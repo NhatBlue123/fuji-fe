@@ -1,0 +1,1 @@
+dùng css module cho dự án này, không cần folder styles này lắm, có css tái sử dụng gì thì mới css ở đây thôi

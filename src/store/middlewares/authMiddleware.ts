@@ -27,7 +27,6 @@ authListenerMiddleware.startListening({
     }
   },
 });
-
 // Listener cho logout action -> clear cache
 authListenerMiddleware.startListening({
   actionCreator: logout,

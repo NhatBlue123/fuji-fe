@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_JP } from "next/font/google"; // Import fonts
-import "material-symbols/index.css"; // Import Material Symbols
+import "material-symbols/outlined.css"; // Import Material Symbols
 import "./globals.css";
 import Sidebar from "@/components/user-component/Sidebar";
 import MobieSidebar from "@/components/user-component/Mobie-sidebar";
 import Footer from "@/components/user-component/Footer";
-
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,7 +33,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning className="dark">
-      <body className={`${inter.variable} ${notoSansJP.variable} antialiased bg-gray-50 dark:bg-background-dark font-display text-slate-800 dark:text-slate-100 overflow-hidden transition-colors duration-300`}>
+      <body
+        className={`${inter.variable} ${notoSansJP.variable} antialiased bg-gray-50 dark:bg-background-dark font-display text-slate-800 dark:text-slate-100 overflow-hidden transition-colors duration-300`}
+      >
         <div className="flex h-screen w-full">
           <Sidebar />
           <main className="flex-1 overflow-y-auto relative scroll-smooth bg-gray-50 dark:bg-[#0f172a]">

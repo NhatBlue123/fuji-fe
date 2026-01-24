@@ -19,7 +19,9 @@ export default function LoginForm() {
       <div className="flex flex-col items-center mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="relative flex items-center justify-center size-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/30">
-            <span className="material-symbols-outlined text-3xl">landscape</span>
+            <span className="material-symbols-outlined text-3xl">
+              landscape
+            </span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">
             FUJI
@@ -49,7 +51,10 @@ export default function LoginForm() {
         </div>
 
         <div className="px-8 pb-8">
-          <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in-right">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5 animate-fade-in-right"
+          >
             <div className="relative group">
               <input
                 className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-secondary rounded-xl focus:outline-none ring-1 ring-secondary/50 shadow-[0_0_15px_rgba(244,114,182,0.15)] peer placeholder-transparent transition-all"
@@ -98,14 +103,14 @@ export default function LoginForm() {
               </button>
             </div>
 
-
-
             <button
               className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
               type="submit"
             >
               Đăng nhập
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              <span className="material-symbols-outlined text-sm">
+                arrow_forward
+              </span>
             </button>
           </form>
 
@@ -170,11 +175,17 @@ export default function LoginForm() {
       <div className="mt-6 text-center px-8">
         <p className="text-[11px] text-slate-500 leading-relaxed">
           Bằng việc đăng ký, bạn đồng ý với{" "}
-          <Link href="/terms" className="text-slate-400 hover:text-blue-400 underline">
+          <Link
+            href="/terms"
+            className="text-slate-400 hover:text-blue-400 underline"
+          >
             Điều khoản dịch vụ
           </Link>{" "}
           và{" "}
-          <Link href="/privacy" className="text-slate-400 hover:text-blue-400 underline">
+          <Link
+            href="/privacy"
+            className="text-slate-400 hover:text-blue-400 underline"
+          >
             Chính sách quyền riêng tư
           </Link>{" "}
           của FUJI.

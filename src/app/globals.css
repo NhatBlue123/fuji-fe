@@ -22,6 +22,8 @@
   --color-primary-blue: var(--primary-blue);
   --color-primary-dark: var(--primary-dark);
   --color-secondary-pink: var(--secondary-pink);
+  --color-aurora-pink: var(--aurora-pink);
+  --color-aurora-blue: var(--aurora-blue);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-card-bg: var(--card-bg);
   --color-background-dark: var(--background-dark);
@@ -43,19 +45,11 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Animations */
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-spin-slow: spin 3s linear infinite;
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
+  /* Border Radius */
+  --radius-DEFAULT: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
 }
 
 :root {
@@ -100,6 +94,8 @@
   --primary-blue: #3b82f6;
   --primary-dark: #1d4ed8;
   --secondary-pink: #f472b6;
+  --aurora-pink: #f2b5c4;
+  --aurora-blue: #3b82f6;
   --sidebar-bg: #ffffff;
   --card-bg: #ffffff;
   --background-dark: #f9fafb;
@@ -154,6 +150,8 @@
 
   /* Custom Names overridden for Dark Mode */
   --primary-blue: #3b82f6;
+  --aurora-pink: #f2b5c4;
+  --aurora-blue: #3b82f6;
   --primary-dark: #1d4ed8;
   --secondary-pink: #f472b6;
   --sidebar-bg: #0b1120;
@@ -233,6 +231,16 @@
     text-shadow: 0 0 15px rgba(244, 114, 182, 0.6);
   }
 
+  /* Autofill styles */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
   .timeline-line {
     background: linear-gradient(
       to bottom,
@@ -297,6 +305,45 @@
     }
   }
 
+  @keyframes auroraFlow1 {
+    0% {
+      transform: rotate(15deg) scale(1) translate(0, 0);
+    }
+    100% {
+      transform: rotate(20deg) scale(1.1) translate(-2%, -5%);
+    }
+  }
+
+  @keyframes auroraFlow2 {
+    0% {
+      transform: rotate(-10deg) scale(1) translate(0, 0);
+    }
+    100% {
+      transform: rotate(-5deg) scale(1.1) translate(2%, 5%);
+    }
+  }
+
+  @keyframes pulseGlow {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes fadeInRight {
+    0% {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
@@ -305,8 +352,24 @@
     animation: fade-in 1s ease-out;
   }
 
+  .animate-fade-in-right {
+    animation: fadeInRight 0.5s ease-out forwards;
+  }
+
   .animate-spin-slow {
     animation: spin 3s linear infinite;
+  }
+
+  .animate-aurora-flow-1 {
+    animation: auroraFlow1 12s ease-in-out infinite alternate;
+  }
+
+  .animate-aurora-flow-2 {
+    animation: auroraFlow2 15s ease-in-out infinite alternate;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 6s ease-in-out infinite;
   }
 
   .shadow-glow {

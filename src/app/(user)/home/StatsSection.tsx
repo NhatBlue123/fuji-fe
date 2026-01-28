@@ -42,12 +42,12 @@ const StatsSection = () => {
   }
 
   return (
-    <div className="px-8 md:px-12 lg:px-20 -mt-24 relative z-20">
-      <div className="flex grid-rows-4 xl:flex-rows-2 lg:grid-cols-4 gap-6">
+    <div className="px-6 md:px-12 lg:px-20 -mt-16 relative z-20">
+      <div className="flex grid-rows-4 xl:flex-rows-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="glass-card p-6 rounded-2xl flex items-center gap-6 hover:bg-slate-800/60 transition-colors"
+            className="glass-card p-6 rounded-2xl flex items-center gap-4 hover:bg-slate-800/60 transition-colors"
           >
             <div className={`size-32 rounded-full ${getColorClasses(stat.color)} flex items-center justify-center border`}>
               <span className="material-symbols-outlined">{stat.icon}</span>

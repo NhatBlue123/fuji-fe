@@ -4,7 +4,6 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
       <div className="mx-auto max-w-4xl space-y-10">
-
         {/* ================= HEADER ================= */}
         <div className="flex items-center justify-between">
           <div>
@@ -15,6 +14,7 @@ export default function EditProfilePage() {
               Cập nhật thông tin cá nhân và mục tiêu học tập
             </p>
           </div>
+         
 
           <Link
             href="/profile"
@@ -26,7 +26,6 @@ export default function EditProfilePage() {
 
         {/* ================= FORM ================= */}
         <form className="space-y-10">
-
           {/* ===== BASIC INFO ===== */}
           <div className="rounded-2xl bg-slate-900 border border-slate-800 p-8 space-y-6">
             <h2 className="text-lg font-semibold text-slate-100">
@@ -130,7 +129,6 @@ export default function EditProfilePage() {
               Lưu thay đổi
             </button>
           </div>
-
         </form>
       </div>
     </div>

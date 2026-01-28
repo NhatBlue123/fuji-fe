@@ -7,7 +7,7 @@ const HeroSection = () => {
           className="w-full h-full bg-cover bg-center transform scale-105"
           style={{
             backgroundImage:
-              'url("https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c")',
+              'url("https://haycafe.vn/wp-content/uploads/2022/03/Hinh-anh-nui-Phu-Si-dep.jpg")',
           }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#0B1120] via-[#0B1120]/80 to-blue-900/40 mix-blend-multiply"></div>
@@ -19,7 +19,7 @@ const HeroSection = () => {
 
       {/* Content */}
       <div className="relative z-10 max-w-2xl text-white pt-10">
-        <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 mb-6 shadow-glow">
+        <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 mb-6 shadow-glow">
           <span className="size-4 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_#F472B6]"></span>
           <span className="text-xl font-bold tracking-wide uppercase text-secondary">
             Nền tảng học tiếng Nhật số 1

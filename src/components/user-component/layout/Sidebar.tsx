@@ -163,13 +163,20 @@ const Sidebar = () => {
                 "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfFl_pOyFigGwfLtmeb6LniwUCm0yBud_fv-LOAt4SoJGaT1pzBnvbOgHz5kbgBJOB_ssp423Jkd3U7soqab37_QOtQjp5mQW96CfW95qvn9FSRNVuMMNXx7T7vxkuG7ZnHbevTkCEnYHd7eRQX_QSbjeoZteLQeY9ag0vm-wqmhxamd3eiryL-cOTWrKLJp4fETdKaaaZEcH--J8xyVwIDsYlZdYp_zX6qbEXJOIXInVkVVBxP_D4xyoF96BL9Zpu4P_AZlntpRY')",
             }}
           ></div>
-          <div className="flex-1 min-w-0">
+          <div>
+            <Link
+            href="/profile"
+            className="flex-1 min-w-0 block rounded-lg
+             hover:bg-blue-500 dark:hover:bg-gray-800
+             transition p-1"
+          >
             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
               Minh Anh
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               Học viên N3
             </p>
+          </Link>
           </div>
           <button className="text-gray-400 hover:text-white transition-colors">
             <span className="material-symbols-outlined">logout</span>

@@ -2,16 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { login } from "@/services/auth.service";
+import { setToken } from "@/lib/auth";
+
+
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login:", { email, password });
-    // TODO: Implement login logic
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await login(email, password);
+
+      // Lưu token
+      setToken(data.accessToken);
+
+      // Chuyển trang sau khi login thành công
+      router.push("/dashboard");
+    } catch (err) {
+      setError("Email hoặc mật khẩu không đúng");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -103,14 +124,27 @@ export default function LoginForm() {
               </button>
             </div>
 
+            {error && (
+              <p className="text-sm text-red-400 text-center">{error}</p>
+            )}
+
             <button
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
               type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500
+  hover:from-pink-400 hover:to-rose-400
+  disabled:opacity-60 disabled:cursor-not-allowed
+  text-white font-bold rounded-xl shadow-lg shadow-pink-500/30
+  hover:shadow-pink-500/50 transform hover:-translate-y-0.5
+  active:translate-y-0 transition-all duration-200 mt-2
+  flex items-center justify-center gap-2"
             >
-              Đăng nhập
-              <span className="material-symbols-outlined text-sm">
-                arrow_forward
-              </span>
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              {!loading && (
+                <span className="material-symbols-outlined text-sm">
+                  arrow_forward
+                </span>
+              )}
             </button>
           </form>
 

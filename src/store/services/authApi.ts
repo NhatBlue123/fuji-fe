@@ -60,12 +60,20 @@ const baseQueryWithReauth: BaseQueryFn<
               return refreshResult;
             } else {
               console.log("❌ Refresh failed, logging out");
-              api.dispatch({ type: "auth/logout" });
+              // Import removeToken from lib/auth and clear token
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("fuji_access_token");
+                localStorage.removeItem("auth_state");
+              }
               return null;
             }
           } catch (error) {
             console.error("❌ Refresh error:", error);
-            api.dispatch({ type: "auth/logout" });
+            // Clear token on error
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("fuji_access_token");
+              localStorage.removeItem("auth_state");
+            }
             return null;
           } finally {
             isRefreshing = false;

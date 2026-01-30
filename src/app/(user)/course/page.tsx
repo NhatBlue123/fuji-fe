@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import Filter from "@/components/user-component/course/Filter";
-import CourseList from "@/components/user-component/course/CourseList";
+import Filter from "@/components/admin-component/course/Filter";
+import CourseList from "@/components/admin-component/course/CourseList";
 
 export default function CoursePage() {
   const [isLoading, setIsLoading] = useState(false);

@@ -34,6 +34,8 @@
   /* Existing Shadcn vars */
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-card-border: var(--card-border);
+  --color-sidebar-bg: var(--sidebar-bg);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-muted: var(--muted);
@@ -44,6 +46,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-text-main: var(--text-main);
 
   /* Border Radius */
   --radius-DEFAULT: 0.5rem;
@@ -55,40 +58,36 @@
 :root {
   --radius: 0.5rem;
 
-  /*
-     MATCHING PROVIDED HTML COLORS
-     primary: #3b82f6 (Blue)
-     secondary: #F472B6 (Pink)
-  */
-
-  /* Light mode */
-  --background: #f9fafb; /* Matches background-dark/light logic somewhat or keep standard */
+  /* Light mode - FUJI Admin Theme */
+  --background: #ffffff;
   --foreground: #0f172a;
 
-  --primary: #3b82f6;
+  /* Primary: Bright Orange */
+  --primary: #ff9933;
   --primary-foreground: #ffffff;
 
-  --secondary: #f472b6;
-  --secondary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #404040;
 
   --card: #ffffff;
   --card-foreground: #0f172a;
+  --card-border: #e8e8e8;
 
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted: #f5f5f5;
+  --muted-foreground: #8c8c8c;
 
-  --accent: #f1f5f9;
+  --accent: #f5f5f5;
   --accent-foreground: #0f172a;
 
-  --destructive: #ef4444;
+  --destructive: #dc2626;
   --destructive-foreground: #fafafa;
 
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #3b82f6;
+  --border: #e8e8e8;
+  --input: #ffffff;
+  --ring: #ff9933;
 
   /* Custom Names */
   --primary-blue: #3b82f6;
@@ -96,24 +95,25 @@
   --secondary-pink: #f472b6;
   --aurora-pink: #f2b5c4;
   --aurora-blue: #3b82f6;
-  --sidebar-bg: #ffffff;
+  --sidebar-bg: #f9f9f9;
   --card-bg: #ffffff;
-  --background-dark: #f9fafb;
-  --footer-bg: #f3f4f6;
+  --background-dark: #ffffff;
+  --footer-bg: #f9f9f9;
   --surface-light: #ffffff;
   --surface-dark: #1e293b;
+  --text-main: #1a1a1a;
 
-  /* Sidebar Specific (if used by shadcn components) */
-  --sidebar: #ffffff;
+  /* Sidebar Specific */
+  --sidebar: #f9f9f9;
   --sidebar-foreground: #0f172a;
-  --sidebar-primary: #3b82f6;
+  --sidebar-primary: #ff9933;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1f5f9;
   --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #3b82f6;
+  --sidebar-border: #e8e8e8;
+  --sidebar-ring: #ff9933;
 
-  /* New font variables */
+  /* Font variables */
   --font-inter: "Inter", sans-serif;
   --font-noto-sans-jp: "Noto Sans JP", sans-serif;
 }

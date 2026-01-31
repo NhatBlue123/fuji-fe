@@ -397,3 +397,13 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
+.profile-theme {
+  --p-primary: #1F3A5F;
+  --p-bg: #F5EFE6;
+  --p-secondary: #F2B5C4;
+  --p-danger: #C73A3A;
+  --p-text: #1A1A1A;
+  --p-muted: #4A4A4A;
+  --p-card: #ffffff;
+}
+

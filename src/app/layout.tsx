@@ -32,7 +32,7 @@ export default function RootLayout({
     <html lang="vi" suppressHydrationWarning className="dark">
       <body
         suppressHydrationWarning
-        className={`${inter.variable} ${notoSansJP.variable} antialiased bg-gray-50 dark:bg-background-dark font-display text-slate-800 dark:text-slate-100`}
+        className={`${inter.variable} ${notoSansJP.variable} antialiased font-display`}
       >
         {children}
       </body>

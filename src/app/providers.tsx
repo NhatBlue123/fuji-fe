@@ -9,7 +9,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    // Load theme from localStorage
+    // Load theme from localStorage adjustment
     const theme = localStorage.getItem('theme') || 'light';
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, []);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -109,21 +110,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="text-text-main font-medium">Courses</span>
           </div>
           <div className="flex items-center gap-4">
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               onClick={toggleTheme}
-              className="h-9 w-9 rounded-md hover:bg-accent dark:hover:bg-accent border border-border flex items-center justify-center text-foreground transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">
                 {isDark ? 'light_mode' : 'dark_mode'}
               </span>
-            </button>
-            <button className="h-9 w-9 rounded-full hover:bg-secondary dark:hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors relative">
+            </Button>
+            <Button variant="ghost" size="icon" className="relative">
               <span className="material-symbols-outlined text-[20px]">notifications</span>
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary border-2 border-background"></span>
-            </button>
-            <button className="h-9 w-9 rounded-full hover:bg-secondary dark:hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors">
+            </Button>
+            <Button variant="ghost" size="icon">
               <span className="material-symbols-outlined text-[20px]">help</span>
-            </button>
+            </Button>
           </div>
         </header>
 

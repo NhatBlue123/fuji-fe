@@ -1,4 +1,4 @@
-import CourseManagement from '@/components/admin/course/CourseManagement'
+import CourseManagement from '@/components/admin-component/course/CourseManagement'
 
 export default function CourseAdminPage() {
   return <CourseManagement />

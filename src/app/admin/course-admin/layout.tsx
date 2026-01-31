@@ -1,3 +1,3 @@
-import AdminLayout from "@/components/admin/layout/AdminLayout";
+import AdminLayout from "@/components/admin-component/layout/AdminLayout";
 
 export default AdminLayout;

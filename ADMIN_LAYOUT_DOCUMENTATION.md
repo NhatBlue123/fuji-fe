@@ -5,7 +5,7 @@ Complete admin dashboard for course management with professional dark theme desi
 
 ## 📁 Component Structure
 
-### 1. **Sidebar Component** (`src/components/admin/Sidebar.tsx`)
+### 1. **Sidebar Component** (`src/components/admin-component/Sidebar.tsx`)
 Professional sidebar navigation with:
 - FUJI Admin logo with gradient background
 - Navigation items: Dashboard, Users, Courses (active), Analytics, Settings
@@ -21,7 +21,7 @@ Professional sidebar navigation with:
 
 ---
 
-### 2. **Header Component** (`src/components/admin/Header.tsx`)
+### 2. **Header Component** (`src/components/admin-component/Header.tsx`)
 Dynamic header with search and filter functionality:
 - Page title and subtitle
 - "Add Course" button with glow effect
@@ -34,7 +34,7 @@ Dynamic header with search and filter functionality:
 
 ---
 
-### 3. **CourseCard Component** (`src/components/admin/CourseCard.tsx`)
+### 3. **CourseCard Component** (`src/components/admin-component/CourseCard.tsx`)
 Beautiful card component for displaying courses:
 - Thumbnail with hover zoom effect
 - Course level and status badges
@@ -56,7 +56,7 @@ Beautiful card component for displaying courses:
 
 ---
 
-### 4. **CourseForm Component** (`src/components/admin/CourseForm.tsx`)
+### 4. **CourseForm Component** (`src/components/admin-component/CourseForm.tsx`)
 Comprehensive form for creating/editing courses:
 - Image upload with preview
 - Course name input
@@ -78,7 +78,7 @@ Comprehensive form for creating/editing courses:
 
 ---
 
-### 5. **CourseModal Component** (`src/components/admin/CourseModal.tsx`)
+### 5. **CourseModal Component** (`src/components/admin-component/CourseModal.tsx`)
 Modal dialog for creating/editing courses:
 - Backdrop blur effect
 - Title changes based on create/edit mode
@@ -94,7 +94,7 @@ Modal dialog for creating/editing courses:
 
 ---
 
-### 6. **CourseManagement Component** (`src/components/admin/CourseManagement.tsx`)
+### 6. **CourseManagement Component** (`src/components/admin-component/CourseManagement.tsx`)
 Main dashboard component combining all elements:
 - Full-page layout with Sidebar and Header
 - Responsive course grid (1-4 columns based on screen size)
@@ -151,7 +151,7 @@ interface Course {
 
 ### Import in page:
 ```tsx
-import CourseManagement from '@/components/admin/CourseManagement'
+import CourseManagement from '@/components/admin-component/CourseManagement'
 
 export default function DashboardAdminPage() {
   return <CourseManagement />
@@ -232,7 +232,7 @@ export default function DashboardAdminPage() {
 ## 🔍 File Locations
 
 ```
-src/components/admin/
+src/components/admin-component/
 ├── Sidebar.tsx              (Navigation)
 ├── Header.tsx               (Search & Filters)
 ├── CourseCard.tsx           (Course Card)

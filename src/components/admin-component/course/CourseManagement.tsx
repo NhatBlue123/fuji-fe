@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import CourseModal from './CourseModal'
 import { Course } from './type'
+import { Button } from '@/components/ui/button'
 
 const MOCK_COURSES: Course[] = [
     {
@@ -161,29 +162,27 @@ export default function CourseManagement() {
                         <h1 className="text-3xl font-bold tracking-tight text-text-main">Quản lý khóa học</h1>
                         <p className="text-muted-foreground">Quản lý chương trình học và theo dõi tiến độ học tập của học sinh.</p>
                     </div>
-                    <button
+                    <Button
                         onClick={() => handleOpenModal()}
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 dark:bg-slate-600 dark:text-white dark:hover:bg-slate-700 hover:shadow-md hover:shadow-blue-500/30 h-10 px-4 py-2"
+                        className="bg-blue-500 text-white hover:bg-blue-600 dark:bg-slate-600 dark:text-white dark:hover:bg-slate-700 hover:shadow-md hover:shadow-blue-500/30 h-10 px-4 py-2"
                     >
                         <span className="material-symbols-outlined text-[20px]">add</span>
                         Tạo khóa học mới
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Filters Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6 mb-8">
                     <div className="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
                         {(['All', 'Published', 'Draft'] as const).map(status => (
-                            <button
+                            <Button
                                 key={status}
+                                variant={selectedStatus === status ? "default" : "ghost"}
                                 onClick={() => setSelectedStatus(status)}
-                                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${selectedStatus === status
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'hover:text-primary hover:bg-primary/10'
-                                    }`}
+                                className="px-3 py-1.5"
                             >
                                 {status === 'All' ? 'Tất cả' : status === 'Published' ? 'Đã xuất bản' : 'Bản nháp'}
-                            </button>
+                            </Button>
                         ))}
                     </div>
 
@@ -266,12 +265,13 @@ export default function CourseManagement() {
 
                                 {/* Actions */}
                                 <div className="flex items-center p-4 pt-0 gap-2">
-                                    <button
+                                    <Button
+                                        variant="outline"
                                         onClick={() => handleOpenModal(course)}
-                                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full text-foreground"
+                                        className="w-full"
                                     >
                                         {course.status === 'Draft' ? 'Tiếp tục soạn' : 'Chỉnh sửa'}
-                                    </button>
+                                    </Button>
                                     {/* <button
                     onClick={() => handleDelete(course.id)}
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-destructive/10 hover:text-destructive text-muted-foreground h-9 w-9"

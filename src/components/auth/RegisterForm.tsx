@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import clsx from 'clsx';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { REGEXP_ONLY_DIGITS } from 'input-otp';
+import { useRegisterMutation, useVerifyOtpMutation } from '@/lib/authAPI';
 
 type Errors = {
     fullname?: string;
@@ -21,6 +24,10 @@ export default function RegisterForm() {
     const [submitted, setSubmitted] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [step, setStep] = useState<'register' | 'verify'>('register');
+    const [otp, setOtp] = useState('');
+    const [register, { isLoading: isRegistering }] = useRegisterMutation();
+    const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -39,13 +46,13 @@ export default function RegisterForm() {
             newErrors.fullname = 'Vui lòng nhập họ tên';
         }
 
-const emailRegex =
-  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const emailRegex =
+            /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!formData.email.trim()) {
-    newErrors.email = 'Vui lòng nhập email';
-} else if (!emailRegex.test(formData.email)) {
-    newErrors.email = 'Email không hợp lệ';
-}
+            newErrors.email = 'Vui lòng nhập email';
+        } else if (!emailRegex.test(formData.email)) {
+            newErrors.email = 'Email không hợp lệ';
+        }
 
 
         if (!formData.password) {
@@ -65,17 +72,44 @@ const emailRegex =
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSubmitted(true);
         if (!validate()) return;
 
-        console.log('Registration data:', formData);
+        try {
+            const result = await register({
+                username: formData.email, // assuming username is email
+                email: formData.email,
+                password: formData.password,
+                fullName: formData.fullname,
+            }).unwrap();
+            console.log('Registration successful:', result);
+            setStep('verify');
+        } catch (error) {
+            console.error('Registration failed:', error);
+            // Handle error, perhaps set error message
+        }
+    };
+    const handleVerifyOTP = async () => {
+        if (otp.length !== 6) return;
+
+        try {
+            const result = await verifyOtp({
+                email: formData.email,
+                otpCode: otp,
+            }).unwrap();
+            console.log('Verification successful:', result);
+            // Redirect to login or dashboard
+            window.location.href = '/auth/login';
+        } catch (error) {
+            console.error('Verification failed:', error);
+            // Handle error
+        }
     };
     const inputClass = (error?: string) =>
         clsx(
-            'block w-full px-4 py-3.5 text-white bg-slate-800/50 rounded-xl border transition-all',
-            'focus:outline-none focus:ring-1',
+            'block w-full px-4 py-3.5 text-white bg-slate-800/50 rounded-xl border transition-all focus:outline-none focus:ring-1',
             submitted && error
                 ? 'border-rose-500 ring-rose-500'
                 : 'border-slate-600/50 focus:border-blue-500 focus:ring-blue-500'
@@ -127,116 +161,151 @@ const emailRegex =
 
                 {/* Form */}
                 <div className="px-8 pb-8">
-                    <form className="space-y-4" onSubmit={handleSubmit}>
-                        {/* Fullname */}
-                        <div>
-                            <input
-                                id="fullname"
-                                value={formData.fullname}
-                                onChange={handleChange}
-                                className={inputClass(errors.fullname)}
-                                placeholder="Họ tên"
-                            />
-                            {submitted && errors.fullname && (
-                                <p className="mt-1 text-xs text-rose-400">{errors.fullname}</p>
-                            )}
-                        </div>
-                        {/* Email Input */}
-                        <div className="relative group">
-                            <input
-  id="email"
-  type="email"
-  value={formData.email}
-  onChange={handleChange}
-  className={clsx(
-    inputClass(errors.email),
-    'peer placeholder-transparent'
-  )}
-  placeholder="Email"
-/>
-{submitted && errors.email && (
-                                <p className="mt-1 text-xs text-rose-400">{errors.email}</p>
-                            )}
-                            <label
-                                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                                htmlFor="email"
-                            >
-                                Email
-                            </label>
-                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
-                                mail
-                            </span>
-                        </div>
-
-                        {/* Password Input */}
-                        <div className="relative group">
-                            <input
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
-                                value={formData.password}
-                                onChange={handleChange}
-                                className={inputClass(errors.password)}
-                                placeholder="Mật khẩu"
-                            />
-                            {submitted && errors.password && (
-                                <p className="mt-1 text-xs text-rose-400">{errors.password}</p>
-                            )}
-                            <label
-                                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                                htmlFor="password"
-                            >
-                            </label>
-                            <button
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                <span className="material-symbols-outlined text-xl">
-                                    {showPassword ? 'visibility' : 'visibility_off'}
+                    {step === 'register' ? (
+                        <form className="space-y-4" onSubmit={handleSubmit}>
+                            {/* Fullname */}
+                            <div>
+                                <input
+                                    id="fullname"
+                                    value={formData.fullname}
+                                    onChange={handleChange}
+                                    className={inputClass(errors.fullname)}
+                                    placeholder="Họ tên"
+                                />
+                                {submitted && errors.fullname && (
+                                    <p className="mt-1 text-xs text-rose-400">{errors.fullname}</p>
+                                )}
+                            </div>
+                            {/* Email Input */}
+                            <div className="relative group">
+                                <input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className={clsx(
+                                        inputClass(errors.email),
+                                        'peer placeholder-transparent'
+                                    )}
+                                    placeholder="Email"
+                                />
+                                {submitted && errors.email && (
+                                    <p className="mt-1 text-xs text-rose-400">{errors.email}</p>
+                                )}
+                                <label
+                                    className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
+                                    htmlFor="email"
+                                >
+                                    Email
+                                </label>
+                                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
+                                    mail
                                 </span>
+                            </div>
+
+                            {/* Password Input */}
+                            <div className="relative group">
+                                <input
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className={inputClass(errors.password)}
+                                    placeholder="Mật khẩu"
+                                />
+                                {submitted && errors.password && (
+                                    <p className="mt-1 text-xs text-rose-400">{errors.password}</p>
+                                )}
+                                <label
+                                    className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
+                                    htmlFor="password"
+                                >
+                                </label>
+                                <button
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    <span className="material-symbols-outlined text-xl">
+                                        {showPassword ? 'visibility' : 'visibility_off'}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Confirm Password Input */}
+                            <div className="relative group">
+                                <input
+                                    id="confirm_password"
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    value={formData.confirm_password}
+                                    onChange={handleChange}
+                                    className={inputClass(errors.confirm_password)}
+                                    placeholder="Xác nhận mật khẩu"
+                                />
+                                {submitted && errors.confirm_password && (
+                                    <p className="mt-1 text-xs text-rose-400">
+                                        {errors.confirm_password}
+                                    </p>
+                                )}
+                                <label
+                                    className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
+                                    htmlFor="confirm_password"
+                                >
+                                </label>
+                                <button
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                >
+                                    <span className="material-symbols-outlined text-xl">
+                                        {showConfirmPassword ? 'visibility' : 'visibility_off'}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
+                                className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
+                                type="submit"
+                                disabled={isRegistering}
+                            >
+                                {isRegistering ? 'Đang tạo...' : 'Tạo tài khoản'}
+                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                            </button>
+                        </form>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="text-center">
+                                <h3 className="text-lg font-semibold text-white">Xác nhận email</h3>
+                                <p className="text-slate-400 text-sm">Nhập mã OTP đã gửi đến email của bạn</p>
+                            </div>
+                            <div className="flex justify-center">
+                                <InputOTP
+                                    maxLength={6}
+                                    pattern={REGEXP_ONLY_DIGITS}
+                                    value={otp}
+                                    onChange={setOtp}
+                                >
+                                    <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-white *:data-[slot=input-otp-slot]:bg-slate-800/50 *:data-[slot=input-otp-slot]:border-slate-600/50 *:data-[slot=input-otp-slot]:rounded-xl *:data-[slot=input-otp-slot]:text-xl">
+                                        <InputOTPSlot index={0} />
+                                        <InputOTPSlot index={1} />
+                                        <InputOTPSlot index={2} />
+                                        <InputOTPSlot index={3} />
+                                        <InputOTPSlot index={4} />
+                                        <InputOTPSlot index={5} />
+                                    </InputOTPGroup>
+                                </InputOTP>
+                            </div>
+                            <button
+                                onClick={handleVerifyOTP}
+                                disabled={otp.length !== 6 || isVerifying}
+                                className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {isVerifying ? 'Đang xác nhận...' : 'Xác nhận'}
+                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
                             </button>
                         </div>
-
-                        {/* Confirm Password Input */}
-                        <div className="relative group">
-                            <input
-                                id="confirm_password"
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                value={formData.confirm_password}
-                                onChange={handleChange}
-                                className={inputClass(errors.confirm_password)}
-                                placeholder="Xác nhận mật khẩu"
-                            />
-                            {submitted && errors.confirm_password && (
-                                <p className="mt-1 text-xs text-rose-400">
-                                    {errors.confirm_password}
-                                </p>
-                            )}
-                            <label
-                                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                                htmlFor="confirm_password"
-                            >
-                            </label>
-                            <button
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                                <span className="material-symbols-outlined text-xl">
-                                    {showConfirmPassword ? 'visibility' : 'visibility_off'}
-                                </span>
-                            </button>
-                        </div>
-
-                        {/* Submit Button */}
-                        <button
-                            className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
-                            type="submit"
-                        >
-                            Tạo tài khoản
-                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                        </button>
-                    </form>
+                    )}
 
                     {/* Divider */}
                     <div className="relative my-8">

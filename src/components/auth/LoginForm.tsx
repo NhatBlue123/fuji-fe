@@ -57,7 +57,7 @@ export default function LoginForm() {
           >
             <div className="relative group">
               <input
-                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-secondary rounded-xl focus:outline-none ring-1 ring-secondary/50 shadow-[0_0_15px_rgba(244,114,182,0.15)] peer placeholder-transparent transition-all"
+                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
                 id="email"
                 placeholder="Email"
                 type="email"
@@ -66,12 +66,12 @@ export default function LoginForm() {
                 required
               />
               <label
-                className="absolute text-sm text-secondary duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-card-bg px-2 left-3 rounded-full pointer-events-none"
+                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
                 htmlFor="email"
               >
                 Email
               </label>
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-secondary text-xl">
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
                 mail
               </span>
             </div>

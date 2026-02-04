@@ -64,7 +64,7 @@ export default function LoginForm() {
 
       // 5. Xử lý thông báo lỗi từ Backend trả về
       let msg = "Đăng nhập thất bại. Vui lòng thử lại!";
-      
+
       if (err?.data?.message) {
         msg = err.data.message; // Message từ GlobalExceptionHandler
       } else if (typeof err?.data === "string") {
@@ -76,7 +76,11 @@ export default function LoginForm() {
       setErrorMessage(msg);
       dispatch(loginFailure(msg));
     }
+  }; const handleGoogleLogin = () => {
+    // Chuyển hướng sang backend OAuth2
+    window.location.href = "http://localhost:8181/oauth2/authorization/google";
   };
+
 
   return (
     <div className="relative z-10 w-full max-w-[460px] mx-4">

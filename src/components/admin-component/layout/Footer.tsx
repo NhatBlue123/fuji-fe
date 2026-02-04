@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 const Footer = () => {
     return (
@@ -49,9 +50,9 @@ const Footer = () => {
                     <p className="text-slate-400 text-sm leading-relaxed">Nhận mẹo học tiếng Nhật và ưu đãi khóa học mới nhất từ FUJI.</p>
                     <div className="flex gap-2 p-1.5 bg-white/5 border border-white/10 rounded-xl focus-within:border-blue-500/50 transition-all">
                         <input className="bg-transparent border-none focus:ring-0 text-white text-sm flex-1 px-3" placeholder="Email của bạn" type="email" />
-                        <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap">
+                        <Button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap">
                             Đăng ký
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -62,7 +63,7 @@ const Footer = () => {
                         <a className="hover:text-slate-300 transition-colors" href="#">Bảo mật</a>
                         <a className="hover:text-slate-300 transition-colors" href="#">Trung tâm trợ giúp</a>
                     </div>
-                    <p className="text-slate-500 text-sm font-medium">© 2024 FUJI. All rights reserved.</p>
+                    <p className="text-slate-500 text-sm font-medium">© 2026 FUJI. All rights reserved.</p>
                 </div>
             </div>
         </footer>

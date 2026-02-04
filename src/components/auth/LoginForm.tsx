@@ -2,16 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { login } from "@/services/auth.service";
+import { setToken } from "@/lib/auth";
+
+
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login:", { email, password });
-    // TODO: Implement login logic
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await login(email, password);
+
+      // Lưu token
+      setToken(data.accessToken);
+
+      // Chuyển trang sau khi login thành công
+      router.push("/dashboard");
+    } catch (err) {
+      setError("Email hoặc mật khẩu không đúng");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,7 +78,7 @@ export default function LoginForm() {
           >
             <div className="relative group">
               <input
-                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-secondary rounded-xl focus:outline-none ring-1 ring-secondary/50 shadow-[0_0_15px_rgba(244,114,182,0.15)] peer placeholder-transparent transition-all"
+                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
                 id="email"
                 placeholder="Email"
                 type="email"
@@ -66,12 +87,12 @@ export default function LoginForm() {
                 required
               />
               <label
-                className="absolute text-sm text-secondary duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-card-bg px-2 left-3 rounded-full pointer-events-none"
+                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
                 htmlFor="email"
               >
                 Email
               </label>
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-secondary text-xl">
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
                 mail
               </span>
             </div>
@@ -103,14 +124,27 @@ export default function LoginForm() {
               </button>
             </div>
 
+            {error && (
+              <p className="text-sm text-red-400 text-center">{error}</p>
+            )}
+
             <button
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
               type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500
+  hover:from-pink-400 hover:to-rose-400
+  disabled:opacity-60 disabled:cursor-not-allowed
+  text-white font-bold rounded-xl shadow-lg shadow-pink-500/30
+  hover:shadow-pink-500/50 transform hover:-translate-y-0.5
+  active:translate-y-0 transition-all duration-200 mt-2
+  flex items-center justify-center gap-2"
             >
-              Đăng nhập
-              <span className="material-symbols-outlined text-sm">
-                arrow_forward
-              </span>
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              {!loading && (
+                <span className="material-symbols-outlined text-sm">
+                  arrow_forward
+                </span>
+              )}
             </button>
           </form>
 

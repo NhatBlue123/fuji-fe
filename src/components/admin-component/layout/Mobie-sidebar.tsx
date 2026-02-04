@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 const MobieSidebar = () => {
   return (
@@ -7,9 +8,9 @@ const MobieSidebar = () => {
         <span className="material-symbols-outlined text-blue-600 dark:text-white text-3xl">landscape</span>
         <span className="font-black text-slate-900 dark:text-white text-lg">FUJI</span>
       </div>
-      <button className="p-2 text-gray-600 dark:text-white">
+      <Button variant="ghost" size="icon" className="text-gray-600 dark:text-white">
         <span className="material-symbols-outlined">menu</span>
-      </button>
+      </Button>
     </div>
   );
 };

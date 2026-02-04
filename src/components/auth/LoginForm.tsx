@@ -226,8 +226,10 @@ export default function LoginForm() {
           <div className="grid grid-cols-1 gap-4">
             <button
               type="button"
+              onClick={handleGoogleLogin}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
             >
+
               <svg
                 className="w-5 h-5 group-hover:scale-110 transition-transform"
                 viewBox="0 0 24 24"

@@ -1,38 +1,21 @@
-"use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { login } from "@/services/auth.service";
-import { setToken } from "@/lib/auth";
-
-
 
 export default function LoginForm() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const [login, { isLoading }] = useLoginMutation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const handleSubmit = async (e: React.FormEvent) => {
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const data = await login(email, password);
-
-      // Lưu token
-      setToken(data.accessToken);
-
-      // Chuyển trang sau khi login thành công
-      router.push("/dashboard");
-    } catch (err) {
-      setError("Email hoặc mật khẩu không đúng");
-    } finally {
-      setLoading(false);
-    }
+    console.log("Login:", { email, password });
+    // TODO: Implement login logic
   };
 
   return (
@@ -72,6 +55,16 @@ export default function LoginForm() {
         </div>
 
         <div className="px-8 pb-8">
+         {errorMessage && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 animate-shake">
+            <span className="material-symbols-outlined text-red-500 text-xl">
+              error
+            </span>
+            <span className="text-red-400 text-sm font-medium">
+              {errorMessage}
+            </span>
+          </div>
+        )}
           <form
             onSubmit={handleSubmit}
             className="space-y-5 animate-fade-in-right"
@@ -80,8 +73,8 @@ export default function LoginForm() {
               <input
                 className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
                 id="email"
-                placeholder="Email"
-                type="email"
+                placeholder="Email hoặc Tên đăng nhập"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -90,10 +83,10 @@ export default function LoginForm() {
                 className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
                 htmlFor="email"
               >
-                Email
+                Tên đăng nhập
               </label>
               <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
-                mail
+                person
               </span>
             </div>
 
@@ -106,6 +99,7 @@ export default function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
               <label
                 className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-card-bg px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none"
@@ -130,21 +124,11 @@ export default function LoginForm() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500
-  hover:from-pink-400 hover:to-rose-400
-  disabled:opacity-60 disabled:cursor-not-allowed
-  text-white font-bold rounded-xl shadow-lg shadow-pink-500/30
-  hover:shadow-pink-500/50 transform hover:-translate-y-0.5
-  active:translate-y-0 transition-all duration-200 mt-2
-  flex items-center justify-center gap-2"
             >
-              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-              {!loading && (
-                <span className="material-symbols-outlined text-sm">
-                  arrow_forward
-                </span>
-              )}
+              Đăng nhập
+              <span className="material-symbols-outlined text-sm">
+                arrow_forward
+              </span>
             </button>
           </form>
 

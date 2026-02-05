@@ -56,7 +56,7 @@ export default function LoginForm() {
       dispatch(loginSuccess(userForState));
 
       // 4. Chuyển hướng
-      console.log("✅ Đăng nhập thành công!");
+      console.log("Đăng nhập thành công!");
       router.push("/home");
 
     } catch (err: any) {

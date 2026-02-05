@@ -34,8 +34,8 @@ const baseQueryWithReauth: BaseQueryFn<
   if (result.error && result.error.status === 401) {
     const isRefreshEndpoint =
       typeof args === "string"
-        ? args.includes("/auth/refresh")
-        : args.url.includes("/auth/refresh");
+        ? args.includes("/refresh")
+        : args.url.includes("/refresh");
 
     if (!isRefreshEndpoint) {
       // Nếu đang có refresh request khác, chờ nó xong
@@ -51,7 +51,7 @@ const baseQueryWithReauth: BaseQueryFn<
         refreshPromise = (async () => {
           try {
             const refreshResult = await baseQuery(
-              { url: "/auth/refresh", method: "POST" },
+              { url: "/refresh", method: "POST" },
               api,
               extraOptions,
             );
@@ -111,6 +111,12 @@ interface LoginResponseData {
  
 }
 
+export interface VerifyOtpRequest {
+  email: string;
+  otpCode: string;
+}
+
+
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQueryWithReauth, // Dùng baseQuery có auto refresh
@@ -129,7 +135,7 @@ export const authApi = createApi({
     // Đăng ký
     register: builder.mutation<ApiResponse<{ user: User }>, RegisterRequest>({
       query: (userData) => ({
-        url: "/auth/register",
+        url: "/register",
         method: "POST",
         body: userData,
       }),
@@ -138,31 +144,39 @@ export const authApi = createApi({
     // Đăng xuất
     logout: builder.mutation<ApiResponse, void>({
       query: () => ({
-        url: "/auth/logout",
+        url: "/logout",
         method: "POST",
       }),
       invalidatesTags: ["Auth", "User"],
     }),
 
+    verifyOtp: builder.mutation<ApiResponse<string>, { email: string; otpCode: string }>({
+      query: (data) => ({
+        url: "/verify-otp",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
     // Refresh token
     refreshToken: builder.mutation<ApiResponse<{ user: User }>, void>({
       query: () => ({
-        url: "/auth/refresh",
+        url: "/refresh",
         method: "POST",
       }),
       invalidatesTags: ["Auth"],
     }),
 
     // Lấy thông tin user hiện tại
-    getCurrentUser: builder.query<ApiResponse<{ user: User }>, void>({
-      query: () => "/auth/me",
+    getCurrentUser: builder.query<ApiResponse<User>, void>({
+      query: () => "/me",
       providesTags: ["User"],
     }),
 
     // Verify email
     verifyEmail: builder.mutation<ApiResponse, { token: string }>({
       query: ({ token }) => ({
-        url: `/auth/verify-email?token=${token}`,
+        url: `/verify-email?token=${token}`,
         method: "POST",
       }),
     }),
@@ -170,7 +184,7 @@ export const authApi = createApi({
     // Forgot password
     forgotPassword: builder.mutation<ApiResponse, { email: string }>({
       query: ({ email }) => ({
-        url: "/auth/forgot-password",
+        url: "/forgot-password",
         method: "POST",
         body: { email },
       }),
@@ -182,7 +196,7 @@ export const authApi = createApi({
       { token: string; password: string }
     >({
       query: ({ token, password }) => ({
-        url: "/auth/reset-password",
+        url: "/reset-password",
         method: "POST",
         body: { token, password },
       }),
@@ -190,15 +204,18 @@ export const authApi = createApi({
   }),
 });
 
-// Export hooks
+
+// Export auto-generated hooks
+// RTK Query generates these hooks automatically based on endpoint names
 export const {
   useLoginMutation,
   useRegisterMutation,
   useLogoutMutation,
+  useVerifyOtpMutation,
+  useVerifyEmailMutation,
   useRefreshTokenMutation,
   useGetCurrentUserQuery,
   useLazyGetCurrentUserQuery,
-  useVerifyEmailMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } = authApi;

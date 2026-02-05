@@ -1,6 +1,4 @@
-// src/app/(exam)/JLPTtest/page.tsx
 "use client";
-
 import React, { useEffect, useState } from "react";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";

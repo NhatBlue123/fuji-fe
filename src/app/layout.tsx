@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Noto_Sans_JP } from "next/font/google"; // Import fonts
 import "material-symbols/outlined.css"; // Import Material Symbols
 import "./globals.css";
+import { Providers } from "./providers";
 import StoreProvider from "@/store/StoreProvider";
 
 const inter = Inter({
@@ -35,6 +36,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${inter.variable} ${notoSansJP.variable} antialiased font-display`}
       >
+        <Providers>
+          {children}
+        </Providers>
         <StoreProvider>
           {children}
         </StoreProvider>

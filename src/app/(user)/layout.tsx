@@ -1,6 +1,6 @@
-import Sidebar from "@/components/user-component/layout/Sidebar";
-import MobieSidebar from "@/components/user-component/layout/Mobie-sidebar";
-import Footer from "@/components/user-component/layout/Footer";
+import Sidebar from "@/components/admin-component/layout/Sidebar";
+import MobieSidebar from "@/components/admin-component/layout/Mobie-sidebar";
+import Footer from "@/components/admin-component/layout/Footer";
 
 export default function UserLayout({
   children,

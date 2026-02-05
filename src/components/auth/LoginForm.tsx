@@ -1,9 +1,10 @@
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAppDispatch } from "@/store/hooks";
 import { useLoginMutation } from "@/store/services/authApi";
-import { useAppDispatch } from "@/store/hooks"; // Hook custom typed
 import { loginSuccess, loginFailure } from "@/store/slices/authSlice";
 import { User } from "@/types/auth";
 
@@ -11,8 +12,10 @@ export default function LoginForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
+  // RTK Query Hook
   const [login, { isLoading }] = useLoginMutation();
 
+  // Local State
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,33 +23,24 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+    setErrorMessage(null); // Reset lỗi cũ
+
     try {
-      // 1. Gọi API Login
-      // Lưu ý: Backend Java yêu cầu field là "username". 
-      // Nếu user nhập email vào ô username, ta cứ gửi nó đi.
-      const response =  await login({ 
-        username: email, 
-        password: password 
+      // 1. Gọi API Login (Backend sẽ set Cookie tự động)
+      // Lưu ý: Backend yêu cầu field 'username', ta map email vào đó
+      const response = await login({
+        username: email,
+        password: password,
       }).unwrap();
 
-     
-
-      // // 2. Lưu Token vào LocalStorage (Quan trọng!)
-      // if (response.accessToken) {
-      //   localStorage.setItem("accessToken", response.accessToken);
-      //   localStorage.setItem("refreshToken", response.refreshToken);
-      // }
-
-
-      // 3. Tạo object User giả lập từ response để lưu vào Redux 
-      // (Vì LoginResponse của Java chưa trả full User object như Mongo)
+      // 2. Tạo object User giả lập để lưu vào Redux State
+      // (Vì Backend hiện tại chỉ trả về username/email, chưa full info)
       const userForState: User = {
-        _id: "temp_id", // Backend SQL dùng ID số, Frontend đang type string
+        _id: "temp_id",
         id: "temp_id",
         email: response.email || email,
         username: response.username,
-        fullname: response.username, // Tạm thời lấy username làm fullname
+        fullname: response.username, // Tạm dùng username làm tên hiển thị
         level: "N5",
         isActive: true,
         isAdmin: false,
@@ -55,42 +49,42 @@ export default function LoginForm() {
         followers: [],
         following: [],
         lastActiveAt: new Date().toISOString(),
-        gender: "other"
+        gender: "other",
       };
 
-      // 4. Dispatch action cập nhật Redux Store
+      // 3. Cập nhật Redux Store (để UI biết đã login)
       dispatch(loginSuccess(userForState));
 
-      // 5. Chuyển hướng trang
+      // 4. Chuyển hướng
       console.log("Đăng nhập thành công!");
-      router.push("/home"); // Hoặc /course
+      router.push("/home");
 
     } catch (err: any) {
-
       console.error("Login failed:", err);
-      let displayMessage = "Đăng nhập thất bại. Vui lòng thử lại!";
-      if (err) {
-        
-        if (err.data && err.data.message) {
-            displayMessage = err.data.message;
-        } 
-        // Trường hợp 2: Lỗi kết nối (Server chết, mạng rớt)
-        else if (err.error) {
-            displayMessage = "Không thể kết nối đến máy chủ (Network Error)";
-        }
-        // Trường hợp 3: Backend trả string thô
-        else if (typeof err.data === "string") {
-            displayMessage = err.data;
-        }
+
+      // 5. Xử lý thông báo lỗi từ Backend trả về
+      let msg = "Đăng nhập thất bại. Vui lòng thử lại!";
+
+      if (err?.data?.message) {
+        msg = err.data.message; // Message từ GlobalExceptionHandler
+      } else if (typeof err?.data === "string") {
+        msg = err.data;
+      } else if (err?.error) {
+        msg = "Không thể kết nối đến máy chủ (Network Error)";
       }
 
-      // Set vào state để hiển thị lên màn hình
-      setErrorMessage(displayMessage);
+      setErrorMessage(msg);
+      dispatch(loginFailure(msg));
     }
+  }; const handleGoogleLogin = () => {
+    // Chuyển hướng sang backend OAuth2
+    window.location.href = "http://localhost:8181/oauth2/authorization/google";
   };
+
 
   return (
     <div className="relative z-10 w-full max-w-[460px] mx-4">
+      {/* --- HEADER LOGO --- */}
       <div className="flex flex-col items-center mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="relative flex items-center justify-center size-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/30">
@@ -107,9 +101,11 @@ export default function LoginForm() {
         </p>
       </div>
 
+      {/* --- MAIN CARD --- */}
       <div className="bg-card-bg/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden relative group">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
 
+        {/* TAB SWITCHER */}
         <div className="px-8 pt-8 pb-4">
           <div className="relative flex bg-slate-900/50 rounded-xl p-1 shadow-inner border border-white/5">
             <div className="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-slate-800 rounded-lg shadow-sm border border-white/10 transition-all duration-300 ease-out"></div>
@@ -126,20 +122,24 @@ export default function LoginForm() {
         </div>
 
         <div className="px-8 pb-8">
-         {errorMessage && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 animate-shake">
-            <span className="material-symbols-outlined text-red-500 text-xl">
-              error
-            </span>
-            <span className="text-red-400 text-sm font-medium">
-              {errorMessage}
-            </span>
-          </div>
-        )}
+          {/* ERROR MESSAGE ALERT */}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 animate-shake">
+              <span className="material-symbols-outlined text-red-500 text-xl">
+                error
+              </span>
+              <span className="text-red-400 text-sm font-medium">
+                {errorMessage}
+              </span>
+            </div>
+          )}
+
+          {/* LOGIN FORM */}
           <form
             onSubmit={handleSubmit}
             className="space-y-5 animate-fade-in-right"
           >
+            {/* Input Email/Username */}
             <div className="relative group">
               <input
                 className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
@@ -149,6 +149,7 @@ export default function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
               <label
                 className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
@@ -161,6 +162,7 @@ export default function LoginForm() {
               </span>
             </div>
 
+            {/* Input Password */}
             <div className="relative group">
               <input
                 className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
@@ -182,6 +184,7 @@ export default function LoginForm() {
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
               >
                 <span className="material-symbols-outlined text-xl">
                   {showPassword ? "visibility" : "visibility_off"}
@@ -189,8 +192,9 @@ export default function LoginForm() {
               </button>
             </div>
 
+            {/* Submit Button */}
             <button
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               type="submit"
               disabled={isLoading}
             >
@@ -210,6 +214,7 @@ export default function LoginForm() {
             </button>
           </form>
 
+          {/* DIVIDER */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-700"></div>
@@ -221,11 +226,14 @@ export default function LoginForm() {
             </div>
           </div>
 
+          {/* SOCIAL LOGIN */}
           <div className="grid grid-cols-1 gap-4">
             <button
               type="button"
+              onClick={handleGoogleLogin}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
             >
+
               <svg
                 className="w-5 h-5 group-hover:scale-110 transition-transform"
                 viewBox="0 0 24 24"
@@ -255,6 +263,7 @@ export default function LoginForm() {
           </div>
         </div>
 
+        {/* FOOTER */}
         <div className="px-8 py-5 bg-slate-900/40 border-t border-white/5 text-center backdrop-blur-md">
           <p className="text-sm text-slate-400">
             Chưa có tài khoản?{" "}

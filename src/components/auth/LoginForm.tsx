@@ -1,17 +1,92 @@
-"use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useLoginMutation } from "@/store/services/authApi";
+import { useAppDispatch } from "@/store/hooks"; // Hook custom typed
+import { loginSuccess, loginFailure } from "@/store/slices/authSlice";
+import { User } from "@/types/auth";
 
 export default function LoginForm() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const [login, { isLoading }] = useLoginMutation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login:", { email, password });
-    // TODO: Implement login logic
+    setErrorMessage(null);
+    try {
+      // 1. Gọi API Login
+      // Lưu ý: Backend Java yêu cầu field là "username". 
+      // Nếu user nhập email vào ô username, ta cứ gửi nó đi.
+      const response =  await login({ 
+        username: email, 
+        password: password 
+      }).unwrap();
+
+     
+
+      // // 2. Lưu Token vào LocalStorage (Quan trọng!)
+      // if (response.accessToken) {
+      //   localStorage.setItem("accessToken", response.accessToken);
+      //   localStorage.setItem("refreshToken", response.refreshToken);
+      // }
+
+
+      // 3. Tạo object User giả lập từ response để lưu vào Redux 
+      // (Vì LoginResponse của Java chưa trả full User object như Mongo)
+      const userForState: User = {
+        _id: "temp_id", // Backend SQL dùng ID số, Frontend đang type string
+        id: "temp_id",
+        email: response.email || email,
+        username: response.username,
+        fullname: response.username, // Tạm thời lấy username làm fullname
+        level: "N5",
+        isActive: true,
+        isAdmin: false,
+        isOnline: true,
+        posts: 0,
+        followers: [],
+        following: [],
+        lastActiveAt: new Date().toISOString(),
+        gender: "other"
+      };
+
+      // 4. Dispatch action cập nhật Redux Store
+      dispatch(loginSuccess(userForState));
+
+      // 5. Chuyển hướng trang
+      console.log("Đăng nhập thành công!");
+      router.push("/home"); // Hoặc /course
+
+    } catch (err: any) {
+
+      console.error("Login failed:", err);
+      let displayMessage = "Đăng nhập thất bại. Vui lòng thử lại!";
+      if (err) {
+        
+        if (err.data && err.data.message) {
+            displayMessage = err.data.message;
+        } 
+        // Trường hợp 2: Lỗi kết nối (Server chết, mạng rớt)
+        else if (err.error) {
+            displayMessage = "Không thể kết nối đến máy chủ (Network Error)";
+        }
+        // Trường hợp 3: Backend trả string thô
+        else if (typeof err.data === "string") {
+            displayMessage = err.data;
+        }
+      }
+
+      // Set vào state để hiển thị lên màn hình
+      setErrorMessage(displayMessage);
+    }
   };
 
   return (
@@ -51,28 +126,38 @@ export default function LoginForm() {
         </div>
 
         <div className="px-8 pb-8">
+         {errorMessage && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 animate-shake">
+            <span className="material-symbols-outlined text-red-500 text-xl">
+              error
+            </span>
+            <span className="text-red-400 text-sm font-medium">
+              {errorMessage}
+            </span>
+          </div>
+        )}
           <form
             onSubmit={handleSubmit}
             className="space-y-5 animate-fade-in-right"
           >
             <div className="relative group">
               <input
-                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-secondary rounded-xl focus:outline-none ring-1 ring-secondary/50 shadow-[0_0_15px_rgba(244,114,182,0.15)] peer placeholder-transparent transition-all"
+                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
                 id="email"
-                placeholder="Email"
-                type="email"
+                placeholder="Email hoặc Tên đăng nhập"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
               <label
-                className="absolute text-sm text-secondary duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-card-bg px-2 left-3 rounded-full pointer-events-none"
+                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
                 htmlFor="email"
               >
-                Email
+                Tên đăng nhập
               </label>
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-secondary text-xl">
-                mail
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
+                person
               </span>
             </div>
 
@@ -85,6 +170,7 @@ export default function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
               <label
                 className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-card-bg px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none"
@@ -106,11 +192,21 @@ export default function LoginForm() {
             <button
               className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
               type="submit"
+              disabled={isLoading}
             >
-              Đăng nhập
-              <span className="material-symbols-outlined text-sm">
-                arrow_forward
-              </span>
+              {isLoading ? (
+                <>
+                  <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  Đăng nhập
+                  <span className="material-symbols-outlined text-sm">
+                    arrow_forward
+                  </span>
+                </>
+              )}
             </button>
           </form>
 

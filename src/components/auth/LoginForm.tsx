@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { AuthFloatingInput } from "../ui/auth-ui/auth-floating-input";
+import { AuthPasswordInput } from "../ui/auth-ui/auth-pass-input";
+import { AuthPrimaryButton } from "../ui/auth-ui/auth-primary-button";
 
 export default function LoginForm() {
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -55,63 +57,34 @@ export default function LoginForm() {
             onSubmit={handleSubmit}
             className="space-y-5 animate-fade-in-right"
           >
-            <div className="relative group">
-              <input
-                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
-                id="email"
-                placeholder="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <label
-                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                htmlFor="email"
-              >
-                Email
-              </label>
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
-                mail
-              </span>
-            </div>
-
-            <div className="relative group">
-              <input
-                className="block w-full px-4 py-3.5 text-white bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 peer placeholder-transparent transition-all"
-                id="password"
-                placeholder="Mật khẩu"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <label
-                className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-card-bg px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none"
-                htmlFor="password"
-              >
-                Mật khẩu
-              </label>
-              <button
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                <span className="material-symbols-outlined text-xl">
-                  {showPassword ? "visibility" : "visibility_off"}
+            <AuthFloatingInput
+              id="email"
+              type="email"
+              label="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              rightIcon={
+                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">
+                  mail
                 </span>
-              </button>
-            </div>
+              }
+            />
 
-            <button
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2 flex items-center justify-center gap-2"
-              type="submit"
-            >
+
+            <AuthPasswordInput
+              id="password"
+              label="Mật khẩu"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <AuthPrimaryButton type="submit">
               Đăng nhập
               <span className="material-symbols-outlined text-sm">
                 arrow_forward
               </span>
-            </button>
+            </AuthPrimaryButton>
+
           </form>
 
           <div className="relative my-8">

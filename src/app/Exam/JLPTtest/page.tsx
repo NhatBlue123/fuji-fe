@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";
 import ExamContent from "./ExamContent";
@@ -87,7 +87,7 @@ export default function JLPTtestPage() {
                     transform: `translateX(calc( -1 * ( ${(currentQuestion - 1) * 22}px + 4px ) ))`
                   }}
                >
-                  {Array.from({ length: 50 }).map((_, index) => {
+                  {Array.from({ length: 77 }).map((_, index) => {
                     const qNum = index + 1;
                     const isActive = qNum === currentQuestion;
                     const distance = Math.abs(currentQuestion - qNum);
@@ -116,7 +116,7 @@ export default function JLPTtestPage() {
 
         
             <button
-              onClick={() => setCurrentQuestion((q) => Math.min(50, q + 1))}
+              onClick={() => setCurrentQuestion((q) => Math.min(77, q + 1))}
               className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold shadow transition hover:brightness-90 active:scale-95"
               style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
             >

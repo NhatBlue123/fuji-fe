@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/*
+  Admin Theme
+  - Separate from User theme to avoid conflicts.
+  - Can defined admin specific colors here if needed.
+*/
+
+:root {
+  /* Admin specific variables if needed here */
+}

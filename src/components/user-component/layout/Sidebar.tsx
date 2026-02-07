@@ -2,41 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "@/components/common";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   const isActive = (path: string) => {
     return pathname === path;
   };
 
   return (
-    <aside className="hidden w-64 flex-col bg-white dark:bg-sidebar-bg border-r border-gray-200 dark:border-gray-800 md:flex shadow-xl z-20 transition-colors duration-300">
-      <div className="flex items-center gap-3 px-6 py-8">
+    <aside className="hidden w-64 flex-col bg-sidebar border-r border-sidebar-border md:flex shadow-xl z-20 transition-colors duration-300">
+      <Link
+        href="/"
+        className="flex items-center gap-3 px-6 py-8 hover:bg-sidebar-accent/50 transition-colors cursor-pointer"
+      >
         <div className="relative flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white overflow-hidden shadow-lg shadow-blue-500/30">
           <span className="material-symbols-outlined text-3xl">landscape</span>
         </div>
         <div className="flex flex-col">
-          <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-xl font-black tracking-tight text-sidebar-foreground">
             FUJI
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+          <p className="text-xs text-muted-foreground font-medium">
             Học Tiếng Nhật
           </p>
         </div>
-      </div>
+      </Link>
       <nav className="flex-1 overflow-y-auto px-4 space-y-1">
         <Link
           className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/home")
-              ? "bg-blue-50 dark:bg-white/10 text-blue-600 dark:text-white font-bold shadow-sm dark:shadow-none"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white font-medium group"
+            isActive("/")
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
           }`}
-          href="/home"
+          href="/"
         >
           <span
             className={`material-symbols-outlined ${
-              isActive("/home") ? "filled" : ""
+              isActive("/") ? "filled" : ""
             }`}
           >
             home
@@ -46,8 +51,8 @@ const Sidebar = () => {
         <Link
           className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
             isActive("/course")
-              ? "bg-blue-50 dark:bg-white/10 text-blue-600 dark:text-white font-bold shadow-sm dark:shadow-none"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white font-medium group"
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
           }`}
           href="/course"
         >
@@ -55,7 +60,7 @@ const Sidebar = () => {
             className={`material-symbols-outlined ${
               isActive("/course")
                 ? "filled"
-                : "group-hover:text-blue-600 dark:group-hover:text-white transition-colors"
+                : "group-hover:text-sidebar-primary transition-colors"
             }`}
           >
             menu_book
@@ -63,7 +68,7 @@ const Sidebar = () => {
           <span>Khóa học</span>
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white transition-all font-medium group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
@@ -72,7 +77,7 @@ const Sidebar = () => {
           <span>Cộng đồng</span>
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white transition-all font-medium group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
@@ -84,7 +89,7 @@ const Sidebar = () => {
           </span>
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white transition-all font-medium group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
@@ -93,7 +98,7 @@ const Sidebar = () => {
           <span>Luyện tập AI</span>
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white transition-all font-medium group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
@@ -101,9 +106,9 @@ const Sidebar = () => {
           </span>
           <span>Thẻ ghi nhớ</span>
         </Link>
-        <div className="my-4 border-t border-gray-200 dark:border-gray-800 mx-4"></div>
+        <div className="my-4 border-t border-sidebar-border mx-4"></div>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white transition-all font-medium group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
@@ -112,7 +117,7 @@ const Sidebar = () => {
           <span>Thông báo</span>
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-blue-600 dark:hover:text-white transition-all font-medium group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
@@ -138,21 +143,21 @@ const Sidebar = () => {
         </div>
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-gray-400">
+            <span className="material-symbols-outlined text-muted-foreground">
               contrast
             </span>
-            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+            <span className="text-sm font-bold text-sidebar-foreground">
               Sáng / Tối
             </span>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
-              checked={true}
+              checked={theme === "dark"}
               className="sr-only peer"
               type="checkbox"
-              onChange={() => {}}
+              onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
             />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
           </label>
         </div>
         <div className="flex items-center gap-3 px-2">
@@ -165,18 +170,18 @@ const Sidebar = () => {
           ></div>
           <div>
             <Link
-            href="/profile"
-            className="flex-1 min-w-0 block rounded-lg
-             hover:bg-blue-500 dark:hover:bg-gray-800
+              href="/profile"
+              className="flex-1 min-w-0 block rounded-lg
+             hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
              transition p-1"
-          >
-            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-              Minh Anh
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              Học viên N3
-            </p>
-          </Link>
+            >
+              <p className="text-sm font-bold text-sidebar-foreground truncate">
+                Minh Anh
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                Học viên N3
+              </p>
+            </Link>
           </div>
           <button className="text-gray-400 hover:text-white transition-colors">
             <span className="material-symbols-outlined">logout</span>

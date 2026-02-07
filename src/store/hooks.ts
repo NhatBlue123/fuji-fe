@@ -1,15 +1,15 @@
 "use client";
 
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store";
+import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
 
-/**
- * Custom hook để access auth state và methods
- */
+// Use throughout your app instead of plain `useDispatch` and `useSelector`
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+
 export const useAuth = () => {
-  const dispatch = useDispatch();
-  const { user, isAuthenticated, isLoading, error, isInitialized } = useSelector(
-    (state: RootState) => state.auth,
+  const { user, isAuthenticated, isLoading, error, isInitialized } = useAppSelector(
+    (state) => state.auth,
   );
 
   return {

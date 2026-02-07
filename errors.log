@@ -1,0 +1,3 @@
+.next/dev/types/validator.ts(42,39): error TS2306: File 'D:/FUJI/fuji-fe/src/app/(admin)/admin/page.tsx' is not a module.
+src/store/middlewares/authMiddleware.ts(25,58): error TS2339: Property 'user' does not exist on type 'User'.
+src/store/middlewares/authMiddleware.ts(26,61): error TS2339: Property 'user' does not exist on type 'User'.

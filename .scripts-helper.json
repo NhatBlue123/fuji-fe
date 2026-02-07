@@ -1,0 +1,15 @@
+{
+  "name": "fuji-fe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "clean": "rm -rf .next node_modules/.cache",
+    "clean:win": "if exist .next rmdir /s /q .next && if exist node_modules\\.cache rmdir /s /q node_modules\\.cache",
+    "fresh": "npm run clean && npm run dev",
+    "fresh:win": "npm run clean:win && npm run dev"
+  }
+}

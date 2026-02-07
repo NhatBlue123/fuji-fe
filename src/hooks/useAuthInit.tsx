@@ -10,7 +10,7 @@ import {
 } from "../store/slices/authSlice";
 import { RootState } from "../store";
 import { authApi } from "../store/services/authApi";
-import { LoadingPage } from "../components/common/LoadingPage";
+
 
 /**
  * Hook để khôi phục authentication state khi app khởi động và theo dõi session
@@ -118,12 +118,7 @@ export const useAuthInit = () => {
 export const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isLoading } = useAuthInit();
-
-  // Hiển thị loading page khi đang init auth
-  if (isLoading) {
-    return <LoadingPage />;
-  }
+  useAuthInit();
 
   return <>{children}</>;
 };

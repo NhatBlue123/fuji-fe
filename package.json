@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "node -e \"const fs = require('fs'); try { fs.rmSync('.next', { recursive: true, force: true }); fs.rmSync('.turbo', { recursive: true, force: true }); fs.rmSync('node_modules/.cache', { recursive: true, force: true }); console.log('✅ Cache cleaned!'); } catch (e) { console.log('Already clean or error:', e.message); }\"",
+    "fresh": "npm run clean && npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "5.2.2",

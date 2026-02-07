@@ -23,14 +23,14 @@ export default function LoginForm() {
     setErrorMessage(null);
     try {
       // 1. Gọi API Login
-      // Lưu ý: Backend Java yêu cầu field là "username". 
+      // Lưu ý: Backend Java yêu cầu field là "username".
       // Nếu user nhập email vào ô username, ta cứ gửi nó đi.
-      const response =  await login({ 
-        username: email, 
-        password: password 
+      const response =  await login({
+        username: email,
+        password: password
       }).unwrap();
 
-     
+
 
       // // 2. Lưu Token vào LocalStorage (Quan trọng!)
       // if (response.accessToken) {
@@ -39,7 +39,7 @@ export default function LoginForm() {
       // }
 
 
-      // 3. Tạo object User giả lập từ response để lưu vào Redux 
+      // 3. Tạo object User giả lập từ response để lưu vào Redux
       // (Vì LoginResponse của Java chưa trả full User object như Mongo)
       const userForState: User = {
         _id: "temp_id", // Backend SQL dùng ID số, Frontend đang type string
@@ -63,17 +63,17 @@ export default function LoginForm() {
 
       // 5. Chuyển hướng trang
       console.log("Đăng nhập thành công!");
-      router.push("/home"); // Hoặc /course
+      router.push("/"); // Hoặc /course
 
     } catch (err: any) {
 
       console.error("Login failed:", err);
       let displayMessage = "Đăng nhập thất bại. Vui lòng thử lại!";
       if (err) {
-        
+
         if (err.data && err.data.message) {
             displayMessage = err.data.message;
-        } 
+        }
         // Trường hợp 2: Lỗi kết nối (Server chết, mạng rớt)
         else if (err.error) {
             displayMessage = "Không thể kết nối đến máy chủ (Network Error)";

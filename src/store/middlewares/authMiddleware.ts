@@ -22,8 +22,8 @@ authListenerMiddleware.startListening({
   matcher: authApi.endpoints.getCurrentUser.matchFulfilled,
   effect: async (action, listenerApi) => {
     console.log("✅ Get current user successful");
-    if (action.payload?.success && action.payload?.data?.user) {
-      listenerApi.dispatch(loginSuccess(action.payload.data.user));
+    if (action.payload?.success && action.payload?.data) {
+      listenerApi.dispatch(loginSuccess(action.payload.data));
     }
   },
 });

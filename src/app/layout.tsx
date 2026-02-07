@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import "material-symbols/outlined.css";
-import "./globals.css";
-import { ThemeProvider, ExtensionCleanup, InitialPageLoader } from "@/components/common";
+import { ThemeProvider, ExtensionCleanup } from "@/components/common";
 import RtkProvider from "./providers";
 
 const inter = Inter({
@@ -58,30 +57,39 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
-      </head>
-      <body suppressHydrationWarning>
-        {/* ✅ Script chạy trước khi React hydrate để chống flash theme */}
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
+
+        {/* Chống flash theme - Script này phải chạy đồng bộ trong <head> */}
+        <script
           dangerouslySetInnerHTML={{
             __html: `
 (function() {
   try {
-    // Theme
     var theme = localStorage.getItem('theme');
-    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var cl = document.documentElement.classList;
-    cl.remove('light', 'dark');
-    if(theme === 'dark' || (!theme && systemDark)) cl.add('dark');
-    else cl.add('light');
-  } catch(e) {}
+    var root = document.documentElement;
+
+    // Xóa các class theme cũ
+    root.classList.remove('light', 'dark');
+
+    // Áp dụng theme
+    if (theme === 'dark' || theme === 'light') {
+      root.classList.add(theme);
+    } else {
+      // Nếu chưa có theme hoặc theme = 'system', dùng system preference
+      var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.add(isDark ? 'dark' : 'light');
+    }
+  } catch(e) {
+    // Fallback: nếu lỗi thì dùng light mode
+    document.documentElement.classList.add('light');
+  }
 })();
             `,
           }}
         />
+      </head>
+      <body suppressHydrationWarning>
         <ExtensionCleanup />
-        <InitialPageLoader />
+
         <RtkProvider>
           <ThemeProvider
             attribute="class"

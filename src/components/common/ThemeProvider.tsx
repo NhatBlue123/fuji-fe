@@ -5,7 +5,29 @@ import { ThemeProviderProps, ThemeProviderState } from "@/types/common";
 
 type Theme = "dark" | "light" | "system";
 
-const ThemeProviderContext = React.createContext<ThemeProviderState | undefined>(undefined);
+const ThemeProviderContext = React.createContext<
+  ThemeProviderState | undefined
+>(undefined);
+
+// Hàm lấy theme từ localStorage hoặc system preference (chỉ chạy client-side)
+const getInitialTheme = (defaultTheme: Theme, enableSystem: boolean): Theme => {
+  if (typeof window === "undefined") return defaultTheme;
+
+  try {
+    const stored = localStorage.getItem("theme") as Theme;
+    if (stored) return stored;
+
+    if (enableSystem) {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+  } catch (e) {
+    console.error("Error reading theme:", e);
+  }
+
+  return defaultTheme;
+};
 
 export function ThemeProvider({
   children,
@@ -15,17 +37,10 @@ export function ThemeProvider({
   disableTransitionOnChange = false,
   ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
-
-  React.useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme;
-    if (stored) {
-      setThemeState(stored);
-    } else if (enableSystem) {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      setThemeState(systemTheme);
-    }
-  }, [enableSystem]);
+  // Khởi tạo theme ngay từ đầu bằng cách đọc localStorage (chỉ chạy một lần khi mount)
+  const [theme, setThemeState] = React.useState<Theme>(() =>
+    getInitialTheme(defaultTheme, enableSystem),
+  );
 
   React.useEffect(() => {
     const root = window.document.documentElement;
@@ -40,7 +55,10 @@ export function ThemeProvider({
     root.classList.remove("light", "dark");
 
     if (theme === "system" && enableSystem) {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
       root.classList.add(systemTheme);
     } else {
       root.classList.add(theme);
@@ -60,13 +78,18 @@ export function ThemeProvider({
     [theme, setTheme],
   );
 
-  return <ThemeProviderContext.Provider value={value}>{children}</ThemeProviderContext.Provider>;
+  return (
+    <ThemeProviderContext.Provider value={value}>
+      {children}
+    </ThemeProviderContext.Provider>
+  );
 }
 
 export const useTheme = () => {
   const context = React.useContext(ThemeProviderContext);
 
-  if (context === undefined) throw new Error("useTheme must be used within a ThemeProvider");
+  if (context === undefined)
+    throw new Error("useTheme must be used within a ThemeProvider");
 
   return context;
 };

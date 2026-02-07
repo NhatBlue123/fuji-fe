@@ -13,8 +13,9 @@ let refreshPromise: Promise<unknown> | null = null;
 
 // Base query với credentials để gửi cookies
 const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1",
-  credentials: "include", // Gửi cookies với mọi request
+  // URL Backend Spring Boot của bạn
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8181/api/auth",
+  credentials: "include", 
   prepareHeaders: (headers) => {
     headers.set("Content-Type", "application/json");
     return headers;
@@ -60,12 +61,20 @@ const baseQueryWithReauth: BaseQueryFn<
               return refreshResult;
             } else {
               console.log("❌ Refresh failed, logging out");
-              api.dispatch({ type: "auth/logout" });
+              // Import removeToken from lib/auth and clear token
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("fuji_access_token");
+                localStorage.removeItem("auth_state");
+              }
               return null;
             }
           } catch (error) {
             console.error("❌ Refresh error:", error);
-            api.dispatch({ type: "auth/logout" });
+            // Clear token on error
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("fuji_access_token");
+              localStorage.removeItem("auth_state");
+            }
             return null;
           } finally {
             isRefreshing = false;
@@ -102,15 +111,23 @@ interface RegisterRequest {
   fullName?: string;
 }
 
+interface LoginResponseData {
+  accessToken: string;
+  refreshToken: string;
+  username: string;
+  email?: string;
+ 
+}
+
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQueryWithReauth, // Dùng baseQuery có auto refresh
   tagTypes: ["Auth", "User"],
   endpoints: (builder) => ({
     // Đăng nhập
-    login: builder.mutation<ApiResponse<{ user: User }>, LoginRequest>({
+    login: builder.mutation<LoginResponseData, LoginRequest>({
       query: (credentials) => ({
-        url: "/auth/login",
+        url: "/login",
         method: "POST",
         body: credentials,
       }),

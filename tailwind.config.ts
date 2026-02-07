@@ -1,11 +1,13 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -37,9 +39,11 @@ const config: Config = {
           DEFAULT: "var(--color-card)",
           foreground: "var(--color-card-foreground)",
           bg: "var(--color-card-bg)",
+          border: "var(--color-card-border)",
         },
         "background-dark": "var(--color-background-dark)",
         "footer-bg": "var(--color-footer-bg)",
+        "sidebar-bg": "var(--color-sidebar-bg)",
         surface: {
           light: "var(--color-surface-light)",
           dark: "var(--color-surface-dark)",
@@ -60,50 +64,25 @@ const config: Config = {
         border: "var(--color-border)",
         input: "var(--color-input)",
         ring: "var(--color-ring)",
+        "text-main": "var(--color-text-main)",
       },
-      borderRadius: {
-        lg: "var(--radius-lg)",
-        xl: "var(--radius-xl)",
-        DEFAULT: "var(--radius-DEFAULT)",
-        full: "var(--radius-full)",
-      },
-      animation: {
-        "aurora-flow-1": "auroraFlow1 12s ease-in-out infinite alternate",
-        "aurora-flow-2": "auroraFlow2 15s ease-in-out infinite alternate",
-        "pulse-glow": "pulseGlow 6s ease-in-out infinite",
-        float: "float 6s ease-in-out infinite",
-        "fade-in": "fade-in 1s ease-out",
-        "fade-in-right": "fadeInRight 0.5s ease-out forwards",
-        "spin-slow": "spin 3s linear infinite",
+      boxShadow: {
+        card: "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)",
+        "card-hover": "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05)",
+        "100%": { opacity: "1", transform: "translateX(0)" },
       },
       keyframes: {
-        auroraFlow1: {
-          "0%": { transform: "rotate(15deg) scale(1) translate(0, 0)" },
-          "100%": { transform: "rotate(20deg) scale(1.1) translate(-2%, -5%)" },
-        },
-        auroraFlow2: {
-          "0%": { transform: "rotate(-10deg) scale(1) translate(0, 0)" },
-          "100%": { transform: "rotate(-5deg) scale(1.1) translate(2%, 5%)" },
-        },
-        pulseGlow: {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "0.7" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
-        },
-        "fade-in": {
-          from: { opacity: "0", transform: "translateY(20px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        fadeInRight: {
+        slideIn: {
           "0%": { opacity: "0", transform: "translateX(-10px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
       },
+      animation: {
+        slideIn: "slideIn 0.2s ease-out",
+      },
     },
   },
+
   plugins: [],
 };
 

@@ -6,6 +6,7 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import type { User } from "../../types/auth";
+import { API_CONFIG } from "@/config/api";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
@@ -13,9 +14,9 @@ let refreshPromise: Promise<unknown> | null = null;
 
 // Base query với credentials để gửi cookies
 const baseQuery = fetchBaseQuery({
-  // URL Backend Spring Boot của bạn
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8181/api/auth",
-  credentials: "include", 
+  // Sử dụng API_CONFIG thay vì hardcode URL
+  baseUrl: API_CONFIG.BASE_URL,
+  credentials: "include",
   prepareHeaders: (headers) => {
     headers.set("Content-Type", "application/json");
     return headers;
@@ -108,7 +109,7 @@ interface LoginResponseData {
   refreshToken: string;
   username: string;
   email?: string;
- 
+
 }
 
 export interface VerifyOtpRequest {

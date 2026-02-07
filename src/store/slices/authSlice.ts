@@ -1,6 +1,7 @@
 // Quản lý state authentication của user
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { AuthState, User } from "../../types/auth";
+import { API_CONFIG } from "@/config/api";
 
 // Khôi phục auth state từ localStorage nếu có
 const getInitialAuthState = (): AuthState => {
@@ -46,7 +47,7 @@ export const logoutThunk = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/logout`,
+        `${API_CONFIG.BASE_URL}/logout`,
         {
           method: "POST",
           credentials: "include", // Important: gửi cookies

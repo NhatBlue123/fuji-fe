@@ -1,8 +1,22 @@
-// Typed hooks cho Redux store
-import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import type { RootState, AppDispatch } from "./index";
+"use client";
 
-// Hook dispatch với type safety
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-// Hook selector với type safety
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store";
+
+/**
+ * Custom hook để access auth state và methods
+ */
+export const useAuth = () => {
+  const dispatch = useDispatch();
+  const { user, isAuthenticated, isLoading, error, isInitialized } = useSelector(
+    (state: RootState) => state.auth,
+  );
+
+  return {
+    user,
+    isAuthenticated,
+    isLoading,
+    error,
+    isInitialized,
+  };
+};

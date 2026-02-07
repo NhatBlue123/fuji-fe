@@ -40,7 +40,12 @@ const tabContentVariants = {
     x: 0,
     opacity: 1,
     scale: 1,
-    transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 0.8 },
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 30,
+      mass: 0.8,
+    },
   },
   exit: (direction: number) => ({
     x: direction > 0 ? -280 : 280,

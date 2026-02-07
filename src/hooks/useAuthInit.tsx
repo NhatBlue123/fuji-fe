@@ -2,19 +2,14 @@
 
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  useLazyGetCurrentUserQuery,
-} from "../store/services/authApi";
+import { useLazyGetCurrentUserQuery } from "../store/services/authApi";
 import {
   loginSuccess,
   logout,
   setInitialized,
 } from "../store/slices/authSlice";
 import type { RootState, AppDispatch } from "../store";
-import {
-  getAccessToken,
-  getRefreshToken,
-} from "@/lib/token";
+import { getAccessToken, getRefreshToken } from "@/lib/token";
 import type { User } from "@/types/auth";
 
 /**
@@ -92,4 +87,3 @@ export const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({
   useAuthInit();
   return <>{children}</>;
 };
-

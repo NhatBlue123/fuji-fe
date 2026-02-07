@@ -80,9 +80,7 @@ const baseQueryWithReauth: BaseQueryFn<
             extraOptions,
           );
 
-          const data = refreshResult.data as
-            | RefreshResponseData
-            | undefined;
+          const data = refreshResult.data as RefreshResponseData | undefined;
 
           if (data?.accessToken) {
             // Lưu tokens mới

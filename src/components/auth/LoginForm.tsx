@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,19 +29,15 @@ export default function LoginForm() {
       });
       router.push("/");
     } catch (err: any) {
-
       console.error("Login failed:", err);
       let displayMessage = "Đăng nhập thất bại. Vui lòng thử lại!";
       if (err) {
-
         if (err.data && err.data.message) {
-            displayMessage = err.data.message;
-        }
-        else if (err.error) {
-            displayMessage = "Không thể kết nối đến máy chủ (Network Error)";
-        }
-        else if (typeof err.data === "string") {
-            displayMessage = err.data;
+          displayMessage = err.data.message;
+        } else if (err.error) {
+          displayMessage = "Không thể kết nối đến máy chủ (Network Error)";
+        } else if (typeof err.data === "string") {
+          displayMessage = err.data;
         }
       }
 
@@ -88,16 +83,16 @@ export default function LoginForm() {
         </div>
 
         <div className="px-8 pb-8">
-         {errorMessage && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 animate-shake">
-            <span className="material-symbols-outlined text-red-500 text-xl">
-              error
-            </span>
-            <span className="text-red-400 text-sm font-medium">
-              {errorMessage}
-            </span>
-          </div>
-        )}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 animate-shake">
+              <span className="material-symbols-outlined text-red-500 text-xl">
+                error
+              </span>
+              <span className="text-red-400 text-sm font-medium">
+                {errorMessage}
+              </span>
+            </div>
+          )}
           <form
             onSubmit={handleSubmit}
             className="space-y-5 animate-fade-in-right"

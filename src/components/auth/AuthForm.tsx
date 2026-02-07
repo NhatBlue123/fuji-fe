@@ -6,10 +6,15 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { useLoginMutation } from "@/store/services/authApi";
 import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import {
+  useLoginMutation,
+  useSendOtpRegisterMutation,
   useRegisterMutation,
-  useVerifyOtpMutation,
 } from "@/store/services/authApi";
 
 type AuthTab = "login" | "register";
@@ -112,8 +117,9 @@ export default function AuthForm({
   const [loginError, setLoginError] = useState<string | null>(null);
 
   /* ─── Register state ─── */
+  const [sendOtpRegister, { isLoading: isSendingOtp }] =
+    useSendOtpRegisterMutation();
   const [registerUser, { isLoading: isRegistering }] = useRegisterMutation();
-  const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
   const [registerStep, setRegisterStep] = useState<RegisterStep>("register");
   const [formData, setFormData] = useState({
     username: "",
@@ -192,20 +198,24 @@ export default function AuthForm({
     setSubmitted(true);
     setRegisterServerError(null);
     if (!validate()) return;
+
+    const payload = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      fullName: formData.fullname,
+    };
+
     try {
-      await registerUser({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        fullName: formData.fullname,
-      }).unwrap();
+      // Bước 1: Gửi OTP (không tạo user)
+      await sendOtpRegister(payload).unwrap();
       toast.info("Mã OTP đã được gửi", {
         description: `Vui lòng kiểm tra email ${formData.email}`,
       });
       setRegisterStep("otp");
     } catch (err: any) {
       setRegisterServerError(
-        err?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!",
+        err?.data?.message || "Gửi OTP thất bại. Vui lòng thử lại!",
       );
     }
   };
@@ -218,12 +228,20 @@ export default function AuthForm({
       return;
     }
     try {
-      await verifyOtp({ email: formData.email, otpCode }).unwrap();
-      toast.success("Xác thực thành công!", {
-        description: "Bạn hiện có thể đăng nhập với tài khoản mới.",
+      // Bước 2: Đăng ký với OTP (tạo user active ngay)
+      await registerUser({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullname,
+        otpCode: otpCode,
+      }).unwrap();
+      toast.success("Đăng ký thành công!", {
+        description: "Bạn có thể đăng nhập ngay bây giờ.",
       });
       switchTab("login");
       setRegisterStep("register");
+      setOtpCode("");
     } catch (err: any) {
       setRegisterServerError(
         err?.data?.message || "Mã OTP không chính xác hoặc đã hết hạn!",
@@ -595,9 +613,9 @@ export default function AuthForm({
                         <button
                           className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                           type="submit"
-                          disabled={isRegistering}
+                          disabled={isSendingOtp}
                         >
-                          {isRegistering ? "Đang xử lý..." : "Tạo tài khoản"}
+                          {isSendingOtp ? "Đang gửi OTP..." : "Tạo tài khoản"}
                           <span className="material-symbols-outlined text-sm">
                             arrow_forward
                           </span>
@@ -645,35 +663,67 @@ export default function AuthForm({
                       }}
                     >
                       <form className="space-y-6" onSubmit={handleVerifyOtp}>
-                        <div className="text-center">
-                          <p className="text-sm text-slate-400">
-                            Mã OTP đã được gửi đến email
-                          </p>
-                          <p className="text-sm font-bold text-white">
-                            {formData.email}
-                          </p>
+                        <div className="text-center space-y-3">
+                          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/30">
+                            <span className="material-symbols-outlined text-3xl text-white">
+                              shield_lock
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-400">
+                              Mã OTP đã được gửi đến email
+                            </p>
+                            <p className="text-sm font-bold text-white">
+                              {formData.email}
+                            </p>
+                          </div>
                         </div>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={otpCode}
-                          onChange={(e) =>
-                            setOtpCode(e.target.value.replace(/\D/g, ""))
-                          }
-                          className="w-full text-center text-2xl tracking-[0.5em] px-4 py-3.5 bg-slate-800/50 rounded-xl border border-slate-600/50 text-white focus:border-blue-500 outline-none"
-                          placeholder="000000"
-                        />
-                        {regErrors.otp && (
-                          <p className="text-xs text-rose-400 text-center">
-                            {regErrors.otp}
-                          </p>
-                        )}
+                        <div className="flex flex-col items-center gap-4">
+                          <InputOTP
+                            maxLength={6}
+                            value={otpCode}
+                            onChange={(value) => setOtpCode(value)}
+                            containerClassName="gap-3"
+                          >
+                            <InputOTPGroup>
+                              <InputOTPSlot
+                                index={0}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={1}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={2}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={3}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={4}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={5}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                            </InputOTPGroup>
+                          </InputOTP>
+                          {regErrors.otp && (
+                            <p className="text-xs text-rose-400 text-center animate-pulse">
+                              {regErrors.otp}
+                            </p>
+                          )}
+                        </div>
                         <button
                           className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50"
                           type="submit"
-                          disabled={isVerifying}
+                          disabled={isRegistering}
                         >
-                          {isVerifying ? "Đang xác thực..." : "Xác nhận OTP"}
+                          {isRegistering ? "Đang xử lý..." : "Xác nhận OTP"}
                         </button>
                         <button
                           type="button"

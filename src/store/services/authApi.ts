@@ -6,7 +6,7 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import type { User } from "../../types/auth";
-import { API_CONFIG } from "@/config/api";
+import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
 import {
   getAccessToken,
   getRefreshToken,
@@ -44,9 +44,13 @@ const baseQueryWithReauth: BaseQueryFn<
 
   // Bỏ qua nếu endpoint là login/register/refresh
   const url = typeof args === "string" ? args : args.url;
-  const skipReauth = ["/login", "/register", "/refresh", "/verify-otp"].some(
-    (ep) => url.includes(ep),
-  );
+  const skipReauth = [
+    API_ENDPOINTS.AUTH.LOGIN,
+    API_ENDPOINTS.AUTH.REGISTER,
+    API_ENDPOINTS.AUTH.REFRESH,
+    API_ENDPOINTS.AUTH.VERIFY_OTP,
+    API_ENDPOINTS.AUTH.SEND_OTP_REGISTER,
+  ].some((ep) => url.includes(ep));
 
   if (result.error && result.error.status === 401 && !skipReauth) {
     // Nếu đang có refresh request khác, chờ nó xong
@@ -72,7 +76,7 @@ const baseQueryWithReauth: BaseQueryFn<
 
           const refreshResult = await baseQuery(
             {
-              url: "/refresh",
+              url: API_ENDPOINTS.AUTH.REFRESH,
               method: "POST",
               body: { refreshToken },
             },
@@ -134,7 +138,15 @@ interface RegisterRequest {
   username: string;
   email: string;
   password: string;
-  fullName?: string;
+  fullName: string;
+  otpCode: string;
+}
+
+interface SendOtpRegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
 }
 
 // Backend trả về khi login thành công
@@ -166,17 +178,29 @@ export const authApi = createApi({
     // Đăng nhập - trả về tokens
     login: builder.mutation<LoginResponseData, LoginRequest>({
       query: (credentials) => ({
-        url: "/login",
+        url: API_ENDPOINTS.AUTH.LOGIN,
         method: "POST",
         body: credentials,
       }),
       invalidatesTags: ["Auth", "User"],
     }),
 
-    // Đăng ký
-    register: builder.mutation<ApiResponse<{ user: User }>, RegisterRequest>({
+    // Gửi OTP để đăng ký (validate đầy đủ thông tin trước, không tạo tài khoản)
+    sendOtpRegister: builder.mutation<
+      ApiResponse<string>,
+      SendOtpRegisterRequest
+    >({
+      query: (data) => ({
+        url: API_ENDPOINTS.AUTH.SEND_OTP_REGISTER,
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // Đăng ký - gửi đầy đủ thông tin + OTP
+    register: builder.mutation<ApiResponse<string>, RegisterRequest>({
       query: (userData) => ({
-        url: "/register",
+        url: API_ENDPOINTS.AUTH.REGISTER,
         method: "POST",
         body: userData,
       }),
@@ -185,7 +209,7 @@ export const authApi = createApi({
     // Đăng xuất
     logout: builder.mutation<ApiResponse, void>({
       query: () => ({
-        url: "/logout",
+        url: API_ENDPOINTS.AUTH.LOGOUT,
         method: "POST",
       }),
       invalidatesTags: ["Auth", "User"],
@@ -197,7 +221,7 @@ export const authApi = createApi({
       { email: string; otpCode: string }
     >({
       query: (data) => ({
-        url: "/verify-otp",
+        url: API_ENDPOINTS.AUTH.VERIFY_OTP,
         method: "POST",
         body: data,
       }),
@@ -208,7 +232,7 @@ export const authApi = createApi({
       query: () => {
         const refreshToken = getRefreshToken();
         return {
-          url: "/refresh",
+          url: API_ENDPOINTS.AUTH.REFRESH,
           method: "POST",
           body: { refreshToken },
         };
@@ -218,7 +242,7 @@ export const authApi = createApi({
 
     // Lấy thông tin user hiện tại (cần Bearer token)
     getCurrentUser: builder.query<ApiResponse<User>, void>({
-      query: () => "/me",
+      query: () => API_ENDPOINTS.AUTH.ME,
       providesTags: ["User"],
     }),
 
@@ -233,7 +257,7 @@ export const authApi = createApi({
     // Forgot password
     forgotPassword: builder.mutation<ApiResponse, { email: string }>({
       query: ({ email }) => ({
-        url: "/forgot-password",
+        url: API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
         method: "POST",
         body: { email },
       }),
@@ -245,7 +269,7 @@ export const authApi = createApi({
       { token: string; password: string }
     >({
       query: ({ token, password }) => ({
-        url: "/reset-password",
+        url: API_ENDPOINTS.AUTH.RESET_PASSWORD,
         method: "POST",
         body: { token, password },
       }),
@@ -255,6 +279,7 @@ export const authApi = createApi({
 
 // Export auto-generated hooks
 export const {
+  useSendOtpRegisterMutation,
   useLoginMutation,
   useRegisterMutation,
   useLogoutMutation,

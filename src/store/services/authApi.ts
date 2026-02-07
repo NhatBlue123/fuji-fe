@@ -7,23 +7,34 @@ import type {
 } from "@reduxjs/toolkit/query";
 import type { User } from "../../types/auth";
 import { API_CONFIG } from "@/config/api";
+import {
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+  clearTokens,
+} from "@/lib/token";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
-let refreshPromise: Promise<unknown> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
-// Base query với credentials để gửi cookies
+// Base query - tự động gắn Bearer token từ localStorage
 const baseQuery = fetchBaseQuery({
-  // Sử dụng API_CONFIG thay vì hardcode URL
   baseUrl: API_CONFIG.BASE_URL,
   credentials: "include",
   prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+    const token = getAccessToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
     return headers;
   },
 });
 
-// Base query with auto refresh token
+// Base query with auto refresh token khi gặp 401
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
@@ -31,52 +42,75 @@ const baseQueryWithReauth: BaseQueryFn<
 > = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  // Nếu gặp 401 và chưa phải endpoint refresh
-  if (result.error && result.error.status === 401) {
-    const isRefreshEndpoint =
-      typeof args === "string"
-        ? args.includes("/refresh")
-        : args.url.includes("/refresh");
+  // Bỏ qua nếu endpoint là login/register/refresh
+  const url = typeof args === "string" ? args : args.url;
+  const skipReauth = ["/login", "/register", "/refresh", "/verify-otp"].some(
+    (ep) => url.includes(ep),
+  );
 
-    if (!isRefreshEndpoint) {
-      // Nếu đang có refresh request khác, chờ nó xong
-      if (isRefreshing && refreshPromise) {
-        await refreshPromise;
-        // Retry request ban đầu sau khi refresh xong
+  if (result.error && result.error.status === 401 && !skipReauth) {
+    // Nếu đang có refresh request khác, chờ nó xong
+    if (isRefreshing && refreshPromise) {
+      const success = await refreshPromise;
+      if (success) {
+        // Retry với token mới
         result = await baseQuery(args, api, extraOptions);
       } else {
-        // Bắt đầu refresh mới
-        isRefreshing = true;
-        console.log("🔄 Token expired, refreshing...");
+        api.dispatch({ type: "auth/logout" });
+      }
+    } else {
+      // Bắt đầu refresh mới
+      isRefreshing = true;
 
-        refreshPromise = (async () => {
-          try {
-            const refreshResult = await baseQuery(
-              { url: "/refresh", method: "POST" },
-              api,
-              extraOptions,
-            );
-
-            if (refreshResult.data) {
-              console.log("✅ Token refreshed successfully");
-              return refreshResult;
-            } else {
-              console.log("❌ Refresh failed, logging out");
-              api.dispatch({ type: "auth/logout" });
-              return null;
-            }
-          } catch (error) {
-            console.error("❌ Refresh error:", error);
+      refreshPromise = (async (): Promise<boolean> => {
+        try {
+          const refreshToken = getRefreshToken();
+          if (!refreshToken) {
             api.dispatch({ type: "auth/logout" });
-            return null;
-          } finally {
-            isRefreshing = false;
-            refreshPromise = null;
+            return false;
           }
-        })();
 
-        await refreshPromise;
-        // Retry request ban đầu
+          const refreshResult = await baseQuery(
+            {
+              url: "/refresh",
+              method: "POST",
+              body: { refreshToken },
+            },
+            api,
+            extraOptions,
+          );
+
+          const data = refreshResult.data as
+            | RefreshResponseData
+            | undefined;
+
+          if (data?.accessToken) {
+            // Lưu tokens mới
+            setTokens(data.accessToken, data.refreshToken || refreshToken);
+            // Cập nhật Redux state
+            api.dispatch({
+              type: "auth/tokenRefreshed",
+              payload: {
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken || refreshToken,
+              },
+            });
+            return true;
+          } else {
+            api.dispatch({ type: "auth/logout" });
+            return false;
+          }
+        } catch {
+          api.dispatch({ type: "auth/logout" });
+          return false;
+        } finally {
+          isRefreshing = false;
+          refreshPromise = null;
+        }
+      })();
+
+      const success = await refreshPromise;
+      if (success) {
         result = await baseQuery(args, api, extraOptions);
       }
     }
@@ -85,7 +119,8 @@ const baseQueryWithReauth: BaseQueryFn<
   return result;
 };
 
-// Response types
+// ─── Response types ────────────────────────────────────
+
 interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
@@ -104,12 +139,18 @@ interface RegisterRequest {
   fullName?: string;
 }
 
-interface LoginResponseData {
+// Backend trả về khi login thành công
+export interface LoginResponseData {
   accessToken: string;
   refreshToken: string;
   username: string;
   email?: string;
+}
 
+// Backend trả về khi refresh thành công
+interface RefreshResponseData {
+  accessToken: string;
+  refreshToken?: string;
 }
 
 export interface VerifyOtpRequest {
@@ -117,13 +158,14 @@ export interface VerifyOtpRequest {
   otpCode: string;
 }
 
+// ─── API Definition ────────────────────────────────────
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: baseQueryWithReauth, // Dùng baseQuery có auto refresh
+  baseQuery: baseQueryWithReauth,
   tagTypes: ["Auth", "User"],
   endpoints: (builder) => ({
-    // Đăng nhập
+    // Đăng nhập - trả về tokens
     login: builder.mutation<LoginResponseData, LoginRequest>({
       query: (credentials) => ({
         url: "/login",
@@ -151,7 +193,11 @@ export const authApi = createApi({
       invalidatesTags: ["Auth", "User"],
     }),
 
-    verifyOtp: builder.mutation<ApiResponse<string>, { email: string; otpCode: string }>({
+    // Xác thực OTP
+    verifyOtp: builder.mutation<
+      ApiResponse<string>,
+      { email: string; otpCode: string }
+    >({
       query: (data) => ({
         url: "/verify-otp",
         method: "POST",
@@ -160,15 +206,19 @@ export const authApi = createApi({
     }),
 
     // Refresh token
-    refreshToken: builder.mutation<ApiResponse<{ user: User }>, void>({
-      query: () => ({
-        url: "/refresh",
-        method: "POST",
-      }),
+    refreshToken: builder.mutation<RefreshResponseData, void>({
+      query: () => {
+        const refreshToken = getRefreshToken();
+        return {
+          url: "/refresh",
+          method: "POST",
+          body: { refreshToken },
+        };
+      },
       invalidatesTags: ["Auth"],
     }),
 
-    // Lấy thông tin user hiện tại
+    // Lấy thông tin user hiện tại (cần Bearer token)
     getCurrentUser: builder.query<ApiResponse<User>, void>({
       query: () => "/me",
       providesTags: ["User"],
@@ -205,9 +255,7 @@ export const authApi = createApi({
   }),
 });
 
-
 // Export auto-generated hooks
-// RTK Query generates these hooks automatically based on endpoint names
 export const {
   useLoginMutation,
   useRegisterMutation,

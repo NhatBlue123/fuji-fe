@@ -1,124 +1,95 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useGetCurrentUserQuery } from "../store/services/authApi";
 import {
-  loginStart,
+  useLazyGetCurrentUserQuery,
+} from "../store/services/authApi";
+import {
   loginSuccess,
-  logoutThunk,
+  logout,
+  setInitialized,
 } from "../store/slices/authSlice";
-import { RootState } from "../store";
-import { authApi } from "../store/services/authApi";
-
+import type { RootState, AppDispatch } from "../store";
+import {
+  getAccessToken,
+  getRefreshToken,
+} from "@/lib/token";
+import type { User } from "@/types/auth";
 
 /**
- * Hook để khôi phục authentication state khi app khởi động và theo dõi session
+ * Hook để khôi phục authentication state khi app khởi động.
+ * Token refresh scheduling được xử lý bởi authMiddleware.
  */
 export const useAuthInit = () => {
-  const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { isInitialized } = useSelector((state: RootState) => state.auth);
+  const [triggerGetCurrentUser] = useLazyGetCurrentUserQuery();
 
-  // Gọi API để lấy thông tin user hiện tại (nếu có token trong cookie)
-  const { data, isSuccess, isError, isLoading, refetch, error } =
-    useGetCurrentUserQuery();
-
-  // Set loading state khi bắt đầu check auth
+  // Khôi phục session khi app mount
   useEffect(() => {
-    if (isLoading) {
-      dispatch(loginStart());
-    }
-  }, [isLoading, dispatch]);
+    if (isInitialized) return;
 
-  useEffect(() => {
-    if (isSuccess && data?.success && data.data) {
-      // Backend trả về user object trực tiếp trong data
-      dispatch(loginSuccess(data.data));
-      console.log("✅ Auth state restored from /auth/me:", data.data);
-    } else if (isError) {
-      // Nếu API fail, logout
-      const errorStatus = (error as any)?.status;
-      if (errorStatus === 401 || errorStatus === 403) {
-        console.log("🔓 Session expired, logging out...");
-        dispatch(logoutThunk() as any);
-      } else {
-        console.log(
-          "❌ No valid session found - token may be expired or invalid"
-        );
-        dispatch(logoutThunk() as any);
+    const restoreSession = async () => {
+      const accessToken = getAccessToken();
+      const refreshToken = getRefreshToken();
+
+      if (!accessToken || !refreshToken) {
+        dispatch(setInitialized());
+        return;
       }
-    }
-  }, [isSuccess, isError, data, dispatch, error]);
 
-  // Theo dõi khi user quay lại tab để check session
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isAuthenticated) {
-        // User quay lại tab và đang authenticated, check lại session
-        console.log("👁️ User returned to tab, checking session...");
-        refetch();
+      try {
+        const result = await triggerGetCurrentUser(undefined, false).unwrap();
+
+        if (result?.data) {
+          dispatch(
+            loginSuccess({
+              user: result.data as User,
+              accessToken,
+              refreshToken,
+            }),
+          );
+        } else {
+          dispatch(logout());
+        }
+      } catch {
+        // Token hết hạn hoặc không hợp lệ
+        dispatch(logout());
       }
     };
 
-    const handleFocus = () => {
-      if (isAuthenticated) {
-        // User focus vào window và đang authenticated, check lại session
-        console.log("🎯 Window focused, checking session...");
-        refetch();
+    restoreSession();
+  }, [dispatch, isInitialized, triggerGetCurrentUser]);
+
+  // Khi user quay lại tab, refetch user info
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const token = getAccessToken();
+        if (token) {
+          triggerGetCurrentUser(undefined, true);
+        }
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
     };
-  }, [refetch, isAuthenticated]);
+  }, [triggerGetCurrentUser]);
 
-  // ✅ PROACTIVE TOKEN REFRESH - Refresh token trước khi hết hạn
-  // Access token hết hạn sau 1 giờ, refresh sau 50 phút để tránh lỗi
-  useEffect(() => {
-    if (!isAuthenticated) {
-      // Clear interval nếu user logout
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-      return;
-    }
-
-    console.log("🔄 Setting up proactive token refresh (every 50 minutes)");
-
-    // Refresh ngay lập tức sau 50 phút đầu tiên
-    const REFRESH_INTERVAL = 50 * 60 * 1000; // 50 phút (trước khi token 1 giờ hết hạn)
-
-    refreshIntervalRef.current = setInterval(() => {
-      console.log("⏰ Proactive token refresh triggered...");
-      dispatch(authApi.endpoints.refreshToken.initiate() as any);
-    }, REFRESH_INTERVAL);
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-    };
-  }, [dispatch, isAuthenticated]);
-
-  return { isLoading };
+  return { isLoading: !isInitialized };
 };
 
 /**
  * Component wrapper để init auth state
- * Tối ưu: Không block render, cho phép children render ngay
+ * Không block render, cho phép children render ngay
  */
 export const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   useAuthInit();
-
   return <>{children}</>;
 };
+

@@ -5,14 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
+import { toast } from "sonner";
 import { useLoginMutation } from "@/store/services/authApi";
 import {
   useRegisterMutation,
   useVerifyOtpMutation,
 } from "@/store/services/authApi";
-import { useAppDispatch } from "@/store/hooks";
-import { loginSuccess } from "@/store/slices/authSlice";
-import { User } from "@/types/auth";
 
 type AuthTab = "login" | "register";
 type RegisterStep = "register" | "otp";
@@ -42,7 +40,7 @@ const tabContentVariants = {
     x: 0,
     opacity: 1,
     scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 30, mass: 0.8 },
+    transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 0.8 },
   },
   exit: (direction: number) => ({
     x: direction > 0 ? -280 : 280,
@@ -87,7 +85,6 @@ export default function AuthForm({
   onSuccess,
 }: AuthFormProps) {
   const router = useRouter();
-  const dispatch = useAppDispatch();
 
   /* ─── Tab state ─── */
   const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
@@ -134,27 +131,14 @@ export default function AuthForm({
     e.preventDefault();
     setLoginError(null);
     try {
-      const response = await login({
+      await login({
         username: loginEmail,
         password: loginPassword,
       }).unwrap();
-      const userForState: User = {
-        _id: "temp_id",
-        id: "temp_id",
-        email: response.email || loginEmail,
-        username: response.username,
-        fullname: response.username,
-        level: "N5",
-        isActive: true,
-        isAdmin: false,
-        isOnline: true,
-        posts: 0,
-        followers: [],
-        following: [],
-        lastActiveAt: new Date().toISOString(),
-        gender: "other",
-      };
-      dispatch(loginSuccess(userForState));
+      // Middleware sẽ tự động: lưu tokens → fetch /me → dispatch loginSuccess
+      toast.success("Đăng nhập thành công!", {
+        description: "Chào mừng bạn quay trở lại FUJI",
+      });
       if (onSuccess) {
         onSuccess();
       } else {
@@ -166,6 +150,7 @@ export default function AuthForm({
       else if (err?.error) msg = "Không thể kết nối đến máy chủ";
       else if (typeof err?.data === "string") msg = err.data;
       setLoginError(msg);
+      toast.error("Đăng nhập thất bại", { description: msg });
     }
   };
 
@@ -209,6 +194,9 @@ export default function AuthForm({
         password: formData.password,
         fullName: formData.fullname,
       }).unwrap();
+      toast.info("Mã OTP đã được gửi", {
+        description: `Vui lòng kiểm tra email ${formData.email}`,
+      });
       setRegisterStep("otp");
     } catch (err: any) {
       setRegisterServerError(
@@ -226,7 +214,9 @@ export default function AuthForm({
     }
     try {
       await verifyOtp({ email: formData.email, otpCode }).unwrap();
-      alert("Xác thực thành công! Bạn hiện có thể đăng nhập.");
+      toast.success("Xác thực thành công!", {
+        description: "Bạn hiện có thể đăng nhập với tài khoản mới.",
+      });
       switchTab("login");
       setRegisterStep("register");
     } catch (err: any) {

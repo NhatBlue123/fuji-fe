@@ -3,13 +3,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLoginMutation } from "@/store/services/authApi";
-import { useAppDispatch } from "@/store/hooks"; // Hook custom typed
-import { loginSuccess, loginFailure } from "@/store/slices/authSlice";
-import { User } from "@/types/auth";
+import { toast } from "sonner";
 
 export default function LoginForm() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
 
   const [login, { isLoading }] = useLoginMutation();
 
@@ -22,49 +19,16 @@ export default function LoginForm() {
     e.preventDefault();
     setErrorMessage(null);
     try {
-      // 1. Gọi API Login
-      // Lưu ý: Backend Java yêu cầu field là "username".
-      // Nếu user nhập email vào ô username, ta cứ gửi nó đi.
-      const response =  await login({
+      await login({
         username: email,
-        password: password
+        password: password,
       }).unwrap();
 
-
-
-      // // 2. Lưu Token vào LocalStorage (Quan trọng!)
-      // if (response.accessToken) {
-      //   localStorage.setItem("accessToken", response.accessToken);
-      //   localStorage.setItem("refreshToken", response.refreshToken);
-      // }
-
-
-      // 3. Tạo object User giả lập từ response để lưu vào Redux
-      // (Vì LoginResponse của Java chưa trả full User object như Mongo)
-      const userForState: User = {
-        _id: "temp_id", // Backend SQL dùng ID số, Frontend đang type string
-        id: "temp_id",
-        email: response.email || email,
-        username: response.username,
-        fullname: response.username, // Tạm thời lấy username làm fullname
-        level: "N5",
-        isActive: true,
-        isAdmin: false,
-        isOnline: true,
-        posts: 0,
-        followers: [],
-        following: [],
-        lastActiveAt: new Date().toISOString(),
-        gender: "other"
-      };
-
-      // 4. Dispatch action cập nhật Redux Store
-      dispatch(loginSuccess(userForState));
-
-      // 5. Chuyển hướng trang
-      console.log("Đăng nhập thành công!");
-      router.push("/"); // Hoặc /course
-
+      // Middleware sẽ tự động: lưu tokens → fetch /me → dispatch loginSuccess
+      toast.success("Đăng nhập thành công!", {
+        description: "Chào mừng bạn quay trở lại FUJI",
+      });
+      router.push("/");
     } catch (err: any) {
 
       console.error("Login failed:", err);
@@ -74,18 +38,16 @@ export default function LoginForm() {
         if (err.data && err.data.message) {
             displayMessage = err.data.message;
         }
-        // Trường hợp 2: Lỗi kết nối (Server chết, mạng rớt)
         else if (err.error) {
             displayMessage = "Không thể kết nối đến máy chủ (Network Error)";
         }
-        // Trường hợp 3: Backend trả string thô
         else if (typeof err.data === "string") {
             displayMessage = err.data;
         }
       }
 
-      // Set vào state để hiển thị lên màn hình
       setErrorMessage(displayMessage);
+      toast.error("Đăng nhập thất bại", { description: displayMessage });
     }
   };
 

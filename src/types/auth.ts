@@ -56,6 +56,8 @@ export interface UserProfileResponse {
 // Auth state types
 export interface AuthState {
   user: User | null;
+  accessToken: string | null;
+  roles: string[];
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;

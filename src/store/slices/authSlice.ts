@@ -2,12 +2,20 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { AuthState, User } from "../../types/auth";
 import { API_CONFIG } from "@/config/api";
+import {
+  getAccessToken,
+  clearTokens,
+  setTokens,
+  getRolesFromToken,
+} from "@/lib/token";
 
 // Khôi phục auth state từ localStorage nếu có
 const getInitialAuthState = (): AuthState => {
   if (typeof window === "undefined") {
     return {
       user: null,
+      accessToken: null,
+      roles: [],
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -16,14 +24,17 @@ const getInitialAuthState = (): AuthState => {
   }
 
   try {
+    const token = getAccessToken();
     const savedAuth = localStorage.getItem("auth_state");
-    if (savedAuth) {
+    if (savedAuth && token) {
       const parsed = JSON.parse(savedAuth);
       return {
         ...parsed,
-        isLoading: false, // Reset loading state
-        error: null, // Clear any previous errors
-        isInitialized: false, // Will be set to true after auth check
+        accessToken: token,
+        roles: getRolesFromToken(token),
+        isLoading: false,
+        error: null,
+        isInitialized: false,
       };
     }
   } catch (error) {
@@ -32,6 +43,8 @@ const getInitialAuthState = (): AuthState => {
 
   return {
     user: null,
+    accessToken: null,
+    roles: [],
     isAuthenticated: false,
     isLoading: false,
     error: null,
@@ -46,16 +59,15 @@ export const logoutThunk = createAsyncThunk(
   "auth/logoutThunk",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}/logout`,
-        {
-          method: "POST",
-          credentials: "include", // Important: gửi cookies
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const token = getAccessToken();
+      const response = await fetch(`${API_CONFIG.BASE_URL}/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-      );
+      });
 
       if (!response.ok) {
         console.warn("Logout API failed, but clearing local state anyway");
@@ -64,8 +76,9 @@ export const logoutThunk = createAsyncThunk(
       return true;
     } catch (error) {
       console.error("Logout API error:", error);
-      // Vẫn clear local state kể cả khi API fail
       return rejectWithValue(error);
+    } finally {
+      clearTokens();
     }
   },
 );
@@ -79,15 +92,46 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    // Đăng nhập thành công, lưu thông tin user
-    loginSuccess: (state, action: PayloadAction<User>) => {
-      state.user = action.payload;
+
+    // Đăng nhập thành công, lưu thông tin user + token
+    loginSuccess: (
+      state,
+      action: PayloadAction<{
+        user: User;
+        accessToken: string;
+        refreshToken: string;
+      }>,
+    ) => {
+      const { user, accessToken, refreshToken } = action.payload;
+      state.user = user;
+      state.accessToken = accessToken;
+      state.roles = getRolesFromToken(accessToken);
       state.isAuthenticated = true;
       state.isLoading = false;
       state.error = null;
       state.isInitialized = true;
 
-      // Lưu vào localStorage
+      // Lưu tokens và auth_state
+      setTokens(accessToken, refreshToken);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "auth_state",
+            JSON.stringify({
+              user,
+              isAuthenticated: true,
+              isInitialized: true,
+            }),
+          );
+        } catch (error) {
+          console.warn("Failed to save auth state:", error);
+        }
+      }
+    },
+
+    // Cập nhật user profile (không thay đổi token)
+    updateUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(
@@ -103,74 +147,76 @@ const authSlice = createSlice({
         }
       }
     },
-    // Đăng nhập thất bại, lưu lỗi
+
+    // Cập nhật tokens mới (sau refresh)
+    tokenRefreshed: (
+      state,
+      action: PayloadAction<{
+        accessToken: string;
+        refreshToken: string;
+      }>,
+    ) => {
+      const { accessToken, refreshToken } = action.payload;
+      state.accessToken = accessToken;
+      state.roles = getRolesFromToken(accessToken);
+      setTokens(accessToken, refreshToken);
+    },
+
+    // Đăng nhập thất bại
     loginFailure: (state, action: PayloadAction<string>) => {
       state.user = null;
+      state.accessToken = null;
+      state.roles = [];
       state.isAuthenticated = false;
       state.isLoading = false;
       state.error = action.payload;
       state.isInitialized = true;
-
-      // Xóa khỏi localStorage
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_state");
-      }
+      clearTokens();
     },
+
     // Đăng xuất, reset toàn bộ state
     logout: (state) => {
       state.user = null;
+      state.accessToken = null;
+      state.roles = [];
       state.isAuthenticated = false;
       state.isLoading = false;
       state.error = null;
       state.isInitialized = true;
-
-      // Xóa khỏi localStorage
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_state");
-      }
+      clearTokens();
     },
+
     // Đánh dấu auth đã được khởi tạo
     setInitialized: (state) => {
       state.isInitialized = true;
     },
+
     clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
-    // Handle logoutThunk
     builder
       .addCase(logoutThunk.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(logoutThunk.fulfilled, (state) => {
-        // Clear toàn bộ state sau khi logout thành công
         state.user = null;
+        state.accessToken = null;
+        state.roles = [];
         state.isAuthenticated = false;
         state.isLoading = false;
         state.error = null;
         state.isInitialized = true;
-
-        // Xóa khỏi localStorage
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("auth_state");
-        }
-
-        console.log("✅ Logout successful - cookies cleared on backend");
       })
       .addCase(logoutThunk.rejected, (state) => {
-        // Vẫn clear state kể cả khi API fail (network error, etc.)
         state.user = null;
+        state.accessToken = null;
+        state.roles = [];
         state.isAuthenticated = false;
         state.isLoading = false;
         state.error = null;
         state.isInitialized = true;
-
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("auth_state");
-        }
-
-        console.log("⚠️ Logout API failed but local state cleared");
       });
   },
 });
@@ -182,5 +228,7 @@ export const {
   logout,
   clearError,
   setInitialized,
+  updateUser,
+  tokenRefreshed,
 } = authSlice.actions;
 export default authSlice.reducer;

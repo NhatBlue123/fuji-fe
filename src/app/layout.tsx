@@ -1,9 +1,9 @@
 import type React from "react";
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import "material-symbols/outlined.css";
 import { ThemeProvider, ExtensionCleanup } from "@/components/common";
+import { Toaster } from "@/components/ui/sonner";
 import RtkProvider from "./providers";
 
 const inter = Inter({
@@ -98,6 +98,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Toaster />
           </ThemeProvider>
         </RtkProvider>
       </body>

@@ -8,15 +8,26 @@ export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 export const useAuth = () => {
-  const { user, isAuthenticated, isLoading, error, isInitialized } = useAppSelector(
-    (state) => state.auth,
-  );
-
-  return {
+  const {
     user,
+    accessToken,
+    roles,
     isAuthenticated,
     isLoading,
     error,
     isInitialized,
+  } = useAppSelector((state) => state.auth);
+
+  return {
+    user,
+    accessToken,
+    roles,
+    isAuthenticated,
+    isLoading,
+    error,
+    isInitialized,
+    // Helper kiểm tra role
+    hasRole: (role: string) => roles.includes(role),
+    isAdmin: roles.includes("ROLE_ADMIN") || roles.includes("ADMIN"),
   };
 };

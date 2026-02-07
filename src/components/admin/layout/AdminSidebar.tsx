@@ -107,7 +107,7 @@ export function AdminSidebar() {
       <aside
         className={cn(
           "relative flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
-          collapsed ? "w-[68px]" : "w-[260px]"
+          collapsed ? "w-[68px]" : "w-[260px]",
         )}
       >
         {/* Logo / Brand */}
@@ -138,8 +138,7 @@ export function AdminSidebar() {
                 {group.items.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    (item.href !== "/admin" &&
-                      pathname.startsWith(item.href));
+                    (item.href !== "/admin" && pathname.startsWith(item.href));
                   const Icon = item.icon;
 
                   const linkContent = (
@@ -150,7 +149,7 @@ export function AdminSidebar() {
                         isActive
                           ? "bg-sidebar-accent text-sidebar-primary"
                           : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        collapsed && "justify-center px-2"
+                        collapsed && "justify-center px-2",
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -170,9 +169,7 @@ export function AdminSidebar() {
                   if (collapsed) {
                     return (
                       <Tooltip key={item.href}>
-                        <TooltipTrigger asChild>
-                          {linkContent}
-                        </TooltipTrigger>
+                        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                         <TooltipContent side="right" sideOffset={8}>
                           <p>{item.title}</p>
                           {item.badge && (
@@ -206,7 +203,7 @@ export function AdminSidebar() {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  collapsed && "justify-center px-2"
+                  collapsed && "justify-center px-2",
                 )}
                 size="sm"
               >

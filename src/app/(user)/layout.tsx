@@ -5,8 +5,10 @@ import Footer from "@/components/user-component/layout/Footer";
 
 export default function UserLayout({
   children,
+  auth,
 }: {
   children: React.ReactNode;
+  auth: React.ReactNode;
 }) {
   return (
     <div className="flex h-screen w-full">
@@ -16,6 +18,7 @@ export default function UserLayout({
         {children}
         <Footer />
       </main>
+      {auth}
     </div>
   );
 }

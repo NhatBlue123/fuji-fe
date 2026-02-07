@@ -54,11 +54,36 @@ const stats = [
 ];
 
 const recentUsers = [
-  { name: "Nguyễn Văn A", email: "nguyenvana@email.com", course: "N5 Cơ bản", date: "2 giờ trước" },
-  { name: "Trần Thị B", email: "tranthib@email.com", course: "N4 Nâng cao", date: "3 giờ trước" },
-  { name: "Lê Văn C", email: "levanc@email.com", course: "N3 Trung cấp", date: "5 giờ trước" },
-  { name: "Phạm Thị D", email: "phamthid@email.com", course: "N5 Cơ bản", date: "6 giờ trước" },
-  { name: "Hoàng Văn E", email: "hoangvane@email.com", course: "N2 Cao cấp", date: "8 giờ trước" },
+  {
+    name: "Nguyễn Văn A",
+    email: "nguyenvana@email.com",
+    course: "N5 Cơ bản",
+    date: "2 giờ trước",
+  },
+  {
+    name: "Trần Thị B",
+    email: "tranthib@email.com",
+    course: "N4 Nâng cao",
+    date: "3 giờ trước",
+  },
+  {
+    name: "Lê Văn C",
+    email: "levanc@email.com",
+    course: "N3 Trung cấp",
+    date: "5 giờ trước",
+  },
+  {
+    name: "Phạm Thị D",
+    email: "phamthid@email.com",
+    course: "N5 Cơ bản",
+    date: "6 giờ trước",
+  },
+  {
+    name: "Hoàng Văn E",
+    email: "hoangvane@email.com",
+    course: "N2 Cao cấp",
+    date: "8 giờ trước",
+  },
 ];
 
 const popularCourses = [
@@ -127,9 +152,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Người dùng mới</CardTitle>
-                <CardDescription>
-                  Danh sách đăng ký gần đây
-                </CardDescription>
+                <CardDescription>Danh sách đăng ký gần đây</CardDescription>
               </div>
               <Button variant="outline" size="sm">
                 Xem tất cả

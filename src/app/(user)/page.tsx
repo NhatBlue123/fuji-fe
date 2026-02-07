@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -54,12 +55,15 @@ export default function Home() {
               cho người Việt với sự hỗ trợ từ AI.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="bg-secondary hover:bg-pink-400 text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-pink-500/40 flex items-center gap-2">
+              <Link
+                href="/login"
+                className="bg-secondary hover:bg-pink-400 text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-pink-500/40 flex items-center gap-2"
+              >
                 Bắt đầu ngay
                 <span className="material-symbols-outlined text-sm">
                   arrow_forward
                 </span>
-              </button>
+              </Link>
               <button className="bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center gap-2 hover:border-white/40">
                 <span className="material-symbols-outlined">play_circle</span>
                 Xem demo

@@ -55,6 +55,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/courses/${id}`,
     ENROLL: (id: string) => `/courses/${id}/enroll`,
     MY_COURSES: "/courses/my-courses",
+    STATS: "/courses/stats",
   },
 
   // Lessons

@@ -4,17 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Edit, LogOut, Key } from "lucide-react";
+import { logout } from "@/lib/auth";
+
 export default function ProfilePage() {
   const [openLogout, setOpenLogout] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
-  const handleLogout = () => {
-    // 1️⃣ Clear auth (tùy bạn dùng gì)
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      // ✅ GOOD: Use server action with httpOnly cookies
+      await logout();
 
-    // 2️⃣ Redirect về home
-    router.push("/");
+      // Clear any client-side cache if needed
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">

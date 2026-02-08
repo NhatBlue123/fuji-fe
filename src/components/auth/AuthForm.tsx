@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import {
   useLoginMutation,
   useSendOtpRegisterMutation,
   useRegisterMutation,
+  useVerifyOAuth2OtpMutation,
 } from "@/store/services/authApi";
 
 type AuthTab = "login" | "register";
@@ -100,6 +101,20 @@ export default function AuthForm({
   const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
   const [direction, setDirection] = useState(0);
 
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session");
+  const sessionEmail = searchParams.get("email");
+
+  useEffect(() => {
+    if (sessionId) {
+      setActiveTab("register");
+      setRegisterStep("otp");
+      setDirection(1);
+    } else {
+      setActiveTab(defaultTab);
+      setDirection(defaultTab === "register" ? 1 : -1);
+    }
+  }, [defaultTab, sessionId]);
   const switchTab = (tab: AuthTab) => {
     if (tab === activeTab) return;
     setDirection(tab === "register" ? 1 : -1);
@@ -120,6 +135,8 @@ export default function AuthForm({
   const [sendOtpRegister, { isLoading: isSendingOtp }] =
     useSendOtpRegisterMutation();
   const [registerUser, { isLoading: isRegistering }] = useRegisterMutation();
+  const [verifyOAuth2Otp, { isLoading: isVerifyingOAuth2 }] =
+    useVerifyOAuth2OtpMutation();
   const [registerStep, setRegisterStep] = useState<RegisterStep>("register");
   const [formData, setFormData] = useState({
     username: "",
@@ -228,6 +245,16 @@ export default function AuthForm({
       return;
     }
     try {
+      if (sessionId) {
+        // Step 2 for OAuth2: Verify session + OTP
+        await verifyOAuth2Otp({ sessionId, otpCode }).unwrap();
+        toast.success("Xác thực Google thành công!", {
+          description: "Chào mừng bạn gia nhập FUJI",
+        });
+        router.push("/");
+        return;
+      }
+
       // Bước 2: Đăng ký với OTP (tạo user active ngay)
       await registerUser({
         username: formData.username,
@@ -433,6 +460,7 @@ export default function AuthForm({
                 </div>
                 <button
                   type="button"
+                  onClick={() => window.location.href = "http://localhost:8181/oauth2/authorization/google"}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                 >
                   <GoogleIcon />
@@ -635,6 +663,7 @@ export default function AuthForm({
                       </div>
                       <button
                         type="button"
+                        onClick={() => window.location.href = "http://localhost:8181/oauth2/authorization/google"}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                       >
                         <GoogleIcon />
@@ -671,10 +700,10 @@ export default function AuthForm({
                           </div>
                           <div>
                             <p className="text-sm text-slate-400">
-                              Mã OTP đã được gửi đến email
+                              {sessionId ? "Mã xác thực Google đã gửi đến" : "Mã OTP đã được gửi đến email"}
                             </p>
                             <p className="text-sm font-bold text-white">
-                              {formData.email}
+                              {sessionId ? sessionEmail : formData.email}
                             </p>
                           </div>
                         </div>
@@ -721,9 +750,9 @@ export default function AuthForm({
                         <button
                           className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50"
                           type="submit"
-                          disabled={isRegistering}
+                          disabled={isRegistering || isVerifyingOAuth2}
                         >
-                          {isRegistering ? "Đang xử lý..." : "Xác nhận OTP"}
+                          {isRegistering || isVerifyingOAuth2 ? "Đang xử lý..." : "Xác nhận OTP"}
                         </button>
                         <button
                           type="button"

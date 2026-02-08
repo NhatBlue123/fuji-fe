@@ -168,6 +168,11 @@ export interface VerifyOtpRequest {
   otpCode: string;
 }
 
+export interface OAuth2VerifyOtpRequest {
+  sessionId: string;
+  otpCode: string;
+}
+
 // ─── API Definition ────────────────────────────────────
 
 export const authApi = createApi({
@@ -227,6 +232,16 @@ export const authApi = createApi({
       }),
     }),
 
+    // Xác thực OTP cho OAuth2
+    verifyOAuth2Otp: builder.mutation<ApiResponse<LoginResponseData>, OAuth2VerifyOtpRequest>({
+      query: (data) => ({
+        url: API_ENDPOINTS.AUTH.VERIFY_OAUTH2_OTP,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Auth", "User"],
+    }),
+
     // Refresh token
     refreshToken: builder.mutation<RefreshResponseData, void>({
       query: () => {
@@ -284,6 +299,7 @@ export const {
   useRegisterMutation,
   useLogoutMutation,
   useVerifyOtpMutation,
+  useVerifyOAuth2OtpMutation,
   useVerifyEmailMutation,
   useRefreshTokenMutation,
   useGetCurrentUserQuery,

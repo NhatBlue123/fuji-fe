@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { toast } from "sonner";
@@ -11,10 +11,12 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { AuthFloatingInput } from "./AuthFloatingInput";
 import {
   useLoginMutation,
   useSendOtpRegisterMutation,
   useRegisterMutation,
+  useVerifyOAuth2OtpMutation,
 } from "@/store/services/authApi";
 
 type AuthTab = "login" | "register";
@@ -100,6 +102,20 @@ export default function AuthForm({
   const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
   const [direction, setDirection] = useState(0);
 
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session");
+  const sessionEmail = searchParams.get("email");
+
+  useEffect(() => {
+    if (sessionId) {
+      setActiveTab("register");
+      setRegisterStep("otp");
+      setDirection(1);
+    } else {
+      setActiveTab(defaultTab);
+      setDirection(defaultTab === "register" ? 1 : -1);
+    }
+  }, [defaultTab, sessionId]);
   const switchTab = (tab: AuthTab) => {
     if (tab === activeTab) return;
     setDirection(tab === "register" ? 1 : -1);
@@ -120,6 +136,8 @@ export default function AuthForm({
   const [sendOtpRegister, { isLoading: isSendingOtp }] =
     useSendOtpRegisterMutation();
   const [registerUser, { isLoading: isRegistering }] = useRegisterMutation();
+  const [verifyOAuth2Otp, { isLoading: isVerifyingOAuth2 }] =
+    useVerifyOAuth2OtpMutation();
   const [registerStep, setRegisterStep] = useState<RegisterStep>("register");
   const [formData, setFormData] = useState({
     username: "",
@@ -228,6 +246,16 @@ export default function AuthForm({
       return;
     }
     try {
+      if (sessionId) {
+        // Step 2 for OAuth2: Verify session + OTP
+        await verifyOAuth2Otp({ sessionId, otpCode }).unwrap();
+        toast.success("Xác thực Google thành công!", {
+          description: "Chào mừng bạn gia nhập FUJI",
+        });
+        router.push("/");
+        return;
+      }
+
       // Bước 2: Đăng ký với OTP (tạo user active ngay)
       await registerUser({
         username: formData.username,
@@ -249,14 +277,6 @@ export default function AuthForm({
     }
   };
 
-  const inputClass = (error?: string) =>
-    clsx(
-      "block w-full px-4 py-3.5 text-white bg-slate-800/50 rounded-xl border transition-all",
-      "focus:outline-none focus:ring-1 placeholder-transparent peer",
-      submitted && error
-        ? "border-rose-500 ring-rose-500"
-        : "border-slate-600/50 focus:border-blue-500 focus:ring-blue-500",
-    );
 
   /* ═══════════ RENDER ═══════════ */
   return (
@@ -280,7 +300,7 @@ export default function AuthForm({
 
       {/* Card */}
       <div className="bg-card-bg/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent opacity-50" />
 
         {/* Tab Switcher */}
         <div className="px-8 pt-8 pb-4">
@@ -319,7 +339,7 @@ export default function AuthForm({
         </div>
 
         {/* Tab Content with Animation */}
-        <div className="px-8 pb-8 overflow-hidden">
+        <div className="px-8 pt-4 pb-8">
           <AnimatePresence mode="wait" custom={direction}>
             {activeTab === "login" ? (
               <motion.div
@@ -348,55 +368,41 @@ export default function AuthForm({
 
                 <form onSubmit={handleLogin} className="space-y-5">
                   {/* Username */}
-                  <div className="relative group">
-                    <input
-                      className={inputClass()}
-                      id="login-email"
-                      placeholder="Email hoặc Tên đăng nhập"
-                      type="text"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                    />
-                    <label
-                      className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                      htmlFor="login-email"
-                    >
-                      Tên đăng nhập
-                    </label>
-                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
-                      person
-                    </span>
-                  </div>
+                  <AuthFloatingInput
+                    id="login-email"
+                    label="Tên đăng nhập"
+                    type="text"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    rightIcon={
+                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
+                        person
+                      </span>
+                    }
+                  />
 
                   {/* Password */}
-                  <div className="relative group">
-                    <input
-                      className={inputClass()}
-                      id="login-password"
-                      placeholder="Mật khẩu"
-                      type={showLoginPassword ? "text" : "password"}
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                      disabled={isLoginLoading}
-                    />
-                    <label
-                      className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                      htmlFor="login-password"
-                    >
-                      Mật khẩu
-                    </label>
-                    <button
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
-                      type="button"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    >
-                      <span className="material-symbols-outlined text-xl">
-                        {showLoginPassword ? "visibility" : "visibility_off"}
-                      </span>
-                    </button>
-                  </div>
+                  <AuthFloatingInput
+                    id="login-password"
+                    label="Mật khẩu"
+                    type={showLoginPassword ? "text" : "password"}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    disabled={isLoginLoading}
+                    rightIcon={
+                      <button
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      >
+                        <span className="material-symbols-outlined text-xl">
+                          {showLoginPassword ? "visibility" : "visibility_off"}
+                        </span>
+                      </button>
+                    }
+                  />
 
                   {/* Submit */}
                   <button
@@ -433,6 +439,7 @@ export default function AuthForm({
                 </div>
                 <button
                   type="button"
+                  onClick={() => window.location.href = "http://localhost:8181/oauth2/authorization/google"}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                 >
                   <GoogleIcon />
@@ -483,131 +490,89 @@ export default function AuthForm({
                     >
                       <form className="space-y-4" onSubmit={handleRegister}>
                         {/* Username */}
-                        <div>
-                          <input
-                            id="username"
-                            value={formData.username}
-                            onChange={handleRegChange}
-                            className={inputClass(regErrors.username).replace(
-                              "placeholder-transparent peer",
-                              "",
-                            )}
-                            placeholder="Tên đăng nhập"
-                          />
-                          {submitted && regErrors.username && (
-                            <p className="mt-1 text-xs text-rose-400">
-                              {regErrors.username}
-                            </p>
-                          )}
-                        </div>
+                        <AuthFloatingInput
+                          id="username"
+                          label="Tên đăng nhập"
+                          value={formData.username}
+                          onChange={handleRegChange}
+                          error={submitted && regErrors.username ? regErrors.username : undefined}
+                          rightIcon={
+                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
+                              person
+                            </span>
+                          }
+                        />
 
                         {/* Fullname */}
-                        <div>
-                          <input
-                            id="fullname"
-                            value={formData.fullname}
-                            onChange={handleRegChange}
-                            className={inputClass(regErrors.fullname).replace(
-                              "placeholder-transparent peer",
-                              "",
-                            )}
-                            placeholder="Họ tên"
-                          />
-                          {submitted && regErrors.fullname && (
-                            <p className="mt-1 text-xs text-rose-400">
-                              {regErrors.fullname}
-                            </p>
-                          )}
-                        </div>
+                        <AuthFloatingInput
+                          id="fullname"
+                          label="Họ tên"
+                          value={formData.fullname}
+                          onChange={handleRegChange}
+                          error={submitted && regErrors.fullname ? regErrors.fullname : undefined}
+                          rightIcon={
+                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
+                              badge
+                            </span>
+                          }
+                        />
 
                         {/* Email */}
-                        <div className="relative group">
-                          <input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleRegChange}
-                            className={inputClass(regErrors.email)}
-                            placeholder="Email"
-                          />
-                          <label
-                            className="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-transparent px-2 peer-focus:px-2 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-90 peer-focus:-translate-y-4 left-3 rounded-full pointer-events-none backdrop-blur-md"
-                            htmlFor="email"
-                          >
-                            Email
-                          </label>
-                          <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-500 transition-colors text-xl">
-                            mail
-                          </span>
-                          {submitted && regErrors.email && (
-                            <p className="mt-1 text-xs text-rose-400">
-                              {regErrors.email}
-                            </p>
-                          )}
-                        </div>
+                        <AuthFloatingInput
+                          id="email"
+                          label="Email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleRegChange}
+                          error={submitted && regErrors.email ? regErrors.email : undefined}
+                          rightIcon={
+                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
+                              mail
+                            </span>
+                          }
+                        />
 
                         {/* Password */}
-                        <div className="relative group">
-                          <input
-                            id="password"
-                            type={showRegPassword ? "text" : "password"}
-                            value={formData.password}
-                            onChange={handleRegChange}
-                            className={inputClass(regErrors.password).replace(
-                              "placeholder-transparent peer",
-                              "",
-                            )}
-                            placeholder="Mật khẩu"
-                          />
-                          <button
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                            type="button"
-                            onClick={() => setShowRegPassword(!showRegPassword)}
-                          >
-                            <span className="material-symbols-outlined text-xl">
-                              {showRegPassword
-                                ? "visibility"
-                                : "visibility_off"}
-                            </span>
-                          </button>
-                          {submitted && regErrors.password && (
-                            <p className="mt-1 text-xs text-rose-400">
-                              {regErrors.password}
-                            </p>
-                          )}
-                        </div>
+                        <AuthFloatingInput
+                          id="password"
+                          label="Mật khẩu"
+                          type={showRegPassword ? "text" : "password"}
+                          value={formData.password}
+                          onChange={handleRegChange}
+                          error={submitted && regErrors.password ? regErrors.password : undefined}
+                          rightIcon={
+                            <button
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                              type="button"
+                              onClick={() => setShowRegPassword(!showRegPassword)}
+                            >
+                              <span className="material-symbols-outlined text-xl">
+                                {showRegPassword ? "visibility" : "visibility_off"}
+                              </span>
+                            </button>
+                          }
+                        />
 
                         {/* Confirm Password */}
-                        <div className="relative group">
-                          <input
-                            id="confirm_password"
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={formData.confirm_password}
-                            onChange={handleRegChange}
-                            className={inputClass(
-                              regErrors.confirm_password,
-                            ).replace("placeholder-transparent peer", "")}
-                            placeholder="Xác nhận mật khẩu"
-                          />
-                          <button
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                            type="button"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
-                          >
-                            <span className="material-symbols-outlined text-xl">
-                              {showConfirmPassword
-                                ? "visibility"
-                                : "visibility_off"}
-                            </span>
-                          </button>
-                          {submitted && regErrors.confirm_password && (
-                            <p className="mt-1 text-xs text-rose-400">
-                              {regErrors.confirm_password}
-                            </p>
-                          )}
-                        </div>
+                        <AuthFloatingInput
+                          id="confirm_password"
+                          label="Xác nhận mật khẩu"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={formData.confirm_password}
+                          onChange={handleRegChange}
+                          error={submitted && regErrors.confirm_password ? regErrors.confirm_password : undefined}
+                          rightIcon={
+                            <button
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              <span className="material-symbols-outlined text-xl">
+                                {showConfirmPassword ? "visibility" : "visibility_off"}
+                              </span>
+                            </button>
+                          }
+                        />
 
                         {/* Submit */}
                         <button
@@ -635,6 +600,7 @@ export default function AuthForm({
                       </div>
                       <button
                         type="button"
+                        onClick={() => window.location.href = "http://localhost:8181/oauth2/authorization/google"}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                       >
                         <GoogleIcon />
@@ -664,17 +630,17 @@ export default function AuthForm({
                     >
                       <form className="space-y-6" onSubmit={handleVerifyOtp}>
                         <div className="text-center space-y-3">
-                          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/30">
+                          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-700 shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/30">
                             <span className="material-symbols-outlined text-3xl text-white">
                               shield_lock
                             </span>
                           </div>
                           <div>
                             <p className="text-sm text-slate-400">
-                              Mã OTP đã được gửi đến email
+                              {sessionId ? "Mã xác thực Google đã gửi đến" : "Mã OTP đã được gửi đến email"}
                             </p>
                             <p className="text-sm font-bold text-white">
-                              {formData.email}
+                              {sessionId ? sessionEmail : formData.email}
                             </p>
                           </div>
                         </div>
@@ -688,23 +654,23 @@ export default function AuthForm({
                             <InputOTPGroup>
                               <InputOTPSlot
                                 index={0}
-                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
                               />
                               <InputOTPSlot
                                 index={1}
-                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
                               />
                               <InputOTPSlot
                                 index={2}
-                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
                               />
                               <InputOTPSlot
                                 index={3}
-                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
                               />
                               <InputOTPSlot
                                 index={4}
-                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
                               />
                               <InputOTPSlot
                                 index={5}
@@ -719,11 +685,11 @@ export default function AuthForm({
                           )}
                         </div>
                         <button
-                          className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50"
+                          className="w-full py-3.5 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50"
                           type="submit"
-                          disabled={isRegistering}
+                          disabled={isRegistering || isVerifyingOAuth2}
                         >
-                          {isRegistering ? "Đang xử lý..." : "Xác nhận OTP"}
+                          {isRegistering || isVerifyingOAuth2 ? "Đang xử lý..." : "Xác nhận OTP"}
                         </button>
                         <button
                           type="button"

@@ -1,0 +1,28 @@
+.glassPanel {
+  background: color-mix(in srgb, var(--color-card) 75%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.bannerGradient {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-background) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 60%, transparent) 50%,
+    var(--color-background) 100%
+  );
+}
+
+.pulseSlow {
+  animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseSlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

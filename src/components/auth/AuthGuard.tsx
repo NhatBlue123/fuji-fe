@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/store/hooks";
+// import { useRouter } from "next/navigation";
+// import { useAuth } from "@/store/hooks";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -18,10 +18,13 @@ interface AuthGuardProps {
  */
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   children,
-  redirectTo = "/login",
-  fallback,
+  // redirectTo = "/login",
+  // fallback,
 }) => {
-  const { isAuthenticated, isInitialized } = useAuth();
+  // TEMPORARY: Tắt auth guard để dev - CHỈ DÙNG KHI DEV, NHỚ BẬT LẠI!
+  return <>{children}</>;
+
+  /* const { isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -46,7 +49,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     return null;
   }
 
-  return <>{children}</>;
+  return <>{children}</>; */
 };
 
 export default AuthGuard;

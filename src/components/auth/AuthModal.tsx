@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthForm from "./AuthForm";
+import { useAuth } from "@/store/hooks";
+import { useEffect } from "react";
 
 interface AuthModalProps {
   defaultTab?: "login" | "register";
@@ -10,6 +12,14 @@ interface AuthModalProps {
 
 export default function AuthModal({ defaultTab = "login" }: AuthModalProps) {
   const router = useRouter();
+  const { isAuthenticated, isInitialized } = useAuth();
+
+  // If already authenticated, close modal and go back
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      router.back();
+    }
+  }, [isInitialized, isAuthenticated, router]);
 
   const handleClose = () => {
     router.back();
@@ -17,9 +27,11 @@ export default function AuthModal({ defaultTab = "login" }: AuthModalProps) {
 
   const handleSuccess = () => {
     router.back();
-    // Small delay to let the modal close before navigating
     setTimeout(() => router.refresh(), 150);
   };
+
+  // Don't render modal if already authenticated
+  if (isInitialized && isAuthenticated) return null;
 
   return (
     <AnimatePresence>

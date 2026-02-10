@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
     REFRESH: "/auth/refresh",
     ME: "/auth/me",
     VERIFY_OTP: "/auth/verify-otp",
+    VERIFY_OAUTH2_OTP: "/auth/oauth2/verify-otp",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
     VERIFY_EMAIL: "/auth/verify-email",

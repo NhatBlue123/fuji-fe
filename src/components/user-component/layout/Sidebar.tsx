@@ -98,10 +98,20 @@ const Sidebar = () => {
           <span>Luyện tập AI</span>
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            isActive("/flashcards")
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+          }`}
+          href="/flashcards"
         >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
+          <span
+            className={`material-symbols-outlined ${
+              isActive("/flashcards")
+                ? "filled"
+                : "group-hover:text-sidebar-primary transition-colors"
+            }`}
+          >
             style
           </span>
           <span>Thẻ ghi nhớ</span>

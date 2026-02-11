@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -17,60 +18,132 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useGetFlashCardByIdQuery, useStartLearningMutation } from "@/store/services/flashcardApi";
+import { getMockImage } from "@/lib/mockImages";
 import styles from "./page.module.css";
 
-const mockCard = {
-  id: 1,
-  status: "Mới học",
-  kana: "学生",
-  romaji: "gakusei",
-  meaning: "Học sinh",
-  detail: '"Người đang theo học tại trường"',
-  example: {
-    japanese: "私は学生です。",
-    romaji: "Watashi wa gakusei desu.",
-    vietnamese: "Tôi là học sinh.",
-  },
-  image:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCTyfbd-hnxHrIXJ1Sy5_LzcWGbNso2IRzDE8u7Ney3n-lLtyXDklyJSmjt_Apo6CkvtqT4SCwD5DRyuKYSHpPD9anvAN9NYmwVHzTbhQZpZChwHJdhcsYvy_yjA7m4vHEglPugU7e12CdtvLtnOevbiyOs4d6M9L-KmcnQ2NTd24cg0Wl_GYeBrvJotem__c2-28i9FpzraK6gQpJZ4uNRGdzEwSuhQAt-K4Wo56q-xYjnxenMeHSOxjtt7q5jGrqyRCIITNP1e9c",
-};
+export default function FlashcardStudyPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
+  const { data: flashcard, isLoading, error } = useGetFlashCardByIdQuery(id);
+  const [startLearning] = useStartLearningMutation();
 
-export default function FlashcardStudyPage() {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [currentCard] = useState(0);
-  const [totalCards] = useState(40);
-  const [learnedCards] = useState(12);
-  const [imageMode, setImageMode] = useState<
-    "front" | "back" | "both" | "none"
-  >("front");
+  const [imageMode, setImageMode] = useState<"front" | "back" | "both" | "none">("front");
+  const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
+
+  // Initialize learning when page loads
+  useEffect(() => {
+    if (flashcard) {
+      startLearning(id).catch(console.error);
+    }
+  }, [flashcard, id, startLearning]);
+
+  const cards = flashcard?.cards || [];
+  const totalCards = cards.length;
+  const currentCard = cards[currentIndex];
+  const progress = totalCards > 0 ? Math.round((completedCards.size / totalCards) * 100) : 0;
 
   const handleCardClick = () => {
     setIsFlipped(!isFlipped);
   };
 
-  const handleKnown = () => {
-    // TODO: Implement known logic
+  const handleKnown = useCallback(() => {
+    // Mark current card as known
+    setCompletedCards((prev) => new Set([...prev, currentIndex]));
+    // Move to next card
+    if (currentIndex < totalCards - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setIsFlipped(false);
+    } else {
+      // All cards completed
+      router.push(`/flashcards/detail/${id}`);
+    }
+  }, [currentIndex, totalCards, router, id]);
+
+  const handleUnknown = useCallback(() => {
+    // Just flip back without marking as known
     setIsFlipped(false);
-  };
+    // Move to next card
+    if (currentIndex < totalCards - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    }
+  }, [currentIndex, totalCards]);
 
-  const handleUnknown = () => {
-    // TODO: Implement unknown logic
+  const handlePrevCard = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+      setIsFlipped(false);
+    }
+  }, [currentIndex]);
+
+  const handleNextCard = useCallback(() => {
+    if (currentIndex < totalCards - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setIsFlipped(false);
+    }
+  }, [currentIndex, totalCards]);
+
+  const handleShuffle = useCallback(() => {
+    // Shuffle cards (simple Fisher-Yates shuffle)
+    const shuffled = [...cards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    // This would need to be stored in state - for now just randomize current
+    setCurrentIndex(Math.floor(Math.random() * totalCards));
     setIsFlipped(false);
-  };
+  }, [cards, totalCards]);
 
-  const handleShuffle = () => {
-    // TODO: Implement shuffle logic
-  };
+  const handleFlipAll = useCallback(() => {
+    setIsFlipped(!isFlipped);
+  }, [isFlipped]);
 
-  const handleFlipAll = () => {
-    // TODO: Implement flip all logic
-  };
+  const handlePlayAudio = useCallback(() => {
+    if (currentCard?.vocabulary) {
+      const utterance = new SpeechSynthesisUtterance(currentCard.vocabulary);
+      utterance.lang = "ja-JP";
+      speechSynthesis.speak(utterance);
+    }
+  }, [currentCard]);
 
-  const handlePlayAudio = () => {
-    // TODO: Implement audio playback
-  };
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-screen bg-background">
+        <span className="material-symbols-outlined text-5xl text-pink-400 animate-spin">
+          progress_activity
+        </span>
+      </div>
+    );
+  }
 
-  const progress = Math.round((learnedCards / totalCards) * 100);
+  if (error || !flashcard || totalCards === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-screen bg-background gap-4">
+        <span className="material-symbols-outlined text-6xl text-red-400">error</span>
+        <p className="text-muted-foreground">Không thể tải bộ flashcard hoặc không có thẻ nào.</p>
+        <Link
+          href="/flashcards"
+          className="text-secondary hover:underline flex items-center gap-1"
+        >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          Quay lại
+        </Link>
+      </div>
+    );
+  }
+
+  // Get image for current card (use previewUrl or fallback to mock)
+  const cardImage = currentCard?.previewUrl || getMockImage(currentCard?.id || 0);
+
+  // Check if current card is marked as known
+  const isCurrentCardKnown = completedCards.has(currentIndex);
 
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-background text-foreground">
@@ -82,26 +155,24 @@ export default function FlashcardStudyPage() {
       <header className="flex items-center justify-between px-6 py-3 md:px-10 border-b border-border/40 backdrop-blur-md z-30 bg-background/50">
         <div className="flex items-center gap-4 w-1/4">
           <Link
-            href="/flashcards/sets/1"
+            href={`/flashcards/detail/${id}`}
             className="flex items-center justify-center size-9 rounded-full bg-card/40 hover:bg-card/60 text-muted-foreground hover:text-foreground transition-all border border-border/40"
           >
-            <span className="material-symbols-outlined text-xl">
-              arrow_back
-            </span>
+            <span className="material-symbols-outlined text-xl">arrow_back</span>
           </Link>
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
               Đang học
             </span>
             <h2 className="text-xs md:text-sm font-bold text-foreground truncate max-w-[200px] md:max-w-xs">
-              Từ vựng Minna no Nihongo
+              {flashcard.name}
             </h2>
           </div>
         </div>
 
         <div className="flex-1 max-w-lg mx-auto flex flex-col items-center gap-1.5">
           <div className="flex justify-between w-full text-[10px] font-medium text-muted-foreground">
-            <span>{learnedCards} thẻ</span>
+            <span>{completedCards.size} thẻ</span>
             <span>{totalCards} thẻ</span>
           </div>
           <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden border border-border/40 relative">
@@ -115,7 +186,7 @@ export default function FlashcardStudyPage() {
         <div className="w-1/4 flex justify-end items-center gap-1.5">
           <Select
             value={imageMode}
-            onValueChange={(value: any) => setImageMode(value)}
+            onValueChange={(value: "front" | "back" | "both" | "none") => setImageMode(value)}
           >
             <SelectTrigger className="w-[140px] h-8 text-xs border-border/40 bg-card/40">
               <SelectValue placeholder="Hiển thị ảnh" />
@@ -161,7 +232,7 @@ export default function FlashcardStudyPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <Link
-                  href="/flashcards/exercise/1/multiple-choice"
+                  href={`/flashcards/exercise/${id}/multiple-choice`}
                   className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-card/40 hover:bg-card/60 hover:border-primary/40 transition-all group cursor-pointer"
                 >
                   <div className="size-12 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -183,7 +254,7 @@ export default function FlashcardStudyPage() {
                 </Link>
 
                 <Link
-                  href="/flashcards/exercise/1/fill-blank"
+                  href={`/flashcards/exercise/${id}/fill-blank`}
                   className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-card/40 hover:bg-card/60 hover:border-secondary/40 transition-all group cursor-pointer"
                 >
                   <div className="size-12 rounded-lg bg-secondary/20 flex items-center justify-center">
@@ -233,44 +304,46 @@ export default function FlashcardStudyPage() {
               className={`absolute w-full h-full ${styles.backfaceHidden} ${styles.glassCard} rounded-3xl ${styles.shadowCard} flex flex-col overflow-hidden`}
             >
               <div className="flex justify-between items-center p-4 border-b border-border/40">
-                <span className="px-2.5 py-0.5 bg-primary/20 text-primary text-[10px] font-bold rounded-full border border-primary/20">
-                  {mockCard.status}
+                <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                  isCurrentCardKnown
+                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                    : "bg-primary/20 text-primary border-primary/20"
+                }`}>
+                  {isCurrentCardKnown ? "Đã thuộc" : "Mới học"}
                 </span>
                 <button className="text-muted-foreground hover:text-secondary transition-colors">
-                  <span className="material-symbols-outlined text-xl">
-                    bookmark
-                  </span>
+                  <span className="material-symbols-outlined text-xl">bookmark</span>
                 </button>
               </div>
 
               <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
-                {(imageMode === "front" || imageMode === "both") && (
+                {(imageMode === "front" || imageMode === "both") && cardImage && (
                   <div className="relative size-32 rounded-2xl overflow-hidden shadow-2xl border-4 border-border/20 group-hover:scale-105 transition-transform duration-500">
                     <img
-                      alt="Student Illustration"
+                      alt={currentCard?.vocabulary || "Vocabulary"}
                       className="w-full h-full object-cover"
-                      src={mockCard.image}
+                      src={cardImage}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   </div>
                 )}
                 <div className="text-center">
-                  <p className="text-xs text-secondary font-medium mb-0.5">
-                    {mockCard.romaji}
-                  </p>
+                  {currentCard?.pronunciation && (
+                    <p className="text-xs text-secondary font-medium mb-0.5">
+                      {currentCard.pronunciation}
+                    </p>
+                  )}
                   <h1
                     className={`${imageMode === "none" || imageMode === "back" ? "text-6xl" : "text-5xl"} font-black text-foreground tracking-tight mb-1 drop-shadow-lg`}
                   >
-                    {mockCard.kana}
+                    {currentCard?.vocabulary || ""}
                   </h1>
                 </div>
               </div>
 
               <div className="p-3 bg-black/20 backdrop-blur-sm border-t border-border/40">
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse">
-                  <span className="material-symbols-outlined text-base">
-                    touch_app
-                  </span>
+                  <span className="material-symbols-outlined text-base">touch_app</span>
                   Chạm để lật thẻ
                 </div>
               </div>
@@ -281,12 +354,12 @@ export default function FlashcardStudyPage() {
               className={`absolute w-full h-full ${styles.backfaceHidden} ${styles.rotateY180} ${styles.glassCard} rounded-3xl ${styles.shadowCard} flex flex-col overflow-hidden bg-card`}
             >
               <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3 text-center">
-                {(imageMode === "back" || imageMode === "both") && (
+                {(imageMode === "back" || imageMode === "both") && cardImage && (
                   <div className="relative size-32 rounded-2xl overflow-hidden shadow-2xl border-4 border-border/20 mb-2">
                     <img
-                      alt="Student Illustration"
+                      alt={currentCard?.vocabulary || "Vocabulary"}
                       className="w-full h-full object-cover"
-                      src={mockCard.image}
+                      src={cardImage}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   </div>
@@ -294,28 +367,21 @@ export default function FlashcardStudyPage() {
                 <h2
                   className={`${imageMode === "back" || imageMode === "both" ? "text-xl" : "text-2xl"} font-bold text-foreground mb-1`}
                 >
-                  {mockCard.meaning}
+                  {currentCard?.meaning || ""}
                 </h2>
-                <p
-                  className={`${imageMode === "back" || imageMode === "both" ? "text-sm" : "text-base"} text-muted-foreground italic`}
-                >
-                  {mockCard.detail}
-                </p>
-                <div className="w-full h-px bg-border/40 my-2"></div>
-                <div className="text-left w-full">
-                  <p className="text-xs text-muted-foreground mb-1">Ví dụ:</p>
-                  <p
-                    className={`${imageMode === "back" || imageMode === "both" ? "text-sm" : "text-base"} text-foreground`}
-                  >
-                    {mockCard.example.japanese}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {mockCard.example.romaji}
-                  </p>
-                  <p className="text-xs text-foreground mt-1">
-                    {mockCard.example.vietnamese}
-                  </p>
-                </div>
+                {currentCard?.exampleSentence && (
+                  <>
+                    <div className="w-full h-px bg-border/40 my-2"></div>
+                    <div className="text-left w-full">
+                      <p className="text-xs text-muted-foreground mb-1">Ví dụ:</p>
+                      <p
+                        className={`${imageMode === "back" || imageMode === "both" ? "text-sm" : "text-base"} text-foreground`}
+                      >
+                        {currentCard.exampleSentence}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -324,23 +390,27 @@ export default function FlashcardStudyPage() {
         {/* Card Navigation */}
         <div className="flex items-center justify-center gap-4 mt-6">
           <button
-            className="flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105"
+            onClick={handlePrevCard}
+            disabled={currentIndex === 0}
+            className={`flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105 ${
+              currentIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             title="Thẻ trước"
           >
-            <span className="material-symbols-outlined text-xl">
-              arrow_back
-            </span>
+            <span className="material-symbols-outlined text-xl">arrow_back</span>
           </button>
           <div className="px-4 py-2 rounded-xl bg-card/40 border border-border/40 text-foreground font-bold text-sm min-w-[80px] text-center">
-            {currentCard + 1}/{totalCards}
+            {currentIndex + 1}/{totalCards}
           </div>
           <button
-            className="flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105"
+            onClick={handleNextCard}
+            disabled={currentIndex === totalCards - 1}
+            className={`flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105 ${
+              currentIndex === totalCards - 1 ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             title="Thẻ tiếp theo"
           >
-            <span className="material-symbols-outlined text-xl">
-              arrow_forward
-            </span>
+            <span className="material-symbols-outlined text-xl">arrow_forward</span>
           </button>
         </div>
       </div>
@@ -392,7 +462,10 @@ export default function FlashcardStudyPage() {
         </div>
 
         <div className="mt-3 text-center">
-          <button className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+          <button
+            onClick={handleNextCard}
+            className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+          >
             Bỏ qua thẻ này
           </button>
         </div>

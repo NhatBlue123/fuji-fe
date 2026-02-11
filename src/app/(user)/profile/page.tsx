@@ -11,8 +11,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [openLogout, setOpenLogout] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  /* ================= MOCK DATA (thay bằng GET /api/me) ================= */
+  
   const user = {
     username: "luongdc",
     email: "luong@gmail.com",

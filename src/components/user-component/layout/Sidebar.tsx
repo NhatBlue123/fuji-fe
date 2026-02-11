@@ -1,12 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/components/common";
+import { useAuth } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
+import { logoutThunk } from "@/store/slices/authSlice";
+import { toast } from "sonner";
+import Image from "next/image";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
+  const dispatch = useAppDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutThunk()).unwrap();
+      toast.success("Đăng xuất thành công!");
+      router.push("/");
+    } catch {
+      toast.error("Đăng xuất thất bại");
+    }
+  };
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -72,21 +90,21 @@ const Sidebar = () => {
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            group
+            assignment
           </span>
-          <span>Cộng đồng</span>
+          <span>Luyện thi JLPT</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            chat_bubble
+            book_online
           </span>
-          <span>Tin nhắn</span>
-          <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
+          <span>Booking</span>
+          {/* <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
             3
-          </span>
+          </span> */}
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
@@ -171,31 +189,73 @@ const Sidebar = () => {
           </label>
         </div>
         <div className="flex items-center gap-3 px-2">
-          <div
-            className="size-10 rounded-full bg-gray-200 bg-cover bg-center border-2 border-white dark:border-gray-600 shadow-sm"
-            style={{
-              backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfFl_pOyFigGwfLtmeb6LniwUCm0yBud_fv-LOAt4SoJGaT1pzBnvbOgHz5kbgBJOB_ssp423Jkd3U7soqab37_QOtQjp5mQW96CfW95qvn9FSRNVuMMNXx7T7vxkuG7ZnHbevTkCEnYHd7eRQX_QSbjeoZteLQeY9ag0vm-wqmhxamd3eiryL-cOTWrKLJp4fETdKaaaZEcH--J8xyVwIDsYlZdYp_zX6qbEXJOIXInVkVVBxP_D4xyoF96BL9Zpu4P_AZlntpRY')",
-            }}
-          ></div>
-          <div>
+          {isAuthenticated && user ? (
+            <>
+              <div className="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0">
+                <Image
+                  src={
+                    user.avatar || user.avatarUrl || "/images/avt-default.jpg"
+                  }
+                  alt={user.fullname || user.fullName || user.username}
+                  width={40}
+                  height={40}
+                  className="size-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "/images/avt-default.jpg";
+                  }}
+                />
+              </div>
+              <div>
+                <Link
+                  href="/profile"
+                  className="flex-1 min-w-0 block rounded-lg
+                   hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+                   transition p-1"
+                >
+                  <p className="text-sm font-bold text-sidebar-foreground truncate">
+                    {user.fullname || user.fullName || user.username}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user.level ? `Học viên ${user.level}` : user.email}
+                  </p>
+                </Link>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-red-400 transition-colors ml-auto"
+                title="Đăng xuất"
+              >
+                <span className="material-symbols-outlined">logout</span>
+              </button>
+            </>
+          ) : (
             <Link
-              href="/profile"
-              className="flex-1 min-w-0 block rounded-lg
-             hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
-             transition p-1"
+              href="/login"
+              className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-sidebar-accent transition-colors group"
             >
-              <p className="text-sm font-bold text-sidebar-foreground truncate">
-                Minh Anh
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                Học viên N3
-              </p>
+              <div className="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0">
+                <Image
+                  src="/images/avt-default.jpg"
+                  alt="Đăng nhập"
+                  width={40}
+                  height={40}
+                  className="size-full object-cover"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-sidebar-foreground group-hover:text-primary truncate">
+                  Đăng nhập
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  Đăng nhập để bắt đầu
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-muted-foreground group-hover:text-primary ml-auto">
+                login
+              </span>
             </Link>
-          </div>
-          <button className="text-gray-400 hover:text-white transition-colors">
-            <span className="material-symbols-outlined">logout</span>
-          </button>
+          )}
         </div>
       </div>
     </aside>

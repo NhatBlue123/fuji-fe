@@ -1,14 +1,12 @@
 "use client";
 
 import React from "react";
-// import { useRouter } from "next/navigation";
-// import { useAuth } from "@/store/hooks";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/store/hooks";
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  /** URL chuyển hướng khi chưa đăng nhập (mặc định: /login) */
   redirectTo?: string;
-  /** Hiển thị loading component tuỳ chỉnh */
   fallback?: React.ReactNode;
 }
 
@@ -18,13 +16,10 @@ interface AuthGuardProps {
  */
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   children,
-  // redirectTo = "/login",
-  // fallback,
+  redirectTo = "/login",
+  fallback,
 }) => {
-  // TEMPORARY: Tắt auth guard để dev - CHỈ DÙNG KHI DEV, NHỚ BẬT LẠI!
-  return <>{children}</>;
-
-  /* const { isAuthenticated, isInitialized } = useAuth();
+  const { isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -33,7 +28,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     }
   }, [isInitialized, isAuthenticated, router, redirectTo]);
 
-  // Đang kiểm tra auth
   if (!isInitialized) {
     return (
       fallback ?? (
@@ -44,12 +38,9 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     );
   }
 
-  // Chưa đăng nhập
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
-  return <>{children}</>; */
+  return <>{children}</>;
 };
 
 export default AuthGuard;

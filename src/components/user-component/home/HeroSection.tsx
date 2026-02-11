@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/store/hooks";
 
 export function HeroSection() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="relative w-full min-h-[680px] flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-20 pb-72 overflow-hidden rounded-b-[3rem] shadow-2xl shadow-blue-900/20">
       <div className="absolute inset-0 z-0">
@@ -35,7 +40,7 @@ export function HeroSection() {
         </p>
         <div className="flex flex-wrap gap-4">
           <Link
-            href="/login"
+            href={isAuthenticated ? "/course" : "/login"}
             className="bg-secondary hover:bg-pink-400 text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-pink-500/40 flex items-center gap-2"
           >
             Bắt đầu ngay

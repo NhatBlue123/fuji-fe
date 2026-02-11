@@ -1,14 +1,19 @@
 /**
  * Token Utilities
- * Decode JWT, check expiry, manage localStorage tokens,
+ * Decode JWT, check expiry, manage cookie-based access token,
  * and schedule proactive refresh.
+ *
+ * Architecture:
+ * - Access token: stored in JS-accessible cookie (for Authorization header)
+ * - Refresh token: HttpOnly cookie managed by backend (not accessible from JS)
  */
 
 interface JwtPayload {
-  sub: string; // subject (username or userId)
-  exp: number; // expiry timestamp (seconds)
-  iat: number; // issued at (seconds)
-  roles?: string[]; // user roles
+  sub: string;
+  exp: number;
+  iat: number;
+  username?: string;
+  roles?: string[];
   email?: string;
   [key: string]: unknown;
 }
@@ -30,7 +35,6 @@ export function decodeJwt(token: string): JwtPayload | null {
 export function isTokenExpired(token: string): boolean {
   const payload = decodeJwt(token);
   if (!payload?.exp) return true;
-  // Add 10s buffer
   return Date.now() >= payload.exp * 1000 - 10_000;
 }
 
@@ -47,41 +51,67 @@ export function getRolesFromToken(token: string): string[] {
   return payload?.roles ?? [];
 }
 
-// ─── Token Storage Keys ───
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+// ─── Cookie Helpers ───────────────────────────────────────
 
-// ─── Storage helpers ───
+function setCookie(name: string, value: string, days: number): void {
+  if (typeof document === "undefined") return;
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(
+    new RegExp(
+      "(?:^|; )" + name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1") + "=([^;]*)",
+    ),
+  );
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function deleteCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+}
+
+// ─── Access Token (cookie-based) ──────────────────────────
+
+const ACCESS_TOKEN_COOKIE = "access_token";
+
 export function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return getCookie(ACCESS_TOKEN_COOKIE);
 }
 
+export function setAccessToken(accessToken: string): void {
+  setCookie(ACCESS_TOKEN_COOKIE, accessToken, 1);
+}
+
+/** @deprecated Refresh token is HttpOnly cookie, not accessible from JS */
 export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return null;
 }
 
-export function setTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+/**
+ * Save access token to cookie.
+ * refreshToken param is kept for backward compat but ignored (it's HttpOnly cookie).
+ */
+export function setTokens(accessToken: string, _refreshToken?: string): void {
+  setAccessToken(accessToken);
 }
 
 export function clearTokens(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem("auth_state");
+  deleteCookie(ACCESS_TOKEN_COOKIE);
+  // Clean up old localStorage data from previous implementation
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("auth_state");
+  }
 }
 
 // ─── Proactive Refresh Scheduler ───
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-/**
- * Schedule a token refresh to fire before the access token expires.
- * Refreshes at 80% of the token's lifetime (e.g. 48 min for a 60 min token).
- */
 export function scheduleTokenRefresh(
   accessToken: string,
   refreshFn: () => void,
@@ -90,13 +120,12 @@ export function scheduleTokenRefresh(
 
   const ttl = getTimeUntilExpiry(accessToken);
   if (ttl <= 0) {
-    // Already expired, refresh immediately
     refreshFn();
     return;
   }
 
-  // Refresh at 80% of remaining lifetime, min 30s
-  const refreshIn = Math.max(ttl * 0.8, 30_000);
+  // Refresh at 80% of TTL, but at least 30s before expiry
+  const refreshIn = Math.max(ttl - 30_000, ttl * 0.8);
   console.log(`⏰ Token refresh scheduled in ${Math.round(refreshIn / 1000)}s`);
 
   refreshTimer = setTimeout(() => {

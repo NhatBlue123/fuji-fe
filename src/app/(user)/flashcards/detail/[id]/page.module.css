@@ -1,0 +1,28 @@
+.glassPanel {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.bannerGradient {
+  background: linear-gradient(
+    180deg,
+    rgba(11, 17, 32, 0) 0%,
+    rgba(11, 17, 32, 0.6) 50%,
+    rgba(11, 17, 32, 1) 100%
+  );
+}
+
+.pulseSlow {
+  animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseSlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

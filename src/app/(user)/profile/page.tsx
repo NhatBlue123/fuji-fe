@@ -6,14 +6,14 @@ import { Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar } from "lucide
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/lib/auth";
-import { useGetMeQuery } from "@/store/services/user/userApi";
-
+//import { useGetMeQuery } from "@/store/services/user/userApi";
+import { useGetCurrentUserQuery } from "@/store/services/authApi";
 export default function ProfilePage() {
   const router = useRouter();
   const [openLogout, setOpenLogout] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const { data: user, isLoading, error } = useGetMeQuery();
+  const { data: user, isLoading, error } = useGetCurrentUserQuery();
 
   if (isLoading) {
     return <div className="text-white p-10">Loading...</div>;

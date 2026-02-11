@@ -17,6 +17,7 @@ import type {
   PaginationDTO,
   RatingRequestDTO,
   CardDTO,
+  UserStudyProgressDTO,
 } from "@/types/flashcard";
 
 // ─── Response wrapper ──────────────────────────────────
@@ -259,6 +260,43 @@ export const flashcardApi = createApi({
       providesTags: [{ type: "FlashCard", id: "SEARCH" }],
     }),
 
+    // Start learning a flashcard
+    startLearning: builder.mutation<
+      UserStudyProgressDTO,
+      number | string
+    >({
+      query: (flashCardId) => ({
+        url: API_ENDPOINTS.FLASHCARDS.START_LEARNING(flashCardId),
+        method: "POST",
+      }),
+      transformResponse: (response: ApiResponse<UserStudyProgressDTO>) =>
+        response.data!,
+      invalidatesTags: (_result, _err, flashCardId) => [
+        { type: "FlashCard", id: flashCardId },
+      ],
+    }),
+
+    // Submit exercise result
+    submitExerciseResult: builder.mutation<
+      void,
+      {
+        flashcardId: number | string;
+        exerciseType: string;
+        correctCount: number;
+        totalCount: number;
+      }
+    >({
+      query: ({ flashcardId, exerciseType, correctCount, totalCount }) => ({
+        url: API_ENDPOINTS.FLASHCARDS.SUBMIT_EXERCISE(flashcardId),
+        method: "POST",
+        body: {
+          exerciseType,
+          correctCount,
+          totalCount,
+        },
+      }),
+    }),
+
     // ═══════════════════ FlashList endpoints ═══════════════════
 
     // List all flashlists (returns publicLists + myLists)
@@ -443,6 +481,8 @@ export const {
   useDeleteFlashCardMutation,
   useAddCardToFlashCardMutation,
   useSearchFlashCardsQuery,
+  useStartLearningMutation,
+  useSubmitExerciseResultMutation,
   // FlashList
   useGetFlashListsQuery,
   useGetFlashListByIdQuery,

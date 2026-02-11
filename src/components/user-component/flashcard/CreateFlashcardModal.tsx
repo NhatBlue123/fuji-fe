@@ -160,10 +160,11 @@ export default function CreateFlashcardModal({
    * Parse card content text into CardDTO[]
    * Format: each line = "vocabulary - meaning"
    * Enriches with pipeline translations when meaning is missing.
+   * Includes previewUrl from selected images.
    */
   const parseCardContent = (content: string): CardDTO[] => {
-    return content
-      .split("\n")
+    const lines = content.split("\n");
+    return lines
       .map((line) => line.trim())
       .filter((line) => line.length > 0)
       .map((line, index) => {
@@ -177,7 +178,10 @@ export default function CreateFlashcardModal({
           vocabulary = line.substring(0, sepIdx).trim();
           meaning = line.substring(sepIdx + 3).trim();
         }
-        return { vocabulary, meaning };
+        // Get selected image for this term (using index-based key matching)
+        const termKey = `term-${index}`;
+        const previewUrl = selectedTermImages[termKey] || null;
+        return { vocabulary, meaning, previewUrl };
       });
   };
 

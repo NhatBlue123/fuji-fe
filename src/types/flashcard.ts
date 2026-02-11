@@ -16,6 +16,7 @@ export interface CardDTO {
   meaning: string;
   pronunciation?: string;
   exampleSentence?: string;
+  previewUrl?: string | null;
 }
 
 export interface CardResponseDTO {
@@ -24,8 +25,20 @@ export interface CardResponseDTO {
   meaning: string;
   pronunciation: string | null;
   exampleSentence: string | null;
+  previewUrl: string | null;
   cardOrder: number;
   createdAt: string;
+}
+
+// ─── User Study Progress ─────────────────────────────────
+export interface UserStudyProgressDTO {
+  id: number;
+  progressPercentage: number;
+  rememberedCount: number;
+  totalCards: number;
+  lastStudiedAt: string | null;
+  nextReviewAt: string | null;
+  isCompleted: boolean;
 }
 
 // ─── FlashCard (a set of cards) ────────────────────────
@@ -57,6 +70,9 @@ export interface FlashCardResponseDTO {
   cardCount: number;
   createdAt: string;
   updatedAt: string;
+  // Study tracking fields
+  studyCount?: number;
+  userProgress?: UserStudyProgressDTO;
 }
 
 export interface FlashCardSummaryDTO {

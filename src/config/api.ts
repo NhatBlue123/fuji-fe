@@ -68,6 +68,7 @@ export const API_ENDPOINTS = {
 
   // FlashCards
   FLASHCARDS: {
+    BASE: "/flashcards",
     LIST: "/flashcards",
     GET_BY_ID: (id: number | string) => `/flashcards/${id}`,
     CREATE: "/flashcards",
@@ -77,6 +78,8 @@ export const API_ENDPOINTS = {
     REMOVE_CARD: (cardId: number | string, cardIndex: number) =>
       `/flashcards/${cardId}/items/${cardIndex}`,
     SEARCH: "/flashcards/search",
+    START_LEARNING: (id: number | string) => `/flashcards/${id}/start-learning`,
+    SUBMIT_EXERCISE: (id: number | string) => `/flashcards/${id}/submit-exercise`,
   },
 
   // FlashLists

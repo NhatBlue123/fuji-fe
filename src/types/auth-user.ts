@@ -1,13 +1,17 @@
-export interface User {
+
+export interface AuthUser {
   id: number;
   username: string;
   email: string;
+
   fullName: string;
   avatarUrl?: string | null;
-  phone?: string | null;
-  gender?: string | null;
   bio?: string | null;
-  jlptLevel?: string | null;
+  gender?: string | null;
+  phone?: string | null;
+
+  jlptLevel?: "N5" | "N4" | "N3" | "N2" | "N1" | null;
+
   active: boolean;
   createdAt: string;
 }

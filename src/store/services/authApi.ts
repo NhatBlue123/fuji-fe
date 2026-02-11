@@ -8,6 +8,7 @@ import type {
 import type { User } from "../../types/auth";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
 import { getAccessToken, setAccessToken, clearTokens } from "@/lib/token";
+import { AuthUser } from "@/types/auth-user";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
@@ -252,10 +253,25 @@ export const authApi = createApi({
 
     // Lấy thông tin user hiện tại (cần Bearer token)
     // Endpoint: GET /api/users/me
-    getCurrentUser: builder.query<ApiResponse<User>, void>({
-      query: () => "/users/me",
-      providesTags: ["User"],
-    }),
+    getCurrentUser: builder.query<AuthUser, void>({
+  query: () => "/users/me",
+  transformResponse: (res: any): AuthUser => ({
+    id: res.id,
+    username: res.username,
+    email: res.email,
+
+    fullName: res.fullName,
+    avatarUrl: res.avatarUrl,
+    bio: res.bio,
+    gender: res.gender,
+    phone: res.phone,
+    jlptLevel: res.jlptLevel,
+    active: res.active,
+    createdAt: res.createdAt,
+  }),
+  providesTags: ["User"],
+}),
+
 
     // Verify email
     verifyEmail: builder.mutation<ApiResponse, { token: string }>({

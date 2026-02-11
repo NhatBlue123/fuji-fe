@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
@@ -157,7 +156,7 @@ export default function FillBlankExercisePage({
     } catch (err) {
       console.error("Failed to submit:", err);
     }
-  }, [id, score, submitResult]);
+  }, [id, score.correct, score.total, submitResult]);
 
   /* ─── Loading / Error ──────────────────────────────── */
   if (isLoading) {

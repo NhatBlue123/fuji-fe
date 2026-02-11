@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
@@ -42,14 +41,12 @@ export default function MultipleChoiceExercisePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
   const { data: flashcard, isLoading, error } = useGetFlashCardByIdQuery(id);
   const [submitResult] = useSubmitExerciseResultMutation();
 
   const [questions, setQuestions] = useState<MultipleChoiceQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
   const [answers, setAnswers] = useState<Record<number, AnswerRecord>>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -93,7 +90,6 @@ export default function MultipleChoiceExercisePage({
     setQuestions(qs);
     setCurrentIndex(0);
     setSelectedAnswer(null);
-    setIsAnswered(false);
     setAnswers({});
     setShowResults(false);
   }, [flashcard]);
@@ -104,6 +100,7 @@ export default function MultipleChoiceExercisePage({
 
   /* Derived */
   const currentQ = questions[currentIndex];
+  const isAnswered = selectedAnswer !== null;
   const correctCount = useMemo(
     () => Object.values(answers).filter((a) => a.correct).length,
     [answers],
@@ -117,7 +114,6 @@ export default function MultipleChoiceExercisePage({
     (option: string) => {
       if (isAnswered || !currentQ) return;
       setSelectedAnswer(option);
-      setIsAnswered(true);
       const correct = option === currentQ.answer;
       setAnswers((prev) => ({
         ...prev,
@@ -131,7 +127,6 @@ export default function MultipleChoiceExercisePage({
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((p) => p + 1);
       setSelectedAnswer(null);
-      setIsAnswered(false);
     } else {
       setShowResults(true);
       submitResult({

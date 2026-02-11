@@ -6,23 +6,35 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import type { User } from "../../types/auth";
+import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
+import {
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+  clearTokens,
+} from "@/lib/token";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
-let refreshPromise: Promise<unknown> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
-// Base query với credentials để gửi cookies
+// Base query - tự động gắn Bearer token từ localStorage
 const baseQuery = fetchBaseQuery({
-  // URL Backend Spring Boot của bạn
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8181/api/auth",
-  credentials: "include", 
+  baseUrl: API_CONFIG.BASE_URL,
+  credentials: "include",
   prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+    const token = getAccessToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
     return headers;
   },
 });
 
-// Base query with auto refresh token
+// Base query with auto refresh token khi gặp 401
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
@@ -30,52 +42,77 @@ const baseQueryWithReauth: BaseQueryFn<
 > = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  // Nếu gặp 401 và chưa phải endpoint refresh
-  if (result.error && result.error.status === 401) {
-    const isRefreshEndpoint =
-      typeof args === "string"
-        ? args.includes("/auth/refresh")
-        : args.url.includes("/auth/refresh");
+  // Bỏ qua nếu endpoint là login/register/refresh
+  const url = typeof args === "string" ? args : args.url;
+  const skipReauth = [
+    API_ENDPOINTS.AUTH.LOGIN,
+    API_ENDPOINTS.AUTH.REGISTER,
+    API_ENDPOINTS.AUTH.REFRESH,
+    API_ENDPOINTS.AUTH.VERIFY_OTP,
+    API_ENDPOINTS.AUTH.SEND_OTP_REGISTER,
+  ].some((ep) => url.includes(ep));
 
-    if (!isRefreshEndpoint) {
-      // Nếu đang có refresh request khác, chờ nó xong
-      if (isRefreshing && refreshPromise) {
-        await refreshPromise;
-        // Retry request ban đầu sau khi refresh xong
+  if (result.error && result.error.status === 401 && !skipReauth) {
+    // Nếu đang có refresh request khác, chờ nó xong
+    if (isRefreshing && refreshPromise) {
+      const success = await refreshPromise;
+      if (success) {
+        // Retry với token mới
         result = await baseQuery(args, api, extraOptions);
       } else {
-        // Bắt đầu refresh mới
-        isRefreshing = true;
-        console.log("🔄 Token expired, refreshing...");
+        api.dispatch({ type: "auth/logout" });
+      }
+    } else {
+      // Bắt đầu refresh mới
+      isRefreshing = true;
 
-        refreshPromise = (async () => {
-          try {
-            const refreshResult = await baseQuery(
-              { url: "/auth/refresh", method: "POST" },
-              api,
-              extraOptions,
-            );
-
-            if (refreshResult.data) {
-              console.log("✅ Token refreshed successfully");
-              return refreshResult;
-            } else {
-              console.log("❌ Refresh failed, logging out");
-              api.dispatch({ type: "auth/logout" });
-              return null;
-            }
-          } catch (error) {
-            console.error("❌ Refresh error:", error);
+      refreshPromise = (async (): Promise<boolean> => {
+        try {
+          const refreshToken = getRefreshToken();
+          if (!refreshToken) {
             api.dispatch({ type: "auth/logout" });
-            return null;
-          } finally {
-            isRefreshing = false;
-            refreshPromise = null;
+            return false;
           }
-        })();
 
-        await refreshPromise;
-        // Retry request ban đầu
+          const refreshResult = await baseQuery(
+            {
+              url: API_ENDPOINTS.AUTH.REFRESH,
+              method: "POST",
+              body: { refreshToken },
+            },
+            api,
+            extraOptions,
+          );
+
+          const data = refreshResult.data as RefreshResponseData | undefined;
+
+          if (data?.accessToken) {
+            // Lưu tokens mới
+            setTokens(data.accessToken, data.refreshToken || refreshToken);
+            // Cập nhật Redux state
+            api.dispatch({
+              type: "auth/tokenRefreshed",
+              payload: {
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken || refreshToken,
+              },
+            });
+            return true;
+          } else {
+            api.dispatch({ type: "auth/logout" });
+            return false;
+          }
+        } catch {
+          api.dispatch({ type: "auth/logout" });
+          return false;
+        } finally {
+          isRefreshing = false;
+          refreshPromise = null;
+        }
+      })();
+
+      const success = await refreshPromise;
+      if (success) {
         result = await baseQuery(args, api, extraOptions);
       }
     }
@@ -84,7 +121,8 @@ const baseQueryWithReauth: BaseQueryFn<
   return result;
 };
 
-// Response types
+// ─── Response types ────────────────────────────────────
+
 interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
@@ -100,36 +138,74 @@ interface RegisterRequest {
   username: string;
   email: string;
   password: string;
-  fullName?: string;
+  fullName: string;
+  otpCode: string;
 }
 
-interface LoginResponseData {
+interface SendOtpRegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+}
+
+// Backend trả về khi login thành công
+export interface LoginResponseData {
   accessToken: string;
   refreshToken: string;
   username: string;
   email?: string;
- 
 }
+
+// Backend trả về khi refresh thành công
+interface RefreshResponseData {
+  accessToken: string;
+  refreshToken?: string;
+}
+
+export interface VerifyOtpRequest {
+  email: string;
+  otpCode: string;
+}
+
+export interface OAuth2VerifyOtpRequest {
+  sessionId: string;
+  otpCode: string;
+}
+
+// ─── API Definition ────────────────────────────────────
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: baseQueryWithReauth, // Dùng baseQuery có auto refresh
+  baseQuery: baseQueryWithReauth,
   tagTypes: ["Auth", "User"],
   endpoints: (builder) => ({
-    // Đăng nhập
+    // Đăng nhập - trả về tokens
     login: builder.mutation<LoginResponseData, LoginRequest>({
       query: (credentials) => ({
-        url: "/login",
+        url: API_ENDPOINTS.AUTH.LOGIN,
         method: "POST",
         body: credentials,
       }),
       invalidatesTags: ["Auth", "User"],
     }),
 
-    // Đăng ký
-    register: builder.mutation<ApiResponse<{ user: User }>, RegisterRequest>({
+    // Gửi OTP để đăng ký (validate đầy đủ thông tin trước, không tạo tài khoản)
+    sendOtpRegister: builder.mutation<
+      ApiResponse<string>,
+      SendOtpRegisterRequest
+    >({
+      query: (data) => ({
+        url: API_ENDPOINTS.AUTH.SEND_OTP_REGISTER,
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // Đăng ký - gửi đầy đủ thông tin + OTP
+    register: builder.mutation<ApiResponse<string>, RegisterRequest>({
       query: (userData) => ({
-        url: "/auth/register",
+        url: API_ENDPOINTS.AUTH.REGISTER,
         method: "POST",
         body: userData,
       }),
@@ -138,31 +214,57 @@ export const authApi = createApi({
     // Đăng xuất
     logout: builder.mutation<ApiResponse, void>({
       query: () => ({
-        url: "/auth/logout",
+        url: API_ENDPOINTS.AUTH.LOGOUT,
         method: "POST",
       }),
       invalidatesTags: ["Auth", "User"],
     }),
 
-    // Refresh token
-    refreshToken: builder.mutation<ApiResponse<{ user: User }>, void>({
-      query: () => ({
-        url: "/auth/refresh",
+    // Xác thực OTP
+    verifyOtp: builder.mutation<
+      ApiResponse<string>,
+      { email: string; otpCode: string }
+    >({
+      query: (data) => ({
+        url: API_ENDPOINTS.AUTH.VERIFY_OTP,
         method: "POST",
+        body: data,
       }),
+    }),
+
+    // Xác thực OTP cho OAuth2
+    verifyOAuth2Otp: builder.mutation<ApiResponse<LoginResponseData>, OAuth2VerifyOtpRequest>({
+      query: (data) => ({
+        url: API_ENDPOINTS.AUTH.VERIFY_OAUTH2_OTP,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Auth", "User"],
+    }),
+
+    // Refresh token
+    refreshToken: builder.mutation<RefreshResponseData, void>({
+      query: () => {
+        const refreshToken = getRefreshToken();
+        return {
+          url: API_ENDPOINTS.AUTH.REFRESH,
+          method: "POST",
+          body: { refreshToken },
+        };
+      },
       invalidatesTags: ["Auth"],
     }),
 
-    // Lấy thông tin user hiện tại
-    getCurrentUser: builder.query<ApiResponse<{ user: User }>, void>({
-      query: () => "/auth/me",
+    // Lấy thông tin user hiện tại (cần Bearer token)
+    getCurrentUser: builder.query<ApiResponse<User>, void>({
+      query: () => API_ENDPOINTS.AUTH.ME,
       providesTags: ["User"],
     }),
 
     // Verify email
     verifyEmail: builder.mutation<ApiResponse, { token: string }>({
       query: ({ token }) => ({
-        url: `/auth/verify-email?token=${token}`,
+        url: `/verify-email?token=${token}`,
         method: "POST",
       }),
     }),
@@ -170,7 +272,7 @@ export const authApi = createApi({
     // Forgot password
     forgotPassword: builder.mutation<ApiResponse, { email: string }>({
       query: ({ email }) => ({
-        url: "/auth/forgot-password",
+        url: API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
         method: "POST",
         body: { email },
       }),
@@ -182,7 +284,7 @@ export const authApi = createApi({
       { token: string; password: string }
     >({
       query: ({ token, password }) => ({
-        url: "/auth/reset-password",
+        url: API_ENDPOINTS.AUTH.RESET_PASSWORD,
         method: "POST",
         body: { token, password },
       }),
@@ -190,15 +292,18 @@ export const authApi = createApi({
   }),
 });
 
-// Export hooks
+// Export auto-generated hooks
 export const {
+  useSendOtpRegisterMutation,
   useLoginMutation,
   useRegisterMutation,
   useLogoutMutation,
+  useVerifyOtpMutation,
+  useVerifyOAuth2OtpMutation,
+  useVerifyEmailMutation,
   useRefreshTokenMutation,
   useGetCurrentUserQuery,
   useLazyGetCurrentUserQuery,
-  useVerifyEmailMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } = authApi;

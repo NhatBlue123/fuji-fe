@@ -9,15 +9,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**", // Cho phép mọi domain HTTPS - thu hẹp lại khi biết domain cụ thể
+        hostname: "**",
       },
     ],
+    // Tối ưu hóa ảnh bị lỗi trên một số môi trường Windows với Turbopack -> tắt formats tạm thời hoặc giữ nguyên nếu không phải nguyên nhân
     formats: ["image/avif", "image/webp"],
   },
 
   // ===== API PROXY (CHỈ TRONG DEVELOPMENT) =====
   async rewrites() {
-    // Chỉ proxy trong development để avoid CORS
     if (process.env.NODE_ENV === "development") {
       return [
         {
@@ -30,34 +30,13 @@ const nextConfig: NextConfig = {
   },
 
   // ===== SECURITY & PERFORMANCE =====
-  poweredByHeader: false, // Ẩn header "X-Powered-By: Next.js"
+  poweredByHeader: false,
 
-  // ===== CACHE HEADERS =====
+  // ===== CACHE HEADERS (Giữ nguyên từ Hanabi/Fuji cũ) =====
   async headers() {
     return [
-      // Cache static images
       {
         source: "/:all*(svg|jpg|jpeg|png|webp|gif|ico|avif)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      // Cache fonts
-      {
-        source: "/:all*(woff|woff2|ttf|otf|eot)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      // Cache Next.js static files
-      {
-        source: "/_next/static/:path*",
         headers: [
           {
             key: "Cache-Control",
@@ -69,14 +48,13 @@ const nextConfig: NextConfig = {
   },
 
   // ===== EXPERIMENTAL FEATURES =====
-  experimental: {
-    // Tree-shaking cho icon libraries
-    optimizePackageImports: ["lucide-react"],
-  },
+  // Tạm tắt experimental để tránh lỗi Turbopack cache (SST file error)
+  // experimental: {
+  //   optimizePackageImports: ["lucide-react"],
+  // },
 
   // ===== COMPILER OPTIONS =====
   compiler: {
-    // Xóa console.log trong production
     removeConsole: process.env.NODE_ENV === "production" ? {
       exclude: ["error", "warn"],
     } : false,

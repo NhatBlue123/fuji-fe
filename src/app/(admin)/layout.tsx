@@ -1,10 +1,16 @@
-import '@/app/globals.css'
+import "@/styles/admin.css";
+import { AdminLayoutWrapper } from "@/components/admin/layout";
+import AdminGuard from "@/components/auth/AdminGuard";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {children}
-    </div>
-  )
+    <AdminGuard>
+      <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
+    </AdminGuard>
+  );
 }
 

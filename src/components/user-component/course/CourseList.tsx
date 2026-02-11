@@ -99,18 +99,18 @@ const MOCK_COURSES: Course[] = [
 
 function CourseCardSkeleton() {
   return (
-    <div className="bg-card-bg rounded-2xl overflow-hidden border border-slate-700/50 flex flex-col h-full animate-pulse">
-      <div className="h-48 bg-slate-800"></div>
+    <div className="bg-card rounded-2xl overflow-hidden border border-border flex flex-col h-full animate-pulse">
+      <div className="h-48 bg-muted"></div>
       <div className="p-5 flex flex-col flex-1">
-        <div className="h-6 bg-slate-700 rounded mb-2 w-3/4"></div>
-        <div className="h-4 bg-slate-700 rounded mb-2 w-full"></div>
-        <div className="h-4 bg-slate-700 rounded mb-4 w-5/6"></div>
+        <div className="h-6 bg-muted rounded mb-2 w-3/4"></div>
+        <div className="h-4 bg-muted rounded mb-2 w-full"></div>
+        <div className="h-4 bg-muted rounded mb-4 w-5/6"></div>
         <div className="mt-auto mb-5">
-          <div className="h-2 bg-slate-700 rounded-full mb-1.5"></div>
+          <div className="h-2 bg-muted rounded-full mb-1.5"></div>
         </div>
         <div className="flex gap-3">
-          <div className="flex-1 h-10 bg-slate-700 rounded-lg"></div>
-          <div className="flex-1 h-10 bg-slate-700 rounded-lg"></div>
+          <div className="flex-1 h-10 bg-muted rounded-lg"></div>
+          <div className="flex-1 h-10 bg-muted rounded-lg"></div>
         </div>
       </div>
     </div>
@@ -122,7 +122,7 @@ function CourseCard({ course }: { course: Course }) {
   const hasStats = course.lessons || course.students;
 
   return (
-    <div className="bg-card-bg rounded-2xl overflow-hidden border border-slate-700/50 card-hover-effect group flex flex-col h-full">
+    <div className="bg-card rounded-2xl overflow-hidden border border-border card-hover-effect group flex flex-col h-full hover:shadow-xl transition-all duration-300">
       <div className="h-48 relative overflow-hidden">
         {hasImage ? (
           <>
@@ -130,13 +130,13 @@ function CourseCard({ course }: { course: Course }) {
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
               style={{ backgroundImage: `url('${course.image}')` }}
             ></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-80"></div>
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-900">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="material-symbols-outlined text-6xl text-white/20 group-hover:text-white/40 transition-colors">
+              <span className="material-symbols-outlined text-6xl text-primary-foreground/20 group-hover:text-primary-foreground/40 transition-colors">
                 menu_book
               </span>
             </div>
@@ -147,35 +147,35 @@ function CourseCard({ course }: { course: Course }) {
         >
           {course.level}
         </div>
-        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur px-2 py-1 rounded-lg flex items-center gap-1 text-yellow-400 text-xs font-bold border border-white/10">
+        <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/60 backdrop-blur px-2 py-1 rounded-lg flex items-center gap-1 text-yellow-600 dark:text-yellow-400 text-xs font-bold border border-black/10 dark:border-white/10 shadow-sm">
           <span className="material-symbols-outlined text-sm filled">star</span>{" "}
           {course.rating}
         </div>
       </div>
 
       <div className="p-5 flex flex-col flex-1">
-        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-secondary transition-colors">
+        <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors">
           {course.title}
         </h3>
-        <p className="text-sm text-slate-400 mb-4 line-clamp-2 leading-relaxed">
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
           {course.description}
         </p>
 
         {course.progress !== undefined ? (
           <div className="mt-auto mb-5">
-            <div className="flex justify-between text-xs font-medium text-slate-400 mb-1.5">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground mb-1.5">
               <span>Đã học</span>
               <span className="text-secondary">{course.progress}%</span>
             </div>
-            <div className="w-full bg-slate-700 rounded-full h-1.5">
+            <div className="w-full bg-muted rounded-full h-1.5">
               <div
-                className="bg-gradient-to-r from-secondary to-pink-600 h-1.5 rounded-full shadow-[0_0_10px_#F472B6]"
+                className="bg-gradient-to-r from-secondary to-secondary/80 h-1.5 rounded-full shadow-[0_0_10px_currentColor] text-secondary"
                 style={{ width: `${course.progress}%` }}
               ></div>
             </div>
           </div>
         ) : hasStats ? (
-          <div className="mt-auto mb-5 pt-3 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-400">
+          <div className="mt-auto mb-5 pt-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
             {course.lessons && (
               <>
                 <span className="material-symbols-outlined text-sm">
@@ -202,10 +202,10 @@ function CourseCard({ course }: { course: Course }) {
         )}
 
         <div className="flex gap-3">
-          <button className="flex-1 py-2.5 rounded-lg border border-slate-600 text-slate-300 font-bold hover:bg-slate-800 hover:text-white hover:border-slate-500 transition-colors text-sm">
+          <button className="flex-1 py-2.5 rounded-lg border border-input text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-border transition-colors text-sm">
             Chi tiết
           </button>
-          <button className="flex-1 py-2.5 rounded-lg bg-secondary hover:bg-pink-400 text-white font-bold transition-all shadow-lg shadow-pink-500/20 text-sm hover:shadow-pink-500/40">
+          <button className="flex-1 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 text-sm hover:shadow-secondary/40">
             {course.isEnrolled ? "Học ngay" : "Đăng ký"}
           </button>
         </div>
@@ -221,7 +221,7 @@ export default function CourseList({ isLoading = false }: CourseListProps) {
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-16">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <span className="material-symbols-outlined text-secondary">
             auto_awesome
           </span>
@@ -232,9 +232,9 @@ export default function CourseList({ isLoading = false }: CourseListProps) {
             onClick={() => setViewMode("grid")}
             className={`size-8 rounded-full ${
               viewMode === "grid"
-                ? "bg-secondary text-white"
-                : "bg-slate-800 text-slate-400 hover:text-white"
-            } border border-slate-700 flex items-center justify-center hover:border-slate-500 transition-all`}
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            } border border-input flex items-center justify-center hover:border-border transition-all`}
           >
             <span className="material-symbols-outlined text-lg">grid_view</span>
           </button>
@@ -242,9 +242,9 @@ export default function CourseList({ isLoading = false }: CourseListProps) {
             onClick={() => setViewMode("list")}
             className={`size-8 rounded-full ${
               viewMode === "list"
-                ? "bg-secondary text-white"
-                : "bg-slate-800 text-slate-400 hover:text-white"
-            } border border-slate-700 flex items-center justify-center hover:border-slate-500 transition-all`}
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            } border border-input flex items-center justify-center hover:border-border transition-all`}
           >
             <span className="material-symbols-outlined text-lg">view_list</span>
           </button>
@@ -266,7 +266,7 @@ export default function CourseList({ isLoading = false }: CourseListProps) {
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            className="p-2 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-sm">
               chevron_left
@@ -278,20 +278,20 @@ export default function CourseList({ isLoading = false }: CourseListProps) {
               onClick={() => setCurrentPage(page)}
               className={`w-9 h-9 rounded-lg font-bold transition-all ${
                 currentPage === page
-                  ? "bg-secondary text-white shadow-lg shadow-pink-500/20"
-                  : "border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white font-medium"
+                  ? "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/20"
+                  : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
               }`}
             >
               {page}
             </button>
           ))}
-          <span className="text-slate-500 px-1">...</span>
+          <span className="text-muted-foreground px-1">...</span>
           <button
             onClick={() => setCurrentPage(8)}
             className={`w-9 h-9 rounded-lg transition-all ${
               currentPage === 8
-                ? "bg-secondary text-white shadow-lg shadow-pink-500/20 font-bold"
-                : "border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white font-medium"
+                ? "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/20 font-bold"
+                : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
             }`}
           >
             8
@@ -299,7 +299,7 @@ export default function CourseList({ isLoading = false }: CourseListProps) {
           <button
             disabled={currentPage === 8}
             onClick={() => setCurrentPage((prev) => Math.min(8, prev + 1))}
-            className="p-2 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-sm">
               chevron_right

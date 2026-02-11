@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "./slices/authSlice";
 import { authApi } from "./services/authApi";
+import { flashcardApi } from "./services/flashcardApi";
 import { authListenerMiddleware } from "./middlewares/authMiddleware";
 
 export const store = configureStore({
@@ -9,10 +10,12 @@ export const store = configureStore({
     auth: authReducer,
     // RTK Query reducers
     [authApi.reducerPath]: authApi.reducer,
+    [flashcardApi.reducerPath]: flashcardApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(authApi.middleware)
+      .concat(flashcardApi.middleware)
       .prepend(authListenerMiddleware.middleware),
 });
 

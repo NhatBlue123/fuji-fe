@@ -87,7 +87,7 @@ const Sidebar = () => {
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
+          href="/JLPT_Practice"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             assignment

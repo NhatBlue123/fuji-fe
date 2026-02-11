@@ -65,6 +65,34 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id: string) => `/lessons/${id}`,
     COMPLETE: (id: string) => `/lessons/${id}/complete`,
   },
+
+  // FlashCards
+  FLASHCARDS: {
+    LIST: "/flashcards",
+    GET_BY_ID: (id: number | string) => `/flashcards/${id}`,
+    CREATE: "/flashcards",
+    UPDATE: (id: number | string) => `/flashcards/${id}`,
+    DELETE: (id: number | string) => `/flashcards/${id}`,
+    ADD_CARD: (id: number | string) => `/flashcards/${id}/items`,
+    REMOVE_CARD: (cardId: number | string, cardIndex: number) =>
+      `/flashcards/${cardId}/items/${cardIndex}`,
+    SEARCH: "/flashcards/search",
+  },
+
+  // FlashLists
+  FLASHLISTS: {
+    LIST: "/flashlists",
+    GET_BY_ID: (id: number | string) => `/flashlists/${id}`,
+    CREATE: "/flashlists",
+    UPDATE: (id: number | string) => `/flashlists/${id}`,
+    DELETE: (id: number | string) => `/flashlists/${id}`,
+    RATE: (id: number | string) => `/flashlists/${id}/rate`,
+    ADD_CARD: (listId: number | string, cardId: number | string) =>
+      `/flashlists/${listId}/cards/${cardId}`,
+    REMOVE_CARD: (listId: number | string, cardId: number | string) =>
+      `/flashlists/${listId}/cards/${cardId}`,
+    SEARCH: "/flashlists/search",
+  },
 };
 
 /**

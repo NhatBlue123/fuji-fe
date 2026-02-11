@@ -32,6 +32,64 @@ interface FlashcardSettingsProps {
   onClose?: () => void;
 }
 
+/**
+ * Parse multiline input with optional example and pronunciation.
+ * Format: vocabulary - meaning <ví dụ câu> :/phát âm/:
+ * Both <ví dụ> and :/phát âm/: are optional.
+ */
+function parseMultiLine(line: string): {
+  vocabulary: string;
+  meaning: string;
+  pronunciation: string;
+  exampleSentence: string;
+} {
+  let remaining = line.trim();
+  let pronunciation = "";
+  let exampleSentence = "";
+
+  // Extract pronunciation :/.../:
+  const pronMatch = remaining.match(/:\/(.+?)\/:/);
+  if (pronMatch) {
+    pronunciation = pronMatch[1].trim();
+    remaining = remaining.replace(pronMatch[0], "").trim();
+  }
+
+  // Extract example <...>
+  const exMatch = remaining.match(/<(.+?)>/);
+  if (exMatch) {
+    exampleSentence = exMatch[1].trim();
+    remaining = remaining.replace(exMatch[0], "").trim();
+  }
+
+  // Now parse vocabulary - meaning
+  const dashIdx = remaining.indexOf(" - ");
+  if (dashIdx !== -1) {
+    return {
+      vocabulary: remaining.substring(0, dashIdx).trim(),
+      meaning: remaining.substring(dashIdx + 3).trim(),
+      pronunciation,
+      exampleSentence,
+    };
+  }
+
+  const colonSpaceIdx = remaining.indexOf(": ");
+  if (colonSpaceIdx !== -1) {
+    return {
+      vocabulary: remaining.substring(0, colonSpaceIdx).trim(),
+      meaning: remaining.substring(colonSpaceIdx + 2).trim(),
+      pronunciation,
+      exampleSentence,
+    };
+  }
+
+  return {
+    vocabulary: remaining,
+    meaning: "",
+    pronunciation,
+    exampleSentence,
+  };
+}
+
 export default function FlashcardSettings({
   id,
   isModal = false,
@@ -48,11 +106,26 @@ export default function FlashcardSettings({
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  // Card editing state
+  const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
+
   // Flashcard info state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState<string>("");
   const [isPublic, setIsPublic] = useState(true);
+
+  // Single card form state (controlled)
+  const [singleVocab, setSingleVocab] = useState("");
+  const [singleMeaning, setSingleMeaning] = useState("");
+  const [singlePronunciation, setSinglePronunciation] = useState("");
+  const [singleExample, setSingleExample] = useState("");
+  const [singlePreviewUrl, setSinglePreviewUrl] = useState("");
+  const [singleImageSearch, setSingleImageSearch] = useState("");
+  const [singleSearchResults, setSingleSearchResults] = useState<
+    { url: string; title: string }[]
+  >([]);
+  const [singleSearching, setSingleSearching] = useState(false);
 
   // Multi-add state
   const [multiContent, setMultiContent] = useState("");
@@ -86,14 +159,13 @@ export default function FlashcardSettings({
           pronunciation: card.pronunciation || "",
           exampleSentence: card.exampleSentence || "",
           previewUrl: card.previewUrl || null,
-        }))
+        })),
       );
     }
   }, [flashcard]);
 
   const handleTermImageSelect = (termKey: string, imageUrl: string) => {
     setSelectedTermImages((prev) => {
-      // Toggle logic
       if (prev[termKey] === imageUrl) {
         const next = { ...prev };
         delete next[termKey];
@@ -104,8 +176,9 @@ export default function FlashcardSettings({
   };
 
   // Drag and drop handlers for reordering
-  const handleDragStart = (index: number) => {
+  const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -127,40 +200,36 @@ export default function FlashcardSettings({
   // Delete card
   const deleteCard = (index: number) => {
     setCards(cards.filter((_, i) => i !== index));
+    if (editingCardIndex === index) setEditingCardIndex(null);
+    else if (editingCardIndex !== null && editingCardIndex > index) {
+      setEditingCardIndex(editingCardIndex - 1);
+    }
+  };
+
+  // Update card field
+  const updateCardField = (
+    index: number,
+    field: keyof CardEdit,
+    value: string,
+  ) => {
+    setCards((prev) =>
+      prev.map((card, i) => (i === index ? { ...card, [field]: value } : card)),
+    );
   };
 
   // Add single card
   const addSingleCard = () => {
-    const vocabInput = document.getElementById(
-      "single-vocab"
-    ) as HTMLInputElement;
-    const meaningInput = document.getElementById(
-      "single-meaning"
-    ) as HTMLInputElement;
-    const pronunciationInput = document.getElementById(
-      "single-pronunciation"
-    ) as HTMLInputElement;
-    const exampleInput = document.getElementById(
-      "single-example"
-    ) as HTMLInputElement;
-    const previewInput = document.getElementById(
-      "single-preview-url"
-    ) as HTMLInputElement;
-
-    const vocab = vocabInput?.value?.trim();
-    const meaning = meaningInput?.value?.trim();
-
-    if (!vocab || !meaning) {
+    if (!singleVocab.trim() || !singleMeaning.trim()) {
       alert("Vui lòng nhập từ vựng và nghĩa!");
       return;
     }
 
     const newCard: CardEdit = {
-      vocabulary: vocab,
-      meaning: meaning,
-      pronunciation: pronunciationInput?.value?.trim() || "",
-      exampleSentence: exampleInput?.value?.trim() || "",
-      previewUrl: previewInput?.value?.trim() || null,
+      vocabulary: singleVocab.trim(),
+      meaning: singleMeaning.trim(),
+      pronunciation: singlePronunciation.trim(),
+      exampleSentence: singleExample.trim(),
+      previewUrl: singlePreviewUrl.trim() || null,
       isNew: true,
       _tempId: `temp-${Date.now()}`,
     };
@@ -168,42 +237,97 @@ export default function FlashcardSettings({
     setCards((prev) => [...prev, newCard]);
 
     // Clear form
-    vocabInput.value = "";
-    meaningInput.value = "";
-    pronunciationInput.value = "";
-    exampleInput.value = "";
-    previewInput.value = "";
+    setSingleVocab("");
+    setSingleMeaning("");
+    setSinglePronunciation("");
+    setSingleExample("");
+    setSinglePreviewUrl("");
+    setSingleSearchResults([]);
+    setSingleImageSearch("");
 
     setActiveTab("cards");
   };
 
-  // Add multiple cards
+  // Search images for single card
+  const handleSingleImageSearch = async () => {
+    const query = singleImageSearch.trim() || singleVocab.trim();
+    if (!query) return;
+    setSingleSearching(true);
+    try {
+      const res = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
+          query,
+        )}&per_page=8&client_id=demo`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setSingleSearchResults(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data.results?.map((r: any) => ({
+            url: r.urls?.small || r.urls?.thumb,
+            title: r.alt_description || query,
+          })) || [],
+        );
+      } else {
+        // Fallback mock
+        setSingleSearchResults(
+          Array.from({ length: 6 }, (_, i) => ({
+            url: getMockImage(i),
+            title: `${query} ${i + 1}`,
+          })),
+        );
+      }
+    } catch {
+      setSingleSearchResults(
+        Array.from({ length: 6 }, (_, i) => ({
+          url: getMockImage(i),
+          title: `${query} ${i + 1}`,
+        })),
+      );
+    } finally {
+      setSingleSearching(false);
+    }
+  };
+
+  // Add multiple cards with enhanced parsing
   const addMultipleCards = () => {
-    if (pipelineTerms.length === 0) {
+    // Use our enhanced parser that supports <example> and :/pronunciation/:
+    const lines = multiContent
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) {
       alert("Không có thẻ nào hợp lệ!");
       return;
     }
 
-    const newCards: CardEdit[] = pipelineTerms
-      .filter((t) => t.vocabulary.trim())
-      .map((term, index) => ({
-        vocabulary: term.vocabulary,
-        meaning: term.meaning || "",
-        pronunciation: "",
-        exampleSentence: "",
-        previewUrl: selectedTermImages[term.key] || null,
+    const newCards: CardEdit[] = lines.map((line, index) => {
+      const parsed = parseMultiLine(line);
+      // Try to match image from pipeline
+      const matchingTerm = pipelineTerms.find(
+        (t) => t.vocabulary === parsed.vocabulary,
+      );
+      const termKey = matchingTerm?.key || "";
+
+      return {
+        vocabulary: parsed.vocabulary,
+        meaning: parsed.meaning,
+        pronunciation: parsed.pronunciation,
+        exampleSentence: parsed.exampleSentence,
+        previewUrl: selectedTermImages[termKey] || null,
         isNew: true,
         _tempId: `temp-${Date.now()}-${index}`,
-      }));
+      };
+    });
 
-    if (newCards.length === 0) {
+    const validCards = newCards.filter((c) => c.vocabulary.trim());
+    if (validCards.length === 0) {
       alert("Không có thẻ nào hợp lệ!");
       return;
     }
 
-    setCards((prev) => [...prev, ...newCards]);
-
-    // Clear form
+    setCards((prev) => [...prev, ...validCards]);
     setMultiContent("");
     setSelectedTermImages({});
     setActiveTab("cards");
@@ -213,7 +337,6 @@ export default function FlashcardSettings({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Update flashcard info and reorder cards
       await updateFlashCard({
         id: id,
         flashcard: {
@@ -233,7 +356,6 @@ export default function FlashcardSettings({
         },
       }).unwrap();
 
-      // Add new cards
       const newCards = cards.filter((c) => c.isNew);
       for (const card of newCards) {
         await addCardToFlashCard({
@@ -261,8 +383,9 @@ export default function FlashcardSettings({
     }
   };
 
-  // Calculate study time estimate
   const studyTimeMinutes = Math.ceil(cards.length * 0.3);
+  const editingCard =
+    editingCardIndex !== null ? cards[editingCardIndex] : null;
 
   if (isLoading) {
     return (
@@ -290,14 +413,18 @@ export default function FlashcardSettings({
                   onClick={onClose}
                   className="flex items-center justify-center size-10 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border"
                 >
-                  <span className="material-symbols-outlined text-xl">close</span>
+                  <span className="material-symbols-outlined text-xl">
+                    close
+                  </span>
                 </button>
               ) : (
                 <Link
                   href={`/flashcards/detail/${id}`}
                   className="flex items-center justify-center size-10 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border"
                 >
-                  <span className="material-symbols-outlined text-xl">close</span>
+                  <span className="material-symbols-outlined text-xl">
+                    close
+                  </span>
                 </Link>
               )}
               <div className="flex flex-col">
@@ -378,8 +505,11 @@ export default function FlashcardSettings({
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-6 py-8">
           {activeTab === "info" ? (
-            // Tab: Flashcard Info
-            <div className="max-w-2xl space-y-6">
+            /* ═══════════════════════════════════════════
+               Tab: Thông tin — full-width 2-column layout
+               ═══════════════════════════════════════════ */
+            <div className="space-y-6">
+              {/* Row 1: Name + Level side by side on full width */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">
@@ -413,6 +543,7 @@ export default function FlashcardSettings({
                 </div>
               </div>
 
+              {/* Row 2: Description full-width */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
                   Mô tả
@@ -426,51 +557,58 @@ export default function FlashcardSettings({
                 />
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 p-4 bg-card border border-border rounded-xl">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    {cards.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Tổng thẻ</p>
+              {/* Row 3: Stats + Visibility side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4 p-4 bg-card border border-border rounded-xl">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-foreground">
+                      {cards.length}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Tổng thẻ</p>
+                  </div>
+                  <div className="text-center border-x border-border">
+                    <p className="text-2xl font-bold text-pink-400">
+                      {studyTimeMinutes}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Phút học</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-400">
+                      {cards.filter((c) => c.previewUrl).length}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Có hình ảnh</p>
+                  </div>
                 </div>
-                <div className="text-center border-x border-border">
-                  <p className="text-2xl font-bold text-pink-400">
-                    {studyTimeMinutes}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Phút học</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-400">
-                    {cards.filter((c) => c.previewUrl).length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Có hình ảnh</p>
-                </div>
-              </div>
 
-              {/* Visibility Toggle */}
-              <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
-                <span className="material-symbols-outlined text-pink-400">
-                  public
-                </span>
-                <div className="flex-1">
-                  <p className="text-foreground font-medium">Công khai</p>
-                  <p className="text-sm text-muted-foreground">
-                    Cho phép người khác xem và học bộ thẻ này
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsPublic(!isPublic)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    isPublic ? "bg-pink-500" : "bg-slate-600"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      isPublic ? "translate-x-7" : "translate-x-1"
+                {/* Visibility Toggle — fixed CSS */}
+                <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
+                  <span className="material-symbols-outlined text-pink-400">
+                    {isPublic ? "public" : "lock"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-foreground font-medium">
+                      {isPublic ? "Công khai" : "Riêng tư"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isPublic
+                        ? "Cho phép người khác xem và học"
+                        : "Chỉ bạn mới xem được"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsPublic(!isPublic)}
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                      isPublic ? "bg-pink-500" : "bg-muted-foreground/30"
                     }`}
-                  />
-                </button>
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                        isPublic ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* New Cards Count */}
@@ -488,24 +626,35 @@ export default function FlashcardSettings({
               )}
             </div>
           ) : activeTab === "cards" ? (
-            // Tab: Cards Management (Reorder)
+            /* ═══════════════════════════════════════════
+               Tab: Thẻ — horizontal cards with drag & drop + click to edit
+               ═══════════════════════════════════════════ */
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Kéo thả để sắp xếp lại thứ tự thẻ.
+                Kéo thả để sắp xếp lại thứ tự. Nhấn vào thẻ để chỉnh sửa thông
+                tin.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* Horizontal scrollable card strip */}
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 {cards.map((card, index) => (
                   <div
                     key={card._tempId || card.id || index}
                     draggable
-                    onDragStart={() => handleDragStart(index)}
+                    onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`bg-card border rounded-xl overflow-hidden transition-all cursor-pointer group ${
+                    onClick={() =>
+                      setEditingCardIndex(
+                        editingCardIndex === index ? null : index,
+                      )
+                    }
+                    className={`flex-shrink-0 w-44 bg-card border rounded-xl overflow-hidden transition-all cursor-pointer select-none ${
                       draggedIndex === index
                         ? "border-pink-500 shadow-lg shadow-pink-500/20 scale-[1.02] opacity-50"
-                        : "border-border hover:border-pink-500/30"
+                        : editingCardIndex === index
+                          ? "border-pink-500 ring-2 ring-pink-500/30"
+                          : "border-border hover:border-pink-500/30"
                     } ${card.isNew ? "ring-2 ring-green-500/50" : ""}`}
                   >
                     {/* Preview Image */}
@@ -517,38 +666,28 @@ export default function FlashcardSettings({
                             card.previewUrl || getMockImage(card.id || index)
                           }')`,
                         }}
-                      ></div>
+                      />
                       {card.isNew && (
-                        <div className="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full">
                           MỚI
                         </div>
                       )}
+                      <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/50 text-white text-[10px] font-bold rounded">
+                        #{index + 1}
+                      </div>
                     </div>
 
                     {/* Card Info */}
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <p className="text-lg font-bold text-foreground">
-                            {card.vocabulary || "—"}
-                          </p>
-                          {card.pronunciation && (
-                            <p className="text-xs text-pink-400">
-                              {card.pronunciation}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => deleteCard(index)}
-                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors"
-                          title="Xóa"
-                        >
-                          <span className="material-symbols-outlined text-sm">
-                            delete
-                          </span>
-                        </button>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                    <div className="p-3">
+                      <p className="text-sm font-bold text-foreground truncate">
+                        {card.vocabulary || "—"}
+                      </p>
+                      {card.pronunciation && (
+                        <p className="text-[11px] text-pink-400 truncate">
+                          /{card.pronunciation}/
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
                         {card.meaning || "—"}
                       </p>
                     </div>
@@ -570,10 +709,138 @@ export default function FlashcardSettings({
                   </button>
                 </div>
               )}
+
+              {/* Card Edit Panel (shown when a card is selected) */}
+              {editingCard && editingCardIndex !== null && (
+                <div className="mt-6 bg-card border border-border rounded-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                      <span className="material-symbols-outlined text-pink-400">
+                        edit
+                      </span>
+                      Chỉnh sửa thẻ #{editingCardIndex + 1}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => deleteCard(editingCardIndex)}
+                        className="px-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-colors flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          delete
+                        </span>
+                        Xóa
+                      </button>
+                      <button
+                        onClick={() => setEditingCardIndex(null)}
+                        className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary border border-border transition-colors"
+                      >
+                        Đóng
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">
+                        Từ vựng *
+                      </label>
+                      <input
+                        type="text"
+                        value={editingCard.vocabulary}
+                        onChange={(e) =>
+                          updateCardField(
+                            editingCardIndex,
+                            "vocabulary",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none font-japanese"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">
+                        Nghĩa *
+                      </label>
+                      <input
+                        type="text"
+                        value={editingCard.meaning}
+                        onChange={(e) =>
+                          updateCardField(
+                            editingCardIndex,
+                            "meaning",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">
+                        Phiên âm
+                      </label>
+                      <input
+                        type="text"
+                        value={editingCard.pronunciation}
+                        onChange={(e) =>
+                          updateCardField(
+                            editingCardIndex,
+                            "pronunciation",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        placeholder="Phiên âm..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">
+                        Ví dụ câu
+                      </label>
+                      <input
+                        type="text"
+                        value={editingCard.exampleSentence}
+                        onChange={(e) =>
+                          updateCardField(
+                            editingCardIndex,
+                            "exampleSentence",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        placeholder="Ví dụ câu..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">
+                      URL hình ảnh
+                    </label>
+                    <input
+                      type="text"
+                      value={editingCard.previewUrl || ""}
+                      onChange={(e) =>
+                        updateCardField(
+                          editingCardIndex,
+                          "previewUrl",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                      placeholder="URL hình ảnh..."
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            // Tab: Add Cards (Single + Multiple)
-            <div className="max-w-7xl">
+            /* ═══════════════════════════════════════════
+               Tab: Thêm thẻ (Single + Multiple) — full-width
+               ═══════════════════════════════════════════ */
+            <div>
               {/* Add Mode Toggle */}
               <div className="flex gap-2 mb-6">
                 <button
@@ -601,8 +868,8 @@ export default function FlashcardSettings({
               </div>
 
               {addMode === "single" ? (
-                // Single Card Add
-                <div className="max-w-2xl bg-card border border-border rounded-2xl p-6">
+                /* Single Card Add — full width */
+                <div className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                     <span className="material-symbols-outlined text-pink-400">
                       add_circle
@@ -610,14 +877,15 @@ export default function FlashcardSettings({
                     Thêm một thẻ mới
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground">
                         Từ vựng tiếng Nhật *
                       </label>
                       <input
                         type="text"
-                        id="single-vocab"
+                        value={singleVocab}
+                        onChange={(e) => setSingleVocab(e.target.value)}
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none font-japanese"
                         placeholder="例: 日本語"
                       />
@@ -628,21 +896,23 @@ export default function FlashcardSettings({
                       </label>
                       <input
                         type="text"
-                        id="single-meaning"
+                        value={singleMeaning}
+                        onChange={(e) => setSingleMeaning(e.target.value)}
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
                         placeholder="例: Tiếng Nhật"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground">
                         Phiên âm (Romaji)
                       </label>
                       <input
                         type="text"
-                        id="single-pronunciation"
+                        value={singlePronunciation}
+                        onChange={(e) => setSinglePronunciation(e.target.value)}
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
                         placeholder="例: nihongo"
                       />
@@ -653,26 +923,95 @@ export default function FlashcardSettings({
                       </label>
                       <input
                         type="text"
-                        id="single-example"
+                        value={singleExample}
+                        onChange={(e) => setSingleExample(e.target.value)}
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
                         placeholder="例: 私は日本語を学びます"
                       />
                     </div>
                   </div>
 
-                  {/* Image Section */}
+                  {/* Image Search Section */}
                   <div className="space-y-3 mb-6 p-4 bg-muted/10 border border-border rounded-xl">
-                    <label className="text-sm text-muted-foreground">
-                      Hình ảnh - Tùy chọn (URL)
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Hình ảnh
                     </label>
-                    <div className="flex gap-3">
+                    {/* URL input */}
+                    <input
+                      type="text"
+                      value={singlePreviewUrl}
+                      onChange={(e) => setSinglePreviewUrl(e.target.value)}
+                      className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                      placeholder="Nhập URL hình ảnh hoặc tìm kiếm bên dưới..."
+                    />
+                    {/* Image search bar */}
+                    <div className="flex gap-2">
                       <input
                         type="text"
-                        id="single-preview-url"
-                        className="flex-1 bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
-                        placeholder="Nhập URL hình ảnh..."
+                        value={singleImageSearch}
+                        onChange={(e) => setSingleImageSearch(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleSingleImageSearch()
+                        }
+                        className="flex-1 bg-input border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        placeholder={`Tìm ảnh "${singleVocab || "từ vựng"}"...`}
                       />
+                      <button
+                        onClick={handleSingleImageSearch}
+                        disabled={singleSearching}
+                        className="px-4 py-2.5 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 text-white rounded-xl transition-colors flex items-center gap-1.5 text-sm font-medium"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          {singleSearching ? "progress_activity" : "search"}
+                        </span>
+                        Tìm
+                      </button>
                     </div>
+                    {/* Search results grid */}
+                    {singleSearchResults.length > 0 && (
+                      <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 mt-2">
+                        {singleSearchResults.map((img, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setSinglePreviewUrl(img.url)}
+                            className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                              singlePreviewUrl === img.url
+                                ? "border-pink-500 ring-2 ring-pink-500/30"
+                                : "border-border hover:border-pink-500/40"
+                            }`}
+                          >
+                            <img
+                              src={img.url}
+                              alt={img.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {/* Preview selected image */}
+                    {singlePreviewUrl && (
+                      <div className="flex items-center gap-3 mt-2 p-2 bg-card border border-border rounded-lg">
+                        <img
+                          src={singlePreviewUrl}
+                          alt="Preview"
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground truncate">
+                            {singlePreviewUrl}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setSinglePreviewUrl("")}
+                          className="text-muted-foreground hover:text-red-400 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            close
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -684,7 +1023,7 @@ export default function FlashcardSettings({
                   </button>
                 </div>
               ) : (
-                // Multiple Cards Add
+                /* Multiple Cards Add */
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                     <span className="material-symbols-outlined text-pink-400">
@@ -704,27 +1043,55 @@ export default function FlashcardSettings({
                         onChange={(e) => setMultiContent(e.target.value)}
                         rows={15}
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none resize-none font-mono text-sm"
-                        placeholder="vocabulary - meaning"
+                        placeholder={`từ vựng - nghĩa <ví dụ câu> :/phát âm/:\n\nVí dụ:\n日本語 - tiếng Nhật <日本語を学ぶ> :/にほんご/:\nありがとう - cảm ơn :/arigatou/:\nhello - xin chào <hello world>`}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-semibold">
-                          Hướng dẫn nhập liệu:
-                        </span>
-                        <br />
-                        Mỗi dòng là một thẻ học tập
-                        <br />
-                        Dùng dấu &quot;-&quot; để phân tách từ vựng và nghĩa
-                        <br />
-                        <span className="text-gray-400">Ví dụ:</span>
-                        <br />• hello - xin chào
-                        <br />• goodbye - tạm biệt
-                        <br />• thanks - cảm ơn
-                      </p>
+                      <div className="text-xs text-muted-foreground space-y-1 p-3 bg-muted/10 border border-border rounded-lg">
+                        <p className="font-semibold text-foreground/70">
+                          Hướng dẫn nhập:
+                        </p>
+                        <p>
+                          <span className="text-pink-400 font-mono">
+                            từ vựng - nghĩa
+                          </span>{" "}
+                          — bắt buộc
+                        </p>
+                        <p>
+                          <span className="text-pink-400 font-mono">
+                            &lt;ví dụ câu&gt;
+                          </span>{" "}
+                          — tùy chọn, đặt trong dấu {"<>"}
+                        </p>
+                        <p>
+                          <span className="text-pink-400 font-mono">
+                            :/phát âm/:
+                          </span>{" "}
+                          — tùy chọn, đặt trong{" "}
+                          <span className="font-mono">:/.../:{"  "}</span>
+                        </p>
+                        <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5">
+                          <p className="text-muted-foreground/70">Ví dụ:</p>
+                          <p className="font-mono text-[11px]">
+                            日本語 - tiếng Nhật {"<"}日本語を学ぶ{">"}{" "}
+                            :/にほんご/:
+                          </p>
+                          <p className="font-mono text-[11px]">
+                            ありがとう - cảm ơn :/arigatou/:
+                          </p>
+                          <p className="font-mono text-[11px]">
+                            hello - xin chào {"<"}hello world{">"}
+                          </p>
+                        </div>
+                      </div>
 
                       <button
                         onClick={addMultipleCards}
-                        disabled={pipelineTerms.length === 0}
-                        className="w-full py-4 mt-4 bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
+                        disabled={
+                          multiContent
+                            .trim()
+                            .split("\n")
+                            .filter((l) => l.trim()).length === 0
+                        }
+                        className="w-full py-4 mt-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
                       >
                         <span className="material-symbols-outlined">add</span>
                         Thêm tất cả thẻ
@@ -774,7 +1141,7 @@ export default function FlashcardSettings({
                     </span>
                     Thẻ mới sẽ thêm ({cards.filter((c) => c.isNew).length})
                   </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {cards
                       .filter((c) => c.isNew)
                       .map((card, index) => (
@@ -790,14 +1157,24 @@ export default function FlashcardSettings({
                                 getMockImage(card.id || index)
                               }')`,
                             }}
-                          ></div>
+                          />
                           <div className="text-center">
-                            <p className="text-foreground font-bold truncate">
+                            <p className="text-foreground font-bold truncate text-sm">
                               {card.vocabulary}
                             </p>
-                            <p className="text-sm text-muted-foreground truncate">
+                            {card.pronunciation && (
+                              <p className="text-[11px] text-pink-400 truncate">
+                                /{card.pronunciation}/
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground truncate">
                               {card.meaning}
                             </p>
+                            {card.exampleSentence && (
+                              <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">
+                                {card.exampleSentence}
+                              </p>
+                            )}
                           </div>
                           <button
                             onClick={() => {

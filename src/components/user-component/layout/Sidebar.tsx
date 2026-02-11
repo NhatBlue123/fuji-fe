@@ -90,21 +90,21 @@ const Sidebar = () => {
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            group
+            assignment
           </span>
-          <span>Cộng đồng</span>
+          <span>Luyện thi JLPT</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
         >
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            chat_bubble
+            book_online
           </span>
-          <span>Tin nhắn</span>
-          <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
+          <span>Booking</span>
+          {/* <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
             3
-          </span>
+          </span> */}
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"

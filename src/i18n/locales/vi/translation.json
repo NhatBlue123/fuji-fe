@@ -1,0 +1,90 @@
+{
+  "common": {
+    "home": "Trang chủ",
+    "course": "Khóa học",
+    "flashcard": "Thẻ ghi nhớ",
+    "management": "Quản lý",
+    "notification": "Thông báo",
+    "darkMode": "Chế độ tối",
+    "lightMode": "Chế độ sáng",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "creating": "Đang tạo...",
+    "jlptPractice": "Luyện thi JLPT",
+    "booking": "Booking",
+    "aiPractice": "Luyện tập AI",
+    "themeToggle": "Sáng / Tối"
+  },
+  "auth": {
+    "loginSuccess": "Đăng nhập thành công",
+    "loginFail": "Đăng nhập thất bại",
+    "registerSuccess": "Đăng ký thành công",
+
+    "loginWelcome": "Chào mừng bạn quay trở lại FUJI",
+    "loginFailed": "Đăng nhập thất bại. Vui lòng thử lại!",
+
+    "invalidCredentials": "Tên đăng nhập hoặc mật khẩu không đúng",
+    "emailAlreadyExists": "Email đã tồn tại",
+    "usernameAlreadyExists": "Tên đăng nhập đã tồn tại",
+
+    "sendOtpSuccess": "Mã OTP đã được gửi",
+    "sendOtpCheckEmail": "Vui lòng kiểm tra email {{email}}",
+    "sendOtpFailed": "Gửi OTP thất bại. Vui lòng thử lại!",
+
+    "otpInvalid": "Mã OTP không chính xác",
+    "otpExpired": "Mã OTP đã hết hạn",
+    "otpInvalidOrExpired": "Mã OTP không chính xác hoặc đã hết hạn!",
+
+    "registerCanLogin": "Bạn có thể đăng nhập ngay bây giờ.",
+    "verifyOtpSuccess": "Xác thực OTP thành công",
+
+    "userNotFound": "Người dùng không tồn tại",
+    "accountNotActivated": "Tài khoản chưa được kích hoạt",
+    "accountDisabled": "Tài khoản chưa được kích hoạt hoặc đã bị khóa",
+
+    "googleVerifySuccess": "Xác thực Google thành công!",
+    "googleWelcome": "Chào mừng bạn gia nhập FUJI",
+
+    "refreshSuccess": "Làm mới token thành công",
+    "logoutSuccess": "Đăng xuất thành công"
+  },
+  "api": {
+    "loading": "Đang tải dữ liệu...",
+    "error": "Có lỗi xảy ra",
+    "validation": {
+      "invalid": "Dữ liệu không hợp lệ"
+    },
+    "unexpectedError": "Đã xảy ra lỗi hệ thống",
+    "networkError": "Không thể kết nối đến máy chủ",
+    "createFailed": "Đã xảy ra lỗi khi tạo. Vui lòng thử lại."
+  },
+  "flashlist": {
+    "listSuccess": "Lấy danh sách FlashList thành công",
+    "detailSuccess": "Lấy chi tiết FlashList thành công",
+    "createSuccess": "Tạo FlashList thành công",
+    "updateSuccess": "Cập nhật FlashList thành công",
+    "deleteSuccess": "Xóa FlashList thành công",
+    "deleteAllSuccess": "Xóa tất cả FlashList của người dùng thành công",
+    "rateSuccess": "Đánh giá FlashList thành công",
+    "addCardSuccess": "Thêm FlashCard vào FlashList thành công",
+    "removeCardSuccess": "Xóa FlashCard khỏi FlashList thành công",
+    "searchSuccess": "Tìm kiếm FlashList thành công",
+    "validationFailed": "Dữ liệu FlashList không hợp lệ",
+    "validate": {
+      "titleRequired": "Vui lòng nhập tiêu đề FlashList",
+      "privateCardInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai. Hãy bỏ chọn các FlashCard riêng tư hoặc đặt FlashList ở chế độ riêng tư."
+    },
+    "create": "Tạo Flash List"
+  },
+  "flashcard": {
+    "visibility": {
+      "otherPrivate": "FlashCard riêng tư của người khác",
+      "ownPrivateInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai"
+    },
+    "validate": {
+      "nameRequired": "Vui lòng nhập tên bộ FlashCard",
+      "minOneCard": "Vui lòng nhập ít nhất một thẻ"
+    },
+    "create": "Tạo Flash Card"
+  }
+}

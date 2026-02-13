@@ -8,6 +8,8 @@ import { useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
 import Image from "next/image";
+import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -15,6 +17,7 @@ const Sidebar = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated } = useAuth();
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     try {
@@ -50,40 +53,36 @@ const Sidebar = () => {
       </Link>
       <nav className="flex-1 overflow-y-auto px-4 space-y-1">
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
           href="/"
         >
           <span
-            className={`material-symbols-outlined ${
-              isActive("/") ? "filled" : ""
-            }`}
+            className={`material-symbols-outlined ${isActive("/") ? "filled" : ""
+              }`}
           >
             home
           </span>
-          <span>Trang chủ</span>
+          <span>{t("common.home")}</span>
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/course")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/course")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
           href="/course"
         >
           <span
-            className={`material-symbols-outlined ${
-              isActive("/course")
-                ? "filled"
-                : "group-hover:text-sidebar-primary transition-colors"
-            }`}
+            className={`material-symbols-outlined ${isActive("/course")
+              ? "filled"
+              : "group-hover:text-sidebar-primary transition-colors"
+              }`}
           >
             menu_book
           </span>
-          <span>Khóa học</span>
+          <span>{t("common.course")}</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
@@ -92,7 +91,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             assignment
           </span>
-          <span>Luyện thi JLPT</span>
+          <span>{t("common.jlptPractice")}</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
@@ -101,7 +100,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             book_online
           </span>
-          <span>Booking</span>
+          <span>{t("common.booking")}</span>
           {/* <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
             3
           </span> */}
@@ -113,26 +112,24 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             smart_toy
           </span>
-          <span>Luyện tập AI</span>
+          <span>{t("common.aiPractice")}</span>
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/flashcards")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/flashcards")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
           href="/flashcards"
         >
           <span
-            className={`material-symbols-outlined ${
-              isActive("/flashcards")
-                ? "filled"
-                : "group-hover:text-sidebar-primary transition-colors"
-            }`}
+            className={`material-symbols-outlined ${isActive("/flashcards")
+              ? "filled"
+              : "group-hover:text-sidebar-primary transition-colors"
+              }`}
           >
             style
           </span>
-          <span>Thẻ ghi nhớ</span>
+          <span>{t("common.flashcard")}</span>
         </Link>
         <div className="my-4 border-t border-sidebar-border mx-4"></div>
         <Link
@@ -142,7 +139,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             notifications
           </span>
-          <span>Thông báo</span>
+          <span>{t("common.notification")}</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
@@ -151,7 +148,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             settings
           </span>
-          <span>Quản lý</span>
+          <span>{t("common.management")}</span>
         </Link>
       </nav>
       <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-4">
@@ -169,24 +166,27 @@ const Sidebar = () => {
             Xem chi tiết
           </button>
         </div>
-        <div className="flex items-center justify-between px-2">
+        <div className="flex justify-center w-full">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-muted-foreground">
-              contrast
-            </span>
-            <span className="text-sm font-bold text-sidebar-foreground">
-              Sáng / Tối
-            </span>
+
+            {/* Nút Sáng / Tối dạng chip, match với nút English */}
+            <button
+              type="button"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="inline-flex h-8 w-28 items-center justify-center gap-2 rounded-full border border-border bg-background/60 px-3 text-xs font-medium text-muted-foreground shadow-sm hover:bg-background hover:text-foreground transition-colors whitespace-nowrap"
+
+            >
+              <span className="material-symbols-outlined text-[16px] leading-none">
+                contrast
+              </span>
+              <span className="truncate max-w-[80px]">
+                {t("common.themeToggle")}
+              </span>
+
+            </button>
+            {/* Nút đổi ngôn ngữ dạng chip giống style bên trên */}
+            <LanguageSwitcher className="h-8" />
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              checked={theme === "dark"}
-              className="sr-only peer"
-              type="checkbox"
-              onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-            />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-          </label>
         </div>
         <div className="flex items-center gap-3 px-2">
           {isAuthenticated && user ? (

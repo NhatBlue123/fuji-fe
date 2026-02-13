@@ -1,0 +1,90 @@
+{
+  "common": {
+    "home": "Home",
+    "course": "Courses",
+    "flashcard": "Flashcards",
+    "management": "Management",
+    "notification": "Notifications",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "login": "Login",
+    "logout": "Logout",
+    "creating": "Creating...",
+    "jlptPractice": "JLPT practice",
+    "booking": "Booking",
+    "aiPractice": "AI practice",
+    "themeToggle": "Light / Dark"
+  },
+  "auth": {
+    "loginSuccess": "Login successful",
+    "loginFail": "Login failed",
+    "registerSuccess": "Registration successful",
+
+    "loginWelcome": "Welcome back to FUJI",
+    "loginFailed": "Login failed. Please try again.",
+
+    "invalidCredentials": "Incorrect username or password",
+    "emailAlreadyExists": "Email already exists",
+    "usernameAlreadyExists": "Username already exists",
+
+    "sendOtpSuccess": "OTP has been sent",
+    "sendOtpCheckEmail": "Please check your email {{email}}",
+    "sendOtpFailed": "Failed to send OTP. Please try again.",
+
+    "otpInvalid": "OTP code is invalid",
+    "otpExpired": "OTP code has expired",
+    "otpInvalidOrExpired": "OTP code is invalid or has expired",
+
+    "registerCanLogin": "You can log in now.",
+    "verifyOtpSuccess": "OTP verification successful",
+
+    "userNotFound": "User not found",
+    "accountNotActivated": "Account has not been activated",
+    "accountDisabled": "Account is not activated or has been locked",
+
+    "googleVerifySuccess": "Google verification successful",
+    "googleWelcome": "Welcome to FUJI",
+
+    "refreshSuccess": "Token refreshed successfully",
+    "logoutSuccess": "Logout successful"
+  },
+  "api": {
+    "loading": "Loading data...",
+    "error": "Something went wrong",
+    "validation": {
+      "invalid": "Invalid data"
+    },
+    "unexpectedError": "A system error has occurred",
+    "networkError": "Unable to connect to the server",
+    "createFailed": "An error occurred while creating. Please try again."
+  },
+  "flashlist": {
+    "listSuccess": "Fetched FlashList successfully",
+    "detailSuccess": "Fetched FlashList detail successfully",
+    "createSuccess": "FlashList created successfully",
+    "updateSuccess": "FlashList updated successfully",
+    "deleteSuccess": "FlashList deleted successfully",
+    "deleteAllSuccess": "All FlashLists for the user deleted successfully",
+    "rateSuccess": "FlashList rated successfully",
+    "addCardSuccess": "FlashCard added to FlashList successfully",
+    "removeCardSuccess": "FlashCard removed from FlashList successfully",
+    "searchSuccess": "FlashList search completed successfully",
+    "validationFailed": "FlashList data is invalid",
+    "validate": {
+      "titleRequired": "Please enter a FlashList title",
+      "privateCardInPublicList": "Cannot add private FlashCards to a public FlashList. Please unselect private FlashCards or set the FlashList to private."
+    },
+    "create": "Create Flash List"
+  },
+  "flashcard": {
+    "visibility": {
+      "otherPrivate": "Private FlashCard owned by another user",
+      "ownPrivateInPublicList": "Cannot add your private FlashCard to a public FlashList"
+    },
+    "validate": {
+      "nameRequired": "Please enter a FlashCard set name",
+      "minOneCard": "Please enter at least one card"
+    },
+    "create": "Create Flash Card"
+  }
+}

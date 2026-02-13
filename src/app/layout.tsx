@@ -102,6 +102,7 @@ export default function RootLayout({
           </ThemeProvider>
         </RtkProvider>
       </body>
+
     </html>
   );
 }

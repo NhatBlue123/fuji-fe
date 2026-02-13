@@ -107,14 +107,19 @@ function DetailSkeleton() {
 function LessonItem({
   lesson,
   index,
+  courseId,
 }: {
   lesson: LessonResponseDTO;
   index: number;
+  courseId: number;
 }) {
   const isVideo = lesson.lessonType === "video";
 
   return (
-    <div className="p-4 pl-6 md:pl-14 hover:bg-accent/30 transition-colors flex items-center justify-between group cursor-pointer">
+    <Link
+      href={`/course/${courseId}/lesson/${lesson.id}`}
+      className="p-4 pl-6 md:pl-14 hover:bg-accent/30 transition-colors flex items-center justify-between group cursor-pointer block"
+    >
       <div className="flex items-center gap-4">
         <div
           className={`size-10 rounded-full flex items-center justify-center transition-all ${
@@ -157,11 +162,11 @@ function LessonItem({
         </div>
       </div>
       {!lesson.userCompleted && (
-        <button className="bg-muted hover:bg-secondary hover:text-secondary-foreground text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-border hover:border-secondary transition-all opacity-0 group-hover:opacity-100">
+        <span className="bg-muted hover:bg-secondary hover:text-secondary-foreground text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-border hover:border-secondary transition-all opacity-0 group-hover:opacity-100">
           {isVideo ? "Xem" : "Làm bài"}
-        </button>
+        </span>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -280,9 +285,11 @@ function OverviewContent({ description }: { description: string }) {
 function CurriculumContent({
   lessons,
   isLoading,
+  courseId,
 }: {
   lessons: LessonResponseDTO[];
   isLoading: boolean;
+  courseId: number;
 }) {
   const [expandedAll, setExpandedAll] = useState(true);
 
@@ -383,7 +390,12 @@ function CurriculumContent({
               </div>
             ) : (
               lessons.map((lesson, idx) => (
-                <LessonItem key={lesson.id} lesson={lesson} index={idx} />
+                <LessonItem
+                  key={lesson.id}
+                  lesson={lesson}
+                  index={idx}
+                  courseId={courseId}
+                />
               ))
             )}
           </div>
@@ -898,12 +910,27 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
           {/* CTA */}
           <div className="flex-shrink-0">
-            <button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg">
-              <span className="material-symbols-outlined filled">
-                play_circle
-              </span>
-              Bắt đầu học ngay
-            </button>
+            {lessons.length > 0 ? (
+              <Link
+                href={`/course/${courseId}/lesson/${[...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)[0].id}`}
+                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
+              >
+                <span className="material-symbols-outlined filled">
+                  play_circle
+                </span>
+                Bắt đầu học ngay
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="bg-muted text-muted-foreground font-bold py-4 px-8 rounded-xl flex items-center gap-2 text-lg cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined filled">
+                  play_circle
+                </span>
+                Chưa có bài học
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -944,7 +971,11 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
               <OverviewContent description={course.description} />
             )}
             {activeTab === "curriculum" && (
-              <CurriculumContent lessons={lessons} isLoading={lessonsLoading} />
+              <CurriculumContent
+                lessons={lessons}
+                isLoading={lessonsLoading}
+                courseId={courseId}
+              />
             )}
             {activeTab === "instructor" && (
               <InstructorContent

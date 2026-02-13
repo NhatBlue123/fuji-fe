@@ -6,8 +6,8 @@ import CourseDetailView from "@/components/user-component/course/CourseDetailVie
 export default function CourseDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ courseId: string }>;
 }) {
-  const { id } = use(params);
-  return <CourseDetailView courseId={Number(id)} />;
+  const { courseId } = use(params);
+  return <CourseDetailView courseId={Number(courseId)} />;
 }

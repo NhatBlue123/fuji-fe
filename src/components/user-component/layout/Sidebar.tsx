@@ -15,7 +15,7 @@ const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
 
@@ -189,7 +189,7 @@ const Sidebar = () => {
           </div>
         </div>
         <div className="flex items-center gap-3 px-2">
-          {isAuthenticated && user ? (
+          {isMounted && isAuthenticated && user ? (
             <>
               <div className="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0">
                 <Image

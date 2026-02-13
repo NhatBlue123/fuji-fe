@@ -4,9 +4,10 @@ import React from "react";
 interface HeaderProps {
   timeLeft: number;
   formatTime: (s: number) => string;
+  testTitle?: string;
 }
 
-export default function ExamHeader({ timeLeft, formatTime }: HeaderProps) {
+export default function ExamHeader({ timeLeft, formatTime, testTitle }: HeaderProps) {
   return (
     <header className="h-16 shrink-0 z-50 flex items-center justify-between border-b border-border bg-surface-dark px-6 shadow-sm">
       
@@ -21,7 +22,7 @@ export default function ExamHeader({ timeLeft, formatTime }: HeaderProps) {
           </span>
         </div>
         <h1 className="text-lg font-bold tracking-tight text-foreground">
-          Đề thi thử JLPT N3 - 2024
+          {testTitle || "Đề thi thử JLPT"}
         </h1>
       </div>
       <div className="flex items-center gap-6">

@@ -35,7 +35,7 @@ function useMatchingState(items: MatchingItem[]) {
       }
       setActiveLeft((prev) => (prev === leftIdx ? null : leftIdx));
     },
-    [submitted, pairs]
+    [submitted, pairs],
   );
 
   const selectRight = useCallback(
@@ -51,7 +51,7 @@ function useMatchingState(items: MatchingItem[]) {
       });
       setActiveLeft(null);
     },
-    [submitted, activeLeft]
+    [submitted, activeLeft],
   );
 
   const removePair = useCallback(
@@ -63,7 +63,7 @@ function useMatchingState(items: MatchingItem[]) {
         return next;
       });
     },
-    [submitted]
+    [submitted],
   );
 
   const submit = useCallback(() => setSubmitted(true), []);
@@ -316,7 +316,7 @@ export default function MatchingTask({ data }: { data: TaskDataEnvelope }) {
               const item = items[origIdx];
               const isUsed = usedRight.has(origIdx);
               const pairedLeftEntry = Object.entries(pairs).find(
-                ([, v]) => v === origIdx
+                ([, v]) => v === origIdx,
               );
               const pairedLeftIdx =
                 pairedLeftEntry !== undefined

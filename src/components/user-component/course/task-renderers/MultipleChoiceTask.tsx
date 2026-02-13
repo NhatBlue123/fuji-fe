@@ -19,7 +19,10 @@ function useMultipleChoiceState(items: MultipleChoiceItem[]) {
   const select = useCallback((questionId: string, optionKey: string) => {
     setState((prev) => {
       if (prev.submitted) return prev;
-      return { ...prev, selected: { ...prev.selected, [questionId]: optionKey } };
+      return {
+        ...prev,
+        selected: { ...prev.selected, [questionId]: optionKey },
+      };
     });
   }, []);
 
@@ -37,14 +40,19 @@ function useMultipleChoiceState(items: MultipleChoiceItem[]) {
     return items.filter((q) => state.selected[q.id] === q.answer).length;
   }, [state.submitted, state.selected, items]);
 
-  const allAnswered = items.length > 0 && items.every((q) => state.selected[q.id]);
+  const allAnswered =
+    items.length > 0 && items.every((q) => state.selected[q.id]);
 
   return { ...state, select, submit, reset, score, allAnswered };
 }
 
 // ─── Component ─────────────────────────────────────────
 
-export default function MultipleChoiceTask({ data }: { data: TaskDataEnvelope }) {
+export default function MultipleChoiceTask({
+  data,
+}: {
+  data: TaskDataEnvelope;
+}) {
   const items = data.items as MultipleChoiceItem[];
   const { selected, submitted, select, submit, reset, score, allAnswered } =
     useMultipleChoiceState(items);
@@ -67,7 +75,8 @@ export default function MultipleChoiceTask({ data }: { data: TaskDataEnvelope })
         {items.map((q, idx) => {
           const userAnswer = selected[q.id];
           const isCorrect = submitted && userAnswer === q.answer;
-          const isWrong = submitted && userAnswer !== q.answer && userAnswer !== undefined;
+          const isWrong =
+            submitted && userAnswer !== q.answer && userAnswer !== undefined;
 
           return (
             <div
@@ -104,11 +113,14 @@ export default function MultipleChoiceTask({ data }: { data: TaskDataEnvelope })
                   }
                   if (submitted) {
                     if (isAnswer) {
-                      optionClass = "border-green-500 bg-green-500/10 cursor-default";
+                      optionClass =
+                        "border-green-500 bg-green-500/10 cursor-default";
                     } else if (isSelected && !isAnswer) {
-                      optionClass = "border-red-500 bg-red-500/10 cursor-default";
+                      optionClass =
+                        "border-red-500 bg-red-500/10 cursor-default";
                     } else {
-                      optionClass = "border-border bg-muted/20 opacity-50 cursor-default";
+                      optionClass =
+                        "border-border bg-muted/20 opacity-50 cursor-default";
                     }
                   }
 
@@ -133,7 +145,9 @@ export default function MultipleChoiceTask({ data }: { data: TaskDataEnvelope })
                       >
                         {opt.key}
                       </span>
-                      <span className="text-sm text-foreground">{opt.text}</span>
+                      <span className="text-sm text-foreground">
+                        {opt.text}
+                      </span>
                       {submitted && isAnswer && (
                         <span className="material-symbols-outlined text-green-500 text-lg ml-auto filled">
                           check_circle
@@ -198,7 +212,9 @@ export function TaskHeader({
               info
             </span>
             <div>
-              <h4 className="font-semibold text-blue-300 mb-1 text-sm">Hướng dẫn</h4>
+              <h4 className="font-semibold text-blue-300 mb-1 text-sm">
+                Hướng dẫn
+              </h4>
               <p className="text-sm text-blue-200/80 leading-relaxed">
                 {instructions}
               </p>
@@ -229,19 +245,30 @@ export function TaskActions({
     const percent = total > 0 ? Math.round((score / total) * 100) : 0;
     const isPass = percent >= 60;
 
-    const bgGradient = percent >= 80
-      ? "from-green-500 to-emerald-600"
-      : percent >= 60
-        ? "from-blue-500 to-cyan-600"
-        : percent >= 40
-          ? "from-yellow-500 to-orange-600"
-          : "from-red-500 to-pink-600";
+    const bgGradient =
+      percent >= 80
+        ? "from-green-500 to-emerald-600"
+        : percent >= 60
+          ? "from-blue-500 to-cyan-600"
+          : percent >= 40
+            ? "from-yellow-500 to-orange-600"
+            : "from-red-500 to-pink-600";
 
-    const emoji = percent >= 80 ? "🎉" : percent >= 60 ? "👍" : percent >= 40 ? "💪" : "📚";
-    const message = percent >= 80 ? "Xuất sắc!" : percent >= 60 ? "Tốt lắm!" : percent >= 40 ? "Cố gắng thêm!" : "Hãy thử lại!";
+    const emoji =
+      percent >= 80 ? "🎉" : percent >= 60 ? "👍" : percent >= 40 ? "💪" : "📚";
+    const message =
+      percent >= 80
+        ? "Xuất sắc!"
+        : percent >= 60
+          ? "Tốt lắm!"
+          : percent >= 40
+            ? "Cố gắng thêm!"
+            : "Hãy thử lại!";
 
     return (
-      <div className={`p-6 md:p-8 rounded-2xl bg-gradient-to-br ${bgGradient} text-white text-center animate-in fade-in slide-in-from-top-4 duration-500`}>
+      <div
+        className={`p-6 md:p-8 rounded-2xl bg-gradient-to-br ${bgGradient} text-white text-center animate-in fade-in slide-in-from-top-4 duration-500`}
+      >
         <div className="flex flex-col items-center gap-3 md:gap-4">
           <div className="text-4xl md:text-5xl">{emoji}</div>
           <div>
@@ -249,7 +276,9 @@ export function TaskActions({
             <p className="text-base md:text-lg font-medium opacity-90">
               {message}
             </p>
-            <p className="text-sm opacity-75 mt-1">Đúng {score}/{total} câu</p>
+            <p className="text-sm opacity-75 mt-1">
+              Đúng {score}/{total} câu
+            </p>
           </div>
           <div className="flex gap-3 mt-2">
             <button

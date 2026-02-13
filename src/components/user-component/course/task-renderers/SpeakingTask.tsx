@@ -11,8 +11,7 @@ import { TaskHeader, EmptyTask } from "./MultipleChoiceTask";
  * the instructions + a practice prompt.
  */
 export default function SpeakingTask({ data }: { data: TaskDataEnvelope }) {
-  const hasContent =
-    data.instructions || (data.items && data.items.length > 0);
+  const hasContent = data.instructions || (data.items && data.items.length > 0);
 
   if (!hasContent) {
     return <EmptyTask message="Bài tập nói đang được phát triển." />;
@@ -30,7 +29,11 @@ export default function SpeakingTask({ data }: { data: TaskDataEnvelope }) {
       {data.items.length > 0 && (
         <div className="space-y-4">
           {data.items.map((item, idx) => {
-            const entry = item as { text?: string; prompt?: string; example?: string };
+            const entry = item as {
+              text?: string;
+              prompt?: string;
+              example?: string;
+            };
             return (
               <div
                 key={idx}
@@ -68,7 +71,8 @@ export default function SpeakingTask({ data }: { data: TaskDataEnvelope }) {
         <div>
           <p className="font-semibold text-foreground">Luyện nói</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Đọc to các câu ở trên để luyện phát âm. Tính năng ghi âm sẽ được cập nhật sớm.
+            Đọc to các câu ở trên để luyện phát âm. Tính năng ghi âm sẽ được cập
+            nhật sớm.
           </p>
         </div>
       </div>

@@ -159,9 +159,7 @@ function TaskContent({ lesson }: { lesson: LessonResponseDTO }) {
   };
 
   const parsed = parseTaskData(lesson.taskData ?? null);
-  const Renderer = lesson.taskType
-    ? TASK_RENDERERS[lesson.taskType]
-    : null;
+  const Renderer = lesson.taskType ? TASK_RENDERERS[lesson.taskType] : null;
 
   return (
     <div className="w-full bg-card rounded-2xl border border-border p-6 md:p-8 relative z-0">
@@ -420,7 +418,10 @@ export default function LessonView({
       </header>
 
       {/* ══════════════════ BODY ══════════════════ */}
-      <div className="flex-1 flex overflow-hidden relative" style={{ isolation: 'isolate' }}>
+      <div
+        className="flex-1 flex overflow-hidden relative"
+        style={{ isolation: "isolate" }}
+      >
         {/* ── Main Content ── */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {/* Video / Task Area */}

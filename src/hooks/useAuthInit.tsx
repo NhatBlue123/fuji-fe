@@ -28,9 +28,9 @@ export const useAuthInit = () => {
     if (isInitialized) return;
 
     const restoreSession = async () => {
-      const accessToken = getAccessToken();
+      const initialToken = getAccessToken();
 
-      if (!accessToken) {
+      if (!initialToken) {
         dispatch(setInitialized());
         return;
       }
@@ -39,6 +39,16 @@ export const useAuthInit = () => {
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
         if (result?.data) {
+          // Re-read token after API call — baseQueryWithReauth may have
+          // refreshed it during 401 recovery, replacing the expired JWT
+          // with a fresh one in the cookie. Using the stale `initialToken`
+          // would overwrite the fresh token and break every subsequent request.
+          const currentToken = getAccessToken();
+          if (!currentToken) {
+            dispatch(logout());
+            return;
+          }
+
           const backendUser = result.data as unknown as Record<string, unknown>;
           // Map backend UserDTO to frontend User type
           const user: User = {
@@ -71,7 +81,7 @@ export const useAuthInit = () => {
           dispatch(
             loginSuccess({
               user,
-              accessToken,
+              accessToken: currentToken,
             }),
           );
         } else {

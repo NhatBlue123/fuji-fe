@@ -47,17 +47,33 @@ function useFillBlankState(items: FillBlankItem[]) {
   }, [submitted, answers, items]);
 
   const allAnswered =
-    items.length > 0 && items.every((item) => (answers[item.id] ?? "").trim().length > 0);
+    items.length > 0 &&
+    items.every((item) => (answers[item.id] ?? "").trim().length > 0);
 
-  return { answers, submitted, updateAnswer, submit, reset, score, allAnswered };
+  return {
+    answers,
+    submitted,
+    updateAnswer,
+    submit,
+    reset,
+    score,
+    allAnswered,
+  };
 }
 
 // ─── Component ─────────────────────────────────────────
 
 export default function FillBlankTask({ data }: { data: TaskDataEnvelope }) {
   const items = data.items as FillBlankItem[];
-  const { answers, submitted, updateAnswer, submit, reset, score, allAnswered } =
-    useFillBlankState(items);
+  const {
+    answers,
+    submitted,
+    updateAnswer,
+    submit,
+    reset,
+    score,
+    allAnswered,
+  } = useFillBlankState(items);
 
   if (items.length === 0) {
     return <EmptyTask message="Chưa có bài tập điền từ nào." />;
@@ -76,7 +92,8 @@ export default function FillBlankTask({ data }: { data: TaskDataEnvelope }) {
           const { before, after } = extractBlank(item.sentence);
           const userAnswer = (answers[item.id] ?? "").trim();
           const isCorrect =
-            submitted && userAnswer.toLowerCase() === item.answer.trim().toLowerCase();
+            submitted &&
+            userAnswer.toLowerCase() === item.answer.trim().toLowerCase();
           const isWrong = submitted && !isCorrect && userAnswer.length > 0;
 
           return (

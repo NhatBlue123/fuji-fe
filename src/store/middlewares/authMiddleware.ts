@@ -219,6 +219,15 @@ authListenerMiddleware.startListening({
   },
 });
 
+// tokenRefreshed action dispatched (e.g. by baseQueryWithReauth in any API slice)
+// → re-schedule proactive refresh so the next expiry is covered
+authListenerMiddleware.startListening({
+  actionCreator: tokenRefreshed,
+  effect: async (_, listenerApi) => {
+    setupTokenRefresh(listenerApi.dispatch as AppDispatch);
+  },
+});
+
 // Logout → clear mọi thứ
 authListenerMiddleware.startListening({
   actionCreator: logout,

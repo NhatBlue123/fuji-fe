@@ -11,8 +11,7 @@ import { TaskHeader, EmptyTask } from "./MultipleChoiceTask";
  * as reading passages / questions.
  */
 export default function ReadingTask({ data }: { data: TaskDataEnvelope }) {
-  const hasContent =
-    data.instructions || (data.items && data.items.length > 0);
+  const hasContent = data.instructions || (data.items && data.items.length > 0);
 
   if (!hasContent) {
     return <EmptyTask message="Bài tập đọc hiểu đang được phát triển." />;

@@ -112,6 +112,21 @@ const authSlice = createSlice({
 
       // Lưu access token vào cookie
       setAccessToken(accessToken);
+
+      // Persist minimal user state so page reloads start authenticated
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "auth_state",
+            JSON.stringify({
+              user,
+              isAuthenticated: true,
+            }),
+          );
+        } catch {
+          // localStorage full or blocked — ignore
+        }
+      }
     },
 
     // Cập nhật user profile (không thay đổi token)

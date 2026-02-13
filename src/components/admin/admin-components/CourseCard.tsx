@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import {
   Trash2,
   Pencil,
   MoreHorizontal,
+  Eye,
 } from "lucide-react";
 import type { CourseResponseDTO } from "@/types/course";
 import {
@@ -103,6 +105,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/courses/${course.id}`}>
+                  <Eye className="size-4 mr-2" />
+                  Chi tiết
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit?.(course.id)}>
                 <Pencil className="size-4 mr-2" />
                 Chỉnh sửa
@@ -169,6 +177,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             {course.instructor?.fullName || "Chưa có giảng viên"}
           </span>
         </div>
+
+        <Button variant="outline" size="sm" className="w-full mt-3" asChild>
+          <Link href={`/admin/courses/${course.id}`}>
+            <Eye className="size-4 mr-2" />
+            Chi tiết
+          </Link>
+        </Button>
       </CardContent>
 
       {/* Delete confirmation dialog */}

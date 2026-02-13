@@ -42,7 +42,8 @@ import { toast } from "sonner";
 import { CreateFlashcardModal } from "./CreateFlashcardModal";
 import { ViewFlashcardModal } from "./ViewFlashcardModal";
 import { Flashcard } from "@/types/flashcard";
-import { exportFlashcardsToExcel } from "@/lib/excelUtils";
+import { exportFlashcardsToExcel } from "./flashcardUtils";
+import { Card } from "@/types/card";
 
 interface FlashcardListProps {
     cards: Flashcard[];
@@ -65,6 +66,10 @@ export const FlashcardList = ({
     const [savedCards, setSavedCards] = useState<number[]>([]);
     const [selectedCards, setSelectedCards] = useState<number[]>([]);
     const [selectedExportCards, setSelectedExportCards] = useState<number[]>([]);
+
+    const [isViewCardOpen, setIsViewCardOpen] = useState(false);
+    const [viewCards, setViewCards] = useState<Card[]>([]);
+    const [viewLevel, setViewLevel] = useState<string>("");
 
     // Edit/Delete/View state
     const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
@@ -151,145 +156,145 @@ export const FlashcardList = ({
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
                     {/* Search Box */}
-<div className="relative w-full max-w-xl group">
+                    <div className="relative w-full max-w-xl group">
 
-    {/* Search Icon */}
-    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        {/* Search Icon */}
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 
-    {/* Filter Button (inside input, right side) */}
-    <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={() => setShowFilter(prev => !prev)}
-        className={cn(
-            "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg transition-all",
-            showFilter
-                ? "bg-indigo-100 text-indigo-600"
-                : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-        )}
-    >
-        <Filter className="size-4" />
-    </Button>
+                        {/* Filter Button (inside input, right side) */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowFilter(prev => !prev)}
+                            className={cn(
+                                "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg transition-all",
+                                showFilter
+                                    ? "bg-indigo-100 text-indigo-600"
+                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            )}
+                        >
+                            <Filter className="size-4" />
+                        </Button>
 
-    {/* Input */}
-    <Input
-        placeholder="Tìm kiếm từ vựng, ý nghĩa..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="pl-10 pr-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
+                        {/* Input */}
+                        <Input
+                            placeholder="Tìm kiếm từ vựng, ý nghĩa..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 pr-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
                    focus-visible:ring-2 focus-visible:ring-indigo-500/20
                    focus-visible:border-indigo-500 transition-all"
-    />
-</div>
+                        />
+                    </div>
 
 
 
 
-                        <Button
-                            onClick={onCreateClick}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
-                        >
-                            <Plus className="size-5 mr-2" />
-                            Tạo Thẻ Mới
-                        </Button>
+                    <Button
+                        onClick={onCreateClick}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
+                    >
+                        <Plus className="size-5 mr-2" />
+                        Tạo Thẻ Mới
+                    </Button>
 
-                        <Button
-                            variant="outline"
-                            disabled={selectedCards.length === 0}
-                            onClick={() => {
-                                const exportCards = filteredCards.filter(card =>
-                                    selectedCards.includes(card.id)
-                                );
+                    <Button
+                        variant="outline"
+                        disabled={selectedCards.length === 0}
+                        onClick={() => {
+                            const exportCards = filteredCards.filter(card =>
+                                selectedCards.includes(card.id)
+                            );
 
-                                exportFlashcardsToExcel(
-                                    exportCards,
-                                    `flashcards_selected_${new Date().toISOString().split("T")[0]}.xlsx`
-                                );
+                            exportFlashcardsToExcel(
+                                exportCards,
+                                `flashcards_selected_${new Date().toISOString().split("T")[0]}.xlsx`
+                            );
 
-                                toast.success(`Đã xuất ${exportCards.length} thẻ`);
-                                setSelectedCards([]);
-                            }}
-                            className="h-12 px-6 rounded-xl font-semibold border-slate-200"
-                        >
-                            <Upload className="size-5 mr-2" />
-                            Export Excel
-                        </Button>
+                            toast.success(`Đã xuất ${exportCards.length} thẻ`);
+                            setSelectedCards([]);
+                        }}
+                        className="h-12 px-6 rounded-xl font-semibold border-slate-200"
+                    >
+                        <Upload className="size-5 mr-2" />
+                        Export Excel
+                    </Button>
 
-                        <Button
-                            variant="outline"
-                            onClick={onImportClick}
-                            className="h-12 px-6 rounded-xl font-semibold border-slate-200"
-                        >
-                            <Download className="size-5 mr-2" />
-                            Import Excel
-                        </Button>
+                    <Button
+                        variant="outline"
+                        onClick={onImportClick}
+                        className="h-12 px-6 rounded-xl font-semibold border-slate-200"
+                    >
+                        <Download className="size-5 mr-2" />
+                        Import Excel
+                    </Button>
+
+                </div>
+            </div>
+
+            {/* Collapsible Filter Panel */}
+            {showFilter && (
+                <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+
+                        {/* Status Filter */}
+                        <div className="flex items-center gap-4 flex-wrap">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                Trạng thái:
+                            </p>
+
+                            {[
+                                { label: "Tất cả", value: "all" },
+                                { label: "Đã học", value: "learned" },
+                                { label: "Chưa học", value: "not_learned" },
+                                { label: "Cần ôn", value: "review" },
+                            ].map(item => (
+                                <button
+                                    key={item.value}
+                                    onClick={() => setStatusFilter(item.value)}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                                        statusFilter === item.value
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                    )}
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Type Filter */}
+                        <div className="flex items-center gap-4 flex-wrap">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                Loại:
+                            </p>
+
+                            {[
+                                { label: "Tất cả", value: "all" },
+                                { label: "Kanji", value: "Kanji" },
+                                { label: "Từ vựng", value: "Vocabulary" },
+                            ].map(item => (
+                                <button
+                                    key={item.value}
+                                    onClick={() => setTypeFilter(item.value)}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                                        typeFilter === item.value
+                                            ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                    )}
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
 
                     </div>
                 </div>
-
-                {/* Collapsible Filter Panel */}
-                {showFilter && (
-                    <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-                            {/* Status Filter */}
-                            <div className="flex items-center gap-4 flex-wrap">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                                    Trạng thái:
-                                </p>
-
-                                {[
-                                    { label: "Tất cả", value: "all" },
-                                    { label: "Đã học", value: "learned" },
-                                    { label: "Chưa học", value: "not_learned" },
-                                    { label: "Cần ôn", value: "review" },
-                                ].map(item => (
-                                    <button
-                                        key={item.value}
-                                        onClick={() => setStatusFilter(item.value)}
-                                        className={cn(
-                                            "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-                                            statusFilter === item.value
-                                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                                        )}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Type Filter */}
-                            <div className="flex items-center gap-4 flex-wrap">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                                    Loại:
-                                </p>
-
-                                {[
-                                    { label: "Tất cả", value: "all" },
-                                    { label: "Kanji", value: "Kanji" },
-                                    { label: "Từ vựng", value: "Vocabulary" },
-                                ].map(item => (
-                                    <button
-                                        key={item.value}
-                                        onClick={() => setTypeFilter(item.value)}
-                                        className={cn(
-                                            "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-                                            typeFilter === item.value
-                                                ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                                        )}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                        </div>
-                    </div>
-                )}
+            )}
 
 
 
@@ -470,17 +475,10 @@ export const FlashcardList = ({
 
             {/* View Flashcard Modal */}
             <ViewFlashcardModal
-                open={viewingCard !== null}
-                onOpenChange={(open) => {
-                    if (!open) setViewingCard(null);
-                }}
-                cards={filteredCards}
-                initialIndex={
-                    viewingCard
-                        ? filteredCards.findIndex(c => c.id === viewingCard.id)
-                        : 0
-                }
-
+                open={isViewCardOpen}
+                onOpenChange={setIsViewCardOpen}
+                cards={viewCards}
+                flashCardLevel={viewLevel}
             />
 
             {/* Edit Modal */}

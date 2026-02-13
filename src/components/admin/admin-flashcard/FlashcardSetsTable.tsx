@@ -50,7 +50,8 @@ import { CreateFlashcardSetModal } from "./CreateFlashcardSetModal";
 import { FlashcardSetDetailModal } from "./FlashcardSetDetailModal";
 import { ViewFlashcardModal } from "./ViewFlashcardModal";
 import { CreateFlashcardModal } from "./CreateFlashcardModal";
-import { exportFlashcardsToExcel } from "@/lib/excelUtils";
+import { exportFlashcardsToExcel } from "./flashcardUtils";
+import { Card } from "@/types/card";
 
 interface FlashcardSetsTableProps {
     onCreateClick: () => void;
@@ -80,6 +81,7 @@ const INITIAL_SETS: FlashcardSet[] = [
     },
 ];
 
+
 // Mock cards data for demonstration
 const MOCK_CARDS: Flashcard[] = [
     {
@@ -91,6 +93,7 @@ const MOCK_CARDS: Flashcard[] = [
         lesson: "N5 - Unit 1",
         type: "Vocabulary",
         studyStatus: "learned",
+        viewCount: 0,
     },
     {
         id: 2,
@@ -101,6 +104,7 @@ const MOCK_CARDS: Flashcard[] = [
         lesson: "N5 - Unit 1",
         type: "Vocabulary",
         studyStatus: "learned",
+        viewCount: 0,
     },
     {
         id: 3,
@@ -111,6 +115,7 @@ const MOCK_CARDS: Flashcard[] = [
         lesson: "N5 - Unit 1",
         type: "Vocabulary",
         studyStatus: "review",
+        viewCount: 0,
     },
 ];
 
@@ -121,6 +126,11 @@ export const FlashcardSetsTable = ({
     const [searchQuery, setSearchQuery] = useState("");
     const [filterBy, setFilterBy] = useState("all");
     const [showFilter, setShowFilter] = useState(false);
+
+    // Moved from global scope
+    const [isViewCardOpen, setIsViewCardOpen] = useState(false);
+    const [viewCards, setViewCards] = useState<Card[]>([]);
+    const [viewLevel, setViewLevel] = useState<string>("");
 
     // Modal & Selection States
     const [viewingSet, setViewingSet] = useState<FlashcardSet | null>(null);
@@ -159,66 +169,66 @@ export const FlashcardSetsTable = ({
                 <div className="relative w-full max-w-xl group space-y-5">
 
 
-    {/* Search Row */}
-    <div className="relative w-full group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    {/* Search Row */}
+                    <div className="relative w-full group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowFilter(prev => !prev)}
-            className={cn(
-                "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg transition-all",
-                filterBy !== "all"
-                    ? "bg-indigo-100 text-indigo-600"
-                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-            )}
-        >
-            <Filter className="size-4" />
-        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowFilter(prev => !prev)}
+                            className={cn(
+                                "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg transition-all",
+                                filterBy !== "all"
+                                    ? "bg-indigo-100 text-indigo-600"
+                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            )}
+                        >
+                            <Filter className="size-4" />
+                        </Button>
 
-        <Input
-            placeholder="Tìm kiếm bộ thẻ..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
+                        <Input
+                            placeholder="Tìm kiếm bộ thẻ..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 pr-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
             focus-visible:ring-2 focus-visible:ring-indigo-500/20
             focus-visible:border-indigo-500 transition-all"
-        />
-    </div>
+                        />
+                    </div>
 
-    {/* Filter Panel */}
-    {showFilter && (
-        <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-sm
+                    {/* Filter Panel */}
+                    {showFilter && (
+                        <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-sm
         animate-in fade-in slide-in-from-top-2 duration-200">
 
-            <div className="flex items-center gap-4 flex-wrap">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                    Lọc bộ thẻ:
-                </p>
+                            <div className="flex items-center gap-4 flex-wrap">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                    Lọc bộ thẻ:
+                                </p>
 
-                {[
-                    { label: "Tất cả", value: "all" },
-                    { label: "Mới nhất", value: "newest" },
-                    { label: "Theo khóa học", value: "course" },
-                ].map((item) => (
-                    <button
-                        key={item.value}
-                        onClick={() => setFilterBy(item.value)}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-                            filterBy === item.value
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                        )}
-                    >
-                        {item.label}
-                    </button>
-                ))}
-            </div>
-        </div>
-    )}
+                                {[
+                                    { label: "Tất cả", value: "all" },
+                                    { label: "Mới nhất", value: "newest" },
+                                    { label: "Theo khóa học", value: "course" },
+                                ].map((item) => (
+                                    <button
+                                        key={item.value}
+                                        onClick={() => setFilterBy(item.value)}
+                                        className={cn(
+                                            "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                                            filterBy === item.value
+                                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                        )}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
 
 
@@ -360,12 +370,10 @@ export const FlashcardSetsTable = ({
 
             {/* View Individual Card Modal */}
             <ViewFlashcardModal
-                open={viewingCard !== null}
-                onOpenChange={(open) => {
-                    if (!open) setViewingCard(null);
-                }}
-                cards={MOCK_CARDS}
-                initialIndex={viewingCard ? MOCK_CARDS.findIndex(c => c.id === viewingCard.id) : 0}
+                open={isViewCardOpen}
+                onOpenChange={setIsViewCardOpen}
+                cards={viewCards}
+                flashCardLevel={viewLevel}
             />
 
             {/* Edit Set Modal */}

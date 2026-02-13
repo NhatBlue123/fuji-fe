@@ -16,22 +16,27 @@ import {
     Volume2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Flashcard } from "@/types/flashcard";
 import { cn } from "@/lib/utils";
+import { Card } from "@/types/card";
 
 interface ViewFlashcardModalProps {
+
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    cards: Flashcard[];
+    cards: Card[];
+    flashCardLevel: string;
     initialIndex?: number;
 }
 
+type JlptLevel = "N5" | "N4" | "N3" | "N2" | "N1";
 export const ViewFlashcardModal = ({
     open,
     onOpenChange,
     cards,
+    flashCardLevel: JlptLevel,
     initialIndex = 0,
-}: ViewFlashcardModalProps) => {
+}
+    : ViewFlashcardModalProps) => {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -104,8 +109,10 @@ export const ViewFlashcardModal = ({
                 )}>
                     <div className="flex items-center gap-3">
                         <Badge className="bg-white/20 hover:bg-white/30 text-white border-none font-black px-3 py-1.5 rounded-full backdrop-blur-md uppercase tracking-widest text-[10px]">
-                            {currentCard.type} • {currentCard.lesson}
+                            JLPT {JlptLevel}
                         </Badge>
+
+
                         <span className="text-white/80 font-bold text-sm">
                             {currentIndex + 1} / {cards.length}
                         </span>
@@ -166,6 +173,8 @@ export const ViewFlashcardModal = ({
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                disabled
+                                title="Chưa hỗ trợ phát âm"
                                 className="absolute top-8 right-8 size-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md"
                             >
                                 <Volume2 className="size-6" />

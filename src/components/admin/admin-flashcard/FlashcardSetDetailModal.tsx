@@ -27,7 +27,7 @@ import {
 import { FlashcardSet, Flashcard } from "@/types/flashcard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { exportFlashcardsToExcel } from "@/lib/excelUtils";
+import { exportFlashcardsToExcel } from "./flashcardUtils";
 import { ImportFlashcardModal } from "./ImportFlashcardModal";
 interface FlashcardSetDetailModalProps {
     open: boolean;
@@ -55,22 +55,22 @@ export const FlashcardSetDetailModal = ({
     const [searchQuery, setSearchQuery] = useState("");
     const [savedCards, setSavedCards] = useState<number[]>([]);
     const [openImport, setOpenImport] = useState(false);
-const [showFilter, setShowFilter] = useState(false);
-const [statusFilter, setStatusFilter] = useState<"all" | "learned" | "not_learned" | "review">("all");
+    const [showFilter, setShowFilter] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<"all" | "learned" | "not_learned" | "review">("all");
 
     if (!set) return null;
 
     const filteredCards = cards.filter(card => {
-    const matchSearch =
-        card.kanji.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        card.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        card.hiragana.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchSearch =
+            card.kanji.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            card.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            card.hiragana.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchStatus =
-        statusFilter === "all" ? true : card.studyStatus === statusFilter;
+        const matchStatus =
+            statusFilter === "all" ? true : card.studyStatus === statusFilter;
 
-    return matchSearch && matchStatus;
-});
+        return matchSearch && matchStatus;
+    });
 
     const totalViews = cards.reduce(
         (sum, card) => sum + (card.viewCount ?? 0),

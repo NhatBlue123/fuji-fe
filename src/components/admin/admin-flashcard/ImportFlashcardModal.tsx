@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, Fragment } from "react";
-import { useRouter } from "next/navigation";
 import {
     Dialog,
     DialogContent,
@@ -24,8 +23,9 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { importFlashcardsFromExcel, downloadExcelTemplate } from "@/lib/excelUtils";
+import { downloadExcelTemplate } from "./flashcardUtils";
 import { Flashcard } from "@/types/flashcard";
+import { importFlashcards } from "@/store/services/admin/flashcardApi";
 
 interface ImportFlashcardModalProps {
     open: boolean;
@@ -42,7 +42,6 @@ export const ImportFlashcardModal = ({
     const [isUploading, setIsUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedLesson, setSelectedLesson] = useState("");
-    const [previewData, setPreviewData] = useState<Partial<Flashcard>[]>([]);
 
     const handleNextStep = () => {
         if (step === 2 && !selectedFile) {
@@ -56,7 +55,7 @@ export const ImportFlashcardModal = ({
         if (step > 1) setStep(step - 1);
     };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv') && !file.name.endsWith('.xls')) {
@@ -65,23 +64,13 @@ export const ImportFlashcardModal = ({
             }
 
             setSelectedFile(file);
-            toast.info("Đang đọc file...");
-
-            try {
-                const data = await importFlashcardsFromExcel(file);
-                setPreviewData(data);
-                toast.success(`Đã đọc ${data.length} thẻ từ file: ${file.name}`);
-            } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Lỗi khi đọc file Excel");
-                setSelectedFile(null);
-                setPreviewData([]);
-            }
+            toast.success(`Đã chọn file: ${file.name}`);
         }
     };
 
     const handleUpload = async () => {
         // Validation
-        if (!selectedFile || previewData.length === 0) {
+        if (!selectedFile) {
             toast.error("Vui lòng chọn file Excel hợp lệ");
             setStep(2);
             return;
@@ -93,26 +82,19 @@ export const ImportFlashcardModal = ({
 
         setIsUploading(true);
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const response = await importFlashcards(selectedFile, selectedLesson);
 
-            // Add lesson to all cards
-            const cardsWithLesson = previewData.map(card => ({
-                ...card,
-                lesson: selectedLesson,
-            }));
-
-            onImportSuccess(cardsWithLesson);
-            toast.success(`Đã thêm ${cardsWithLesson.length} thẻ thành công!`);
+            toast.success(response.message || "Import thành công!");
+            onImportSuccess([]); // Trigger refresh
             onOpenChange(false);
 
             // Reset
             setStep(1);
             setSelectedFile(null);
             setSelectedLesson("");
-            setPreviewData([]);
-        } catch (error) {
-            toast.error("Đã có lỗi xảy ra trong quá trình nhập dữ liệu");
+        } catch (error: any) {
+            const message = error.response?.data?.message || (error instanceof Error ? error.message : "Đã có lỗi xảy ra trong quá trình nhập dữ liệu");
+            toast.error(message);
         } finally {
             setIsUploading(false);
         }

@@ -145,6 +145,7 @@ export interface CourseListParams {
   size?: number;
   sortBy?: string;
   sortDir?: string;
+  keyword?: string;
 }
 
 // ─── Legacy (keep for user-facing pages) ───────────────

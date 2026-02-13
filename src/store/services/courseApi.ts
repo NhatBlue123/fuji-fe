@@ -269,6 +269,18 @@ export const courseApi = createApi({
 
     // ==================== USERS ====================
 
+    searchCourses: builder.query<
+      PageResponse<CourseResponseDTO>,
+      { keyword: string; page?: number; size?: number }
+    >({
+      query: ({ keyword, page = 0, size = 10 }) =>
+        `/courses/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`,
+      transformResponse: (
+        response: ApiResponse<PageResponse<CourseResponseDTO>>,
+      ) => response.data!,
+      providesTags: [{ type: "Course", id: "LIST" }],
+    }),
+
     getInstructors: builder.query<InstructorDTO[], void>({
       query: () => "/users/instructors",
       transformResponse: (response: ApiResponse<InstructorDTO[]>) =>
@@ -291,5 +303,6 @@ export const {
   useUpdateLessonMutation,
   useDeleteLessonMutation,
   useUploadAudioMutation,
+  useSearchCoursesQuery,
   useGetInstructorsQuery,
 } = courseApi;

@@ -13,6 +13,7 @@ interface JwtPayload {
   exp: number;
   iat: number;
   username?: string;
+  role?: string;
   roles?: string[];
   email?: string;
   [key: string]: unknown;
@@ -48,6 +49,11 @@ export function getTimeUntilExpiry(token: string): number {
 // ─── Extract roles from token ───
 export function getRolesFromToken(token: string): string[] {
   const payload = decodeJwt(token);
+  // Backend stores single role as "role" claim (e.g. "ADMIN", "STUDENT")
+  if (payload?.role) {
+    return [payload.role as string];
+  }
+  // Fallback: check "roles" array claim
   return payload?.roles ?? [];
 }
 

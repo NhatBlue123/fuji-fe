@@ -9,6 +9,7 @@ import type { User } from "../../types/auth";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
 import { getAccessToken, setAccessToken, clearTokens } from "@/lib/token";
 import { AuthUser } from "@/types/auth-user";
+import i18n from "@/i18n";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
@@ -26,6 +27,9 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
+    // Gửi ngôn ngữ hiện tại lên backend để align với FE
+    const currentLang = i18n.language || "vi";
+    headers.set("Accept-Language", currentLang);
     return headers;
   },
 });
@@ -116,7 +120,8 @@ const baseQueryWithReauth: BaseQueryFn<
 
 interface ApiResponse<T = unknown> {
   success: boolean;
-  message?: string;
+  // Backend trả về key i18n (ví dụ "auth.loginSuccess")
+  messageKey?: string;
   data?: T;
 }
 

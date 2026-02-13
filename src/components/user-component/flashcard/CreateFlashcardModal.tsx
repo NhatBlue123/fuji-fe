@@ -25,6 +25,7 @@ import { getMockImage } from "@/lib/mockImages";
 import { useFlashcardPipeline } from "@/hooks/useFlashcardPipeline";
 import TermPreviewList from "@/components/user-component/flashcard/TermPreviewList";
 import type { CardDTO, FlashCardResponseDTO } from "@/types/flashcard";
+import { useTranslation } from "react-i18next";
 
 interface CreateFlashcardModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ export default function CreateFlashcardModal({
   const [activeTab, setActiveTab] = useState<TabType>("list");
   const [isPublic, setIsPublic] = useState(false);
   const [level, setLevel] = useState("N5");
+  const { t } = useTranslation();
 
   // Form states for Flash List
   const [listTitle, setListTitle] = useState("");
@@ -112,10 +114,11 @@ export default function CreateFlashcardModal({
   const getVisibilityWarning = (fc: FlashCardResponseDTO): string | null => {
     const isOwnCard = String(fc.user?.id) === String(currentUserId);
     // Other's private → shouldn't even appear (API filters), but just in case
-    if (!isOwnCard && !fc.isPublic) return "FlashCard riêng tư của người khác";
+    if (!isOwnCard && !fc.isPublic)
+      return t("flashcard.visibility.otherPrivate");
     // Own private card + public list → cannot add
     if (isOwnCard && !fc.isPublic && isPublic)
-      return "Không thể thêm FlashCard riêng tư vào FlashList công khai";
+      return t("flashcard.visibility.ownPrivateInPublicList");
     return null;
   };
 
@@ -208,7 +211,7 @@ export default function CreateFlashcardModal({
     try {
       if (activeTab === "list") {
         if (!listTitle.trim()) {
-          setError("Vui lòng nhập tiêu đề FlashList");
+          setError(t("flashlist.validate.titleRequired"));
           return;
         }
 
@@ -223,7 +226,7 @@ export default function CreateFlashcardModal({
           });
           if (privateOwnCards.length > 0) {
             setError(
-              "Không thể thêm FlashCard riêng tư vào FlashList công khai. Hãy bỏ chọn các FlashCard riêng tư hoặc đặt FlashList ở chế độ riêng tư.",
+              t("flashlist.validate.privateCardInPublicList"),
             );
             return;
           }
@@ -244,12 +247,12 @@ export default function CreateFlashcardModal({
         }).unwrap();
       } else {
         if (!cardName.trim()) {
-          setError("Vui lòng nhập tên bộ FlashCard");
+          setError(t("flashcard.validate.nameRequired"));
           return;
         }
         const cards = parseCardContent(cardContent);
         if (cards.length === 0) {
-          setError("Vui lòng nhập ít nhất một thẻ");
+          setError(t("flashcard.validate.minOneCard"));
           return;
         }
         await createFlashCard({
@@ -266,10 +269,12 @@ export default function CreateFlashcardModal({
       resetForm();
       onOpenChange(false);
     } catch (err: unknown) {
-      const apiErr = err as { data?: { message?: string } };
-      setError(
-        apiErr?.data?.message || "Đã xảy ra lỗi khi tạo. Vui lòng thử lại.",
-      );
+      const apiErr = err as { data?: { messageKey?: string } };
+      if (apiErr?.data?.messageKey) {
+        setError(t(apiErr.data.messageKey));
+      } else {
+        setError(t("api.createFailed"));
+      }
     }
   };
 
@@ -663,10 +668,10 @@ export default function CreateFlashcardModal({
               </span>
             )}
             {isSubmitting
-              ? "Đang tạo..."
+              ? t("common.creating")
               : activeTab === "list"
-                ? "Tạo Flash List"
-                : "Tạo Flash Card"}
+                ? t("flashlist.create")
+                : t("flashcard.create")}
           </button>
         </div>
       </DialogContent>

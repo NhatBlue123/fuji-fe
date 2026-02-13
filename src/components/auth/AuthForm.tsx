@@ -18,6 +18,7 @@ import {
   useRegisterMutation,
   useVerifyOAuth2OtpMutation,
 } from "@/store/services/authApi";
+import { useTranslation } from "react-i18next";
 
 type AuthTab = "login" | "register";
 type RegisterStep = "register" | "otp";
@@ -97,6 +98,7 @@ export default function AuthForm({
   onSuccess,
 }: AuthFormProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   /* ─── Tab state ─── */
   const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
@@ -163,13 +165,15 @@ export default function AuthForm({
     e.preventDefault();
     setLoginError(null);
     try {
-      await login({
+      const res = await login({
         username: loginEmail,
         password: loginPassword,
       }).unwrap();
       // Middleware sẽ tự động: lưu tokens → fetch /me → dispatch loginSuccess
-      toast.success("Đăng nhập thành công!", {
-        description: "Chào mừng bạn quay trở lại FUJI",
+      // Nếu backend trả về messageKey ở wrapper ApiResponse, ta không dùng ở đây
+      // vì mutation login transformResponse đã unwrap data accessToken.
+      toast.success(t("auth.loginSuccess"), {
+        description: t("auth.loginWelcome"),
       });
       if (onSuccess) {
         onSuccess();
@@ -177,9 +181,10 @@ export default function AuthForm({
         router.push("/");
       }
     } catch (err: any) {
-      let msg = "Đăng nhập thất bại. Vui lòng thử lại!";
-      if (err?.data?.message) msg = err.data.message;
-      else if (err?.error) msg = "Không thể kết nối đến máy chủ";
+      let msg = t("auth.loginFailed");
+      // Backend error handler: { messageKey: "auth.invalidCredentials" }
+      if (err?.data?.messageKey) msg = t(err.data.messageKey);
+      else if (err?.error) msg = t("api.networkError");
       else if (typeof err?.data === "string") msg = err.data;
       setLoginError(msg);
       toast.error("Đăng nhập thất bại", { description: msg });
@@ -229,15 +234,20 @@ export default function AuthForm({
 
     try {
       // Bước 1: Gửi OTP (không tạo user)
-      await sendOtpRegister(payload).unwrap();
-      toast.info("Mã OTP đã được gửi", {
-        description: `Vui lòng kiểm tra email ${formData.email}`,
+      const res = await sendOtpRegister(payload).unwrap();
+      const msg =
+        (res as any)?.messageKey && typeof (res as any).messageKey === "string"
+          ? t((res as any).messageKey)
+          : t("auth.sendOtpSuccess");
+      toast.info(msg, {
+        description: t("auth.sendOtpCheckEmail", { email: formData.email }),
       });
       setRegisterStep("otp");
     } catch (err: any) {
-      setRegisterServerError(
-        err?.data?.message || "Gửi OTP thất bại. Vui lòng thử lại!",
-      );
+      const msg =
+        (err?.data?.messageKey && t(err.data.messageKey)) ||
+        t("auth.sendOtpFailed");
+      setRegisterServerError(msg);
     }
   };
 
@@ -252,8 +262,8 @@ export default function AuthForm({
       if (sessionId) {
         // Step 2 for OAuth2: Verify session + OTP
         await verifyOAuth2Otp({ sessionId, otpCode }).unwrap();
-        toast.success("Xác thực Google thành công!", {
-          description: "Chào mừng bạn gia nhập FUJI",
+        toast.success(t("auth.googleVerifySuccess"), {
+          description: t("auth.googleWelcome"),
         });
         router.push("/");
         return;
@@ -267,16 +277,17 @@ export default function AuthForm({
         fullName: formData.fullname,
         otpCode: otpCode,
       }).unwrap();
-      toast.success("Đăng ký thành công!", {
-        description: "Bạn có thể đăng nhập ngay bây giờ.",
+      toast.success(t("auth.registerSuccess"), {
+        description: t("auth.registerCanLogin"),
       });
       switchTab("login");
       setRegisterStep("register");
       setOtpCode("");
     } catch (err: any) {
-      setRegisterServerError(
-        err?.data?.message || "Mã OTP không chính xác hoặc đã hết hạn!",
-      );
+      const msg =
+        (err?.data?.messageKey && t(err.data.messageKey)) ||
+        t("auth.otpInvalidOrExpired");
+      setRegisterServerError(msg);
     }
   };
 

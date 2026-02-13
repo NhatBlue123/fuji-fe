@@ -13,14 +13,17 @@ export default function ProfilePage() {
   const [openLogout, setOpenLogout] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const { data: user, isLoading, error } = useGetCurrentUserQuery();
+  const { data: user, isLoading, error, isUninitialized } = useGetCurrentUserQuery();
 
-  if (isLoading) {
-    return <div className="text-white p-10">Loading...</div>;
+  // Show loading state while fetching or initializing
+  if (isLoading || isUninitialized) {
+    return <div className="text-white p-10">Đang tải...</div>;
   }
 
+  // Redirect to login if not authenticated
   if (error || !user) {
-    return <div className="text-red-500 p-10">Không lấy được thông tin user</div>;
+    router.push("/login");
+    return null;
   }
   // const user = {
   //   username: "luongdc",
@@ -45,13 +48,15 @@ export default function ProfilePage() {
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" });
 
-  const getInitials = (name: string) =>
-    name
+  const getInitials = (name: string) => {
+    if (!name) return "??";
+    return name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .slice(0, 2)
       .toUpperCase();
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">

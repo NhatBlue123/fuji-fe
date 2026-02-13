@@ -2,6 +2,7 @@
 import Link from "next/link"; 
 
 interface ExamCardProps {
+  testId: number;
   status: "new" | "doing" | "done" | "locked";
   title: string;
   image: string;
@@ -11,7 +12,7 @@ interface ExamCardProps {
 }
 
 export default function ExamCard({ 
-  status, title, image, tag, info, colorTheme = "accent-pink" 
+  testId, status, title, image, tag, info, colorTheme = "accent-pink" 
 }: ExamCardProps) {
 
   const renderBadge = () => {
@@ -46,7 +47,7 @@ export default function ExamCard({
     }
 
     return (
-      <Link href="/Exam/JLPTtest" className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}>
+      <Link href={`/Exam/JLPTtest?testId=${testId}`} className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}>
         {btnText}
       </Link>
     );

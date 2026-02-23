@@ -13,7 +13,7 @@ export default function JLPTtestPage() {
   const [currentQuestion, setCurrentQuestion] = useState(24);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  // ===== AUTO SUBMIT =====
+  // de auto submit
   const handleSubmit = useCallback(() => {
     console.log("⏱ Hết giờ – auto submit");
     router.push("/jlpt/result");
@@ -21,7 +21,7 @@ export default function JLPTtestPage() {
 
   // ===== TIMER =====
   const { timeLeft } = useCountdown({
-    duration: 6 * 60,
+    duration: 90 * 60,
     onFiveMinutesLeft: () => {
       alert("⚠️ Còn 5 phút cuối!");
     },

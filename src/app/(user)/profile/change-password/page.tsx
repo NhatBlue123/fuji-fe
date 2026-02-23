@@ -38,27 +38,33 @@ export default function ChangePasswordPage() {
     }
 
     try {
-      await changePassword({
-        currentPassword,
-        newPassword,
-      }).unwrap();
+  const res = await changePassword({
+    currentPassword,
+    newPassword,
+  }).unwrap();
 
-      alert("Đổi mật khẩu thành công!");
+  console.log("Success:", res);
 
-      // Logout sau khi đổi
-      localStorage.removeItem("access_token");
-      //localStorage.removeItem("user");
+  alert("Đổi mật khẩu thành công!");
 
-      router.push("/");
-    } catch (err: any) {
-      setError(err?.data?.message || "Đổi mật khẩu thất bại.");
-    }
+  localStorage.removeItem("access_token");
+
+  router.push("/");
+
+} catch (err: any) {
+  console.error("Change password error:", err);
+
+  setError(
+    err?.data?.message ||
+    err?.error ||
+    "Đổi mật khẩu thất bại."
+  );
+}
   };
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
       <div className="mx-auto max-w-6xl bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
-        {/* Back */}
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition w-fit"
@@ -114,7 +120,6 @@ export default function ChangePasswordPage() {
               {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             </button>
 
-            {/* Error */}
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             {/* Submit */}
@@ -138,13 +143,8 @@ export default function ChangePasswordPage() {
   );
 }
 
-/* ===== Reusable Field ===== */
 function Field({
-  label,
-  type,
-  value,
-  onChange,
-}: {
+  label,type,value,onChange,}: {
   label: string;
   type: string;
   value: string;

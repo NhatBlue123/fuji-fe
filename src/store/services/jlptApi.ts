@@ -86,7 +86,28 @@ export const jlptApi = createApi({
     // Get test by ID with questions
     getTestById: builder.query<JlptTest, number>({
       query: (id) => `/jlpt-tests/${id}`,
-      transformResponse: (response: ApiResponse<JlptTest>) => response.data,
+      transformResponse: (response: ApiResponse<JlptTest>) => {
+        const test = response.data;
+        // Helper to parse options for a question and its children
+        const parseQuestion = (q: any) => {
+          if (q.options && typeof q.options === "string") {
+            try {
+              q.options = JSON.parse(q.options);
+            } catch (e) {
+              console.error("Failed to parse options", e);
+              q.options = [];
+            }
+          }
+          if (q.children) {
+            q.children.forEach(parseQuestion);
+          }
+        };
+
+        if (test.questions) {
+          test.questions.forEach(parseQuestion);
+        }
+        return test;
+      },
       providesTags: (result, error, id) => [{ type: "JlptTests", id }],
     }),
 
@@ -101,6 +122,21 @@ export const jlptApi = createApi({
         response.data,
       invalidatesTags: ["JlptAttempts"],
     }),
+
+    // Get attempt result by ID
+    getAttemptById: builder.query<TestAttemptResult, number>({
+      query: (id) => `/jlpt-test-attempts/${id}`,
+      transformResponse: (response: ApiResponse<TestAttemptResult>) =>
+        response.data,
+      providesTags: (result, error, id) => [{ type: "JlptAttempts", id }],
+    }),
+
+    // Get current user's attempts
+    getMyAttempts: builder.query<TestAttemptResult[], void>({
+      query: () => "/jlpt-test-attempts/my-attempts",
+      transformResponse: (response: ApiResponse<TestAttemptResult[]>) => response.data,
+      providesTags: ["JlptAttempts"],
+    }),
   }),
 });
 
@@ -109,4 +145,6 @@ export const {
   useGetAllTestsQuery,
   useGetTestByIdQuery,
   useSubmitTestMutation,
+  useGetAttemptByIdQuery,
+  useGetMyAttemptsQuery,
 } = jlptApi;

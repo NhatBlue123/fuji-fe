@@ -116,7 +116,7 @@ export default function AdminJLPTTestsPage() {
             </div>
           )}
 
-          {error && (
+          {!!error && (
             <div className="text-center py-8 text-destructive">
               Lỗi tải dữ liệu
             </div>

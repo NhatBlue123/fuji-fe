@@ -9,10 +9,11 @@ interface ExamCardProps {
   tag: string;
   info: string;
   colorTheme?: string; 
+  attemptId?: number;
 }
 
 export default function ExamCard({ 
-  testId, status, title, image, tag, info, colorTheme = "accent-pink" 
+  testId, status, title, image, tag, info, colorTheme = "accent-pink", attemptId
 }: ExamCardProps) {
 
   const renderBadge = () => {
@@ -46,8 +47,12 @@ export default function ExamCard({
       btnText = "Xem kết quả";
     }
 
+    const href = status === "done" && attemptId 
+      ? `/jlpt/result?attemptId=${attemptId}` 
+      : `/Exam/JLPTtest?testId=${testId}`;
+
     return (
-      <Link href={`/Exam/JLPTtest?testId=${testId}`} className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}>
+      <Link href={href} className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}>
         {btnText}
       </Link>
     );

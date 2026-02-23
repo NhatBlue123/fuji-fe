@@ -69,11 +69,11 @@ export interface CreateQuestionDTO {
   mondaiTitle?: string;
   parentId?: number | null;
   questionOrder: number;
-  section: 'vocabulary' | 'grammar' | 'reading' | 'listening';
+  section: 'VOCABULARY' | 'GRAMMAR' | 'READING' | 'LISTENING';
   contentText: string;
   imageMediaId?: number | null;
   audioMediaId?: number | null;
-  options?: string[]; // JSON array of 4 options
+  options?: string; // JSON-encoded string array: "[\"a\",\"b\",\"c\",\"d\"]" (matches backend String field)
   correctOption?: number; // 1-4
   explanation?: string;
   points?: number; // default 1.0
@@ -99,24 +99,32 @@ export interface JlptTestAdmin {
   questions?: JlptQuestionAdmin[];
 }
 
+export interface MediaInfo {
+  id: number;
+  url: string;
+  publicId: string;
+  resourceType: string;
+  format: string;
+  size: number;
+}
+
 export interface JlptQuestionAdmin {
   id: number;
   testId: number;
   mondaiNumber: number;
   mondaiTitle?: string;
-  parentId?: number;
+  parentId?: number | null;
   questionOrder: number;
   section: string;
   contentText: string;
-  imageMediaId?: number;
-  audioMediaId?: number;
-  imageUrl?: string; // populated from media_files
-  audioUrl?: string; // populated from media_files
-  options?: string[];
+  imageMedia?: MediaInfo | null;
+  audioMedia?: MediaInfo | null;
+  options?: string | string[]; // Backend returns JSON string; may be pre-parsed to array
   correctOption?: number;
   explanation?: string;
   points: number;
   createdAt: string;
+  children?: JlptQuestionAdmin[]; // populated for parent questions (tree structure)
 }
 
 export interface MediaUploadResponse {

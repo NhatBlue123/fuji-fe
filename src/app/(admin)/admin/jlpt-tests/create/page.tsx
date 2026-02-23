@@ -50,6 +50,13 @@ export default function CreateJLPTTestPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleNumberChange = (field: string, value: string) => {
+    const numValue = value === "" ? 0 : parseInt(value);
+    if (!isNaN(numValue)) {
+      updateField(field, numValue);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -141,8 +148,8 @@ export default function CreateJLPTTestPage() {
                   id="duration"
                   type="number"
                   min="1"
-                  value={formData.duration}
-                  onChange={(e) => updateField("duration", parseInt(e.target.value))}
+                  value={formData.duration || ""}
+                  onChange={(e) => handleNumberChange("duration", e.target.value)}
                   required
                 />
               </div>
@@ -153,8 +160,8 @@ export default function CreateJLPTTestPage() {
                   id="totalQuestions"
                   type="number"
                   min="1"
-                  value={formData.totalQuestions}
-                  onChange={(e) => updateField("totalQuestions", parseInt(e.target.value))}
+                  value={formData.totalQuestions || ""}
+                  onChange={(e) => handleNumberChange("totalQuestions", e.target.value)}
                   required
                 />
                 <p className="text-xs text-muted-foreground">
@@ -172,8 +179,8 @@ export default function CreateJLPTTestPage() {
                   type="number"
                   min="1"
                   max="180"
-                  value={formData.passScore}
-                  onChange={(e) => updateField("passScore", parseInt(e.target.value))}
+                  value={formData.passScore || ""}
+                  onChange={(e) => handleNumberChange("passScore", e.target.value)}
                   required
                 />
                 <p className="text-xs text-muted-foreground">
@@ -188,8 +195,8 @@ export default function CreateJLPTTestPage() {
                     id="langPass"
                     type="number"
                     min="0"
-                    value={formData.languageKnowledgePassScore}
-                    onChange={(e) => updateField("languageKnowledgePassScore", parseInt(e.target.value))}
+                    value={formData.languageKnowledgePassScore || ""}
+                    onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)}
                   />
                 </div>
 
@@ -199,8 +206,8 @@ export default function CreateJLPTTestPage() {
                     id="readPass"
                     type="number"
                     min="0"
-                    value={formData.readingPassScore}
-                    onChange={(e) => updateField("readingPassScore", parseInt(e.target.value))}
+                    value={formData.readingPassScore || ""}
+                    onChange={(e) => handleNumberChange("readingPassScore", e.target.value)}
                   />
                 </div>
 
@@ -210,8 +217,8 @@ export default function CreateJLPTTestPage() {
                     id="listenPass"
                     type="number"
                     min="0"
-                    value={formData.listeningPassScore}
-                    onChange={(e) => updateField("listeningPassScore", parseInt(e.target.value))}
+                    value={formData.listeningPassScore || ""}
+                    onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)}
                   />
                 </div>
               </div>

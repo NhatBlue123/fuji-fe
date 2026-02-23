@@ -1,13 +1,33 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";
 import ExamContent from "./ExamContent";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useGetTestByIdQuery, useSubmitTestMutation } from "@/store/services/jlptApi";
-import type { UserAnswer } from "@/types/jlpt";
+import type { UserAnswer, JlptQuestion } from "@/types/jlpt";
+import {
+  JLPT_STRUCTURE,
+  rebuildStructureWithCounts,
+  getQuestionNumbers,
+  type JLPTLevel,
+  type SectionConfig,
+} from "@/lib/jlpt-structure";
+
+/** Normalize options: backend may store as string[] OR as JSON-encoded string */
+function parseOptions(opts?: string[] | string | null): string[] {
+  if (!opts) return [];
+  if (Array.isArray(opts)) return opts;
+  try {
+    const parsed = JSON.parse(opts as string);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 
 export default function JLPTtestPage() {
   const router = useRouter();
@@ -17,6 +37,9 @@ export default function JLPTtestPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [examStartTime] = useState<number>(Date.now());
+  // Increments only when user explicitly clicks a sidebar number → triggers scroll in grouped view
+  const [scrollTrigger, setScrollTrigger] = useState(0);
 
   // Fetch test data
   const { data: testData, isLoading, error } = useGetTestByIdQuery(
@@ -26,8 +49,103 @@ export default function JLPTtestPage() {
 
   const [submitTest] = useSubmitTestMutation();
 
-  const questions = testData?.questions || [];
-  const totalQuestions = questions.length;
+  // Flatten tree: collect only answerable leaf questions
+  const allQuestions = testData?.questions || [];
+
+  // ── Build structure first so we know which mondai are reading passages ──
+  const examStructure = useMemo<SectionConfig[]>(() => {
+    if (!testData?.level) return [];
+    try {
+      const raw = localStorage.getItem(`jlpt_mondai_config_${testId}`);
+      if (raw) {
+        const overrides = JSON.parse(raw) as Record<string, { count: number; instruction: string }>;
+        const countMap: Record<number, number> = {};
+        Object.entries(overrides).forEach(([k, v]) => { if (v.count > 0) countMap[Number(k)] = v.count; });
+        if (Object.keys(countMap).length > 0)
+          return rebuildStructureWithCounts(testData.level as JLPTLevel, countMap);
+      }
+    } catch { /* ignore */ }
+    return JLPT_STRUCTURE[testData.level as JLPTLevel] ?? [];
+  }, [testData?.level, testId]);
+
+  // Map of reading mondai numbers to their start question order
+  const readingMondaiData = useMemo(() => {
+    const map = new Map<number, { start: number }>();
+    examStructure.forEach((s) => s.mondai.forEach((m) => {
+      if (m.requires_passage) map.set(m.number, { start: m.start });
+    }));
+    return map;
+  }, [examStructure]);
+  const isReadingMondai = (mondaiNum: number) => readingMondaiData.has(mondaiNum);
+
+  const examSubLabels = useMemo(() => {
+    const labels: Record<number, string> = {};
+    let currentLabelNumber = 1;
+
+    examStructure.forEach((section) => {
+      section.mondai.forEach((mondai) => {
+        if (mondai.requires_passage) {
+          const nums = getQuestionNumbers(mondai);
+          nums.forEach((n: number, idx: number) => {
+            labels[n] = `${currentLabelNumber}.${idx + 1}`;
+          });
+          currentLabelNumber++; 
+        } else {
+          const nums = getQuestionNumbers(mondai);
+          nums.forEach((n: number) => {
+            labels[n] = String(currentLabelNumber);
+            currentLabelNumber++;
+          });
+        }
+      });
+    });
+
+    return labels;
+  }, [examStructure]);
+
+  const leafQuestions = useMemo(() => {
+    const flattened: any[] = [];
+    const sortedQ = [...allQuestions].sort((a, b) => a.questionOrder - b.questionOrder);
+    
+    sortedQ.forEach(q => {
+      if (!q.children || q.children.length === 0) {
+        if (q.parentId == null) {
+          const opts = parseOptions(q.options);
+          if (opts.length > 0) {
+            flattened.push({
+              ...q,
+              options: opts,
+              subLabel: examSubLabels[q.questionOrder] || String(q.questionOrder),
+            });
+          }
+        }
+      } else {
+        const isReadingPassage = readingMondaiData.has(q.mondaiNumber);
+        const sortedChildren = [...q.children].sort((a, b) => a.questionOrder - b.questionOrder);
+        
+        sortedChildren.forEach(child => {
+          const opts = parseOptions(child.options);
+          flattened.push({
+            ...child,
+            options: opts,
+            subLabel: examSubLabels[child.questionOrder] || String(child.questionOrder),
+            parent: {
+              ...q,
+              isReadingPassage,
+              passageGroupBase: isReadingPassage 
+                ? parseInt(examSubLabels[child.questionOrder]?.split('.')[0] || "0") 
+                : null,
+            }
+          });
+        });
+      }
+    });
+
+    return flattened;
+  }, [allQuestions, examSubLabels, readingMondaiData]);
+
+
+  const totalQuestions = leafQuestions.length;
   const duration = testData?.duration || 140; // minutes
 
   // ===== AUTO SUBMIT =====
@@ -38,7 +156,10 @@ export default function JLPTtestPage() {
     setIsSubmitting(true);
 
     try {
-      // Convert answers to API format
+      // Calculate time spent in seconds
+      const timeSpentSeconds = Math.floor((Date.now() - examStartTime) / 1000);
+
+      // Convert answers to backend format: array of { questionId, selected }
       const userAnswers: UserAnswer[] = Object.entries(answers).map(
         ([questionId, selected]) => ({
           questionId: Number(questionId),
@@ -46,9 +167,13 @@ export default function JLPTtestPage() {
         })
       );
 
+      // Serialize to JSON string as backend expects
+      const userAnswersJson = JSON.stringify(userAnswers);
+
       const result = await submitTest({
         testId: Number(testId),
-        answers: userAnswers,
+        userAnswers: userAnswersJson,
+        timeSpent: timeSpentSeconds,
       }).unwrap();
 
       console.log("✅ Test submitted successfully:", result);
@@ -60,7 +185,7 @@ export default function JLPTtestPage() {
       alert("Không thể nộp bài. Vui lòng thử lại!");
       setIsSubmitting(false);
     }
-  }, [testId, answers, submitTest, router]);
+  }, [testId, answers, submitTest, router, examStartTime]);
 
   // ===== TIMER =====
   const { timeLeft } = useCountdown({
@@ -143,13 +268,11 @@ export default function JLPTtestPage() {
           <div className="flex-1 overflow-y-auto">
             <ExamContent
               currentQ={currentQuestion}
-              question={questions[currentQuestion]}
-              selectedAnswer={answers[questions[currentQuestion]?.id]}
-              onSelectOption={(opt) =>
-                setAnswers((prev) => ({
-                  ...prev,
-                  [questions[currentQuestion].id]: opt,
-                }))
+              question={leafQuestions[currentQuestion]}
+              answers={answers}
+              scrollTrigger={scrollTrigger}
+              onSelectOption={(questionId, opt) =>
+                setAnswers((prev) => ({ ...prev, [questionId]: opt }))
               }
             />
           </div>
@@ -191,11 +314,17 @@ export default function JLPTtestPage() {
         </div>
 
         <ExamSidebar
-          currentQ={currentQuestion}
-          totalQuestions={totalQuestions}
+          structure={examStructure}
+          currentQ={leafQuestions[currentQuestion]?.questionOrder ?? 0}
           answers={answers}
-          questions={questions}
-          onSelect={setCurrentQuestion}
+          questions={allQuestions}
+          onSelect={(questionOrder) => {
+            const idx = leafQuestions.findIndex(q => q.questionOrder === questionOrder);
+            if (idx !== -1) {
+              setCurrentQuestion(idx);
+              setScrollTrigger((t) => t + 1); // signal: scroll to the target sub-question
+            }
+          }}
         />
       </main>
     </div>

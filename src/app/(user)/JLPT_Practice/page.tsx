@@ -3,9 +3,9 @@ import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import HistoryCard from "./HistoryCard";
 import ExamCard from "./ExamCard";
-import { useState } from "react";
-import { useGetPublishedTestsQuery } from "@/store/services/jlptApi";
-import type { JLPTLevel } from "@/types/jlpt";
+import { useState, useMemo } from "react";
+import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
+import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
@@ -18,6 +18,21 @@ export default function JlptPracticePage() {
     page: currentPage,
     size: pageSize,
   });
+
+  // Fetch user attempts
+  const { data: attempts } = useGetMyAttemptsQuery();
+  
+  const attemptsMap = useMemo(() => {
+    if (!attempts) return {};
+    const map: Record<number, TestAttemptResult> = {};
+    attempts.forEach(a => {
+        // Since backend orders by date desc, the first one encountered is the latest
+        if (!map[a.testId]) {
+            map[a.testId] = a;
+        }
+    });
+    return map;
+  }, [attempts]);
 
   const tests = data?.content || [];
   const totalPages = data?.totalPages || 1;
@@ -61,20 +76,26 @@ export default function JlptPracticePage() {
       {!isLoading && !error && tests.length > 0 && (
         <section className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {/* Show history card on first page */}
-          {currentPage === 0 && <HistoryCard />}
+          {currentPage === 0 && <HistoryCard attempts={attempts || []} />}
 
-          {tests.map((test) => (
-            <ExamCard
-              key={test.id}
-              testId={test.id}
-              status="new"
-              title={test.title}
-              image={test.coverImage || defaultImage}
-              tag={test.level}
-              info={`${test.totalQuestions} câu hỏi • ${test.duration} phút`}
-              colorTheme="pink-400"
-            />
-          ))}
+          {tests.map((test) => {
+            const attempt = attemptsMap[test.id];
+            const status = attempt ? "done" : "new";
+            
+            return (
+              <ExamCard
+                key={test.id}
+                testId={test.id}
+                status={status}
+                attemptId={attempt?.id}
+                title={test.title}
+                image={defaultImage}
+                tag={test.level}
+                info={`${test.totalQuestions} câu hỏi • ${test.duration} phút`}
+                colorTheme="pink-400"
+              />
+            );
+          })}
         </section>
       )}
 

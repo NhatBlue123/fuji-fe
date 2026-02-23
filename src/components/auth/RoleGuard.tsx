@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/store/hooks";
+// import { useRouter } from "next/navigation";
+// import { useAuth } from "@/store/hooks";
 
 interface RoleGuardProps {
   children: React.ReactNode;
   /** Roles được phép truy cập (chỉ cần có 1 trong các role) */
-  allowedRoles: string[];
+  allowedRoles?: string[];
   /** URL chuyển hướng khi không có quyền (mặc định: /) */
   redirectTo?: string;
   /** Hiển thị loading component tuỳ chỉnh */
@@ -19,11 +19,14 @@ interface RoleGuardProps {
  */
 export const RoleGuard: React.FC<RoleGuardProps> = ({
   children,
-  allowedRoles,
-  redirectTo = "/",
-  fallback,
+  // allowedRoles,
+  // redirectTo = "/",
+  // fallback,
 }) => {
-  const { isAuthenticated, isInitialized, roles } = useAuth();
+  // TEMPORARY: Tắt role guard để dev - CHỈ DÙNG KHI DEV, NHỚ BẬT LẠI!
+  return <>{children}</>;
+
+  /* const { isAuthenticated, isInitialized, roles } = useAuth();
   const router = useRouter();
 
   const hasRequiredRole = allowedRoles.some((role) => roles.includes(role));
@@ -55,7 +58,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     return null;
   }
 
-  return <>{children}</>;
+  return <>{children}</>; */
 };
 
 export default RoleGuard;

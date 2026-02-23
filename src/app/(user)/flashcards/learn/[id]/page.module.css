@@ -1,0 +1,64 @@
+.perspectiveContainer {
+  perspective: 2000px;
+}
+
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
+}
+
+.cardInner.flipped {
+  transform: rotateY(180deg);
+}
+
+.backfaceHidden {
+  backface-visibility: hidden;
+}
+
+.rotateY180 {
+  transform: rotateY(180deg);
+}
+
+.glassCard {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-card) 80%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 90%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  transform-style: preserve-3d;
+}
+
+.radialBg {
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--color-secondary) 8%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.shadowCard {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.shadowGlow {
+  box-shadow: 0 0 20px
+    color-mix(in srgb, var(--color-secondary) 30%, transparent);
+}
+
+.shadowGlowRed {
+  box-shadow:
+    0 0 15px rgba(239, 68, 68, 0.1),
+    0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.shadowGlowGreen {
+  box-shadow:
+    0 0 15px rgba(34, 197, 94, 0.1),
+    0 0 20px rgba(34, 197, 94, 0.3);
+}

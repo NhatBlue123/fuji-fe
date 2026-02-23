@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Lock,  ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useChangePasswordMutation } from "@/store/services/user/userApi";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
 
+  // ===== STATE =====
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [changePassword, { isLoading }] = useChangePasswordMutation();
+
+  // ===== SUBMIT =====
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -32,121 +37,131 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    // 🚀 Gọi API đổi mật khẩu tại đây (sau này)
-    // await fetch("/api/change-password", ...)
+    try {
+  const res = await changePassword({
+    currentPassword,
+    newPassword,
+  }).unwrap();
 
-    // 🔐 Sau khi đổi mật khẩu → logout
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  console.log("Success:", res);
 
-    router.push("/");
+  alert("Đổi mật khẩu thành công!");
+
+  localStorage.removeItem("access_token");
+
+  router.push("/");
+
+} catch (err: any) {
+  console.error("Change password error:", err);
+
+  setError(
+    err?.data?.message ||
+    err?.error ||
+    "Đổi mật khẩu thất bại."
+  );
+}
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
-
+    <div className="min-h-screen bg-slate-950 px-4 py-16">
+      <div className="mx-auto max-w-6xl bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
         <button
-    onClick={() => router.back()}
-    className="flex items-center gap-2 text-sm text-slate-400
-               hover:text-slate-200 transition w-fit"
-  >
-    <ArrowLeft size={16} />
-    Quay lại
-  </button>
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-full bg-indigo-600/20 flex items-center justify-center">
-            <Lock className="text-indigo-400" />
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition w-fit"
+        >
+          <ArrowLeft size={16} />
+          Quay lại
+        </button>
+
+        <div className="mx-auto max-w-md space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-indigo-600/20 flex items-center justify-center">
+              <Lock className="text-indigo-400" />
+            </div>
+
+            <h1 className="text-2xl font-bold text-slate-100">Đổi mật khẩu</h1>
+
+            <p className="text-sm text-slate-400">
+              Để bảo mật tài khoản học tiếng Nhật của bạn
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">
-            Đổi mật khẩu
-          </h1>
-          <p className="text-sm text-slate-400">
-            Để bảo mật tài khoản học tiếng Nhật của bạn
-          </p>
-        </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* Current Password */}
-          <div className="space-y-1">
-            <label className="text-sm text-slate-300">
-              Mật khẩu hiện tại
-            </label>
-            <input
+          {/* FORM */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Field
+              label="Mật khẩu hiện tại"
               type={showPassword ? "text" : "password"}
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full rounded-lg bg-slate-800 border border-slate-700
-                         px-4 py-2.5 text-slate-100
-                         focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={setCurrentPassword}
             />
-          </div>
 
-          {/* New Password */}
-          <div className="space-y-1">
-            <label className="text-sm text-slate-300">
-              Mật khẩu mới
-            </label>
-            <input
+            <Field
+              label="Mật khẩu mới"
               type={showPassword ? "text" : "password"}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full rounded-lg bg-slate-800 border border-slate-700
-                         px-4 py-2.5 text-slate-100
-                         focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={setNewPassword}
             />
-          </div>
 
-          {/* Confirm Password */}
-          <div className="space-y-1">
-            <label className="text-sm text-slate-300">
-              Xác nhận mật khẩu mới
-            </label>
-            <input
+            <Field
+              label="Xác nhận mật khẩu mới"
               type={showPassword ? "text" : "password"}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-lg bg-slate-800 border border-slate-700
-                         px-4 py-2.5 text-slate-100
-                         focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={setConfirmPassword}
             />
-          </div>
 
-          {/* Show Password */}
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition"
-          >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-          </button>
+            {/* Toggle show password */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            </button>
 
-          {/* Error */}
-          {error && (
-            <p className="text-sm text-red-400">
-              {error}
-            </p>
-          )}
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-full py-3 rounded-lg bg-indigo-600
-                       hover:bg-indigo-500 text-white font-semibold transition"
-          >
-            Cập nhật mật khẩu
-          </button>
-        </form>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 rounded-lg bg-indigo-600
+                         hover:bg-indigo-500 text-white font-semibold
+                         transition disabled:opacity-50"
+            >
+              {isLoading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+            </button>
+          </form>
 
-        {/* Footer */}
-        <p className="text-xs text-center text-slate-500">
-          Sau khi đổi mật khẩu, bạn sẽ cần đăng nhập lại.
-        </p>
+          <p className="text-xs text-center text-slate-500">
+            Sau khi đổi mật khẩu, bạn sẽ cần đăng nhập lại.
+          </p>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function Field({
+  label,type,value,onChange,}: {
+  label: string;
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm text-slate-300">{label}</label>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg bg-slate-800 border border-slate-700
+                   px-4 py-2.5 text-slate-100
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
     </div>
   );
 }

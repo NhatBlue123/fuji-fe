@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/store/hooks";
+// import { useRouter } from "next/navigation";
+// import { useAuth } from "@/store/hooks";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -19,10 +19,13 @@ interface AdminGuardProps {
  */
 export const AdminGuard: React.FC<AdminGuardProps> = ({
   children,
-  redirectTo = "/",
-  fallback,
+  // redirectTo = "/",
+  // fallback,
 }) => {
-  const { isAuthenticated, isInitialized, isAdmin } = useAuth();
+  // TEMPORARY: Tắt admin guard để dev - CHỈ DÙNG KHI DEV, NHỚ BẬT LẠI!
+  return <>{children}</>;
+
+  /* const { isAuthenticated, isInitialized, isAdmin } = useAuth();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -54,7 +57,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
     return null;
   }
 
-  return <>{children}</>;
+  return <>{children}</>; */
 };
 
 export default AdminGuard;

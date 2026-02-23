@@ -1,214 +1,180 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Edit, LogOut, Key } from "lucide-react";
+import { useState } from "react";
 import { logout } from "@/lib/auth";
-
+//import { useGetMeQuery } from "@/store/services/user/userApi";
+import { useGetCurrentUserQuery } from "@/store/services/authApi";
 export default function ProfilePage() {
+  const router = useRouter();
   const [openLogout, setOpenLogout] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const router = useRouter();
+
+  const { data: user, isLoading, error } = useGetCurrentUserQuery();
+
+  if (isLoading) {
+    return <div className="text-white p-10">Loading...</div>;
+  }
+
+  if (error || !user) {
+    return <div className="text-red-500 p-10">Không lấy được thông tin user</div>;
+  }
+  // const user = {
+  //   username: "luongdc",
+  //   email: "luong@gmail.com",
+  //   fullname: "Dương Công Lượng",
+  //   avatar: "",
+  //   bio: "Đam mê học tiếng Nhật 🇯🇵 – Mục tiêu JLPT N3",
+  //   gender: "male",
+  //   phone: "0123456789",
+  //   jlpt_level: "N5",
+  //   is_active: true,
+  //   created_at: "2025-01-15T00:00:00",
+  // };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    try {
-      // ✅ GOOD: Use server action with httpOnly cookies
-      await logout();
-
-      // Clear any client-side cache if needed
-      router.push("/");
-      router.refresh();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
+    await logout();
+    router.push("/");
+    router.refresh();
   };
+
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" });
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
-      <div className="mx-auto max-w-6xl space-y-12">
+      <div className="mx-auto max-w-6xl space-y-8">
         {/* ================= HEADER ================= */}
-        <div className="flex flex-row md:flex-row items-center gap-8 rounded-2xl bg-slate-900 p-8 border border-slate-800">
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-4xl font-bold text-white">
-            L
-          </div>
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+          <div className="h-32 bg-gradient-to-r from-indigo-600 to-violet-600" />
 
-          <div className="flex-1 space-y-1">
-            <h1 className="text-2xl font-bold text-slate-100">
-              Dương Công Lượng
-            </h1>
-            <p className="text-slate-400">Người học tiếng Nhật • Trình độ N5</p>
-            <p className="text-slate-400">
-              Mục tiêu:{" "}
-              <span className="text-slate-200 font-medium">JLPT N3</span>
-            </p>
-          </div>
+          <div className="px-8 pb-8 -mt-16">
+            <div className="flex flex-col md:flex-row items-end justify-between gap-4">
+              {/* Avatar */}
+              <div className="w-32 h-32 rounded-full border-4 border-slate-900 bg-indigo-500 flex items-center justify-center text-4xl font-bold text-white overflow-hidden">
+                {user.avatarUrl? (
+                  <Image src={user.avatarUrl} alt="avatar" width={128} height={128} />
+                ) : (
+                  getInitials(user.fullName)
+                )}
+              </div>
 
-          <div className="flex flex-wrap gap-3">
-            {/* Edit Profile */}
-            <Link
-              href="/profile/edit"
-              className="flex items-center gap-2 h-11 px-4 rounded-lg
-               bg-slate-700 text-slate-200
-               hover:bg-indigo-600 hover:text-white
-               transition"
-            >
-              <Edit size={16} />
-              Chỉnh sửa hồ sơ
-            </Link>
-
-            {/* Change Password */}
-            <Link
-              href="/profile/change-password"
-              className="flex items-center gap-2 h-11 px-4 rounded-lg
-               bg-slate-700 text-slate-200
-               hover:bg-indigo-600 hover:text-white
-               transition"
-            >
-              <Key size={16} />
-              Đổi mật khẩu
-            </Link>
-
-            {/* Logout */}
-            <button
-              onClick={() => setOpenLogout(true)}
-              className="flex items-center gap-2 h-11 px-4 rounded-lg
-               bg-slate-700 text-slate-200
-               hover:bg-indigo-600 hover:text-white
-               transition"
-            >
-              <LogOut size={16} />
-              Đăng xuất
-            </button>
-          </div>
-        </div>
-
-        {openLogout && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center
-                        bg-black/60 backdrop-blur-sm"
-          >
-            <div className="bg-zinc-800 rounded-2xl w-full max-w-sm p-6 space-y-5">
-              <h2 className="text-lg font-semibold text-center">
-                Xác nhận đăng xuất
-              </h2>
-
-              <p className="text-sm text-zinc-400 text-center">
-                Bạn có chắc chắn muốn đăng xuất không?
-              </p>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setOpenLogout(false)}
-                  className="flex-1 py-2 rounded-lg bg-zinc-700
-                           hover:bg-zinc-600 transition"
+              {/* Actions */}
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/profile/edit"
+                  className="flex items-center gap-2 px-5 h-11 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
                 >
-                  Hủy
-                </button>
+                  <Edit size={16} /> Chỉnh sửa hồ sơ
+                </Link>
+
+                <Link
+                  href="/profile/change-password"
+                  className="flex items-center gap-2 px-5 h-11 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
+                >
+                  <Key size={16} /> Đổi mật khẩu
+                </Link>
 
                 <button
-                  onClick={handleLogout}
-                  className="flex-1 py-2 rounded-lg bg-red-600
-                           hover:bg-red-500 transition"
+                  onClick={() => setOpenLogout(true)}
+                  className="flex items-center gap-2 px-5 h-11 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
                 >
-                  Có
+                  <LogOut size={16} /> Đăng xuất
                 </button>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ================= STATS ================= */}
-        <div className="flex grid-cols-1 sm:grid-cols-3 p-4 gap-6">
-          {[
-            { label: "Trình độ", value: "N5" },
-            { label: "Từ vựng đã học", value: "1,240" },
-            { label: "Chuỗi ngày học", value: "18 🔥" },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="rounded-xl bg-slate-900 border border-slate-800 p-6"
-            >
-              <p className="text-sm text-slate-400">{item.label}</p>
-              <p className="mt-2 text-2xl font-bold text-slate-100">
-                {item.value}
-              </p>
+            {/* Info */}
+            <div className="mt-6 space-y-2">
+              <h1 className="text-3xl font-bold text-slate-100">{user.fullName}</h1>
+              <p className="text-slate-400">@{user.username}</p>
+              {user.bio && <p className="text-slate-300 max-w-2xl">{user.bio}</p>}
             </div>
-          ))}
-        </div>
 
-        {/* ================= PROGRESS ================= */}
-        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-8 space-y-6">
-          <h2 className="text-xl font-semibold text-slate-100">
-            Tiến độ học tập
-          </h2>
-
-          {[
-            { label: "Từ vựng", percent: 70 },
-            { label: "Ngữ pháp", percent: 55 },
-            { label: "Nghe hiểu", percent: 40 },
-            { label: "Đọc hiểu", percent: 35 },
-          ].map((item) => (
-            <div key={item.label}>
-              <div className="mb-1 flex justify-between text-sm text-slate-400">
-                <span>{item.label}</span>
-                <span>{item.percent}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-800">
-                <div
-                  className="h-2 rounded-full bg-indigo-500"
-                  style={{ width: `${item.percent}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ================= GOAL + ACCOUNT ================= */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-          {/* GOAL */}
-          <div className="rounded-2xl bg-slate-900 border border-slate-800 p-8 space-y-4">
-            <h2 className="text-xl font-semibold text-slate-100">
-              Mục tiêu học tập
-            </h2>
-
-            <p className="text-slate-400">
-              🎯 JLPT <span className="text-slate-200 font-medium">N3</span>{" "}
-              trong 6 tháng
-            </p>
-            <p className="text-slate-400">⏱ 60 phút học mỗi ngày</p>
-
-            <button className="mt-4 px-5 py-2.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-red-600 cursor-pointer transition">
-              Cập nhật mục tiêu
-            </button>
-          </div>
-          {/* ACCOUNT */}
-          <div className="rounded-2xl bg-slate-900 border border-slate-800 p-8 space-y-4">
-            <h2 className="text-xl font-semibold text-slate-100">
-              Thông tin tài khoản
-            </h2>
-
-            <div className="space-y-2 text-slate-400">
-              <p>
-                Email: <span className="text-slate-200">luong@gmail.com</span>
-              </p>
-              <p>
-                Ngày tham gia: <span className="text-slate-200">01/2025</span>
-              </p>
-              <p>
-                Gói học: <span className="text-slate-200">Free</span>
-              </p>
-              <p>
-                Trạng thái:{" "}
-                <span className="text-emerald-400 font-medium">
-                  Đang hoạt động
-                </span>
-              </p>
+            {/* Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-800">
+              <Info icon={<Mail size={16} />} label="Email" value={user.email} />
+              <Info icon={<Phone size={16} />} label="SĐT" value={user.phone || "—"} />
+              <Info
+                icon={<User size={16} />}
+                label="Giới tính"
+                value={user.gender === "male" ? "Nam" : "Nữ"}
+              />
+              <Info
+                icon={<BookOpen size={16} />}
+                label="JLPT"
+                value={
+                  <span className="px-3 py-1 rounded-full bg-indigo-600/20 text-indigo-400">
+                    {user.jlptLevel}
+                  </span>
+                }
+              />
             </div>
           </div>
         </div>
+
+        {/* ================= ACCOUNT ================= */}
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+          <h2 className="text-xl font-semibold text-slate-100">Thông tin tài khoản</h2>
+
+          <Info icon={<Calendar size={16} />} label="Ngày tham gia" value={formatDate(user.createdAt)} />
+          <Info
+            icon={<User size={16} />}
+            label="Trạng thái"
+            value={
+              user.active ? (
+                <span className="text-emerald-400">Đang hoạt động</span>
+              ) : (
+                <span className="text-red-400">Bị khóa</span>
+              )
+            }
+          />
+        </div>
+      </div>
+
+      {/* LOGOUT MODAL */}
+      {openLogout && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4 w-full max-w-sm">
+            <p className="text-center text-slate-200">Bạn có chắc muốn đăng xuất?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setOpenLogout(false)} className="flex-1 py-2 bg-slate-800 rounded-lg">
+                Hủy
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-2 bg-red-600 rounded-lg text-white"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================= COMPONENT ================= */
+function Info({ icon, label, value }: any) {
+  return (
+    <div className="flex items-start gap-3 p-4 rounded-lg bg-slate-800/50">
+      <div className="text-slate-400">{icon}</div>
+      <div>
+        <p className="text-xs text-slate-500">{label}</p>
+        <div className="text-slate-200 font-medium">{value}</div>
       </div>
     </div>
   );

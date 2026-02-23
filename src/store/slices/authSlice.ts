@@ -5,7 +5,7 @@ import { API_CONFIG } from "@/config/api";
 import {
   getAccessToken,
   clearTokens,
-  setTokens,
+  setAccessToken,
   getRolesFromToken,
 } from "@/lib/token";
 
@@ -60,7 +60,7 @@ export const logoutThunk = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getAccessToken();
-      const response = await fetch(`${API_CONFIG.BASE_URL}/logout`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -99,10 +99,9 @@ const authSlice = createSlice({
       action: PayloadAction<{
         user: User;
         accessToken: string;
-        refreshToken: string;
       }>,
     ) => {
-      const { user, accessToken, refreshToken } = action.payload;
+      const { user, accessToken } = action.payload;
       state.user = user;
       state.accessToken = accessToken;
       state.roles = getRolesFromToken(accessToken);
@@ -111,55 +110,26 @@ const authSlice = createSlice({
       state.error = null;
       state.isInitialized = true;
 
-      // Lưu tokens và auth_state
-      setTokens(accessToken, refreshToken);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(
-            "auth_state",
-            JSON.stringify({
-              user,
-              isAuthenticated: true,
-              isInitialized: true,
-            }),
-          );
-        } catch (error) {
-          console.warn("Failed to save auth state:", error);
-        }
-      }
+      // Lưu access token vào cookie
+      setAccessToken(accessToken);
     },
 
     // Cập nhật user profile (không thay đổi token)
     updateUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(
-            "auth_state",
-            JSON.stringify({
-              user: action.payload,
-              isAuthenticated: true,
-              isInitialized: true,
-            }),
-          );
-        } catch (error) {
-          console.warn("Failed to save auth state:", error);
-        }
-      }
     },
 
-    // Cập nhật tokens mới (sau refresh)
+    // Cập nhật access token mới (sau refresh)
     tokenRefreshed: (
       state,
       action: PayloadAction<{
         accessToken: string;
-        refreshToken: string;
       }>,
     ) => {
-      const { accessToken, refreshToken } = action.payload;
+      const { accessToken } = action.payload;
       state.accessToken = accessToken;
       state.roles = getRolesFromToken(accessToken);
-      setTokens(accessToken, refreshToken);
+      setAccessToken(accessToken);
     },
 
     // Đăng nhập thất bại

@@ -123,6 +123,9 @@ export default function AuthForm({
     // Reset errors when switching
     setLoginError(null);
     setRegisterServerError(null);
+    // Update URL to reflect current tab
+    const newPath = tab === "login" ? "/login" : "/register";
+    window.history.replaceState(null, "", newPath);
   };
 
   /* ─── Login state ─── */
@@ -276,7 +279,6 @@ export default function AuthForm({
       );
     }
   };
-
 
   /* ═══════════ RENDER ═══════════ */
   return (
@@ -439,7 +441,10 @@ export default function AuthForm({
                 </div>
                 <button
                   type="button"
-                  onClick={() => window.location.href = "http://localhost:8181/oauth2/authorization/google"}
+                  onClick={() =>
+                    (window.location.href =
+                      "http://localhost:8181/oauth2/authorization/google")
+                  }
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                 >
                   <GoogleIcon />
@@ -495,7 +500,11 @@ export default function AuthForm({
                           label="Tên đăng nhập"
                           value={formData.username}
                           onChange={handleRegChange}
-                          error={submitted && regErrors.username ? regErrors.username : undefined}
+                          error={
+                            submitted && regErrors.username
+                              ? regErrors.username
+                              : undefined
+                          }
                           rightIcon={
                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
                               person
@@ -509,7 +518,11 @@ export default function AuthForm({
                           label="Họ tên"
                           value={formData.fullname}
                           onChange={handleRegChange}
-                          error={submitted && regErrors.fullname ? regErrors.fullname : undefined}
+                          error={
+                            submitted && regErrors.fullname
+                              ? regErrors.fullname
+                              : undefined
+                          }
                           rightIcon={
                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
                               badge
@@ -524,7 +537,11 @@ export default function AuthForm({
                           type="email"
                           value={formData.email}
                           onChange={handleRegChange}
-                          error={submitted && regErrors.email ? regErrors.email : undefined}
+                          error={
+                            submitted && regErrors.email
+                              ? regErrors.email
+                              : undefined
+                          }
                           rightIcon={
                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
                               mail
@@ -539,15 +556,23 @@ export default function AuthForm({
                           type={showRegPassword ? "text" : "password"}
                           value={formData.password}
                           onChange={handleRegChange}
-                          error={submitted && regErrors.password ? regErrors.password : undefined}
+                          error={
+                            submitted && regErrors.password
+                              ? regErrors.password
+                              : undefined
+                          }
                           rightIcon={
                             <button
                               className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
                               type="button"
-                              onClick={() => setShowRegPassword(!showRegPassword)}
+                              onClick={() =>
+                                setShowRegPassword(!showRegPassword)
+                              }
                             >
                               <span className="material-symbols-outlined text-xl">
-                                {showRegPassword ? "visibility" : "visibility_off"}
+                                {showRegPassword
+                                  ? "visibility"
+                                  : "visibility_off"}
                               </span>
                             </button>
                           }
@@ -560,15 +585,23 @@ export default function AuthForm({
                           type={showConfirmPassword ? "text" : "password"}
                           value={formData.confirm_password}
                           onChange={handleRegChange}
-                          error={submitted && regErrors.confirm_password ? regErrors.confirm_password : undefined}
+                          error={
+                            submitted && regErrors.confirm_password
+                              ? regErrors.confirm_password
+                              : undefined
+                          }
                           rightIcon={
                             <button
                               className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
                               type="button"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              onClick={() =>
+                                setShowConfirmPassword(!showConfirmPassword)
+                              }
                             >
                               <span className="material-symbols-outlined text-xl">
-                                {showConfirmPassword ? "visibility" : "visibility_off"}
+                                {showConfirmPassword
+                                  ? "visibility"
+                                  : "visibility_off"}
                               </span>
                             </button>
                           }
@@ -600,7 +633,10 @@ export default function AuthForm({
                       </div>
                       <button
                         type="button"
-                        onClick={() => window.location.href = "http://localhost:8181/oauth2/authorization/google"}
+                        onClick={() =>
+                          (window.location.href =
+                            "http://localhost:8181/oauth2/authorization/google")
+                        }
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                       >
                         <GoogleIcon />
@@ -637,7 +673,9 @@ export default function AuthForm({
                           </div>
                           <div>
                             <p className="text-sm text-slate-400">
-                              {sessionId ? "Mã xác thực Google đã gửi đến" : "Mã OTP đã được gửi đến email"}
+                              {sessionId
+                                ? "Mã xác thực Google đã gửi đến"
+                                : "Mã OTP đã được gửi đến email"}
                             </p>
                             <p className="text-sm font-bold text-white">
                               {sessionId ? sessionEmail : formData.email}
@@ -689,7 +727,9 @@ export default function AuthForm({
                           type="submit"
                           disabled={isRegistering || isVerifyingOAuth2}
                         >
-                          {isRegistering || isVerifyingOAuth2 ? "Đang xử lý..." : "Xác nhận OTP"}
+                          {isRegistering || isVerifyingOAuth2
+                            ? "Đang xử lý..."
+                            : "Xác nhận OTP"}
                         </button>
                         <button
                           type="button"

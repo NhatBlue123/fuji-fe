@@ -9,12 +9,14 @@ import {
   setInitialized,
 } from "../store/slices/authSlice";
 import type { RootState, AppDispatch } from "../store";
-import { getAccessToken, getRefreshToken } from "@/lib/token";
+import { getAccessToken } from "@/lib/token";
 import type { User } from "@/types/auth";
 
 /**
  * Hook để khôi phục authentication state khi app khởi động.
- * Token refresh scheduling được xử lý bởi authMiddleware.
+ * - Access token: JS-accessible cookie
+ * - Refresh token: HttpOnly cookie (sent automatically)
+ * - Token refresh scheduling: handled by authMiddleware
  */
 export const useAuthInit = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -27,9 +29,8 @@ export const useAuthInit = () => {
 
     const restoreSession = async () => {
       const accessToken = getAccessToken();
-      const refreshToken = getRefreshToken();
 
-      if (!accessToken || !refreshToken) {
+      if (!accessToken) {
         dispatch(setInitialized());
         return;
       }
@@ -38,11 +39,39 @@ export const useAuthInit = () => {
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
         if (result?.data) {
+          const backendUser = result.data as unknown as Record<string, unknown>;
+          // Map backend UserDTO to frontend User type
+          const user: User = {
+            _id: String(backendUser.id || ""),
+            id: backendUser.id as number,
+            email: (backendUser.email as string) || "",
+            username: (backendUser.username as string) || "",
+            fullname:
+              (backendUser.fullName as string) ||
+              (backendUser.username as string) ||
+              "",
+            fullName: (backendUser.fullName as string) || "",
+            avatar: (backendUser.avatarUrl as string) || "",
+            avatarUrl: (backendUser.avatarUrl as string) || "",
+            gender: (backendUser.gender as string) || "",
+            role: (backendUser.role as string) || "STUDENT",
+            level: (backendUser.jlptLevel ||
+              backendUser.level ||
+              "N5") as User["level"],
+            isActive: true,
+            isAdmin: backendUser.role === "ADMIN",
+            isOnline: true,
+            posts: 0,
+            followers: [],
+            following: [],
+            lastActiveAt: new Date().toISOString(),
+            createdAt: backendUser.createdAt as string,
+            updatedAt: backendUser.updatedAt as string,
+          };
           dispatch(
             loginSuccess({
-              user: result.data as User,
+              user,
               accessToken,
-              refreshToken,
             }),
           );
         } else {

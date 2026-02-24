@@ -109,13 +109,6 @@ const ReadingGroupView = ({
     ? [...parent.children].sort((a: any, b: any) => a.questionOrder - b.questionOrder)
     : [question];
 
-  // Use sequential group base (attached by page.tsx) for consistent labels with admin sidebar
-  const baseOrder: number =
-    (question as any).parent?.passageGroupBase ??
-    siblings[0]?.questionOrder ??
-    (question as any).questionOrder ??
-    0;
-
   return (
     <div className="max-w-4xl mx-auto w-full pt-4 md:pt-8 px-4 pb-8">
       {/* Section label + mondai instruction */}
@@ -230,12 +223,7 @@ const StandardView = ({
       <div className="bg-[#151c2c] border border-slate-700/50 rounded-xl p-6 md:p-8 shadow-2xl">
         {!isListening && (
           <div className="mb-6">
-            <span className="text-slate-500 font-bold text-sm mb-3 block">問 {qNum + 1}</span>
-            {passageText && (
-              <p className="text-slate-200 text-lg md:text-xl font-jp leading-relaxed mb-4 pb-4 border-b border-slate-700">
-                {renderJlptText(passageText)}
-              </p>
-            )}
+            <span className="text-slate-500 font-bold text-sm mb-3 block">問 {(question as any).subLabel ?? (qNum + 1)}</span>
             {question.contentText && (
               <h3 className="text-xl md:text-2xl font-medium text-slate-100 leading-relaxed">
                 {renderJlptText(question.contentText)}

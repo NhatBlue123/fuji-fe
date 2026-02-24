@@ -3,20 +3,30 @@ import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import HistoryCard from "./HistoryCard";
 import ExamCard from "./ExamCard";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedLevel, setSelectedLevel] = useState<JLPTLevel>("N3");
+  const [selectedLevel, setSelectedLevel] = useState<string>("Tất cả");
+  const [searchQuery, setSearchQuery] = useState("");
   const pageSize = 9;
+
+  // Use debounce for search query
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   // Fetch published tests from backend
   const { data, isLoading, error } = useGetPublishedTestsQuery({
-    level: selectedLevel,
+    level: selectedLevel === "Tất cả" ? undefined : (selectedLevel as JLPTLevel),
     page: currentPage,
     size: pageSize,
+    search: debouncedSearch,
   });
 
   // Fetch user attempts
@@ -44,7 +54,12 @@ export default function JlptPracticePage() {
   return (
     <div className="w-full px-6 md:px-12 lg:px-20 py-12 relative bg-[#0B1120] min-h-screen">
       <CourseHeader />
-      <CourseFilters />
+      <CourseFilters 
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeLevel={selectedLevel}
+        onLevelChange={setSelectedLevel}
+      />
 
       {/* Loading state */}
       {isLoading && (

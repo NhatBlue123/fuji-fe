@@ -99,7 +99,12 @@ export default function ExamSidebar({
               {isOpen && (
                 <div className="px-3 pb-2 space-y-2">
                   {section.mondai.map((mondai) => {
-                    const nums = getQuestionNumbers(mondai);
+                    const mondaiQuestions = leafQuestions
+                      .filter(q => q.mondaiNumber === mondai.number)
+                      .sort((a,b) => a.questionOrder - b.questionOrder);
+
+                    if (mondaiQuestions.length === 0) return null;
+
                     return (
                       <div key={mondai.number} className="bg-slate-800/40 rounded-lg p-2.5">
                         <div className="flex items-center gap-2 mb-2">
@@ -114,13 +119,12 @@ export default function ExamSidebar({
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {nums.map((n) => {
+                          {mondaiQuestions.map((leafQ) => {
+                            const n = leafQ.questionOrder;
                             const isCurrent = currentQ === n;
                             const isAnswered = answeredSet.has(n);
                             const isFlagged = flaggedQuestions.includes(n);
                             
-                            // Retrieve exact label computed centrally in page.tsx
-                            const leafQ = leafQuestions.find((q) => q.questionOrder === n);
                             const subLabel = (leafQ as any)?.subLabel ?? String(n);
 
                             return (

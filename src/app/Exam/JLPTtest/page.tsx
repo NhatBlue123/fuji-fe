@@ -80,20 +80,25 @@ export default function JLPTtestPage() {
 
   const examSubLabels = useMemo(() => {
     const labels: Record<number, string> = {};
+    if (!examStructure) return labels;
+
     let currentLabelNumber = 1;
 
     examStructure.forEach((section) => {
       section.mondai.forEach((mondai) => {
+        const nums = [];
+        for (let i = mondai.start; i <= mondai.end; i++) {
+          nums.push(i);
+        }
+
         if (mondai.requires_passage) {
-          const nums = getQuestionNumbers(mondai);
-          nums.forEach((n: number, idx: number) => {
-            labels[n] = `${currentLabelNumber}.${idx + 1}`;
+          nums.forEach((qNum, idx) => {
+            labels[qNum] = `${currentLabelNumber}.${idx + 1}`;
           });
-          currentLabelNumber++; 
+          currentLabelNumber++;
         } else {
-          const nums = getQuestionNumbers(mondai);
-          nums.forEach((n: number) => {
-            labels[n] = String(currentLabelNumber);
+          nums.forEach((qNum) => {
+            labels[qNum] = String(currentLabelNumber);
             currentLabelNumber++;
           });
         }

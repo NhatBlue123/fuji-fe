@@ -28,14 +28,12 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings } from "lucide-react";
 import type { SectionKey } from "@/lib/jlpt-structure";
 import { renderJlptText } from "@/lib/renderJlptText";
-
 // ─── Mondai override types ────────────────────────────────────────────────────
 interface MondaiOverride {
   count: number;        // number of questions in this mondai
   instruction: string; // direction text shown to students
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────
 
 interface MondaiNode {
   parent: JlptQuestionAdmin | null;  // passage question (parentId = null)
@@ -168,13 +166,13 @@ function PassagePanel({
 
 function SectionSidebar({
   sections,
-  questionsMap,
+  mondaiLeaves,
   selectedQ,
   onSelect,
   subLabels,
 }: {
   sections: SectionConfig[];
-  questionsMap: QuestionsMap;
+  mondaiLeaves: Map<number, JlptQuestionAdmin[]>;
   selectedQ: number | null;
   onSelect: (n: number) => void;
   subLabels: Record<number, string>;
@@ -192,9 +190,12 @@ function SectionSidebar({
           </div>
 
           {section.mondai.map((mondai) => {
-            const node = questionsMap[mondai.number];
             const nums = getQuestionNumbers(mondai);
-            const filled = nums.filter(n => node?.children[n]).length;
+            const actualQuestions = mondaiLeaves.get(mondai.number) || [];
+            const displayNums = actualQuestions.length > 0 ? actualQuestions.map(q => q.questionOrder) : nums;
+            
+            // Re-calculate "filled" based on actual answerable ones
+            const filled = actualQuestions.length;
 
             return (
               <div key={mondai.number} className="px-4 py-3 border-t border-border/50">
@@ -224,8 +225,8 @@ function SectionSidebar({
 
                 {/* Question number dots */}
                 <div className="flex flex-wrap gap-1">
-                  {nums.map((n) => {
-                    const isSaved = !!node?.children[n];
+                  {displayNums.map((n) => {
+                    const isSaved = actualQuestions.some(q => q.questionOrder === n);
                     const isCurrent = selectedQ === n;
                     // Exact match sequential subLabel from DB logic: 45.1, 46.1...
                     const subLabel = subLabels[n] ?? String(n);
@@ -342,7 +343,6 @@ export default function AdminExamLayout() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       return next;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [STORAGE_KEY]);
 
   // Form state (resets when switching question)
@@ -399,30 +399,45 @@ export default function AdminExamLayout() {
     return { ...found, node, existingChild, existingParent };
   }, [selectedQuestionNumber, findMondaiInStructure, questionsMap]);
 
-  const { subLabels } = useMemo(() => {
+  const { subLabels, mondaiLeaves } = useMemo(() => {
     const labels: Record<number, string> = {};
+    const leavesMap = new Map<number, JlptQuestionAdmin[]>();
+    
+    if (!test?.questions) return { subLabels: labels, mondaiLeaves: leavesMap };
+
+    // 1. Group only answerable questions (leaves) by mondaiNumber for the sidebar dots status
+    test.questions.forEach((q) => {
+      // If it's a child OR a standalone question with options/correctOption, it's a leaf
+      if (q.parentId != null || q.options != null || q.correctOption != null) {
+        if (!leavesMap.has(q.mondaiNumber)) leavesMap.set(q.mondaiNumber, []);
+        leavesMap.get(q.mondaiNumber)!.push(q);
+      }
+    });
+
+    // 2. Pre-generate EXACT labels for every possible slot statically from structure
+    // This allows even unsaved/empty placeholders (like "46", "47") to show as "46.1"
     let currentLabelNumber = 1;
 
     structure.forEach((section) => {
       section.mondai.forEach((mondai) => {
+        const nums = getQuestionNumbers(mondai);
+
         if (mondai.requires_passage) {
-          const nums = getQuestionNumbers(mondai);
-          nums.forEach((n, idx) => {
-            labels[n] = `${currentLabelNumber}.${idx + 1}`;
+          nums.forEach((qNum, idx) => {
+            labels[qNum] = `${currentLabelNumber}.${idx + 1}`;
           });
-          currentLabelNumber++; 
+          currentLabelNumber++;
         } else {
-          const nums = getQuestionNumbers(mondai);
-          nums.forEach((n) => {
-            labels[n] = String(currentLabelNumber);
+          nums.forEach((qNum) => {
+            labels[qNum] = String(currentLabelNumber);
             currentLabelNumber++;
           });
         }
       });
     });
 
-    return { subLabels: labels };
-  }, [structure]);
+    return { subLabels: labels, mondaiLeaves: leavesMap };
+  }, [test?.questions, structure]);
 
   // Human-readable label for the selected question: "45.1" for passage mondai child, raw number otherwise
   const selectedSubLabel = useMemo(() => {
@@ -679,7 +694,7 @@ export default function AdminExamLayout() {
         {/* Left panel: List questions grouped by section / mondai */}
         <SectionSidebar
           sections={structure}
-          questionsMap={questionsMap}
+          mondaiLeaves={mondaiLeaves}
           selectedQ={selectedQuestionNumber}
           onSelect={handleSelectQuestion}
           subLabels={subLabels}

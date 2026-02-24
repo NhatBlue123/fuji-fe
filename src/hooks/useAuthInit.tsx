@@ -36,6 +36,7 @@ export const useAuthInit = () => {
       }
 
       try {
+        console.log("📡 useAuthInit: Fetching current user from API...");
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
         if (result?.data) {
@@ -78,6 +79,9 @@ export const useAuthInit = () => {
             createdAt: backendUser.createdAt as string,
             updatedAt: backendUser.updatedAt as string,
           };
+          console.log("✅ useAuthInit: User fetched successfully:", user.username);
+          console.log("👤 useAuthInit: fullName =", user.fullName);
+          console.log("💾 useAuthInit: Dispatching loginSuccess...");
           dispatch(
             loginSuccess({
               user,
@@ -85,10 +89,12 @@ export const useAuthInit = () => {
             }),
           );
         } else {
+          console.log("❌ useAuthInit: No user data in response, logging out");
           dispatch(logout());
         }
-      } catch {
+      } catch (error) {
         // Token hết hạn hoặc không hợp lệ
+        console.error("❌ useAuthInit: Error fetching user, logging out:", error);
         dispatch(logout());
       }
     };

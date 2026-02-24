@@ -67,10 +67,15 @@ export const authListenerMiddleware = createListenerMiddleware();
 authListenerMiddleware.startListening({
   matcher: authApi.endpoints.login.matchFulfilled,
   effect: async (action, listenerApi) => {
+    console.log("🔐 Middleware: Login successful, processing...");
     const { accessToken } = action.payload;
-    if (!accessToken) return;
+    if (!accessToken) {
+      console.error("❌ Middleware: No accessToken in login response!");
+      return;
+    }
 
     // Lưu access token vào cookie
+    console.log("💾 Middleware: Saving access token to cookie...");
     setAccessToken(accessToken);
 
     // Fetch user profile từ /users/me
@@ -81,39 +86,33 @@ authListenerMiddleware.startListening({
         }),
       );
 
-      if (result.data?.data) {
-        const backendUser = result.data.data as unknown as Record<
-          string,
-          unknown
-        >;
-        // Map backend UserDTO to frontend User type
+      // After transformResponse, result.data is directly the AuthUser object
+      if (result.data) {
+        const authUser = result.data;
+        // Map AuthUser to legacy User type
         const user: User = {
-          _id: String(backendUser.id || ""),
-          id: backendUser.id as number,
-          email: (backendUser.email as string) || "",
-          username: (backendUser.username as string) || "",
-          fullname:
-            (backendUser.fullName as string) ||
-            (backendUser.username as string) ||
-            "",
-          fullName: (backendUser.fullName as string) || "",
-          avatar: (backendUser.avatarUrl as string) || "",
-          avatarUrl: (backendUser.avatarUrl as string) || "",
-          gender: (backendUser.gender as string) || "",
-          role: (backendUser.role as string) || "STUDENT",
-          level: (backendUser.jlptLevel ||
-            backendUser.level ||
-            "N5") as User["level"],
-          isActive: true,
-          isAdmin: backendUser.role === "ADMIN",
+          _id: String(authUser.id || ""),
+          id: authUser.id as number,
+          email: authUser.email || "",
+          username: authUser.username || "",
+          fullname: authUser.fullName || authUser.username || "",
+          fullName: authUser.fullName || "",
+          avatar: authUser.avatarUrl || "",
+          avatarUrl: authUser.avatarUrl || "",
+          gender: authUser.gender || "",
+          role: "STUDENT", // Default role
+          level: (authUser.jlptLevel || "N5") as User["level"],
+          isActive: authUser.active ?? true,
+          isAdmin: false, // Will be set based on role if available
           isOnline: true,
           posts: 0,
           followers: [],
           following: [],
           lastActiveAt: new Date().toISOString(),
-          createdAt: backendUser.createdAt as string,
-          updatedAt: backendUser.updatedAt as string,
+          createdAt: authUser.createdAt || new Date().toISOString(),
+          updatedAt: authUser.createdAt || new Date().toISOString(),
         };
+        console.log("✅ Middleware: Dispatching loginSuccess with user:", user.username);
         listenerApi.dispatch(loginSuccess({ user, accessToken }));
       } else {
         // Fallback minimal user
@@ -162,45 +161,39 @@ authListenerMiddleware.startListening({
 authListenerMiddleware.startListening({
   matcher: authApi.endpoints.getCurrentUser.matchFulfilled,
   effect: async (action, listenerApi) => {
-    if (action.payload?.data) {
-      const backendUser = action.payload.data as unknown as Record<
-        string,
-        unknown
-      >;
-      const accessToken = getAccessToken();
+    console.log("👤 Middleware: getCurrentUser fulfilled, processing...");
+    // After transformResponse, payload is directly the AuthUser object
+    const authUser = action.payload;
+    const accessToken = getAccessToken();
 
-      if (accessToken) {
-        // Map backend UserDTO to frontend User type
-        const user: User = {
-          _id: String(backendUser.id || ""),
-          id: backendUser.id as number,
-          email: (backendUser.email as string) || "",
-          username: (backendUser.username as string) || "",
-          fullname:
-            (backendUser.fullName as string) ||
-            (backendUser.username as string) ||
-            "",
-          fullName: (backendUser.fullName as string) || "",
-          avatar: (backendUser.avatarUrl as string) || "",
-          avatarUrl: (backendUser.avatarUrl as string) || "",
-          gender: (backendUser.gender as string) || "",
-          role: (backendUser.role as string) || "STUDENT",
-          level: (backendUser.jlptLevel ||
-            backendUser.level ||
-            "N5") as User["level"],
-          isActive: true,
-          isAdmin: backendUser.role === "ADMIN",
-          isOnline: true,
-          posts: 0,
-          followers: [],
-          following: [],
-          lastActiveAt: new Date().toISOString(),
-          createdAt: backendUser.createdAt as string,
-          updatedAt: backendUser.updatedAt as string,
-        };
-        listenerApi.dispatch(updateUser(user));
-        setupTokenRefresh(listenerApi.dispatch as AppDispatch);
-      }
+    if (accessToken && authUser) {
+      // Map AuthUser to legacy User type
+      const user: User = {
+        _id: String(authUser.id || ""),
+        id: authUser.id as number,
+        email: authUser.email || "",
+        username: authUser.username || "",
+        fullname: authUser.fullName || authUser.username || "",
+        fullName: authUser.fullName || "",
+        avatar: authUser.avatarUrl || "",
+        avatarUrl: authUser.avatarUrl || "",
+        gender: authUser.gender || "",
+        role: "STUDENT", // Default role
+        level: (authUser.jlptLevel || "N5") as User["level"],
+        isActive: authUser.active ?? true,
+        isAdmin: false, // Will be set based on role if available
+        isOnline: true,
+        posts: 0,
+        followers: [],
+        following: [],
+        lastActiveAt: new Date().toISOString(),
+        createdAt: authUser.createdAt || new Date().toISOString(),
+        updatedAt: authUser.createdAt || new Date().toISOString(),
+      };
+      console.log("✅ Middleware: Dispatching updateUser with:", user.username);
+      console.log("🔄 Middleware: isAuthenticated should now be TRUE");
+      listenerApi.dispatch(updateUser(user));
+      setupTokenRefresh(listenerApi.dispatch as AppDispatch);
     }
   },
 });

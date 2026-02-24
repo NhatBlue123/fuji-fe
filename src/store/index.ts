@@ -20,6 +20,8 @@ export const store = configureStore({
     getDefaultMiddleware()
       .concat(authApi.middleware)
       .concat(flashcardApi.middleware)
+      .concat(jlptApi.middleware)
+      .concat(adminJlptApi.middleware)
       .concat(baseApi.middleware)
       .concat(courseApi.middleware)
       .prepend(authListenerMiddleware.middleware),

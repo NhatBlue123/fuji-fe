@@ -1,10 +1,21 @@
 "use client";
 import React, { useState } from "react";
 
-export default function CourseFilter() {
+interface CourseFilterProps {
+  search: string;
+  onSearchChange: (val: string) => void;
+  activeLevel: string;
+  onLevelChange: (val: string) => void;
+}
+
+export default function CourseFilter({
+  search,
+  onSearchChange,
+  activeLevel,
+  onLevelChange,
+}: CourseFilterProps) {
   const levels = ["Tất cả", "N5", "N4", "N3", "N2", "N1"];
   const types = ["Đề full", "Từ vựng", "Ngữ pháp", "Đọc hiểu", "Nghe hiểu"];
-  const [activeLevel, setActiveLevel] = useState("Tất cả");
   const [activeType, setActiveType] = useState("Đề full");
 
   return (
@@ -23,7 +34,7 @@ export default function CourseFilter() {
               return (
                 <button
                   key={level}
-                  onClick={() => setActiveLevel(level)}
+                  onClick={() => onLevelChange(level)}
                   className={`
                     h-10 px-4 rounded-full text-sm font-semibold transition-all
                     ${isActive
@@ -71,6 +82,8 @@ export default function CourseFilter() {
           </span>
           <input
             type="text"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Tìm kiếm đề thi..."
             className="w-full h-10 bg-slate-900/50 text-white border border-slate-700/50 rounded-full pl-10 pr-4 text-sm
             focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 placeholder:text-slate-500 transition-all"

@@ -254,23 +254,28 @@ export const authApi = createApi({
     // Lấy thông tin user hiện tại (cần Bearer token)
     // Endpoint: GET /api/users/me
     getCurrentUser: builder.query<AuthUser, void>({
-  query: () => "/users/me",
-  transformResponse: (res: any): AuthUser => ({
-    id: res.id,
-    username: res.username,
-    email: res.email,
-
-    fullName: res.fullName,
-    avatarUrl: res.avatarUrl,
-    bio: res.bio,
-    gender: res.gender,
-    phone: res.phone,
-    jlptLevel: res.jlptLevel,
-    active: res.active,
-    createdAt: res.createdAt,
-  }),
-  providesTags: ["User"],
-}),
+      query: () => "/users/me",
+      transformResponse: (res: any): AuthUser => {
+        // Backend returns ApiResponse<UserDTO> = { success, message, data: UserDTO }
+        // We need to unwrap the 'data' field first
+        const userData = res.data || res; // Fallback to res if data doesn't exist
+        
+        return {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          fullName: userData.fullName || userData.username || "User",
+          avatarUrl: userData.avatarUrl || null,
+          bio: userData.bio || null,
+          gender: userData.gender || "male",
+          phone: userData.phone || null,
+          jlptLevel: userData.jlptLevel || "N5",
+          active: userData.isActive ?? false,
+          createdAt: userData.createdAt,
+        };
+      },
+      providesTags: ["User"],
+    }),
 
 
     // Verify email

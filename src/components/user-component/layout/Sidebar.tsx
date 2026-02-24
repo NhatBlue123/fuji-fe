@@ -155,7 +155,7 @@ const Sidebar = () => {
           </span>
           <span>Thông báo</span>
         </Link>
-        {isAdminOrTeacher && (
+        {isMounted && isAdminOrTeacher && (
           <Link
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               isActive("/admin")

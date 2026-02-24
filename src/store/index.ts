@@ -6,6 +6,8 @@ import { flashcardApi } from "./services/flashcardApi";
 import { courseApi } from "./services/courseApi";
 import { authListenerMiddleware } from "./middlewares/authMiddleware";
 import { baseApi } from "./services/baseApi";
+import { jlptApi } from "./services/jlptApi";
+import { adminJlptApi } from "./services/adminJlptApi";
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +17,8 @@ export const store = configureStore({
     [baseApi.reducerPath]: baseApi.reducer,
     [flashcardApi.reducerPath]: flashcardApi.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
+    [jlptApi.reducerPath]: jlptApi.reducer,
+    [adminJlptApi.reducerPath]: adminJlptApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()

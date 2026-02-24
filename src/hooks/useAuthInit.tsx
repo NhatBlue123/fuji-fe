@@ -39,7 +39,7 @@ export const useAuthInit = () => {
         console.log("📡 useAuthInit: Fetching current user from API...");
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
-        if (result?.data) {
+        if (result) {
           // Re-read token after API call — baseQueryWithReauth may have
           // refreshed it during 401 recovery, replacing the expired JWT
           // with a fresh one in the cookie. Using the stale `initialToken`
@@ -50,7 +50,7 @@ export const useAuthInit = () => {
             return;
           }
 
-          const backendUser = result.data as unknown as Record<string, unknown>;
+          const backendUser = result as unknown as Record<string, unknown>;
           // Map backend UserDTO to frontend User type
           const user: User = {
             _id: String(backendUser.id || ""),

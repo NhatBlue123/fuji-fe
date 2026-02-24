@@ -22,54 +22,46 @@ export default function CourseFilter({
     <section className="relative z-10 mb-12">
       <div className="bg-slate-800/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 flex items-center justify-between gap-6">
         
-        {/*PHẦN THANH TRƯỢT*/}
-        <div 
-            className="flex items-center gap-4 overflow-x-auto scrollbar-hide whitespace-nowrap h-10 max-w-[550px]"
-            style={{ maskImage: 'linear-gradient(to right, black 85%, transparent 100%)' }}
-        >
-            
-          <div className="flex gap-2">
-            {levels.map((level) => {
-              const isActive = activeLevel === level;
-              return (
-                <button
-                  key={level}
-                  onClick={() => onLevelChange(level)}
-                  className={`
-                    h-10 px-4 rounded-full text-sm font-semibold transition-all
-                    ${isActive
-                      ? "bg-pink-400 text-white shadow-[0_0_16px_rgba(244,114,182,0.55)]"
-                      : "bg-slate-800/60 text-slate-300 border border-slate-700/50 hover:bg-slate-700"
-                    }
-                  `}
-                >
-                  {level}
-                </button>
-              );
-            })}
+        {/* PHẦN LỌC DROPDOWN */}
+        <div className="flex items-center gap-3">
+          {/* Lọc cấp độ */}
+          <div className="relative">
+            <select
+              value={activeLevel}
+              onChange={(e) => onLevelChange(e.target.value)}
+              className="appearance-none h-10 pl-4 pr-10 bg-slate-800/80 text-slate-200 border border-slate-700/50 hover:bg-slate-700 rounded-full text-sm font-semibold focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-sm"
+            >
+              {levels.map((level) => (
+                <option key={level} value={level} className="bg-slate-800 text-slate-200 font-medium">
+                  {level === "Tất cả" ? "Tất cả cấp độ" : level}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
 
-          <div className="w-px h-6 bg-white/10 shrink-0" />
-          <div className="flex gap-2">
-            {types.map((type) => {
-              const isActive = activeType === type;
-
-              return (
-                <button
-                  key={type}
-                  onClick={() => setActiveType(type)} 
-                  className={`
-                    h-10 px-4 rounded-full text-sm font-semibold transition-all
-                    ${isActive
-                      ? "bg-pink-400 text-white shadow-[0_0_16px_rgba(244,114,182,0.55)]"
-                      : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
-                    }
-                  `}
-                >
+          {/* Lọc loại đề */}
+          <div className="relative">
+            <select
+              value={activeType}
+              onChange={(e) => setActiveType(e.target.value)}
+              className="appearance-none h-10 pl-4 pr-10 bg-slate-800/80 text-slate-200 border border-slate-700/50 hover:bg-slate-700 rounded-full text-sm font-semibold focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-sm"
+            >
+              {types.map((type) => (
+                <option key={type} value={type} className="bg-slate-800 text-slate-200 font-medium">
                   {type}
-                </button>
-              );
-            })}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
         </div>
 

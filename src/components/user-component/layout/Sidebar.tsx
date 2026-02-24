@@ -14,7 +14,7 @@ const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated, isInitialized } = useAuth();
+  const { user, isAuthenticated, roles } = useAuth();
   const dispatch = useAppDispatch();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -22,6 +22,10 @@ const Sidebar = () => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Check if user is admin or teacher
+  const isAdminOrTeacher =
+    roles && (roles.includes("ADMIN") || roles.includes("TEACHER"));
 
   const handleLogout = async () => {
     try {
@@ -151,15 +155,27 @@ const Sidebar = () => {
           </span>
           <span>Thông báo</span>
         </Link>
-        <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
-        >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            settings
-          </span>
-          <span>Quản lý</span>
-        </Link>
+        {isAdminOrTeacher && (
+          <Link
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              isActive("/admin")
+                ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
+            href="/admin"
+          >
+            <span
+              className={`material-symbols-outlined ${
+                isActive("/admin")
+                  ? "filled"
+                  : "group-hover:text-blue-600 dark:group-hover:text-white transition-colors"
+              }`}
+            >
+              admin_panel_settings
+            </span>
+            <span>Quản lý</span>
+          </Link>
+        )}
       </nav>
       <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-4">
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 dark:from-blue-900 dark:to-indigo-950 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer shadow-lg shadow-blue-900/20 ring-1 ring-white/10">

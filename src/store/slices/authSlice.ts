@@ -116,18 +116,19 @@ const authSlice = createSlice({
 
       // Lưu access token vào cookie
       setAccessToken(accessToken);
-      
-      // Persist user data to localStorage
+
+      // Persist minimal user state so page reloads start authenticated
       if (typeof window !== "undefined") {
         try {
-          const authState = {
-            user,
-            isAuthenticated: true,
-            isInitialized: true,
-          };
-          localStorage.setItem("auth_state", JSON.stringify(authState));
-        } catch (error) {
-          console.warn("Failed to save auth state to localStorage:", error);
+          localStorage.setItem(
+            "auth_state",
+            JSON.stringify({
+              user,
+              isAuthenticated: true,
+            }),
+          );
+        } catch {
+          // localStorage full or blocked — ignore
         }
       }
     },

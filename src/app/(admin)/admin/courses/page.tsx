@@ -4,103 +4,159 @@ import React, { useState, useMemo } from "react";
 import { CourseHeader } from "@/components/admin/admin-components/CourseHeader";
 import { CourseFilters } from "@/components/admin/admin-components/CourseFilters";
 import { CourseCard } from "@/components/admin/admin-components/CourseCard";
-
-const COURSES_DATA = [
-  {
-    id: 1,
-    title: "JLPT N5 Comprehensive",
-    description: "Complete beginner guide to Japanese grammar, vocabulary and Kanji for N5 level.",
-    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop",
-    level: "N5",
-    status: "PUBLISHED" as const,
-    students: "1,234",
-    duration: "24h 30m",
-    levelColor: "bg-orange-600",
-  },
-  {
-    id: 2,
-    title: "Kanji Mastery N3",
-    description: "Intermediate Kanji characters with focus on radicals and common compounds.",
-    image: "https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=800&auto=format&fit=crop",
-    level: "N3",
-    status: "DRAFT" as const,
-    students: "0",
-    duration: "--h --m",
-    levelColor: "bg-purple-600",
-  },
-  {
-    id: 3,
-    title: "Listening Practice N2",
-    description: "Advanced listening comprehension for business and daily life scenarios.",
-    image: "https://images.unsplash.com/photo-1484704849700-f032a568e944?q=80&w=800&auto=format&fit=crop",
-    level: "N2",
-    status: "PUBLISHED" as const,
-    students: "892",
-    duration: "18h 15m",
-    levelColor: "bg-blue-600",
-  },
-  {
-    id: 4,
-    title: "Business Japanese",
-    description: "Learn Keigo and formal business etiquette for professional environments in Japan.",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop",
-    level: "BIZ",
-    status: "DRAFT" as const,
-    students: "0",
-    duration: "--h --m",
-    levelColor: "bg-indigo-700",
-  },
-  {
-    id: 5,
-    title: "Grammar Foundation N4",
-    description: "Essential grammar structures to bridge the gap between basic and intermediate Japanese.",
-    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=800&auto=format&fit=crop",
-    level: "N4",
-    status: "PUBLISHED" as const,
-    students: "542",
-    duration: "12h 45m",
-    levelColor: "bg-teal-600",
-  },
-];
+import { CreateCourseModal } from "@/components/admin/admin-components/CreateCourseModal";
+import {
+  useGetAllCoursesQuery,
+  useDeleteCourseMutation,
+} from "@/store/services/courseApi";
+import { Loader2, BookX, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function CoursesPage() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [page, setPage] = useState(0);
+
+  const { data, isLoading, isError, refetch } = useGetAllCoursesQuery({
+    page,
+    size: 20,
+    sortBy: "createdAt",
+    sortDir: "desc",
+  });
+
+  const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
 
   const filteredCourses = useMemo(() => {
-    return COURSES_DATA.filter((course) => {
-      const matchesFilter = filter === "all" || course.status === filter;
+    if (!data?.content) return [];
+    return data.content.filter((course) => {
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "PUBLISHED" && course.isPublished) ||
+        (filter === "DRAFT" && !course.isPublished);
       const matchesSearch =
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesFilter && matchesSearch;
     });
-  }, [filter, searchQuery]);
+  }, [data, filter, searchQuery]);
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteCourse(id).unwrap();
+      toast.success("Xóa khóa học thành công!");
+    } catch {
+      toast.error("Xóa khóa học thất bại");
+    }
+  };
+
+  const handleEdit = (id: number) => {
+    // TODO: Navigate to course edit page
+    console.log("Edit course", id);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
-      <div className="p-8 lg:p-12 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <CourseHeader />
-        <CourseFilters
-          onTabChange={setFilter}
-          onSearchChange={setSearchQuery}
-        />
+    <div className="space-y-6">
+      <CourseHeader
+        onCreateCourse={() => setCreateModalOpen(true)}
+        totalCourses={data?.totalElements}
+      />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <CourseFilters onTabChange={setFilter} onSearchChange={setSearchQuery} />
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-24">
+          <Loader2 className="size-8 text-primary animate-spin mb-3" />
+          <p className="text-sm text-muted-foreground">
+            Đang tải danh sách khóa học...
+          </p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {isError && (
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+            <AlertCircle className="size-6 text-destructive" />
+          </div>
+          <p className="font-medium mb-1">Không thể tải dữ liệu</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            Vui lòng kiểm tra kết nối và thử lại.
+          </p>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className="size-4" />
+            Thử lại
+          </Button>
+        </div>
+      )}
+
+      {/* Course grid */}
+      {!isLoading && !isError && (
+        <>
           {filteredCourses.length > 0 ? (
-            filteredCourses.map((course) => (
-              <CourseCard
-                key={course.id}
-                {...course}
-              />
-            ))
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredCourses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  isDeleting={isDeleting}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="col-span-full py-20 text-center">
-              <p className="text-slate-400 font-medium">Không tìm thấy khóa học nào phù hợp.</p>
+            <div className="flex flex-col items-center justify-center py-24">
+              <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <BookX className="size-6 text-muted-foreground" />
+              </div>
+              <p className="font-medium mb-1">Không tìm thấy khóa học</p>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery
+                  ? "Thử tìm kiếm với từ khóa khác."
+                  : 'Nhấn "Tạo khóa học" để bắt đầu.'}
+              </p>
             </div>
           )}
-        </div>
-      </div>
+
+          {/* Pagination */}
+          {data && data.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={data.first}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                Trang trước
+              </Button>
+              <span className="text-sm text-muted-foreground px-3">
+                {data.number + 1} / {data.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={data.last}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Trang sau
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+
+      <CreateCourseModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+      />
     </div>
   );
 }

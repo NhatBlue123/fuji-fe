@@ -1,3 +1,155 @@
+// ─── Course Types (aligned with backend DTOs) ─────────
+
+export interface UserSummaryDTO {
+  id: number;
+  username: string;
+  fullName: string;
+  avatarUrl: string;
+}
+export interface InstructorDTO {
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+  role: string;
+}
+export interface CourseResponseDTO {
+  id: number;
+  title: string;
+  description: string;
+  instructor: UserSummaryDTO;
+  author: UserSummaryDTO;
+  thumbnailUrl: string | null;
+  price: number;
+  studentCount: number;
+  lessonCount: number;
+  totalDuration: number;
+  averageRating: number;
+  ratingCount: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseRequestDTO {
+  title: string;
+  description: string;
+  instructorId: number;
+  price: number;
+  isPublished?: boolean;
+}
+
+export interface CourseUpdateDTO {
+  title?: string;
+  description?: string;
+  instructorId?: number;
+  price?: number;
+  isPublished?: boolean;
+}
+
+export interface RatingRequestDTO {
+  rating: number;
+}
+
+export interface RatingResponseDTO {
+  id: number;
+  courseId: number;
+  rating: number;
+  review: string | null;
+  user: UserSummaryDTO;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Lesson Types ──────────────────────────────────────
+
+export type LessonType = "video" | "task";
+export type VideoType = "youtube" | "upload";
+export type TaskType =
+  | "multiple_choice"
+  | "fill_blank"
+  | "listening"
+  | "matching"
+  | "speaking"
+  | "reading";
+
+export interface LessonResponseDTO {
+  id: number;
+  courseId: number;
+  courseTitle: string;
+  title: string;
+  lessonOrder: number;
+  lessonType: LessonType;
+  videoUrl: string | null;
+  videoType: VideoType | null;
+  duration: number;
+  taskType: TaskType | null;
+  taskData: string | null;
+  content: string | null;
+  completionCount: number;
+  userCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LessonRequestDTO {
+  courseId: number;
+  title: string;
+  lessonType: LessonType;
+  videoUrl?: string;
+  videoType?: VideoType;
+  duration?: number;
+  taskType?: TaskType;
+  taskData?: string;
+  content?: string;
+  lessonOrder?: number;
+}
+
+export interface LessonUpdateDTO {
+  title?: string;
+  lessonType?: LessonType;
+  videoUrl?: string;
+  videoType?: VideoType;
+  duration?: number;
+  taskType?: TaskType;
+  taskData?: string;
+  content?: string;
+  lessonOrder?: number;
+}
+
+// ─── API Response ──────────────────────────────────────
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  timestamp?: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+// ─── Query Params ──────────────────────────────────────
+
+export interface CourseListParams {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: string;
+  keyword?: string;
+}
+
+// ─── Legacy (keep for user-facing pages) ───────────────
+
 export interface Course {
   id: string;
   title: string;
@@ -10,7 +162,6 @@ export interface Course {
   featured?: boolean;
 }
 
-// ✅ Static course data - no API fetch, instant render
 export const FEATURED_COURSES: Course[] = [
   {
     id: "1",

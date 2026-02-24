@@ -4,19 +4,14 @@ import Filter from "@/components/user-component/course/Filter";
 import CourseList from "@/components/user-component/course/CourseList";
 
 export default function CoursePage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   const handleFilterChange = (filters: {
     search: string;
     level: string;
     category: string;
   }) => {
-    console.log("Filters changed:", filters);
-    // Simulate API call
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    setSearchKeyword(filters.search);
   };
 
   return (
@@ -50,7 +45,7 @@ export default function CoursePage() {
       </div>
 
       {/* Course List */}
-      <CourseList isLoading={isLoading} />
+      <CourseList searchKeyword={searchKeyword} />
     </div>
   );
 }

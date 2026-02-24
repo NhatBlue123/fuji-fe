@@ -3,6 +3,8 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "./slices/authSlice";
 import { authApi } from "./services/authApi";
 import { flashcardApi } from "./services/flashcardApi";
+import { jlptApi } from "./services/jlptApi";
+import { adminJlptApi } from "./services/adminJlptApi";
 import { authListenerMiddleware } from "./middlewares/authMiddleware";
 import { baseApi } from "./services/baseApi";
 
@@ -13,11 +15,15 @@ export const store = configureStore({
     [authApi.reducerPath]: authApi.reducer,
     [baseApi.reducerPath]: baseApi.reducer,
     [flashcardApi.reducerPath]: flashcardApi.reducer,
+    [jlptApi.reducerPath]: jlptApi.reducer,
+    [adminJlptApi.reducerPath]: adminJlptApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(authApi.middleware)
       .concat(flashcardApi.middleware)
+      .concat(jlptApi.middleware)
+      .concat(adminJlptApi.middleware)
       .concat(baseApi.middleware)
       .prepend(authListenerMiddleware.middleware),
 });

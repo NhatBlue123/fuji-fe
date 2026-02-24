@@ -8,6 +8,7 @@ import { LearningPathSection } from "@/components/user-component/home/LearningPa
 import { CommunitySection } from "@/components/user-component/home/CommunitySection";
 import { CTASection } from "@/components/user-component/home/CTASection";
 
+// ✅ Server Component - Static render, no loading needed
 export default function HomePage() {
   return (
     <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background dark:bg-[#0f172a]">

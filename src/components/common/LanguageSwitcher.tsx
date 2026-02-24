@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 type LangCode = "vi" | "en" | "ja";
 
@@ -30,6 +31,7 @@ export default function LanguageSwitcher({
   className?: string;
 }) {
   const { changeLanguage, currentLanguage } = useLanguage();
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
 
   const filteredLanguages = useMemo(() => {
@@ -66,7 +68,7 @@ export default function LanguageSwitcher({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64 rounded-2xl border border-border bg-white text-slate-900 shadow-2xl p-4 space-y-4">
-        <div className="text-base font-semibold">Cài đặt ngôn ngữ</div>
+        <div className="text-base font-semibold">{t("languageSwitcher.title")}</div>
         {/* Search input */}
         <div className="relative">
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
@@ -75,7 +77,7 @@ export default function LanguageSwitcher({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm kiếm ngôn ngữ..."
+            placeholder={t("languageSwitcher.searchPlaceholder")}
             className="pl-9 bg-slate-50 focus:bg-white"
           />
         </div>
@@ -109,7 +111,7 @@ export default function LanguageSwitcher({
             })}
             {filteredLanguages.length === 0 && (
               <p className="px-3 py-4 text-xs text-slate-400">
-                Không tìm thấy ngôn ngữ phù hợp
+                {t("languageSwitcher.noResults")}
               </p>
             )}
           </div>

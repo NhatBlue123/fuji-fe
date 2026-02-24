@@ -10,22 +10,29 @@ import { toast } from "sonner";
 import Image from "next/image";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { useState, useEffect } from "react";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, isInitialized } = useAuth();
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+
   const handleLogout = async () => {
     try {
       await dispatch(logoutThunk()).unwrap();
-      toast.success("Đăng xuất thành công!");
+      toast.success(t("sidebar.logoutSuccess"));
       router.push("/");
     } catch {
-      toast.error("Đăng xuất thất bại");
+      toast.error(t("sidebar.logoutFailed"));
     }
   };
 
@@ -47,7 +54,7 @@ const Sidebar = () => {
             FUJI
           </h1>
           <p className="text-xs text-muted-foreground font-medium">
-            Học Tiếng Nhật
+            {t("sidebar.subtitle")}
           </p>
         </div>
       </Link>
@@ -159,11 +166,11 @@ const Sidebar = () => {
             </span>
           </div>
           <p className="text-xs font-medium opacity-80 mb-1 text-blue-200">
-            Gói cao cấp
+            {t("sidebar.premiumTitle")}
           </p>
-          <h3 className="font-bold text-sm mb-2">Nâng cấp Premium</h3>
+          <h3 className="font-bold text-sm mb-2">{t("sidebar.premiumHeading")}</h3>
           <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg backdrop-blur-sm transition-colors w-full border border-white/10">
-            Xem chi tiết
+            {t("sidebar.viewDetails")}
           </button>
         </div>
         <div className="flex justify-center w-full">
@@ -217,14 +224,14 @@ const Sidebar = () => {
                     {user.fullname || user.fullName || user.username}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {user.level ? `Học viên ${user.level}` : user.email}
+                    {user.level ? `${t("sidebar.studentLevel")} ${user.level}` : user.email}
                   </p>
                 </Link>
               </div>
               <button
                 onClick={handleLogout}
                 className="text-gray-400 hover:text-red-400 transition-colors ml-auto"
-                title="Đăng xuất"
+                title={t("common.logout")}
               >
                 <span className="material-symbols-outlined">logout</span>
               </button>
@@ -245,10 +252,10 @@ const Sidebar = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-sidebar-foreground group-hover:text-primary truncate">
-                  Đăng nhập
+                  {t("common.login")}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
-                  Đăng nhập để bắt đầu
+                  {t("sidebar.loginToStart")}
                 </p>
               </div>
               <span className="material-symbols-outlined text-muted-foreground group-hover:text-primary ml-auto">

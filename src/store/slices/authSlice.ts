@@ -1,11 +1,10 @@
-// Quản lý state authentication của user
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { AuthState, User } from "../../types/auth";
 import { API_CONFIG } from "@/config/api";
 import {
   getAccessToken,
   clearTokens,
-  setTokens,
+  setAccessToken,
   getRolesFromToken,
 } from "@/lib/token";
 
@@ -26,8 +25,11 @@ const getInitialAuthState = (): AuthState => {
   try {
     const token = getAccessToken();
     const savedAuth = localStorage.getItem("auth_state");
+    console.log("🔍 getInitialAuthState: token =", token ? "EXISTS" : "NULL");
+    console.log("🔍 getInitialAuthState: savedAuth =", savedAuth ? "EXISTS" : "NULL");
     if (savedAuth && token) {
       const parsed = JSON.parse(savedAuth);
+      console.log("✅ getInitialAuthState: Restoring user from localStorage:", parsed.user?.username);
       return {
         ...parsed,
         accessToken: token,
@@ -36,6 +38,8 @@ const getInitialAuthState = (): AuthState => {
         error: null,
         isInitialized: false,
       };
+    } else {
+      console.log("❌ getInitialAuthState: Cannot restore - missing token or savedAuth");
     }
   } catch (error) {
     console.warn("Failed to parse saved auth state:", error);
@@ -60,7 +64,7 @@ export const logoutThunk = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getAccessToken();
-      const response = await fetch(`${API_CONFIG.BASE_URL}/logout`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -99,10 +103,9 @@ const authSlice = createSlice({
       action: PayloadAction<{
         user: User;
         accessToken: string;
-        refreshToken: string;
       }>,
     ) => {
-      const { user, accessToken, refreshToken } = action.payload;
+      const { user, accessToken } = action.payload;
       state.user = user;
       state.accessToken = accessToken;
       state.roles = getRolesFromToken(accessToken);
@@ -111,8 +114,10 @@ const authSlice = createSlice({
       state.error = null;
       state.isInitialized = true;
 
-      // Lưu tokens và auth_state
-      setTokens(accessToken, refreshToken);
+      // Lưu access token vào cookie
+      setAccessToken(accessToken);
+
+      // Persist minimal user state so page reloads start authenticated
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(
@@ -120,11 +125,10 @@ const authSlice = createSlice({
             JSON.stringify({
               user,
               isAuthenticated: true,
-              isInitialized: true,
             }),
           );
-        } catch (error) {
-          console.warn("Failed to save auth state:", error);
+        } catch {
+          // localStorage full or blocked — ignore
         }
       }
     },
@@ -132,34 +136,35 @@ const authSlice = createSlice({
     // Cập nhật user profile (không thay đổi token)
     updateUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      state.isAuthenticated = true; // Mark as authenticated when user is set
+      state.isInitialized = true; // Mark as initialized
+      
+      // Persist user data to localStorage
       if (typeof window !== "undefined") {
         try {
-          localStorage.setItem(
-            "auth_state",
-            JSON.stringify({
-              user: action.payload,
-              isAuthenticated: true,
-              isInitialized: true,
-            }),
-          );
+          const authState = {
+            user: action.payload,
+            isAuthenticated: true,
+            isInitialized: true,
+          };
+          localStorage.setItem("auth_state", JSON.stringify(authState));
         } catch (error) {
-          console.warn("Failed to save auth state:", error);
+          console.warn("Failed to save auth state to localStorage:", error);
         }
       }
     },
 
-    // Cập nhật tokens mới (sau refresh)
+    // Cập nhật access token mới (sau refresh)
     tokenRefreshed: (
       state,
       action: PayloadAction<{
         accessToken: string;
-        refreshToken: string;
       }>,
     ) => {
-      const { accessToken, refreshToken } = action.payload;
+      const { accessToken } = action.payload;
       state.accessToken = accessToken;
       state.roles = getRolesFromToken(accessToken);
-      setTokens(accessToken, refreshToken);
+      setAccessToken(accessToken);
     },
 
     // Đăng nhập thất bại
@@ -184,6 +189,11 @@ const authSlice = createSlice({
       state.error = null;
       state.isInitialized = true;
       clearTokens();
+      
+      // Clear localStorage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_state");
+      }
     },
 
     // Đánh dấu auth đã được khởi tạo
@@ -208,6 +218,11 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = null;
         state.isInitialized = true;
+        
+        // Clear localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("auth_state");
+        }
       })
       .addCase(logoutThunk.rejected, (state) => {
         state.user = null;
@@ -217,6 +232,11 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = null;
         state.isInitialized = true;
+        
+        // Clear localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("auth_state");
+        }
       });
   },
 });

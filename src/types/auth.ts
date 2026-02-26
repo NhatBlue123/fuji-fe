@@ -1,26 +1,29 @@
-// User interface - Match với backend model
+// User interface - Match với backend UserDTO
 export interface User {
-  _id: string; // MongoDB ObjectId as string
-  id?: string; // Optional alias for _id
+  _id: string;
+  id?: number | string;
   email: string;
   username: string;
   fullname: string;
+  fullName?: string; // Backend returns fullName (camelCase)
   avatar?: string;
+  avatarUrl?: string; // Backend returns avatarUrl
   bio?: string;
   phone?: string;
   address?: string;
   gender: string;
+  role?: string; // STUDENT, INSTRUCTOR, ADMIN
   level: "N5" | "N4" | "N3" | "N2" | "N1";
   isActive: boolean;
   isAdmin: boolean;
   isOnline: boolean;
   posts: number;
-  followers: string[]; // ObjectId array as strings
-  following: string[]; // ObjectId array as strings
-  course?: string; // ObjectId as string
-  lastActiveAt: string; // Date as ISO string
-  createdAt?: string; // Date as ISO string
-  updatedAt?: string; // Date as ISO string
+  followers: string[];
+  following: string[];
+  course?: string;
+  lastActiveAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // API Request/Response types

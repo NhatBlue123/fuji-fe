@@ -79,6 +79,11 @@ const navGroups: NavGroup[] = [
         href: "/admin/posts",
         icon: FileText,
       },
+      {
+        title: "Đề thi",
+        href: "/admin/jlpt-tests",
+        icon: BookOpenCheck
+      }
     ],
   },
   {

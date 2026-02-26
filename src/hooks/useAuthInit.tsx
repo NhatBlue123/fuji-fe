@@ -9,12 +9,14 @@ import {
   setInitialized,
 } from "../store/slices/authSlice";
 import type { RootState, AppDispatch } from "../store";
-import { getAccessToken, getRefreshToken } from "@/lib/token";
+import { getAccessToken } from "@/lib/token";
 import type { User } from "@/types/auth";
 
 /**
  * Hook để khôi phục authentication state khi app khởi động.
- * Token refresh scheduling được xử lý bởi authMiddleware.
+ * - Access token: JS-accessible cookie
+ * - Refresh token: HttpOnly cookie (sent automatically)
+ * - Token refresh scheduling: handled by authMiddleware
  */
 export const useAuthInit = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -26,30 +28,73 @@ export const useAuthInit = () => {
     if (isInitialized) return;
 
     const restoreSession = async () => {
-      const accessToken = getAccessToken();
-      const refreshToken = getRefreshToken();
+      const initialToken = getAccessToken();
 
-      if (!accessToken || !refreshToken) {
+      if (!initialToken) {
         dispatch(setInitialized());
         return;
       }
 
       try {
+        console.log("📡 useAuthInit: Fetching current user from API...");
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
-        if (result?.data) {
+        if (result) {
+          // Re-read token after API call — baseQueryWithReauth may have
+          // refreshed it during 401 recovery, replacing the expired JWT
+          // with a fresh one in the cookie. Using the stale `initialToken`
+          // would overwrite the fresh token and break every subsequent request.
+          const currentToken = getAccessToken();
+          if (!currentToken) {
+            dispatch(logout());
+            return;
+          }
+
+          const backendUser = result as unknown as Record<string, unknown>;
+          // Map backend UserDTO to frontend User type
+          const user: User = {
+            _id: String(backendUser.id || ""),
+            id: backendUser.id as number,
+            email: (backendUser.email as string) || "",
+            username: (backendUser.username as string) || "",
+            fullname:
+              (backendUser.fullName as string) ||
+              (backendUser.username as string) ||
+              "",
+            fullName: (backendUser.fullName as string) || "",
+            avatar: (backendUser.avatarUrl as string) || "",
+            avatarUrl: (backendUser.avatarUrl as string) || "",
+            gender: (backendUser.gender as string) || "",
+            role: (backendUser.role as string) || "STUDENT",
+            level: (backendUser.jlptLevel ||
+              backendUser.level ||
+              "N5") as User["level"],
+            isActive: true,
+            isAdmin: backendUser.role === "ADMIN",
+            isOnline: true,
+            posts: 0,
+            followers: [],
+            following: [],
+            lastActiveAt: new Date().toISOString(),
+            createdAt: backendUser.createdAt as string,
+            updatedAt: backendUser.updatedAt as string,
+          };
+          console.log("✅ useAuthInit: User fetched successfully:", user.username);
+          console.log("👤 useAuthInit: fullName =", user.fullName);
+          console.log("💾 useAuthInit: Dispatching loginSuccess...");
           dispatch(
             loginSuccess({
-              user: result.data as User,
-              accessToken,
-              refreshToken,
+              user,
+              accessToken: currentToken,
             }),
           );
         } else {
+          console.log("❌ useAuthInit: No user data in response, logging out");
           dispatch(logout());
         }
-      } catch {
+      } catch (error) {
         // Token hết hạn hoặc không hợp lệ
+        console.error("❌ useAuthInit: Error fetching user, logging out:", error);
         dispatch(logout());
       }
     };

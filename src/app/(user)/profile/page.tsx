@@ -6,25 +6,37 @@ import { Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar } from "lucide
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/lib/auth";
-
+//import { useGetMeQuery } from "@/store/services/user/userApi";
+import { useGetCurrentUserQuery } from "@/store/services/authApi";
 export default function ProfilePage() {
   const router = useRouter();
   const [openLogout, setOpenLogout] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  /* ================= MOCK DATA (thay bằng GET /api/me) ================= */
-  const user = {
-    username: "luongdc",
-    email: "luong@gmail.com",
-    fullname: "Dương Công Lượng",
-    avatar: "",
-    bio: "Đam mê học tiếng Nhật 🇯🇵 – Mục tiêu JLPT N3",
-    gender: "male",
-    phone: "0123456789",
-    jlpt_level: "N5",
-    is_active: true,
-    created_at: "2025-01-15T00:00:00",
-  };
+  const { data: user, isLoading, error, isUninitialized } = useGetCurrentUserQuery();
+
+  // Show loading state while fetching or initializing
+  if (isLoading || isUninitialized) {
+    return <div className="text-white p-10">Đang tải...</div>;
+  }
+
+  // Redirect to login if not authenticated
+  if (error || !user) {
+    router.push("/login");
+    return null;
+  }
+  // const user = {
+  //   username: "luongdc",
+  //   email: "luong@gmail.com",
+  //   fullname: "Dương Công Lượng",
+  //   avatar: "",
+  //   bio: "Đam mê học tiếng Nhật 🇯🇵 – Mục tiêu JLPT N3",
+  //   gender: "male",
+  //   phone: "0123456789",
+  //   jlpt_level: "N5",
+  //   is_active: true,
+  //   created_at: "2025-01-15T00:00:00",
+  // };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -36,13 +48,15 @@ export default function ProfilePage() {
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" });
 
-  const getInitials = (name: string) =>
-    name
+  const getInitials = (name: string) => {
+    if (!name) return "??";
+    return name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .slice(0, 2)
       .toUpperCase();
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
@@ -55,10 +69,10 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row items-end justify-between gap-4">
               {/* Avatar */}
               <div className="w-32 h-32 rounded-full border-4 border-slate-900 bg-indigo-500 flex items-center justify-center text-4xl font-bold text-white overflow-hidden">
-                {user.avatar ? (
-                  <Image src={user.avatar} alt="avatar" width={128} height={128} />
+                {user.avatarUrl? (
+                  <Image src={user.avatarUrl} alt="avatar" width={128} height={128} />
                 ) : (
-                  getInitials(user.fullname)
+                  getInitials(user.fullName)
                 )}
               </div>
 
@@ -89,7 +103,7 @@ export default function ProfilePage() {
 
             {/* Info */}
             <div className="mt-6 space-y-2">
-              <h1 className="text-3xl font-bold text-slate-100">{user.fullname}</h1>
+              <h1 className="text-3xl font-bold text-slate-100">{user.fullName}</h1>
               <p className="text-slate-400">@{user.username}</p>
               {user.bio && <p className="text-slate-300 max-w-2xl">{user.bio}</p>}
             </div>
@@ -108,7 +122,7 @@ export default function ProfilePage() {
                 label="JLPT"
                 value={
                   <span className="px-3 py-1 rounded-full bg-indigo-600/20 text-indigo-400">
-                    {user.jlpt_level}
+                    {user.jlptLevel}
                   </span>
                 }
               />
@@ -120,12 +134,12 @@ export default function ProfilePage() {
         <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-4">
           <h2 className="text-xl font-semibold text-slate-100">Thông tin tài khoản</h2>
 
-          <Info icon={<Calendar size={16} />} label="Ngày tham gia" value={formatDate(user.created_at)} />
+          <Info icon={<Calendar size={16} />} label="Ngày tham gia" value={formatDate(user.createdAt)} />
           <Info
             icon={<User size={16} />}
             label="Trạng thái"
             value={
-              user.is_active ? (
+              user.active ? (
                 <span className="text-emerald-400">Đang hoạt động</span>
               ) : (
                 <span className="text-red-400">Bị khóa</span>

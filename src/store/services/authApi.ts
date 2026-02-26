@@ -7,21 +7,17 @@ import type {
 } from "@reduxjs/toolkit/query";
 import type { User } from "../../types/auth";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
-import {
-  getAccessToken,
-  getRefreshToken,
-  setTokens,
-  clearTokens,
-} from "@/lib/token";
+import { getAccessToken, setAccessToken, clearTokens } from "@/lib/token";
+import { AuthUser } from "@/types/auth-user";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// Base query - tự động gắn Bearer token từ localStorage
+// Base query - tự động gắn Bearer token từ cookie
 const baseQuery = fetchBaseQuery({
   baseUrl: API_CONFIG.BASE_URL,
-  credentials: "include",
+  credentials: "include", // Gửi HttpOnly cookie (refreshToken) tự động
   prepareHeaders: (headers) => {
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
@@ -68,33 +64,28 @@ const baseQueryWithReauth: BaseQueryFn<
 
       refreshPromise = (async (): Promise<boolean> => {
         try {
-          const refreshToken = getRefreshToken();
-          if (!refreshToken) {
-            api.dispatch({ type: "auth/logout" });
-            return false;
-          }
-
+          // Refresh token is in HttpOnly cookie, sent automatically via credentials: "include"
           const refreshResult = await baseQuery(
             {
               url: API_ENDPOINTS.AUTH.REFRESH,
               method: "POST",
-              body: { refreshToken },
             },
             api,
             extraOptions,
           );
 
-          const data = refreshResult.data as RefreshResponseData | undefined;
+          // Backend wraps in ApiResponse: { success, data: { accessToken } }
+          const apiResponse = refreshResult.data as
+            | { success?: boolean; data?: RefreshResponseData }
+            | undefined;
+          const data = apiResponse?.data;
 
           if (data?.accessToken) {
-            // Lưu tokens mới
-            setTokens(data.accessToken, data.refreshToken || refreshToken);
-            // Cập nhật Redux state
+            setAccessToken(data.accessToken);
             api.dispatch({
               type: "auth/tokenRefreshed",
               payload: {
                 accessToken: data.accessToken,
-                refreshToken: data.refreshToken || refreshToken,
               },
             });
             return true;
@@ -149,10 +140,10 @@ interface SendOtpRegisterRequest {
   fullName: string;
 }
 
-// Backend trả về khi login thành công
+// Backend login trả về ApiResponse<LoginResponse> với data: { accessToken, username }
+// refreshToken được set vào HttpOnly cookie bởi backend
 export interface LoginResponseData {
   accessToken: string;
-  refreshToken: string;
   username: string;
   email?: string;
 }
@@ -180,13 +171,19 @@ export const authApi = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ["Auth", "User"],
   endpoints: (builder) => ({
-    // Đăng nhập - trả về tokens
+    // Đăng nhập - backend returns ApiResponse<LoginResponse>
+    // accessToken in JSON body, refreshToken in HttpOnly cookie
     login: builder.mutation<LoginResponseData, LoginRequest>({
       query: (credentials) => ({
         url: API_ENDPOINTS.AUTH.LOGIN,
         method: "POST",
         body: credentials,
       }),
+      transformResponse: (response: ApiResponse<LoginResponseData>) => {
+        // Backend wraps in ApiResponse, extract the data
+        if (response?.data) return response.data;
+        return response as unknown as LoginResponseData;
+      },
       invalidatesTags: ["Auth", "User"],
     }),
 
@@ -233,7 +230,10 @@ export const authApi = createApi({
     }),
 
     // Xác thực OTP cho OAuth2
-    verifyOAuth2Otp: builder.mutation<ApiResponse<LoginResponseData>, OAuth2VerifyOtpRequest>({
+    verifyOAuth2Otp: builder.mutation<
+      ApiResponse<LoginResponseData>,
+      OAuth2VerifyOtpRequest
+    >({
       query: (data) => ({
         url: API_ENDPOINTS.AUTH.VERIFY_OAUTH2_OTP,
         method: "POST",
@@ -242,24 +242,41 @@ export const authApi = createApi({
       invalidatesTags: ["Auth", "User"],
     }),
 
-    // Refresh token
-    refreshToken: builder.mutation<RefreshResponseData, void>({
-      query: () => {
-        const refreshToken = getRefreshToken();
-        return {
-          url: API_ENDPOINTS.AUTH.REFRESH,
-          method: "POST",
-          body: { refreshToken },
-        };
-      },
+    // Refresh token - refresh token is in HttpOnly cookie, sent automatically
+    refreshToken: builder.mutation<ApiResponse<RefreshResponseData>, void>({
+      query: () => ({
+        url: API_ENDPOINTS.AUTH.REFRESH,
+        method: "POST",
+      }),
       invalidatesTags: ["Auth"],
     }),
 
     // Lấy thông tin user hiện tại (cần Bearer token)
-    getCurrentUser: builder.query<ApiResponse<User>, void>({
-      query: () => API_ENDPOINTS.AUTH.ME,
+    // Endpoint: GET /api/users/me
+    getCurrentUser: builder.query<AuthUser, void>({
+      query: () => "/users/me",
+      transformResponse: (res: any): AuthUser => {
+        // Backend returns ApiResponse<UserDTO> = { success, message, data: UserDTO }
+        // We need to unwrap the 'data' field first
+        const userData = res.data || res; // Fallback to res if data doesn't exist
+        
+        return {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          fullName: userData.fullName || userData.username || "User",
+          avatarUrl: userData.avatarUrl || null,
+          bio: userData.bio || null,
+          gender: userData.gender || "male",
+          phone: userData.phone || null,
+          jlptLevel: userData.jlptLevel || "N5",
+          active: userData.isActive ?? false,
+          createdAt: userData.createdAt,
+        };
+      },
       providesTags: ["User"],
     }),
+
 
     // Verify email
     verifyEmail: builder.mutation<ApiResponse, { token: string }>({

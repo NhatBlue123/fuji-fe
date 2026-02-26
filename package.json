@@ -31,7 +31,7 @@
     "date-fns": "^3.0.0",
     "framer-motion": "^11.0.0",
     "input-otp": "^1.0.0",
-    "lucide-react": "^0.300.0",
+    "lucide-react": "^0.575.0",
     "material-symbols": "^0.40.2",
     "next": "^16.1.6",
     "next-themes": "^0.2.1",

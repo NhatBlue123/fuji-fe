@@ -37,6 +37,7 @@ export default function JLPTtestPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [examStartTime] = useState<number>(Date.now());
   // Increments only when user explicitly clicks a sidebar number → triggers scroll in grouped view
   const [scrollTrigger, setScrollTrigger] = useState(0);
@@ -153,18 +154,20 @@ export default function JLPTtestPage() {
   const totalQuestions = leafQuestions.length;
   const duration = testData?.duration || 140; // minutes
 
-  // ===== AUTO SUBMIT =====
+  // ===== CONFIRM + SUBMIT =====
+  const handleRequestSubmit = useCallback(() => {
+    setShowConfirm(true);
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     if (!testId) return;
-
+    setShowConfirm(false);
     console.log("⏱ Submitting test...");
     setIsSubmitting(true);
 
     try {
-      // Calculate time spent in seconds
       const timeSpentSeconds = Math.floor((Date.now() - examStartTime) / 1000);
 
-      // Convert answers to backend format: array of { questionId, selected }
       const userAnswers: UserAnswer[] = Object.entries(answers).map(
         ([questionId, selected]) => ({
           questionId: Number(questionId),
@@ -172,7 +175,6 @@ export default function JLPTtestPage() {
         })
       );
 
-      // Serialize to JSON string as backend expects
       const userAnswersJson = JSON.stringify(userAnswers);
 
       const result = await submitTest({
@@ -182,8 +184,6 @@ export default function JLPTtestPage() {
       }).unwrap();
 
       console.log("✅ Test submitted successfully:", result);
-
-      // Navigate to results page with attempt ID
       router.push(`/jlpt/result?attemptId=${result.id}`);
     } catch (error) {
       console.error("❌ Failed to submit test:", error);
@@ -194,11 +194,11 @@ export default function JLPTtestPage() {
 
   // ===== TIMER =====
   const { timeLeft } = useCountdown({
-    duration: duration * 60, // convert to seconds
+    duration: duration * 60,
     onFiveMinutesLeft: () => {
       alert("⚠️ Còn 5 phút cuối!");
     },
-    onTimeUp: handleSubmit,
+    onTimeUp: handleSubmit, // auto-submit when time is up (no confirm needed)
   });
 
   const formatTime = (seconds: number) => {
@@ -257,16 +257,61 @@ export default function JLPTtestPage() {
     );
   }
 
+  // Answered count
+  const answeredCount = Object.keys(answers).length;
+
   return (
     <div
       className="h-screen flex flex-col overflow-hidden font-sans text-white"
       style={{ backgroundColor: "#0B1120" }}
     >
-      <ExamHeader 
-        timeLeft={timeLeft} 
+      <ExamHeader
+        timeLeft={timeLeft}
         formatTime={formatTime}
         testTitle={testData.title}
+        answeredCount={answeredCount}
+        totalCount={totalQuestions}
+        onSubmit={handleRequestSubmit}
       />
+
+      {/* ── Confirmation Dialog ─────────────────────────────────────── */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#1a2540] border border-slate-700 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center">
+            <span className="material-symbols-outlined text-5xl text-[#ee2b5b] mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>assignment_turned_in</span>
+            <h2 className="text-xl font-bold text-white mb-2">Xác nhận nộp bài</h2>
+            {answeredCount < totalQuestions ? (
+              <p className="text-slate-300 text-sm mb-6">
+                Bạn đã làm{" "}
+                <span className="text-yellow-400 font-bold">{answeredCount}/{totalQuestions}</span>{" "}
+                câu. Còn{" "}
+                <span className="text-red-400 font-bold">{totalQuestions - answeredCount}</span>{" "}
+                câu chưa tắt.<br />
+                Bạn có chắc chắn muốn nộp bài không?
+              </p>
+            ) : (
+              <p className="text-slate-300 text-sm mb-6">
+                Bạn đã hoàn thành tất cả <span className="text-green-400 font-bold">{totalQuestions}</span> câu.<br />
+                Bạn có chắc chắn muốn nộp bài không?
+              </p>
+            )}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 px-5 py-2.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition font-medium"
+              >
+                Tiếp tục làm
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="flex-1 px-5 py-2.5 rounded-lg bg-[#ee2b5b] text-white font-bold hover:bg-[#d41f4e] transition"
+              >
+                Nộp bài
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
@@ -300,10 +345,10 @@ export default function JLPTtestPage() {
 
             {currentQuestion === totalQuestions - 1 ? (
               <button
-                onClick={handleSubmit}
+                onClick={handleRequestSubmit}
                 className="px-6 py-2.5 rounded-lg font-bold bg-green-500 text-white hover:bg-green-600"
               >
-                Nộp bài
+                Nộp bài ✓
               </button>
             ) : (
               <button

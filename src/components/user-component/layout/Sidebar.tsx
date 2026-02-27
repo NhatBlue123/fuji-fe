@@ -25,12 +25,9 @@ const Sidebar = () => {
     setIsMounted(true);
   }, []);
 
-<<<<<<< HEAD
   // Check if user is admin or teacher
   const isAdminOrTeacher =
     roles && (roles.includes("ADMIN") || roles.includes("TEACHER"));
-=======
->>>>>>> origin/feature/fe-i18n
 
   const handleLogout = async () => {
     try {
@@ -154,7 +151,6 @@ const Sidebar = () => {
           </span>
           <span>{t("common.notification")}</span>
         </Link>
-<<<<<<< HEAD
         {isMounted && isAdminOrTeacher && (
           <Link
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
@@ -176,7 +172,6 @@ const Sidebar = () => {
             <span>Quản lý</span>
           </Link>
         )}
-=======
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
           href="#"
@@ -186,7 +181,6 @@ const Sidebar = () => {
           </span>
           <span>{t("common.management")}</span>
         </Link>
->>>>>>> origin/feature/fe-i18n
       </nav>
       <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-4">
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 dark:from-blue-900 dark:to-indigo-950 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer shadow-lg shadow-blue-900/20 ring-1 ring-white/10">

@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";
 import ExamContent from "./ExamContent";
+import AntiCheatOverlay from "./AntiCheatOverlay";
 import { useCountdown } from "@/hooks/useCountdown";
+import { useAntiCheat } from "@/hooks/useAntiCheat";
 import { useGetTestByIdQuery, useSubmitTestMutation } from "@/store/services/jlptApi";
 import type { UserAnswer, JlptQuestion } from "@/types/jlpt";
 import {
@@ -192,13 +194,21 @@ export default function JLPTtestPage() {
     }
   }, [testId, answers, submitTest, router, examStartTime]);
 
-  // ===== TIMER =====
+  // ===== ANTI-CHEAT =====
+  const MAX_TAB_SWITCHES = 5;
+  const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } = useAntiCheat({
+    maxTabSwitches: MAX_TAB_SWITCHES,
+    detectDevTools: true,
+  });
+
+  // ===== TIMER (paused when devtools open) =====
   const { timeLeft } = useCountdown({
     duration: duration * 60,
+    paused: devToolsOpen,
     onFiveMinutesLeft: () => {
       alert("⚠️ Còn 5 phút cuối!");
     },
-    onTimeUp: handleSubmit, // auto-submit when time is up (no confirm needed)
+    onTimeUp: handleSubmit,
   });
 
   const formatTime = (seconds: number) => {
@@ -273,6 +283,16 @@ export default function JLPTtestPage() {
         totalCount={totalQuestions}
         onSubmit={handleRequestSubmit}
       />
+
+      {/* ── Anti-Cheat Overlay ──────────────────────────────────────── */}
+      {activeWarning && (
+        <AntiCheatOverlay
+          warning={activeWarning}
+          tabSwitchCount={tabSwitchCount}
+          maxTabSwitches={MAX_TAB_SWITCHES}
+          onDismiss={dismissWarning}
+        />
+      )}
 
       {/* ── Confirmation Dialog ─────────────────────────────────────── */}
       {showConfirm && (

@@ -7,7 +7,7 @@ export const baseApi = createApi({
     baseUrl: "http://localhost:8181/api",
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = getAccessToken(); // đọc từ cookie, không phải localStorage
+      const token = getAccessToken(); // đọc từ cookie
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }

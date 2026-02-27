@@ -44,9 +44,18 @@ export const userApi = baseApi.injectEndpoints({
       }),
     }),
 
+    updateProfile: builder.mutation<any, FormData>({
+      query: (formData) => ({
+        url: "/users/me/me",
+        method: "PUT",
+        body: formData,
+      }),
+    }),
+
   }),
 });
 
 export const {
   useChangePasswordMutation,
+  useUpdateProfileMutation,
 } = userApi;

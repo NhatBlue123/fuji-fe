@@ -45,6 +45,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "3.4.0",
     "wanakana": "^5.3.1",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.5"
   },
   "devDependencies": {

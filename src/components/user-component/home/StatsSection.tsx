@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const STAT_STYLES = {
   blue: "bg-blue-500/20 text-blue-600 dark:text-blue-300 border-blue-500/20",
@@ -18,30 +21,32 @@ interface Stat {
   color: StatColor;
 }
 
-const STATS: Stat[] = [
-  { icon: "groups", value: "10K+", label: "Học viên", color: "blue" },
-  { icon: "school", value: "500+", label: "Khóa học", color: "pink" },
-  {
-    icon: "verified",
-    value: "95%",
-    label: "Tỷ lệ đỗ JLPT",
-    color: "emerald",
-  },
-  {
-    icon: "cast_for_education",
-    value: "50+",
-    label: "Giảng viên",
-    color: "purple",
-  },
-];
-
 export function StatsSection() {
+  const { t } = useTranslation();
+
+  const STATS: Stat[] = [
+    { icon: "groups", value: "10K+", label: t("home.stats.students"), color: "blue" },
+    { icon: "school", value: "500+", label: t("home.stats.courses"), color: "pink" },
+    {
+      icon: "verified",
+      value: "95%",
+      label: t("home.stats.jlptPassRate"),
+      color: "emerald",
+    },
+    {
+      icon: "cast_for_education",
+      value: "50+",
+      label: t("home.stats.teachers"),
+      color: "purple",
+    },
+  ];
+
   return (
     <div className="px-6 md:px-12 lg:px-20 -mt-16 relative z-20">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((stat) => (
+        {STATS.map((stat, index) => (
           <div
-            key={stat.label}
+            key={index}
             className="glass-card p-6 rounded-2xl flex items-center gap-4 hover:bg-slate-100 hover:dark:bg-slate-800/60 transition-colors"
           >
             <div

@@ -76,11 +76,6 @@ const navGroups: NavGroup[] = [
         icon: Layers,
       },
       {
-        title: "Bài viết",
-        href: "/admin/posts",
-        icon: FileText,
-      },
-      {
         title: "Đề thi",
         href: "/admin/jlpt-tests",
         icon: BookOpenCheck

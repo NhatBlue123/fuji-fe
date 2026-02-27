@@ -1,6 +1,5 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
 
 import en from "./locales/en/translation.json";
 import vi from "./locales/vi/translation.json";
@@ -13,18 +12,12 @@ const resources = {
 };
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: "vi", // Khởi tạo với 'vi' để khớp với SSR (chống lỗi Hydration)
     fallbackLng: "vi",
     supportedLngs: ["en", "vi", "ja"],
-    load: "languageOnly",
-    detection: {
-      order: ["localStorage", "cookie", "navigator", "htmlTag"],
-      lookupLocalStorage: "i18nextLng",
-      caches: ["localStorage", "cookie"],
-    },
     interpolation: {
       escapeValue: false,
     },
@@ -33,6 +26,4 @@ i18n
     },
   });
 
-
 export default i18n;
-

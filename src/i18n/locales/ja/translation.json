@@ -1,0 +1,155 @@
+{
+  "common": {
+    "home": "ホーム",
+    "course": "コース",
+    "flashcard": "フラッシュカード",
+    "management": "管理",
+    "notification": "通知",
+    "darkMode": "ダークモード",
+    "lightMode": "ライトモード",
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "creating": "作成中...",
+    "jlptPractice": "JLPT 模擬試験",
+    "booking": "予約",
+    "aiPractice": "AI 練習",
+    "themeToggle": "ライト / ダーク",
+    "searchPlaceholder": "検索...",
+    "noResults": "結果が見つかりません",
+    "register": "登録"
+  },
+  "sidebar": {
+    "subtitle": "日本語を学ぶ",
+    "premiumTitle": "プレミアムプラン",
+    "premiumHeading": "プレミアムにアップグレード",
+    "viewDetails": "詳細を見る",
+    "loginToStart": "ログインして開始",
+    "studentLevel": "受講生",
+    "logoutSuccess": "ログアウトしました！",
+    "logoutFailed": "ログアウトに失敗しました"
+  },
+  "languageSwitcher": {
+    "title": "言語設定",
+    "searchPlaceholder": "言語を検索...",
+    "noResults": "該当する言語が見つかりません"
+  },
+  "auth": {
+    "loginSuccess": "ログインに成功しました",
+    "loginFail": "ログインに失敗しました",
+    "registerSuccess": "登録に成功しました",
+    "username": "ユーザー名",
+    "fullname": "氏名",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirmPassword": "パスワード（確認）",
+    "orContinueWith": "または次で続行",
+    "noAccount": "アカウントをお持ちでないですか？",
+    "haveAccount": "既にアカウントをお持ちですか？",
+    "registerNow": "今すぐ登録",
+    "loginNow": "今すぐログイン",
+    "processing": "処理中...",
+    "subTitle": "ベトナムNo.1の日本語学習プラットフォーム",
+    "loginWelcome": "FUJI へようこそ",
+    "loginFailed": "ログインに失敗しました。もう一度お試しください。",
+    "invalidCredentials": "ユーザー名またはパスワードが正しくありません",
+    "emailAlreadyExists": "このメールアドレスは既に登録されています",
+    "usernameAlreadyExists": "このユーザー名は既に使用されています",
+    "sendOtpSuccess": "OTP コードを送信しました",
+    "sendOtpCheckEmail": "メール {{email}} をご確認ください",
+    "sendOtpFailed": "OTP の送信に失敗しました。もう一度お試しください。",
+    "otpInvalid": "OTP コードが正しくありません",
+    "otpExpired": "OTP コードの有効期限が切れています",
+    "otpInvalidOrExpired": "OTP コードが無効か、有効期限が切れています",
+    "registerCanLogin": "すぐにログインできます。",
+    "verifyOtpSuccess": "OTP 認証に成功しました",
+    "userNotFound": "ユーザーが見つかりません",
+    "accountNotActivated": "アカウントが有効化されていません",
+    "accountDisabled": "アカウントが有効化されていないか、ロックされています",
+    "googleVerifySuccess": "Google 認証に成功しました",
+    "googleWelcome": "FUJI へようこそ",
+    "refreshSuccess": "トークンを更新しました",
+    "logoutSuccess": "ログアウトしました",
+    "google": "Google",
+    "backToEdit": "情報を編集に戻る",
+    "confirmOtp": "OTP を確認",
+    "otpSentTo": "OTP コードがメールに送信されました",
+    "oauth2OtpSentTo": "Google 認証コードが送信されました：",
+    "termsPrefix": "登録することで、あなたは FUJI の",
+    "termsOfService": "利用規約",
+    "and": "および",
+    "privacyPolicy": "プライバシーポリシー",
+    "fujiFooter": "に同意したことになります。",
+    "validation": {
+      "usernameRequired": "ユーザー名を入力してください",
+      "fullnameRequired": "氏名を入力してください",
+      "emailRequired": "メールアドレスを入力してください",
+      "emailInvalid": "メールアドレスが正しくありません",
+      "passwordRequired": "パスワードを入力してください",
+      "passwordMin": "パスワードは 6 文字以上である必要があります",
+      "confirmPasswordRequired": "パスワードを再度入力してください",
+      "passwordsNotMatch": "パスワードが一致しません",
+      "otpRequired": "6 桁の OTP をすべて入力してください"
+    }
+  },
+  "api": {
+    "loading": "データを読み込み中...",
+    "error": "エラーが発生しました",
+    "validation": {
+      "invalid": "入力内容が正しくありません"
+    },
+    "unexpectedError": "システムエラーが発生しました",
+    "networkError": "サーバーに接続できません",
+    "createFailed": "作成中にエラーが発生しました。もう一度お試しください。"
+  },
+  "flashlist": {
+    "listSuccess": "フラッシュリストの取得に成功しました",
+    "detailSuccess": "フラッシュリストの詳細取得に成功しました",
+    "createSuccess": "フラッシュリストを作成しました",
+    "updateSuccess": "フラッシュリストを更新しました",
+    "deleteSuccess": "フラッシュリストを削除しました",
+    "deleteAllSuccess": "ユーザーのフラッシュリストをすべて削除しました",
+    "rateSuccess": "フラッシュリストの評価に成功しました",
+    "addCardSuccess": "フラッシュカードをフラッシュリストに追加しました",
+    "removeCardSuccess": "フラッシュカードをフラッシュリストから削除しました",
+    "searchSuccess": "フラッシュリストの検索に成功しました",
+    "validationFailed": "フラッシュリストの入力内容が正しくありません",
+    "validate": {
+      "titleRequired": "フラッシュリストのタイトルを入力してください",
+      "privateCardInPublicList": "プライベートフラッシュカードを公開フラッシュリストに追加することはできません。プライベートカードの選択を解除するか、フラッシュリストを非公開にしてください。"
+    },
+    "create": "フラッシュリストを作成"
+  },
+  "flashcard": {
+    "visibility": {
+      "otherPrivate": "他のユーザーのプライベートフラッシュカードです",
+      "ownPrivateInPublicList": "自分のプライベートフラッシュカードを公開フラッシュリストに追加することはできません"
+    },
+    "validate": {
+      "nameRequired": "フラッシュカードセット名を入力してください",
+      "minOneCard": "少なくとも 1 枚のカードを入力してください"
+    },
+    "create": "フラッシュカードを作成"
+  },
+  "home": {
+    "badge": "ナンバーワン日本語学習プラットフォーム",
+    "title": "日本語を学ぶ",
+    "easier": "もっと簡単に。",
+    "description": "FUJIで日本語を制覇しましょう。AIのサポートによるパーソナライズされた学習ルート。",
+    "getStarted": "今すぐ始める",
+    "watchDemo": "デモを見る",
+    "stats": {
+      "students": "受講生",
+      "courses": "コース",
+      "jlptPassRate": "JLPT合格率",
+      "teachers": "講師"
+    },
+    "coursesSection": {
+      "title": "あなたのコース",
+      "subtitle": "日本語征服の旅を続けましょう！",
+      "viewAll": "すべて見る",
+      "aiTitle": "AI先生と会話",
+      "aiDescription": "24時間365日常駐のスマートAIチューターと自然な日本語を練習しましょう。発音を即座にフィードバック。",
+      "practiceNow": "今すぐ練習"
+    }
+  }
+}

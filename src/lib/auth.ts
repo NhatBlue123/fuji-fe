@@ -5,8 +5,8 @@ import { cookies } from "next/headers";
 export async function logout() {
   try {
     const cookieStore = await cookies();
-    cookieStore.delete("access_token");
-    cookieStore.delete("refreshToken"); // HttpOnly cookie set by backend
+    cookieStore.delete("auth_token");
+    cookieStore.delete("refresh_token");
     return { success: true };
   } catch (error) {
     console.error("Logout error:", error);
@@ -17,7 +17,7 @@ export async function logout() {
 export async function getAuthToken() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("access_token");
+    const token = cookieStore.get("auth_token");
     return token?.value || null;
   } catch (error) {
     console.error("Get token error:", error);

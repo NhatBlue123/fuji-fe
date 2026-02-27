@@ -8,17 +8,19 @@ import { useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
 import Image from "next/image";
+import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
   const dispatch = useAppDispatch();
-  const [isMounted, setIsMounted] = useState(false);
+  const { t } = useTranslation();
 
-  // Prevent hydration mismatch by only showing user info after client mount
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -30,10 +32,10 @@ const Sidebar = () => {
   const handleLogout = async () => {
     try {
       await dispatch(logoutThunk()).unwrap();
-      toast.success("Đăng xuất thành công!");
+      toast.success(t("sidebar.logoutSuccess"));
       router.push("/");
     } catch {
-      toast.error("Đăng xuất thất bại");
+      toast.error(t("sidebar.logoutFailed"));
     }
   };
 
@@ -55,46 +57,42 @@ const Sidebar = () => {
             FUJI
           </h1>
           <p className="text-xs text-muted-foreground font-medium">
-            Học Tiếng Nhật
+            {t("sidebar.subtitle")}
           </p>
         </div>
       </Link>
       <nav className="flex-1 overflow-y-auto px-4 space-y-1">
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
           href="/"
         >
           <span
-            className={`material-symbols-outlined ${
-              isActive("/") ? "filled" : ""
-            }`}
+            className={`material-symbols-outlined ${isActive("/") ? "filled" : ""
+              }`}
           >
             home
           </span>
-          <span>Trang chủ</span>
+          <span>{t("common.home")}</span>
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/course")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/course")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
           href="/course"
         >
           <span
-            className={`material-symbols-outlined ${
-              isActive("/course")
-                ? "filled"
-                : "group-hover:text-sidebar-primary transition-colors"
-            }`}
+            className={`material-symbols-outlined ${isActive("/course")
+              ? "filled"
+              : "group-hover:text-sidebar-primary transition-colors"
+              }`}
           >
             menu_book
           </span>
-          <span>Khóa học</span>
+          <span>{t("common.course")}</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
@@ -103,7 +101,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             assignment
           </span>
-          <span>Luyện thi JLPT</span>
+          <span>{t("common.jlptPractice")}</span>
         </Link>
         <Link
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
@@ -112,7 +110,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             book_online
           </span>
-          <span>Booking</span>
+          <span>{t("common.booking")}</span>
           {/* <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
             3
           </span> */}
@@ -124,26 +122,24 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             smart_toy
           </span>
-          <span>Luyện tập AI</span>
+          <span>{t("common.aiPractice")}</span>
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/flashcards")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/flashcards")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
           href="/flashcards"
         >
           <span
-            className={`material-symbols-outlined ${
-              isActive("/flashcards")
-                ? "filled"
-                : "group-hover:text-sidebar-primary transition-colors"
-            }`}
+            className={`material-symbols-outlined ${isActive("/flashcards")
+              ? "filled"
+              : "group-hover:text-sidebar-primary transition-colors"
+              }`}
           >
             style
           </span>
-          <span>Thẻ ghi nhớ</span>
+          <span>{t("common.flashcard")}</span>
         </Link>
         <div className="my-4 border-t border-sidebar-border mx-4"></div>
         <Link
@@ -153,7 +149,7 @@ const Sidebar = () => {
           <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
             notifications
           </span>
-          <span>Thông báo</span>
+          <span>{t("common.notification")}</span>
         </Link>
         {isMounted && isAdminOrTeacher && (
           <Link
@@ -176,6 +172,15 @@ const Sidebar = () => {
             <span>Quản lý</span>
           </Link>
         )}
+        <Link
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
+          href="#"
+        >
+          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
+            settings
+          </span>
+          <span>{t("common.management")}</span>
+        </Link>
       </nav>
       <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-4">
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 dark:from-blue-900 dark:to-indigo-950 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer shadow-lg shadow-blue-900/20 ring-1 ring-white/10">
@@ -185,31 +190,34 @@ const Sidebar = () => {
             </span>
           </div>
           <p className="text-xs font-medium opacity-80 mb-1 text-blue-200">
-            Gói cao cấp
+            {t("sidebar.premiumTitle")}
           </p>
-          <h3 className="font-bold text-sm mb-2">Nâng cấp Premium</h3>
+          <h3 className="font-bold text-sm mb-2">{t("sidebar.premiumHeading")}</h3>
           <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg backdrop-blur-sm transition-colors w-full border border-white/10">
-            Xem chi tiết
+            {t("sidebar.viewDetails")}
           </button>
         </div>
-        <div className="flex items-center justify-between px-2">
+        <div className="flex justify-center w-full">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-muted-foreground">
-              contrast
-            </span>
-            <span className="text-sm font-bold text-sidebar-foreground">
-              Sáng / Tối
-            </span>
+
+            {/* Nút Sáng / Tối dạng chip, match với nút English */}
+            <button
+              type="button"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="inline-flex h-8 w-28 items-center justify-center gap-2 rounded-full border border-border bg-background/60 px-3 text-xs font-medium text-muted-foreground shadow-sm hover:bg-background hover:text-foreground transition-colors whitespace-nowrap"
+
+            >
+              <span className="material-symbols-outlined text-[16px] leading-none">
+                contrast
+              </span>
+              <span className="truncate max-w-[80px]">
+                {t("common.themeToggle")}
+              </span>
+
+            </button>
+            {/* Nút đổi ngôn ngữ dạng chip giống style bên trên */}
+            <LanguageSwitcher className="h-8" />
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              checked={theme === "dark"}
-              className="sr-only peer"
-              type="checkbox"
-              onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-            />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-          </label>
         </div>
         <div className="flex items-center gap-3 px-2">
           {isMounted && isAuthenticated && user ? (
@@ -240,14 +248,14 @@ const Sidebar = () => {
                     {user.fullname || user.fullName || user.username}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {user.level ? `Học viên ${user.level}` : user.email}
+                    {user.level ? `${t("sidebar.studentLevel")} ${user.level}` : user.email}
                   </p>
                 </Link>
               </div>
               <button
                 onClick={handleLogout}
                 className="text-gray-400 hover:text-red-400 transition-colors ml-auto"
-                title="Đăng xuất"
+                title={t("common.logout")}
               >
                 <span className="material-symbols-outlined">logout</span>
               </button>
@@ -268,10 +276,10 @@ const Sidebar = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-sidebar-foreground group-hover:text-primary truncate">
-                  Đăng nhập
+                  {t("common.login")}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
-                  Đăng nhập để bắt đầu
+                  {t("sidebar.loginToStart")}
                 </p>
               </div>
               <span className="material-symbols-outlined text-muted-foreground group-hover:text-primary ml-auto">

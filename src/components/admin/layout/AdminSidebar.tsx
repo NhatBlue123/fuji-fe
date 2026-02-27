@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,7 +15,9 @@ import {
   FileText,
   Bell,
   Shield,
-  BookOpenCheck
+  BookOpenCheck,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -27,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/common/ThemeProvider";
 
 interface NavItem {
   title: string;
@@ -107,6 +110,12 @@ const navGroups: NavGroup[] = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -203,6 +212,34 @@ export function AdminSidebar() {
 
         {/* Bottom Actions */}
         <div className="p-3">
+          {mounted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground mb-1",
+                    collapsed && "justify-center px-2",
+                  )}
+                  size="sm"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <Moon className="h-4 w-4 shrink-0" />
+                  )}
+                  {!collapsed && <span>Giao diện {theme === "dark" ? "sáng" : "tối"}</span>}
+                </Button>
+              </TooltipTrigger>
+              {collapsed && (
+                <TooltipContent side="right" sideOffset={8}>
+                  <p>Đổi giao diện</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

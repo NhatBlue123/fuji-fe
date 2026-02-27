@@ -1,6 +1,6 @@
-import CourseAdminLayout from "@/components/UI/admin-component/CourseAdminLayout"
-import { CourseGrid } from "@/components/UI/admin-component/CourseGrid"
-import { SidebarProvider } from "@/components/UI/admin-component/SidebarContext"
+import CourseAdminLayout from "@/components/ui/admin-component/CourseAdminLayout"
+import { CourseGrid } from "@/components/ui/admin-component/CourseGrid"
+import { SidebarProvider } from "@/components/ui/admin-component/SidebarContext"
 import '@/app/globals.css'
 
 export default function CourseManagementPage() {

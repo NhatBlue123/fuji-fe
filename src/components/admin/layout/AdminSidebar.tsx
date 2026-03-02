@@ -16,6 +16,7 @@ import {
   Bell,
   Shield,
   Layers,
+  BookOpenCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -73,11 +74,6 @@ const navGroups: NavGroup[] = [
         title: "Flashcard",
         href: "/admin/flashcard",
         icon: Layers,
-      },
-      {
-        title: "Bài viết",
-        href: "/admin/posts",
-        icon: FileText,
       },
       {
         title: "Đề thi",

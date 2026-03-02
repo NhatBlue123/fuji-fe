@@ -40,7 +40,8 @@ export interface RegisterRequest {
 }
 export interface AuthResponse {
   success: boolean;
-  message: string;
+  // Backend trả về key i18n thay vì chuỗi message thô
+  messageKey?: string;
   data: {
     accessToken: string;
     user: User;
@@ -51,7 +52,7 @@ export interface AuthResponse {
 // User Profile API response - Backend trả về user object trực tiếp trong data
 export interface UserProfileResponse {
   success: boolean;
-  message: string;
+  messageKey?: string;
   data: User | null; // ← Trực tiếp User object, không phải { user: User }
   timestamp: string;
 }

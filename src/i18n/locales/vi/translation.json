@@ -1,0 +1,155 @@
+{
+  "common": {
+    "home": "Trang chủ",
+    "course": "Khóa học",
+    "flashcard": "Thẻ ghi nhớ",
+    "management": "Quản lý",
+    "notification": "Thông báo",
+    "darkMode": "Chế độ tối",
+    "lightMode": "Chế độ sáng",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "creating": "Đang tạo...",
+    "jlptPractice": "Luyện thi JLPT",
+    "booking": "Booking",
+    "aiPractice": "Luyện tập AI",
+    "themeToggle": "Sáng / Tối",
+    "searchPlaceholder": "Tìm kiếm...",
+    "noResults": "Không có kết quả",
+    "register": "Đăng ký"
+  },
+  "sidebar": {
+    "subtitle": "Học Tiếng Nhật",
+    "premiumTitle": "Gói cao cấp",
+    "premiumHeading": "Nâng cấp Premium",
+    "viewDetails": "Xem chi tiết",
+    "loginToStart": "Đăng nhập để bắt đầu",
+    "studentLevel": "Học viên",
+    "logoutSuccess": "Đăng xuất thành công!",
+    "logoutFailed": "Đăng xuất thất bại"
+  },
+  "languageSwitcher": {
+    "title": "Cài đặt ngôn ngữ",
+    "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
+    "noResults": "Không tìm thấy ngôn ngữ phù hợp"
+  },
+  "auth": {
+    "loginSuccess": "Đăng nhập thành công",
+    "loginFail": "Đăng nhập thất bại",
+    "registerSuccess": "Đăng ký thành công",
+    "username": "Tên đăng nhập",
+    "fullname": "Họ tên",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "orContinueWith": "Hoặc tiếp tục với",
+    "noAccount": "Chưa có tài khoản?",
+    "haveAccount": "Đã có tài khoản?",
+    "registerNow": "Đăng ký ngay",
+    "loginNow": "Đăng nhập ngay",
+    "processing": "Đang xử lý...",
+    "subTitle": "Nền tảng học tiếng Nhật số 1 Việt Nam",
+    "loginWelcome": "Chào mừng bạn quay trở lại FUJI",
+    "loginFailed": "Đăng nhập thất bại. Vui lòng thử lại!",
+    "invalidCredentials": "Tên đăng nhập hoặc mật khẩu không đúng",
+    "emailAlreadyExists": "Email đã tồn tại",
+    "usernameAlreadyExists": "Tên đăng nhập đã tồn tại",
+    "sendOtpSuccess": "Mã OTP đã được gửi",
+    "sendOtpCheckEmail": "Vui lòng kiểm tra email {{email}}",
+    "sendOtpFailed": "Gửi OTP thất bại. Vui lòng thử lại!",
+    "otpInvalid": "Mã OTP không chính xác",
+    "otpExpired": "Mã OTP đã hết hạn",
+    "otpInvalidOrExpired": "Mã OTP không chính xác hoặc đã hết hạn!",
+    "registerCanLogin": "Bạn có thể đăng nhập ngay bây giờ.",
+    "verifyOtpSuccess": "Xác thực OTP thành công",
+    "userNotFound": "Người dùng không tồn tại",
+    "accountNotActivated": "Tài khoản chưa được kích hoạt",
+    "accountDisabled": "Tài khoản chưa được kích hoạt hoặc đã bị khóa",
+    "googleVerifySuccess": "Xác thực Google thành công!",
+    "googleWelcome": "Chào mừng bạn gia nhập FUJI",
+    "refreshSuccess": "Làm mới token thành công",
+    "logoutSuccess": "Đăng xuất thành công",
+    "google": "Google",
+    "backToEdit": "Quay lại chỉnh sửa thông tin",
+    "confirmOtp": "Xác nhận OTP",
+    "otpSentTo": "Mã OTP đã được gửi đến email",
+    "oauth2OtpSentTo": "Mã xác thực Google đã gửi đến",
+    "termsPrefix": "Bằng việc đăng ký, bạn đồng ý với",
+    "termsOfService": "Điều khoản dịch vụ",
+    "and": "và",
+    "privacyPolicy": "Chính sách quyền riêng tư",
+    "fujiFooter": "của FUJI.",
+    "validation": {
+      "usernameRequired": "Vui lòng nhập tên đăng nhập",
+      "fullnameRequired": "Vui lòng nhập họ tên",
+      "emailRequired": "Vui lòng nhập email",
+      "emailInvalid": "Email không hợp lệ",
+      "passwordRequired": "Vui lòng nhập mật khẩu",
+      "passwordMin": "Mật khẩu tối thiểu 6 ký tự",
+      "confirmPasswordRequired": "Vui lòng xác nhận mật khẩu",
+      "passwordsNotMatch": "Mật khẩu không khớp",
+      "otpRequired": "Vui lòng nhập đầy đủ 6 số"
+    }
+  },
+  "api": {
+    "loading": "Đang tải dữ liệu...",
+    "error": "Có lỗi xảy ra",
+    "validation": {
+      "invalid": "Dữ liệu không hợp lệ"
+    },
+    "unexpectedError": "Đã xảy ra lỗi hệ thống",
+    "networkError": "Không thể kết nối đến máy chủ",
+    "createFailed": "Đã xảy ra lỗi khi tạo. Vui lòng thử lại."
+  },
+  "flashlist": {
+    "listSuccess": "Lấy danh sách FlashList thành công",
+    "detailSuccess": "Lấy chi tiết FlashList thành công",
+    "createSuccess": "Tạo FlashList thành công",
+    "updateSuccess": "Cập nhật FlashList thành công",
+    "deleteSuccess": "Xóa FlashList thành công",
+    "deleteAllSuccess": "Xóa tất cả FlashList của người dùng thành công",
+    "rateSuccess": "Đánh giá FlashList thành công",
+    "addCardSuccess": "Thêm FlashCard vào FlashList thành công",
+    "removeCardSuccess": "Xóa FlashCard khỏi FlashList thành công",
+    "searchSuccess": "Tìm kiếm FlashList thành công",
+    "validationFailed": "Dữ liệu FlashList không hợp lệ",
+    "validate": {
+      "titleRequired": "Vui lòng nhập tiêu đề FlashList",
+      "privateCardInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai. Hãy bỏ chọn các FlashCard riêng tư hoặc đặt FlashList ở chế độ riêng tư."
+    },
+    "create": "Tạo Flash List"
+  },
+  "flashcard": {
+    "visibility": {
+      "otherPrivate": "FlashCard riêng tư của người khác",
+      "ownPrivateInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai"
+    },
+    "validate": {
+      "nameRequired": "Vui lòng nhập tên bộ FlashCard",
+      "minOneCard": "Vui lòng nhập ít nhất một thẻ"
+    },
+    "create": "Tạo Flash Card"
+  },
+  "home": {
+    "badge": "Nền tảng học tiếng Nhật số 1",
+    "title": "Học Tiếng Nhật",
+    "easier": "Dễ Dàng Hơn.",
+    "description": "Chinh phục tiếng Nhật cùng FUJI. Lộ trình cá nhân hóa dành riêng cho người Việt với sự hỗ trợ từ AI.",
+    "getStarted": "Bắt đầu ngay",
+    "watchDemo": "Xem demo",
+    "stats": {
+      "students": "Học viên",
+      "courses": "Khóa học",
+      "jlptPassRate": "Tỷ lệ đỗ JLPT",
+      "teachers": "Giảng viên"
+    },
+    "coursesSection": {
+      "title": "Khóa học của bạn",
+      "subtitle": "Tiếp tục hành trình chinh phục tiếng Nhật nào!",
+      "viewAll": "Xem tất cả",
+      "aiTitle": "Kaiwa với AI Sensei",
+      "aiDescription": "Luyện nói tiếng Nhật tự nhiên với trợ lý ảo thông minh 24/7. Phản hồi tức thì về phát âm và ngữ điệu.",
+      "practiceNow": "Luyện tập ngay"
+    }
+  }
+}

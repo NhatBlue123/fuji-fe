@@ -1,168 +1,42 @@
-// ─── Flashcard Types (matching BE DTOs) ────────────────
-
-export type JlptLevel = "N5" | "N4" | "N3" | "N2" | "N1";
-
-// ─── User Summary ──────────────────────────────────────
-export interface UserSummaryDTO {
+export interface FlashcardSet {
   id: number;
-  username: string;
-  fullName: string;
-  avatarUrl: string | null;
+  name: string;
+  description: string;
+  lesson: string;
+  numCards: number;
+  createdAt: string;
+  status: string;
+  lessonColor?: string;
+  isPublic?: boolean;
+  level?: "N5" | "N4" | "N3" | "N2" | "N1";
 }
 
-// ─── Card (individual vocabulary card) ─────────────────
-export interface CardDTO {
-  vocabulary: string;
+export interface Flashcard {
+  id: number;
+  kanji: string;
+  hiragana: string;
   meaning: string;
-  pronunciation?: string;
-  exampleSentence?: string;
-  previewUrl?: string | null;
+  example: string;
+  lesson: string;
+  type: string;
+  studyStatus?: "learned" | "review" | "not_learned";
+  viewCount: number;
 }
 
-export interface CardResponseDTO {
-  id: number;
-  vocabulary: string;
+export interface CreateFlashcardPayload {
+  kanji: string;
+  hiragana: string;
   meaning: string;
-  pronunciation: string | null;
-  exampleSentence: string | null;
-  previewUrl: string | null;
-  cardOrder: number;
-  createdAt: string;
+  example: string;
+  lesson: string;
+  type: string;
 }
 
-// ─── User Study Progress ─────────────────────────────────
-export interface UserStudyProgressDTO {
-  id: number;
-  progressPercentage: number;
-  rememberedCount: number;
-  totalCards: number;
-  lastStudiedAt: string | null;
-  nextReviewAt: string | null;
-  isCompleted: boolean;
-}
-
-// ─── FlashCard (a set of cards) ────────────────────────
-export interface FlashCardRequestDTO {
-  name: string;
-  description?: string;
-  level?: JlptLevel;
-  isPublic?: boolean;
-  cards: CardDTO[];
-}
-
-export interface FlashCardUpdateDTO {
-  name?: string;
-  description?: string;
-  level?: JlptLevel;
-  isPublic?: boolean;
-  cards?: CardDTO[];
-}
-
-export interface FlashCardResponseDTO {
-  id: number;
-  name: string;
-  description: string | null;
-  level: JlptLevel | null;
-  thumbnailUrl: string | null;
-  isPublic: boolean;
-  user: UserSummaryDTO;
-  cards: CardResponseDTO[];
-  cardCount: number;
-  createdAt: string;
-  updatedAt: string;
-  // Study tracking fields
-  studyCount?: number;
-  userProgress?: UserStudyProgressDTO;
-}
-
-export interface FlashCardSummaryDTO {
-  id: number;
-  name: string;
-  level: JlptLevel | null;
-  thumbnailUrl: string | null;
-  cardCount: number;
-}
-
-// ─── FlashList (collection of flashcard sets) ──────────
-export interface FlashListRequestDTO {
-  title: string;
-  description?: string;
-  level?: JlptLevel;
-  isPublic?: boolean;
-  flashcardIds?: number[];
-}
-
-export interface FlashListUpdateDTO {
-  title?: string;
-  description?: string;
-  level?: JlptLevel;
-  isPublic?: boolean;
-}
-
-export interface FlashListResponseDTO {
-  id: number;
-  title: string;
-  description: string | null;
-  level: JlptLevel | null;
-  thumbnailUrl: string | null;
-  isPublic: boolean;
-  user: UserSummaryDTO;
-  flashcards: FlashCardSummaryDTO[];
-  cardCount: number;
-  averageRating: number;
-  ratingCount: number;
-  studyCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface FlashListPageDTO {
-  publicLists: FlashListResponseDTO[];
-  myLists: FlashListResponseDTO[];
-  pagination: PaginationDTO;
-}
-
-// ─── Rating ────────────────────────────────────────────
-export interface RatingRequestDTO {
-  rating: number; // 1-5
-}
-
-// ─── Pagination ────────────────────────────────────────
-export interface PaginationDTO {
-  page: number;
-  limit: number;
-  totalElements: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
-
-// ─── Search Results ────────────────────────────────────
-export interface FlashCardSearchResult {
-  results: FlashCardResponseDTO[];
-  pagination: PaginationDTO;
-}
-
-export interface FlashListSearchResult {
-  results: FlashListResponseDTO[];
-  pagination: PaginationDTO;
-}
-
-// ─── List params ───────────────────────────────────────
-export interface FlashCardListParams {
-  page?: number;
-  limit?: number;
-}
-
-export interface FlashListListParams {
-  page?: number;
-  limit?: number;
-}
-
-export interface SearchParams {
-  query?: string;
-  level?: JlptLevel;
-  select?: string;
-  page?: number;
-  limit?: number;
+export function buildFlashcardFormData(payload: CreateFlashcardPayload, thumbnail?: File): FormData {
+  const formData = new FormData();
+  formData.append("flashcard", JSON.stringify(payload));
+  if (thumbnail) {
+    formData.append("thumbnail", thumbnail);
+  }
+  return formData;
 }

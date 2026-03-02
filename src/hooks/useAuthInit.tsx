@@ -28,18 +28,29 @@ export const useAuthInit = () => {
     if (isInitialized) return;
 
     const restoreSession = async () => {
-      const accessToken = getAccessToken();
+      const initialToken = getAccessToken();
 
-      if (!accessToken) {
+      if (!initialToken) {
         dispatch(setInitialized());
         return;
       }
 
       try {
+        console.log("📡 useAuthInit: Fetching current user from API...");
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
-        if (result?.data) {
-          const backendUser = result.data as unknown as Record<string, unknown>;
+        if (result) {
+          // Re-read token after API call — baseQueryWithReauth may have
+          // refreshed it during 401 recovery, replacing the expired JWT
+          // with a fresh one in the cookie. Using the stale `initialToken`
+          // would overwrite the fresh token and break every subsequent request.
+          const currentToken = getAccessToken();
+          if (!currentToken) {
+            dispatch(logout());
+            return;
+          }
+
+          const backendUser = result as unknown as Record<string, unknown>;
           // Map backend UserDTO to frontend User type
           const user: User = {
             _id: String(backendUser.id || ""),
@@ -68,17 +79,22 @@ export const useAuthInit = () => {
             createdAt: backendUser.createdAt as string,
             updatedAt: backendUser.updatedAt as string,
           };
+          console.log("✅ useAuthInit: User fetched successfully:", user.username);
+          console.log("👤 useAuthInit: fullName =", user.fullName);
+          console.log("💾 useAuthInit: Dispatching loginSuccess...");
           dispatch(
             loginSuccess({
               user,
-              accessToken,
+              accessToken: currentToken,
             }),
           );
         } else {
+          console.log("❌ useAuthInit: No user data in response, logging out");
           dispatch(logout());
         }
-      } catch {
+      } catch (error) {
         // Token hết hạn hoặc không hợp lệ
+        console.error("❌ useAuthInit: Error fetching user, logging out:", error);
         dispatch(logout());
       }
     };

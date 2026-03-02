@@ -9,6 +9,7 @@ import type { User } from "../../types/auth";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
 import { getAccessToken, setAccessToken, clearTokens } from "@/lib/token";
 import { AuthUser } from "@/types/auth-user";
+import i18n from "@/i18n";
 
 // Flag để tránh nhiều request refresh đồng thời
 let isRefreshing = false;
@@ -26,6 +27,9 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
+    // Gửi ngôn ngữ hiện tại lên backend để align với FE
+    const currentLang = i18n.language || "vi";
+    headers.set("Accept-Language", currentLang);
     return headers;
   },
 });
@@ -116,7 +120,8 @@ const baseQueryWithReauth: BaseQueryFn<
 
 interface ApiResponse<T = unknown> {
   success: boolean;
-  message?: string;
+  // Backend trả về key i18n (ví dụ "auth.loginSuccess")
+  messageKey?: string;
   data?: T;
 }
 
@@ -254,23 +259,28 @@ export const authApi = createApi({
     // Lấy thông tin user hiện tại (cần Bearer token)
     // Endpoint: GET /api/users/me
     getCurrentUser: builder.query<AuthUser, void>({
-  query: () => "/users/me",
-  transformResponse: (res: any): AuthUser => ({
-    id: res.id,
-    username: res.username,
-    email: res.email,
-
-    fullName: res.fullName,
-    avatarUrl: res.avatarUrl,
-    bio: res.bio,
-    gender: res.gender,
-    phone: res.phone,
-    jlptLevel: res.jlptLevel,
-    active: res.active,
-    createdAt: res.createdAt,
-  }),
-  providesTags: ["User"],
-}),
+      query: () => "/users/me",
+      transformResponse: (res: any): AuthUser => {
+        // Backend returns ApiResponse<UserDTO> = { success, message, data: UserDTO }
+        // We need to unwrap the 'data' field first
+        const userData = res.data || res; // Fallback to res if data doesn't exist
+        
+        return {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          fullName: userData.fullName || userData.username || "User",
+          avatarUrl: userData.avatarUrl || null,
+          bio: userData.bio || null,
+          gender: userData.gender || "male",
+          phone: userData.phone || null,
+          jlptLevel: userData.jlptLevel || "N5",
+          active: userData.isActive ?? false,
+          createdAt: userData.createdAt,
+        };
+      },
+      providesTags: ["User"],
+    }),
 
 
     // Verify email

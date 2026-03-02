@@ -11,6 +11,10 @@ export const baseApi = createApi({
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
+
+      const lang = localStorage.getItem("i18nextLng") || "vi";
+      headers.set("Accept-Language", lang);
+
       return headers;
     },
   }),

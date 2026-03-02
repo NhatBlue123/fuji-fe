@@ -18,6 +18,7 @@ import {
   useRegisterMutation,
   useVerifyOAuth2OtpMutation,
 } from "@/store/services/authApi";
+import { useTranslation } from "react-i18next";
 
 type AuthTab = "login" | "register";
 type RegisterStep = "register" | "otp";
@@ -97,6 +98,7 @@ export default function AuthForm({
   onSuccess,
 }: AuthFormProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   /* ─── Tab state ─── */
   const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
@@ -163,13 +165,15 @@ export default function AuthForm({
     e.preventDefault();
     setLoginError(null);
     try {
-      await login({
+      const res = await login({
         username: loginEmail,
         password: loginPassword,
       }).unwrap();
       // Middleware sẽ tự động: lưu tokens → fetch /me → dispatch loginSuccess
-      toast.success("Đăng nhập thành công!", {
-        description: "Chào mừng bạn quay trở lại FUJI",
+      // Nếu backend trả về messageKey ở wrapper ApiResponse, ta không dùng ở đây
+      // vì mutation login transformResponse đã unwrap data accessToken.
+      toast.success(t("auth.loginSuccess"), {
+        description: t("auth.loginWelcome"),
       });
       if (onSuccess) {
         onSuccess();
@@ -177,12 +181,13 @@ export default function AuthForm({
         router.push("/");
       }
     } catch (err: any) {
-      let msg = "Đăng nhập thất bại. Vui lòng thử lại!";
-      if (err?.data?.message) msg = err.data.message;
-      else if (err?.error) msg = "Không thể kết nối đến máy chủ";
+      let msg = t("auth.loginFailed");
+      // Backend error handler: { messageKey: "auth.invalidCredentials" }
+      if (err?.data?.messageKey) msg = t(err.data.messageKey);
+      else if (err?.error) msg = t("api.networkError");
       else if (typeof err?.data === "string") msg = err.data;
       setLoginError(msg);
-      toast.error("Đăng nhập thất bại", { description: msg });
+      toast.error(t("auth.loginFail"), { description: msg });
     }
   };
 
@@ -198,18 +203,19 @@ export default function AuthForm({
     const newErrors: Errors = {};
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!formData.username.trim())
-      newErrors.username = "Vui lòng nhập tên đăng nhập";
-    if (!formData.fullname.trim()) newErrors.fullname = "Vui lòng nhập họ tên";
-    if (!formData.email.trim()) newErrors.email = "Vui lòng nhập email";
+      newErrors.username = t("auth.validation.usernameRequired");
+    if (!formData.fullname.trim())
+      newErrors.fullname = t("auth.validation.fullnameRequired");
+    if (!formData.email.trim()) newErrors.email = t("auth.validation.emailRequired");
     else if (!emailRegex.test(formData.email))
-      newErrors.email = "Email không hợp lệ";
-    if (!formData.password) newErrors.password = "Vui lòng nhập mật khẩu";
+      newErrors.email = t("auth.validation.emailInvalid");
+    if (!formData.password) newErrors.password = t("auth.validation.passwordRequired");
     else if (formData.password.length < 6)
-      newErrors.password = "Mật khẩu tối thiểu 6 ký tự";
+      newErrors.password = t("auth.validation.passwordMin");
     if (!formData.confirm_password)
-      newErrors.confirm_password = "Vui lòng xác nhận mật khẩu";
+      newErrors.confirm_password = t("auth.validation.confirmPasswordRequired");
     else if (formData.confirm_password !== formData.password)
-      newErrors.confirm_password = "Mật khẩu không khớp";
+      newErrors.confirm_password = t("auth.validation.passwordsNotMatch");
     setRegErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -229,15 +235,20 @@ export default function AuthForm({
 
     try {
       // Bước 1: Gửi OTP (không tạo user)
-      await sendOtpRegister(payload).unwrap();
-      toast.info("Mã OTP đã được gửi", {
-        description: `Vui lòng kiểm tra email ${formData.email}`,
+      const res = await sendOtpRegister(payload).unwrap();
+      const msg =
+        (res as any)?.messageKey && typeof (res as any).messageKey === "string"
+          ? t((res as any).messageKey)
+          : t("auth.sendOtpSuccess");
+      toast.info(msg, {
+        description: t("auth.sendOtpCheckEmail", { email: formData.email }),
       });
       setRegisterStep("otp");
     } catch (err: any) {
-      setRegisterServerError(
-        err?.data?.message || "Gửi OTP thất bại. Vui lòng thử lại!",
-      );
+      const msg =
+        (err?.data?.messageKey && t(err.data.messageKey)) ||
+        t("auth.sendOtpFailed");
+      setRegisterServerError(msg);
     }
   };
 
@@ -245,15 +256,15 @@ export default function AuthForm({
     e.preventDefault();
     setRegisterServerError(null);
     if (otpCode.length < 6) {
-      setRegErrors({ ...regErrors, otp: "Vui lòng nhập đầy đủ 6 số" });
+      setRegErrors({ ...regErrors, otp: t("auth.validation.otpRequired") });
       return;
     }
     try {
       if (sessionId) {
         // Step 2 for OAuth2: Verify session + OTP
         await verifyOAuth2Otp({ sessionId, otpCode }).unwrap();
-        toast.success("Xác thực Google thành công!", {
-          description: "Chào mừng bạn gia nhập FUJI",
+        toast.success(t("auth.googleVerifySuccess"), {
+          description: t("auth.googleWelcome"),
         });
         router.push("/");
         return;
@@ -267,16 +278,17 @@ export default function AuthForm({
         fullName: formData.fullname,
         otpCode: otpCode,
       }).unwrap();
-      toast.success("Đăng ký thành công!", {
-        description: "Bạn có thể đăng nhập ngay bây giờ.",
+      toast.success(t("auth.registerSuccess"), {
+        description: t("auth.registerCanLogin"),
       });
       switchTab("login");
       setRegisterStep("register");
       setOtpCode("");
     } catch (err: any) {
-      setRegisterServerError(
-        err?.data?.message || "Mã OTP không chính xác hoặc đã hết hạn!",
-      );
+      const msg =
+        (err?.data?.messageKey && t(err.data.messageKey)) ||
+        t("auth.otpInvalidOrExpired");
+      setRegisterServerError(msg);
     }
   };
 
@@ -296,7 +308,7 @@ export default function AuthForm({
           </h1>
         </div>
         <p className="text-slate-400 text-sm font-medium">
-          Nền tảng học tiếng Nhật số 1 Việt Nam
+          {t("auth.subTitle")}
         </p>
       </div>
 
@@ -323,7 +335,7 @@ export default function AuthForm({
                   : "text-slate-400 hover:text-slate-200",
               )}
             >
-              Đăng nhập
+              {t("common.login")}
             </button>
             <button
               type="button"
@@ -335,7 +347,7 @@ export default function AuthForm({
                   : "text-slate-400 hover:text-slate-200",
               )}
             >
-              Đăng ký
+              {t("common.register")}
             </button>
           </div>
         </div>
@@ -372,7 +384,7 @@ export default function AuthForm({
                   {/* Username */}
                   <AuthFloatingInput
                     id="login-email"
-                    label="Tên đăng nhập"
+                    label={t("auth.username")}
                     type="text"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
@@ -387,7 +399,7 @@ export default function AuthForm({
                   {/* Password */}
                   <AuthFloatingInput
                     id="login-password"
-                    label="Mật khẩu"
+                    label={t("auth.password")}
                     type={showLoginPassword ? "text" : "password"}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -415,11 +427,11 @@ export default function AuthForm({
                     {isLoginLoading ? (
                       <>
                         <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                        Đang xử lý...
+                        {t("auth.processing")}
                       </>
                     ) : (
                       <>
-                        Đăng nhập
+                        {t("common.login")}
                         <span className="material-symbols-outlined text-sm">
                           arrow_forward
                         </span>
@@ -435,21 +447,21 @@ export default function AuthForm({
                   </div>
                   <div className="relative flex justify-center text-[10px] uppercase">
                     <span className="bg-card-bg px-3 text-slate-500 font-bold tracking-widest">
-                      Hoặc tiếp tục với
+                      {t("auth.orContinueWith")}
                     </span>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() =>
-                    (window.location.href =
-                      "http://localhost:8181/oauth2/authorization/google")
+                  (window.location.href =
+                    "http://localhost:8181/oauth2/authorization/google")
                   }
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                 >
                   <GoogleIcon />
                   <span className="text-sm font-bold text-slate-300 group-hover:text-white">
-                    Google
+                    {t("auth.google")}
                   </span>
                 </button>
               </motion.div>
@@ -497,7 +509,7 @@ export default function AuthForm({
                         {/* Username */}
                         <AuthFloatingInput
                           id="username"
-                          label="Tên đăng nhập"
+                          label={t("auth.username")}
                           value={formData.username}
                           onChange={handleRegChange}
                           error={
@@ -515,7 +527,7 @@ export default function AuthForm({
                         {/* Fullname */}
                         <AuthFloatingInput
                           id="fullname"
-                          label="Họ tên"
+                          label={t("auth.fullname")}
                           value={formData.fullname}
                           onChange={handleRegChange}
                           error={
@@ -533,7 +545,7 @@ export default function AuthForm({
                         {/* Email */}
                         <AuthFloatingInput
                           id="email"
-                          label="Email"
+                          label={t("auth.email")}
                           type="email"
                           value={formData.email}
                           onChange={handleRegChange}
@@ -552,7 +564,7 @@ export default function AuthForm({
                         {/* Password */}
                         <AuthFloatingInput
                           id="password"
-                          label="Mật khẩu"
+                          label={t("auth.password")}
                           type={showRegPassword ? "text" : "password"}
                           value={formData.password}
                           onChange={handleRegChange}
@@ -581,7 +593,7 @@ export default function AuthForm({
                         {/* Confirm Password */}
                         <AuthFloatingInput
                           id="confirm_password"
-                          label="Xác nhận mật khẩu"
+                          label={t("auth.confirmPassword")}
                           type={showConfirmPassword ? "text" : "password"}
                           value={formData.confirm_password}
                           onChange={handleRegChange}
@@ -613,7 +625,7 @@ export default function AuthForm({
                           type="submit"
                           disabled={isSendingOtp}
                         >
-                          {isSendingOtp ? "Đang gửi OTP..." : "Tạo tài khoản"}
+                          {isSendingOtp ? t("auth.processing") : t("common.register")}
                           <span className="material-symbols-outlined text-sm">
                             arrow_forward
                           </span>
@@ -627,21 +639,21 @@ export default function AuthForm({
                         </div>
                         <div className="relative flex justify-center text-[10px] uppercase">
                           <span className="bg-card-bg/50 backdrop-blur-sm px-3 text-slate-500 font-bold tracking-widest rounded">
-                            Hoặc tiếp tục với
+                            {t("auth.orContinueWith")}
                           </span>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() =>
-                          (window.location.href =
-                            "http://localhost:8181/oauth2/authorization/google")
+                        (window.location.href =
+                          "http://localhost:8181/oauth2/authorization/google")
                         }
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                       >
                         <GoogleIcon />
                         <span className="text-sm font-bold text-slate-300 group-hover:text-white">
-                          Google
+                          {t("auth.google")}
                         </span>
                       </button>
                     </motion.div>
@@ -674,8 +686,8 @@ export default function AuthForm({
                           <div>
                             <p className="text-sm text-slate-400">
                               {sessionId
-                                ? "Mã xác thực Google đã gửi đến"
-                                : "Mã OTP đã được gửi đến email"}
+                                ? t("auth.oauth2OtpSentTo")
+                                : t("auth.otpSentTo")}
                             </p>
                             <p className="text-sm font-bold text-white">
                               {sessionId ? sessionEmail : formData.email}
@@ -728,15 +740,15 @@ export default function AuthForm({
                           disabled={isRegistering || isVerifyingOAuth2}
                         >
                           {isRegistering || isVerifyingOAuth2
-                            ? "Đang xử lý..."
-                            : "Xác nhận OTP"}
+                            ? t("auth.processing")
+                            : t("auth.confirmOtp")}
                         </button>
                         <button
                           type="button"
                           onClick={() => setRegisterStep("register")}
                           className="w-full text-sm text-slate-400 hover:text-white transition-colors"
                         >
-                          Quay lại chỉnh sửa thông tin
+                          {t("auth.backToEdit")}
                         </button>
                       </form>
                     </motion.div>
@@ -752,24 +764,24 @@ export default function AuthForm({
           <p className="text-sm text-slate-400">
             {activeTab === "login" ? (
               <>
-                Chưa có tài khoản?{" "}
+                {t("auth.noAccount")}{" "}
                 <button
                   type="button"
                   onClick={() => switchTab("register")}
                   className="font-bold text-secondary hover:text-pink-400 hover:underline decoration-2 underline-offset-4 transition-all"
                 >
-                  Đăng ký ngay
+                  {t("auth.registerNow")}
                 </button>
               </>
             ) : (
               <>
-                Đã có tài khoản?{" "}
+                {t("auth.haveAccount")}{" "}
                 <button
                   type="button"
                   onClick={() => switchTab("login")}
                   className="font-bold text-secondary hover:text-pink-400 hover:underline decoration-2 underline-offset-4 transition-all"
                 >
-                  Đăng nhập ngay
+                  {t("auth.loginNow")}
                 </button>
               </>
             )}
@@ -780,21 +792,21 @@ export default function AuthForm({
       {/* Terms */}
       <div className="mt-6 text-center px-8">
         <p className="text-[11px] text-slate-500 leading-relaxed">
-          Bằng việc đăng ký, bạn đồng ý với{" "}
+          {t("auth.termsPrefix")}{" "}
           <Link
             href="/terms"
             className="text-slate-400 hover:text-blue-400 underline"
           >
-            Điều khoản dịch vụ
+            {t("auth.termsOfService")}
           </Link>{" "}
-          và{" "}
+          {t("auth.and")}{" "}
           <Link
             href="/privacy"
             className="text-slate-400 hover:text-blue-400 underline"
           >
-            Chính sách quyền riêng tư
+            {t("auth.privacyPolicy")}
           </Link>{" "}
-          của FUJI.
+          {t("auth.fujiFooter")}
         </p>
       </div>
     </div>

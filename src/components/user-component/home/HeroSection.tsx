@@ -3,9 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/store/hooks";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export function HeroSection() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
+
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <div className="relative w-full min-h-[680px] flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-20 pb-72 overflow-hidden rounded-b-[3rem] shadow-2xl shadow-blue-900/20">
@@ -27,30 +36,29 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 mb-6 shadow-glow">
           <span className="size-2 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_#F472B6]"></span>
           <span className="text-xs font-bold tracking-wide uppercase text-secondary">
-            Nền tảng học tiếng Nhật số 1
+            {t("home.badge")}
           </span>
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-7xl font-black leading-tight mb-4 tracking-tight drop-shadow-lg">
-          Học Tiếng Nhật <br />
-          <span className="text-secondary text-glow">Dễ Dàng Hơn.</span>
+          {t("home.title")} <br />
+          <span className="text-secondary text-glow">{t("home.easier")}</span>
         </h1>
         <p className="text-lg md:text-xl text-slate-300 mb-8 font-light max-w-lg leading-relaxed drop-shadow-md">
-          Chinh phục tiếng Nhật cùng FUJI. Lộ trình cá nhân hóa dành riêng cho
-          người Việt với sự hỗ trợ từ AI.
+          {t("home.description")}
         </p>
         <div className="flex flex-wrap gap-4">
           <Link
-            href={isAuthenticated ? "/course" : "/login"}
+            href={isMounted && isAuthenticated ? "/course" : "/login"}
             className="bg-secondary hover:bg-pink-400 text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-pink-500/40 flex items-center gap-2"
           >
-            Bắt đầu ngay
+            {t("home.getStarted")}
             <span className="material-symbols-outlined text-sm">
               arrow_forward
             </span>
           </Link>
           <button className="bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center gap-2 hover:border-white/40">
             <span className="material-symbols-outlined">play_circle</span>
-            Xem demo
+            {t("home.watchDemo")}
           </button>
         </div>
       </div>

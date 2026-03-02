@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";
@@ -8,7 +8,10 @@ import ExamContent from "./ExamContent";
 import AntiCheatOverlay from "./AntiCheatOverlay";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useAntiCheat } from "@/hooks/useAntiCheat";
-import { useGetTestByIdQuery, useSubmitTestMutation } from "@/store/services/jlptApi";
+import {
+  useGetTestByIdQuery,
+  useSubmitTestMutation,
+} from "@/store/services/jlptApi";
 import type { UserAnswer, JlptQuestion } from "@/types/jlpt";
 import {
   JLPT_STRUCTURE,
@@ -30,8 +33,21 @@ function parseOptions(opts?: string[] | string | null): string[] {
   }
 }
 
-
 export default function JLPTtestPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400"></div>
+        </div>
+      }
+    >
+      <JLPTtestPageInner />
+    </Suspense>
+  );
+}
+
+function JLPTtestPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId");
@@ -45,10 +61,11 @@ export default function JLPTtestPage() {
   const [scrollTrigger, setScrollTrigger] = useState(0);
 
   // Fetch test data
-  const { data: testData, isLoading, error } = useGetTestByIdQuery(
-    Number(testId),
-    { skip: !testId }
-  );
+  const {
+    data: testData,
+    isLoading,
+    error,
+  } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
   const [submitTest] = useSubmitTestMutation();
 
@@ -61,25 +78,38 @@ export default function JLPTtestPage() {
     try {
       const raw = localStorage.getItem(`jlpt_mondai_config_${testId}`);
       if (raw) {
-        const overrides = JSON.parse(raw) as Record<string, { count: number; instruction: string }>;
+        const overrides = JSON.parse(raw) as Record<
+          string,
+          { count: number; instruction: string }
+        >;
         const countMap: Record<number, number> = {};
-        Object.entries(overrides).forEach(([k, v]) => { if (v.count > 0) countMap[Number(k)] = v.count; });
+        Object.entries(overrides).forEach(([k, v]) => {
+          if (v.count > 0) countMap[Number(k)] = v.count;
+        });
         if (Object.keys(countMap).length > 0)
-          return rebuildStructureWithCounts(testData.level as JLPTLevel, countMap);
+          return rebuildStructureWithCounts(
+            testData.level as JLPTLevel,
+            countMap,
+          );
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return JLPT_STRUCTURE[testData.level as JLPTLevel] ?? [];
   }, [testData?.level, testId]);
 
   // Map of reading mondai numbers to their start question order
   const readingMondaiData = useMemo(() => {
     const map = new Map<number, { start: number }>();
-    examStructure.forEach((s) => s.mondai.forEach((m) => {
-      if (m.requires_passage) map.set(m.number, { start: m.start });
-    }));
+    examStructure.forEach((s) =>
+      s.mondai.forEach((m) => {
+        if (m.requires_passage) map.set(m.number, { start: m.start });
+      }),
+    );
     return map;
   }, [examStructure]);
-  const isReadingMondai = (mondaiNum: number) => readingMondaiData.has(mondaiNum);
+  const isReadingMondai = (mondaiNum: number) =>
+    readingMondaiData.has(mondaiNum);
 
   const examSubLabels = useMemo(() => {
     const labels: Record<number, string> = {};
@@ -113,9 +143,11 @@ export default function JLPTtestPage() {
 
   const leafQuestions = useMemo(() => {
     const flattened: any[] = [];
-    const sortedQ = [...allQuestions].sort((a, b) => a.questionOrder - b.questionOrder);
-    
-    sortedQ.forEach(q => {
+    const sortedQ = [...allQuestions].sort(
+      (a, b) => a.questionOrder - b.questionOrder,
+    );
+
+    sortedQ.forEach((q) => {
       if (!q.children || q.children.length === 0) {
         if (q.parentId == null) {
           const opts = parseOptions(q.options);
@@ -123,27 +155,33 @@ export default function JLPTtestPage() {
             flattened.push({
               ...q,
               options: opts,
-              subLabel: examSubLabels[q.questionOrder] || String(q.questionOrder),
+              subLabel:
+                examSubLabels[q.questionOrder] || String(q.questionOrder),
             });
           }
         }
       } else {
         const isReadingPassage = readingMondaiData.has(q.mondaiNumber);
-        const sortedChildren = [...q.children].sort((a, b) => a.questionOrder - b.questionOrder);
-        
-        sortedChildren.forEach(child => {
+        const sortedChildren = [...q.children].sort(
+          (a, b) => a.questionOrder - b.questionOrder,
+        );
+
+        sortedChildren.forEach((child) => {
           const opts = parseOptions(child.options);
           flattened.push({
             ...child,
             options: opts,
-            subLabel: examSubLabels[child.questionOrder] || String(child.questionOrder),
+            subLabel:
+              examSubLabels[child.questionOrder] || String(child.questionOrder),
             parent: {
               ...q,
               isReadingPassage,
-              passageGroupBase: isReadingPassage 
-                ? parseInt(examSubLabels[child.questionOrder]?.split('.')[0] || "0") 
+              passageGroupBase: isReadingPassage
+                ? parseInt(
+                    examSubLabels[child.questionOrder]?.split(".")[0] || "0",
+                  )
                 : null,
-            }
+            },
           });
         });
       }
@@ -151,7 +189,6 @@ export default function JLPTtestPage() {
 
     return flattened;
   }, [allQuestions, examSubLabels, readingMondaiData]);
-
 
   const totalQuestions = leafQuestions.length;
   const duration = testData?.duration || 140; // minutes
@@ -174,7 +211,7 @@ export default function JLPTtestPage() {
         ([questionId, selected]) => ({
           questionId: Number(questionId),
           selected,
-        })
+        }),
       );
 
       const userAnswersJson = JSON.stringify(userAnswers);
@@ -196,10 +233,11 @@ export default function JLPTtestPage() {
 
   // ===== ANTI-CHEAT =====
   const MAX_TAB_SWITCHES = 5;
-  const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } = useAntiCheat({
-    maxTabSwitches: MAX_TAB_SWITCHES,
-    detectDevTools: true,
-  });
+  const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } =
+    useAntiCheat({
+      maxTabSwitches: MAX_TAB_SWITCHES,
+      detectDevTools: true,
+    });
 
   // ===== TIMER (paused when devtools open) =====
   const { timeLeft } = useCountdown({
@@ -298,20 +336,37 @@ export default function JLPTtestPage() {
       {showConfirm && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-[#1a2540] border border-slate-700 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center">
-            <span className="material-symbols-outlined text-5xl text-[#ee2b5b] mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>assignment_turned_in</span>
-            <h2 className="text-xl font-bold text-white mb-2">Xác nhận nộp bài</h2>
+            <span
+              className="material-symbols-outlined text-5xl text-[#ee2b5b] mb-3 block"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              assignment_turned_in
+            </span>
+            <h2 className="text-xl font-bold text-white mb-2">
+              Xác nhận nộp bài
+            </h2>
             {answeredCount < totalQuestions ? (
               <p className="text-slate-300 text-sm mb-6">
                 Bạn đã làm{" "}
-                <span className="text-yellow-400 font-bold">{answeredCount}/{totalQuestions}</span>{" "}
+                <span className="text-yellow-400 font-bold">
+                  {answeredCount}/{totalQuestions}
+                </span>{" "}
                 câu. Còn{" "}
-                <span className="text-red-400 font-bold">{totalQuestions - answeredCount}</span>{" "}
-                câu chưa tắt.<br />
+                <span className="text-red-400 font-bold">
+                  {totalQuestions - answeredCount}
+                </span>{" "}
+                câu chưa tắt.
+                <br />
                 Bạn có chắc chắn muốn nộp bài không?
               </p>
             ) : (
               <p className="text-slate-300 text-sm mb-6">
-                Bạn đã hoàn thành tất cả <span className="text-green-400 font-bold">{totalQuestions}</span> câu.<br />
+                Bạn đã hoàn thành tất cả{" "}
+                <span className="text-green-400 font-bold">
+                  {totalQuestions}
+                </span>{" "}
+                câu.
+                <br />
                 Bạn có chắc chắn muốn nộp bài không?
               </p>
             )}
@@ -389,7 +444,9 @@ export default function JLPTtestPage() {
           answers={answers}
           questions={allQuestions}
           onSelect={(questionOrder) => {
-            const idx = leafQuestions.findIndex(q => q.questionOrder === questionOrder);
+            const idx = leafQuestions.findIndex(
+              (q) => q.questionOrder === questionOrder,
+            );
             if (idx !== -1) {
               setCurrentQuestion(idx);
               setScrollTrigger((t) => t + 1); // signal: scroll to the target sub-question

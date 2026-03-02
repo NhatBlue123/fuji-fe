@@ -354,12 +354,14 @@ export default function FlashcardsPage() {
                               </span>
                               <span>{fl.flashcards?.length || 0} bộ thẻ</span>
                             </div>
-                            {fl.averageRating > 0 && (
+                            {(fl.averageRating || 0) > 0 && (
                               <div className="flex items-center gap-1">
                                 <span className="material-symbols-outlined text-sm text-yellow-500">
                                   star
                                 </span>
-                                <span>{fl.averageRating.toFixed(1)}</span>
+                                <span>
+                                  {(fl.averageRating || 0).toFixed(1)}
+                                </span>
                               </div>
                             )}
                           </div>

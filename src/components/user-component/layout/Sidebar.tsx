@@ -63,32 +63,36 @@ const Sidebar = () => {
       </Link>
       <nav className="flex-1 overflow-y-auto px-4 space-y-1">
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/")
-            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-            }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            isActive("/")
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+          }`}
           href="/"
         >
           <span
-            className={`material-symbols-outlined ${isActive("/") ? "filled" : ""
-              }`}
+            className={`material-symbols-outlined ${
+              isActive("/") ? "filled" : ""
+            }`}
           >
             home
           </span>
           <span>{t("common.home")}</span>
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/course")
-            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-            }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            isActive("/course")
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+          }`}
           href="/course"
         >
           <span
-            className={`material-symbols-outlined ${isActive("/course")
-              ? "filled"
-              : "group-hover:text-sidebar-primary transition-colors"
-              }`}
+            className={`material-symbols-outlined ${
+              isActive("/course")
+                ? "filled"
+                : "group-hover:text-sidebar-primary transition-colors"
+            }`}
           >
             menu_book
           </span>
@@ -116,29 +120,34 @@ const Sidebar = () => {
           </span> */}
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/ai-chat")
-            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-            }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            isActive("/ai-chat")
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+          }`}
           href="/ai-chat"
         >
-          <span className={`material-symbols-outlined ${isActive("/ai-chat") ? "filled" : "group-hover:text-blue-600 dark:group-hover:text-white transition-colors"}`}>
+          <span
+            className={`material-symbols-outlined ${isActive("/ai-chat") ? "filled" : "group-hover:text-blue-600 dark:group-hover:text-white transition-colors"}`}
+          >
             smart_toy
           </span>
           <span>{t("common.aiPractice")}</span>
         </Link>
         <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/flashcards")
-            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-            }`}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            isActive("/flashcards")
+              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+          }`}
           href="/flashcards"
         >
           <span
-            className={`material-symbols-outlined ${isActive("/flashcards")
-              ? "filled"
-              : "group-hover:text-sidebar-primary transition-colors"
-              }`}
+            className={`material-symbols-outlined ${
+              isActive("/flashcards")
+                ? "filled"
+                : "group-hover:text-sidebar-primary transition-colors"
+            }`}
           >
             style
           </span>
@@ -195,20 +204,20 @@ const Sidebar = () => {
           <p className="text-xs font-medium opacity-80 mb-1 text-blue-200">
             {t("sidebar.premiumTitle")}
           </p>
-          <h3 className="font-bold text-sm mb-2">{t("sidebar.premiumHeading")}</h3>
+          <h3 className="font-bold text-sm mb-2">
+            {t("sidebar.premiumHeading")}
+          </h3>
           <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg backdrop-blur-sm transition-colors w-full border border-white/10">
             {t("sidebar.viewDetails")}
           </button>
         </div>
         <div className="flex justify-center w-full">
           <div className="flex items-center gap-3">
-
             {/* Nút Sáng / Tối dạng chip, match với nút English */}
             <button
               type="button"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="inline-flex h-8 w-28 items-center justify-center gap-2 rounded-full border border-border bg-background/60 px-3 text-xs font-medium text-muted-foreground shadow-sm hover:bg-background hover:text-foreground transition-colors whitespace-nowrap"
-
             >
               <span className="material-symbols-outlined text-[16px] leading-none">
                 contrast
@@ -216,7 +225,6 @@ const Sidebar = () => {
               <span className="truncate max-w-[80px]">
                 {t("common.themeToggle")}
               </span>
-
             </button>
             {/* Nút đổi ngôn ngữ dạng chip giống style bên trên */}
             <LanguageSwitcher className="h-8" />
@@ -251,7 +259,9 @@ const Sidebar = () => {
                     {user.fullname || user.fullName || user.username}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {user.level ? `${t("sidebar.studentLevel")} ${user.level}` : user.email}
+                    {user.level
+                      ? `${t("sidebar.studentLevel")} ${user.level}`
+                      : user.email}
                   </p>
                 </Link>
               </div>

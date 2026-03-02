@@ -93,8 +93,7 @@ const ASSISTANT_INITIAL: AssistantMessage[] = [
   {
     id: 1,
     role: "ai",
-    textVn:
-      "Xin chào! Tôi là Trợ giảng AI của FUJI. Bạn muốn học gì hôm nay?",
+    textVn: "Xin chào! Tôi là Trợ giảng AI của FUJI. Bạn muốn học gì hôm nay?",
   },
 ];
 
@@ -114,7 +113,7 @@ const RubyText = memo(function RubyText({ segments }: { segments: Seg[] }) {
           </ruby>
         ) : (
           <span key={i}>{seg.t}</span>
-        )
+        ),
       )}
     </>
   );
@@ -307,8 +306,8 @@ const RightSidebar = memo(function RightSidebar({
               <span className="text-xs font-bold uppercase">Điểm mạnh</span>
             </div>
             <p className="text-xs text-foreground/80 leading-relaxed">
-              Phát âm từ vựng về &ldquo;địa điểm&rdquo; rất rõ ràng. Phản xạ
-              trả lời câu hỏi &ldquo;Đi đâu&rdquo; nhanh chóng.
+              Phát âm từ vựng về &ldquo;địa điểm&rdquo; rất rõ ràng. Phản xạ trả
+              lời câu hỏi &ldquo;Đi đâu&rdquo; nhanh chóng.
             </p>
           </div>
           <div className="bg-orange-500/5 border border-orange-500/20 p-4 rounded-xl">
@@ -621,10 +620,7 @@ function SenseiPanel() {
                         </div>
                       </div>
                     ) : (
-                      <div
-                        key={msg.id}
-                        className="flex gap-4 opacity-70"
-                      >
+                      <div key={msg.id} className="flex gap-4 opacity-70">
                         <div className="shrink-0 size-8 rounded-full bg-muted mt-1 border border-border flex items-center justify-center">
                           <span className="material-symbols-outlined text-sm text-muted-foreground">
                             person
@@ -643,7 +639,7 @@ function SenseiPanel() {
                           )}
                         </div>
                       </div>
-                    )
+                    ),
                   )}
 
                   {/* Voice recognition indicator */}
@@ -757,9 +753,7 @@ function AssistantPanel() {
                     {msg.textJp && (
                       <p className="font-bold text-lg mb-1">{msg.textJp}</p>
                     )}
-                    {msg.textVn && (
-                      <p className="text-sm">{msg.textVn}</p>
-                    )}
+                    {msg.textVn && <p className="text-sm">{msg.textVn}</p>}
                   </div>
                   <div className="flex gap-2 mt-1">
                     <button
@@ -787,7 +781,7 @@ function AssistantPanel() {
                   <p className="text-base">{msg.textJp}</p>
                 </div>
               </div>
-            )
+            ),
           )}
 
           {isTyping && <TypingIndicator label="Trợ giảng đang soạn..." />}

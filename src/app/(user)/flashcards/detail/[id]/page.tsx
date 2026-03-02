@@ -5,6 +5,7 @@ import Link from "next/link";
 import styles from "./page.module.css";
 import { useGetFlashCardByIdQuery } from "@/store/services/flashcardApi";
 import { getMockImage } from "@/lib/mockImages";
+import type { CardResponseDTO } from "@/types/flashcard";
 
 export default function FlashcardSetDetailPage({
   params,
@@ -188,7 +189,14 @@ export default function FlashcardSetDetailPage({
                   <span className="material-symbols-outlined text-secondary">
                     update
                   </span>
-                  <span>Cập nhật {formatDate(flashcard.updatedAt)}</span>
+                  <span>
+                    Cập nhật{" "}
+                    {formatDate(
+                      flashcard.updatedAt ||
+                        flashcard.createdAt ||
+                        new Date().toISOString(),
+                    )}
+                  </span>
                 </div>
                 {studyCount > 0 && (
                   <div className="flex items-center gap-2">
@@ -313,7 +321,7 @@ export default function FlashcardSetDetailPage({
                 </span>
                 <span className="text-xl font-bold text-foreground">
                   {userProgress
-                    ? formatNextReview(userProgress.nextReviewAt)
+                    ? formatNextReview(userProgress.nextReviewAt || null)
                     : "Sẵn sàng"}
                 </span>
                 <span className="text-xs text-purple-300 mt-1">
@@ -407,7 +415,7 @@ export default function FlashcardSetDetailPage({
                     : "flex flex-col gap-4"
                 }
               >
-                {cards.map((card, index) => {
+                {cards.map((card: CardResponseDTO, index) => {
                   // Use real data from card or fallback
                   const hasPreviewImage =
                     card.exampleSentence && card.exampleSentence.length > 0;

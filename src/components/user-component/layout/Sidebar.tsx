@@ -116,10 +116,13 @@ const Sidebar = () => {
           </span> */}
         </Link>
         <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive("/ai-chat")
+            ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
+            }`}
+          href="/ai-chat"
         >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
+          <span className={`material-symbols-outlined ${isActive("/ai-chat") ? "filled" : "group-hover:text-blue-600 dark:group-hover:text-white transition-colors"}`}>
             smart_toy
           </span>
           <span>{t("common.aiPractice")}</span>

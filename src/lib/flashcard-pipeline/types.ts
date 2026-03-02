@@ -28,6 +28,10 @@ export interface ImageResult {
   title: string;
   width?: number;
   height?: number;
+  /** Cloudinary public_id (for management if needed) */
+  cloudinaryPublicId?: string;
+  /** Original external source URL (for traceability) */
+  sourceUrl?: string;
 }
 
 // ─── The full state of a single term in the pipeline ─

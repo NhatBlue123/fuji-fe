@@ -97,7 +97,7 @@ export default function FlashcardsPage() {
 
   return (
     <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background dark:bg-[#0f172a]">
-      <div className="max-w-[1600px] mx-auto w-full p-6 md:p-10">
+      <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20">
         <section className="relative w-full rounded-3xl overflow-hidden mb-12 bg-[#0B1120] border border-white/5 shadow-2xl group">
           <div className="absolute inset-0 bg-slate-900"></div>
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-pink-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
@@ -164,7 +164,7 @@ export default function FlashcardsPage() {
                     <SelectTrigger className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-blue-100 py-3.5 pl-5 pr-12 rounded-2xl text-sm font-bold hover:bg-white/10 transition-colors focus:ring-pink-500/30 focus:border-pink-500/50">
                       <SelectValue placeholder="Cấp độ" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 text-gray-300 border-white/10">
+                    <SelectContent>
                       <SelectItem value="all">Tất cả cấp độ</SelectItem>
                       <SelectItem value="n5">N5</SelectItem>
                       <SelectItem value="n4">N4</SelectItem>
@@ -184,7 +184,7 @@ export default function FlashcardsPage() {
                     <SelectTrigger className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-blue-100 py-3.5 pl-5 pr-12 rounded-2xl text-sm font-bold hover:bg-white/10 transition-colors focus:ring-pink-500/30 focus:border-pink-500/50">
                       <SelectValue placeholder="Chủ sở hữu" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 text-gray-300 border-white/10">
+                    <SelectContent>
                       <SelectItem value="all">Tất cả</SelectItem>
                       <SelectItem value="mine">Của tôi</SelectItem>
                       <SelectItem value="community">Cộng đồng</SelectItem>
@@ -213,7 +213,7 @@ export default function FlashcardsPage() {
         {/* Loading state */}
         {isLoading && (
           <div className="flex items-center justify-center py-20">
-            <span className="material-symbols-outlined text-4xl text-pink-400 animate-spin">
+            <span className="material-symbols-outlined text-4xl text-primary animate-spin">
               progress_activity
             </span>
           </div>
@@ -225,7 +225,7 @@ export default function FlashcardsPage() {
             <span className="material-symbols-outlined text-6xl text-red-400 mb-4 block">
               error
             </span>
-            <p className="text-slate-400">
+            <p className="text-muted-foreground">
               Không thể tải dữ liệu. Vui lòng thử lại sau.
             </p>
           </div>
@@ -234,15 +234,15 @@ export default function FlashcardsPage() {
         {/* FlashCards grid */}
         {!isLoading && !cardsError && viewMode === "cards" && (
           <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <span className="w-1 h-8 bg-pink-500 rounded-full"></span>
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+              <span className="w-1 h-8 bg-secondary rounded-full"></span>
               Flash Cards
-              <span className="text-sm font-normal text-slate-500">
+              <span className="text-sm font-normal text-muted-foreground">
                 ({filteredCards.length})
               </span>
             </h2>
             {filteredCards.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
+              <div className="text-center py-16 text-muted-foreground">
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   style
                 </span>
@@ -252,32 +252,32 @@ export default function FlashcardsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredCards.map((fc) => (
                   <Link key={fc.id} href={`/flashcards/detail/${fc.id}`}>
-                    <article className="glass-card rounded-2xl overflow-hidden hover:border-pink-500/50 transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full">
-                      <div className="relative h-48 bg-slate-800 overflow-hidden flex items-center justify-center">
+                    <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full">
+                      <div className="relative h-48 bg-muted overflow-hidden flex items-center justify-center">
                         <div
                           className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                           style={{
                             backgroundImage: `url('${fc.thumbnailUrl || getMockImage(fc.id)}')`,
                           }}
                         ></div>
-                        <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur text-pink-400 border border-pink-500/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                        <div className="absolute top-3 left-3 bg-background/80 backdrop-blur text-secondary border border-secondary/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
                           {fc.user?.username || "Của tôi"}
                         </div>
                         {fc.level && (
-                          <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur text-white border border-white/20 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                          <div className="absolute top-3 right-3 bg-background/80 backdrop-blur text-foreground border border-border text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
                             {fc.level}
                           </div>
                         )}
                       </div>
                       <div className="p-5 flex flex-col flex-1">
-                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-pink-400 transition-colors truncate">
+                        <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-secondary transition-colors truncate">
                           {fc.name}
                         </h3>
-                        <p className="text-xs text-slate-400 mb-4 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
                           {fc.description || "Không có mô tả"}
                         </p>
-                        <div className="mt-auto pt-4 border-t border-white/5">
-                          <div className="flex items-center justify-between mb-4 text-xs text-slate-500 font-medium">
+                        <div className="mt-auto pt-4 border-t border-border">
+                          <div className="flex items-center justify-between mb-4 text-xs text-muted-foreground font-medium">
                             <div className="flex items-center gap-1">
                               <span className="material-symbols-outlined text-sm">
                                 content_copy
@@ -285,7 +285,7 @@ export default function FlashcardsPage() {
                               <span>{fc.cardCount} cards</span>
                             </div>
                           </div>
-                          <div className="w-full py-2.5 rounded-xl bg-secondary hover:bg-pink-400 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20 group-hover:shadow-pink-500/40">
+                          <div className="w-full py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-secondary/20 group-hover:shadow-secondary/40">
                             <span className="material-symbols-outlined text-lg">
                               play_arrow
                             </span>
@@ -304,15 +304,15 @@ export default function FlashcardsPage() {
         {/* FlashLists grid */}
         {!isLoading && !listsError && viewMode === "lists" && (
           <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
               <span className="w-1 h-8 bg-blue-500 rounded-full"></span>
               Flash Lists
-              <span className="text-sm font-normal text-slate-500">
+              <span className="text-sm font-normal text-muted-foreground">
                 ({filteredLists.length})
               </span>
             </h2>
             {filteredLists.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
+              <div className="text-center py-16 text-muted-foreground">
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   list
                 </span>
@@ -322,32 +322,32 @@ export default function FlashcardsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredLists.map((fl) => (
                   <Link key={fl.id} href={`/flashcards/sets/${fl.id}`}>
-                    <article className="glass-card rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full cursor-pointer">
-                      <div className="relative h-48 bg-slate-800 overflow-hidden flex items-center justify-center">
+                    <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                      <div className="relative h-48 bg-muted overflow-hidden flex items-center justify-center">
                         <div
                           className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                           style={{
                             backgroundImage: `url('${fl.thumbnailUrl || getMockImage(fl.id)}')`,
                           }}
                         ></div>
-                        <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                        <div className="absolute top-3 left-3 bg-background/80 backdrop-blur text-primary border border-primary/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
                           {fl.user?.username || "Của tôi"}
                         </div>
                         {fl.level && (
-                          <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur text-white border border-white/20 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                          <div className="absolute top-3 right-3 bg-background/80 backdrop-blur text-foreground border border-border text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
                             {fl.level}
                           </div>
                         )}
                       </div>
                       <div className="p-5 flex flex-col flex-1">
-                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-400 transition-colors truncate">
+                        <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors truncate">
                           {fl.title}
                         </h3>
-                        <p className="text-xs text-slate-400 mb-4 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
                           {fl.description || "Không có mô tả"}
                         </p>
-                        <div className="mt-auto pt-4 border-t border-white/5">
-                          <div className="flex items-center justify-between mb-4 text-xs text-slate-500 font-medium">
+                        <div className="mt-auto pt-4 border-t border-border">
+                          <div className="flex items-center justify-between mb-4 text-xs text-muted-foreground font-medium">
                             <div className="flex items-center gap-1">
                               <span className="material-symbols-outlined text-sm">
                                 style
@@ -363,7 +363,7 @@ export default function FlashcardsPage() {
                               </div>
                             )}
                           </div>
-                          <div className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40">
+                          <div className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 group-hover:shadow-primary/40">
                             <span className="material-symbols-outlined text-lg">
                               collections
                             </span>
@@ -387,7 +387,7 @@ export default function FlashcardsPage() {
             onClick={() => setViewMode("cards")}
             className={`${styles.writingVertical} py-4 px-3 transition-colors text-xs font-bold tracking-widest border-b border-gray-200 dark:border-gray-700/50 ${
               viewMode === "cards"
-                ? "bg-secondary text-white shadow-inner"
+                ? "bg-secondary text-secondary-foreground shadow-inner"
                 : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"
             }`}
           >
@@ -397,7 +397,7 @@ export default function FlashcardsPage() {
             onClick={() => setViewMode("lists")}
             className={`${styles.writingVertical} py-4 px-3 transition-colors text-xs font-bold tracking-widest ${
               viewMode === "lists"
-                ? "bg-secondary text-white shadow-inner"
+                ? "bg-secondary text-secondary-foreground shadow-inner"
                 : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"
             }`}
           >

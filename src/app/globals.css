@@ -198,6 +198,18 @@
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 
+  /* Glass Panel — used in flashcard detail hero page */
+  .glass-panel {
+    background: color-mix(in oklch, var(--card) 70%, transparent);
+    border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .dark .glass-panel {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
   /* Text Glow */
   .text-glow {
     text-shadow: 0 0 15px rgba(244, 114, 182, 0.6);

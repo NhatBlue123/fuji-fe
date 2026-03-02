@@ -5,7 +5,8 @@
 export { FlashcardPipeline, STATUS_LABELS, LANGUAGE_LABELS } from "./pipeline";
 export { parseTerms } from "./parser";
 export { detectLanguage } from "./detectLanguage";
-export { searchImages, clearImageCache } from "./imageSearch";
+export { searchImages, clearImageCache, resolveImage } from "./imageSearch";
+export type { ResolvedImage } from "./imageSearch";
 export { ConcurrencyLimiter } from "./concurrency";
 export type {
   TermState,

@@ -1,15 +1,15 @@
 .glassPanel {
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklch, var(--card) 60%, transparent);
+  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
   backdrop-filter: blur(12px);
 }
 
 .bannerGradient {
   background: linear-gradient(
     180deg,
-    rgba(11, 17, 32, 0) 0%,
-    rgba(11, 17, 32, 0.6) 50%,
-    rgba(11, 17, 32, 1) 100%
+    transparent 0%,
+    color-mix(in oklch, var(--background) 60%, transparent) 50%,
+    var(--background) 100%
   );
 }
 

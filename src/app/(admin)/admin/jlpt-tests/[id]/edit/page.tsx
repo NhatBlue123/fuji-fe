@@ -251,7 +251,7 @@ export default function EditJLPTTestPage() {
               <Checkbox
                 id="isPublished"
                 checked={formData.isPublished}
-                onCheckedChange={(checked) => updateField("isPublished", checked)}
+                onCheckedChange={(checked: boolean) => updateField("isPublished", checked)}
               />
               <Label htmlFor="isPublished" className="cursor-pointer">
                 Xuất bản đề thi (hiển thị cho học viên)

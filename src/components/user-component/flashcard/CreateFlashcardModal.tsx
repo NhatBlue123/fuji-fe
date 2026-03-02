@@ -23,6 +23,7 @@ import {
 import { useAuth } from "@/store/hooks";
 import { getMockImage } from "@/lib/mockImages";
 import { useFlashcardPipeline } from "@/hooks/useFlashcardPipeline";
+import { resolveImage } from "@/lib/flashcard-pipeline";
 import TermPreviewList from "@/components/user-component/flashcard/TermPreviewList";
 import type { CardDTO, FlashCardResponseDTO } from "@/types/flashcard";
 import { useTranslation } from "react-i18next";
@@ -76,6 +77,10 @@ export default function CreateFlashcardModal({
     searchAllImages,
   } = useFlashcardPipeline(activeTab === "card" ? cardContent : "");
 
+  const [resolvingImages, setResolvingImages] = useState<
+    Record<string, boolean>
+  >({});
+
   const handleTermImageSelect = (termKey: string, imageUrl: string) => {
     setSelectedTermImages((prev) => {
       // Toggle: click same image again to deselect
@@ -86,6 +91,26 @@ export default function CreateFlashcardModal({
       }
       return { ...prev, [termKey]: imageUrl };
     });
+
+    // If deselecting (same image clicked), don't resolve
+    if (selectedTermImages[termKey] === imageUrl) return;
+
+    // Resolve: upload to Cloudinary (or get cached URL)
+    setResolvingImages((prev) => ({ ...prev, [termKey]: true }));
+    resolveImage(imageUrl)
+      .then((resolved) => {
+        setSelectedTermImages((prev) => ({
+          ...prev,
+          [termKey]: resolved.cloudinaryUrl,
+        }));
+      })
+      .catch((err) => {
+        console.error("Failed to resolve image:", err);
+        // Keep the raw URL as fallback (already set above)
+      })
+      .finally(() => {
+        setResolvingImages((prev) => ({ ...prev, [termKey]: false }));
+      });
   };
 
   // Auth for visibility check
@@ -225,9 +250,7 @@ export default function CreateFlashcardModal({
             return isOwn && !fc.isPublic;
           });
           if (privateOwnCards.length > 0) {
-            setError(
-              t("flashlist.validate.privateCardInPublicList"),
-            );
+            setError(t("flashlist.validate.privateCardInPublicList"));
             return;
           }
         }
@@ -292,7 +315,7 @@ export default function CreateFlashcardModal({
             className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
               activeTab === "list"
                 ? "bg-secondary text-secondary-foreground"
-                : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                : "bg-card text-muted-foreground hover:bg-muted"
             }`}
           >
             Flash List
@@ -302,7 +325,7 @@ export default function CreateFlashcardModal({
             className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
               activeTab === "card"
                 ? "bg-secondary text-secondary-foreground"
-                : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                : "bg-card text-muted-foreground hover:bg-muted"
             }`}
           >
             Flash Card
@@ -323,7 +346,7 @@ export default function CreateFlashcardModal({
                     type="text"
                     value={listTitle}
                     onChange={(e) => setListTitle(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-foreground placeholder:text-muted-foreground"
+                    className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
                     placeholder="Nhập tiêu đề..."
                   />
                 </div>
@@ -336,7 +359,7 @@ export default function CreateFlashcardModal({
                     value={listDescription}
                     onChange={(e) => setListDescription(e.target.value)}
                     rows={4}
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-foreground placeholder:text-muted-foreground resize-none"
+                    className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
                     placeholder="Nhập mô tả..."
                   />
                 </div>
@@ -346,7 +369,7 @@ export default function CreateFlashcardModal({
                     JLPT Level
                   </label>
                   <Select value={level} onValueChange={setLevel}>
-                    <SelectTrigger className="w-full bg-secondary/30 border-border text-foreground">
+                    <SelectTrigger className="w-full bg-card border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover text-popover-foreground border-border">
@@ -364,7 +387,7 @@ export default function CreateFlashcardModal({
                   <button
                     onClick={() => setIsPublic(!isPublic)}
                     className={`relative inline-flex shrink-0 w-12 h-6 rounded-full transition-colors ${
-                      isPublic ? "bg-pink-500" : "bg-muted"
+                      isPublic ? "bg-primary" : "bg-muted"
                     }`}
                   >
                     <span
@@ -389,14 +412,14 @@ export default function CreateFlashcardModal({
                       type="text"
                       value={searchFlashcard}
                       onChange={(e) => setSearchFlashcard(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-foreground placeholder:text-muted-foreground"
+                      className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
                       placeholder="Tìm kiếm flashcard..."
                     />
                   </div>
 
                   {/* Selected count badge */}
                   {selectedFlashcardIds.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-pink-400">
+                    <div className="mt-2 flex items-center gap-2 text-xs text-primary">
                       <span className="material-symbols-outlined text-sm">
                         check_circle
                       </span>
@@ -435,8 +458,8 @@ export default function CreateFlashcardModal({
                               isDisabled
                                 ? "opacity-40 cursor-not-allowed bg-secondary/10"
                                 : isSelected
-                                  ? "bg-pink-500/20 border border-pink-500/40"
-                                  : "bg-secondary/30 hover:bg-secondary/50 border border-transparent"
+                                  ? "bg-primary/10 border border-primary/40"
+                                  : "bg-card hover:bg-muted border border-border"
                             }`}
                           >
                             <div
@@ -452,7 +475,7 @@ export default function CreateFlashcardModal({
                               <p className="text-[10px] text-muted-foreground flex items-center gap-2">
                                 <span>{fc.cardCount} thẻ</span>
                                 {fc.level && (
-                                  <span className="text-pink-400/70">
+                                  <span className="text-muted-foreground">
                                     {fc.level}
                                   </span>
                                 )}
@@ -473,7 +496,7 @@ export default function CreateFlashcardModal({
                               )}
                             </div>
                             {isSelected && (
-                              <span className="material-symbols-outlined text-pink-400 text-lg flex-shrink-0">
+                              <span className="material-symbols-outlined text-primary text-lg flex-shrink-0">
                                 check_circle
                               </span>
                             )}
@@ -495,7 +518,7 @@ export default function CreateFlashcardModal({
                     type="text"
                     value={cardName}
                     onChange={(e) => setCardName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-foreground placeholder:text-muted-foreground"
+                    className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
                     placeholder="Nhập tên bộ FlashCard..."
                   />
                 </div>
@@ -508,7 +531,7 @@ export default function CreateFlashcardModal({
                     value={cardDescription}
                     onChange={(e) => setCardDescription(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-foreground placeholder:text-muted-foreground resize-none"
+                    className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
                     placeholder="Nhập mô tả..."
                   />
                 </div>
@@ -518,7 +541,7 @@ export default function CreateFlashcardModal({
                     JLPT Level
                   </label>
                   <Select value={level} onValueChange={setLevel}>
-                    <SelectTrigger className="w-full bg-secondary/30 border-border text-foreground">
+                    <SelectTrigger className="w-full bg-card border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover text-popover-foreground border-border">
@@ -536,7 +559,7 @@ export default function CreateFlashcardModal({
                   <button
                     onClick={() => setIsPublic(!isPublic)}
                     className={`relative inline-flex shrink-0 w-12 h-6 rounded-full transition-colors ${
-                      isPublic ? "bg-pink-500" : "bg-muted"
+                      isPublic ? "bg-primary" : "bg-muted"
                     }`}
                   >
                     <span
@@ -555,7 +578,7 @@ export default function CreateFlashcardModal({
                     value={cardContent}
                     onChange={(e) => setCardContent(e.target.value)}
                     rows={6}
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-foreground placeholder:text-muted-foreground resize-none font-mono text-sm"
+                    className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none font-mono text-sm"
                     placeholder="mặt trước - mặt sau"
                   />
                   <p className="text-xs text-muted-foreground mt-2">
@@ -582,7 +605,7 @@ export default function CreateFlashcardModal({
               <label className="block text-sm font-medium mb-2">
                 Ảnh Thumbnail
               </label>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-pink-500/50 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
                 {(activeTab === "list" ? listThumbnail : cardThumbnail) ? (
                   <div className="relative w-full h-64">
                     <Image
@@ -660,7 +683,7 @@ export default function CreateFlashcardModal({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-3.5 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             {isSubmitting && (
               <span className="material-symbols-outlined animate-spin text-lg">

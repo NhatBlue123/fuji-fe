@@ -7,12 +7,16 @@ export const baseApi = createApi({
     baseUrl: "http://localhost:8181/api",
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = getAccessToken(); // đọc từ cookie
+      // Token được lưu trong cookie, dùng getAccessToken() để đọc đúng
+      const token = getAccessToken();
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
 
-      const lang = localStorage.getItem("i18nextLng") || "vi";
+      const lang =
+        typeof window !== "undefined"
+          ? localStorage.getItem("i18nextLng") || "vi"
+          : "vi";
       headers.set("Accept-Language", lang);
 
       return headers;

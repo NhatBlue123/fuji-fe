@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   useGetAllTestsQuery,
   useGetAllTestsStatsQuery,
   useDeleteTestMutation,
   useUpdateTestMutation,
+  useCreateTestMutation,
 } from "@/store/services/adminJlptApi";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +21,14 @@ import {
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  MoreHorizontal, Plus, Pencil, Trash2, Eye,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  MoreHorizontal, Plus, Pencil, Trash2, Eye, X,
   CheckCircle2, XCircle, Users, TrendingUp, BarChart3, BookOpen,
 } from "lucide-react";
 
@@ -29,20 +37,57 @@ const LEVEL_COLORS: Record<string, string> = {
   N1: "bg-red-500", N2: "bg-orange-500", N3: "bg-yellow-500", N4: "bg-blue-500", N5: "bg-green-500",
 };
 
+const INITIAL_FORM = {
+  title: "",
+  level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
+  testType: "full_test" as "full_test" | "vocabulary" | "grammar" | "reading" | "listening",
+  description: "",
+  duration: 120,
+  totalQuestions: 0,
+  passScore: 90,
+  languageKnowledgePassScore: 19,
+  readingPassScore: 19,
+  listeningPassScore: 19,
+};
+
 export default function AdminJLPTTestsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
-  // Paginated query for table
+  // ── Queries & mutations ──────────────────────────────────────────────────────
   const { data, isLoading, error } = useGetAllTestsQuery({
     page, size: pageSize, sortBy: "createdAt", sortDir: "desc",
   });
-
-  // All-tests query for aggregate stats
   const { data: allTests = [] } = useGetAllTestsStatsQuery();
-
   const [deleteTest] = useDeleteTestMutation();
   const [updateTest] = useUpdateTestMutation();
+  const [createTest, { isLoading: isCreating }] = useCreateTestMutation();
+
+  // ── Create form state ─────────────────────────────────────────────────────────
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formData, setFormData] = useState(INITIAL_FORM);
+
+  const updateField = (field: string, value: any) =>
+    setFormData(prev => ({ ...prev, [field]: value }));
+
+  const handleNumberChange = (field: string, value: string) => {
+    const numValue = value === "" ? 0 : parseInt(value);
+    if (!isNaN(numValue)) updateField(field, numValue);
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const result = await createTest(formData).unwrap();
+      setShowCreateForm(false);
+      setFormData(INITIAL_FORM);
+      router.push(`/admin/jlpt-tests/${result.id}/questions`);
+    } catch (err) {
+      alert("Tạo đề thi thất bại!");
+      console.error(err);
+    }
+  };
 
   // ── Aggregate stats ──────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -83,20 +128,213 @@ export default function AdminJLPTTestsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">JLPT Tests</h1>
           <p className="text-muted-foreground">Quản lý đề thi JLPT</p>
         </div>
-        <Link href="/admin/jlpt-tests/create">
-          <Button><Plus className="mr-2 h-4 w-4" />Tạo đề thi mới</Button>
-        </Link>
+        <Button onClick={() => setShowCreateForm(true)}>
+          <Plus className="mr-2 h-4 w-4" />Tạo đề thi mới
+        </Button>
       </div>
 
+      {/* ══════════════════════════════════════════════════════════════════════
+          INLINE CREATE FORM — slides in over the page content
+      ══════════════════════════════════════════════════════════════════════ */}
+      {showCreateForm && (
+        <>
+          {/* Backdrop — blurs and dims everything below the form */}
+          <div
+            className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm"
+            onClick={() => setShowCreateForm(false)}
+          />
+
+          {/* Form panel — scrollable overlay */}
+          <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
+            <div className="flex min-h-full items-start justify-center px-4 py-10">
+            <div
+              className="w-full max-w-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <form onSubmit={handleCreate}>
+                <Card className="shadow-2xl border-border">
+                  <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+                    <div>
+                      <CardTitle className="text-xl">Tạo đề thi JLPT mới</CardTitle>
+                      <CardDescription className="mt-1">
+                        Điền thông tin cơ bản của đề thi
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowCreateForm(false)}
+                      className="shrink-0 -mt-1 -mr-1"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </CardHeader>
+
+                  <CardContent className="space-y-5">
+                    {/* Title */}
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Tiêu đề *</Label>
+                      <Input
+                        id="title"
+                        placeholder="VD: JLPT N3 Tháng 7/2024"
+                        value={formData.title}
+                        onChange={(e) => updateField("title", e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Level & Test Type */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="level">Cấp độ *</Label>
+                        <Select value={formData.level} onValueChange={(v) => updateField("level", v)}>
+                          <SelectTrigger id="level"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {["N5", "N4", "N3", "N2", "N1"].map(l => (
+                              <SelectItem key={l} value={l}>{l}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="testType">Loại đề thi *</Label>
+                        <Select value={formData.testType} onValueChange={(v) => updateField("testType", v)}>
+                          <SelectTrigger id="testType"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="full_test">Full Test</SelectItem>
+                            <SelectItem value="vocabulary">Vocabulary</SelectItem>
+                            <SelectItem value="grammar">Grammar</SelectItem>
+                            <SelectItem value="reading">Reading</SelectItem>
+                            <SelectItem value="listening">Listening</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Mô tả</Label>
+                      <Textarea
+                        id="description"
+                        placeholder="Mô tả ngắn về đề thi này..."
+                        rows={2}
+                        value={formData.description}
+                        onChange={(e) => updateField("description", e.target.value)}
+                      />
+                    </div>
+
+                    {/* Duration & Total Questions */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="duration">Thời gian (phút) *</Label>
+                        <Input
+                          id="duration"
+                          type="number"
+                          min="1"
+                          value={formData.duration || ""}
+                          onChange={(e) => handleNumberChange("duration", e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="totalQuestions">Tổng số câu hỏi</Label>
+                        <Input
+                          id="totalQuestions"
+                          type="number"
+                          min="0"
+                          value={formData.totalQuestions || ""}
+                          onChange={(e) => handleNumberChange("totalQuestions", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Có thể để 0 và cập nhật sau</p>
+                      </div>
+                    </div>
+
+                    {/* Pass Scores */}
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="passScore">Điểm đỗ tổng *</Label>
+                        <Input
+                          id="passScore"
+                          type="number"
+                          min="1"
+                          max="180"
+                          value={formData.passScore || ""}
+                          onChange={(e) => handleNumberChange("passScore", e.target.value)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">Thường là 90–100</p>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
+                          <Input
+                            id="langPass"
+                            type="number"
+                            min="0"
+                            value={formData.languageKnowledgePassScore || ""}
+                            onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="readPass">Liệt đọc</Label>
+                          <Input
+                            id="readPass"
+                            type="number"
+                            min="0"
+                            value={formData.readingPassScore || ""}
+                            onChange={(e) => handleNumberChange("readingPassScore", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="listenPass">Liệt nghe</Label>
+                          <Input
+                            id="listenPass"
+                            type="number"
+                            min="0"
+                            value={formData.listeningPassScore || ""}
+                            onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ trượt dù tổng điểm cao.
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-2">
+                      <Button type="submit" disabled={isCreating}>
+                        {isCreating ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowCreateForm(false)}
+                      >
+                        Hủy
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </form>
+            </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ── Stats Cards ── */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-4 transition-all duration-300 ${showCreateForm ? "blur-sm opacity-50 pointer-events-none select-none" : ""}`}>
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardDescription>Tổng đề thi</CardDescription>
@@ -152,7 +390,7 @@ export default function AdminJLPTTestsPage() {
 
       {/* ── Level Distribution Bar Chart ── */}
       {stats && Object.keys(stats.levelAttempts).length > 0 && (
-        <Card>
+        <Card className={`transition-all duration-300 ${showCreateForm ? "blur-sm opacity-50 pointer-events-none select-none" : ""}`}>
           <CardHeader>
             <CardTitle className="text-base font-semibold">Lượt thi theo Level</CardTitle>
             <CardDescription>Phân bố lượt thi toàn bộ đề thi</CardDescription>
@@ -188,16 +426,16 @@ export default function AdminJLPTTestsPage() {
       )}
 
       {/* ── Table ── */}
-      <Card>
+      <Card className={`transition-all duration-300 ${showCreateForm ? "blur-sm opacity-50 pointer-events-none select-none" : ""}`}>
         <CardContent className="pt-6">
           {isLoading && <div className="text-center py-8 text-muted-foreground">Đang tải...</div>}
           {!!error && <div className="text-center py-8 text-destructive">Lỗi tải dữ liệu</div>}
           {!isLoading && !error && tests.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">Chưa có đề thi nào</p>
-              <Link href="/admin/jlpt-tests/create">
-                <Button><Plus className="mr-2 h-4 w-4" />Tạo đề thi đầu tiên</Button>
-              </Link>
+              <Button onClick={() => setShowCreateForm(true)}>
+                <Plus className="mr-2 h-4 w-4" />Tạo đề thi đầu tiên
+              </Button>
             </div>
           )}
 

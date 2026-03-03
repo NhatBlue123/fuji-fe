@@ -159,7 +159,7 @@ export const FlashcardList = ({
                     <div className="relative w-full max-w-xl group">
 
                         {/* Search Icon */}
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
 
                         {/* Filter Button (inside input, right side) */}
                         <Button
@@ -170,8 +170,8 @@ export const FlashcardList = ({
                             className={cn(
                                 "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg transition-all",
                                 showFilter
-                                    ? "bg-indigo-100 text-indigo-600"
-                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                             )}
                         >
                             <Filter className="size-4" />
@@ -182,9 +182,7 @@ export const FlashcardList = ({
                             placeholder="Tìm kiếm từ vựng, ý nghĩa..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
-                   focus-visible:ring-2 focus-visible:ring-indigo-500/20
-                   focus-visible:border-indigo-500 transition-all"
+                            className="pl-10 pr-12 h-10"
                         />
                     </div>
 
@@ -193,9 +191,9 @@ export const FlashcardList = ({
 
                     <Button
                         onClick={onCreateClick}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
+                        className="h-10 px-5"
                     >
-                        <Plus className="size-5 mr-2" />
+                        <Plus className="size-4 mr-2" />
                         Tạo Thẻ Mới
                     </Button>
 
@@ -215,18 +213,18 @@ export const FlashcardList = ({
                             toast.success(`Đã xuất ${exportCards.length} thẻ`);
                             setSelectedCards([]);
                         }}
-                        className="h-12 px-6 rounded-xl font-semibold border-slate-200"
+                        className="h-10 px-5"
                     >
-                        <Upload className="size-5 mr-2" />
+                        <Upload className="size-4 mr-2" />
                         Export Excel
                     </Button>
 
                     <Button
                         variant="outline"
                         onClick={onImportClick}
-                        className="h-12 px-6 rounded-xl font-semibold border-slate-200"
+                        className="h-10 px-5"
                     >
-                        <Download className="size-5 mr-2" />
+                        <Download className="size-4 mr-2" />
                         Import Excel
                     </Button>
 
@@ -235,13 +233,13 @@ export const FlashcardList = ({
 
             {/* Collapsible Filter Panel */}
             {showFilter && (
-                <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-200">
 
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 
                         {/* Status Filter */}
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                 Trạng thái:
                             </p>
 
@@ -255,10 +253,10 @@ export const FlashcardList = ({
                                     key={item.value}
                                     onClick={() => setStatusFilter(item.value)}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                                        "px-3 py-1 rounded-full text-xs font-semibold transition-all border",
                                         statusFilter === item.value
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                            : "bg-background text-foreground border-border hover:bg-accent"
                                     )}
                                 >
                                     {item.label}
@@ -267,8 +265,8 @@ export const FlashcardList = ({
                         </div>
 
                         {/* Type Filter */}
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                 Loại:
                             </p>
 
@@ -281,10 +279,10 @@ export const FlashcardList = ({
                                     key={item.value}
                                     onClick={() => setTypeFilter(item.value)}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                                        "px-3 py-1 rounded-full text-xs font-semibold transition-all border",
                                         typeFilter === item.value
-                                            ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                            : "bg-background text-foreground border-border hover:bg-accent"
                                     )}
                                 >
                                     {item.label}
@@ -303,13 +301,13 @@ export const FlashcardList = ({
             {/* Quick Stats Mini */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {stats.map((stat, i) => (
-                    <div key={i} className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                    <div key={i} className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all">
                         <div className={cn("p-2 rounded-lg", stat.bg)}>
                             <stat.icon className={cn("size-4", stat.color)} />
                         </div>
                         <div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</div>
-                            <div className="text-lg font-black text-slate-900">{stat.value}</div>
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</div>
+                            <div className="text-lg font-black">{stat.value}</div>
                         </div>
                     </div>
                 ))}
@@ -343,13 +341,13 @@ export const FlashcardList = ({
                 {filteredCards.length > 0 ? filteredCards.map((card) => (
                     <div
                         key={card.id}
-                        className="group relative bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                        className="group relative bg-card rounded-xl p-5 border border-border shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
                     >
                         {/* Header Mini */}
                         <div className="flex justify-between items-start mb-4">
                             <Badge variant="secondary" className={cn(
                                 "px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider border-none",
-                                card.type === "Kanji" ? "bg-orange-50 text-orange-600" : "bg-amber-50 text-amber-600"
+                                card.type === "Kanji" ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
                             )}>
                                 {card.type}
                             </Badge>
@@ -360,8 +358,8 @@ export const FlashcardList = ({
                                 className={cn(
                                     "size-8 rounded-lg transition-all",
                                     savedCards.includes(card.id)
-                                        ? "bg-amber-100 text-amber-600 scale-110 shadow-sm"
-                                        : "text-slate-300 hover:text-amber-600 hover:bg-amber-50"
+                                        ? "bg-amber-100 text-amber-600 scale-110 shadow-sm dark:bg-amber-900/30 dark:text-amber-400"
+                                        : "text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
                                 )}
                             >
                                 <Bookmark className={cn("size-4", savedCards.includes(card.id) ? "fill-current" : "")} />
@@ -373,33 +371,33 @@ export const FlashcardList = ({
                             className="text-center space-y-2 mb-6 cursor-pointer"
                             onClick={() => setViewingCard(card)}
                         >
-                            <h3 className="text-3xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition-colors">
+                            <h3 className="text-3xl font-black tracking-tight hover:text-amber-600 transition-colors">
                                 {card.kanji}
                             </h3>
-                            <p className="text-xs font-bold text-slate-400 bg-slate-50 inline-block px-3 py-1 rounded-lg">
+                            <p className="text-xs font-bold text-muted-foreground bg-muted inline-block px-3 py-1 rounded-lg">
                                 {card.hiragana}
                             </p>
-                            <div className="h-px w-8 bg-slate-100 mx-auto my-3" />
+                            <div className="h-px w-8 bg-border mx-auto my-3" />
                             <p className="text-md font-bold text-amber-600 tracking-tight leading-tight">
                                 {card.meaning}
                             </p>
-                            <p className="text-[11px] text-slate-500 font-medium italic line-clamp-1 opacity-70">
+                            <p className="text-[11px] text-muted-foreground font-medium italic line-clamp-1 opacity-70">
                                 "{card.example}"
                             </p>
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
+                        <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
                                     {card.lesson}
                                 </span>
                                 {card.studyStatus === 'learned' && <CheckCircle2 className="size-3 text-emerald-500" />}
                                 {card.studyStatus === 'review' && <AlertCircle className="size-3 text-rose-500" />}
                                 {/* View Count */}
                                 <div className="flex items-center gap-1 ml-auto">
-                                    <Eye className="size-3 text-indigo-400" />
-                                    <span className="text-[9px] font-black text-indigo-600">
+                                    <Eye className="size-3 text-primary/60" />
+                                    <span className="text-[9px] font-black text-primary">
                                         {card.viewCount || 0}
                                     </span>
                                 </div>
@@ -415,8 +413,8 @@ export const FlashcardList = ({
                                     className={cn(
                                         "size-8 rounded-lg transition-all",
                                         selectedCards.includes(card.id)
-                                            ? "bg-indigo-100 text-indigo-600"
-                                            : "text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"
+                                            ? "bg-primary/10 text-primary"
+                                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                                     )}
                                 >
                                     <Check className="size-4" />
@@ -429,7 +427,7 @@ export const FlashcardList = ({
                                         e.stopPropagation();
                                         handleEditClick(card);
                                     }}
-                                    className="size-8 rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600"
+                                    className="size-8 rounded-lg text-muted-foreground hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/20"
                                 >
                                     <Edit className="size-4" />
                                 </Button>
@@ -440,7 +438,7 @@ export const FlashcardList = ({
                                         e.stopPropagation();
                                         handleDeleteClick(card.id);
                                     }}
-                                    variant="ghost" size="icon" className="size-8 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                                    variant="ghost" size="icon" className="size-8 rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20"
                                 >
                                     <Trash2 className="size-4" />
                                 </Button>
@@ -448,26 +446,26 @@ export const FlashcardList = ({
                         </div>
                     </div>
                 )) : (
-                    <div className="col-span-full py-20 text-center bg-slate-50/50 rounded-[2rem] border-2 border-dashed border-slate-100">
-                        <div className="size-16 bg-white rounded-2xl shadow-sm mx-auto flex items-center justify-center mb-4">
-                            <Filter className="size-8 text-slate-200" />
+                    <div className="col-span-full py-20 text-center bg-muted/30 rounded-2xl border-2 border-dashed border-border">
+                        <div className="size-16 bg-background rounded-2xl shadow-sm mx-auto flex items-center justify-center mb-4">
+                            <Filter className="size-8 text-muted-foreground" />
                         </div>
-                        <p className="text-slate-500 font-bold text-lg">Không tìm thấy thẻ nào</p>
-                        <p className="text-slate-400 text-sm">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                        <p className="text-foreground font-bold text-lg">Không tìm thấy thẻ nào</p>
+                        <p className="text-muted-foreground text-sm">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
                     </div>
                 )}
 
                 {/* Smaller Add Card */}
                 <button
                     onClick={onCreateClick}
-                    className="group bg-slate-50/50 rounded-2xl p-6 border-2 border-dashed border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 transition-all duration-300 flex flex-col items-center justify-center gap-3 min-h-[220px]"
+                    className="group bg-muted/30 rounded-xl p-6 border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 flex flex-col items-center justify-center gap-3 min-h-[220px]"
                 >
-                    <div className="size-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-amber-600 group-hover:scale-110 transition-all shadow-sm">
+                    <div className="size-12 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all shadow-sm">
                         <Plus className="size-6 stroke-[3px]" />
                     </div>
                     <div className="text-center">
-                        <p className="font-bold text-slate-900 text-sm">Tạo thẻ mới</p>
-                        <p className="text-[11px] text-slate-400 font-medium tracking-tight">Thêm nội dung bài học</p>
+                        <p className="font-bold text-sm">Tạo thẻ mới</p>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-tight">Thêm nội dung bài học</p>
                     </div>
                 </button>
 
@@ -491,22 +489,22 @@ export const FlashcardList = ({
 
             {/* Delete Confirmation Modal using Standard Dialog */}
             <Dialog open={deletingCardId !== null} onOpenChange={(open) => !open && setDeletingCardId(null)}>
-                <DialogContent className="max-w-md rounded-2xl border border-slate-100 p-6 shadow-xl">
+                <DialogContent className="max-w-md">
 
                     <div className="flex items-start gap-4">
 
                         {/* Icon */}
-                        <div className="size-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
-                            <Trash2 className="size-5 text-rose-500" />
+                        <div className="size-12 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+                            <Trash2 className="size-5 text-destructive" />
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 space-y-2">
-                            <DialogTitle className="text-lg font-black text-slate-900">
+                            <DialogTitle className="text-lg font-bold">
                                 Xóa thẻ này?
                             </DialogTitle>
 
-                            <DialogDescription className="text-sm text-slate-500 font-medium leading-relaxed">
+                            <DialogDescription>
                                 Thẻ sẽ bị xóa vĩnh viễn khỏi hệ thống và không thể khôi phục lại.
                             </DialogDescription>
                         </div>
@@ -517,14 +515,13 @@ export const FlashcardList = ({
                         <Button
                             variant="ghost"
                             onClick={() => setDeletingCardId(null)}
-                            className="h-10 px-5 rounded-lg font-semibold text-slate-500 hover:bg-slate-100"
                         >
                             Hủy
                         </Button>
 
                         <Button
                             onClick={confirmDelete}
-                            className="h-10 px-5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-sm"
+                            variant="destructive"
                         >
                             Xóa
                         </Button>

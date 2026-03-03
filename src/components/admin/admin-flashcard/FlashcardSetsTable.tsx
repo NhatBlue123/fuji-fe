@@ -171,7 +171,7 @@ export const FlashcardSetsTable = ({
 
                     {/* Search Row */}
                     <div className="relative w-full group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
 
                         <Button
                             type="button"
@@ -181,8 +181,8 @@ export const FlashcardSetsTable = ({
                             className={cn(
                                 "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg transition-all",
                                 filterBy !== "all"
-                                    ? "bg-indigo-100 text-indigo-600"
-                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                             )}
                         >
                             <Filter className="size-4" />
@@ -192,19 +192,16 @@ export const FlashcardSetsTable = ({
                             placeholder="Tìm kiếm bộ thẻ..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
-            focus-visible:ring-2 focus-visible:ring-indigo-500/20
-            focus-visible:border-indigo-500 transition-all"
+                            className="pl-10 pr-12 h-10"
                         />
                     </div>
 
                     {/* Filter Panel */}
                     {showFilter && (
-                        <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-sm
+                        <div className="bg-muted/50 border border-border rounded-xl px-4 py-3
         animate-in fade-in slide-in-from-top-2 duration-200">
-
                             <div className="flex items-center gap-4 flex-wrap">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                     Lọc bộ thẻ:
                                 </p>
 
@@ -219,8 +216,8 @@ export const FlashcardSetsTable = ({
                                         className={cn(
                                             "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
                                             filterBy === item.value
-                                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                                : "bg-background text-foreground border-border hover:bg-accent"
                                         )}
                                     >
                                         {item.label}
@@ -237,67 +234,65 @@ export const FlashcardSetsTable = ({
                 <div className="flex items-center gap-3">
                     <Button
                         onClick={onCreateClick}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
+                        className="h-10 px-5"
                     >
-                        <Plus className="size-5 mr-2" />
+                        <Plus className="size-4 mr-2" />
                         Tạo Bộ Mới
                     </Button>
 
                     <Button
                         variant="outline"
                         onClick={() => setIsExportOpen(true)}
-                        className="h-12 px-6 rounded-xl font-semibold border-slate-200"
-
+                        className="h-10 px-5"
                     >
-                        <Upload className="size-5 mr-2" />
+                        <Upload className="size-4 mr-2" />
                         Export Excel
                     </Button>
-
                 </div>
             </div>
 
             {/* Table Container */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="rounded-lg border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                     <Table>
-                        <TableHeader className="bg-slate-50/50">
-                            <TableRow className="hover:bg-transparent border-slate-100">
-                                <TableHead className="font-bold text-slate-500 h-14 pl-6">Tên Bộ Chứa</TableHead>
-                                <TableHead className="font-bold text-slate-500 h-14">Khóa Học</TableHead>
-                                <TableHead className="font-bold text-slate-500 h-14">Mô Tả</TableHead>
-                                <TableHead className="font-bold text-slate-500 h-14 text-center">Số Thẻ</TableHead>
-                                <TableHead className="font-bold text-slate-500 h-14">Ngày Tạo</TableHead>
-                                <TableHead className="font-bold text-slate-500 h-14 text-right pr-6">Hành Động</TableHead>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="h-12 pl-6">Tên Bộ Chứa</TableHead>
+                                <TableHead className="h-12">Khóa Học</TableHead>
+                                <TableHead className="h-12">Mô Tả</TableHead>
+                                <TableHead className="h-12 text-center">Số Thẻ</TableHead>
+                                <TableHead className="h-12">Ngày Tạo</TableHead>
+                                <TableHead className="h-12 text-right pr-6">Hành Động</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredSets.length > 0 ? filteredSets.map((set) => (
                                 <TableRow
                                     key={set.id}
-                                    className="hover:bg-slate-50/50 transition-colors border-slate-100 group"
+                                    className="group"
                                 >
                                     <TableCell className="py-4 pl-6" onClick={() => setViewingSet(set)}>
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                                                <Layers className="size-4 text-indigo-600" />
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <Layers className="size-4 text-primary" />
                                             </div>
-                                            <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">{set.name}</span>
+                                            <span className="font-semibold cursor-pointer hover:text-primary transition-colors">{set.name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell onClick={() => setViewingSet(set)}>
-                                        <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-600 font-bold px-3 py-1 rounded-lg">
+                                        <Badge variant="outline">
                                             {set.lesson}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="max-w-[250px] truncate text-slate-500 font-medium text-sm" onClick={() => setViewingSet(set)}>
+                                    <TableCell className="max-w-[250px] truncate text-muted-foreground text-sm" onClick={() => setViewingSet(set)}>
                                         {set.description}
                                     </TableCell>
                                     <TableCell className="text-center" onClick={() => setViewingSet(set)}>
-                                        <span className="inline-flex items-center justify-center min-w-[32px] px-2 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-black text-xs">
+                                        <span className="inline-flex items-center justify-center min-w-[32px] px-2 h-7 rounded-md bg-primary/10 text-primary font-bold text-xs">
                                             {set.numCards}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="text-slate-400 font-medium text-sm" onClick={() => setViewingSet(set)}>
+                                    <TableCell className="text-muted-foreground text-sm" onClick={() => setViewingSet(set)}>
                                         <div className="flex items-center gap-2">
                                             <Calendar className="size-4 opacity-50" />
                                             {set.createdAt}
@@ -309,22 +304,22 @@ export const FlashcardSetsTable = ({
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="size-8 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                                    className="size-8"
                                                 >
                                                     <MoreHorizontal className="size-5" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 rounded-xl p-2 shadow-xl border-slate-100">
-                                                <DropdownMenuLabel className="font-black text-xs text-slate-400 uppercase tracking-widest px-2 py-1.5">Quản lý bộ thẻ</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => setViewingSet(set)} className="rounded-lg font-bold text-slate-600 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer flex items-center gap-2">
-                                                    <Eye className="size-4" /> Xem chi tiết
+                                            <DropdownMenuContent align="end" className="w-48">
+                                                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-widest">Quản lý bộ thẻ</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => setViewingSet(set)} className="cursor-pointer">
+                                                    <Eye className="size-4 mr-2" /> Xem chi tiết
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setEditingSet(set)} className="rounded-lg font-bold text-slate-600 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer flex items-center gap-2">
-                                                    <Edit className="size-4" /> Chỉnh sửa
+                                                <DropdownMenuItem onClick={() => setEditingSet(set)} className="cursor-pointer">
+                                                    <Edit className="size-4 mr-2" /> Chỉnh sửa
                                                 </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="bg-slate-100" />
-                                                <DropdownMenuItem onClick={() => setDeletingSetId(set.id)} className="rounded-lg font-bold text-rose-600 focus:bg-rose-50 focus:text-rose-600 cursor-pointer flex items-center gap-2">
-                                                    <Trash2 className="size-4" /> Xóa bộ thẻ
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => setDeletingSetId(set.id)} className="text-destructive cursor-pointer">
+                                                    <Trash2 className="size-4 mr-2" /> Xóa bộ thẻ
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -334,10 +329,10 @@ export const FlashcardSetsTable = ({
                                 <TableRow>
                                     <TableCell colSpan={6} className="py-20 text-center">
                                         <div className="flex flex-col items-center justify-center gap-3">
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                <Search className="size-8 text-slate-200" />
+                                            <div className="p-4 bg-muted rounded-2xl">
+                                                <Search className="size-8 text-muted-foreground" />
                                             </div>
-                                            <p className="text-slate-400 font-bold">Không tìm thấy bộ chứa nào phù hợp.</p>
+                                            <p className="text-muted-foreground font-medium">Không tìm thấy bộ chứa nào phù hợp.</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -407,28 +402,24 @@ export const FlashcardSetsTable = ({
 
             {/* Delete Confirmation Modal */}
             <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
-                <DialogContent className="sm:max-w-[420px] rounded-3xl p-6">
+                <DialogContent className="sm:max-w-[420px]">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-black">
+                        <DialogTitle>
                             Xuất Excel
                         </DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">
+                        <DialogDescription>
                             Chọn bộ chứa thẻ bạn muốn xuất
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* Select Set */}
-                    {/* Select Set */}
                     <div className="space-y-2">
-
-                        {/* Export All Option */}
                         <button
                             onClick={() => setExportSet(null)}
                             className={cn(
-                                "w-full text-left px-4 py-3 rounded-xl border font-bold transition-all",
+                                "w-full text-left px-4 py-3 rounded-lg border font-medium transition-all",
                                 exportSet === null
-                                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
-                                    : "border-slate-200 hover:bg-slate-50"
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-border hover:bg-accent"
                             )}
                         >
                             Xuất tất cả bộ thẻ
@@ -439,10 +430,10 @@ export const FlashcardSetsTable = ({
                                 key={set.id}
                                 onClick={() => setExportSet(set)}
                                 className={cn(
-                                    "w-full text-left px-4 py-3 rounded-xl border font-bold transition-all",
+                                    "w-full text-left px-4 py-3 rounded-lg border font-medium transition-all",
                                     exportSet?.id === set.id
-                                        ? "border-indigo-500 bg-indigo-50 text-indigo-600"
-                                        : "border-slate-200 hover:bg-slate-50"
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-border hover:bg-accent"
                                 )}
                             >
                                 {set.name}
@@ -450,16 +441,15 @@ export const FlashcardSetsTable = ({
                         ))}
                     </div>
 
-                    <DialogFooter className="mt-6">
+                    <DialogFooter className="mt-2">
                         <Button
                             disabled={exportSet === undefined}
                             onClick={() => {
-                                // ⚠️ demo: MOCK_CARDS – sau này thay bằng API theo set.id
                                 let dataToExport = MOCK_CARDS;
                                 let fileName = "tat-ca-bo-the.xlsx";
 
                                 if (exportSet) {
-                                    dataToExport = MOCK_CARDS; // sau này lọc theo set.id
+                                    dataToExport = MOCK_CARDS;
                                     fileName = `${exportSet.name}.xlsx`;
                                 }
 
@@ -474,8 +464,6 @@ export const FlashcardSetsTable = ({
                                 setIsExportOpen(false);
                                 setExportSet(null);
                             }}
-
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 rounded-xl"
                         >
                             Xuất Excel
                         </Button>

@@ -102,6 +102,11 @@ const Sidebar = () => {
           {t("common.aiPractice")}
         </Link>
 
+        <Link href="/video-call" className={navClass("/video-call")}>
+          <span className={iconClass("/video-call")}>video_chat</span>
+          Luyện nói JLPT
+        </Link>
+
         <Link href="/flashcards" className={navClass("/flashcards")}>
           <span className={iconClass("/flashcards")}>style</span>
           {t("common.flashcard")}

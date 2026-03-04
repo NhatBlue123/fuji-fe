@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { CourseHeader } from "@/components/admin/admin-components/CourseHeader";
-import { CourseFilters } from "@/components/admin/admin-components/CourseFilters";
-import { CourseCard } from "@/components/admin/admin-components/CourseCard";
-import { CreateCourseModal } from "@/components/admin/admin-components/CreateCourseModal";
+import { CourseHeader } from "@/components/admin/course/CourseHeader";
+import { CourseFilters } from "@/components/admin/course/CourseFilters";
+import { CourseCard } from "@/components/admin/course/CourseCard";
+import { CreateCourseModal } from "@/components/admin/course/CreateCourseModal";
 import {
   useGetAllCoursesQuery,
   useDeleteCourseMutation,

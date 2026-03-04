@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Lock, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChangePasswordMutation } from "@/store/services/user/userApi";
+import { Button } from "@/components/ui/button";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -65,13 +66,13 @@ export default function ChangePasswordPage() {
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
       <div className="mx-auto max-w-6xl bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
-        <button
+        <Button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition w-fit"
         >
           <ArrowLeft size={16} />
           Quay lại
-        </button>
+        </Button>
 
         <div className="mx-auto max-w-md space-y-6">
           {/* Header */}
@@ -111,19 +112,19 @@ export default function ChangePasswordPage() {
             />
 
             {/* Toggle show password */}
-            <button
+            <Button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-            </button>
+            </Button>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             {/* Submit */}
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
               className="w-full py-3 rounded-lg bg-indigo-600
@@ -131,7 +132,7 @@ export default function ChangePasswordPage() {
                          transition disabled:opacity-50"
             >
               {isLoading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
-            </button>
+            </Button>
           </form>
 
           <p className="text-xs text-center text-slate-500">

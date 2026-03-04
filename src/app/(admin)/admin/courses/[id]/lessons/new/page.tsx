@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { LessonForm } from "@/components/admin/admin-components/lesson-form";
+import { LessonForm } from "@/components/admin/course/lesson-form";
 
 interface Props {
   params: Promise<{ id: string }>;

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import BookingModal from "./bookingmodal/page";
+import { Button } from "@/components/ui/button";
 const teachers = [
   {
     name: "Haruka Sato",
@@ -98,9 +99,9 @@ export default function TeacherBookingDashboard() {
                   />
                 </label>
 
-                <button className="bg-pink-500 hover:bg-neon-pink/90 text-white px-10 rounded-xl font-bold text-sm transition-all shadow-[0_0_20px_rgba(255,92,141,0.2)]">
+                <Button className="bg-pink-500 hover:bg-neon-pink/90 text-white px-10 rounded-xl font-bold text-sm transition-all shadow-[0_0_20px_rgba(255,92,141,0.2)]">
                   TÌM KIẾM
-                </button>
+                </Button>
               </div>
 
               {/* Filters */}
@@ -112,25 +113,25 @@ export default function TeacherBookingDashboard() {
                   </span>
 
                   <div className="flex gap-2">
-                    <button className="px-4 py-2 rounded-lg bg-dark-bg border border-accent-border text-xs font-bold text-text-secondary hover:border-neon-pink hover:text-neon-pink transition-all">
+                    <Button className="px-4 py-2 rounded-lg bg-dark-bg border border-accent-border text-xs font-bold text-text-secondary hover:border-neon-pink hover:text-neon-pink transition-all">
                       N1
-                    </button>
+                    </Button>
 
-                    <button className="px-4 py-2 rounded-lg bg-pink-500 text-white text-xs font-bold shadow-[0_0_10px_rgba(255,92,141,0.3)]">
+                    <Button className="px-4 py-2 rounded-lg bg-pink-500 text-white text-xs font-bold shadow-[0_0_10px_rgba(255,92,141,0.3)]">
                       N2
-                    </button>
+                    </Button>
 
-                    <button className="px-4 py-2 rounded-lg bg-pink-500 text-white text-xs font-bold shadow-[0_0_10px_rgba(255,92,141,0.3)]">
+                    <Button className="px-4 py-2 rounded-lg bg-pink-500 text-white text-xs font-bold shadow-[0_0_10px_rgba(255,92,141,0.3)]">
                       N3
-                    </button>
+                    </Button>
 
-                    <button className="px-4 py-2 rounded-lg bg-dark-bg border border-accent-border text-xs font-bold text-text-secondary hover:border-neon-pink hover:text-neon-pink transition-all">
+                    <Button className="px-4 py-2 rounded-lg bg-dark-bg border border-accent-border text-xs font-bold text-text-secondary hover:border-neon-pink hover:text-neon-pink transition-all">
                       N4
-                    </button>
+                    </Button>
 
-                    <button className="px-4 py-2 rounded-lg bg-dark-bg border border-accent-border text-xs font-bold text-text-secondary hover:border-neon-pink hover:text-neon-pink transition-all">
+                    <Button className="px-4 py-2 rounded-lg bg-dark-bg border border-accent-border text-xs font-bold text-text-secondary hover:border-neon-pink hover:text-neon-pink transition-all">
                       N5
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -143,7 +144,7 @@ export default function TeacherBookingDashboard() {
                     <div className="absolute top-full mt-2 w-48 bg-card-bg border border-accent-border rounded-xl shadow-xl z-50">
                       {["Dưới $15", "$15 - $20", "$20 - $30", "Trên $30"].map(
                         (price) => (
-                          <button
+                          <Button
                             key={price}
                             onClick={() => {
                               setSelectedPrice(price);
@@ -152,12 +153,12 @@ export default function TeacherBookingDashboard() {
                             className="w-full text-left px-4 py-3 text-sm text-text-secondary hover:bg-dark-bg hover:text-neon-pink transition-all"
                           >
                             {price}
-                          </button>
+                          </Button>
                         ),
                       )}
                     </div>
                   )}
-                  <button
+                  <Button
                     onClick={() => setShowPriceDropdown(!showPriceDropdown)}
                     className="flex items-center gap-2 bg-dark-bg border border-accent-border px-4 py-2 rounded-lg text-text-secondary text-xs font-bold hover:border-neon-pink hover:text-neon-pink transition-all"
                   >
@@ -168,9 +169,9 @@ export default function TeacherBookingDashboard() {
                     <span className="material-symbols-outlined text-sm">
                       expand_more
                     </span>
-                  </button>
+                  </Button>
 
-                  <button className="flex items-center gap-2 bg-dark-bg border border-accent-border px-4 py-2 rounded-lg text-text-secondary text-xs font-bold hover:border-neon-pink hover:text-neon-pink transition-all">
+                  <Button className="flex items-center gap-2 bg-dark-bg border border-accent-border px-4 py-2 rounded-lg text-text-secondary text-xs font-bold hover:border-neon-pink hover:text-neon-pink transition-all">
                     <span className="material-symbols-outlined text-sm">
                       language
                     </span>
@@ -178,7 +179,7 @@ export default function TeacherBookingDashboard() {
                     <span className="material-symbols-outlined text-sm">
                       expand_more
                     </span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -223,12 +224,12 @@ export default function TeacherBookingDashboard() {
                 </div>
 
                 <div className="p-4">
-                  <button
+                  <Button
                     onClick={() => setOpenBooking(true)}
                     className="w-full py-3 bg-pink-500 rounded-xl font-bold hover:brightness-110 transition"
                   >
                     Đặt lịch ngay
-                  </button>
+                  </Button>
                   
                 </div>
                 {openBooking && (
@@ -243,18 +244,18 @@ export default function TeacherBookingDashboard() {
       <div className="flex justify-center pt-8">
         <nav className="flex items-center gap-2">
           {/* PREV */}
-          <button
+          <Button
             onClick={goPrev}
             className="size-11 flex items-center justify-center rounded-xl border border-accent-border bg-card-bg hover:bg-dark-bg hover:border-neon-pink transition-all text-text-secondary hover:text-neon-pink"
           >
             <span className="material-symbols-outlined text-sm">
               chevron_left
             </span>
-          </button>
+          </Button>
 
           {/* PAGE NUMBERS */}
           {pages.map((p) => (
-            <button
+            <Button
               key={p}
               onClick={() => setCurrentPage(p)}
               className={
@@ -264,36 +265,36 @@ export default function TeacherBookingDashboard() {
               }
             >
               {p}
-            </button>
+            </Button>
           ))}
 
           {/* DOTS */}
           <span className="px-2 text-text-secondary/40 font-bold">...</span>
 
           {/* LAST PAGE */}
-          <button
+          <Button
             onClick={() => setCurrentPage(totalPages)}
             className="size-11 flex items-center justify-center rounded-xl border border-accent-border bg-card-bg hover:bg-dark-bg hover:border-neon-pink transition-all font-bold text-sm text-text-secondary hover:text-neon-pink"
           >
             {totalPages}
-          </button>
+          </Button>
 
           {/* NEXT */}
-          <button
+          <Button
             onClick={goNext}
             className="size-11 flex items-center justify-center rounded-xl border border-accent-border bg-card-bg hover:bg-dark-bg hover:border-neon-pink transition-all text-text-secondary hover:text-neon-pink"
           >
             <span className="material-symbols-outlined text-sm">
               chevron_right
             </span>
-          </button>
+          </Button>
         </nav>
       </div>
 
       {/* FLOAT BUTTON */}
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-pink-500 rounded-full shadow-lg hover:scale-110 transition">
+      <Button className="fixed bottom-8 right-8 w-14 h-14 bg-pink-500 rounded-full shadow-lg hover:scale-110 transition">
         💬
-      </button>
+      </Button>
     </div>
   );
 }

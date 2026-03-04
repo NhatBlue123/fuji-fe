@@ -91,8 +91,8 @@ const Sidebar = () => {
           {t("common.booking")}
         </Link>
 
-        <Link href="/ai-practice" className={navClass("/ai-practice")}>
-          <span className={iconClass("/ai-practice")}>smart_toy</span>
+        <Link href="/ai-chat" className={navClass("/ai-chat")}>
+          <span className={iconClass("/ai-chat")}>smart_toy</span>
           {t("common.aiPractice")}
         </Link>
 

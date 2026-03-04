@@ -5,6 +5,7 @@ import ExamCard from "./ExamCard";
 import { useState, useMemo, useEffect } from "react";
 import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
+import { Button } from "@/components/ui/button";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
@@ -120,19 +121,19 @@ export default function JlptPracticePage() {
         {/* Pagination */}
         {!isLoading && !error && totalPages > 1 && (
           <div className="flex justify-center mt-12 gap-2">
-            <button
+            <Button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
               disabled={currentPage === 0}
               className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined">chevron_left</span>
-            </button>
+            </Button>
 
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const pg = i;
               const isActive = currentPage === pg;
               return (
-                <button
+                <Button
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
                   className={`size-10 rounded-lg flex items-center justify-center font-bold transition-all ${
@@ -142,7 +143,7 @@ export default function JlptPracticePage() {
                   }`}
                 >
                   {pg + 1}
-                </button>
+                </Button>
               );
             })}
 
@@ -150,13 +151,13 @@ export default function JlptPracticePage() {
               <span className="size-10 flex items-center justify-center text-muted-foreground">...</span>
             )}
 
-            <button
+            <Button
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
               disabled={currentPage >= totalPages - 1}
               className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined">chevron_right</span>
-            </button>
+            </Button>
           </div>
         )}
 

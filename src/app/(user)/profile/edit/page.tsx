@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Upload, User, Phone } from "lucide-react";
 import Image from "next/image";
 import { useUpdateProfileMutation } from "@/store/services/user/userApi";
+import { Button } from "@/components/ui/button";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -164,21 +165,21 @@ export default function EditProfilePage() {
 
             {/* ACTIONS */}
             <div className="flex gap-3 pt-4">
-              <button
+              <Button
                 type="button"
                 onClick={() => router.push("/profile")}
                 className="flex-1 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 transition"
               >
                 Hủy
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isSaving}
                 className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition disabled:opacity-50"
               >
                 {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
-              </button>
+              </Button>
             </div>
           </div>
         </form>

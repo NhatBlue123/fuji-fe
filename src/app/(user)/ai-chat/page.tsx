@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { Button } from "@/components/ui/button";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -163,13 +164,13 @@ const ChatInputArea = memo(function ChatInputArea({
     <div className="p-6 border-t border-border bg-background/80 backdrop-blur-sm shrink-0">
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
         {chips.map((chip) => (
-          <button
+          <Button
             key={chip.text}
             onClick={() => onInputChange(chip.text)}
             className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
           >
             {chip.emoji} {chip.text}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="relative flex items-center gap-3">
@@ -183,21 +184,21 @@ const ChatInputArea = memo(function ChatInputArea({
             type="text"
           />
           {showEmoji && (
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+            <Button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               <span className="material-symbols-outlined">
                 sentiment_satisfied
               </span>
-            </button>
+            </Button>
           )}
         </div>
         {showMic && (
-          <button className="p-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-card transition-all flex items-center justify-center group shadow-sm">
+          <Button className="p-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-card transition-all flex items-center justify-center group shadow-sm">
             <span className="material-symbols-outlined group-hover:scale-110 transition-transform">
               mic
             </span>
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           onClick={onSend}
           disabled={!input.trim()}
           className="p-3.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center shadow-lg shadow-primary/20 group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -205,12 +206,7 @@ const ChatInputArea = memo(function ChatInputArea({
           <span className="material-symbols-outlined group-hover:translate-x-0.5 transition-transform">
             send
           </span>
-        </button>
-      </div>
-      <div className="text-center mt-2">
-        <p className="text-[10px] text-muted-foreground">
-          AI có thể mắc lỗi. Hãy kiểm tra lại thông tin quan trọng.
-        </p>
+        </Button>
       </div>
     </div>
   );
@@ -272,7 +268,7 @@ const RightSidebar = memo(function RightSidebar({
             </label>
             <div className="flex flex-wrap gap-2">
               {LEVELS.map((lvl) => (
-                <button
+                <Button
                   key={lvl}
                   onClick={() => onLevelChange(lvl)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
@@ -282,7 +278,7 @@ const RightSidebar = memo(function RightSidebar({
                   }`}
                 >
                   {lvl}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -348,9 +344,9 @@ const RightSidebar = memo(function RightSidebar({
                 </p>
               </div>
             </div>
-            <button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors border border-border">
+            <Button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors border border-border">
               Luyện ngay
-            </button>
+            </Button>
           </div>
           <div className="group bg-card hover:bg-muted border border-border rounded-xl p-3 transition-all cursor-pointer">
             <div className="flex gap-3">
@@ -368,9 +364,9 @@ const RightSidebar = memo(function RightSidebar({
                 </p>
               </div>
             </div>
-            <button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-primary hover:text-primary-foreground transition-colors border border-border">
+            <Button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-primary hover:text-primary-foreground transition-colors border border-border">
               Làm bài
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -547,7 +543,7 @@ function SenseiPanel() {
                 <div className="absolute -inset-4 border border-secondary/20 rounded-full animate-ping opacity-20" />
               </>
             )}
-            <button
+            <Button
               onClick={handleMicClick}
               className={`relative size-20 md:size-24 rounded-full flex items-center justify-center border-4 border-background transition-all duration-300 group ${
                 isListening
@@ -558,7 +554,7 @@ function SenseiPanel() {
               <span className="material-symbols-outlined text-4xl md:text-5xl text-white drop-shadow-md group-hover:animate-pulse">
                 mic
               </span>
-            </button>
+            </Button>
             <p className="absolute -bottom-10 w-48 -left-12 text-center text-xs font-bold text-secondary uppercase tracking-widest opacity-80 animate-pulse">
               Nhấn để nói
             </p>
@@ -756,14 +752,15 @@ function AssistantPanel() {
                     {msg.textVn && <p className="text-sm">{msg.textVn}</p>}
                   </div>
                   <div className="flex gap-2 mt-1">
-                    <button
+                    <Button
+                      variant="ghost"
                       className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                       title="Sao chép"
                     >
                       <span className="material-symbols-outlined text-lg">
                         content_copy
                       </span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -833,18 +830,19 @@ export default function AIChatPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20">
+          <Button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20">
             <span className="material-symbols-outlined text-lg">
               add_circle
             </span>
             Bắt đầu phiên mới
-          </button>
+          </Button>
         </div>
       </header>
 
       {/* Mode tabs — Chatbot first, Sensei second */}
       <div className="flex border-b border-border bg-muted/30 shrink-0">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setMode("assistant")}
           className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold text-sm transition-all ${
             mode === "assistant"
@@ -854,8 +852,9 @@ export default function AIChatPage() {
         >
           <span className="material-symbols-outlined text-lg">smart_toy</span>
           Chatbot AI
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => setMode("sensei")}
           className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold text-sm transition-all ${
             mode === "sensei"
@@ -867,7 +866,7 @@ export default function AIChatPage() {
             record_voice_over
           </span>
           Giao tiếp với AI Sensei
-        </button>
+        </Button>
       </div>
 
       {/* Render explicit variant — no conditional inside one component */}

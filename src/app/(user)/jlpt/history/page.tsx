@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGetMyAttemptsQuery } from "@/store/services/jlptApi";
 import type { TestAttemptResult, JLPTLevel } from "@/types/jlpt";
+import { Button } from "@/components/ui/button";
 import {
   LineChart,
   Line,
@@ -150,9 +151,9 @@ export default function JlptHistoryPage() {
         <div className="text-center">
           <span className="material-symbols-outlined text-5xl text-red-400 mb-3 block">error</span>
           <p className="text-lg font-semibold">Không thể tải dữ liệu</p>
-          <button onClick={() => router.back()} className="mt-4 px-5 py-2 bg-pink-500 rounded-lg">
+          <Button onClick={() => router.back()} className="mt-4 px-5 py-2 bg-pink-500 rounded-lg">
             Quay lại
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -238,7 +239,7 @@ export default function JlptHistoryPage() {
           {/* Level */}
           <div className="flex gap-2 flex-wrap">
             {LEVELS.map((lv) => (
-              <button
+              <Button
                 key={lv}
                 onClick={() => setSelectedLevel(lv)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${
@@ -248,14 +249,14 @@ export default function JlptHistoryPage() {
                 }`}
               >
                 {lv}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Time */}
           <div className="flex gap-2 flex-wrap sm:ml-auto">
             {TIME_FILTERS.map((tf) => (
-              <button
+              <Button
                 key={tf.value}
                 onClick={() => setSelectedTime(tf.value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
@@ -265,14 +266,14 @@ export default function JlptHistoryPage() {
                 }`}
               >
                 {tf.label}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Pass/fail */}
           <div className="flex gap-2">
             {(["all", "passed", "failed"] as const).map((r) => (
-              <button
+              <Button
                 key={r}
                 onClick={() => setFilterResult(r)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
@@ -286,7 +287,7 @@ export default function JlptHistoryPage() {
                 }`}
               >
                 {r === "all" ? "Tất cả" : r === "passed" ? "✓ Đậu" : "✗ Trượt"}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

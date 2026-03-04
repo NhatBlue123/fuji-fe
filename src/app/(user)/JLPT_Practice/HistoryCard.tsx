@@ -1,6 +1,7 @@
 import React from "react";
 import { TestAttemptResult } from "@/types/jlpt";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface HistoryCardProps {
   attempts: TestAttemptResult[];
@@ -33,9 +34,9 @@ export default function HistoryCard({ attempts }: HistoryCardProps) {
           </div>
         </div>
         {attempts.length > 3 && (
-          <button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700">
+          <Button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700">
             Xem tất cả
-          </button>
+          </Button>
         )}
       </div>
       

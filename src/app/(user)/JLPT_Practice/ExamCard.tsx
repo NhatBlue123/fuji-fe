@@ -1,5 +1,6 @@
 "use client";
-import Link from "next/link"; 
+import Link from "next/link";
+import { Button } from "@/components/ui/button"; 
 
 interface ExamCardProps {
   testId: number;
@@ -28,9 +29,9 @@ export default function ExamCard({
   const renderButton = () => {
     if (status === "locked") {
       return (
-        <button className="w-full py-2 rounded-lg bg-slate-800 text-slate-500 text-sm font-bold border border-slate-700 cursor-not-allowed">
+        <Button className="w-full py-2 rounded-lg bg-slate-800 text-slate-500 text-sm font-bold border border-slate-700 cursor-not-allowed" disabled>
           Đã khóa
-        </button>
+        </Button>
       );
     }
     let btnClass = "";
@@ -66,7 +67,7 @@ export default function ExamCard({
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <span className="material-symbols-outlined text-4xl text-yellow-400 mb-2">lock</span>
           <p className="text-white font-bold text-sm mb-3">Thành viên Premium</p>
-          <button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">Nâng cấp</button>
+          <Button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">Nâng cấp</Button>
         </div>
       )}
 

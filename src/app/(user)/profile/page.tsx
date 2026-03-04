@@ -8,6 +8,7 @@ import { useState } from "react";
 import { logout } from "@/lib/auth";
 //import { useGetMeQuery } from "@/store/services/user/userApi";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
+import { Button } from "@/components/ui/button";
 export default function ProfilePage() {
   const router = useRouter();
   const [openLogout, setOpenLogout] = useState(false);
@@ -92,12 +93,12 @@ export default function ProfilePage() {
                   <Key size={16} /> Đổi mật khẩu
                 </Link>
 
-                <button
+                <Button
                   onClick={() => setOpenLogout(true)}
                   className="flex items-center gap-2 px-5 h-11 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
                 >
                   <LogOut size={16} /> Đăng xuất
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -155,15 +156,15 @@ export default function ProfilePage() {
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4 w-full max-w-sm">
             <p className="text-center text-slate-200">Bạn có chắc muốn đăng xuất?</p>
             <div className="flex gap-3">
-              <button onClick={() => setOpenLogout(false)} className="flex-1 py-2 bg-slate-800 rounded-lg">
+              <Button onClick={() => setOpenLogout(false)} className="flex-1 py-2 bg-slate-800 rounded-lg">
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleLogout}
                 className="flex-1 py-2 bg-red-600 rounded-lg text-white"
               >
                 Đăng xuất
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -6,6 +6,15 @@ import { Upload, User, Phone } from "lucide-react";
 import Image from "next/image";
 import { useUpdateProfileMutation } from "@/store/services/user/userApi";
 import { Button } from "@/components/ui/button";
+import { Input as UIInput } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select as UISelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -125,36 +134,51 @@ export default function EditProfilePage() {
             />
 
             {/* Gender */}
-            <Select
-              label="Giới tính"
-              name="gender"
-              value={form.gender}
-              onChange={handleChange}
-              options={[
-                { value: "MALE", label: "Nam" },
-                { value: "FEMALE", label: "Nữ" },
-                { value: "OTHER", label: "Khác" },
-              ]}
-            />
+            <div>
+              <label className="text-sm text-slate-300 mb-1 block">Giới tính</label>
+              <UISelect
+                value={form.gender}
+                onValueChange={(v) =>
+                  handleChange({ target: { name: "gender", value: v } } as any)
+                }
+              >
+                <SelectTrigger className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200">
+                  <SelectValue placeholder="Chọn giới tính" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MALE">Nam</SelectItem>
+                  <SelectItem value="FEMALE">Nữ</SelectItem>
+                  <SelectItem value="OTHER">Khác</SelectItem>
+                </SelectContent>
+              </UISelect>
+            </div>
 
             {/* JLPT */}
-            <Select
-              label="Trình độ JLPT"
-              name="jlptLevel"
-              value={form.jlptLevel}
-              onChange={handleChange}
-              options={["N5", "N4", "N3", "N2", "N1"].map((n) => ({
-                value: n,
-                label: n,
-              }))}
-            />
+            <div>
+              <label className="text-sm text-slate-300 mb-1 block">Trình độ JLPT</label>
+              <UISelect
+                value={form.jlptLevel}
+                onValueChange={(v) =>
+                  handleChange({ target: { name: "jlptLevel", value: v } } as any)
+                }
+              >
+                <SelectTrigger className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200">
+                  <SelectValue placeholder="Chọn trình độ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["N5", "N4", "N3", "N2", "N1"].map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </UISelect>
+            </div>
 
             {/* Bio */}
             <div>
               <label className="text-sm text-slate-300 mb-1 block">
                 Giới thiệu
               </label>
-              <textarea
+              <Textarea
                 name="bio"
                 value={form.bio}
                 onChange={handleChange}
@@ -200,30 +224,15 @@ function Input({ label, icon, ...props }: any) {
             {icon}
           </div>
         )}
-        <input
+        <UIInput
           {...props}
-          className={`w-full ${icon ? "pl-10" : "pl-4"
-            } pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200`}
+          className={`w-full ${
+            icon ? "pl-10" : "pl-4"
+          } pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200`}
         />
       </div>
     </div>
   );
 }
 
-function Select({ label, options, ...props }: any) {
-  return (
-    <div>
-      <label className="text-sm text-slate-300 mb-1 block">{label}</label>
-      <select
-        {...props}
-        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
-      >
-        {options.map((o: any) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import BookingModal from "./bookingmodal/page";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 const teachers = [
   {
     name: "Haruka Sato",
@@ -92,7 +93,7 @@ export default function TeacherBookingDashboard() {
                     <span className="material-symbols-outlined">search</span>
                   </div>
 
-                  <input
+                  <Input
                     type="text"
                     placeholder="Tìm theo tên giáo viên, từ khóa hoặc chuyên môn..."
                     className="w-full border-none bg-transparent focus:ring-0 text-sm text-white placeholder:text-text-secondary/50 py-4 px-4 outline-none"
@@ -230,11 +231,10 @@ export default function TeacherBookingDashboard() {
                   >
                     Đặt lịch ngay
                   </Button>
-                  
                 </div>
                 {openBooking && (
-                    <BookingModal onClose={() => setOpenBooking(false)} />
-                  )}
+                  <BookingModal onClose={() => setOpenBooking(false)} />
+                )}
               </div>
             ))}
           </div>

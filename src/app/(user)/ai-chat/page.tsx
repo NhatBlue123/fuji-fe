@@ -2,6 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -175,7 +184,7 @@ const ChatInputArea = memo(function ChatInputArea({
       </div>
       <div className="relative flex items-center gap-3">
         <div className="flex-1 relative">
-          <input
+          <Input
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSend()}
@@ -243,24 +252,18 @@ const RightSidebar = memo(function RightSidebar({
             <label className="block text-xs font-medium text-muted-foreground mb-2">
               Chủ đề hội thoại
             </label>
-            <div className="relative">
-              <select
-                value={selectedTopic}
-                onChange={(e) => onTopicChange(e.target.value)}
-                className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary appearance-none pr-8 transition-all"
-              >
+            <Select value={selectedTopic} onValueChange={onTopicChange}>
+              <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all">
+                <SelectValue placeholder="Chọn chủ đề" />
+              </SelectTrigger>
+              <SelectContent>
                 {TOPICS.map((t) => (
-                  <option key={t.value} value={t.value}>
+                  <SelectItem key={t.value} value={t.value}>
                     {t.label}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <span className="material-symbols-outlined text-muted-foreground text-lg">
-                  expand_more
-                </span>
-              </div>
-            </div>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-2">
@@ -577,15 +580,11 @@ function SenseiPanel() {
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Hiện lịch sử
                   </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      checked={showHistory}
-                      onChange={() => setShowHistory((p) => !p)}
-                      className="sr-only peer"
-                      type="checkbox"
-                    />
-                    <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary transition-colors" />
-                  </label>
+                  <Switch
+                    checked={showHistory}
+                    onCheckedChange={() => setShowHistory((p) => !p)}
+                    className="data-[state=checked]:bg-secondary"
+                  />
                 </div>
               </div>
 

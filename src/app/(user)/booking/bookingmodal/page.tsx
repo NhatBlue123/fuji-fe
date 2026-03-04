@@ -125,22 +125,22 @@ export default function BookingModal({ onClose }: BookingModalProps) {
               {/* DATE */}
               <section>
                 <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold mb-4">Chọn ngày học</h3>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-bold">Tháng 10, 2024</span>
-                  <div className="flex gap-2">
-                    <Button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
-                      <span className="material-symbols-outlined text-sm">
-                        chevron_left
-                      </span>
-                    </Button>
-                    <Button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
-                      <span className="material-symbols-outlined text-sm">
-                        chevron_right
-                      </span>
-                    </Button>
+                  <h3 className="text-lg font-bold mb-4">Chọn ngày học</h3>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold">Tháng 10, 2024</span>
+                    <div className="flex gap-2">
+                      <Button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
+                        <span className="material-symbols-outlined text-sm">
+                          chevron_left
+                        </span>
+                      </Button>
+                      <Button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
+                        <span className="material-symbols-outlined text-sm">
+                          chevron_right
+                        </span>
+                      </Button>
+                    </div>
                   </div>
-                </div>
                 </div>
                 <div className="grid grid-cols-7 gap-2">
                   {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {

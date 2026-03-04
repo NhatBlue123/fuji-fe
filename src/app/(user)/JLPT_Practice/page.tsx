@@ -3,7 +3,10 @@ import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import ExamCard from "./ExamCard";
 import { useState, useMemo, useEffect } from "react";
-import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
+import {
+  useGetPublishedTestsQuery,
+  useGetMyAttemptsQuery,
+} from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +18,7 @@ export default function JlptPracticePage() {
 
   // Use debounce for search query
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  
+
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
     return () => clearTimeout(handler);
@@ -23,7 +26,8 @@ export default function JlptPracticePage() {
 
   // Fetch published tests from backend
   const { data, isLoading, error } = useGetPublishedTestsQuery({
-    level: selectedLevel === "Tất cả" ? undefined : (selectedLevel as JLPTLevel),
+    level:
+      selectedLevel === "Tất cả" ? undefined : (selectedLevel as JLPTLevel),
     page: currentPage,
     size: pageSize,
     search: debouncedSearch,
@@ -31,15 +35,15 @@ export default function JlptPracticePage() {
 
   // Fetch user attempts
   const { data: attempts } = useGetMyAttemptsQuery();
-  
+
   const attemptsMap = useMemo(() => {
     if (!attempts) return {};
     const map: Record<number, TestAttemptResult> = {};
-    attempts.forEach(a => {
-        // Since backend orders by date desc, the first one encountered is the latest
-        if (!map[a.testId]) {
-            map[a.testId] = a;
-        }
+    attempts.forEach((a) => {
+      // Since backend orders by date desc, the first one encountered is the latest
+      if (!map[a.testId]) {
+        map[a.testId] = a;
+      }
     });
     return map;
   }, [attempts]);
@@ -68,7 +72,6 @@ export default function JlptPracticePage() {
 
       {/* Nội dung chính */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pb-16">
-
         {/* Loading state */}
         {isLoading && (
           <div className="text-center text-muted-foreground py-20">
@@ -80,16 +83,24 @@ export default function JlptPracticePage() {
         {/* Error state */}
         {!!error && (
           <div className="text-center text-red-500 py-20">
-            <span className="material-symbols-outlined text-6xl mb-4">error</span>
-            <p className="text-lg font-semibold">Không thể tải danh sách đề thi</p>
-            <p className="text-sm text-muted-foreground mt-2">Vui lòng thử lại sau</p>
+            <span className="material-symbols-outlined text-6xl mb-4">
+              error
+            </span>
+            <p className="text-lg font-semibold">
+              Không thể tải danh sách đề thi
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Vui lòng thử lại sau
+            </p>
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && !error && tests.length === 0 && (
           <div className="text-center text-muted-foreground py-20">
-            <span className="material-symbols-outlined text-6xl mb-4">inbox</span>
+            <span className="material-symbols-outlined text-6xl mb-4">
+              inbox
+            </span>
             <p className="text-lg font-semibold">Chưa có đề thi nào</p>
             <p className="text-sm mt-2">Hệ thống đang cập nhật đề thi mới</p>
           </div>
@@ -148,11 +159,15 @@ export default function JlptPracticePage() {
             })}
 
             {totalPages > 5 && (
-              <span className="size-10 flex items-center justify-center text-muted-foreground">...</span>
+              <span className="size-10 flex items-center justify-center text-muted-foreground">
+                ...
+              </span>
             )}
 
             <Button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+              }
               disabled={currentPage >= totalPages - 1}
               className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -160,7 +175,6 @@ export default function JlptPracticePage() {
             </Button>
           </div>
         )}
-
       </div>
     </div>
   );

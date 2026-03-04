@@ -5,6 +5,7 @@ import { Eye, EyeOff, Lock, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChangePasswordMutation } from "@/store/services/user/userApi";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -39,28 +40,23 @@ export default function ChangePasswordPage() {
     }
 
     try {
-  const res = await changePassword({
-    currentPassword,
-    newPassword,
-  }).unwrap();
+      const res = await changePassword({
+        currentPassword,
+        newPassword,
+      }).unwrap();
 
-  console.log("Success:", res);
+      console.log("Success:", res);
 
-  alert("Đổi mật khẩu thành công!");
+      alert("Đổi mật khẩu thành công!");
 
-  localStorage.removeItem("access_token");
+      localStorage.removeItem("access_token");
 
-  router.push("/");
+      router.push("/");
+    } catch (err: any) {
+      console.error("Change password error:", err);
 
-} catch (err: any) {
-  console.error("Change password error:", err);
-
-  setError(
-    err?.data?.message ||
-    err?.error ||
-    "Đổi mật khẩu thất bại."
-  );
-}
+      setError(err?.data?.message || err?.error || "Đổi mật khẩu thất bại.");
+    }
   };
 
   return (
@@ -145,7 +141,11 @@ export default function ChangePasswordPage() {
 }
 
 function Field({
-  label,type,value,onChange,}: {
+  label,
+  type,
+  value,
+  onChange,
+}: {
   label: string;
   type: string;
   value: string;
@@ -155,7 +155,7 @@ function Field({
     <div className="space-y-1">
       <label className="text-sm text-slate-300">{label}</label>
 
-      <input
+      <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -8,6 +8,7 @@ import {
   useSubmitExerciseResultMutation,
 } from "@/store/services/flashcardApi";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface ExerciseQuestion {
@@ -458,7 +459,7 @@ export default function FillBlankExercisePage({
 
             {/* Input */}
             <div className="relative">
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 value={currentAnswer}

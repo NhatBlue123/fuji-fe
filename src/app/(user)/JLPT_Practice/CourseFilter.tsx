@@ -35,7 +35,9 @@ export default function CourseFilter({
 }: CourseFilterProps) {
   const [selectedCategory, setSelectedCategory] = useState("");
 
-  const handleSearch = () => {/* search on change via debounce in parent */};
+  const handleSearch = () => {
+    /* search on change via debounce in parent */
+  };
 
   return (
     <div className="bg-card glass-card p-6 md:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-xl">

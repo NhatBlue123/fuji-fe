@@ -19,6 +19,7 @@ import { useAuth } from "@/store/hooks";
 import { getMockImage } from "@/lib/mockImages";
 import type { JlptLevel } from "@/types/flashcard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type OwnershipFilter = "all" | "mine" | "community";
 
@@ -151,7 +152,7 @@ export default function FlashcardsPage() {
                     search
                   </span>
                 </div>
-                <input
+                <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="block w-full pl-11 pr-4 py-3.5 border border-white/10 rounded-2xl leading-5 bg-white/5 backdrop-blur-md text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500/50 focus:bg-white/10 transition-all shadow-lg shadow-black/20"
@@ -386,26 +387,26 @@ export default function FlashcardsPage() {
       {/* Side tabs: CARD / SETS */}
       <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col items-end pr-0">
         <div className="bg-white dark:bg-slate-800 shadow-2xl rounded-l-2xl border-y border-l border-gray-200 dark:border-gray-700/50 overflow-hidden flex flex-col">
-        <Button
-          onClick={() => setViewMode("cards")}
-          className={`${styles.writingVertical} py-4 px-3 transition-colors text-xs font-bold tracking-widest border-b border-gray-200 dark:border-gray-700/50 ${
-            viewMode === "cards"
-              ? "bg-secondary text-secondary-foreground shadow-inner"
-              : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"
-          }`}
-        >
-          CARD
-        </Button>
-        <Button
-          onClick={() => setViewMode("lists")}
-          className={`${styles.writingVertical} py-4 px-3 transition-colors text-xs font-bold tracking-widest ${
-            viewMode === "lists"
-              ? "bg-secondary text-secondary-foreground shadow-inner"
-              : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"
-          }`}
-        >
-          SETS
-        </Button>
+          <button
+            onClick={() => setViewMode("cards")}
+            className={`${styles.writingVertical} py-4 px-3 transition-colors text-xs font-bold tracking-widest border-b border-gray-200 dark:border-gray-700/50 ${
+              viewMode === "cards"
+                ? "bg-secondary text-secondary-foreground shadow-inner"
+                : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            CARD
+          </button>
+          <button
+            onClick={() => setViewMode("lists")}
+            className={`${styles.writingVertical} py-4 px-3 transition-colors text-xs font-bold tracking-widest ${
+              viewMode === "lists"
+                ? "bg-secondary text-secondary-foreground shadow-inner"
+                : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            SETS
+          </button>
         </div>
       </div>
 

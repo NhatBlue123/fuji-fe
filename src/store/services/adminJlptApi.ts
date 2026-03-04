@@ -163,6 +163,14 @@ export const adminJlptApi = createApi({
       providesTags: ['AdminTest'],
     }),
 
+    // Fetch all tests (size=1000) for aggregate stats — no new backend endpoint needed
+    getAllTestsStats: builder.query<JlptTestAdmin[], void>({
+      query: () => `/jlpt-tests?page=0&size=1000&sortBy=attemptCount&sortDir=desc`,
+      transformResponse: (response: ApiResponse<PaginatedResponse<JlptTestAdmin>>) =>
+        response.data.content,
+      providesTags: ['AdminTest'],
+    }),
+
     getTestById: builder.query<JlptTestAdmin, number>({
       query: (id) => `/jlpt-tests/${id}`,
       transformResponse: (response: ApiResponse<JlptTestAdmin>) => response.data,
@@ -268,6 +276,7 @@ export const adminJlptApi = createApi({
 
 export const {
   useGetAllTestsQuery,
+  useGetAllTestsStatsQuery,
   useGetTestByIdQuery,
   useCreateTestMutation,
   useUpdateTestMutation,

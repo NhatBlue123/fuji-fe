@@ -142,7 +142,7 @@ export default function ProfilePage() {
               user.active ? (
                 <span className="text-emerald-400">Đang hoạt động</span>
               ) : (
-                <span className="text-red-400">Bị khóa</span>
+                <span className="text-red-400">Đang hoạt động</span>
               )
             }
           />

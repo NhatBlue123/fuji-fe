@@ -25,7 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings, Sparkles } from "lucide-react";
+import AIQuestionGenerator, { type AIGeneratedQuestion } from "@/components/admin/AIQuestionGenerator";
 import type { SectionKey } from "@/lib/jlpt-structure";
 import { renderJlptText } from "@/lib/renderJlptText";
 // ─── Mondai override types ────────────────────────────────────────────────────
@@ -319,6 +320,7 @@ export default function AdminExamLayout() {
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(null);
   const [showSetup, setShowSetup] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -448,6 +450,7 @@ export default function AdminExamLayout() {
   // ── Select question → populate form ──────────────────────────────────────
   const handleSelectQuestion = (n: number) => {
     setSelectedQuestionNumber(n);
+    setShowAIPanel(false);
 
     const found = findMondaiInStructure(n);
     if (!found) return;
@@ -622,6 +625,15 @@ export default function AdminExamLayout() {
             <Settings className="h-4 w-4 mr-1" />
             Cấu hình mondai
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAIPanel((s) => !s)}
+            className={showAIPanel ? "border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/20" : ""}
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            AI Tạo câu hỏi
+          </Button>
           <Badge variant="outline">{test.isPublished ? "Published" : "Draft"}</Badge>
         </div>
       </header>
@@ -714,6 +726,26 @@ export default function AdminExamLayout() {
             <div className="text-muted-foreground">Không tìm thấy cấu trúc cho câu {selectedQuestionNumber}</div>
           ) : (
             <div className="max-w-2xl space-y-6">
+              {/* AI Question Generator Panel */}
+              {showAIPanel && derived && (
+                <AIQuestionGenerator
+                  level={test.level}
+                  mondaiNumber={derived.mondai.number}
+                  mondaiTitle={mondaiOverrides[derived.mondai.number]?.instruction || derived.mondai.title}
+                  section={derived.section.sectionKeys[0] as "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING"}
+                  onConfirm={(q: AIGeneratedQuestion) => {
+                    setQuestionText(q.contentText);
+                    setOptions(q.options.length === 4 ? q.options : [...q.options, "", "", "", ""].slice(0, 4));
+                    setCorrectOption(q.correctOption);
+                    setExplanation(q.explanation || "");
+                    if (q.passageText && derived.mondai.requires_passage) {
+                      setPassageText(q.passageText);
+                    }
+                    setShowAIPanel(false);
+                  }}
+                />
+              )}
+
               {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">{derived.section.name}</span>

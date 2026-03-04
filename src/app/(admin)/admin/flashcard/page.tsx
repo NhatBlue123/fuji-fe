@@ -89,46 +89,44 @@ export default function FlashcardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/30">
-            <div className="p-8 lg:p-12 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <FlashcardHeader />
+        <div className="space-y-6">
+            <FlashcardHeader />
 
-                <FlashcardTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            <FlashcardTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-                <div className="animate-in fade-in duration-500">
-                    {activeTab === "sets" ? (
-                        <FlashcardSetsTable
-                            onImportClick={() => setIsImportModalOpen(true)}
-                            onCreateClick={() => setIsCreateSetModalOpen(true)}
-                        />
-                    ) : (
-                        <FlashcardList
-                            cards={cards}
-                            onImportClick={() => setIsImportModalOpen(true)}
-                            onCreateClick={() => setIsCreateCardModalOpen(true)}
-                            onUpdateCard={handleUpdateCard}
-                            onDeleteCard={handleDeleteCard}
-                        />
-                    )}
-                </div>
-
-                <ImportFlashcardModal
-                    open={isImportModalOpen}
-                    onOpenChange={setIsImportModalOpen}
-                    onImportSuccess={handleImportSuccess}
-                />
-
-                <CreateFlashcardSetModal
-                    open={isCreateSetModalOpen}
-                    onOpenChange={setIsCreateSetModalOpen}
-                />
-
-                <CreateFlashcardModal
-                    open={isCreateCardModalOpen}
-                    onOpenChange={setIsCreateCardModalOpen}
-                    onCreateSuccess={handleCreateCard}
-                />
+            <div className="animate-in fade-in duration-500">
+                {activeTab === "sets" ? (
+                    <FlashcardSetsTable
+                        onImportClick={() => setIsImportModalOpen(true)}
+                        onCreateClick={() => setIsCreateSetModalOpen(true)}
+                    />
+                ) : (
+                    <FlashcardList
+                        cards={cards}
+                        onImportClick={() => setIsImportModalOpen(true)}
+                        onCreateClick={() => setIsCreateCardModalOpen(true)}
+                        onUpdateCard={handleUpdateCard}
+                        onDeleteCard={handleDeleteCard}
+                    />
+                )}
             </div>
+
+            <ImportFlashcardModal
+                open={isImportModalOpen}
+                onOpenChange={setIsImportModalOpen}
+                onImportSuccess={handleImportSuccess}
+            />
+
+            <CreateFlashcardSetModal
+                open={isCreateSetModalOpen}
+                onOpenChange={setIsCreateSetModalOpen}
+            />
+
+            <CreateFlashcardModal
+                open={isCreateCardModalOpen}
+                onOpenChange={setIsCreateCardModalOpen}
+                onCreateSuccess={handleCreateCard}
+            />
         </div>
     );
 }

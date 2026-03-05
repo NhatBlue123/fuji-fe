@@ -10,6 +10,8 @@ import {
   useGetAllCoursesQuery,
 } from "@/store/services/courseApi";
 import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // ─── Helpers ───────────────────────────────────────────
 
@@ -762,9 +764,9 @@ function ReviewsContent({
 
         {/* Load more button */}
         {sortedReviews.length > 0 && (
-          <button className="w-full py-3 rounded-xl border border-border bg-card/50 text-muted-foreground font-bold hover:bg-card hover:text-foreground transition-all text-sm">
+          <Button className="w-full py-3 rounded-xl border border-border bg-card/50 text-muted-foreground font-bold hover:bg-card hover:text-foreground transition-all text-sm">
             Xem thêm đánh giá
-          </button>
+          </Button>
         )}
       </section>
     </div>
@@ -1025,12 +1027,12 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 </div>
 
                 {/* Buttons */}
-                <button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
+                <Button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
                   {course.price === 0 ? "Đăng ký miễn phí" : "Mua ngay"}
-                </button>
-                <button className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm">
+                </Button>
+                <Button variant="ghost" className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm">
                   Thêm vào yêu thích
-                </button>
+                </Button>
 
                 {/* Course Info */}
                 <div className="mt-8 space-y-4">
@@ -1113,16 +1115,16 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                   Mã ưu đãi
                 </h3>
                 <div className="flex gap-2 mb-2">
-                  <input
+                  <Input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     className="glass-input rounded-lg text-sm text-foreground px-3 py-2 w-full focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
                     placeholder="Nhập mã giảm giá"
                   />
-                  <button className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors">
+                  <Button className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors">
                     Áp dụng
-                  </button>
+                  </Button>
                 </div>
               </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import Input from '@/components/common/Input';
+import { Button } from "@/components/ui/button";
 
 const Footer = () => {
     return (
@@ -54,9 +55,9 @@ const Footer = () => {
                             type="email"
                             className="flex-1"
                         />
-                        <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap">
+                        <Button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap">
                             Đăng ký
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

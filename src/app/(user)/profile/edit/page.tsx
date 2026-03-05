@@ -135,7 +135,9 @@ export default function EditProfilePage() {
 
             {/* Gender */}
             <div>
-              <label className="text-sm text-slate-300 mb-1 block">Giới tính</label>
+              <label className="text-sm text-slate-300 mb-1 block">
+                Giới tính
+              </label>
               <UISelect
                 value={form.gender}
                 onValueChange={(v) =>
@@ -155,11 +157,15 @@ export default function EditProfilePage() {
 
             {/* JLPT */}
             <div>
-              <label className="text-sm text-slate-300 mb-1 block">Trình độ JLPT</label>
+              <label className="text-sm text-slate-300 mb-1 block">
+                Trình độ JLPT
+              </label>
               <UISelect
                 value={form.jlptLevel}
                 onValueChange={(v) =>
-                  handleChange({ target: { name: "jlptLevel", value: v } } as any)
+                  handleChange({
+                    target: { name: "jlptLevel", value: v },
+                  } as any)
                 }
               >
                 <SelectTrigger className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200">
@@ -167,7 +173,9 @@ export default function EditProfilePage() {
                 </SelectTrigger>
                 <SelectContent>
                   {["N5", "N4", "N3", "N2", "N1"].map((n) => (
-                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                    <SelectItem key={n} value={n}>
+                      {n}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </UISelect>
@@ -234,5 +242,3 @@ function Input({ label, icon, ...props }: any) {
     </div>
   );
 }
-
-

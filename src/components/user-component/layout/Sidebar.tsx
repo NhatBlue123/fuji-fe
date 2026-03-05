@@ -10,6 +10,7 @@ import Image from "next/image";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -129,14 +130,15 @@ const Sidebar = () => {
           <h3 className="font-bold text-sm mb-2">
             {t("sidebar.premiumHeading")}
           </h3>
-          <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full">
+          <Button variant="ghost" className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full">
             {t("sidebar.viewDetails")}
-          </button>
+          </Button>
         </div>
 
         {/* Theme + Language */}
         <div className="flex items-center justify-center gap-3">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs"
           >
@@ -144,7 +146,7 @@ const Sidebar = () => {
               contrast
             </span>
             {t("common.themeToggle")}
-          </button>
+          </Button>
 
           <LanguageSwitcher className="h-8" />
         </div>
@@ -173,12 +175,13 @@ const Sidebar = () => {
               </Link>
             </div>
 
-            <button
+            <Button
+              variant="ghost"
               onClick={handleLogout}
               className="text-gray-400 hover:text-red-400"
             >
               <span className="material-symbols-outlined">logout</span>
-            </button>
+            </Button>
           </div>
         ) : (
           <Link

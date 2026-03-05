@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const MobieSidebar = () => {
   return (
@@ -12,9 +13,9 @@ const MobieSidebar = () => {
           FUJI
         </span>
       </Link>
-      <button className="p-2 text-gray-600 dark:text-white">
+      <Button variant="ghost" className="p-2 text-gray-600 dark:text-white">
         <span className="material-symbols-outlined">menu</span>
-      </button>
+      </Button>
     </div>
   );
 };

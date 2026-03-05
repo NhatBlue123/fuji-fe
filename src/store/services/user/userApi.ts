@@ -26,3 +26,27 @@
 // });
 
 // export const { useGetMeQuery } = userApi;
+import { baseApi } from "../baseApi";
+
+export const userApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    changePassword: builder.mutation<
+      string,
+      {
+        currentPassword: string;
+        newPassword: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/users/me/change-password",
+        method: "PUT",
+        body: data,
+      }),
+    }),
+
+  }),
+});
+
+export const {
+  useChangePasswordMutation,
+} = userApi;

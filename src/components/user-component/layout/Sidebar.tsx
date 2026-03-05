@@ -8,13 +8,20 @@ import { useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   const dispatch = useAppDispatch();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch by only showing user info after client mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -189,7 +196,7 @@ const Sidebar = () => {
           </label>
         </div>
         <div className="flex items-center gap-3 px-2">
-          {isAuthenticated && user ? (
+          {isMounted && isAuthenticated && user ? (
             <>
               <div className="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0">
                 <Image

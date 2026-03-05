@@ -15,6 +15,7 @@ import {
   FileText,
   Bell,
   Shield,
+  BookOpenCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -73,6 +74,11 @@ const navGroups: NavGroup[] = [
         href: "/admin/posts",
         icon: FileText,
       },
+      {
+        title: "Đề thi",
+        href: "/admin/jlpt-tests",
+        icon: BookOpenCheck
+      }
     ],
   },
   {

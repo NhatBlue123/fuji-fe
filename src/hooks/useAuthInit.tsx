@@ -29,17 +29,21 @@ export const useAuthInit = () => {
 
     const restoreSession = async () => {
       const accessToken = getAccessToken();
+      console.log("🔄 useAuthInit: Starting session restore...");
+      console.log("🔑 useAuthInit: accessToken =", accessToken ? "EXISTS" : "NULL");
 
       if (!accessToken) {
+        console.log("❌ useAuthInit: No token found, marking as initialized");
         dispatch(setInitialized());
         return;
       }
 
       try {
+        console.log("📡 useAuthInit: Fetching current user from API...");
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
-        if (result?.data) {
-          const backendUser = result.data as unknown as Record<string, unknown>;
+        if (result) {
+          const backendUser = result as unknown as Record<string, unknown>;
           // Map backend UserDTO to frontend User type
           const user: User = {
             _id: String(backendUser.id || ""),
@@ -68,6 +72,9 @@ export const useAuthInit = () => {
             createdAt: backendUser.createdAt as string,
             updatedAt: backendUser.updatedAt as string,
           };
+          console.log("✅ useAuthInit: User fetched successfully:", user.username);
+          console.log("👤 useAuthInit: fullName =", user.fullName);
+          console.log("💾 useAuthInit: Dispatching loginSuccess...");
           dispatch(
             loginSuccess({
               user,
@@ -75,10 +82,12 @@ export const useAuthInit = () => {
             }),
           );
         } else {
+          console.log("❌ useAuthInit: No user data in response, logging out");
           dispatch(logout());
         }
-      } catch {
+      } catch (error) {
         // Token hết hạn hoặc không hợp lệ
+        console.error("❌ useAuthInit: Error fetching user, logging out:", error);
         dispatch(logout());
       }
     };

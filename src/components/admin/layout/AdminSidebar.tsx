@@ -17,7 +17,6 @@ import {
   Shield,
   BookOpenCheck
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -27,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/admin-component/admin-ui/button";
 
 interface NavItem {
   title: string;

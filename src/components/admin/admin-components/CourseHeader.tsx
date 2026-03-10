@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Plus, Bell, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/admin-component/admin-ui/button";
 
 export const CourseHeader = () => {
     return (

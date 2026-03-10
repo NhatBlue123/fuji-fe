@@ -15,15 +15,11 @@ export const store = configureStore({
     [authApi.reducerPath]: authApi.reducer,
     [baseApi.reducerPath]: baseApi.reducer,
     [flashcardApi.reducerPath]: flashcardApi.reducer,
-    [jlptApi.reducerPath]: jlptApi.reducer,
-    [adminJlptApi.reducerPath]: adminJlptApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(authApi.middleware)
       .concat(flashcardApi.middleware)
-      .concat(jlptApi.middleware)
-      .concat(adminJlptApi.middleware)
       .concat(baseApi.middleware)
       .prepend(authListenerMiddleware.middleware),
 });

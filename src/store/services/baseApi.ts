@@ -14,5 +14,6 @@ export const baseApi = createApi({
       return headers;
     },
   }),
+  tagTypes: ["AdminUsers", "JLPTTests", "JLPTAttempts", "AdminJLPTTests"],
   endpoints: () => ({}),
 });

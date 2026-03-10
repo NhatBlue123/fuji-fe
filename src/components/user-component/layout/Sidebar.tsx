@@ -10,6 +10,7 @@ import Image from "next/image";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import TopupModal from "@/components/user-component/premium/TopupModal";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -20,7 +21,7 @@ const Sidebar = () => {
   const { t } = useTranslation();
 
   const [isMounted, setIsMounted] = useState(false);
-
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   useEffect(() => setIsMounted(true), []);
 
   const isAdminOrTeacher =
@@ -51,6 +52,7 @@ const Sidebar = () => {
   };
 
   return (
+    <>
     <aside className="hidden w-64 flex-col bg-sidebar border-r border-sidebar-border md:flex shadow-xl z-20">
 
       {/* ========= LOGO ========= */}
@@ -142,8 +144,11 @@ const Sidebar = () => {
           <h3 className="font-bold text-sm mb-2">
             {t("sidebar.premiumHeading")}
           </h3>
-          <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full">
+          <button
+          onClick={() => setIsPremiumModalOpen(true)} 
+          className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full">
             {t("sidebar.viewDetails")}
+            
           </button>
         </div>
 
@@ -216,6 +221,11 @@ const Sidebar = () => {
         )}
       </div>
     </aside>
+    <TopupModal 
+        isOpen={isPremiumModalOpen} 
+        onClose={() => setIsPremiumModalOpen(false)} 
+      />
+    </>
   );
 };
 

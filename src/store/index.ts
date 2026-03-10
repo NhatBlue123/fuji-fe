@@ -8,10 +8,13 @@ import { authListenerMiddleware } from "./middlewares/authMiddleware";
 import { baseApi } from "./services/baseApi";
 import { jlptApi } from "./services/jlptApi";
 import { adminJlptApi } from "./services/adminJlptApi";
-
+import paymentReducer from './slices/paymentSlice';
+import walletReducer from "./slices/walletSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    payment: paymentReducer,
+    wallet: walletReducer,
     // RTK Query reducers
     [authApi.reducerPath]: authApi.reducer,
     [baseApi.reducerPath]: baseApi.reducer,

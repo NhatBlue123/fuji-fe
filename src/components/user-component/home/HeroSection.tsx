@@ -12,7 +12,6 @@ export function HeroSection() {
   const { isAuthenticated } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -57,7 +56,10 @@ export function HeroSection() {
               arrow_forward
             </span>
           </Link>
-          <Button variant="ghost" className="bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center gap-2 hover:border-white/40">
+          <Button
+            variant="ghost"
+            className="bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center gap-2 hover:border-white/40"
+          >
             <span className="material-symbols-outlined">play_circle</span>
             {t("home.watchDemo")}
           </Button>

@@ -15,7 +15,10 @@ export function CommunitySection() {
             Thảo luận sôi nổi nhất hôm nay
           </p>
         </div>
-        <Button variant="ghost" className="text-sm font-bold text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors border border-border dark:border-slate-700 px-4 py-2 rounded-lg hover:border-input dark:hover:border-slate-500 hover:bg-muted dark:hover:bg-slate-800">
+        <Button
+          variant="ghost"
+          className="text-sm font-bold text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors border border-border dark:border-slate-700 px-4 py-2 rounded-lg hover:border-input dark:hover:border-slate-500 hover:bg-muted dark:hover:bg-slate-800"
+        >
           Tham gia thảo luận
         </Button>
       </div>

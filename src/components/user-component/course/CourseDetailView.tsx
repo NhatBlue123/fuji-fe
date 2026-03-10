@@ -1030,7 +1030,10 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 <Button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
                   {course.price === 0 ? "Đăng ký miễn phí" : "Mua ngay"}
                 </Button>
-                <Button variant="ghost" className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm">
+                <Button
+                  variant="ghost"
+                  className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm"
+                >
                   Thêm vào yêu thích
                 </Button>
 

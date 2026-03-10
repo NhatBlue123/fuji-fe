@@ -130,7 +130,10 @@ const Sidebar = () => {
           <h3 className="font-bold text-sm mb-2">
             {t("sidebar.premiumHeading")}
           </h3>
-          <Button variant="ghost" className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full">
+          <Button
+            variant="ghost"
+            className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full"
+          >
             {t("sidebar.viewDetails")}
           </Button>
         </div>

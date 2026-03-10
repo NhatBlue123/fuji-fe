@@ -40,7 +40,7 @@ const LEVEL_COLORS: Record<string, string> = {
 const INITIAL_FORM = {
   title: "",
   level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
-  testType: "full_test" as "full_test" | "vocabulary" | "grammar" | "reading" | "listening",
+  testType: "full_test" as "full_test" | "vocabulary_grammar" | "reading" | "listening",
   description: "",
   duration: 120,
   totalQuestions: 0,
@@ -61,12 +61,43 @@ export default function AdminJLPTTestsPage() {
   });
   const { data: allTests = [] } = useGetAllTestsStatsQuery();
   const [deleteTest] = useDeleteTestMutation();
-  const [updateTest] = useUpdateTestMutation();
   const [createTest, { isLoading: isCreating }] = useCreateTestMutation();
 
-  // ── Create form state ─────────────────────────────────────────────────────────
+  // ── Create/Edit form state ─────────────────────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingTestId, setEditingTestId] = useState<number | null>(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
+
+  const [updateTest, { isLoading: isUpdating }] = useUpdateTestMutation();
+
+  const openCreateForm = () => {
+    setEditingTestId(null);
+    setFormData(INITIAL_FORM);
+    setShowCreateForm(true);
+  };
+
+  const openEditForm = (test: any) => {
+    setEditingTestId(test.id);
+    setFormData({
+      title: test.title || "",
+      level: test.level || "N3",
+      testType: test.testType || "full_test",
+      description: test.description || "",
+      duration: test.duration || 120,
+      totalQuestions: test.totalQuestions || 0,
+      passScore: test.passScore || 90,
+      languageKnowledgePassScore: test.languageKnowledgePassScore || 19,
+      readingPassScore: test.readingPassScore || 19,
+      listeningPassScore: test.listeningPassScore || 19,
+    });
+    setShowCreateForm(true);
+  };
+
+  const closeForm = () => {
+    setShowCreateForm(false);
+    setEditingTestId(null);
+    setFormData(INITIAL_FORM);
+  };
 
   const updateField = (field: string, value: any) =>
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -76,15 +107,20 @@ export default function AdminJLPTTestsPage() {
     if (!isNaN(numValue)) updateField(field, numValue);
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await createTest(formData).unwrap();
-      setShowCreateForm(false);
-      setFormData(INITIAL_FORM);
-      router.push(`/admin/jlpt-tests/${result.id}/questions`);
+      if (editingTestId) {
+        await updateTest({ id: editingTestId, data: formData }).unwrap();
+        alert("Cập nhật đề thi thành công!");
+        closeForm();
+      } else {
+        const result = await createTest(formData).unwrap();
+        closeForm();
+        router.push(`/admin/jlpt-tests/${result.id}/questions`);
+      }
     } catch (err) {
-      alert("Tạo đề thi thất bại!");
+      alert(editingTestId ? "Cập nhật thất bại!" : "Tạo đề thi thất bại!");
       console.error(err);
     }
   };
@@ -135,7 +171,7 @@ export default function AdminJLPTTestsPage() {
           <h1 className="text-3xl font-bold tracking-tight">JLPT Tests</h1>
           <p className="text-muted-foreground">Quản lý đề thi JLPT</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
+        <Button onClick={openCreateForm}>
           <Plus className="mr-2 h-4 w-4" />Tạo đề thi mới
         </Button>
       </div>
@@ -148,7 +184,7 @@ export default function AdminJLPTTestsPage() {
           {/* Backdrop — blurs and dims everything below the form */}
           <div
             className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm"
-            onClick={() => setShowCreateForm(false)}
+            onClick={closeForm}
           />
 
           {/* Form panel — scrollable overlay */}
@@ -158,20 +194,22 @@ export default function AdminJLPTTestsPage() {
               className="w-full max-w-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300"
               onClick={(e) => e.stopPropagation()}
             >
-              <form onSubmit={handleCreate}>
+              <form onSubmit={handleSubmit}>
                 <Card className="shadow-2xl border-border">
                   <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
                     <div>
-                      <CardTitle className="text-xl">Tạo đề thi JLPT mới</CardTitle>
+                      <CardTitle className="text-xl">
+                        {editingTestId ? "Chỉnh sửa đề thi JLPT" : "Tạo đề thi JLPT mới"}
+                      </CardTitle>
                       <CardDescription className="mt-1">
-                        Điền thông tin cơ bản của đề thi
+                        {editingTestId ? "Cập nhật thông tin của đề thi" : "Điền thông tin cơ bản của đề thi"}
                       </CardDescription>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowCreateForm(false)}
+                      onClick={closeForm}
                       className="shrink-0 -mt-1 -mr-1"
                     >
                       <X className="h-5 w-5" />
@@ -210,11 +248,10 @@ export default function AdminJLPTTestsPage() {
                         <Select value={formData.testType} onValueChange={(v) => updateField("testType", v)}>
                           <SelectTrigger id="testType"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="full_test">Full Test</SelectItem>
-                            <SelectItem value="vocabulary">Vocabulary</SelectItem>
-                            <SelectItem value="grammar">Grammar</SelectItem>
-                            <SelectItem value="reading">Reading</SelectItem>
-                            <SelectItem value="listening">Listening</SelectItem>
+                            <SelectItem value="full_test">Full Test (Đề thi đầy đủ)</SelectItem>
+                            <SelectItem value="vocabulary_grammar">Từ vựng &amp; Ngữ pháp (言語知識)</SelectItem>
+                            <SelectItem value="reading">Đọc hiểu (読解)</SelectItem>
+                            <SelectItem value="listening">Nghe hiểu (聴解)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -232,33 +269,20 @@ export default function AdminJLPTTestsPage() {
                       />
                     </div>
 
-                    {/* Duration & Total Questions */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="duration">Thời gian (phút) *</Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          min="1"
-                          value={formData.duration || ""}
-                          onChange={(e) => handleNumberChange("duration", e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="totalQuestions">Tổng số câu hỏi</Label>
-                        <Input
-                          id="totalQuestions"
-                          type="number"
-                          min="0"
-                          value={formData.totalQuestions || ""}
-                          onChange={(e) => handleNumberChange("totalQuestions", e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">Có thể để 0 và cập nhật sau</p>
-                      </div>
+                    {/* Duration — full width now that totalQuestions is removed */}
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Thời gian (phút) *</Label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        min="1"
+                        value={formData.duration || ""}
+                        onChange={(e) => handleNumberChange("duration", e.target.value)}
+                        required
+                      />
                     </div>
 
-                    {/* Pass Scores */}
+                    {/* Pass Scores — adaptive per testType */}
                     <div className="space-y-3">
                       <div className="space-y-2">
                         <Label htmlFor="passScore">Điểm đỗ tổng *</Label>
@@ -271,55 +295,85 @@ export default function AdminJLPTTestsPage() {
                           onChange={(e) => handleNumberChange("passScore", e.target.value)}
                           required
                         />
-                        <p className="text-xs text-muted-foreground">Thường là 90–100</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formData.testType === "full_test" ? "Thường là 90–100" : "Điểm tối thiểu để đỗ phần thi này"}
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
+                      {/* full_test: hiện cả 3 mục liệt */}
+                      {formData.testType === "full_test" && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
+                              <Input id="langPass" type="number" min="0"
+                                value={formData.languageKnowledgePassScore || ""}
+                                onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="readPass">Liệt đọc</Label>
+                              <Input id="readPass" type="number" min="0"
+                                value={formData.readingPassScore || ""}
+                                onChange={(e) => handleNumberChange("readingPassScore", e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="listenPass">Liệt nghe</Label>
+                              <Input id="listenPass" type="number" min="0"
+                                value={formData.listeningPassScore || ""}
+                                onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)} />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ trượt dù tổng điểm cao.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
+                      {formData.testType === "vocabulary_grammar" && (
                         <div className="space-y-2">
-                          <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
-                          <Input
-                            id="langPass"
-                            type="number"
-                            min="0"
+                          <Label htmlFor="langPass">Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)</Label>
+                          <Input id="langPass" type="number" min="0"
                             value={formData.languageKnowledgePassScore || ""}
-                            onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)}
-                          />
+                            onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)} />
+                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần ngôn ngữ (thường là 19)</p>
                         </div>
+                      )}
+
+                      {/* reading: chỉ hiện liệt đọc */}
+                      {formData.testType === "reading" && (
                         <div className="space-y-2">
-                          <Label htmlFor="readPass">Liệt đọc</Label>
-                          <Input
-                            id="readPass"
-                            type="number"
-                            min="0"
+                          <Label htmlFor="readPass">Liệt đọc (phần đọc hiểu)</Label>
+                          <Input id="readPass" type="number" min="0"
                             value={formData.readingPassScore || ""}
-                            onChange={(e) => handleNumberChange("readingPassScore", e.target.value)}
-                          />
+                            onChange={(e) => handleNumberChange("readingPassScore", e.target.value)} />
+                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần đọc (thường là 19)</p>
                         </div>
+                      )}
+
+                      {/* listening: chỉ hiện liệt nghe */}
+                      {formData.testType === "listening" && (
                         <div className="space-y-2">
-                          <Label htmlFor="listenPass">Liệt nghe</Label>
-                          <Input
-                            id="listenPass"
-                            type="number"
-                            min="0"
+                          <Label htmlFor="listenPass">Liệt nghe (phần nghe hiểu)</Label>
+                          <Input id="listenPass" type="number" min="0"
                             value={formData.listeningPassScore || ""}
-                            onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)}
-                          />
+                            onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)} />
+                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần nghe (thường là 19)</p>
                         </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ trượt dù tổng điểm cao.
-                      </p>
+                      )}
                     </div>
 
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
-                      <Button type="submit" disabled={isCreating}>
-                        {isCreating ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi"}
+                      <Button type="submit" disabled={isCreating || isUpdating}>
+                        {editingTestId 
+                          ? (isUpdating ? "Đang cập nhật..." : "Lưu thay đổi") 
+                          : (isCreating ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi")}
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setShowCreateForm(false)}
+                        onClick={closeForm}
                       >
                         Hủy
                       </Button>
@@ -433,7 +487,7 @@ export default function AdminJLPTTestsPage() {
           {!isLoading && !error && tests.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">Chưa có đề thi nào</p>
-              <Button onClick={() => setShowCreateForm(true)}>
+              <Button onClick={openCreateForm}>
                 <Plus className="mr-2 h-4 w-4" />Tạo đề thi đầu tiên
               </Button>
             </div>
@@ -540,10 +594,10 @@ export default function AdminJLPTTestsPage() {
                                   <Eye className="mr-2 h-4 w-4" />Quản lý câu hỏi
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/admin/jlpt-tests/${test.id}/edit`}>
-                                  <Pencil className="mr-2 h-4 w-4" />Chỉnh sửa
-                                </Link>
+                              <DropdownMenuItem
+                                onClick={() => openEditForm(test)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />Chỉnh sửa
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"

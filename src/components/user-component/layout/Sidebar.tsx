@@ -69,7 +69,7 @@ const Sidebar = () => {
             FUJI
           </h1>
           <p className="text-xs text-muted-foreground">
-            {t("sidebar.subtitle")}
+            {isMounted ? t("sidebar.subtitle") : ""}
           </p>
         </div>
       </Link>
@@ -104,7 +104,7 @@ const Sidebar = () => {
 
         <Link href="/video-call" className={navClass("/video-call")}>
           <span className={iconClass("/video-call")}>video_chat</span>
-          Luyện nói JLPT
+          Video call
         </Link>
 
         <Link href="/flashcards" className={navClass("/flashcards")}>

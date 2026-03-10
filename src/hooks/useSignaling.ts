@@ -71,7 +71,7 @@ export function useSignaling(): SignalingHook {
     if (globalSocket?.connected) {
       globalSocket.emit(event, data);
     } else {
-      console.warn("[Signaling] emit failed, not connected:", event);
+      console.error(`[Signaling] ❌ emit FAILED — not connected! event="${event}" socketId=${globalSocket?.id}`);
     }
   }, []);
 

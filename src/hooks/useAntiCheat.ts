@@ -52,8 +52,14 @@ export function useAntiCheat({
 
   // ─── Feature 1: Tab Switching Detection ─────────────────────────────────────
   useEffect(() => {
+    let lastPenaltyTime = 0;
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
+        const now = Date.now();
+        if (now - lastPenaltyTime < 1000) return;
+        lastPenaltyTime = now;
+
         tabSwitchCountRef.current += 1;
         setTabSwitchCount(tabSwitchCountRef.current);
 
@@ -74,6 +80,10 @@ export function useAntiCheat({
       // window blur = switched to another app/window
       if (document.visibilityState === "visible") {
         // Visible but blurred = another OS window (not tab switch, handled above)
+        const now = Date.now();
+        if (now - lastPenaltyTime < 1000) return;
+        lastPenaltyTime = now;
+
         tabSwitchCountRef.current += 1;
         setTabSwitchCount(tabSwitchCountRef.current);
         const count = tabSwitchCountRef.current;

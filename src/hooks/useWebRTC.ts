@@ -3,11 +3,19 @@
  *
  * Flow:
  *   1. getUserMedia — request camera + mic
- *   2. createPeerConnection with STUN servers from /api/video-call/config
+ *   2. createPeerConnection with STUN servers
  *   3. Initiator: createOffer → setLocalDescription → emit offer
  *   4. Receiver:  setRemoteDescription(offer) → createAnswer → emit answer
  *   5. Both: onicecandidate → emit ice-candidate
  *   6. Both: ontrack → attach remote stream to video element
+ *
+ * KEY FIX: cleanup is separated from localStream state.
+ * Previously: cleanup useCallback depended on [localStream].
+ * When startLocalStream() called setLocalStream(), React re-ran the cleanup
+ * useEffect (because [cleanup] dep changed) → closed the RTCPeerConnection
+ * WHILE createOffer() was pending → Chrome hung the promise indefinitely.
+ * Solution: use localStreamRef (always current) so cleanup has no deps and
+ * the useEffect only fires on actual unmount.
  */
 "use client";
 
@@ -41,6 +49,13 @@ export function useWebRTC(): WebRTCHook {
   const iceCbRef = useRef<((c: RTCIceCandidate) => void) | null>(null);
   const stateCbRef = useRef<((s: RTCPeerConnectionState) => void) | null>(null);
 
+  // Keep a ref of localStream so cleanup() always has the latest value
+  // WITHOUT being listed as a useCallback dependency.
+  // This is the key fix: cleanup's useEffect dep array is now [] (empty),
+  // so it only runs when the component actually unmounts — not every time
+  // localStream changes.
+  const localStreamRef = useRef<MediaStream | null>(null);
+
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMicOn, setIsMicOn] = useState(true);
@@ -49,8 +64,12 @@ export function useWebRTC(): WebRTCHook {
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   const ensurePC = useCallback(() => {
-    if (pcRef.current) return pcRef.current;
+    // Recreate if PC doesn't exist or was previously closed
+    if (pcRef.current && pcRef.current.connectionState !== "closed") {
+      return pcRef.current;
+    }
 
+    console.log("[WebRTC] Creating new RTCPeerConnection");
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     pc.onicecandidate = (e) => {
@@ -79,6 +98,9 @@ export function useWebRTC(): WebRTCHook {
         video: { width: 1280, height: 720, facingMode: "user" },
         audio: { echoCancellation: true, noiseSuppression: true },
       });
+
+      // Update BOTH state (for React UI) and ref (for cleanup)
+      localStreamRef.current = stream;
       setLocalStream(stream);
 
       const pc = ensurePC();
@@ -91,8 +113,11 @@ export function useWebRTC(): WebRTCHook {
 
   const createOffer = useCallback(async () => {
     const pc = ensurePC();
+    console.log("[WebRTC] createOffer - signalingState:", pc.signalingState, "| tracks:", pc.getSenders().length);
     const offer = await pc.createOffer();
+    console.log("[WebRTC] setLocalDescription (offer)...");
     await pc.setLocalDescription(offer);
+    console.log("[WebRTC] setLocalDescription done.");
     return offer;
   }, [ensurePC]);
 
@@ -140,32 +165,37 @@ export function useWebRTC(): WebRTCHook {
   // ── Mic / Camera toggle ──────────────────────────────────────────────────
 
   const toggleMic = useCallback(() => {
-    localStream?.getAudioTracks().forEach((t) => {
+    localStreamRef.current?.getAudioTracks().forEach((t) => {
       t.enabled = !t.enabled;
     });
     setIsMicOn((prev) => !prev);
-  }, [localStream]);
+  }, []);
 
   const toggleCamera = useCallback(() => {
-    localStream?.getVideoTracks().forEach((t) => {
+    localStreamRef.current?.getVideoTracks().forEach((t) => {
       t.enabled = !t.enabled;
     });
     setIsCameraOn((prev) => !prev);
-  }, [localStream]);
+  }, []);
 
   // ── Cleanup ──────────────────────────────────────────────────────────────
+  // IMPORTANT: no deps — this only runs on actual component unmount.
+  // Using localStreamRef (not localStream state) avoids making cleanup
+  // a [localStream]-dependent callback, which was the root cause of the bug:
+  // every setLocalStream() call would trigger the old cleanup and close the PC.
 
   const cleanup = useCallback(() => {
-    localStream?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current = null;
     pcRef.current?.close();
     pcRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
     iceCbRef.current = null;
     stateCbRef.current = null;
-  }, [localStream]);
+  }, []); // ← NO deps: cleanup is stable, useEffect only fires on unmount
 
-  useEffect(() => () => { cleanup(); }, [cleanup]);
+  useEffect(() => () => { cleanup(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     localStream,

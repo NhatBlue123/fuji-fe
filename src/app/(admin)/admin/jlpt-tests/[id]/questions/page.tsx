@@ -16,6 +16,7 @@ import {
   rebuildStructureWithCounts,
   findMondaiForQuestion,
   getQuestionNumbers,
+  getStructureForTestType,
   type JLPTLevel,
   type MondaiConfig,
   type SectionConfig,
@@ -146,7 +147,7 @@ function PassagePanel({
             value={passageText}
             onChange={(e) => setPassageText(e.target.value)}
             placeholder="Nhập đoạn văn / bài đọc tiếng Nhật..."
-            className="font-jp text-sm bg-white resize-y"
+            className="font-jp text-sm bg-background text-foreground resize-y"
           />
           {requires_audio && (
             <AudioUploader
@@ -368,11 +369,18 @@ export default function AdminExamLayout() {
 
   const structure = useMemo<SectionConfig[]>(() => {
     if (!test?.level) return [];
+    const testType = test.testType ?? "full_test";
     const hasAnyCount = Object.values(countMap).some((c) => c > 0);
-    return hasAnyCount
-      ? rebuildStructureWithCounts(test.level as JLPTLevel, countMap)
-      : JLPT_STRUCTURE[test.level as JLPTLevel] ?? [];
-  }, [test?.level, countMap]);
+    if (hasAnyCount) {
+      // Rebuild with custom counts but still filter by testType
+      const rebuilt = rebuildStructureWithCounts(test.level as JLPTLevel, countMap);
+      const targetSectionNames = new Set(
+        getStructureForTestType(test.level as JLPTLevel, testType).map((s) => s.name)
+      );
+      return rebuilt.filter((s) => targetSectionNames.has(s.name));
+    }
+    return getStructureForTestType(test.level as JLPTLevel, testType);
+  }, [test?.level, test?.testType, countMap]);
 
   const questionsMap = useMemo<QuestionsMap>(() => {
     if (!test?.questions) return {};

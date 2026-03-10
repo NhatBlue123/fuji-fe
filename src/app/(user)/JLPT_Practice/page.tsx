@@ -8,7 +8,8 @@ import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedLevel, setSelectedLevel] = useState<string>("Tất cả");
+  const [selectedLevel, setSelectedLevel] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const pageSize = 9;
 
@@ -20,9 +21,15 @@ export default function JlptPracticePage() {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+  // Reset to page 0 when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [selectedLevel, selectedCategory, debouncedSearch]);
+
   // Fetch published tests from backend
   const { data, isLoading, error } = useGetPublishedTestsQuery({
-    level: selectedLevel === "Tất cả" ? undefined : (selectedLevel as JLPTLevel),
+    level: selectedLevel === "all" ? undefined : (selectedLevel as JLPTLevel),
+    testType: selectedCategory === "all" ? undefined : selectedCategory,
     page: currentPage,
     size: pageSize,
     search: debouncedSearch,
@@ -50,6 +57,14 @@ export default function JlptPracticePage() {
   const defaultImage =
     "https://lh3.googleusercontent.com/aida-public/AB6AXuCDxFdbUtg2jEo2f1rVJJRTWZBFyHB44-mlAfp-GKLrUnc3cvcH-cYZkH9ydP1YZODRfyQc0x6eBpLw_08krUI8ntpUCInksY4rGhIQ81URRQSBldgEks8NzAQfdI8muIWwfH4RaeSIOQCcSC46f2ShFOMCOQekPfNuYnJdTzqcgOFbRdGgflkzcH3f6CnWfeMZ-BeBwcAsHM_QHKpoJWgS8OFizAnRfRkQ-wkuB1LIA4y2pGlwyGgNB5FumbYYiB57B4jKGJC2xEI";
 
+  // Human-readable category label for ExamCard tag
+  const CATEGORY_LABELS: Record<string, string> = {
+    full_test: "Đề full",
+    vocabulary_grammar: "Từ vựng & Ngữ pháp",
+    reading: "Đọc hiểu",
+    listening: "Nghe hiểu",
+  };
+
   return (
     <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background min-h-screen">
       {/* Hero */}
@@ -62,6 +77,8 @@ export default function JlptPracticePage() {
           onSearchChange={setSearchQuery}
           activeLevel={selectedLevel}
           onLevelChange={setSelectedLevel}
+          activeCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
         />
       </div>
 
@@ -100,6 +117,7 @@ export default function JlptPracticePage() {
             {tests.map((test) => {
               const attempt = attemptsMap[test.id];
               const status = attempt ? "done" : "new";
+              const categoryLabel = CATEGORY_LABELS[test.testType ?? "full_test"] ?? test.testType;
               return (
                 <ExamCard
                   key={test.id}
@@ -108,7 +126,7 @@ export default function JlptPracticePage() {
                   attemptId={attempt?.id}
                   title={test.title}
                   image={defaultImage}
-                  tag={test.level}
+                  tag={`${test.level} · ${categoryLabel}`}
                   info={`${test.totalQuestions} câu hỏi • ${test.duration} phút`}
                   colorTheme="pink-400"
                 />

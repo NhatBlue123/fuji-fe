@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   useGetTeachersWithPermissionsQuery,
   useUpdateTeacherPermissionsMutation,
@@ -111,7 +111,7 @@ function PromoteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
@@ -229,18 +229,16 @@ function PermissionEditorDialog({
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Reset when teacher changes
-  const teacherPerms = teacher?.permissions;
-  const teacherId = teacher?.id;
-  useState(() => {
-    if (teacherPerms) setSelected(new Set(teacherPerms));
-  });
-
-  // Sync when dialog opens with teacher data
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && teacherPerms) {
-      setSelected(new Set(teacherPerms));
+  // Sync selected permissions when teacher changes or dialog opens
+  useEffect(() => {
+    if (open && teacher?.permissions) {
+      setSelected(new Set(teacher.permissions));
     }
+  }, [open, teacher]);
+
+  const teacherPerms = teacher?.permissions;
+
+  const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
   };
 
@@ -279,7 +277,7 @@ function PermissionEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />

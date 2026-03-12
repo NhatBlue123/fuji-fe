@@ -8,22 +8,16 @@ export interface AntiCheatWarning {
 }
 
 interface UseAntiCheatOptions {
-  /** Số lần rời tab tối đa trước khi hiện cảnh báo nghiêm trọng */
   maxTabSwitches?: number;
-  /** Có bật phát hiện DevTools không */
   detectDevTools?: boolean;
-  /** Callback khi có sự kiện gian lận */
+  // callback khi có sự kiện gian lận
   onViolation?: (warning: AntiCheatWarning) => void;
 }
 
 interface AntiCheatState {
-  /** Số lần rời tab */
   tabSwitchCount: number;
-  /** DevTools đang mở */
   devToolsOpen: boolean;
-  /** Cảnh báo hiện tại cần hiển thị overlay */
   activeWarning: AntiCheatWarning | null;
-  /** Xóa cảnh báo hiện tại */
   dismissWarning: () => void;
 }
 

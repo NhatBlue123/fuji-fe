@@ -40,6 +40,19 @@ const questionSchema: Schema = {
 function buildPrompt(req: GenerateQuestionsRequest): string {
   const { level, section, count, mondaiNumber, mondaiTitle } = req;
 
+  if (section === "READING") {
+    return `You are a professional JLPT test creator for level ${level}.
+Section: ${section} (Mondai ${mondaiNumber}: ${mondaiTitle || ""}).
+
+Instructions:
+- Generate EXACTLY ONE reading passage (about 200-300 characters for N4/N5, 400-600 characters for N2/N3) related to daily life or general topics.
+- Generate EXACTLY ${count} questions based ONLY on that passage.
+- Language: Japanese for the passage, questions, and options. Vietnamese for the explanations.
+- Difficulty: Strictly JLPT ${level} standard.
+- MUST put the reading passage in the 'passageText' field of the FIRST question element ONLY. For the remaining questions, use "".
+- Ensure all ${count} questions are returned in the JSON array.`;
+  }
+
   return `You are a professional JLPT test creator for level ${level}.
 Section: ${section} (Mondai ${mondaiNumber}: ${mondaiTitle || ""}).
 
@@ -47,8 +60,8 @@ Instructions:
 - Generate EXACTLY ${count} questions.
 - Language: Japanese for questions/options, Vietnamese for explanations.
 - Difficulty: Strictly JLPT ${level} standard.
-- For READING/LISTENING: Put the reading passage or audio script in the 'passageText' of the FIRST element only. For others, use "".
-- Question style: Vocabulary use 【word】, Grammar use ＿＿＿.`;
+- 'passageText' MUST be explicitly set to "" for all questions.
+- Question style: If Vocabulary, use 【word】. If Grammar, use ＿＿＿.`;
 }
 
 // ── Route Handler ─────────────────────────────────────────────────────────────

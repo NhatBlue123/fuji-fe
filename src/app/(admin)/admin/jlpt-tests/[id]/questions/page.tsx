@@ -194,7 +194,8 @@ function SectionSidebar({
           {section.mondai.map((mondai) => {
             const nums = getQuestionNumbers(mondai);
             const actualQuestions = mondaiLeaves.get(mondai.number) || [];
-            const displayNums = actualQuestions.length > 0 ? actualQuestions.map(q => q.questionOrder) : nums;
+            const actualNums = actualQuestions.map((q) => q.questionOrder);
+            const displayNums = Array.from(new Set([...nums, ...actualNums])).sort((a, b) => a - b);
             
             // Re-calculate "filled" based on actual answerable ones
             const filled = actualQuestions.length;
@@ -740,16 +741,98 @@ export default function AdminExamLayout() {
                   level={test.level}
                   mondaiNumber={derived.mondai.number}
                   mondaiTitle={mondaiOverrides[derived.mondai.number]?.instruction || derived.mondai.title}
+                  mondaiStart={derived.mondai.start}
+                  mondaiEnd={derived.mondai.end}
+                  initialStart={selectedQuestionNumber}
                   section={derived.section.sectionKeys[0] as "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING"}
-                  onConfirm={(q: AIGeneratedQuestion) => {
-                    setQuestionText(q.contentText);
-                    setOptions(q.options.length === 4 ? q.options : [...q.options, "", "", "", ""].slice(0, 4));
-                    setCorrectOption(q.correctOption);
-                    setExplanation(q.explanation || "");
-                    if (q.passageText && derived.mondai.requires_passage) {
-                      setPassageText(q.passageText);
-                    }
+                  onConfirm={async (questions: AIGeneratedQuestion[], startFrom: number) => {
+                    if (!derived) return;
+                    
+                    setSaving(true);
                     setShowAIPanel(false);
+                    
+                    try {
+                      // Bắt đầu chèn từ startFrom do User chỉ định
+                      let currentQNum = startFrom;
+                      const { section, mondai } = derived;
+                      const sectionKey = section.sectionKeys[0] as SectionKey;
+                      const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
+                      const effectiveMondaiTitle = overrideInstruction || mondai.title;
+
+                      // Step 1: Handle passage if required (only once for the batch)
+                      let parentId: number | null = derived.existingParent?.id ?? null;
+                      
+                      const firstQ = questions[0];
+                      if (firstQ?.passageText && mondai.requires_passage) {
+                        setPassageText(firstQ.passageText); // Update UI
+                        
+                        const passagePayload: CreateQuestionDTO = {
+                          mondaiNumber: mondai.number,
+                          mondaiTitle: effectiveMondaiTitle,
+                          parentId: null,
+                          questionOrder: mondai.start - 1,
+                          section: sectionKey,
+                          contentText: firstQ.passageText,
+                          options: undefined,
+                          correctOption: undefined,
+                          audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+                        };
+
+                        if (derived.existingParent) {
+                          const updated = await updateQuestion({ id: derived.existingParent.id, data: passagePayload }).unwrap();
+                          parentId = updated.id;
+                        } else {
+                          const created = await addQuestion({ testId, data: passagePayload }).unwrap();
+                          parentId = created.id;
+                        }
+                      }
+
+                      // Step 2: Save each generated question sequentially
+                      for (let i = 0; i < questions.length; i++) {
+                        const q = questions[i];
+                        if (currentQNum > mondai.end) break; // Don't overflow mondai bounds
+                        
+                        const targetNode = questionsMap[mondai.number];
+                        const existingChild = targetNode?.children[currentQNum] ?? null;
+                        
+                        // Parse options array to string length 4 for frontend UI state consistency, but send JSON string
+                        const parsedOptions = q.options.length === 4 ? q.options : [...q.options, "", "", "", ""].slice(0, 4);
+
+                        const childPayload: CreateQuestionDTO = {
+                          mondaiNumber: mondai.number,
+                          mondaiTitle: effectiveMondaiTitle,
+                          parentId: parentId,
+                          questionOrder: currentQNum,
+                          section: sectionKey,
+                          contentText: q.contentText,
+                          options: JSON.stringify(parsedOptions) as any,
+                          correctOption: q.correctOption,
+                          explanation: q.explanation || undefined,
+                          points: 1.0,
+                          audioMediaId: mondai.requires_audio && !mondai.requires_passage ? (audioMediaId ?? undefined) : undefined,
+                          imageMediaId: imageMediaId ?? undefined,
+                        };
+
+                        if (existingChild) {
+                          await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
+                        } else {
+                          await addQuestion({ testId, data: childPayload }).unwrap();
+                        }
+
+                        currentQNum++;
+                      }
+
+                      // Move UI selection to the last created question (or its end)
+                      const finalQNum = Math.min(currentQNum, mondai.end);
+                      handleSelectQuestion(finalQNum);
+                      alert(`Đã chèn và lưu thành công ${questions.length} câu hỏi! (Từ câu ${startFrom})`);
+                      
+                    } catch (error) {
+                      console.error("Lỗi khi lưu batch AI:", error);
+                      alert("Có lỗi xảy ra khi lưu hàng loạt câu hỏi.");
+                    } finally {
+                      setSaving(false);
+                    }
                   }}
                 />
               )}

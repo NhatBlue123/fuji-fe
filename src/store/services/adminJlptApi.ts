@@ -1,12 +1,16 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { API_CONFIG } from '@/config/api';
-import { getAccessToken } from '@/lib/token';
-import type { ApiResponse, PaginatedResponse } from '@/types/api';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
+import type { ApiResponse, PaginatedResponse } from "@/types/api";
 
 // Base query with authentication (same as jlptApi)
 const baseQuery = async (args: any) => {
-  const { url, method = "GET", body } = typeof args === "string" ? { url: args } : args;
-  
+  const {
+    url,
+    method = "GET",
+    body,
+  } = typeof args === "string" ? { url: args } : args;
+
   const headers: HeadersInit = {};
 
   // Only set Content-Type for JSON, let browser set it for FormData
@@ -32,9 +36,11 @@ const baseQuery = async (args: any) => {
   }
 
   const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, config);
-  
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: response.statusText }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: response.statusText }));
     throw new Error(error.message || "Request failed");
   }
 
@@ -48,8 +54,8 @@ const baseQuery = async (args: any) => {
 
 export interface CreateJlptTestDTO {
   title: string;
-  level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
-  testType: 'full_test' | 'vocabulary' | 'grammar' | 'reading' | 'listening';
+  level: "N5" | "N4" | "N3" | "N2" | "N1";
+  testType: "full_test" | "vocabulary" | "grammar" | "reading" | "listening";
   description?: string;
   duration: number; // minutes
   totalQuestions: number;
@@ -69,7 +75,7 @@ export interface CreateQuestionDTO {
   mondaiTitle?: string;
   parentId?: number | null;
   questionOrder: number;
-  section: 'VOCABULARY' | 'GRAMMAR' | 'READING' | 'LISTENING';
+  section: "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
   contentText: string;
   imageMediaId?: number | null;
   audioMediaId?: number | null;
@@ -141,106 +147,133 @@ export interface MediaUploadResponse {
 // ============================================================================
 
 export const adminJlptApi = createApi({
-  reducerPath: 'adminJlptApi',
+  reducerPath: "adminJlptApi",
   baseQuery: baseQuery,
-  tagTypes: ['AdminTest', 'AdminQuestion'],
+  tagTypes: ["AdminTest", "AdminQuestion"],
   endpoints: (builder) => ({
-    
     // ========================================================================
     // TEST MANAGEMENT
     // ========================================================================
-    
-    getAllTests: builder.query<PaginatedResponse<JlptTestAdmin>, {
-      page?: number;
-      size?: number;
-      sortBy?: string;
-      sortDir?: 'asc' | 'desc';
-    }>({
-      query: ({ page = 0, size = 10, sortBy = 'createdAt', sortDir = 'desc' }) =>
+
+    getAllTests: builder.query<
+      PaginatedResponse<JlptTestAdmin>,
+      {
+        page?: number;
+        size?: number;
+        sortBy?: string;
+        sortDir?: "asc" | "desc";
+      }
+    >({
+      query: ({
+        page = 0,
+        size = 10,
+        sortBy = "createdAt",
+        sortDir = "desc",
+      }) =>
         `/jlpt-tests?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`,
-      transformResponse: (response: ApiResponse<PaginatedResponse<JlptTestAdmin>>) => 
-        response.data,
-      providesTags: ['AdminTest'],
+      transformResponse: (
+        response: ApiResponse<PaginatedResponse<JlptTestAdmin>>,
+      ) => response.data,
+      providesTags: ["AdminTest"],
     }),
 
     // Fetch all tests (size=1000) for aggregate stats — no new backend endpoint needed
     getAllTestsStats: builder.query<JlptTestAdmin[], void>({
-      query: () => `/jlpt-tests?page=0&size=1000&sortBy=attemptCount&sortDir=desc`,
-      transformResponse: (response: ApiResponse<PaginatedResponse<JlptTestAdmin>>) =>
-        response.data.content,
-      providesTags: ['AdminTest'],
+      query: () =>
+        `/jlpt-tests?page=0&size=1000&sortBy=attemptCount&sortDir=desc`,
+      transformResponse: (
+        response: ApiResponse<PaginatedResponse<JlptTestAdmin>>,
+      ) => response.data.content,
+      providesTags: ["AdminTest"],
     }),
 
     getTestById: builder.query<JlptTestAdmin, number>({
       query: (id) => `/jlpt-tests/${id}`,
-      transformResponse: (response: ApiResponse<JlptTestAdmin>) => response.data,
-      providesTags: (result, error, id) => [{ type: 'AdminTest', id }],
+      transformResponse: (response: ApiResponse<JlptTestAdmin>) =>
+        response.data,
+      providesTags: (result, error, id) => [{ type: "AdminTest", id }],
     }),
 
     createTest: builder.mutation<JlptTestAdmin, CreateJlptTestDTO>({
       query: (body) => ({
-        url: '/jlpt-tests',
-        method: 'POST',
+        url: "/jlpt-tests",
+        method: "POST",
         body,
       }),
-      transformResponse: (response: ApiResponse<JlptTestAdmin>) => response.data,
-      invalidatesTags: ['AdminTest'],
+      transformResponse: (response: ApiResponse<JlptTestAdmin>) =>
+        response.data,
+      invalidatesTags: ["AdminTest"],
     }),
 
-    updateTest: builder.mutation<JlptTestAdmin, { id: number; data: UpdateJlptTestDTO }>({
+    updateTest: builder.mutation<
+      JlptTestAdmin,
+      { id: number; data: UpdateJlptTestDTO }
+    >({
       query: ({ id, data }) => ({
         url: `/jlpt-tests/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
       }),
-      transformResponse: (response: ApiResponse<JlptTestAdmin>) => response.data,
-      invalidatesTags: (result, error, { id }) => [{ type: 'AdminTest', id }, 'AdminTest'],
+      transformResponse: (response: ApiResponse<JlptTestAdmin>) =>
+        response.data,
+      invalidatesTags: (result, error, { id }) => [
+        { type: "AdminTest", id },
+        "AdminTest",
+      ],
     }),
 
     deleteTest: builder.mutation<void, number>({
       query: (id) => ({
         url: `/jlpt-tests/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['AdminTest'],
+      invalidatesTags: ["AdminTest"],
     }),
 
     // ========================================================================
     // QUESTION MANAGEMENT
     // ========================================================================
 
-    addQuestion: builder.mutation<JlptQuestionAdmin, { testId: number; data: CreateQuestionDTO }>({
+    addQuestion: builder.mutation<
+      JlptQuestionAdmin,
+      { testId: number; data: CreateQuestionDTO }
+    >({
       query: ({ testId, data }) => ({
         url: `/jlpt-tests/${testId}/questions`,
-        method: 'POST',
+        method: "POST",
         body: data,
       }),
-      transformResponse: (response: ApiResponse<JlptQuestionAdmin>) => response.data,
+      transformResponse: (response: ApiResponse<JlptQuestionAdmin>) =>
+        response.data,
       invalidatesTags: (result, error, { testId }) => [
-        { type: 'AdminTest', id: testId },
-        'AdminQuestion',
+        { type: "AdminTest", id: testId },
+        "AdminQuestion",
       ],
     }),
 
-    updateQuestion: builder.mutation<JlptQuestionAdmin, { id: number; data: UpdateQuestionDTO }>({
+    updateQuestion: builder.mutation<
+      JlptQuestionAdmin,
+      { id: number; data: UpdateQuestionDTO }
+    >({
       query: ({ id, data }) => ({
         url: `/jlpt-tests/questions/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
       }),
-      transformResponse: (response: ApiResponse<JlptQuestionAdmin>) => response.data,
+      transformResponse: (response: ApiResponse<JlptQuestionAdmin>) =>
+        response.data,
       invalidatesTags: (result, error, { id }) => [
-        { type: 'AdminQuestion', id },
-        'AdminTest',
+        { type: "AdminQuestion", id },
+        "AdminTest",
       ],
     }),
 
     deleteQuestion: builder.mutation<void, number>({
       query: (id) => ({
         url: `/jlpt-tests/questions/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['AdminQuestion', 'AdminTest'],
+      invalidatesTags: ["AdminQuestion", "AdminTest"],
     }),
 
     // ========================================================================
@@ -249,26 +282,28 @@ export const adminJlptApi = createApi({
 
     uploadImage: builder.mutation<MediaUploadResponse, FormData>({
       query: (formData) => ({
-        url: '/media/upload/image',
-        method: 'POST',
+        url: "/media/upload/image",
+        method: "POST",
         body: formData,
       }),
-      transformResponse: (response: ApiResponse<MediaUploadResponse>) => response.data,
+      transformResponse: (response: ApiResponse<MediaUploadResponse>) =>
+        response.data,
     }),
 
     uploadAudio: builder.mutation<MediaUploadResponse, FormData>({
       query: (formData) => ({
-        url: '/media/upload/audio',
-        method: 'POST',
+        url: "/media/upload/audio",
+        method: "POST",
         body: formData,
       }),
-      transformResponse: (response: ApiResponse<MediaUploadResponse>) => response.data,
+      transformResponse: (response: ApiResponse<MediaUploadResponse>) =>
+        response.data,
     }),
 
     deleteMedia: builder.mutation<void, string>({
       query: (publicId) => ({
         url: `/media/${publicId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
     }),
   }),

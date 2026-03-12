@@ -25,7 +25,11 @@ const Sidebar = () => {
   useEffect(() => setIsMounted(true), []);
 
   const isAdminOrTeacher =
-    roles && (roles.includes("ADMIN") || roles.includes("TEACHER"));
+    roles &&
+    (roles.includes("ADMIN") ||
+      roles.includes("ROLE_ADMIN") ||
+      roles.includes("INSTRUCTOR") ||
+      roles.includes("ROLE_INSTRUCTOR"));
 
   const isActive = (path: string) => pathname === path;
 

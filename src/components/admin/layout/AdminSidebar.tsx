@@ -35,12 +35,16 @@ import { useTheme } from "@/components/common/ThemeProvider";
 import { useAuth, useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ROUTE_PERMISSION_MAP } from "@/lib/permissions";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ElementType;
   badge?: string;
+  /** If true, only ADMIN can see this item */
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -71,6 +75,7 @@ const navGroups: NavGroup[] = [
         title: "Người dùng",
         href: "/admin/users",
         icon: Users,
+        adminOnly: true,
       },
       {
         title: "Khóa học",
@@ -85,8 +90,8 @@ const navGroups: NavGroup[] = [
       {
         title: "Đề thi",
         href: "/admin/jlpt-tests",
-        icon: BookOpenCheck
-      }
+        icon: BookOpenCheck,
+      },
     ],
   },
   {
@@ -102,11 +107,13 @@ const navGroups: NavGroup[] = [
         title: "Phân quyền",
         href: "/admin/roles",
         icon: Shield,
+        adminOnly: true,
       },
       {
         title: "Cài đặt",
         href: "/admin/settings",
         icon: Settings,
+        adminOnly: true,
       },
     ],
   },
@@ -120,13 +127,16 @@ export function AdminSidebar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const { isAdmin, canAccessRoute } = usePermissions();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const displayName = user?.fullname || user?.fullName || user?.username || "Admin";
-  const avatarSrc = user?.avatar || user?.avatarUrl || "/images/avt-default.jpg";
+  const displayName =
+    user?.fullname || user?.fullName || user?.username || "Admin";
+  const avatarSrc =
+    user?.avatar || user?.avatarUrl || "/images/avt-default.jpg";
 
   const handleLogout = async () => {
     try {
@@ -163,69 +173,81 @@ export function AdminSidebar() {
         {/* Navigation */}
         <ScrollArea className="flex-1 px-3 py-4">
           <nav className="flex flex-col gap-1">
-            {navGroups.map((group) => (
-              <div key={group.label} className="mb-4">
-                {!collapsed && (
-                  <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {group.label}
-                  </p>
-                )}
-                {collapsed && <Separator className="mb-2 bg-sidebar-border" />}
-                {group.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/admin" && pathname.startsWith(item.href));
-                  const Icon = item.icon;
+            {navGroups.map((group) => {
+              // Filter items based on permissions
+              const visibleItems = group.items.filter((item) => {
+                if (isAdmin) return true;
+                if (item.adminOnly) return false;
+                return canAccessRoute(item.href);
+              });
+              if (visibleItems.length === 0) return null;
+              return (
+                <div key={group.label} className="mb-4">
+                  {!collapsed && (
+                    <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {group.label}
+                    </p>
+                  )}
+                  {collapsed && (
+                    <Separator className="mb-2 bg-sidebar-border" />
+                  )}
+                  {visibleItems.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href !== "/admin" &&
+                        pathname.startsWith(item.href));
+                    const Icon = item.icon;
 
-                  const linkContent = (
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-primary"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        collapsed && "justify-center px-2",
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1">{item.title}</span>
-                          {item.badge && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </Link>
-                  );
-
-                  if (collapsed) {
-                    return (
-                      <Tooltip key={item.href}>
-                        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={8}>
-                          <p>{item.title}</p>
-                          {item.badge && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              ({item.badge})
-                            </span>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
+                    const linkContent = (
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-primary"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          collapsed && "justify-center px-2",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1">{item.title}</span>
+                            {item.badge && (
+                              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Link>
                     );
-                  }
 
-                  return (
-                    <React.Fragment key={item.href}>
-                      {linkContent}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            ))}
+                    if (collapsed) {
+                      return (
+                        <Tooltip key={item.href}>
+                          <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8}>
+                            <p>{item.title}</p>
+                            {item.badge && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({item.badge})
+                              </span>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
+                    return (
+                      <React.Fragment key={item.href}>
+                        {linkContent}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </nav>
         </ScrollArea>
 
@@ -251,7 +273,9 @@ export function AdminSidebar() {
                   ) : (
                     <Moon className="h-4 w-4 shrink-0" />
                   )}
-                  {!collapsed && <span>Giao diện {theme === "dark" ? "sáng" : "tối"}</span>}
+                  {!collapsed && (
+                    <span>Giao diện {theme === "dark" ? "sáng" : "tối"}</span>
+                  )}
                 </Button>
               </TooltipTrigger>
               {collapsed && (
@@ -282,7 +306,8 @@ export function AdminSidebar() {
                       fill
                       className="object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/avt-default.jpg";
+                        (e.target as HTMLImageElement).src =
+                          "/images/avt-default.jpg";
                       }}
                     />
                   </div>
@@ -314,7 +339,11 @@ export function AdminSidebar() {
               {collapsed && (
                 <TooltipContent side="right" sideOffset={8}>
                   <p className="font-semibold">{displayName}</p>
-                  {user.email && <p className="text-xs text-muted-foreground">{user.email}</p>}
+                  {user.email && (
+                    <p className="text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                  )}
                 </TooltipContent>
               )}
             </Tooltip>
@@ -343,7 +372,12 @@ export function AdminSidebar() {
             </Tooltip>
           ) : (
             /* Skeleton */
-            <div className={cn("flex items-center gap-2 px-2 py-2", collapsed && "justify-center")}>
+            <div
+              className={cn(
+                "flex items-center gap-2 px-2 py-2",
+                collapsed && "justify-center",
+              )}
+            >
               <div className="h-8 w-8 rounded-full bg-sidebar-accent animate-pulse shrink-0" />
               {!collapsed && (
                 <div className="flex-1 space-y-1">

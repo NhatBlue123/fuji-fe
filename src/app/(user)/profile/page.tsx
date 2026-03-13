@@ -96,7 +96,7 @@ export default function ProfilePage() {
                   onClick={() => setOpenLogout(true)}
                   className="flex items-center gap-2 px-5 h-11 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
                 >
-                  <LogOut size={16} /> Đăng xuất
+                  <LogOut size={16} /> Lịch sử giao dịch
                 </button>
               </div>
             </div>

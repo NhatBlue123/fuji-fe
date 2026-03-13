@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { Banknote } from "lucide-react"
-import Image from "next/image"
 import { toast } from "sonner"
 import TopupPackageCard from "./TopupPackageCard"
+import PaymentStatus from "./PaymentStatus"
 
 import { useGetWalletQuery } from "@/store/services/walletApi"
 import { useCreatePaymentMutation } from "@/store/services/paymentApi"
@@ -14,38 +14,37 @@ const paymentMethods = [
 ]
 
 export default function TopupContent() {
-  // API 4: Lấy thông tin ví (Dùng để polling số dư)
-  const { data: wallet, refetch: refetchWallet } = useGetWalletQuery()
+  // API lấy thông tin ví
+  const { data: wallet } = useGetWalletQuery()
 
-  // API 1: Tạo lệnh nạp
+  // API tạo lệnh nạp tiền
   const [createPayment, { isLoading }] = useCreatePaymentMutation()
 
   const balance = wallet?.balance || 0
   const [selectedPackage, setSelectedPackage] = useState<number>(4)
   const [selectedPayment, setSelectedPayment] = useState<string>("bank")
-  const [qrData, setQrData] = useState<{
-    url: string
+  
+  // Payment Status modal state
+  const [paymentQrData, setPaymentQrData] = useState<{
     orderId: string
     amount: number
+    bankId: string
+    accountNo: string
+    accountName: string
   } | null>(null)
 
-  const [initialBalance, setInitialBalance] = useState(0)
-
   const packages = [
-    { id: 1, price: 10000, flowers: 10 },
-    { id: 2, price: 20000, flowers: 20 },
-    { id: 3, price: 50000, flowers: 50, bonus: 5 },
-    { id: 4, price: 100000, flowers: 100, bonus: 20, isPopular: true },
-    { id: 5, price: 200000, flowers: 200, bonus: 60 },
-    { id: 6, price: 500000, flowers: 500, bonus: 200 }
+    { id: 1, price: 1000, flowers: 1 },
+    { id: 2, price: 2000, flowers: 20 },
+    { id: 3, price: 5000, flowers: 50, bonus: 5 },
+    { id: 4, price: 10000, flowers: 10, bonus: 20, isPopular: true },
+    { id: 5, price: 20000, flowers: 20, bonus: 60 },
+    { id: 6, price: 50000, flowers: 50, bonus: 200 }
   ]
 
-  const BANK_ID = "MB"
-  const ACCOUNT_NO = "0916146446"
-  const ACCOUNT_NAME = "Nguyễn Nho Quốc Huy"
-
   /**
-   * CHỈ GỌI API 1: TẠO ĐƠN HÀNG
+   * BƯỚC 1: GỌI API TẠO ĐƠN HÀNG
+   * Backend trả về thông tin tài khoản từ XGate
    */
   const handleTopupClick = async () => {
     const selectedPkg = packages.find(pkg => pkg.id === selectedPackage)
@@ -55,53 +54,45 @@ export default function TopupContent() {
     }
 
     try {
-      // Lưu lại số dư trước khi nạp để so sánh
-      setInitialBalance(balance)
-
-      const order = await createPayment({
+      // Gọi API tạo đơn nạp - Backend trả về bankId, accountNo, accountName
+      const orderData = await createPayment({
         amount: selectedPkg.price
       }).unwrap()
 
-      const qrUrl =
-        `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png` +
-        `?amount=${order.amount}&addInfo=${order.orderId}&accountName=${ACCOUNT_NAME}`
+      console.log("Order data from backend:", orderData)
 
-      setQrData({
-        url: qrUrl,
-        orderId: order.orderId,
-        amount: order.amount
+      // Provide fallback values from environment variables or use defaults
+      const bankId = orderData.bankId || process.env.NEXT_PUBLIC_BANK_ID || "MB"
+      const accountNo = orderData.accountNo || process.env.NEXT_PUBLIC_ACCOUNT_NO || "0916146446"
+      const accountName = orderData.accountName || process.env.NEXT_PUBLIC_ACCOUNT_NAME || "NHo huy"
+
+      // Kiểm tra backend có trả về đầy đủ dữ liệu không
+      if (!accountNo) {
+        console.error("Backend trả về dữ liệu không đầy đủ. Cần account number:", {
+          orderId: orderData.orderId,
+          amount: orderData.amount,
+          bankId,
+          missingAccountNo: !orderData.accountNo,
+          missingAccountName: !orderData.accountName
+        })
+        toast.error("❌ Backend chưa cấu hình tài khoản XGate. Hãy thiết lập biến môi trường hoặc liên hệ admin!")
+        return
+      }
+
+      // Show PaymentStatus component
+      setPaymentQrData({
+        orderId: orderData.orderId,
+        amount: orderData.amount,
+        bankId: bankId,
+        accountNo: accountNo,
+        accountName: accountName
       })
       
       toast.info("Vui lòng quét mã QR để thanh toán")
     } catch (err) {
+      console.error("Error creating payment:", err)
       toast.error("Không thể tạo đơn thanh toán")
     }
-  }
-
-  /**
-   * CHỈ GỌI API 4: POLLING KIỂM TRA SỐ DƯ
-   * (Chạy khi QR đang hiển thị)
-   */
-  useEffect(() => {
-    if (!qrData) return
-
-    const interval = setInterval(async () => {
-      // Gọi refetch để cập nhật dữ liệu ví mới nhất từ API 4
-      const updated = await refetchWallet()
-      const newBalance = updated.data?.balance || 0
-
-      if (newBalance > initialBalance) {
-        toast.success("Hệ thống đã nhận được tiền. Nạp thành công!")
-        setQrData(null) // Đóng popup QR
-        clearInterval(interval)
-      }
-    }, 3000) // 3 giây check một lần để tránh spam server quá mức
-
-    return () => clearInterval(interval)
-  }, [qrData, initialBalance, refetchWallet])
-
-  const closeQrPopup = () => {
-    setQrData(null)
   }
 
   return (
@@ -166,35 +157,16 @@ export default function TopupContent() {
         </button>
       </div>
 
-      {/* Modal Popup QR Code */}
-      {qrData && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-card p-8 rounded-2xl flex flex-col items-center max-w-sm text-center border shadow-2xl relative">
-            <h3 className="text-xl font-bold mb-4">Quét mã để thanh toán</h3>
-            <div className="bg-white p-2 rounded-xl mb-4">
-              <Image
-                src={qrData.url}
-                alt="QR Code"
-                width={250}
-                height={250}
-                className="rounded-lg"
-              />
-            </div>
-            <p className="text-sm mb-1">Nội dung chuyển khoản (bắt buộc):</p>
-            <p className="text-lg font-black text-secondary mb-2 select-all uppercase">
-              {qrData.orderId}
-            </p>
-            <p className="text-[10px] text-muted-foreground mb-6 italic">
-              Hệ thống sẽ tự động cộng tiền sau 1-3 phút khi nhận được thanh toán.
-            </p>
-            <button
-              onClick={closeQrPopup}
-              className="w-full px-4 py-2 border rounded-lg hover:bg-accent transition"
-            >
-              Hủy giao dịch
-            </button>
-          </div>
-        </div>
+      {/* Payment Status Modal */}
+      {paymentQrData && (
+        <PaymentStatus
+          orderId={paymentQrData.orderId}
+          amount={paymentQrData.amount}
+          bankId={paymentQrData.bankId}
+          accountNo={paymentQrData.accountNo}
+          accountName={paymentQrData.accountName}
+          onClose={() => setPaymentQrData(null)}
+        />
       )}
     </div>
   )

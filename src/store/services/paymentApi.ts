@@ -1,57 +1,48 @@
 import { baseApi } from "./baseApi";
 
+// ─── Types ────────────────────────────────────────────
+export interface CreatePaymentResponse {
+  orderId: string
+  amount: number
+  bankId: string
+  accountNo: string
+  accountName: string
+}
+
+export interface PaymentStatusResponse {
+  orderId: string
+  status: "PENDING" | "SUCCESS" | "FAILED"
+  amount: number
+  message?: string
+}
+
 export const paymentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
 
+    // API 1: Tạo đơn nạp - Backend trả về thông tin tài khoản nhận tiền
+    // Mã ORDER_XXX được gán bởi backend dựa trên transaction ID
     createPayment: builder.mutation<
-      { orderId: string; amount: number },
+      CreatePaymentResponse,
       { amount: number }
     >({
       query: (body) => ({
         url: "/payments/create",
         method: "POST",
         body
-      })
-    }),
-
-    // 🔧 SỬA Ở ĐÂY
-    getTestSignature: builder.query<
-      string,
-      { orderId: string; amount: number; status: string }
-    >({
-      query: ({ orderId, amount, status }) => ({
-        url: "/payments/test-signature",
-        params: {
-          order_id: orderId,
-          amount,
-          status
-        },
-        responseHandler: (response) => response.text() // 👈 đọc raw text
-      })
-    }),
-
-    simulateXGatePayment: builder.mutation<
-      any,
-      {
-        orderId: string
-        transactionId: string
-        amount: number
-        status: string
-        signature: string
-      }
-    >({
-      query: (body) => ({
-        url: "/payments/callback",
-        method: "POST",
-        body: {
-          order_id: body.orderId,
-          transaction_id: body.transactionId,
-          amount: body.amount,
-          status: body.status,
-          signature: body.signature
-        }
       }),
       invalidatesTags: ["Wallet"]
+    }),
+
+    // API 2: Kiểm tra trạng thái thanh toán
+    // Gọi liên tục (polling) để check xem tiền đã vào chưa
+    getPaymentStatus: builder.query<
+      PaymentStatusResponse,
+      string
+    >({
+      query: (orderId) => ({
+        url: `/payments/status/${orderId}`,
+        method: "GET"
+      })
     })
 
   })
@@ -59,6 +50,5 @@ export const paymentApi = baseApi.injectEndpoints({
 
 export const {
   useCreatePaymentMutation,
-  useLazyGetTestSignatureQuery,
-  useSimulateXGatePaymentMutation
+  useGetPaymentStatusQuery
 } = paymentApi

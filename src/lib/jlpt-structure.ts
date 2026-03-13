@@ -11,6 +11,7 @@
 
 export type JLPTLevel = "N1" | "N2" | "N3" | "N4" | "N5";
 export type SectionKey = "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
+export type TestType = "full_test" | "vocabulary_grammar" | "reading" | "listening";
 
 export interface MondaiConfig {
   number: number;       // mondaiNumber stored in DB
@@ -260,4 +261,39 @@ export function findMondaiForQuestion(
 /** Get all question numbers for a mondai group */
 export function getQuestionNumbers(mondai: MondaiConfig): number[] {
   return Array.from({ length: mondai.end - mondai.start + 1 }, (_, i) => mondai.start + i);
+}
+
+/**
+ * Maps a testType string to the relevant SectionKey(s) it covers.
+ */
+const TEST_TYPE_TO_KEYS: Record<string, SectionKey[]> = {
+  full_test: ["VOCABULARY", "GRAMMAR", "READING", "LISTENING"],
+  vocabulary_grammar: ["VOCABULARY", "GRAMMAR"],
+  reading: ["READING"],
+  listening: ["LISTENING"],
+};
+
+/**
+ * Returns the JLPT structure for a given level filtered by testType.
+ * For full_test → all sections returned as-is.
+ * For specific categories → only sections whose sectionKeys overlap with
+ * the target key are returned. Sections with multiple sectionKeys (e.g.
+ * N3's 文法・読解 covers GRAMMAR + READING) are kept as-is because their
+ * mondai belong to both topics.
+ */
+export function getStructureForTestType(
+  level: JLPTLevel,
+  testType: string
+): SectionConfig[] {
+  const targetKeys = TEST_TYPE_TO_KEYS[testType] ?? TEST_TYPE_TO_KEYS["full_test"];
+
+  if (targetKeys.length === 4) {
+    // full_test — return everything
+    return JLPT_STRUCTURE[level] ?? [];
+  }
+
+  const allSections = JLPT_STRUCTURE[level] ?? [];
+  return allSections.filter((section) =>
+    section.sectionKeys.some((k) => targetKeys.includes(k))
+  );
 }

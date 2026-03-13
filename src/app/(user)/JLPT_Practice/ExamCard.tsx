@@ -69,7 +69,7 @@ export default function ExamCard({
     let btnText = "";
 
     if (status === "new") {
-      btnClass = `bg-${colorTheme} hover:bg-white text-slate-900 hover:text-slate-900 shadow-pink-500/10`;
+      btnClass = "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-500/20";
       btnText = "Bắt đầu làm bài";
     } else if (status === "doing") {
       btnClass =
@@ -136,17 +136,13 @@ export default function ExamCard({
       {/* Nội dung text */}
       <div className="p-5 flex flex-col flex-1">
         <div className="flex items-center gap-2 mb-2">
-          <span
-            className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${colorTheme} text-slate-900`}
-          >
-            {tag}
-          </span>
-          <span className="text-xs text-slate-400 font-medium">• {info}</span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">{tag}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">• {info}</span>
         </div>
-        <h3 className="text-lg font-bold text-white mb-4 group-hover:text-white/80 transition-colors line-clamp-2">
+        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors line-clamp-2">
           {title}
         </h3>
-        <div className="mt-auto pt-4 border-t border-white/5">
+        <div className="mt-auto pt-4 border-t border-slate-200 dark:border-white/5">
           {renderButton()}
         </div>
       </div>

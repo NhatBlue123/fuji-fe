@@ -69,7 +69,7 @@ const Sidebar = () => {
         <div>
           <h1 className="text-xl font-black text-sidebar-foreground">FUJI</h1>
           <p className="text-xs text-muted-foreground">
-            {t("sidebar.subtitle")}
+            {isMounted ? t("sidebar.subtitle") : ""}
           </p>
         </div>
       </Link>
@@ -99,6 +99,11 @@ const Sidebar = () => {
         <Link href="/ai-chat" className={navClass("/ai-chat")}>
           <span className={iconClass("/ai-chat")}>smart_toy</span>
           {t("common.aiPractice")}
+        </Link>
+
+        <Link href="/video-call" className={navClass("/video-call")}>
+          <span className={iconClass("/video-call")}>video_chat</span>
+          Video call
         </Link>
 
         <Link href="/flashcards" className={navClass("/flashcards")}>

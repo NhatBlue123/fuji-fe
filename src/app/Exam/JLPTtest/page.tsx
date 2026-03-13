@@ -163,10 +163,25 @@ function JLPTtestPageInner() {
   /* ===== ANTI CHEAT ===== */
   const MAX_TAB_SWITCHES = 5;
 
+  const handleViolation = useCallback(
+    (warning: import("@/hooks/useAntiCheat").AntiCheatWarning) => {
+      if (
+        warning.type === "tab_switch" &&
+        warning.count &&
+        warning.count >= MAX_TAB_SWITCHES
+      ) {
+        alert("Bạn đã vi phạm rời trang thi quá 5 lần. Hệ thống tự động nộp bài!");
+        submitExam();
+      }
+    },
+    [submitExam]
+  );
+
   const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } =
     useAntiCheat({
       maxTabSwitches: MAX_TAB_SWITCHES,
       detectDevTools: true,
+      onViolation: handleViolation,
     });
 
   /* ===== UI STATES ===== */

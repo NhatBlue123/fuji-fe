@@ -68,12 +68,15 @@ export const jlptApi = createApi({
     // Get published tests by level (for students)
     getPublishedTests: builder.query<
       PaginatedResponse<JlptTest>,
-      { level?: JLPTLevel; page?: number; size?: number; search?: string }
+      { level?: JLPTLevel; testType?: string; page?: number; size?: number; search?: string }
     >({
-      query: ({ level, page = 0, size = 10, search = "" }) => {
+      query: ({ level, testType, page = 0, size = 10, search = "" }) => {
         let url = `/jlpt-tests/published?page=${page}&size=${size}`;
         if (level) {
           url += `&level=${level}`;
+        }
+        if (testType && testType !== "all") {
+          url += `&testType=${testType}`;
         }
         if (search) {
           url += `&search=${encodeURIComponent(search)}`;

@@ -2,18 +2,33 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar } from "lucide-react";
+import {
+  Edit,
+  Key,
+  LogOut,
+  Mail,
+  Phone,
+  User,
+  BookOpen,
+  Calendar,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/lib/auth";
 //import { useGetMeQuery } from "@/store/services/user/userApi";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
+import { Button } from "@/components/ui/button";
 export default function ProfilePage() {
   const router = useRouter();
   const [openLogout, setOpenLogout] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const { data: user, isLoading, error, isUninitialized } = useGetCurrentUserQuery();
+  const {
+    data: user,
+    isLoading,
+    error,
+    isUninitialized,
+  } = useGetCurrentUserQuery();
 
   // Show loading state while fetching or initializing
   if (isLoading || isUninitialized) {
@@ -46,7 +61,10 @@ export default function ProfilePage() {
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" });
+    new Date(date).toLocaleDateString("vi-VN", {
+      month: "2-digit",
+      year: "numeric",
+    });
 
   const getInitials = (name: string) => {
     if (!name) return "??";
@@ -69,8 +87,13 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row items-end justify-between gap-4">
               {/* Avatar */}
               <div className="w-32 h-32 rounded-full border-4 border-slate-900 bg-indigo-500 flex items-center justify-center text-4xl font-bold text-white overflow-hidden">
-                {user.avatarUrl? (
-                  <Image src={user.avatarUrl} alt="avatar" width={128} height={128} />
+                {user.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt="avatar"
+                    width={128}
+                    height={128}
+                  />
                 ) : (
                   getInitials(user.fullName)
                 )}
@@ -92,26 +115,38 @@ export default function ProfilePage() {
                   <Key size={16} /> Đổi mật khẩu
                 </Link>
 
-                <button
+                <Button
                   onClick={() => setOpenLogout(true)}
                   className="flex items-center gap-2 px-5 h-11 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
                 >
                   <LogOut size={16} /> Đăng xuất
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Info */}
             <div className="mt-6 space-y-2">
-              <h1 className="text-3xl font-bold text-slate-100">{user.fullName}</h1>
+              <h1 className="text-3xl font-bold text-slate-100">
+                {user.fullName}
+              </h1>
               <p className="text-slate-400">@{user.username}</p>
-              {user.bio && <p className="text-slate-300 max-w-2xl">{user.bio}</p>}
+              {user.bio && (
+                <p className="text-slate-300 max-w-2xl">{user.bio}</p>
+              )}
             </div>
 
             {/* Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-800">
-              <Info icon={<Mail size={16} />} label="Email" value={user.email} />
-              <Info icon={<Phone size={16} />} label="SĐT" value={user.phone || "—"} />
+              <Info
+                icon={<Mail size={16} />}
+                label="Email"
+                value={user.email}
+              />
+              <Info
+                icon={<Phone size={16} />}
+                label="SĐT"
+                value={user.phone || "—"}
+              />
               <Info
                 icon={<User size={16} />}
                 label="Giới tính"
@@ -132,9 +167,15 @@ export default function ProfilePage() {
 
         {/* ================= ACCOUNT ================= */}
         <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-slate-100">Thông tin tài khoản</h2>
+          <h2 className="text-xl font-semibold text-slate-100">
+            Thông tin tài khoản
+          </h2>
 
-          <Info icon={<Calendar size={16} />} label="Ngày tham gia" value={formatDate(user.createdAt)} />
+          <Info
+            icon={<Calendar size={16} />}
+            label="Ngày tham gia"
+            value={formatDate(user.createdAt)}
+          />
           <Info
             icon={<User size={16} />}
             label="Trạng thái"
@@ -153,17 +194,22 @@ export default function ProfilePage() {
       {openLogout && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4 w-full max-w-sm">
-            <p className="text-center text-slate-200">Bạn có chắc muốn đăng xuất?</p>
+            <p className="text-center text-slate-200">
+              Bạn có chắc muốn đăng xuất?
+            </p>
             <div className="flex gap-3">
-              <button onClick={() => setOpenLogout(false)} className="flex-1 py-2 bg-slate-800 rounded-lg">
+              <Button
+                onClick={() => setOpenLogout(false)}
+                className="flex-1 py-2 bg-slate-800 rounded-lg"
+              >
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleLogout}
                 className="flex-1 py-2 bg-red-600 rounded-lg text-white"
               >
                 Đăng xuất
-              </button>
+              </Button>
             </div>
           </div>
         </div>

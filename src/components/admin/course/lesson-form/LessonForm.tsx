@@ -122,7 +122,7 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
   // Video fields
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
+  const [videoType, setVideoType] = useState<"youtube" | "upload">("upload");
 
   // Task fields
   const [taskType, setTaskType] = useState<TaskType>("multiple_choice");
@@ -707,70 +707,31 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
                 <Video className="size-5" />
                 Cấu hình Video
               </CardTitle>
-              <CardDescription>
-                Chọn nguồn video: YouTube URL hoặc upload file
-              </CardDescription>
+              <CardDescription>Upload file video cho bài học</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Video Type Toggle */}
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoFileChange}
+                  className="hidden"
+                />
                 <Button
                   type="button"
-                  variant={videoType === "youtube" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setVideoType("youtube")}
+                  variant="outline"
+                  className="gap-2 w-full h-20 border-dashed"
+                  onClick={() => fileInputRef.current?.click()}
                   disabled={isSubmitting}
                 >
-                  YouTube URL
+                  <Upload className="size-5" />
+                  {videoFile ? videoFile.name : "Chọn file video"}
                 </Button>
-                <Button
-                  type="button"
-                  variant={videoType === "upload" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setVideoType("upload")}
-                  disabled={isSubmitting}
-                >
-                  Upload Video
-                </Button>
+                {errors.video && (
+                  <p className="text-sm text-destructive">{errors.video}</p>
+                )}
               </div>
-
-              {videoType === "youtube" ? (
-                <div className="space-y-2">
-                  <Input
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://youtube.com/watch?v=..."
-                    disabled={isSubmitting}
-                    className={errors.video ? "border-destructive" : ""}
-                  />
-                  {errors.video && (
-                    <p className="text-sm text-destructive">{errors.video}</p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoFileChange}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2 w-full h-20 border-dashed"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isSubmitting}
-                  >
-                    <Upload className="size-5" />
-                    {videoFile ? videoFile.name : "Chọn file video"}
-                  </Button>
-                  {errors.video && (
-                    <p className="text-sm text-destructive">{errors.video}</p>
-                  )}
-                </div>
-              )}
             </CardContent>
           </Card>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 interface BookingModalProps {
   onClose: () => void;
 }
@@ -34,22 +35,22 @@ export default function BookingModal({ onClose }: BookingModalProps) {
         {/* HEADER */}
         <div className="p-6 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
+            <Button
               onClick={onClose}
               className="size-10 rounded-full hover:bg-white/5 transition flex items-center justify-center"
             >
               <span className="material-symbols-outlined">arrow_back</span>
-            </button>
+            </Button>
 
             <h2 className="text-xl font-bold">Đặt lịch học với Sensei</h2>
           </div>
 
-          <button
+          <Button
             onClick={onClose}
             className="size-10 rounded-full hover:bg-white/5 transition flex items-center justify-center"
           >
             <span className="material-symbols-outlined">close</span>
-          </button>
+          </Button>
         </div>
 
         {/* CONTENT */}
@@ -124,29 +125,29 @@ export default function BookingModal({ onClose }: BookingModalProps) {
               {/* DATE */}
               <section>
                 <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold mb-4">Chọn ngày học</h3>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-bold">Tháng 10, 2024</span>
-                  <div className="flex gap-2">
-                    <button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
-                      <span className="material-symbols-outlined text-sm">
-                        chevron_left
-                      </span>
-                    </button>
-                    <button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
-                      <span className="material-symbols-outlined text-sm">
-                        chevron_right
-                      </span>
-                    </button>
+                  <h3 className="text-lg font-bold mb-4">Chọn ngày học</h3>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold">Tháng 10, 2024</span>
+                    <div className="flex gap-2">
+                      <Button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
+                        <span className="material-symbols-outlined text-sm">
+                          chevron_left
+                        </span>
+                      </Button>
+                      <Button className="size-8 rounded-lg border border-accent-border flex items-center justify-center hover:border-neon-pink transition-colors">
+                        <span className="material-symbols-outlined text-sm">
+                          chevron_right
+                        </span>
+                      </Button>
+                    </div>
                   </div>
-                </div>
                 </div>
                 <div className="grid grid-cols-7 gap-2">
                   {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
                     const isSelected = day === selectedDate;
 
                     return (
-                      <button
+                      <Button
                         key={day}
                         onClick={() => setSelectedDate(day)}
                         className={`h-20 rounded-xl border flex items-start p-2 font-bold transition
@@ -157,7 +158,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
                           }`}
                       >
                         {day}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -173,7 +174,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
                     const selected = selectedTime === time;
 
                     return (
-                      <button
+                      <Button
                         key={time}
                         disabled={disabled}
                         onClick={() => setSelectedTime(time)}
@@ -187,7 +188,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
                           }`}
                       >
                         {time}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -215,9 +216,9 @@ export default function BookingModal({ onClose }: BookingModalProps) {
             </div>
           </div>
 
-          <button className="px-12 py-4 bg-pink-500 rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition shadow-[0_0_30px_rgba(255,92,141,0.4)]">
+          <Button className="px-12 py-4 bg-pink-500 rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition shadow-[0_0_30px_rgba(255,92,141,0.4)]">
             Xác nhận đặt lịch
-          </button>
+          </Button>
         </div>
       </div>
     </div>

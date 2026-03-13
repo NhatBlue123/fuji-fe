@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 interface CourseHeaderProps {
-  onCreateCourse: () => void;
+  onCreateCourse?: () => void;
   totalCourses?: number;
 }
 
@@ -23,10 +23,12 @@ export const CourseHeader: React.FC<CourseHeaderProps> = ({
             : "Quản lý chương trình và theo dõi tiến độ học viên."}
         </p>
       </div>
-      <Button onClick={onCreateCourse} className="gap-2">
-        <Plus className="size-4" />
-        Tạo khóa học
-      </Button>
+      {onCreateCourse && (
+        <Button onClick={onCreateCourse} className="gap-2">
+          <Plus className="size-4" />
+          Tạo khóa học
+        </Button>
+      )}
     </div>
   );
 };

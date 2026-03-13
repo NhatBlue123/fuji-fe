@@ -3,6 +3,7 @@
 import { FEATURED_COURSES } from "@/types/course";
 import { CourseCard } from "@/components/user-component/course/CourseCard";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 
 // ✅ Client Component with static data - fast render
 export function CoursesSection() {
@@ -60,10 +61,10 @@ export function CoursesSection() {
               {t("home.coursesSection.aiDescription")}
             </p>
             <div className="mt-auto">
-              <button className="w-full py-3 rounded-xl bg-secondary hover:bg-pink-400 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/40 transform hover:translate-y-[-2px]">
+              <Button className="w-full py-3 rounded-xl bg-secondary hover:bg-pink-400 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/40 transform hover:translate-y-[-2px]">
                 <span className="material-symbols-outlined text-lg">mic</span>
                 {t("home.coursesSection.practiceNow")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -71,4 +72,3 @@ export function CoursesSection() {
     </section>
   );
 }
-

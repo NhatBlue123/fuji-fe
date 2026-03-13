@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const JLPT_LEVELS = [
   { level: "N5", color: "blue", time: "105", tests: 3, icon: "timer" },
@@ -92,9 +93,9 @@ export function JLPTSection() {
             <p className="text-sm text-muted-foreground dark:text-slate-400 mb-4">
               {item.tests} đề • {item.time} phút/đề
             </p>
-            <button className="w-full py-2 rounded-lg bg-muted dark:bg-slate-800 hover:bg-current hover:text-white text-foreground dark:text-white text-sm font-medium transition-colors border border-border dark:border-slate-700 hover:border-current">
+            <Button className="w-full py-2 rounded-lg bg-muted dark:bg-slate-800 hover:bg-current hover:text-white text-foreground dark:text-white text-sm font-medium transition-colors border border-border dark:border-slate-700 hover:border-current">
               Làm bài ngay
-            </button>
+            </Button>
           </div>
         ))}
       </div>

@@ -144,7 +144,7 @@ export default function TeacherBookingDashboard() {
                     <div className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
                       {["Dưới $15", "$15 - $20", "$20 - $30", "Trên $30"].map(
                         (price) => (
-                          <button
+                          <Button
                             key={price}
                             onClick={() => {
                               setSelectedPrice(price);
@@ -153,12 +153,12 @@ export default function TeacherBookingDashboard() {
                             className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-accent transition-all"
                           >
                             {price}
-                          </button>
+                          </Button>
                         ),
                       )}
                     </div>
                   )}
-                  <button
+                  <Button
                     onClick={() => setShowPriceDropdown(!showPriceDropdown)}
                     className="flex items-center gap-2 bg-background border border-border px-4 py-2 rounded-lg text-muted-foreground text-sm font-bold hover:border-secondary hover:text-secondary transition-all"
                   >
@@ -236,7 +236,7 @@ export default function TeacherBookingDashboard() {
         {/* PAGINATION */}
         <div className="flex justify-center mt-12 gap-2">
           {/* PREV */}
-          <button
+          <Button
             onClick={goPrev}
             disabled={currentPage === 1}
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all text-muted-foreground hover:text-secondary disabled:opacity-50 disabled:pointer-events-none"
@@ -246,7 +246,7 @@ export default function TeacherBookingDashboard() {
 
           {/* PAGE NUMBERS */}
           {pages.map((p) => (
-            <button
+            <Button
               key={p}
               onClick={() => setCurrentPage(p)}
               className={
@@ -256,22 +256,22 @@ export default function TeacherBookingDashboard() {
               }
             >
               {p}
-            </button>
+            </Button>
           ))}
 
           {/* DOTS */}
           <span className="size-10 flex items-center justify-center text-muted-foreground font-bold">...</span>
 
           {/* LAST PAGE */}
-          <button
+          <Button
             onClick={() => setCurrentPage(totalPages)}
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all font-bold text-sm text-muted-foreground hover:text-foreground"
           >
             {totalPages}
-          </button>
+          </Button>
 
           {/* NEXT */}
-          <button
+          <Button
             onClick={goNext}
             disabled={currentPage === totalPages}
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all text-muted-foreground hover:text-secondary disabled:opacity-50 disabled:pointer-events-none"
@@ -288,7 +288,7 @@ export default function TeacherBookingDashboard() {
       {/* FLOAT BUTTON */}
       <button className="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-secondary-foreground rounded-full shadow-lg shadow-secondary/30 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl z-40">
         💬
-      </button>
+      </Button>
     </div>
   );
 }

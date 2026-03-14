@@ -54,7 +54,7 @@ export default function PaymentStatus({
           setPollIntervalId(null)
           // Redirect to success page sau 1 giây
           setTimeout(() => {
-            router.push("/user/premium/success")
+            router.push("/premium/success")
           }, 1000)
           return
         }

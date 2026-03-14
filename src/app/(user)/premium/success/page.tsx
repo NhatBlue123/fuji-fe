@@ -4,7 +4,7 @@ import React, { useEffect } from "react"
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { useGetWalletQuery } from "@/store/services/walletApi"
-
+import TopupContent from "@/components/user-component/premium/TopupContent"
 export default function PaymentSuccessPage() {
   const { data: wallet } = useGetWalletQuery()
 
@@ -68,13 +68,13 @@ export default function PaymentSuccessPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           <Link
-            href="/user/premium"
+            href="/premium"
             className="block px-6 py-3 bg-secondary text-secondary-foreground font-semibold rounded-xl hover:bg-secondary/90 transition text-center"
           >
             Tiếp tục mua hoa
           </Link>
           <Link
-            href="/user"
+            href=""
             className="block px-6 py-3 border border-border rounded-xl hover:bg-accent transition text-center font-semibold"
           >
             Về trang chủ

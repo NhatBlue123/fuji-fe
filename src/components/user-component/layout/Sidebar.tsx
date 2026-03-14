@@ -226,7 +226,7 @@ const Sidebar = () => {
         onClose={() => setIsPremiumModalOpen(false)} 
       />
     </>
-  );
+    );
 };
 
 export default Sidebar;

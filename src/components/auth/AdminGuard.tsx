@@ -3,19 +3,20 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface AdminGuardProps {
   children: React.ReactNode;
-  /** URL chuyển hướng khi không phải admin (mặc định: /) */
+  /** URL chuyển hướng khi không có quyền (mặc định: /) */
   redirectTo?: string;
   /** Hiển thị loading component tuỳ chỉnh */
   fallback?: React.ReactNode;
 }
 
 /**
- * Guard component - chỉ render children khi user có role ADMIN.
+ * Guard component - render children khi user là ADMIN hoặc INSTRUCTOR có quyền.
  * Nếu chưa đăng nhập → chuyển về /login
- * Nếu đăng nhập nhưng không phải admin → chuyển về redirectTo
+ * Nếu không có quyền admin → chuyển về redirectTo
  */
 export const AdminGuard: React.FC<AdminGuardProps> = ({
   children,
@@ -23,23 +24,27 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
   fallback,
 }) => {
   const { isAuthenticated, isInitialized, isAdmin } = useAuth();
+  const { hasAnyAdminAccess, isLoading: permLoading } = usePermissions();
   const router = useRouter();
 
+  const canAccess = isAdmin || hasAnyAdminAccess;
+  const isReady = isInitialized && !permLoading;
+
   React.useEffect(() => {
-    if (!isInitialized) return;
+    if (!isReady) return;
 
     if (!isAuthenticated) {
       router.replace("/login");
       return;
     }
 
-    if (!isAdmin) {
+    if (!canAccess) {
       router.replace(redirectTo);
     }
-  }, [isInitialized, isAuthenticated, isAdmin, router, redirectTo]);
+  }, [isReady, isAuthenticated, canAccess, router, redirectTo]);
 
-  // Đang kiểm tra auth
-  if (!isInitialized) {
+  // Đang kiểm tra auth hoặc permissions
+  if (!isReady) {
     return (
       fallback ?? (
         <div className="flex min-h-screen items-center justify-center">
@@ -49,8 +54,8 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
     );
   }
 
-  // Chưa đăng nhập hoặc không phải admin
-  if (!isAuthenticated || !isAdmin) {
+  // Không có quyền truy cập
+  if (!isAuthenticated || !canAccess) {
     return null;
   }
 

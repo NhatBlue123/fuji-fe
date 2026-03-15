@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export function FlashcardsSection() {
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-24 mb-16 relative">
@@ -19,10 +21,10 @@ export function FlashcardsSection() {
             Trải nghiệm hệ thống Flashcards 3D sống động. Hình ảnh trực quan, ví
             dụ thực tế và thuật toán Spaced Repetition giúp bạn nhớ lâu hơn.
           </p>
-          <button className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transform hover:-translate-y-1">
+          <Button className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transform hover:-translate-y-1">
             <span className="material-symbols-outlined">auto_awesome</span>
             Tạo Flashcard bằng AI
-          </button>
+          </Button>
         </div>
         <div className="flex-1 flex justify-center w-full relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[460px] bg-blue-200/50 dark:bg-blue-900/20 rounded-3xl rotate-6 border border-blue-500/20 -z-10 blur-sm"></div>

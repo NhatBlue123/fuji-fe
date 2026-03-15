@@ -1,16 +1,18 @@
 "use client";
-import { useState } from "react";
 import Input from "@/components/common/Input";
+import { Button } from "@/components/ui/button";
 
 interface CourseFilterProps {
   search: string;
   onSearchChange: (val: string) => void;
   activeLevel: string;
   onLevelChange: (val: string) => void;
+  activeCategory: string;
+  onCategoryChange: (val: string) => void;
 }
 
 const LEVELS = [
-  { id: "Tất cả", label: "Tất cả" },
+  { id: "all", label: "Tất cả" },
   { id: "N5", label: "N5" },
   { id: "N4", label: "N4" },
   { id: "N3", label: "N3" },
@@ -19,9 +21,9 @@ const LEVELS = [
 ];
 
 const CATEGORIES = [
-  { id: "full", label: "Đề full" },
-  { id: "vocab", label: "Từ vựng" },
-  { id: "grammar", label: "Ngữ pháp" },
+  { id: "all", label: "Tất cả" },
+  { id: "full_test", label: "Đề full" },
+  { id: "vocabulary_grammar", label: "Từ vựng & Ngữ pháp" },
   { id: "reading", label: "Đọc hiểu" },
   { id: "listening", label: "Nghe hiểu" },
 ];
@@ -31,10 +33,14 @@ export default function CourseFilter({
   onSearchChange,
   activeLevel,
   onLevelChange,
+  activeCategory,
+  onCategoryChange,
 }: CourseFilterProps) {
   const [selectedCategory, setSelectedCategory] = useState("");
 
-  const handleSearch = () => {/* search on change via debounce in parent */};
+  const handleSearch = () => {
+    /* search on change via debounce in parent */
+  };
 
   return (
     <div className="bg-card glass-card p-6 md:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-xl">
@@ -49,12 +55,12 @@ export default function CourseFilter({
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           className="pr-28"
         />
-        <button
+        <Button
           onClick={handleSearch}
           className="absolute inset-y-2 right-2 px-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-lg text-sm transition-colors shadow-lg shadow-secondary/20"
         >
           Tìm kiếm
-        </button>
+        </Button>
       </div>
 
       {/* Level + Category filters */}
@@ -65,7 +71,7 @@ export default function CourseFilter({
             Trình độ:
           </span>
           {LEVELS.map((level) => (
-            <button
+            <Button
               key={level.id}
               onClick={() => onLevelChange(level.id)}
               className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
@@ -75,7 +81,7 @@ export default function CourseFilter({
               }`}
             >
               {level.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -87,19 +93,17 @@ export default function CourseFilter({
             Danh mục:
           </span>
           {CATEGORIES.map((cat) => (
-            <button
+            <Button
               key={cat.id}
-              onClick={() =>
-                setSelectedCategory((prev) => (prev === cat.id ? "" : cat.id))
-              }
+              onClick={() => onCategoryChange(cat.id)}
               className={`px-4 py-1.5 rounded-full text-sm transition-all ${
-                selectedCategory === cat.id
+                activeCategory === cat.id
                   ? "bg-secondary text-secondary-foreground font-bold shadow-lg shadow-secondary/30"
                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border font-medium hover:border-input"
               }`}
             >
               {cat.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

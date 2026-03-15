@@ -18,9 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useGetFlashCardByIdQuery, useStartLearningMutation } from "@/store/services/flashcardApi";
+import {
+  useGetFlashCardByIdQuery,
+  useStartLearningMutation,
+} from "@/store/services/flashcardApi";
 import { getMockImage } from "@/lib/mockImages";
 import styles from "./page.module.css";
+import { Button } from "@/components/ui/button";
 
 export default function FlashcardStudyPage({
   params,
@@ -34,7 +38,9 @@ export default function FlashcardStudyPage({
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [imageMode, setImageMode] = useState<"front" | "back" | "both" | "none">("front");
+  const [imageMode, setImageMode] = useState<
+    "front" | "back" | "both" | "none"
+  >("front");
   const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
 
   // Initialize learning when page loads
@@ -47,7 +53,8 @@ export default function FlashcardStudyPage({
   const cards = flashcard?.cards || [];
   const totalCards = cards.length;
   const currentCard = cards[currentIndex];
-  const progress = totalCards > 0 ? Math.round((completedCards.size / totalCards) * 100) : 0;
+  const progress =
+    totalCards > 0 ? Math.round((completedCards.size / totalCards) * 100) : 0;
 
   const handleCardClick = () => {
     setIsFlipped(!isFlipped);
@@ -126,8 +133,12 @@ export default function FlashcardStudyPage({
   if (error || !flashcard || totalCards === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-screen bg-background gap-4">
-        <span className="material-symbols-outlined text-6xl text-red-400">error</span>
-        <p className="text-muted-foreground">Không thể tải bộ flashcard hoặc không có thẻ nào.</p>
+        <span className="material-symbols-outlined text-6xl text-red-400">
+          error
+        </span>
+        <p className="text-muted-foreground">
+          Không thể tải bộ flashcard hoặc không có thẻ nào.
+        </p>
         <Link
           href="/flashcards"
           className="text-secondary hover:underline flex items-center gap-1"
@@ -140,7 +151,8 @@ export default function FlashcardStudyPage({
   }
 
   // Get image for current card (use previewUrl or fallback to mock)
-  const cardImage = currentCard?.previewUrl || getMockImage(currentCard?.id || 0);
+  const cardImage =
+    currentCard?.previewUrl || getMockImage(currentCard?.id || 0);
 
   // Check if current card is marked as known
   const isCurrentCardKnown = completedCards.has(currentIndex);
@@ -158,7 +170,9 @@ export default function FlashcardStudyPage({
             href={`/flashcards/detail/${id}`}
             className="flex items-center justify-center size-9 rounded-full bg-card/40 hover:bg-card/60 text-muted-foreground hover:text-foreground transition-all border border-border/40"
           >
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
+            <span className="material-symbols-outlined text-xl">
+              arrow_back
+            </span>
           </Link>
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
@@ -186,7 +200,9 @@ export default function FlashcardStudyPage({
         <div className="w-1/4 flex justify-end items-center gap-1.5">
           <Select
             value={imageMode}
-            onValueChange={(value: "front" | "back" | "both" | "none") => setImageMode(value)}
+            onValueChange={(value: "front" | "back" | "both" | "none") =>
+              setImageMode(value)
+            }
           >
             <SelectTrigger className="w-[140px] h-8 text-xs border-border/40 bg-card/40">
               <SelectValue placeholder="Hiển thị ảnh" />
@@ -198,30 +214,30 @@ export default function FlashcardStudyPage({
               <SelectItem value="none">Không có ảnh</SelectItem>
             </SelectContent>
           </Select>
-          <button
+          <Button
             onClick={handleShuffle}
             className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full"
             title="Trộn thẻ"
           >
             <span className="material-symbols-outlined text-xl">shuffle</span>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleFlipAll}
             className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full"
             title="Đảo thẻ"
           >
             <span className="material-symbols-outlined text-xl">flip</span>
-          </button>
+          </Button>
 
           {/* Exercise Dialog */}
           <Dialog>
             <DialogTrigger asChild>
-              <button
+              <Button
                 className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full"
                 title="Bài tập"
               >
                 <span className="material-symbols-outlined text-xl">quiz</span>
-              </button>
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -278,12 +294,12 @@ export default function FlashcardStudyPage({
             </DialogContent>
           </Dialog>
 
-          <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full">
+          <Button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full">
             <span className="material-symbols-outlined text-xl">settings</span>
-          </button>
-          <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full">
+          </Button>
+          <Button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full">
             <span className="material-symbols-outlined text-xl">help</span>
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -304,29 +320,34 @@ export default function FlashcardStudyPage({
               className={`absolute w-full h-full ${styles.backfaceHidden} ${styles.glassCard} rounded-3xl ${styles.shadowCard} flex flex-col overflow-hidden`}
             >
               <div className="flex justify-between items-center p-4 border-b border-border/40">
-                <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
-                  isCurrentCardKnown
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-primary/20 text-primary border-primary/20"
-                }`}>
+                <span
+                  className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                    isCurrentCardKnown
+                      ? "bg-green-500/20 text-green-400 border-green-500/30"
+                      : "bg-primary/20 text-primary border-primary/20"
+                  }`}
+                >
                   {isCurrentCardKnown ? "Đã thuộc" : "Mới học"}
                 </span>
-                <button className="text-muted-foreground hover:text-secondary transition-colors">
-                  <span className="material-symbols-outlined text-xl">bookmark</span>
-                </button>
+                <Button className="text-muted-foreground hover:text-secondary transition-colors">
+                  <span className="material-symbols-outlined text-xl">
+                    bookmark
+                  </span>
+                </Button>
               </div>
 
               <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
-                {(imageMode === "front" || imageMode === "both") && cardImage && (
-                  <div className="relative size-32 rounded-2xl overflow-hidden shadow-2xl border-4 border-border/20 group-hover:scale-105 transition-transform duration-500">
-                    <img
-                      alt={currentCard?.vocabulary || "Vocabulary"}
-                      className="w-full h-full object-cover"
-                      src={cardImage}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  </div>
-                )}
+                {(imageMode === "front" || imageMode === "both") &&
+                  cardImage && (
+                    <div className="relative size-32 rounded-2xl overflow-hidden shadow-2xl border-4 border-border/20 group-hover:scale-105 transition-transform duration-500">
+                      <img
+                        alt={currentCard?.vocabulary || "Vocabulary"}
+                        className="w-full h-full object-cover"
+                        src={cardImage}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    </div>
+                  )}
                 <div className="text-center">
                   {currentCard?.pronunciation && (
                     <p className="text-xs text-secondary font-medium mb-0.5">
@@ -343,7 +364,9 @@ export default function FlashcardStudyPage({
 
               <div className="p-3 bg-black/20 backdrop-blur-sm border-t border-border/40">
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse">
-                  <span className="material-symbols-outlined text-base">touch_app</span>
+                  <span className="material-symbols-outlined text-base">
+                    touch_app
+                  </span>
                   Chạm để lật thẻ
                 </div>
               </div>
@@ -354,16 +377,17 @@ export default function FlashcardStudyPage({
               className={`absolute w-full h-full ${styles.backfaceHidden} ${styles.rotateY180} ${styles.glassCard} rounded-3xl ${styles.shadowCard} flex flex-col overflow-hidden bg-card`}
             >
               <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3 text-center">
-                {(imageMode === "back" || imageMode === "both") && cardImage && (
-                  <div className="relative size-32 rounded-2xl overflow-hidden shadow-2xl border-4 border-border/20 mb-2">
-                    <img
-                      alt={currentCard?.vocabulary || "Vocabulary"}
-                      className="w-full h-full object-cover"
-                      src={cardImage}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  </div>
-                )}
+                {(imageMode === "back" || imageMode === "both") &&
+                  cardImage && (
+                    <div className="relative size-32 rounded-2xl overflow-hidden shadow-2xl border-4 border-border/20 mb-2">
+                      <img
+                        alt={currentCard?.vocabulary || "Vocabulary"}
+                        className="w-full h-full object-cover"
+                        src={cardImage}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    </div>
+                  )}
                 <h2
                   className={`${imageMode === "back" || imageMode === "both" ? "text-xl" : "text-2xl"} font-bold text-foreground mb-1`}
                 >
@@ -373,7 +397,9 @@ export default function FlashcardStudyPage({
                   <>
                     <div className="w-full h-px bg-border/40 my-2"></div>
                     <div className="text-left w-full">
-                      <p className="text-xs text-muted-foreground mb-1">Ví dụ:</p>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Ví dụ:
+                      </p>
                       <p
                         className={`${imageMode === "back" || imageMode === "both" ? "text-sm" : "text-base"} text-foreground`}
                       >
@@ -389,7 +415,7 @@ export default function FlashcardStudyPage({
 
         {/* Card Navigation */}
         <div className="flex items-center justify-center gap-4 mt-6">
-          <button
+          <Button
             onClick={handlePrevCard}
             disabled={currentIndex === 0}
             className={`flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105 ${
@@ -397,28 +423,34 @@ export default function FlashcardStudyPage({
             }`}
             title="Thẻ trước"
           >
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
-          </button>
+            <span className="material-symbols-outlined text-xl">
+              arrow_back
+            </span>
+          </Button>
           <div className="px-4 py-2 rounded-xl bg-card/40 border border-border/40 text-foreground font-bold text-sm min-w-[80px] text-center">
             {currentIndex + 1}/{totalCards}
           </div>
-          <button
+          <Button
             onClick={handleNextCard}
             disabled={currentIndex === totalCards - 1}
             className={`flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105 ${
-              currentIndex === totalCards - 1 ? "opacity-50 cursor-not-allowed" : ""
+              currentIndex === totalCards - 1
+                ? "opacity-50 cursor-not-allowed"
+                : ""
             }`}
             title="Thẻ tiếp theo"
           >
-            <span className="material-symbols-outlined text-xl">arrow_forward</span>
-          </button>
+            <span className="material-symbols-outlined text-xl">
+              arrow_forward
+            </span>
+          </Button>
         </div>
       </div>
 
       {/* Controls */}
       <div className="w-full px-6 py-4 md:pb-6 md:px-10 z-30 relative">
         <div className="max-w-4xl mx-auto flex items-center justify-center gap-3 md:gap-6">
-          <button
+          <Button
             onClick={handleUnknown}
             className="flex-1 flex flex-col items-center gap-2 group"
           >
@@ -430,9 +462,9 @@ export default function FlashcardStudyPage({
             <span className="text-[10px] font-bold text-muted-foreground group-hover:text-destructive transition-colors uppercase tracking-wider">
               Chưa thuộc
             </span>
-          </button>
+          </Button>
 
-          <button onClick={handlePlayAudio} className="relative -top-3 group">
+          <Button onClick={handlePlayAudio} className="relative -top-3 group">
             <div className="size-16 rounded-full bg-gradient-to-br from-muted to-card border border-border/40 flex items-center justify-center shadow-lg shadow-black/40 group-hover:scale-110 transition-transform duration-300 z-10 relative">
               <span className="material-symbols-outlined text-2xl text-foreground group-hover:text-secondary transition-colors">
                 volume_up
@@ -444,9 +476,9 @@ export default function FlashcardStudyPage({
             <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-[10px] font-bold text-muted-foreground whitespace-nowrap">
               Phát âm
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={handleKnown}
             className="flex-1 flex flex-col items-center gap-2 group"
           >
@@ -458,16 +490,16 @@ export default function FlashcardStudyPage({
             <span className="text-[10px] font-bold text-muted-foreground group-hover:text-green-400 transition-colors uppercase tracking-wider">
               Đã thuộc
             </span>
-          </button>
+          </Button>
         </div>
 
         <div className="mt-3 text-center">
-          <button
+          <Button
             onClick={handleNextCard}
             className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
           >
             Bỏ qua thẻ này
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Course } from "@/types/course";
+import { Button } from "@/components/ui/button";
 
 interface CourseCardProps {
   course: Course;
@@ -53,9 +54,9 @@ export function CourseCard({ course }: CourseCardProps) {
               </div>
             </>
           )}
-          <button className="w-full py-2.5 rounded-lg border border-border dark:border-slate-600 text-foreground dark:text-white font-bold hover:bg-primary hover:text-white hover:border-primary dark:hover:bg-blue-600 dark:hover:border-blue-600 transition-all text-sm">
+          <Button className="w-full py-2.5 rounded-lg border border-border dark:border-slate-600 text-foreground dark:text-white font-bold hover:bg-primary hover:text-white hover:border-primary dark:hover:bg-blue-600 dark:hover:border-blue-600 transition-all text-sm">
             {buttonText}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

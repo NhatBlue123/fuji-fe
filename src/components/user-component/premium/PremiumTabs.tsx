@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-
+import TopupContent from './TopupContent';
 
 interface PremiumTabsProps {
   activeTab: 'premium' | 'topup'; // Xác định tab nào đang hoạt động
@@ -9,8 +9,8 @@ interface PremiumTabsProps {
 export default function PremiumTabs({ activeTab }: PremiumTabsProps) {
   
   const tabs = [
-    { id: 'premium', label: 'Nâng cấp Premium', href: '/user/premium' },
-    { id: 'topup', label: 'Nạp Hoa Anh Đào', href: '/user/topup' },
+    { id: 'premium', label: 'Nâng cấp Premium', href: '/premium' },
+    { id: 'topup', label: 'Nạp Hoa Anh Đào', href: '/components/user-component/premium/TopupContent.tsx' },
   ];
 
   return (

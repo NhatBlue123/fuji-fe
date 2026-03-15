@@ -5,6 +5,8 @@ import Link from "next/link";
 import styles from "./page.module.css";
 import { useGetFlashCardByIdQuery } from "@/store/services/flashcardApi";
 import { getMockImage } from "@/lib/mockImages";
+import type { CardResponseDTO } from "@/types/flashcard";
+import { Button } from "@/components/ui/button";
 
 export default function FlashcardSetDetailPage({
   params,
@@ -188,7 +190,14 @@ export default function FlashcardSetDetailPage({
                   <span className="material-symbols-outlined text-secondary">
                     update
                   </span>
-                  <span>Cập nhật {formatDate(flashcard.updatedAt)}</span>
+                  <span>
+                    Cập nhật{" "}
+                    {formatDate(
+                      flashcard.updatedAt ||
+                        flashcard.createdAt ||
+                        new Date().toISOString(),
+                    )}
+                  </span>
                 </div>
                 {studyCount > 0 && (
                   <div className="flex items-center gap-2">
@@ -313,7 +322,7 @@ export default function FlashcardSetDetailPage({
                 </span>
                 <span className="text-xl font-bold text-foreground">
                   {userProgress
-                    ? formatNextReview(userProgress.nextReviewAt)
+                    ? formatNextReview(userProgress.nextReviewAt || null)
                     : "Sẵn sàng"}
                 </span>
                 <span className="text-xs text-purple-300 mt-1">
@@ -332,18 +341,18 @@ export default function FlashcardSetDetailPage({
 
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-4">
-            <button className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group">
+            <Button className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group">
               <span className="material-symbols-outlined text-muted-foreground group-hover:text-foreground transition-colors">
                 shuffle
               </span>
               Trộn thẻ
-            </button>
-            <button className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group">
+            </Button>
+            <Button className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group">
               <span className="material-symbols-outlined text-muted-foreground group-hover:text-foreground transition-colors">
                 quiz
               </span>
               Chế độ thi thử
-            </button>
+            </Button>
             <Link
               href={`/flashcards/detail/${id}/settings`}
               className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group"
@@ -363,7 +372,7 @@ export default function FlashcardSetDetailPage({
                 Danh sách thẻ
               </h2>
               <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
-                <button
+                <Button
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded ${
                     viewMode === "grid"
@@ -374,8 +383,8 @@ export default function FlashcardSetDetailPage({
                   <span className="material-symbols-outlined text-sm">
                     grid_view
                   </span>
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded ${
                     viewMode === "list"
@@ -386,7 +395,7 @@ export default function FlashcardSetDetailPage({
                   <span className="material-symbols-outlined text-sm">
                     view_list
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -407,7 +416,7 @@ export default function FlashcardSetDetailPage({
                     : "flex flex-col gap-4"
                 }
               >
-                {cards.map((card, index) => {
+                {cards.map((card: CardResponseDTO, index) => {
                   // Use real data from card or fallback
                   const hasPreviewImage =
                     card.exampleSentence && card.exampleSentence.length > 0;
@@ -427,7 +436,7 @@ export default function FlashcardSetDetailPage({
                         >
                           {hasPreviewImage ? "Đã thuộc" : "Chưa thuộc"}
                         </span>
-                        <button className="text-muted-foreground hover:text-secondary transition-colors">
+                        <Button className="text-muted-foreground hover:text-secondary transition-colors">
                           {hasPreviewImage ? (
                             <span className="material-symbols-outlined text-lg">
                               star
@@ -437,7 +446,7 @@ export default function FlashcardSetDetailPage({
                               star_border
                             </span>
                           )}
-                        </button>
+                        </Button>
                       </div>
                       <div className="flex flex-col items-center justify-center py-4">
                         <h3 className="text-4xl font-black text-foreground mb-2 group-hover:text-secondary/80 transition-colors">

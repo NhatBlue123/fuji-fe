@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { useGetLessonByIdQuery } from "@/store/services/courseApi";
-import { LessonForm } from "@/components/admin/admin-components/lesson-form";
+import { LessonForm } from "@/components/admin/course/lesson-form";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

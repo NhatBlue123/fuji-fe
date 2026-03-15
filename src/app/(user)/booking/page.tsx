@@ -56,11 +56,12 @@ export default function SlotList() {
       {/* Top Header */}
       <header className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-background-light/50 backdrop-blur-md ">
         <div>
-          <h1 className="text-4xl font-black text-white neon-text mb-2">
-            Danh sách slot rảnh
+          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3">
+            Đặt lịch cùng{" "}
+            <span className="text-secondary text-glow">Sensei</span>
           </h1>
-          <p className="text-slate-400 text-xl">
-            Chọn thời gian phù hợp để bắt đầu buổi học cùng giáo viên
+          <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed">
+            Nâng trình hội thoại với giáo viên bản xứ cực kỳ tâm huyết. Tìm kiếm chuyên gia tiếng Nhật 1 kèm 1 phù hợp nhất.
           </p>
         </div>
 

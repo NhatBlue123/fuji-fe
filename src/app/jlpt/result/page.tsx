@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGetAttemptByIdQuery } from "@/store/services/jlptApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Clock, Trophy, Target } from "lucide-react";
 import type { AnswerDetail } from "@/types/jlpt";
 
-export default function JLPTResultPage() {
+function JLPTResultContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
@@ -237,5 +238,22 @@ export default function JLPTResultPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function JLPTResultPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
+          <div className="text-center text-white">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400 mb-4"></div>
+            <p className="text-lg">Đang tải kết quả...</p>
+          </div>
+        </div>
+      }
+    >
+      <JLPTResultContent />
+    </Suspense>
   );
 }

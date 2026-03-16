@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";
@@ -31,7 +31,7 @@ function parseOptions(opts?: string[] | string | null): string[] {
   }
 }
 
-export default function JLPTtestPage() {
+function JLPTtestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId");
@@ -260,5 +260,13 @@ export default function JLPTtestPage() {
         />
       </main>
     </div>
+  );
+}
+
+export default function JLPTtestPage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center text-white bg-[#0B1120]">Đang tải...</div>}>
+      <JLPTtestContent />
+    </Suspense>
   );
 }

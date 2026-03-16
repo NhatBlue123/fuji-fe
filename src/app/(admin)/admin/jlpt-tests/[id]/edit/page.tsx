@@ -28,7 +28,7 @@ export default function EditJLPTTestPage() {
   const [formData, setFormData] = useState({
     title: "",
     level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
-    testType: "full_test" as "full_test" | "vocabulary" | "grammar" | "reading" | "listening",
+    testType: "full_test" as "full_test" | "vocabulary_grammar" | "reading" | "listening",
     description: "",
     duration: 120,
     totalQuestions: 0,
@@ -147,8 +147,7 @@ export default function EditJLPTTestPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="full_test">Full Test</SelectItem>
-                    <SelectItem value="vocabulary">Vocabulary</SelectItem>
-                    <SelectItem value="grammar">Grammar</SelectItem>
+                    <SelectItem value="vocabulary_grammar">Vocabulary & Grammar</SelectItem>
                     <SelectItem value="reading">Reading</SelectItem>
                     <SelectItem value="listening">Listening</SelectItem>
                   </SelectContent>

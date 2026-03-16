@@ -10,17 +10,32 @@ const TabsContext = React.createContext<{
 
 const Tabs = ({
     value,
+    defaultValue,
     onValueChange,
     children,
     className
 }: {
     value?: string
+    defaultValue?: string
     onValueChange?: (value: string) => void
     children: React.ReactNode
     className?: string
 }) => {
+    const [internalValue, setInternalValue] = React.useState(value || defaultValue);
+
+    React.useEffect(() => {
+        if (value !== undefined) {
+            setInternalValue(value);
+        }
+    }, [value]);
+
+    const handleValueChange = (newValue: string) => {
+        setInternalValue(newValue);
+        onValueChange?.(newValue);
+    };
+
     return (
-        <TabsContext.Provider value={{ value, onValueChange }}>
+        <TabsContext.Provider value={{ value: internalValue, onValueChange: handleValueChange }}>
             <div className={cn("w-full", className)}>
                 {children}
             </div>

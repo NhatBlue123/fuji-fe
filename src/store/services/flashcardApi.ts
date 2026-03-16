@@ -98,7 +98,7 @@ const baseQueryWithReauth: BaseQueryFn<
 
 // ─── Helper: build query string ────────────────────────
 
-function toQueryString(params: Record<string, unknown>): string {
+function toQueryString(params: Record<string, any>): string {
   const parts: string[] = [];
   for (const [key, val] of Object.entries(params)) {
     if (val !== undefined && val !== null && val !== "") {
@@ -256,11 +256,11 @@ export const flashcardApi = createApi({
     // Search flashcards
     searchFlashCards: builder.query<FlashCardSearchResult, SearchParams>({
       query: (params) => {
-        const qs = toQueryString(params as Record<string, unknown>);
+        const qs = toQueryString(params);
         return `${API_ENDPOINTS.FLASHCARDS.SEARCH}${qs}`;
       },
       transformResponse: (response: ApiResponse<FlashCardSearchResult>) =>
-        response.data || { results: [], pagination: {} as PaginationDTO },
+        response.data || { flashCards: [], pagination: {} as PaginationDTO },
       providesTags: [{ type: "FlashCard", id: "SEARCH" }],
     }),
 
@@ -464,11 +464,11 @@ export const flashcardApi = createApi({
     // Search flashlists
     searchFlashLists: builder.query<FlashListSearchResult, SearchParams>({
       query: (params) => {
-        const qs = toQueryString(params as Record<string, unknown>);
+        const qs = toQueryString(params);
         return `${API_ENDPOINTS.FLASHLISTS.SEARCH}${qs}`;
       },
       transformResponse: (response: ApiResponse<FlashListSearchResult>) =>
-        response.data || { results: [], pagination: {} as PaginationDTO },
+        response.data || { flashLists: [], pagination: {} as PaginationDTO },
       providesTags: [{ type: "FlashList", id: "SEARCH" }],
     }),
   }),

@@ -233,7 +233,7 @@ export default function FlashListDetailPage({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {flashcards.map((fc) => (
+                {flashcards.map((fc: any) => (
                   <Link key={fc.id} href={`/flashcards/detail/${fc.id}`}>
                     <article className="group relative bg-card border border-border/40 rounded-2xl overflow-hidden hover:border-blue-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 flex flex-col h-full">
                       <div className="relative h-48 bg-slate-800 overflow-hidden flex items-center justify-center">

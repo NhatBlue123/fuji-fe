@@ -95,10 +95,8 @@ export async function POST(req: NextRequest) {
     const prompt = buildPrompt(body);
     const result = await model.generateContent(prompt);
 
-    // Nhờ có responseSchema, kết quả trả về chắc chắn là JSON hợp lệ
     const questions = JSON.parse(result.response.text());
 
-    // Đảm bảo passageText chỉ có ở câu đầu tiên
     const sanitized = questions.map((q: any, i: number) => ({
       ...q,
       passageText: i === 0 ? q.passageText || "" : "",

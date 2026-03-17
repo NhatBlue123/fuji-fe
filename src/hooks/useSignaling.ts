@@ -5,7 +5,14 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL || "http://localhost:8081";
+// Resolve signaling URL in a way that works across devices:
+// - Prefer explicit NEXT_PUBLIC_SIGNALING_URL (for production / custom domains)
+// - Fallback: use current hostname + default signaling port (8081)
+const SIGNALING_URL =
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_SIGNALING_URL || "http://localhost:8081"
+    : process.env.NEXT_PUBLIC_SIGNALING_URL ||
+      `${window.location.protocol}//${window.location.hostname}:8081`;
 
 export interface SignalingHook {
   socket: Socket | null;

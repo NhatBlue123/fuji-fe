@@ -42,7 +42,11 @@ export function DeleteCourseDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button variant="destructive" disabled={isDeleting} onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            disabled={isDeleting}
+            onClick={onConfirm}
+          >
             {isDeleting ? (
               <>
                 <Loader2 className="size-4 mr-2 animate-spin" />

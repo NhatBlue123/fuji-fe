@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import BookingModal from "./bookingmodal/page";
+import { Button } from "@/components/ui/button";
 
 const teachers = [
   {
@@ -87,7 +88,8 @@ export default function TeacherBookingDashboard() {
             <span className="text-secondary text-glow">Sensei</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed">
-            Nâng trình hội thoại với giáo viên bản xứ cực kỳ tâm huyết. Tìm kiếm chuyên gia tiếng Nhật 1 kèm 1 phù hợp nhất.
+            Nâng trình hội thoại với giáo viên bản xứ cực kỳ tâm huyết. Tìm kiếm
+            chuyên gia tiếng Nhật 1 kèm 1 phù hợp nhất.
           </p>
         </div>
       </div>
@@ -109,9 +111,9 @@ export default function TeacherBookingDashboard() {
                 />
               </label>
 
-              <button className="bg-secondary text-secondary-foreground hover:brightness-110 px-6 md:px-10 rounded-xl font-bold transition-all shadow-lg shadow-secondary/20 whitespace-nowrap">
+              <Button className="bg-secondary text-secondary-foreground hover:brightness-110 px-6 md:px-10 rounded-xl font-bold transition-all shadow-lg shadow-secondary/20 whitespace-nowrap">
                 TÌM KIẾM
-              </button>
+              </Button>
             </div>
 
             {/* Filters */}
@@ -162,17 +164,25 @@ export default function TeacherBookingDashboard() {
                     onClick={() => setShowPriceDropdown(!showPriceDropdown)}
                     className="flex items-center gap-2 bg-background border border-border px-4 py-2 rounded-lg text-muted-foreground text-sm font-bold hover:border-secondary hover:text-secondary transition-all"
                   >
-                    <span className="material-symbols-outlined text-sm">payments</span>
+                    <span className="material-symbols-outlined text-sm">
+                      payments
+                    </span>
                     <span>{selectedPrice || "Khoảng giá"}</span>
-                    <span className="material-symbols-outlined text-sm">expand_more</span>
-                  </button>
+                    <span className="material-symbols-outlined text-sm">
+                      expand_more
+                    </span>
+                  </Button>
                 </div>
 
-                <button className="flex items-center gap-2 bg-background border border-border px-4 py-2 rounded-lg text-muted-foreground text-sm font-bold hover:border-secondary hover:text-secondary transition-all">
-                  <span className="material-symbols-outlined text-sm">language</span>
+                <Button className="flex items-center gap-2 bg-background border border-border px-4 py-2 rounded-lg text-muted-foreground text-sm font-bold hover:border-secondary hover:text-secondary transition-all">
+                  <span className="material-symbols-outlined text-sm">
+                    language
+                  </span>
                   <span>Ngôn ngữ</span>
-                  <span className="material-symbols-outlined text-sm">expand_more</span>
-                </button>
+                  <span className="material-symbols-outlined text-sm">
+                    expand_more
+                  </span>
+                </Button>
               </div>
             </div>
           </div>
@@ -181,7 +191,6 @@ export default function TeacherBookingDashboard() {
 
       {/* ===== MAIN CONTENT ===== */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pb-16">
-        
         {/* TEACHERS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {teachers.map((t, idx) => (
@@ -197,12 +206,23 @@ export default function TeacherBookingDashboard() {
                     className="w-16 h-16 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform"
                   />
                   <div>
-                    <h3 className="font-bold text-lg text-foreground line-clamp-1">{t.name}</h3>
+                    <h3 className="font-bold text-lg text-foreground line-clamp-1">
+                      {t.name}
+                    </h3>
                     <p className="text-secondary text-sm font-medium flex items-center gap-1 mt-0.5">
-                      <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span> {t.rating}
+                      <span
+                        className="material-symbols-outlined text-sm"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        star
+                      </span>{" "}
+                      {t.rating}
                     </p>
                     <p className="font-bold text-foreground mt-1">
-                      ${t.price} <span className="text-muted-foreground text-xs font-normal">/giờ</span>
+                      ${t.price}{" "}
+                      <span className="text-muted-foreground text-xs font-normal">
+                        /giờ
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -222,12 +242,12 @@ export default function TeacherBookingDashboard() {
               </div>
 
               <div className="p-5 pt-0 mt-auto">
-                <button
+                <Button
                   onClick={() => setOpenBooking(true)}
                   className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-secondary/20"
                 >
                   Đặt lịch ngay
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -241,8 +261,10 @@ export default function TeacherBookingDashboard() {
             disabled={currentPage === 1}
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all text-muted-foreground hover:text-secondary disabled:opacity-50 disabled:pointer-events-none"
           >
-            <span className="material-symbols-outlined text-sm">chevron_left</span>
-          </button>
+            <span className="material-symbols-outlined text-sm">
+              chevron_left
+            </span>
+          </Button>
 
           {/* PAGE NUMBERS */}
           {pages.map((p) => (
@@ -260,7 +282,9 @@ export default function TeacherBookingDashboard() {
           ))}
 
           {/* DOTS */}
-          <span className="size-10 flex items-center justify-center text-muted-foreground font-bold">...</span>
+          <span className="size-10 flex items-center justify-center text-muted-foreground font-bold">
+            ...
+          </span>
 
           {/* LAST PAGE */}
           <Button
@@ -276,17 +300,17 @@ export default function TeacherBookingDashboard() {
             disabled={currentPage === totalPages}
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all text-muted-foreground hover:text-secondary disabled:opacity-50 disabled:pointer-events-none"
           >
-            <span className="material-symbols-outlined text-sm">chevron_right</span>
-          </button>
+            <span className="material-symbols-outlined text-sm">
+              chevron_right
+            </span>
+          </Button>
         </div>
       </div>
 
-      {openBooking && (
-        <BookingModal onClose={() => setOpenBooking(false)} />
-      )}
+      {openBooking && <BookingModal onClose={() => setOpenBooking(false)} />}
 
       {/* FLOAT BUTTON */}
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-secondary-foreground rounded-full shadow-lg shadow-secondary/30 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl z-40">
+      <Button className="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-secondary-foreground rounded-full shadow-lg shadow-secondary/30 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl z-40">
         💬
       </Button>
     </div>

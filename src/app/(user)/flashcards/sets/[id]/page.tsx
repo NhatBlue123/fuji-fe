@@ -135,7 +135,14 @@ export default function FlashListDetailPage({
                   <span className="material-symbols-outlined text-blue-400">
                     update
                   </span>
-                  <span>Cập nhật {formatDate(flashlist.updatedAt)}</span>
+                  <span>
+                    Cập nhật{" "}
+                    {formatDate(
+                      flashlist.updatedAt ||
+                        flashlist.createdAt ||
+                        new Date().toISOString(),
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-blue-400">
@@ -145,12 +152,14 @@ export default function FlashListDetailPage({
                     {flashlist.user?.fullName || flashlist.user?.username}
                   </span>
                 </div>
-                {flashlist.averageRating > 0 && (
+                {(flashlist.averageRating || 0) > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-yellow-400">
                       star
                     </span>
-                    <span>{flashlist.averageRating.toFixed(1)} / 5.0</span>
+                    <span>
+                      {(flashlist.averageRating || 0).toFixed(1)} / 5.0
+                    </span>
                   </div>
                 )}
               </div>
@@ -209,7 +218,7 @@ export default function FlashListDetailPage({
                   Ngày tạo
                 </span>
                 <span className="text-xl font-bold text-foreground">
-                  {formatDate(flashlist.createdAt)}
+                  {formatDate(flashlist.createdAt || new Date().toISOString())}
                 </span>
               </div>
             </div>

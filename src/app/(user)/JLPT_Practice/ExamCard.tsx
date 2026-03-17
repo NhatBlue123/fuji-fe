@@ -1,5 +1,6 @@
 "use client";
-import Link from "next/link"; 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface ExamCardProps {
   testId: number;
@@ -8,29 +9,60 @@ interface ExamCardProps {
   image: string;
   tag: string;
   info: string;
-  colorTheme?: string; 
+  colorTheme?: string;
   attemptId?: number;
 }
 
-export default function ExamCard({ 
-  testId, status, title, image, tag, info, colorTheme = "accent-pink", attemptId
+export default function ExamCard({
+  testId,
+  status,
+  title,
+  image,
+  tag,
+  info,
+  colorTheme = "accent-pink",
+  attemptId,
 }: ExamCardProps) {
-
   const renderBadge = () => {
     switch (status) {
-      case "new": return <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur-sm text-slate-300 text-[10px] font-bold border border-slate-700">Chưa làm</span>;
-      case "doing": return <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-blue-500/20 backdrop-blur-sm text-blue-400 text-[10px] font-bold border border-blue-500/20">Đang làm</span>;
-      case "done": return <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-emerald-500/20 backdrop-blur-sm text-emerald-400 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">check</span> Đã xong</span>;
-      case "locked": return <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-yellow-500/10 backdrop-blur-sm text-yellow-300 text-[10px] font-bold border border-yellow-500/20 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">lock</span> Premium</span>;
+      case "new":
+        return (
+          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur-sm text-slate-300 text-[10px] font-bold border border-slate-700">
+            Chưa làm
+          </span>
+        );
+      case "doing":
+        return (
+          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-blue-500/20 backdrop-blur-sm text-blue-400 text-[10px] font-bold border border-blue-500/20">
+            Đang làm
+          </span>
+        );
+      case "done":
+        return (
+          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-emerald-500/20 backdrop-blur-sm text-emerald-400 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">check</span>{" "}
+            Đã xong
+          </span>
+        );
+      case "locked":
+        return (
+          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-yellow-500/10 backdrop-blur-sm text-yellow-300 text-[10px] font-bold border border-yellow-500/20 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">lock</span>{" "}
+            Premium
+          </span>
+        );
     }
   };
 
   const renderButton = () => {
     if (status === "locked") {
       return (
-        <button className="w-full py-2 rounded-lg bg-slate-800 text-slate-500 text-sm font-bold border border-slate-700 cursor-not-allowed">
+        <Button
+          className="w-full py-2 rounded-lg bg-slate-800 text-slate-500 text-sm font-bold border border-slate-700 cursor-not-allowed"
+          disabled
+        >
           Đã khóa
-        </button>
+        </Button>
       );
     }
     let btnClass = "";
@@ -40,39 +72,58 @@ export default function ExamCard({
       btnClass = "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-500/20";
       btnText = "Bắt đầu làm bài";
     } else if (status === "doing") {
-      btnClass = "bg-slate-700 hover:bg-blue-600 text-white border-slate-600 hover:border-blue-500";
+      btnClass =
+        "bg-slate-700 hover:bg-blue-600 text-white border-slate-600 hover:border-blue-500";
       btnText = "Tiếp tục";
     } else if (status === "done") {
-      btnClass = "bg-slate-700 hover:bg-blue-600 text-white border-slate-600 hover:border-blue-500";
+      btnClass =
+        "bg-slate-700 hover:bg-blue-600 text-white border-slate-600 hover:border-blue-500";
       btnText = "Xem kết quả";
     }
 
-    const href = status === "done" && attemptId 
-      ? `/jlpt/result?attemptId=${attemptId}` 
-      : `/Exam/JLPTtest?testId=${testId}`;
+    const href =
+      status === "done" && attemptId
+        ? `/jlpt/result?attemptId=${attemptId}`
+        : `/Exam/JLPTtest?testId=${testId}`;
 
     return (
-      <Link href={href} className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}>
+      <Link
+        href={href}
+        className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}
+      >
         {btnText}
       </Link>
     );
   };
 
   return (
-    <article className={`glass-card rounded-2xl flex flex-col group hover:bg-slate-800/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden h-full ${status === 'done' ? 'border-t-4 border-t-emerald-500' : ''}`}>
-      
+    <article
+      className={`glass-card rounded-2xl flex flex-col group hover:bg-slate-800/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden h-full ${status === "done" ? "border-t-4 border-t-emerald-500" : ""}`}
+    >
       {/* Lớp phủ khóa Premium */}
       {status === "locked" && (
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="material-symbols-outlined text-4xl text-yellow-400 mb-2">lock</span>
-          <p className="text-white font-bold text-sm mb-3">Thành viên Premium</p>
-          <button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">Nâng cấp</button>
+          <span className="material-symbols-outlined text-4xl text-yellow-400 mb-2">
+            lock
+          </span>
+          <p className="text-white font-bold text-sm mb-3">
+            Thành viên Premium
+          </p>
+          <Button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">
+            Nâng cấp
+          </Button>
         </div>
       )}
 
       {/* Ảnh bìa */}
-      <div className={`relative h-40 bg-slate-800 overflow-hidden ${status === 'locked' ? 'grayscale group-hover:grayscale-0' : ''}`}>
-        <img alt={title} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" src={image} />
+      <div
+        className={`relative h-40 bg-slate-800 overflow-hidden ${status === "locked" ? "grayscale group-hover:grayscale-0" : ""}`}
+      >
+        <img
+          alt={title}
+          className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+          src={image}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1E293B] to-transparent"></div>
         {renderBadge()}
         {status === "doing" && (

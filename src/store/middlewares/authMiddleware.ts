@@ -89,6 +89,7 @@ authListenerMiddleware.startListening({
       // After transformResponse, result.data is directly the AuthUser object
       if (result.data) {
         const authUser = result.data;
+        const resolvedRole = authUser.role || "STUDENT";
         // Map AuthUser to legacy User type
         const user: User = {
           _id: String(authUser.id || ""),
@@ -100,10 +101,10 @@ authListenerMiddleware.startListening({
           avatar: authUser.avatarUrl || "",
           avatarUrl: authUser.avatarUrl || "",
           gender: authUser.gender || "",
-          role: "STUDENT", // Default role
+          role: resolvedRole,
           level: (authUser.jlptLevel || "N5") as User["level"],
           isActive: authUser.active ?? true,
-          isAdmin: false, // Will be set based on role if available
+          isAdmin: resolvedRole === "ADMIN",
           isOnline: true,
           posts: 0,
           followers: [],
@@ -112,7 +113,10 @@ authListenerMiddleware.startListening({
           createdAt: authUser.createdAt || new Date().toISOString(),
           updatedAt: authUser.createdAt || new Date().toISOString(),
         };
-        console.log("✅ Middleware: Dispatching loginSuccess with user:", user.username);
+        console.log(
+          "✅ Middleware: Dispatching loginSuccess with user:",
+          user.username,
+        );
         listenerApi.dispatch(loginSuccess({ user, accessToken }));
       } else {
         // Fallback minimal user
@@ -167,6 +171,7 @@ authListenerMiddleware.startListening({
     const accessToken = getAccessToken();
 
     if (accessToken && authUser) {
+      const resolvedRole = authUser.role || "STUDENT";
       // Map AuthUser to legacy User type
       const user: User = {
         _id: String(authUser.id || ""),
@@ -178,10 +183,10 @@ authListenerMiddleware.startListening({
         avatar: authUser.avatarUrl || "",
         avatarUrl: authUser.avatarUrl || "",
         gender: authUser.gender || "",
-        role: "STUDENT", // Default role
+        role: resolvedRole,
         level: (authUser.jlptLevel || "N5") as User["level"],
         isActive: authUser.active ?? true,
-        isAdmin: false, // Will be set based on role if available
+        isAdmin: resolvedRole === "ADMIN",
         isOnline: true,
         posts: 0,
         followers: [],

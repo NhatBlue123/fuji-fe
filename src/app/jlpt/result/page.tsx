@@ -9,15 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Clock, Trophy, Target } from "lucide-react";
 import type { AnswerDetail } from "@/types/jlpt";
 
-function JLPTResultContent() {
+function JLPTResultPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
 
-  const { data: attempt, isLoading, error } = useGetAttemptByIdQuery(
-    Number(attemptId),
-    { skip: !attemptId }
-  );
+  const {
+    data: attempt,
+    isLoading,
+    error,
+  } = useGetAttemptByIdQuery(Number(attemptId), { skip: !attemptId });
 
   if (isLoading) {
     return (
@@ -68,7 +69,7 @@ function JLPTResultContent() {
   }
 
   const accuracyPercent = Math.round(
-    (attempt.correctAnswers / attempt.totalQuestions) * 100
+    (attempt.correctAnswers / attempt.totalQuestions) * 100,
   );
 
   return (
@@ -148,13 +149,13 @@ function JLPTResultContent() {
                 <div className="font-semibold text-white">
                   Kiến thức ngôn ngữ (Từ vựng + Ngữ pháp)
                 </div>
-                <div className="text-sm text-slate-400">
-                  Tối thiểu: 19 điểm
-                </div>
+                <div className="text-sm text-slate-400">Tối thiểu: 19 điểm</div>
               </div>
               <Badge
                 variant={
-                  attempt.languageKnowledgeScore >= 19 ? "default" : "destructive"
+                  attempt.languageKnowledgeScore >= 19
+                    ? "default"
+                    : "destructive"
                 }
                 className="text-lg px-4 py-1"
               >
@@ -165,14 +166,10 @@ function JLPTResultContent() {
             <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
               <div>
                 <div className="font-semibold text-white">Đọc hiểu</div>
-                <div className="text-sm text-slate-400">
-                  Tối thiểu: 19 điểm
-                </div>
+                <div className="text-sm text-slate-400">Tối thiểu: 19 điểm</div>
               </div>
               <Badge
-                variant={
-                  attempt.readingScore >= 19 ? "default" : "destructive"
-                }
+                variant={attempt.readingScore >= 19 ? "default" : "destructive"}
                 className="text-lg px-4 py-1"
               >
                 {attempt.readingScore.toFixed(1)}
@@ -182,9 +179,7 @@ function JLPTResultContent() {
             <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
               <div>
                 <div className="font-semibold text-white">Nghe hiểu</div>
-                <div className="text-sm text-slate-400">
-                  Tối thiểu: 19 điểm
-                </div>
+                <div className="text-sm text-slate-400">Tối thiểu: 19 điểm</div>
               </div>
               <Badge
                 variant={
@@ -246,14 +241,11 @@ export default function JLPTResultPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
-          <div className="text-center text-white">
-            <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400 mb-4"></div>
-            <p className="text-lg">Đang tải kết quả...</p>
-          </div>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400"></div>
         </div>
       }
     >
-      <JLPTResultContent />
+      <JLPTResultPageInner />
     </Suspense>
   );
 }

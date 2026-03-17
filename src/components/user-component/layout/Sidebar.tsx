@@ -10,6 +10,7 @@ import Image from "next/image";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -24,7 +25,11 @@ const Sidebar = () => {
   useEffect(() => setIsMounted(true), []);
 
   const isAdminOrTeacher =
-    roles && (roles.includes("ADMIN") || roles.includes("TEACHER"));
+    roles &&
+    (roles.includes("ADMIN") ||
+      roles.includes("ROLE_ADMIN") ||
+      roles.includes("INSTRUCTOR") ||
+      roles.includes("ROLE_INSTRUCTOR"));
 
   const isActive = (path: string) => pathname === path;
 
@@ -52,22 +57,17 @@ const Sidebar = () => {
 
   return (
     <aside className="hidden w-64 flex-col bg-sidebar border-r border-sidebar-border md:flex shadow-xl z-20">
-
       {/* ========= LOGO ========= */}
       <Link
         href="/"
         className="flex items-center gap-3 px-6 py-8 hover:bg-sidebar-accent/50 transition"
       >
         <div className="size-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center shadow-lg">
-          <span className="material-symbols-outlined text-3xl">
-            landscape
-          </span>
+          <span className="material-symbols-outlined text-3xl">landscape</span>
         </div>
 
         <div>
-          <h1 className="text-xl font-black text-sidebar-foreground">
-            FUJI
-          </h1>
+          <h1 className="text-xl font-black text-sidebar-foreground">FUJI</h1>
           <p className="text-xs text-muted-foreground">
             {isMounted ? t("sidebar.subtitle") : ""}
           </p>
@@ -76,7 +76,6 @@ const Sidebar = () => {
 
       {/* ========= MENU ========= */}
       <nav className="flex-1 overflow-y-auto px-4 space-y-1">
-
         <Link href="/" className={navClass("/")}>
           <span className={iconClass("/")}>home</span>
           {t("common.home")}
@@ -97,8 +96,8 @@ const Sidebar = () => {
           {t("common.booking")}
         </Link>
 
-        <Link href="/ai-practice" className={navClass("/ai-practice")}>
-          <span className={iconClass("/ai-practice")}>smart_toy</span>
+        <Link href="/ai-chat" className={navClass("/ai-chat")}>
+          <span className={iconClass("/ai-chat")}>smart_toy</span>
           {t("common.aiPractice")}
         </Link>
 
@@ -115,9 +114,7 @@ const Sidebar = () => {
         <div className="my-4 border-t border-sidebar-border" />
 
         <Link href="/notifications" className={navClass("/notifications")}>
-          <span className={iconClass("/notifications")}>
-            notifications
-          </span>
+          <span className={iconClass("/notifications")}>notifications</span>
           {t("common.notification")}
         </Link>
 
@@ -128,9 +125,7 @@ const Sidebar = () => {
 
         {isMounted && isAdminOrTeacher && (
           <Link href="/admin" className={navClass("/admin")}>
-            <span className={iconClass("/admin")}>
-              admin_panel_settings
-            </span>
+            <span className={iconClass("/admin")}>admin_panel_settings</span>
             Admin
           </Link>
         )}
@@ -138,33 +133,32 @@ const Sidebar = () => {
 
       {/* ========= FOOTER ========= */}
       <div className="p-4 border-t flex flex-col gap-4">
-
         {/* Premium */}
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl p-4 text-white">
-          <p className="text-xs opacity-80">
-            {t("sidebar.premiumTitle")}
-          </p>
+          <p className="text-xs opacity-80">{t("sidebar.premiumTitle")}</p>
           <h3 className="font-bold text-sm mb-2">
             {t("sidebar.premiumHeading")}
           </h3>
-          <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full">
+          <Button
+            variant="ghost"
+            className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full"
+          >
             {t("sidebar.viewDetails")}
-          </button>
+          </Button>
         </div>
 
         {/* Theme + Language */}
         <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={() =>
-              setTheme(theme === "dark" ? "light" : "dark")
-            }
+          <Button
+            variant="ghost"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs"
           >
             <span className="material-symbols-outlined text-[16px]">
               contrast
             </span>
             {t("common.themeToggle")}
-          </button>
+          </Button>
 
           <LanguageSwitcher className="h-8" />
         </div>
@@ -173,9 +167,7 @@ const Sidebar = () => {
         {isMounted && isAuthenticated && user ? (
           <div className="flex items-center gap-3 px-2">
             <Image
-              src={
-                user.avatar || user.avatarUrl || "/images/avt-default.jpg"
-              }
+              src={user.avatar || user.avatarUrl || "/images/avt-default.jpg"}
               alt="avatar"
               width={40}
               height={40}
@@ -195,14 +187,13 @@ const Sidebar = () => {
               </Link>
             </div>
 
-            <button
+            <Button
+              variant="ghost"
               onClick={handleLogout}
               className="text-gray-400 hover:text-red-400"
             >
-              <span className="material-symbols-outlined">
-                logout
-              </span>
-            </button>
+              <span className="material-symbols-outlined">logout</span>
+            </Button>
           </div>
         ) : (
           <Link

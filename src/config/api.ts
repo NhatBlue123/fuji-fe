@@ -80,7 +80,8 @@ export const API_ENDPOINTS = {
       `/flashcards/${cardId}/items/${cardIndex}`,
     SEARCH: "/flashcards/search",
     START_LEARNING: (id: number | string) => `/flashcards/${id}/start-learning`,
-    SUBMIT_EXERCISE: (id: number | string) => `/flashcards/${id}/submit-exercise`,
+    SUBMIT_EXERCISE: (id: number | string) =>
+      `/flashcards/${id}/submit-exercise`,
   },
 
   // FlashLists
@@ -96,6 +97,14 @@ export const API_ENDPOINTS = {
     REMOVE_CARD: (listId: number | string, cardId: number | string) =>
       `/flashlists/${listId}/cards/${cardId}`,
     SEARCH: "/flashlists/search",
+  },
+
+  // Voice Chat (Non-Realtime)
+  VOICE: {
+    CHAT: "/voice/chat",
+    END_SESSION: (sessionCode: string) => `/voice/session/${sessionCode}/end`,
+    LIST_SESSIONS: "/voice/sessions",
+    GET_SESSION: (sessionCode: string) => `/voice/sessions/${sessionCode}`,
   },
 };
 

@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 export function CTASection() {
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-20 mb-20">
@@ -18,9 +20,9 @@ export function CTASection() {
           </p>
         </div>
         <div className="relative z-10 flex gap-4 w-full md:w-auto">
-          <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-bold transition-all w-full md:w-auto whitespace-nowrap shadow-lg shadow-blue-500/30">
+          <Button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-bold transition-all w-full md:w-auto whitespace-nowrap shadow-lg shadow-blue-500/30">
             Đăng ký tư vấn
-          </button>
+          </Button>
         </div>
       </div>
     </section>

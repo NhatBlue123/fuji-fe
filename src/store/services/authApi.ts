@@ -271,11 +271,12 @@ export const authApi = createApi({
         // Backend returns ApiResponse<UserDTO> = { success, message, data: UserDTO }
         // We need to unwrap the 'data' field first
         const userData = res.data || res; // Fallback to res if data doesn't exist
-        
+
         return {
           id: userData.id,
           username: userData.username,
           email: userData.email,
+          role: userData.role || "STUDENT",
           fullName: userData.fullName || userData.username || "User",
           avatarUrl: userData.avatarUrl || null,
           bio: userData.bio || null,
@@ -288,7 +289,6 @@ export const authApi = createApi({
       },
       providesTags: ["User"],
     }),
-
 
     // Verify email
     verifyEmail: builder.mutation<ApiResponse, { token: string }>({

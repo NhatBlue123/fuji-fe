@@ -6,6 +6,7 @@ import {
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
 } from "@/store/services/flashcardApi";
+import { Button } from "@/components/ui/button";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface MultipleChoiceQuestion {
@@ -301,7 +302,7 @@ export default function MultipleChoiceExercisePage({
             )}
 
             <div className="flex gap-3 justify-center pt-2">
-              <button
+              <Button
                 onClick={generateQuestions}
                 className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl transition-all flex items-center gap-2"
               >
@@ -309,7 +310,7 @@ export default function MultipleChoiceExercisePage({
                   replay
                 </span>
                 Làm lại
-              </button>
+              </Button>
               <Link
                 href={`/flashcards/exercise/${id}/fill-blank`}
                 className="px-6 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground font-bold rounded-xl transition-all flex items-center gap-2"
@@ -444,7 +445,7 @@ export default function MultipleChoiceExercisePage({
               }
 
               return (
-                <button
+                <Button
                   key={idx}
                   onClick={() => handleSelect(option)}
                   disabled={isAnswered}
@@ -467,7 +468,7 @@ export default function MultipleChoiceExercisePage({
                     {option}
                   </span>
                   {iconEl}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -541,7 +542,7 @@ export default function MultipleChoiceExercisePage({
             })}
           </div>
 
-          <button
+          <Button
             onClick={handleNext}
             disabled={!isAnswered}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
@@ -558,7 +559,7 @@ export default function MultipleChoiceExercisePage({
                 ? "assessment"
                 : "arrow_forward"}
             </span>
-          </button>
+          </Button>
         </div>
       </footer>
     </div>

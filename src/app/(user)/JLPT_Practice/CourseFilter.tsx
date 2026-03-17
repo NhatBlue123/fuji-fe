@@ -1,5 +1,6 @@
 "use client";
 import Input from "@/components/common/Input";
+import { Button } from "@/components/ui/button";
 
 interface CourseFilterProps {
   search: string;
@@ -35,7 +36,11 @@ export default function CourseFilter({
   activeCategory,
   onCategoryChange,
 }: CourseFilterProps) {
-  const handleSearch = () => {/* search on change via debounce in parent */};
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  const handleSearch = () => {
+    /* search on change via debounce in parent */
+  };
 
   return (
     <div className="bg-card glass-card p-6 md:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-xl">
@@ -50,12 +55,12 @@ export default function CourseFilter({
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           className="pr-28"
         />
-        <button
+        <Button
           onClick={handleSearch}
           className="absolute inset-y-2 right-2 px-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-lg text-sm transition-colors shadow-lg shadow-secondary/20"
         >
           Tìm kiếm
-        </button>
+        </Button>
       </div>
 
       {/* Level + Category filters */}
@@ -66,7 +71,7 @@ export default function CourseFilter({
             Trình độ:
           </span>
           {LEVELS.map((level) => (
-            <button
+            <Button
               key={level.id}
               onClick={() => onLevelChange(level.id)}
               className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
@@ -76,7 +81,7 @@ export default function CourseFilter({
               }`}
             >
               {level.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -88,7 +93,7 @@ export default function CourseFilter({
             Danh mục:
           </span>
           {CATEGORIES.map((cat) => (
-            <button
+            <Button
               key={cat.id}
               onClick={() => onCategoryChange(cat.id)}
               className={`px-4 py-1.5 rounded-full text-sm transition-all ${
@@ -98,7 +103,7 @@ export default function CourseFilter({
               }`}
             >
               {cat.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

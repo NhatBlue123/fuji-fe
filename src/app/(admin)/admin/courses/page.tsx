@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { CourseHeader } from "@/components/admin/admin-components/CourseHeader";
-import { CourseFilters } from "@/components/admin/admin-components/CourseFilters";
-import { CourseCard } from "@/components/admin/admin-components/CourseCard";
-import { CreateCourseModal } from "@/components/admin/admin-components/CreateCourseModal";
+import { CourseHeader } from "@/components/admin/course/CourseHeader";
+import { CourseFilters } from "@/components/admin/course/CourseFilters";
+import { CourseCard } from "@/components/admin/course/CourseCard";
+import { CreateCourseModal } from "@/components/admin/course/CreateCourseModal";
 import {
   useGetAllCoursesQuery,
   useDeleteCourseMutation,
@@ -12,12 +12,18 @@ import {
 import { Loader2, BookX, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function CoursesPage() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [page, setPage] = useState(0);
+  const { hasPermission } = usePermissions();
+
+  const canCreate = hasPermission("COURSE_CREATE");
+  const canEdit = hasPermission("COURSE_EDIT");
+  const canDelete = hasPermission("COURSE_DELETE");
 
   const { data, isLoading, isError, refetch } = useGetAllCoursesQuery({
     page,
@@ -59,7 +65,7 @@ export default function CoursesPage() {
   return (
     <div className="space-y-6">
       <CourseHeader
-        onCreateCourse={() => setCreateModalOpen(true)}
+        onCreateCourse={canCreate ? () => setCreateModalOpen(true) : undefined}
         totalCourses={data?.totalElements}
       />
 
@@ -106,8 +112,8 @@ export default function CoursesPage() {
                 <CourseCard
                   key={course.id}
                   course={course}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
+                  onDelete={canDelete ? handleDelete : undefined}
+                  onEdit={canEdit ? handleEdit : undefined}
                   isDeleting={isDeleting}
                 />
               ))}

@@ -265,10 +265,7 @@ export const flashcardApi = createApi({
     }),
 
     // Start learning a flashcard
-    startLearning: builder.mutation<
-      UserStudyProgressDTO,
-      number | string
-    >({
+    startLearning: builder.mutation<UserStudyProgressDTO, number | string>({
       query: (flashCardId) => ({
         url: API_ENDPOINTS.FLASHCARDS.START_LEARNING(flashCardId),
         method: "POST",

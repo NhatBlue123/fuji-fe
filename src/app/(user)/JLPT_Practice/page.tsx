@@ -3,8 +3,12 @@ import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import ExamCard from "./ExamCard";
 import { useState, useMemo, useEffect } from "react";
-import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
+import {
+  useGetPublishedTestsQuery,
+  useGetMyAttemptsQuery,
+} from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
+import { Button } from "@/components/ui/button";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
@@ -15,7 +19,7 @@ export default function JlptPracticePage() {
 
   // Use debounce for search query
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  
+
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
     return () => clearTimeout(handler);
@@ -37,15 +41,15 @@ export default function JlptPracticePage() {
 
   // Fetch user attempts
   const { data: attempts } = useGetMyAttemptsQuery();
-  
+
   const attemptsMap = useMemo(() => {
     if (!attempts) return {};
     const map: Record<number, TestAttemptResult> = {};
-    attempts.forEach(a => {
-        // Since backend orders by date desc, the first one encountered is the latest
-        if (!map[a.testId]) {
-            map[a.testId] = a;
-        }
+    attempts.forEach((a) => {
+      // Since backend orders by date desc, the first one encountered is the latest
+      if (!map[a.testId]) {
+        map[a.testId] = a;
+      }
     });
     return map;
   }, [attempts]);
@@ -84,7 +88,6 @@ export default function JlptPracticePage() {
 
       {/* Nội dung chính */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pb-16">
-
         {/* Loading state */}
         {isLoading && (
           <div className="text-center text-muted-foreground py-20">
@@ -96,16 +99,24 @@ export default function JlptPracticePage() {
         {/* Error state */}
         {!!error && (
           <div className="text-center text-red-500 py-20">
-            <span className="material-symbols-outlined text-6xl mb-4">error</span>
-            <p className="text-lg font-semibold">Không thể tải danh sách đề thi</p>
-            <p className="text-sm text-muted-foreground mt-2">Vui lòng thử lại sau</p>
+            <span className="material-symbols-outlined text-6xl mb-4">
+              error
+            </span>
+            <p className="text-lg font-semibold">
+              Không thể tải danh sách đề thi
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Vui lòng thử lại sau
+            </p>
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && !error && tests.length === 0 && (
           <div className="text-center text-muted-foreground py-20">
-            <span className="material-symbols-outlined text-6xl mb-4">inbox</span>
+            <span className="material-symbols-outlined text-6xl mb-4">
+              inbox
+            </span>
             <p className="text-lg font-semibold">Chưa có đề thi nào</p>
             <p className="text-sm mt-2">Hệ thống đang cập nhật đề thi mới</p>
           </div>
@@ -138,19 +149,19 @@ export default function JlptPracticePage() {
         {/* Pagination */}
         {!isLoading && !error && totalPages > 1 && (
           <div className="flex justify-center mt-12 gap-2">
-            <button
+            <Button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
               disabled={currentPage === 0}
               className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined">chevron_left</span>
-            </button>
+            </Button>
 
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const pg = i;
               const isActive = currentPage === pg;
               return (
-                <button
+                <Button
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
                   className={`size-10 rounded-lg flex items-center justify-center font-bold transition-all ${
@@ -160,24 +171,27 @@ export default function JlptPracticePage() {
                   }`}
                 >
                   {pg + 1}
-                </button>
+                </Button>
               );
             })}
 
             {totalPages > 5 && (
-              <span className="size-10 flex items-center justify-center text-muted-foreground">...</span>
+              <span className="size-10 flex items-center justify-center text-muted-foreground">
+                ...
+              </span>
             )}
 
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
+            <Button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+              }
               disabled={currentPage >= totalPages - 1}
               className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined">chevron_right</span>
-            </button>
+            </Button>
           </div>
         )}
-
       </div>
     </div>
   );

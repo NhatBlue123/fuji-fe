@@ -18,6 +18,8 @@ import {
 import { useAuth } from "@/store/hooks";
 import { getMockImage } from "@/lib/mockImages";
 import type { JlptLevel } from "@/types/flashcard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type OwnershipFilter = "all" | "mine" | "community";
 
@@ -150,7 +152,7 @@ export default function FlashcardsPage() {
                     search
                   </span>
                 </div>
-                <input
+                <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="block w-full pl-11 pr-4 py-3.5 border border-white/10 rounded-2xl leading-5 bg-white/5 backdrop-blur-md text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500/50 focus:bg-white/10 transition-all shadow-lg shadow-black/20"
@@ -193,7 +195,7 @@ export default function FlashcardsPage() {
                 </div>
               </div>
               <div className="xl:ml-auto w-full xl:w-auto mt-2 xl:mt-0">
-                <button
+                <Button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="relative w-full xl:w-auto group overflow-hidden rounded-2xl bg-gradient-to-br from-white/20 to-white/5 p-[1px] shadow-xl shadow-pink-500/10 hover:shadow-pink-500/20 transition-all"
                 >
@@ -204,7 +206,7 @@ export default function FlashcardsPage() {
                     </span>
                     <span className="font-bold tracking-wide">Tạo mới</span>
                   </div>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -354,12 +356,14 @@ export default function FlashcardsPage() {
                               </span>
                               <span>{fl.flashcards?.length || 0} bộ thẻ</span>
                             </div>
-                            {fl.averageRating > 0 && (
+                            {(fl.averageRating || 0) > 0 && (
                               <div className="flex items-center gap-1">
                                 <span className="material-symbols-outlined text-sm text-yellow-500">
                                   star
                                 </span>
-                                <span>{fl.averageRating.toFixed(1)}</span>
+                                <span>
+                                  {(fl.averageRating || 0).toFixed(1)}
+                                </span>
                               </div>
                             )}
                           </div>

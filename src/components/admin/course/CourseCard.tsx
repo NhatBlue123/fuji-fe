@@ -111,18 +111,24 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                   Chi tiết
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit?.(course.id)}>
-                <Pencil className="size-4 mr-2" />
-                Chỉnh sửa
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 className="size-4 mr-2" />
-                Xóa khóa học
-              </DropdownMenuItem>
+              {onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(course.id)}>
+                  <Pencil className="size-4 mr-2" />
+                  Chỉnh sửa
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    <Trash2 className="size-4 mr-2" />
+                    Xóa khóa học
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

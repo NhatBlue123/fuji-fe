@@ -31,7 +31,21 @@ function parseOptions(opts?: string[] | string | null): string[] {
   }
 }
 
-function JLPTtestContent() {
+export default function JLPTtestPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400"></div>
+        </div>
+      }
+    >
+      <JLPTtestPageInner />
+    </Suspense>
+  );
+}
+
+function JLPTtestPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId");
@@ -43,8 +57,11 @@ function JLPTtestContent() {
   const [examStartTime] = useState(Date.now());
   const [scrollTrigger, setScrollTrigger] = useState(0);
 
-  const { data: testData, isLoading, error } =
-    useGetTestByIdQuery(Number(testId), { skip: !testId });
+  const {
+    data: testData,
+    isLoading,
+    error,
+  } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
   const [submitTest] = useSubmitTestMutation();
 
@@ -67,7 +84,7 @@ function JLPTtestContent() {
         if (Object.keys(countMap).length > 0)
           return rebuildStructureWithCounts(
             testData.level as JLPTLevel,
-            countMap
+            countMap,
           );
       }
     } catch {}
@@ -79,7 +96,7 @@ function JLPTtestContent() {
   const leafQuestions = useMemo(() => {
     const flattened: any[] = [];
     const sortedQ = [...allQuestions].sort(
-      (a, b) => a.questionOrder - b.questionOrder
+      (a, b) => a.questionOrder - b.questionOrder,
     );
 
     sortedQ.forEach((q) => {
@@ -113,7 +130,7 @@ function JLPTtestContent() {
         ([id, selected]) => ({
           questionId: Number(id),
           selected,
-        })
+        }),
       );
 
       const result = await submitTest({
@@ -170,29 +187,40 @@ function JLPTtestContent() {
   /* ===== UI STATES ===== */
 
   if (isLoading)
-    return <div className="h-screen flex items-center justify-center text-white">Đang tải đề...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center text-white">
+        Đang tải đề...
+      </div>
+    );
 
   if (error || !testData)
-    return <div className="h-screen flex items-center justify-center text-white">Không tải được đề</div>;
+    return (
+      <div className="h-screen flex items-center justify-center text-white">
+        Không tải được đề
+      </div>
+    );
 
   if (isSubmitting)
-    return <div className="h-screen flex items-center justify-center text-white">Đang nộp bài...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center text-white">
+        Đang nộp bài...
+      </div>
+    );
 
   const answeredCount = Object.keys(answers).length;
 
   const formatTime = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
 
-  return `${h.toString().padStart(2, "0")}:${m
-    .toString()
-    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-};
+    return `${h.toString().padStart(2, "0")}:${m
+      .toString()
+      .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="h-screen flex flex-col text-white bg-[#0B1120]">
-
       <ExamHeader
         timeLeft={timeLeft}
         formatTime={formatTime}
@@ -232,7 +260,6 @@ function JLPTtestContent() {
       )}
 
       <main className="flex flex-1 overflow-hidden">
-
         <ExamContent
           currentQ={currentQuestion}
           question={leafQuestions[currentQuestion]}
@@ -250,7 +277,7 @@ function JLPTtestContent() {
           questions={allQuestions}
           onSelect={(order) => {
             const idx = leafQuestions.findIndex(
-              (q) => q.questionOrder === order
+              (q) => q.questionOrder === order,
             );
             if (idx !== -1) {
               setCurrentQuestion(idx);
@@ -260,13 +287,5 @@ function JLPTtestContent() {
         />
       </main>
     </div>
-  );
-}
-
-export default function JLPTtestPage() {
-  return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center text-white bg-[#0B1120]">Đang tải...</div>}>
-      <JLPTtestContent />
-    </Suspense>
   );
 }

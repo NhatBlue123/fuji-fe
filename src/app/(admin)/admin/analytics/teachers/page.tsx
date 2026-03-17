@@ -67,19 +67,64 @@ const Dashboard: React.FC = () => {
         {/* --- STATS SECTION GIỮ NGUYÊN --- */}
         <section>
           <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-pink-50 dark:border-slate-800 flex flex-col md:flex-row gap-8 shadow-xl shadow-pink-500/5 transition-all">
-            <div className="relative w-full md:w-80 h-48 bg-gradient-to-br from-cyan-600 via-blue-600 to-pink-500 rounded-3xl p-6 text-white shadow-lg shadow-cyan-500/20 overflow-hidden shrink-0 group">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl transition-all"></div>
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div>
-                  <span className="text-[10px] font-black tracking-[0.2em] opacity-80 uppercase">SenseiHub Premium</span>
-                  <p className="text-xl font-black tracking-tight uppercase mt-2">Nguyen Van A</p>
-                </div>
-                <div className="flex justify-between items-end">
-                  <p className="text-sm font-bold">N1 Specialist</p>
-                  <div className="bg-cyan-400 text-cyan-950 px-3 py-1 rounded-full text-[10px] font-black">ACTIVE</div>
-                </div>
-              </div>
-            </div>
+           <div className="relative w-full md:w-[350px] h-[210px] bg-gradient-to-br from-slate-900 via-blue-900 to-pink-600 rounded-[1.5rem] p-6 text-white shadow-2xl shadow-cyan-500/20 overflow-hidden shrink-0 group transition-transform hover:scale-[1.02] duration-300 border border-white/10">
+  
+  {/* Hiệu ứng ánh kim quét qua thẻ khi hover */}
+  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+
+  {/* Trang trí: Các vòng tròn mờ ảo phía sau */}
+  <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-400/20 rounded-full blur-[60px]"></div>
+  <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-pink-500/20 rounded-full blur-[60px]"></div>
+
+  <div className="relative z-10 flex flex-col h-full justify-between">
+    
+    {/* Phần trên: Brand & Chip */}
+    <div className="flex justify-between items-start">
+      <div className="flex flex-col">
+        <span className="text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">SenseiHub Premium</span>
+        {/* Chip Ngân hàng */}
+        <div className="mt-4 w-11 h-8 bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 rounded-md relative overflow-hidden shadow-inner">
+          <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-black/20"></div>
+          <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-black/20"></div>
+        </div>
+      </div>
+      
+      {/* Biểu tượng Contactless (Sóng không dây) */}
+      <svg className="w-6 h-6 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/><path d="M8 6a6 6 0 0 1 6 6" strokeLinecap="round"/><path d="M4 10a2 2 0 0 1 2 2" strokeLinecap="round"/>
+      </svg>
+    </div>
+
+    {/* Phần giữa: Số thẻ (Phông chữ mono đặc trưng của thẻ tín dụng) */}
+    <div className="mt-2">
+      <p className="text-xl font-medium tracking-[0.15em] font-mono shadow-sm">
+        4521 &nbsp; 8802 &nbsp; 3391 &nbsp; 5678
+      </p>
+    </div>
+
+    {/* Phần dưới: Tên chủ thẻ & Thông tin phụ */}
+    <div className="flex justify-between items-end">
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase opacity-60 font-bold">Card Holder</p>
+        <p className="text-sm font-black tracking-widest uppercase">NGUYEN VAN A</p>
+      </div>
+      
+      <div className="text-right">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end mr-2">
+            <p className="text-[8px] uppercase opacity-60 leading-none">Valid Thru</p>
+            <p className="text-xs font-bold font-mono">12/29</p>
+          </div>
+          {/* Logo loại thẻ (Gợi liên tưởng đến Visa/Mastercard bằng 2 vòng tròn) */}
+          <div className="flex -space-x-3">
+            <div className="w-8 h-8 rounded-full bg-pink-500/80 backdrop-blur-sm border border-white/20"></div>
+            <div className="w-8 h-8 rounded-full bg-cyan-400/80 backdrop-blur-sm border border-white/20"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
             <div className="flex-1 grid grid-cols-2 gap-5">
               <StatItem icon={<Clock size={20} className="text-cyan-500" />} bg="bg-cyan-50 dark:bg-cyan-500/10" label="Tổng số giờ dạy" value="128.5 Giờ" borderColor="group-hover:border-cyan-200 dark:group-hover:border-cyan-800" />
               <StatItem icon={<Users size={20} className="text-pink-500" />} bg="bg-pink-50 dark:bg-pink-500/10" label="Học viên" value="24" borderColor="group-hover:border-pink-200 dark:group-hover:border-pink-800" />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useGetWalletHistoryQuery } from "@/store/services/walletApi";
 import { Transaction } from "@/types/wallet";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -10,14 +11,19 @@ import {
   ChevronRight,
   History,
   Search,
+  ArrowLeft,
+  Download,
+  Filter,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function TransactionHistory() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState<string>("ALL"); // ALL, DEPOSIT, WITHDRAW
   const size = 10;
   const [mounted, setMounted] = useState(false);
 
-  // Tránh lỗi Hydration
   useEffect(() => setMounted(true), []);
 
   const { data, isLoading, isError } = useGetWalletHistoryQuery({ page, size });
@@ -25,200 +31,194 @@ export default function TransactionHistory() {
   const transactions = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
+  // Lọc dữ liệu client-side (Nếu API chưa hỗ trợ lọc)
+  const filteredTransactions = transactions.filter((tx) => {
+    if (filter === "ALL") return true;
+    return tx.type === filter;
+  });
+
   if (!mounted) return null;
 
   if (isLoading)
     return (
-      <div className="p-8 flex justify-center items-center min-h-[400px]">
-        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-
-  if (isError)
-    return (
-      <div className="p-8 text-center text-red-500 bg-red-50 dark:bg-red-500/10 rounded-2xl border border-red-100 dark:border-red-500/20">
-        Không thể tải lịch sử giao dịch. Vui lòng thử lại sau.
+      <div className="min-h-screen flex flex-col justify-center items-center bg-[#050508]">
+        <div className="w-12 h-12 border-4 border-pink-500 border-t-cyan-400 rounded-full animate-spin shadow-[0_0_20px_rgba(236,72,153,0.3)]"></div>
+        <p className="mt-4 text-pink-500/50 font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">Đang tải dữ liệu...</p>
       </div>
     );
 
   return (
-    <div className="ml-10 p-4 md:p-8 max-w-7xl mx-auto space-y-6 transition-colors duration-500">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <History className="text-indigo-500" />
-            Lịch sử giao dịch
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Theo dõi các hoạt động nạp tiền và thanh toán của bạn
-          </p>
-        </div>
-
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={16}
-          />
-          <input
-            type="text"
-            placeholder="Tìm kiếm giao dịch..."
-            className="pl-10 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none w-full md:w-64 transition-all text-sm"
-          />
-        </div>
+    <div className="min-h-screen bg-[#050508] text-slate-200 pb-20 selection:bg-pink-500/30">
+      {/* Background Decor */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/5 blur-[120px] rounded-full" />
       </div>
 
-      {/* Table Container */}
-      <div className="overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[1.5rem] transition-all">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                <th className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                  Mã GD
-                </th>
-                <th className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                  Loại
-                </th>
-                <th className="p-4 font-bold text-slate-600 dark:text-slate-300 text-right">
-                  Số tiền
-                </th>
-                <th className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                  Số dư sau GD
-                </th>
-                <th className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                  Thời gian
-                </th>
-                <th className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                  Nội dung
-                </th>
-              </tr>
-            </thead>
+      <div className="relative z-10 mx-auto max-w-7xl lg:pl-16 px-4 md:px-8 pt-8 space-y-8">
+        
+        {/* Top Nav */}
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => router.back()}
+            className="group flex items-center gap-3 text-slate-500 hover:text-pink-400 transition-all font-bold"
+          >
+            <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/5 group-hover:border-pink-500/20 transition-all">
+              <ArrowLeft size={20} />
+            </div>
+            <span className="tracking-widest uppercase text-[10px]">Trở lại</span>
+          </button>
 
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {transactions.length > 0 ? (
-                transactions.map((tx: Transaction) => {
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-cyan-500/5 border border-cyan-500/20 rounded-full">
+               <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]" />
+               <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em]">Hệ thống bảo mật</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Header & Filter Controls */}
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8">
+          <div className="space-y-3">
+            <h1 className="text-5xl font-black text-white flex items-center gap-4 tracking-tighter uppercase">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">Lịch sử</span>
+              <History size={32} className="text-pink-500" />
+            </h1>
+            <p className="text-slate-500 font-medium max-w-md text-sm border-l-2 border-pink-500/30 pl-4">
+              Quản lý dòng tiền của bạn với bộ nhận diện thông minh Xanh-Hồng.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Filter Buttons */}
+            <div className="flex p-1.5 bg-white/5 border border-white/10 rounded-2xl">
+              {[
+                { label: "Tất cả", value: "ALL" },
+                { label: "Nạp tiền", value: "DEPOSIT" },
+                { label: "Thanh toán", value: "WITHDRAW" },
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  onClick={() => setFilter(item.value)}
+                  className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    filter === item.value 
+                    ? "bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-lg shadow-pink-500/20" 
+                    : "text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
+              <input
+                type="text"
+                placeholder="Tìm giao dịch..."
+                className="pl-12 pr-6 h-14 rounded-2xl bg-white/5 border border-white/10 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 outline-none w-full md:w-64 transition-all text-xs font-bold uppercase tracking-widest"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Table Dashboard */}
+        <div className="bg-[#0c0c14] border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left">
+              <thead>
+                <tr className="bg-gradient-to-r from-cyan-500/5 to-pink-500/5 border-b border-white/5">
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">ID Giao dịch</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70 text-center">Phân loại</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70 text-right">Giá trị</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70">Biến động</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">Ngày giờ</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70 text-right">Trạng thái</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-white/5">
+                {filteredTransactions.map((tx: Transaction) => {
                   const isDeposit = tx.type === "DEPOSIT" || tx.amount > 0;
                   return (
-                    <tr
-                      key={tx.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
-                    >
-                      <td className="p-4 font-mono text-xs text-slate-500 dark:text-slate-400">
-                        #{tx.referenceId || tx.id}
+                    <tr key={tx.id} className="hover:bg-white/[0.02] transition-all group border-l-2 border-transparent hover:border-pink-500">
+                      <td className="p-6">
+                        <span className="font-mono text-[11px] text-cyan-400/80 tracking-tighter">
+                          #{tx.referenceId || tx.id.substring(0, 8).toUpperCase()}
+                        </span>
                       </td>
 
-                      <td className="p-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                            isDeposit
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                              : "bg-pink-100 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400"
-                          }`}
-                        >
-                          {isDeposit ? (
-                            <ArrowDownLeft size={14} />
-                          ) : (
-                            <ArrowUpRight size={14} />
-                          )}
+                      <td className="p-6 text-center">
+                        <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                          isDeposit 
+                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
+                          : "bg-pink-500/10 text-pink-400 border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.1)]"
+                        }`}>
+                          {isDeposit ? <ArrowDownLeft size={10} /> : <ArrowUpRight size={10} />}
                           {tx.type}
                         </span>
                       </td>
 
-                      <td
-                        className={`p-4 text-right font-black ${
-                          isDeposit
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-pink-600 dark:text-pink-400"
-                        }`}
-                      >
-                        {isDeposit ? "+" : "-"}
-                        {tx.amount.toLocaleString()} đ
+                      <td className={`p-6 text-right font-black text-xl tracking-tighter ${isDeposit ? "text-cyan-400" : "text-pink-500"}`}>
+                        {isDeposit ? "+" : "-"}{tx.amount.toLocaleString()} 
+                        <span className="text-[10px] ml-1 opacity-40">đ</span>
                       </td>
 
-                      <td className="p-4">
+                      <td className="p-6">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-700 dark:text-slate-200">
-                            {tx.balanceAfter.toLocaleString()} đ
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            Trước: {tx.balanceBefore.toLocaleString()} đ
-                          </span>
+                          <span className="font-black text-white text-sm">{tx.balanceAfter.toLocaleString()} đ</span>
+                          <span className="text-[9px] text-slate-600 font-bold uppercase">Sau giao dịch</span>
                         </div>
                       </td>
 
-                      <td className="p-4 text-slate-600 dark:text-slate-400">
-                        {new Date(tx.createdAt).toLocaleDateString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}
+                      <td className="p-6 text-slate-400 text-xs font-bold tracking-tighter">
+                        {new Date(tx.createdAt).toLocaleString("vi-VN")}
                       </td>
 
-                      <td className="p-4 text-slate-500 dark:text-slate-400 max-w-[200px] truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all">
-                        {tx.description}
+                      <td className="p-6 text-right">
+                        <span className="inline-flex items-center gap-1.5 text-cyan-400/50 font-black text-[9px] uppercase tracking-widest">
+                           <CheckCircle2 size={12} /> Thành công
+                        </span>
                       </td>
                     </tr>
                   );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="p-12 text-center text-slate-400 italic"
-                  >
-                    Chưa có giao dịch nào được ghi lại.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* Pagination Container */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Hiển thị trang{" "}
-          <span className="font-bold text-slate-900 dark:text-white">
-            {page + 1}
-          </span>{" "}
-          / {totalPages}
-        </p>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage((p) => p - 1)}
-            disabled={page === 0}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-sm"
-          >
-            <ChevronLeft size={20} className="dark:text-white" />
-          </button>
-
-          <div className="flex gap-1">
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setPage(i)}
-                className={`hidden sm:block w-9 h-9 rounded-xl font-bold text-sm transition-all ${
-                  page === i
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+        {/* Footer Actions */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 pt-6 border-t border-white/5">
+          <div className="flex items-center gap-6">
+            <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all uppercase tracking-[0.2em]">
+               <Download size={14} /> Tải báo cáo tháng
+            </button>
           </div>
 
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page + 1 >= totalPages}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-sm"
-          >
-            <ChevronRight size={20} className="dark:text-white" />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 0}
+              className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 disabled:opacity-10 hover:border-pink-500/50 hover:text-pink-500 transition-all"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            
+            <div className="flex gap-2">
+               <span className="px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border border-white/10 font-black text-white text-xs">
+                 {page + 1} / {totalPages}
+               </span>
+            </div>
+
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page + 1 >= totalPages}
+              className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 disabled:opacity-10 hover:border-cyan-500/50 hover:text-cyan-400 transition-all"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

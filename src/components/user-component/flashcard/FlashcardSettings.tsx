@@ -172,7 +172,7 @@ export default function FlashcardSettings({
       setLevel(flashcard.level || "");
       setIsPublic(flashcard.isPublic !== false);
       setCards(
-        flashcard.cards.map((card) => ({
+        (flashcard.cards || []).map((card) => ({
           id: card.id,
           vocabulary: card.vocabulary || "",
           meaning: card.meaning || "",

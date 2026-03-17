@@ -227,14 +227,14 @@ export default function VideoCallRoomPage() {
   if (!matchData) return null;
 
   return (
-    <div className="flex flex-col bg-[#1e3a5f]" style={{ height: "calc(100vh - 64px)" }}>
-
-      {/* ── Main content: Video (60%) + Chat (40%) ── */}
-      <div className="flex flex-1 gap-3 p-4 min-h-0 overflow-hidden">
-
-        {/* ── Left: Remote video with local PiP overlay ── */}
-        <div className="relative flex-[6] rounded-2xl overflow-hidden bg-black shadow-2xl">
-
+    <div
+      className="flex flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900"
+      style={{ height: "calc(100vh - 64px)" }}
+    >
+      {/* ── Main content: Video focus + side chat ── */}
+      <div className="flex flex-1 gap-4 px-6 py-5 min-h-0 overflow-hidden">
+        {/* ── Left: Remote focus with soft frame & PiP ── */}
+        <div className="relative flex-[7] rounded-[28px] overflow-hidden bg-slate-900/80 border border-white/10 shadow-[0_24px_60px_rgba(15,23,42,0.9)]">
           {/* Remote video */}
           <video
             ref={remoteVideoRef}
@@ -245,41 +245,47 @@ export default function VideoCallRoomPage() {
 
           {/* Waiting / Reconnecting overlay */}
           {!isConnected && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/95">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90">
               {reconnect.reconnectState === "reconnecting" ? (
                 <>
-                  <WifiOff className="h-12 w-12 text-amber-400 mb-3" />
-                  <p className="text-white font-semibold">Đang kết nối lại...</p>
-                  <p className="text-zinc-400 text-sm">{reconnect.countdown}s còn lại</p>
+                  <WifiOff className="h-10 w-10 text-amber-300 mb-3" />
+                  <p className="text-slate-50 font-semibold tracking-wide">
+                    Đang kết nối lại...
+                  </p>
+                  <p className="text-slate-400 text-xs mt-1">
+                    {reconnect.countdown}s còn lại
+                  </p>
                 </>
               ) : (
                 <>
-                  <RefreshCw className="h-10 w-10 text-zinc-500 animate-spin mb-3" />
-                  <p className="text-zinc-400">Đang chờ kết nối P2P...</p>
+                  <RefreshCw className="h-8 w-8 text-slate-500 animate-spin mb-3" />
+                  <p className="text-slate-300 text-sm">
+                    Đang chờ kết nối P2P...
+                  </p>
                 </>
               )}
             </div>
           )}
 
           {/* Peer name + level (top-left) */}
-          <div className="absolute top-3 left-3 flex items-center gap-2">
-            <Badge className="bg-[#1e3a5f] text-white font-bold border-0 text-xs">
+          <div className="absolute top-4 left-4 flex items-center gap-2">
+            <Badge className="bg-white/10 text-slate-50 font-semibold border border-white/20 text-[11px] px-2.5 py-1 rounded-full tracking-wide">
               {matchData.peerLevel}
             </Badge>
-            <span className="text-white text-sm font-semibold drop-shadow bg-black/30 px-2 py-0.5 rounded-lg">
+            <span className="text-slate-50 text-sm font-medium drop-shadow bg-slate-900/60 px-3 py-1 rounded-full">
               {matchData.peerName}
             </span>
           </div>
 
           {/* Mic / Camera quick-toggle (top-right) */}
-          <div className="absolute top-3 right-3 flex gap-2">
+          <div className="absolute top-4 right-4 flex gap-2">
             <button
               onClick={webrtc.toggleMic}
               className={cn(
-                "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg",
+                "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg border border-white/15",
                 webrtc.isMicOn
-                  ? "bg-white/20 hover:bg-white/30 text-white"
-                  : "bg-rose-600 hover:bg-rose-700 text-white"
+                  ? "bg-slate-900/40 hover:bg-slate-900/70 text-slate-50"
+                  : "bg-rose-600/90 hover:bg-rose-700 text-white"
               )}
             >
               {webrtc.isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
@@ -287,75 +293,87 @@ export default function VideoCallRoomPage() {
             <button
               onClick={webrtc.toggleCamera}
               className={cn(
-                "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg",
+                "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg border border-white/15",
                 webrtc.isCameraOn
-                  ? "bg-white/20 hover:bg-white/30 text-white"
-                  : "bg-rose-600 hover:bg-rose-700 text-white"
+                  ? "bg-slate-900/40 hover:bg-slate-900/70 text-slate-50"
+                  : "bg-rose-600/90 hover:bg-rose-700 text-white"
               )}
             >
               {webrtc.isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
             </button>
           </div>
 
-          {/* My name label (bottom-right of PiP) */}
-          <div className="absolute bottom-3 left-3 flex flex-col gap-1 items-start">
-            <div className="w-32 aspect-video rounded-xl overflow-hidden border-2 border-white/40 shadow-xl bg-zinc-800">
+          {/* Local PiP + my name (bottom-left) */}
+          <div className="absolute bottom-4 left-4 flex flex-col gap-1 items-start">
+            <div className="relative w-36 aspect-video rounded-2xl overflow-hidden border border-white/35 shadow-[0_14px_40px_rgba(15,23,42,0.9)] bg-slate-900">
               <video
                 ref={localVideoRef}
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover scale-x-[-1]"
               />
               {!webrtc.isCameraOn && (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 rounded-xl">
-                  <VideoOff className="h-5 w-5 text-zinc-500" />
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90 rounded-2xl">
+                  <VideoOff className="h-5 w-5 text-slate-500" />
                 </div>
               )}
             </div>
-            <span className="text-white text-xs font-semibold bg-black/40 px-2 py-0.5 rounded-lg">
+            <span className="text-slate-50 text-xs font-medium bg-slate-900/75 px-2.5 py-0.5 rounded-full">
               {myName}
             </span>
           </div>
         </div>
 
         {/* ── Right: Chat Panel ── */}
-        <div className="flex-[4] flex flex-col rounded-2xl overflow-hidden bg-white shadow-2xl min-h-0">
-
+        <div className="flex-[4] flex flex-col rounded-[24px] overflow-hidden bg-slate-900/80 border border-white/10 shadow-[0_18px_50px_rgba(15,23,42,0.9)] min-h-0">
           {/* Chat header */}
-          <div className="px-5 py-3 bg-[#2563eb] shrink-0 flex items-center justify-between">
+          <div className="px-5 py-3 bg-slate-900/80 border-b border-white/10 shrink-0 flex items-center justify-between">
             <div>
-              <h2 className="text-white font-bold text-base">Nhắn tin</h2>
-              <p className="text-blue-100 text-xs">{matchData.peerName} • {matchData.peerLevel}</p>
+              <h2 className="text-slate-50 font-semibold text-sm tracking-[0.12em] uppercase">
+                Nhắn tin
+              </h2>
+              <p className="text-slate-400 text-xs mt-0.5">
+                {matchData.peerName} • JLPT {matchData.peerLevel}
+              </p>
             </div>
             {isConnected && (
-              <span className="text-xs bg-green-400 text-green-900 font-bold px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-emerald-400/90 text-emerald-950 font-semibold px-2 py-0.5 rounded-full tracking-wide">
                 Đã kết nối
               </span>
             )}
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0 bg-gradient-to-b from-slate-950/40 to-slate-900/40">
             {messages.length === 0 && (
               <div className="h-full flex items-center justify-center">
-                <p className="text-zinc-400 text-sm text-center">
-                  Gửi tin nhắn để bắt đầu hội thoại 💬
+                <p className="text-slate-500 text-xs text-center leading-relaxed">
+                  Gửi vài câu chào bằng tiếng Nhật
+                  <br />
+                  để bắt đầu cuộc trò chuyện.
                 </p>
               </div>
             )}
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={cn("flex flex-col gap-0.5", msg.isMine ? "items-end" : "items-start")}
+                className={cn(
+                  "flex flex-col gap-0.5",
+                  msg.isMine ? "items-end" : "items-start"
+                )}
               >
-                <span className="text-zinc-400 text-[10px] px-1">{msg.senderName}</span>
-                <div className={cn(
-                  "px-3 py-2 rounded-2xl text-sm max-w-[85%] break-words shadow-sm",
-                  msg.isMine
-                    ? "bg-[#2563eb] text-white rounded-br-sm"
-                    : "bg-zinc-100 text-zinc-800 rounded-bl-sm"
-                )}>
+                <span className="text-slate-500 text-[10px] px-1">
+                  {msg.senderName}
+                </span>
+                <div
+                  className={cn(
+                    "px-3 py-2 rounded-2xl text-sm max-w-[85%] break-words shadow-sm",
+                    msg.isMine
+                      ? "bg-sky-500/90 text-slate-950 rounded-br-sm"
+                      : "bg-slate-800/90 text-slate-50 rounded-bl-sm"
+                  )}
+                >
                   {msg.message}
                 </div>
               </div>
@@ -364,18 +382,18 @@ export default function VideoCallRoomPage() {
           </div>
 
           {/* Input */}
-          <div className="shrink-0 p-3 border-t border-zinc-100 flex gap-2">
+          <div className="shrink-0 p-3 border-t border-white/10 flex gap-2 bg-slate-950/80">
             <Input
               value={chatMsg}
               onChange={(e) => setChatMsg(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMsg()}
               placeholder="Nhắn tin..."
-              className="bg-zinc-50 border-zinc-200 text-sm focus-visible:ring-[#2563eb]"
+              className="bg-slate-900/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-sky-500"
             />
             <Button
               onClick={handleSendMsg}
               size="icon"
-              className="shrink-0 bg-[#2563eb] hover:bg-[#1d4ed8]"
+              className="shrink-0 bg-sky-500 hover:bg-sky-400 text-slate-950"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -384,40 +402,40 @@ export default function VideoCallRoomPage() {
       </div>
 
       {/* ── Bottom Control Bar ── */}
-      <div className="shrink-0 flex items-center justify-center gap-3 py-4 px-4">
+      <div className="shrink-0 flex items-center justify-center gap-4 py-4 px-4 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent">
+        {/* Timer */}
+        <div className="h-11 px-6 bg-slate-900/90 border border-white/10 text-slate-50 font-mono text-sm rounded-full flex items-center shadow-[0_10px_30px_rgba(15,23,42,0.9)] min-w-[88px] justify-center">
+          {formatTimer(sessionSeconds)}
+        </div>
 
-        {/* Next — find new partner at same level */}
-        <Button
-          onClick={handleNext}
-          className="h-11 px-6 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold rounded-lg gap-2 shadow-lg"
-        >
-          <SkipForward className="h-4 w-4" />
-          Tiếp theo
-        </Button>
-
-        {/* End Call — hang up permanently */}
+        {/* End Call — center, accent */}
         <Button
           onClick={handleLeave}
-          className="h-11 px-6 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg gap-2 shadow-lg"
+          className="h-12 px-8 rounded-full bg-rose-600 hover:bg-rose-500 text-slate-50 font-semibold tracking-wide gap-2 shadow-[0_18px_40px_rgba(248,113,113,0.6)]"
         >
           <PhoneOff className="h-4 w-4" />
           Kết thúc
         </Button>
 
+        {/* Next — subtle outline */}
+        <Button
+          onClick={handleNext}
+          variant="outline"
+          className="h-11 px-6 rounded-full border-slate-600 text-slate-100 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md"
+        >
+          <SkipForward className="h-4 w-4" />
+          Tiếp theo
+        </Button>
+
         {/* Report */}
         <Button
           variant="outline"
-          className="h-11 px-4 font-bold rounded-lg gap-2 shadow-sm border-zinc-600 text-zinc-200 hover:bg-zinc-700"
+          className="h-11 px-4 rounded-full border-amber-500/60 text-amber-300 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md"
           onClick={() => alert("Báo cáo đã được ghi nhận.")}
         >
           <AlertTriangle className="h-4 w-4" />
           Báo cáo
         </Button>
-
-        {/* Timer */}
-        <div className="h-11 px-6 bg-zinc-800 text-white font-mono font-bold text-base rounded-lg flex items-center shadow-lg min-w-[80px] justify-center">
-          {formatTimer(sessionSeconds)}
-        </div>
       </div>
     </div>
   );

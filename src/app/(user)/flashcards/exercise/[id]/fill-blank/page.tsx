@@ -58,7 +58,7 @@ export default function FillBlankExercisePage({
     const shuffled = shuffle(cards);
     const half = Math.ceil(shuffled.length / 2);
 
-    const vocabQs = shuffled.slice(0, half).map((card, idx) => ({
+    const vocabQs = shuffled.slice(0, half).map((card: any, idx) => ({
       id: idx,
       type: "fill_vocab" as const,
       question: card.meaning || "",
@@ -66,7 +66,7 @@ export default function FillBlankExercisePage({
       hint: card.pronunciation || "",
     }));
 
-    const meaningQs = shuffled.slice(half).map((card, idx) => ({
+    const meaningQs = shuffled.slice(half).map((card: any, idx) => ({
       id: idx + half,
       type: "fill_meaning" as const,
       question: card.vocabulary || "",
@@ -172,7 +172,7 @@ export default function FillBlankExercisePage({
     );
   }
 
-  if (error || !flashcard || flashcard.cards.length < 4) {
+  if (error || !flashcard || !flashcard.cards || flashcard.cards.length < 4) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-screen bg-background gap-4">
         <span className="material-symbols-outlined text-6xl text-red-400">

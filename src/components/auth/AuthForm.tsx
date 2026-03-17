@@ -17,10 +17,13 @@ import {
   useSendOtpRegisterMutation,
   useRegisterMutation,
   useVerifyOAuth2OtpMutation,
+  useForgotPasswordMutation,
+  useVerifyForgotPasswordOtpMutation,
+  useResetPasswordMutation,
 } from "@/store/services/authApi";
 import { useTranslation } from "react-i18next";
 
-type AuthTab = "login" | "register";
+type AuthTab = "login" | "register" | "forgot_password";
 type RegisterStep = "register" | "otp";
 
 interface AuthFormProps {
@@ -126,9 +129,24 @@ export default function AuthForm({
     setLoginError(null);
     setRegisterServerError(null);
     // Update URL to reflect current tab
-    const newPath = tab === "login" ? "/login" : "/register";
+    const tabParam = tab === "login" ? "" : `?tab=${tab}`;
+    const newPath = tab === "login" ? "/login" : (tab === "register" ? "/register" : `/login${tabParam}`);
     window.history.replaceState(null, "", newPath);
   };
+
+  /* ─── Forgot password state ─── */
+  const [sendForgotOtp, { isLoading: isSendingForgotOtp }] = useForgotPasswordMutation();
+  const [verifyForgotOtp, { isLoading: isVerifyingForgotOtp }] = useVerifyForgotPasswordOtpMutation();
+  const [resetPwd, { isLoading: isResettingPwd }] = useResetPasswordMutation();
+  const [forgotStep, setForgotStep] = useState<"EMAIL" | "VERIFY" | "RESET">("EMAIL");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [forgotServerError, setForgotServerError] = useState<string | null>(null);
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
+  const [forgotCountdown, setForgotCountdown] = useState(0);
 
   /* ─── Login state ─── */
   const [login, { isLoading: isLoginLoading }] = useLoginMutation();
@@ -292,6 +310,93 @@ export default function AuthForm({
     }
   };
 
+  /* ─── Forgot password handlers ─── */
+  const handleForgotEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotServerError(null);
+    if (!forgotEmail) {
+      setForgotServerError("Vui lòng nhập email");
+      return;
+    }
+    try {
+      const res = await sendForgotOtp({ email: forgotEmail }).unwrap();
+      toast.success(res.message);
+      setForgotStep("VERIFY");
+
+      // Bắt đầu đếm ngược 60s
+      setForgotCountdown(60);
+      const timer = setInterval(() => {
+        setForgotCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err: any) {
+      setForgotServerError(err?.data?.message || "Không thể gửi OTP. Vui lòng kiểm tra lại email.");
+    }
+  };
+
+  const handleForgotVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotServerError(null);
+    if (forgotOtp.length < 6) {
+      setForgotServerError("Vui lòng nhập đủ 6 số OTP");
+      return;
+    }
+    try {
+      const res = await verifyForgotOtp({
+        email: forgotEmail,
+        otpCode: forgotOtp,
+      }).unwrap();
+      toast.success(res.message);
+      setForgotStep("RESET");
+    } catch (err: any) {
+      setForgotServerError(err?.data?.message || "Mã xác thực không chính xác hoặc đã hết hạn.");
+    }
+  };
+
+  const handleForgotReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotServerError(null);
+    if (forgotOtp.length < 6) {
+      setForgotServerError("Vui lòng nhập đủ 6 số OTP");
+      return;
+    }
+    if (forgotNewPassword.length < 6) {
+      setForgotServerError("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotServerError("Mật khẩu không khớp");
+      return;
+    }
+
+    try {
+      const res = await resetPwd({
+        email: forgotEmail,
+        otpCode: forgotOtp,
+        newPassword: forgotNewPassword,
+      }).unwrap();
+      
+      toast.success(res.message);
+      
+      // Thành công thì quay lại màn đăng nhập
+      setForgotStep("EMAIL");
+      setForgotEmail("");
+      setForgotOtp("");
+      setForgotNewPassword("");
+      setForgotConfirmPassword("");
+      switchTab("login");
+      setLoginEmail(forgotEmail); // Lấy luôn email vừa quên mk để điền sẵn
+      setLoginPassword("");
+    } catch (err: any) {
+      setForgotServerError(err?.data?.message || "Mã OTP không hợp lệ, hoặc đã xảy ra lỗi");
+    }
+  };
+
   /* ═══════════ RENDER ═══════════ */
   return (
     <div className="relative z-10 w-full max-w-[460px] mx-4">
@@ -339,15 +444,15 @@ export default function AuthForm({
             </button>
             <button
               type="button"
-              onClick={() => switchTab("register")}
+              onClick={() => switchTab(activeTab === "forgot_password" ? "forgot_password" : "register")}
               className={clsx(
                 "flex-1 relative z-10 py-2.5 text-sm font-bold transition-colors",
-                activeTab === "register"
+                activeTab === "register" || activeTab === "forgot_password"
                   ? "text-white"
                   : "text-slate-400 hover:text-slate-200",
               )}
             >
-              {t("common.register")}
+              {activeTab === "forgot_password" ? "Quên mật khẩu" : t("common.register")}
             </button>
           </div>
         </div>
@@ -397,26 +502,37 @@ export default function AuthForm({
                   />
 
                   {/* Password */}
-                  <AuthFloatingInput
-                    id="login-password"
-                    label={t("auth.password")}
-                    type={showLoginPassword ? "text" : "password"}
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                    disabled={isLoginLoading}
-                    rightIcon={
+                  <div className="space-y-1">
+                    <AuthFloatingInput
+                      id="login-password"
+                      label={t("auth.password")}
+                      type={showLoginPassword ? "text" : "password"}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                      disabled={isLoginLoading}
+                      rightIcon={
+                        <button
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        >
+                          <span className="material-symbols-outlined text-xl">
+                            {showLoginPassword ? "visibility" : "visibility_off"}
+                          </span>
+                        </button>
+                      }
+                    />
+                    <div className="flex justify-end">
                       <button
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors cursor-pointer"
                         type="button"
-                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        onClick={() => switchTab("forgot_password")}
+                        className="text-xs text-slate-400 hover:text-pink-400 transition-colors font-medium cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-xl">
-                          {showLoginPassword ? "visibility" : "visibility_off"}
-                        </span>
+                       Quên mật khẩu?
                       </button>
-                    }
-                  />
+                    </div>
+                  </div>
 
                   {/* Submit */}
                   <button
@@ -465,7 +581,7 @@ export default function AuthForm({
                   </span>
                 </button>
               </motion.div>
-            ) : (
+            ) : activeTab === "register" ? (
               <motion.div
                 key="register"
                 custom={direction}
@@ -755,6 +871,285 @@ export default function AuthForm({
                   )}
                 </AnimatePresence>
               </motion.div>
+            ) : (
+              <motion.div
+                key="forgot"
+                custom={direction}
+                variants={tabContentVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                {/* Forgot Password Error */}
+                {forgotServerError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3"
+                  >
+                    <span className="material-symbols-outlined text-red-500 text-xl">
+                      error
+                    </span>
+                    <span className="text-red-400 text-sm font-medium">
+                      {forgotServerError}
+                    </span>
+                  </motion.div>
+                )}
+
+                <AnimatePresence mode="wait">
+                  {forgotStep === "EMAIL" ? (
+                    <motion.div
+                      key="forgot-email"
+                      initial={{ opacity: 0, x: 40 }}
+                      animate={{
+                        opacity: 1,
+                        x: 0,
+                        transition: { type: "spring", stiffness: 300, damping: 25 },
+                      }}
+                      exit={{ opacity: 0, x: -40, transition: { duration: 0.15 } }}
+                    >
+                      <form className="space-y-5" onSubmit={handleForgotEmail}>
+                        <div className="text-center mb-6">
+                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">
+                            Khôi phục mật khẩu
+                          </h2>
+                          <p className="text-sm text-slate-400">
+                            Nhập email của bạn để nhận mã OTP khôi phục.
+                          </p>
+                        </div>
+
+                        <AuthFloatingInput
+                          id="forgot-email"
+                          label={t("auth.email")}
+                          type="email"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          required
+                          rightIcon={
+                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-pink-500 transition-colors text-xl">
+                              mail
+                            </span>
+                          }
+                        />
+
+                        <button
+                          className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+                          type="submit"
+                          disabled={isSendingForgotOtp || forgotCountdown > 0}
+                        >
+                          {isSendingForgotOtp ? (
+                            <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                          ) : (
+                            "Gửi mã xác nhận"
+                          )}
+                        </button>
+
+                        {forgotCountdown > 0 && (
+                          <p className="text-center text-sm text-slate-400 mt-4">
+                            Bạn có thể yêu cầu gửi lại sau {forgotCountdown}s
+                          </p>
+                        )}
+                      </form>
+                    </motion.div>
+                  ) : forgotStep === "VERIFY" ? (
+                    <motion.div
+                      key="forgot-verify"
+                      initial={{ opacity: 0, x: 40 }}
+                      animate={{
+                        opacity: 1,
+                        x: 0,
+                        transition: { type: "spring", stiffness: 300, damping: 25 },
+                      }}
+                      exit={{ opacity: 0, x: -40, transition: { duration: 0.15 } }}
+                    >
+                      <form className="space-y-5" onSubmit={handleForgotVerify}>
+                        <div className="text-center mb-6">
+                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">
+                            Xác nhận mã OTP
+                          </h2>
+                          <p className="text-sm text-slate-400">
+                            Mã xác nhận đã được gửi đến
+                            <br />{" "}
+                            <span className="text-white font-bold">
+                              {forgotEmail}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4 mb-4">
+                          <InputOTP
+                            maxLength={6}
+                            value={forgotOtp}
+                            onChange={(value) => setForgotOtp(value)}
+                            containerClassName="gap-3"
+                          >
+                            <InputOTPGroup>
+                              <InputOTPSlot
+                                index={0}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={1}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={2}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={3}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={4}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-pink-500 focus:ring-pink-500 rounded-xl"
+                              />
+                              <InputOTPSlot
+                                index={5}
+                                className="size-12 text-xl font-bold bg-slate-800/50 border-slate-600/50 text-white focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                              />
+                            </InputOTPGroup>
+                          </InputOTP>
+                        </div>
+
+                        <button
+                          className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+                          type="submit"
+                          disabled={isVerifyingForgotOtp}
+                        >
+                          {isVerifyingForgotOtp ? (
+                            <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                          ) : (
+                            "Xác nhận mã"
+                          )}
+                        </button>
+
+                        <div className="flex items-center justify-between mt-4">
+                          <button
+                            type="button"
+                            onClick={() => setForgotStep("EMAIL")}
+                            className="text-sm text-slate-400 hover:text-white transition-colors"
+                          >
+                            Đổi email khác
+                          </button>
+                          {forgotCountdown === 0 ? (
+                            <button
+                              type="button"
+                              onClick={handleForgotEmail}
+                              className="text-sm text-pink-400 hover:text-pink-300 font-semibold transition-colors"
+                              disabled={isSendingForgotOtp}
+                            >
+                              Gửi lại mã
+                            </button>
+                          ) : (
+                            <p className="text-sm text-slate-500">
+                              Có thể gửi lại sau {forgotCountdown}s
+                            </p>
+                          )}
+                        </div>
+                      </form>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="forgot-reset"
+                      initial={{ opacity: 0, x: 40 }}
+                      animate={{
+                        opacity: 1,
+                        x: 0,
+                        transition: { type: "spring", stiffness: 300, damping: 25 },
+                      }}
+                      exit={{ opacity: 0, x: -40, transition: { duration: 0.15 } }}
+                    >
+                      <form className="space-y-5" onSubmit={handleForgotReset}>
+                        <div className="text-center mb-6">
+                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">
+                            Mật khẩu mới
+                          </h2>
+                          <p className="text-sm text-slate-400">
+                            Nhập mật khẩu mới cho tài khoản
+                            <br />{" "}
+                            <span className="text-white font-bold">
+                              {forgotEmail}
+                            </span>
+                          </p>
+                        </div>
+
+                        <AuthFloatingInput
+                          id="forgot-new-password"
+                          label="Mật khẩu mới (ít nhất 6 ký tự)"
+                          type={showForgotNewPassword ? "text" : "password"}
+                          value={forgotNewPassword}
+                          onChange={(e) => setForgotNewPassword(e.target.value)}
+                          required
+                          rightIcon={
+                            <button
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                              type="button"
+                              onClick={() =>
+                                setShowForgotNewPassword(!showForgotNewPassword)
+                              }
+                            >
+                              <span className="material-symbols-outlined text-xl">
+                                {showForgotNewPassword
+                                  ? "visibility"
+                                  : "visibility_off"}
+                              </span>
+                            </button>
+                          }
+                        />
+
+                        <AuthFloatingInput
+                          id="forgot-confirm-password"
+                          label="Xác nhận mật khẩu"
+                          type={showForgotConfirmPassword ? "text" : "password"}
+                          value={forgotConfirmPassword}
+                          onChange={(e) =>
+                            setForgotConfirmPassword(e.target.value)
+                          }
+                          required
+                          rightIcon={
+                            <button
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                              type="button"
+                              onClick={() =>
+                                setShowForgotConfirmPassword(
+                                  !showForgotConfirmPassword,
+                                )
+                              }
+                            >
+                              <span className="material-symbols-outlined text-xl">
+                                {showForgotConfirmPassword
+                                  ? "visibility"
+                                  : "visibility_off"}
+                              </span>
+                            </button>
+                          }
+                        />
+
+                        <button
+                          className="w-full py-3.5 px-4 bg-gradient-to-r from-secondary to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+                          type="submit"
+                          disabled={isResettingPwd}
+                        >
+                          {isResettingPwd ? (
+                            <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                          ) : (
+                            "Đặt lại mật khẩu"
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setForgotStep("VERIFY")}
+                          className="w-full text-center text-sm text-slate-400 hover:text-white transition-colors mt-4"
+                        >
+                          Quay lại nhập mã OTP
+                        </button>
+                      </form>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
@@ -773,7 +1168,7 @@ export default function AuthForm({
                   {t("auth.registerNow")}
                 </button>
               </>
-            ) : (
+            ) : activeTab === "register" ? (
               <>
                 {t("auth.haveAccount")}{" "}
                 <button
@@ -782,6 +1177,17 @@ export default function AuthForm({
                   className="font-bold text-secondary hover:text-pink-400 hover:underline decoration-2 underline-offset-4 transition-all"
                 >
                   {t("auth.loginNow")}
+                </button>
+              </>
+            ) : (
+              <>
+                Đã nhớ mật khẩu?{" "}
+                <button
+                  type="button"
+                  onClick={() => switchTab("login")}
+                  className="font-bold text-secondary hover:text-pink-400 hover:underline decoration-2 underline-offset-4 transition-all"
+                >
+                  Đăng nhập ngay
                 </button>
               </>
             )}

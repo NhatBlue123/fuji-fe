@@ -50,7 +50,8 @@ async function loadIceServers(): Promise<RTCIceServer[]> {
   if (cachedIceServers) return cachedIceServers;
 
   try {
-    const res = await fetch("/api/video-call/config");
+    // Directly call backend on port 8181 in dev
+    const res = await fetch("http://localhost:8181/api/video-call/config");
     if (!res.ok) {
       throw new Error(`ICE config HTTP ${res.status}`);
     }

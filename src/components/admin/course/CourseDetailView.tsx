@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useGetCourseByIdQuery,
   useGetLessonsByCourseQuery,
   useDeleteLessonMutation,
   useDeleteCourseMutation,
+  useUpdateCourseMutation,
 } from "@/store/services/courseApi";
 import {
   Card,
@@ -21,6 +22,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { DeleteCourseDialog } from "@/components/admin/course/DeleteCourseDialog";
 import {
   Table,
   TableBody,
@@ -84,6 +90,8 @@ interface CourseDetailViewProps {
 
 export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const shouldOpenEdit = searchParams.get("edit") !== null;
   const {
     data: course,
     isLoading: courseLoading,
@@ -95,12 +103,34 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     useDeleteLessonMutation();
   const [deleteCourse, { isLoading: isDeletingCourse }] =
     useDeleteCourseMutation();
+  const [updateCourse, { isLoading: isUpdatingCourse }] =
+    useUpdateCourseMutation();
 
   // Dialog states
   const [deleteLessonDialog, setDeleteLessonDialog] = useState<number | null>(
     null,
   );
   const [deleteCourseDialog, setDeleteCourseDialog] = useState(false);
+  const [editCourseDialog, setEditCourseDialog] = useState(shouldOpenEdit);
+
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editPublished, setEditPublished] = useState(false);
+
+  useEffect(() => {
+    if (!course) return;
+    setEditTitle(course.title || "");
+    setEditDescription(course.description || "");
+    setEditPrice(String(course.price ?? 0));
+    setEditPublished(course.isPublished);
+  }, [course]);
+
+  useEffect(() => {
+    if (shouldOpenEdit) {
+      setEditCourseDialog(true);
+    }
+  }, [shouldOpenEdit]);
 
   const handleDeleteLesson = async (lessonId: number) => {
     try {
@@ -119,6 +149,38 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
       router.push("/admin/courses");
     } catch {
       toast.error("Xóa khóa học thất bại");
+    }
+  };
+
+  const handleUpdateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!course?.instructor?.id) {
+      toast.error("Khóa học chưa có giảng viên, không thể cập nhật");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      const courseData = {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        instructorId: course.instructor.id,
+        price: Number(editPrice) || 0,
+        isPublished: editPublished,
+      };
+
+      formData.append(
+        "course",
+        new Blob([JSON.stringify(courseData)], { type: "application/json" }),
+      );
+
+      await updateCourse({ id: courseId, course: formData }).unwrap();
+      toast.success("Cập nhật khóa học thành công!");
+      setEditCourseDialog(false);
+      router.replace(`/admin/courses/${courseId}`);
+    } catch {
+      toast.error("Cập nhật khóa học thất bại");
     }
   };
 
@@ -173,6 +235,10 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
             Chi tiết khóa học và quản lý bài học
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setEditCourseDialog(true)}>
+          <Pencil className="size-4 mr-2" />
+          Chỉnh sửa khóa học
+        </Button>
         <Button
           variant="destructive"
           size="sm"
@@ -455,38 +521,86 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Course Confirmation */}
-      <Dialog open={deleteCourseDialog} onOpenChange={setDeleteCourseDialog}>
+      <DeleteCourseDialog
+        open={deleteCourseDialog}
+        onOpenChange={setDeleteCourseDialog}
+        courseTitle={course.title}
+        isDeleting={isDeletingCourse}
+        onConfirm={handleDeleteCourse}
+      />
+
+      {/* Edit Course */}
+      <Dialog open={editCourseDialog} onOpenChange={setEditCourseDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Xác nhận xóa khóa học</DialogTitle>
+            <DialogTitle>Chỉnh sửa khóa học</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa khóa học &quot;{course.title}&quot;?
-              Toàn bộ bài học và dữ liệu liên quan sẽ bị xóa vĩnh viễn.
+              Cập nhật nhanh thông tin chính của khóa học.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteCourseDialog(false)}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={isDeletingCourse}
-              onClick={handleDeleteCourse}
-            >
-              {isDeletingCourse ? (
-                <>
-                  <Loader2 className="size-4 mr-2 animate-spin" />
-                  Đang xóa...
-                </>
-              ) : (
-                "Xóa khóa học"
-              )}
-            </Button>
-          </DialogFooter>
+
+          <form onSubmit={handleUpdateCourse} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Tiêu đề</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Mô tả</Label>
+              <Textarea
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="min-h-[90px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-price">Giá (VNĐ)</Label>
+              <Input
+                id="edit-price"
+                type="number"
+                min="0"
+                value={editPrice}
+                onChange={(e) => setEditPrice(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">Xuất bản</p>
+                <p className="text-xs text-muted-foreground">
+                  Bật để hiển thị cho học viên
+                </p>
+              </div>
+              <Switch checked={editPublished} onCheckedChange={setEditPublished} />
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditCourseDialog(false)}
+              >
+                Hủy
+              </Button>
+              <Button type="submit" disabled={isUpdatingCourse}>
+                {isUpdatingCourse ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : (
+                  "Lưu thay đổi"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

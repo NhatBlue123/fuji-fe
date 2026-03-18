@@ -62,6 +62,11 @@ const navGroups: NavGroup[] = [
         icon: LayoutDashboard,
       },
       {
+        title: "Teacher Dashboard",
+        href: "/admin/teacher-dashboard",
+        icon: FileText,
+      },
+      {
         title: "Thống kê",
         href: "/admin/analytics",
         icon: BarChart3,

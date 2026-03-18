@@ -71,7 +71,11 @@ const LEVEL_COLORS: Record<string, string> = {
 const INITIAL_FORM = {
   title: "",
   level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
-  testType: "full_test" as "full_test" | "vocabulary_grammar" | "reading" | "listening",
+  testType: "full_test" as
+    | "full_test"
+    | "vocabulary_grammar"
+    | "reading"
+    | "listening",
   description: "",
   duration: 120,
   totalQuestions: 0,
@@ -249,195 +253,299 @@ export default function AdminJLPTTestsPage() {
           {/* Form panel — scrollable overlay */}
           <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
             <div className="flex min-h-full items-start justify-center px-4 py-10">
-            <div
-              className="w-full max-w-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <form onSubmit={handleSubmit}>
-                <Card className="shadow-2xl border-border">
-                  <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
-                    <div>
-                      <CardTitle className="text-xl">
-                        {editingTestId ? "Chỉnh sửa đề thi JLPT" : "Tạo đề thi JLPT mới"}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {editingTestId ? "Cập nhật thông tin của đề thi" : "Điền thông tin cơ bản của đề thi"}
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={closeForm}
-                      className="shrink-0 -mt-1 -mr-1"
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </CardHeader>
-
-                  <CardContent className="space-y-5">
-                    {/* Title */}
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Tiêu đề *</Label>
-                      <Input
-                        id="title"
-                        placeholder="VD: JLPT N3 Tháng 7/2024"
-                        value={formData.title}
-                        onChange={(e) => updateField("title", e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {/* Level & Test Type */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="level">Cấp độ *</Label>
-                        <Select value={formData.level} onValueChange={(v) => updateField("level", v)}>
-                          <SelectTrigger id="level"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {["N5", "N4", "N3", "N2", "N1"].map(l => (
-                              <SelectItem key={l} value={l}>{l}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="testType">Loại đề thi *</Label>
-                        <Select value={formData.testType} onValueChange={(v) => updateField("testType", v)}>
-                          <SelectTrigger id="testType"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="full_test">Full Test (Đề thi đầy đủ)</SelectItem>
-                            <SelectItem value="vocabulary_grammar">Từ vựng &amp; Ngữ pháp (言語知識)</SelectItem>
-                            <SelectItem value="reading">Đọc hiểu (読解)</SelectItem>
-                            <SelectItem value="listening">Nghe hiểu (聴解)</SelectItem>
-                          </SelectContent>
-                        </Select>
+              <div
+                className="w-full max-w-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <form onSubmit={handleSubmit}>
+                  <Card className="shadow-2xl border-border">
+                    <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+                      <div>
+                        <CardTitle className="text-xl">
+                          {editingTestId
+                            ? "Chỉnh sửa đề thi JLPT"
+                            : "Tạo đề thi JLPT mới"}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {editingTestId
+                            ? "Cập nhật thông tin của đề thi"
+                            : "Điền thông tin cơ bản của đề thi"}
+                        </CardDescription>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => setShowCreateForm(false)}
+                        onClick={closeForm}
                         className="shrink-0 -mt-1 -mr-1"
                       >
                         <X className="h-5 w-5" />
                       </Button>
                     </CardHeader>
 
-                    {/* Duration — full width now that totalQuestions is removed */}
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Thời gian (phút) *</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        min="1"
-                        value={formData.duration || ""}
-                        onChange={(e) => handleNumberChange("duration", e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {/* Pass Scores — adaptive per testType */}
-                    <div className="space-y-3">
+                    <CardContent className="space-y-5">
+                      {/* Title */}
                       <div className="space-y-2">
-                        <Label htmlFor="description">Mô tả</Label>
-                        <Textarea
-                          id="description"
-                          placeholder="Mô tả ngắn về đề thi này..."
-                          rows={2}
-                          value={formData.description}
-                          onChange={(e) =>
-                            updateField("description", e.target.value)
-                          }
+                        <Label htmlFor="title">Tiêu đề *</Label>
+                        <Input
+                          id="title"
+                          placeholder="VD: JLPT N3 Tháng 7/2024"
+                          value={formData.title}
+                          onChange={(e) => updateField("title", e.target.value)}
+                          required
                         />
-                        <p className="text-xs text-muted-foreground">
-                          {formData.testType === "full_test" ? "Thường là 90–100" : "Điểm tối thiểu để đỗ phần thi này"}
-                        </p>
                       </div>
 
-                      {/* full_test: hiện cả 3 mục liệt */}
-                      {formData.testType === "full_test" && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
-                              <Input id="langPass" type="number" min="0"
-                                value={formData.languageKnowledgePassScore || ""}
-                                onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="readPass">Liệt đọc</Label>
-                              <Input id="readPass" type="number" min="0"
-                                value={formData.readingPassScore || ""}
-                                onChange={(e) => handleNumberChange("readingPassScore", e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="listenPass">Liệt nghe</Label>
-                              <Input id="listenPass" type="number" min="0"
-                                value={formData.listeningPassScore || ""}
-                                onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)} />
-                            </div>
-                          </div>
+                      {/* Level & Test Type */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="level">Cấp độ *</Label>
+                          <Select
+                            value={formData.level}
+                            onValueChange={(v) => updateField("level", v)}
+                          >
+                            <SelectTrigger id="level">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {["N5", "N4", "N3", "N2", "N1"].map((l) => (
+                                <SelectItem key={l} value={l}>
+                                  {l}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="testType">Loại đề thi *</Label>
+                          <Select
+                            value={formData.testType}
+                            onValueChange={(v) => updateField("testType", v)}
+                          >
+                            <SelectTrigger id="testType">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="full_test">
+                                Full Test (Đề thi đầy đủ)
+                              </SelectItem>
+                              <SelectItem value="vocabulary_grammar">
+                                Từ vựng &amp; Ngữ pháp (言語知識)
+                              </SelectItem>
+                              <SelectItem value="reading">
+                                Đọc hiểu (読解)
+                              </SelectItem>
+                              <SelectItem value="listening">
+                                Nghe hiểu (聴解)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowCreateForm(false)}
+                          className="shrink-0 -mt-1 -mr-1"
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
+
+                      {/* Duration — full width now that totalQuestions is removed */}
+                      <div className="space-y-2">
+                        <Label htmlFor="duration">Thời gian (phút) *</Label>
+                        <Input
+                          id="duration"
+                          type="number"
+                          min="1"
+                          value={formData.duration || ""}
+                          onChange={(e) =>
+                            handleNumberChange("duration", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+
+                      {/* Pass Scores — adaptive per testType */}
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Mô tả</Label>
+                          <Textarea
+                            id="description"
+                            placeholder="Mô tả ngắn về đề thi này..."
+                            rows={2}
+                            value={formData.description}
+                            onChange={(e) =>
+                              updateField("description", e.target.value)
+                            }
+                          />
                           <p className="text-xs text-muted-foreground">
-                            Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ trượt dù tổng điểm cao.
+                            {formData.testType === "full_test"
+                              ? "Thường là 90–100"
+                              : "Điểm tối thiểu để đỗ phần thi này"}
                           </p>
                         </div>
-                      )}
 
-                      {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
-                      {formData.testType === "vocabulary_grammar" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="langPass">Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)</Label>
-                          <Input id="langPass" type="number" min="0"
-                            value={formData.languageKnowledgePassScore || ""}
-                            onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)} />
-                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần ngôn ngữ (thường là 19)</p>
-                        </div>
-                      )}
+                        {/* full_test: hiện cả 3 mục liệt */}
+                        {formData.testType === "full_test" && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
+                                <Input
+                                  id="langPass"
+                                  type="number"
+                                  min="0"
+                                  value={
+                                    formData.languageKnowledgePassScore || ""
+                                  }
+                                  onChange={(e) =>
+                                    handleNumberChange(
+                                      "languageKnowledgePassScore",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="readPass">Liệt đọc</Label>
+                                <Input
+                                  id="readPass"
+                                  type="number"
+                                  min="0"
+                                  value={formData.readingPassScore || ""}
+                                  onChange={(e) =>
+                                    handleNumberChange(
+                                      "readingPassScore",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="listenPass">Liệt nghe</Label>
+                                <Input
+                                  id="listenPass"
+                                  type="number"
+                                  min="0"
+                                  value={formData.listeningPassScore || ""}
+                                  onChange={(e) =>
+                                    handleNumberChange(
+                                      "listeningPassScore",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp
+                              hơn sẽ trượt dù tổng điểm cao.
+                            </p>
+                          </div>
+                        )}
 
-                      {/* reading: chỉ hiện liệt đọc */}
-                      {formData.testType === "reading" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="readPass">Liệt đọc (phần đọc hiểu)</Label>
-                          <Input id="readPass" type="number" min="0"
-                            value={formData.readingPassScore || ""}
-                            onChange={(e) => handleNumberChange("readingPassScore", e.target.value)} />
-                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần đọc (thường là 19)</p>
-                        </div>
-                      )}
+                        {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
+                        {formData.testType === "vocabulary_grammar" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="langPass">
+                              Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)
+                            </Label>
+                            <Input
+                              id="langPass"
+                              type="number"
+                              min="0"
+                              value={formData.languageKnowledgePassScore || ""}
+                              onChange={(e) =>
+                                handleNumberChange(
+                                  "languageKnowledgePassScore",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu phần ngôn ngữ (thường là 19)
+                            </p>
+                          </div>
+                        )}
 
-                      {/* listening: chỉ hiện liệt nghe */}
-                      {formData.testType === "listening" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="listenPass">Liệt nghe (phần nghe hiểu)</Label>
-                          <Input id="listenPass" type="number" min="0"
-                            value={formData.listeningPassScore || ""}
-                            onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)} />
-                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần nghe (thường là 19)</p>
-                        </div>
-                      )}
-                    </div>
+                        {/* reading: chỉ hiện liệt đọc */}
+                        {formData.testType === "reading" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="readPass">
+                              Liệt đọc (phần đọc hiểu)
+                            </Label>
+                            <Input
+                              id="readPass"
+                              type="number"
+                              min="0"
+                              value={formData.readingPassScore || ""}
+                              onChange={(e) =>
+                                handleNumberChange(
+                                  "readingPassScore",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu phần đọc (thường là 19)
+                            </p>
+                          </div>
+                        )}
 
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-2">
-                      <Button type="submit" disabled={isCreating || isUpdating}>
-                        {editingTestId 
-                          ? (isUpdating ? "Đang cập nhật..." : "Lưu thay đổi") 
-                          : (isCreating ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={closeForm}
-                      >
-                        Hủy
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </form>
-            </div>
+                        {/* listening: chỉ hiện liệt nghe */}
+                        {formData.testType === "listening" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="listenPass">
+                              Liệt nghe (phần nghe hiểu)
+                            </Label>
+                            <Input
+                              id="listenPass"
+                              type="number"
+                              min="0"
+                              value={formData.listeningPassScore || ""}
+                              onChange={(e) =>
+                                handleNumberChange(
+                                  "listeningPassScore",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu phần nghe (thường là 19)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3 pt-2">
+                        <Button
+                          type="submit"
+                          disabled={isCreating || isUpdating}
+                        >
+                          {editingTestId
+                            ? isUpdating
+                              ? "Đang cập nhật..."
+                              : "Lưu thay đổi"
+                            : isCreating
+                              ? "Đang tạo..."
+                              : "Tạo đề thi và thêm câu hỏi"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={closeForm}
+                        >
+                          Hủy
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </form>
+              </div>
             </div>
           </div>
         </>

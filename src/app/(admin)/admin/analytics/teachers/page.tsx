@@ -12,6 +12,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer 
 } from 'recharts';
+import { useGetTeacherIncomeStatsQuery } from '@/store/services/teacherApi';
 
 // Dữ liệu mẫu cho biểu đồ
 const chartData = [
@@ -27,9 +28,18 @@ const chartData = [
 const Dashboard: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { data: statsData, isLoading } = useGetTeacherIncomeStatsQuery();
 
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
+
+  if (isLoading) {
+    return (
+      <main className="flex-1 flex flex-col items-center justify-center min-w-0 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <div className="w-8 h-8 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin"></div>
+      </main>
+    );
+  }
 
   // Cấu hình màu sắc dựa trên theme
   const isDark = theme === 'dark';
@@ -126,10 +136,10 @@ const Dashboard: React.FC = () => {
   </div>
 </div>
             <div className="flex-1 grid grid-cols-2 gap-5">
-              <StatItem icon={<Clock size={20} className="text-cyan-500" />} bg="bg-cyan-50 dark:bg-cyan-500/10" label="Tổng số giờ dạy" value="128.5 Giờ" borderColor="group-hover:border-cyan-200 dark:group-hover:border-cyan-800" />
-              <StatItem icon={<Users size={20} className="text-pink-500" />} bg="bg-pink-50 dark:bg-pink-500/10" label="Học viên" value="24" borderColor="group-hover:border-pink-200 dark:group-hover:border-pink-800" />
-              <StatItem icon={<Wallet size={20} className="text-cyan-600 dark:text-cyan-400" />} bg="bg-cyan-100/50 dark:bg-cyan-400/10" label="Số dư" value="15.42M" highlight="text-cyan-600 dark:text-cyan-400" borderColor="group-hover:border-cyan-300 dark:group-hover:border-cyan-700" />
-              <StatItem icon={<Heart size={20} className="text-rose-500" />} bg="bg-rose-50 dark:bg-rose-500/10" label="Yêu thích" value="12K" borderColor="group-hover:border-rose-200 dark:group-hover:border-rose-800" />
+              <StatItem icon={<Clock size={20} className="text-cyan-500" />} bg="bg-cyan-50 dark:bg-cyan-500/10" label="Tổng số lớp" value={`${statsData?.totalClasses || 0}`} borderColor="group-hover:border-cyan-200 dark:group-hover:border-cyan-800" />
+              <StatItem icon={<Users size={20} className="text-pink-500" />} bg="bg-pink-50 dark:bg-pink-500/10" label="Học viên" value={`${statsData?.totalStudents || 0}`} borderColor="group-hover:border-pink-200 dark:group-hover:border-pink-800" />
+              <StatItem icon={<Wallet size={20} className="text-cyan-600 dark:text-cyan-400" />} bg="bg-cyan-100/50 dark:bg-cyan-400/10" label="Tổng thu nhập" value={`${(statsData?.totalRevenue || 0).toLocaleString()}₫`} highlight="text-cyan-600 dark:text-cyan-400" borderColor="group-hover:border-cyan-300 dark:group-hover:border-cyan-700" />
+              <StatItem icon={<Heart size={20} className="text-rose-500" />} bg="bg-rose-50 dark:bg-rose-500/10" label="Phí nền tảng" value={`${(statsData?.totalPlatformFee || 0).toLocaleString()}₫`} borderColor="group-hover:border-rose-200 dark:group-hover:border-rose-800" />
             </div>
           </div>
         </section>
@@ -154,7 +164,7 @@ const Dashboard: React.FC = () => {
             {/* Chart Container */}
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={statsData?.monthlyStats || chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
@@ -214,8 +224,8 @@ const Dashboard: React.FC = () => {
              <div className="bg-white dark:bg-slate-900 p-7 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all">
               <h3 className="text-lg font-extrabold dark:text-white mb-6">Báo cáo</h3>
               <div className="space-y-4">
-                <ReportItem type="income" label="Doanh thu" amount="10.000.000" color="cyan" />
-                <ReportItem type="expense" label="Rút tiền" amount="0" color="pink" />
+                <ReportItem type="income" label="Tổng thu" amount={(statsData?.totalRevenue || 0).toLocaleString()} color="cyan" />
+                <ReportItem type="expense" label="Thực nhận" amount={(statsData?.totalNetIncome || 0).toLocaleString()} color="pink" />
               </div>
             </div>
 

@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
         icon: LayoutDashboard,
       },
       {
-        title: "Thống kê doanh thu",
+        title: "Thống kê ",
         icon: BarChart3,
         children: [
           {
@@ -87,6 +87,12 @@ const navGroups: NavGroup[] = [
       {
         title: "Người dùng",
         href: "/admin/users",
+        icon: Users,
+        adminOnly: true,
+      },
+      {
+        title: "Rút tiền",
+        href: "/admin/withdraw",
         icon: Users,
         adminOnly: true,
       },

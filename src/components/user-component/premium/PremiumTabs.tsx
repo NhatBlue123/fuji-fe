@@ -1,17 +1,16 @@
 import React from 'react';
-import Link from 'next/link';
-import TopupContent from './TopupContent';
 
 interface PremiumTabsProps {
   activeTab: 'premium' | 'topup'; // Xác định tab nào đang hoạt động
+  onChangeTab: (tab: 'premium' | 'topup') => void;
 }
 
-export default function PremiumTabs({ activeTab }: PremiumTabsProps) {
+export default function PremiumTabs({ activeTab, onChangeTab }: PremiumTabsProps) {
   
   const tabs = [
-    { id: 'premium', label: 'Nâng cấp Premium', href: '/premium' },
-    { id: 'topup', label: 'Nạp Hoa Anh Đào', href: '/components/user-component/premium/TopupContent.tsx' },
-  ];
+    { id: 'premium', label: 'Nâng cấp Premium' },
+    { id: 'topup', label: 'Nạp Hoa Anh Đào' },
+  ] as const;
 
   return (
     
@@ -21,7 +20,11 @@ export default function PremiumTabs({ activeTab }: PremiumTabsProps) {
           const isActive = tab.id === activeTab;
           
           return (
-            <Link key={tab.id} href={tab.href} className="relative group">
+            <button 
+              key={tab.id} 
+              onClick={() => onChangeTab(tab.id)} 
+              className="relative group focus:outline-none"
+            >
               <div
                 className={`px-6 py-4 font-semibold text-lg transition-colors duration-200 cursor-pointer whitespace-nowrap
                   ${
@@ -40,7 +43,7 @@ export default function PremiumTabs({ activeTab }: PremiumTabsProps) {
               {!isActive && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-secondary/30 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-full" />
               )}
-            </Link>
+            </button>
           );
         })}
       </div>

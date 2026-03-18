@@ -37,9 +37,9 @@ export default function TopupContent() {
     { id: 1, price: 10000, flowers: 1 },
     { id: 2, price: 20000, flowers: 20 },
     { id: 3, price: 50000, flowers: 50, bonus: 5 },
-    { id: 4, price: 100000, flowers: 10, bonus: 20, isPopular: true },
-    { id: 5, price: 200000, flowers: 20, bonus: 60 },
-    { id: 6, price: 500000, flowers: 50, bonus: 200 }
+    { id: 4, price: 100000, flowers: 100, bonus: 20, isPopular: true },
+    { id: 5, price: 200000, flowers: 200, bonus: 60 },
+    { id: 6, price: 500000, flowers: 500, bonus: 100 }
   ]
 
   /**

@@ -48,7 +48,7 @@ export function HeroSection() {
               },
               number: {
                 density: { enable: true, area: 800 },
-                value: 450, // Số lượng hạt tuyết
+                value: 350, // Số lượng hạt tuyết
               },
               opacity: {
                 value: { min: 0.3, max: 0.8 },

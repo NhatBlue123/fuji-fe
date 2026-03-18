@@ -144,7 +144,7 @@ export default function TransactionHistory() {
                     <tr key={tx.id} className="hover:bg-white/[0.02] transition-all group border-l-2 border-transparent hover:border-pink-500">
                       <td className="p-6">
                         <span className="font-mono text-[11px] text-cyan-400/80 tracking-tighter">
-                          #{tx.referenceId || tx.id.substring(0, 8).toUpperCase()}
+                          #{tx.referenceId || String(tx.id).substring(0, 8).toUpperCase()}
                         </span>
                       </td>
 

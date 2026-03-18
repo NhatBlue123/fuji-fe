@@ -1,0 +1,89 @@
+import { baseApi } from "./baseApi";
+
+export interface WithdrawRequestPayload {
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+}
+
+export interface WithdrawRequestData {
+  id: number;
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  status: string;
+  createdAt: string;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
+export const withdrawApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    createWithdrawRequest: builder.mutation<ApiResponse<WithdrawRequestData>, WithdrawRequestPayload>({
+      query: (body) => ({
+        url: "/withdraw",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Wallet", "Withdraw"],
+    }),
+    getMyWithdrawRequests: builder.query<ApiResponse<WithdrawRequestData[]>, void>({
+      query: () => ({
+        url: "/withdraw/my-requests",
+        method: "GET",
+      }),
+      providesTags: ["Withdraw"],
+    }),
+    
+    // --- ADMIN ENDPOINTS ---
+    getPendingWithdrawRequests: builder.query<ApiResponse<WithdrawRequestData[]>, void>({
+      query: () => ({
+        url: "/admin/withdraw/pending",
+        method: "GET",
+      }),
+      providesTags: ["Withdraw"],
+    }),
+    getAllWithdrawRequests: builder.query<ApiResponse<WithdrawRequestData[]>, void>({
+      query: () => ({
+        url: "/admin/withdraw/all",
+        method: "GET",
+      }),
+      providesTags: ["Withdraw"],
+    }),
+    approveWithdrawRequest: builder.mutation<ApiResponse<string>, number>({
+      query: (id) => ({
+        url: `/admin/withdraw/${id}/approve`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Withdraw", "Wallet"],
+    }),
+    rejectWithdrawRequest: builder.mutation<ApiResponse<string>, number>({
+      query: (id) => ({
+        url: `/admin/withdraw/${id}/reject`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Withdraw", "Wallet"],
+    }),
+  }),
+});
+
+export const {
+  useCreateWithdrawRequestMutation,
+  useGetMyWithdrawRequestsQuery,
+  useGetPendingWithdrawRequestsQuery,
+  useGetAllWithdrawRequestsQuery,
+  useApproveWithdrawRequestMutation,
+  useRejectWithdrawRequestMutation,
+} = withdrawApi;

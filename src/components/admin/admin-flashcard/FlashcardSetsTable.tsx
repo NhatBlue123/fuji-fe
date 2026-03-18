@@ -53,10 +53,7 @@ import { CreateFlashcardModal } from "./CreateFlashcardModal";
 import { exportFlashcardsToExcel } from "./flashcardUtils";
 import { Card } from "@/types/card";
 
-interface FlashcardSetsTableProps {
-    onCreateClick: () => void;
-    onImportClick: () => void;
-}
+interface FlashcardSetsTableProps {}
 
 const INITIAL_SETS: FlashcardSet[] = [
     {
@@ -119,9 +116,7 @@ const MOCK_CARDS: Flashcard[] = [
     },
 ];
 
-export const FlashcardSetsTable = ({
-    onCreateClick,
-}: FlashcardSetsTableProps) => {
+export const FlashcardSetsTable = ({}: FlashcardSetsTableProps) => {
     const [sets, setSets] = useState<FlashcardSet[]>(INITIAL_SETS);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterBy, setFilterBy] = useState("all");
@@ -139,11 +134,16 @@ export const FlashcardSetsTable = ({
     const [viewingCard, setViewingCard] = useState<Flashcard | null>(null);
     const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
     const [isCreateCardModalOpen, setIsCreateCardModalOpen] = useState(false);
+    const [isCreateSetModalOpen, setIsCreateSetModalOpen] = useState(false);
 
     const [isExportOpen, setIsExportOpen] = useState(false);
     const [exportSet, setExportSet] = useState<FlashcardSet | null>(null);
     const handleUpdateSet = (updatedSet: FlashcardSet) => {
         setSets(sets.map(s => s.id === updatedSet.id ? updatedSet : s));
+    };
+
+    const handleCreateSet = (newSet: any) => {
+        setSets([...sets, { ...newSet, id: Date.now(), status: "Draft", numCards: 0, createdAt: new Date().toLocaleDateString("vi-VN") }]);
     };
 
     const confirmDelete = () => {
@@ -236,7 +236,7 @@ export const FlashcardSetsTable = ({
 
                 <div className="flex items-center gap-3">
                     <Button
-                        onClick={onCreateClick}
+                        onClick={() => setIsCreateSetModalOpen(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
                     >
                         <Plus className="size-5 mr-2" />
@@ -382,6 +382,13 @@ export const FlashcardSetsTable = ({
                 onOpenChange={(open) => !open && setEditingSet(null)}
                 editData={editingSet}
                 onUpdateSuccess={handleUpdateSet}
+            />
+
+            {/* Create Set Modal */}
+            <CreateFlashcardSetModal
+                open={isCreateSetModalOpen}
+                onOpenChange={setIsCreateSetModalOpen}
+                onUpdateSuccess={handleCreateSet}
             />
 
             {/* Edit Card Modal */}

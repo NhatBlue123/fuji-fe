@@ -41,25 +41,62 @@ import {
 import { toast } from "sonner";
 import { CreateFlashcardModal } from "./CreateFlashcardModal";
 import { ViewFlashcardModal } from "./ViewFlashcardModal";
+import { ImportFlashcardModal } from "./ImportFlashcardModal";
 import { Flashcard } from "@/types/flashcard";
 import { exportFlashcardsToExcel } from "./flashcardUtils";
 import { Card } from "@/types/card";
 
-interface FlashcardListProps {
-    cards: Flashcard[];
-    onImportClick: () => void;
-    onCreateClick: () => void;
-    onUpdateCard: (updatedCard: Flashcard) => void;
-    onDeleteCard: (id: number) => void;
-}
+interface FlashcardListProps {}
 
-export const FlashcardList = ({
-    cards,
-    onImportClick,
-    onCreateClick,
-    onUpdateCard,
-    onDeleteCard,
-}: FlashcardListProps) => {
+const INITIAL_CARDS: Flashcard[] = [
+    {
+        id: 1,
+        kanji: "山田",
+        hiragana: "やまだ",
+        meaning: "Yamada (name)",
+        example: "山田さんは日本人です。",
+        lesson: "N5 - Unit 1",
+        type: "Vocabulary",
+        studyStatus: "learned",
+        viewCount: 12,
+    },
+    {
+        id: 2,
+        kanji: "先生",
+        hiragana: "せんせい",
+        meaning: "Teacher",
+        example: "あの方は先生です。",
+        lesson: "N5 - Unit 1",
+        type: "Vocabulary",
+        studyStatus: "learned",
+        viewCount: 8,
+    },
+    {
+        id: 3,
+        kanji: "学生",
+        hiragana: "がくせい",
+        meaning: "Student",
+        example: "私は学生です。",
+        lesson: "N5 - Unit 1",
+        type: "Vocabulary",
+        studyStatus: "review",
+        viewCount: 21,
+    },
+    {
+        id: 4,
+        kanji: "日本語",
+        hiragana: "にほんご",
+        meaning: "Japanese Language",
+        example: "日本語を勉強します。",
+        lesson: "N5 - Unit 2",
+        type: "Kanji",
+        studyStatus: "not_learned",
+        viewCount: 0,
+    },
+];
+
+export const FlashcardList = ({}: FlashcardListProps) => {
+    const [cards, setCards] = useState<Flashcard[]>(INITIAL_CARDS);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
@@ -74,9 +111,32 @@ export const FlashcardList = ({
     // Edit/Delete/View state
     const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [deletingCardId, setDeletingCardId] = useState<number | null>(null);
     const [viewingCard, setViewingCard] = useState<Flashcard | null>(null);
     const [showFilter, setShowFilter] = useState(false);
+
+    const handleImportSuccess = (newCards: any[]) => {
+        const cardsWithIds: Flashcard[] = newCards.map((card, index) => ({
+            ...card,
+            id: Date.now() + index,
+            studyStatus: "not_learned"
+        }));
+        setCards([...cards, ...cardsWithIds]);
+    };
+
+    const handleCreateCard = (newCard: any) => {
+        setCards([...cards, { ...newCard, id: Date.now(), studyStatus: "not_learned" }]);
+    };
+
+    const handleUpdateCard = (updatedCard: Flashcard) => {
+        setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
+    };
+
+    const handleDeleteCard = (id: number) => {
+        setCards(cards.filter(c => c.id !== id));
+    };
 
     const toggleSaveCard = (id: number) => {
         if (savedCards.includes(id)) {
@@ -114,7 +174,7 @@ export const FlashcardList = ({
 
     const confirmDelete = () => {
         if (deletingCardId) {
-            onDeleteCard(deletingCardId);
+            handleDeleteCard(deletingCardId);
             toast.success("Đã xóa thẻ");
             setDeletingCardId(null);
         }
@@ -192,7 +252,7 @@ export const FlashcardList = ({
 
 
                     <Button
-                        onClick={onCreateClick}
+                        onClick={() => setIsCreateModalOpen(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
                     >
                         <Plus className="size-5 mr-2" />
@@ -223,7 +283,7 @@ export const FlashcardList = ({
 
                     <Button
                         variant="outline"
-                        onClick={onImportClick}
+                        onClick={() => setIsImportModalOpen(true)}
                         className="h-12 px-6 rounded-xl font-semibold border-slate-200"
                     >
                         <Download className="size-5 mr-2" />
@@ -459,7 +519,7 @@ export const FlashcardList = ({
 
                 {/* Smaller Add Card */}
                 <button
-                    onClick={onCreateClick}
+                    onClick={() => setIsCreateModalOpen(true)}
                     className="group bg-slate-50/50 rounded-2xl p-6 border-2 border-dashed border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 transition-all duration-300 flex flex-col items-center justify-center gap-3 min-h-[220px]"
                 >
                     <div className="size-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-amber-600 group-hover:scale-110 transition-all shadow-sm">
@@ -486,7 +546,21 @@ export const FlashcardList = ({
                 open={isEditModalOpen}
                 onOpenChange={setIsEditModalOpen}
                 editData={editingCard}
-                onUpdateSuccess={onUpdateCard}
+                onUpdateSuccess={handleUpdateCard}
+            />
+
+            {/* Create Modal */}
+            <CreateFlashcardModal
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+                onCreateSuccess={handleCreateCard}
+            />
+
+            {/* Import Modal */}
+            <ImportFlashcardModal
+                open={isImportModalOpen}
+                onOpenChange={setIsImportModalOpen}
+                onImportSuccess={handleImportSuccess}
             />
 
             {/* Delete Confirmation Modal using Standard Dialog */}

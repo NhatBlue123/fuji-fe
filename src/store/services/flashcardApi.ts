@@ -5,6 +5,7 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { BaseQueryFn } from "@reduxjs/toolkit/query";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api";
 import { getAccessToken, setAccessToken } from "@/lib/token";
+import i18n from "@/i18n";
 import type {
   FlashCardResponseDTO,
   FlashListResponseDTO,
@@ -24,7 +25,8 @@ import type {
 
 interface ApiResponse<T = unknown> {
   success: boolean;
-  message?: string;
+  // Backend trả về key i18n (ví dụ "flashlist.createSuccess")
+  messageKey?: string;
   data?: T;
 }
 
@@ -41,6 +43,8 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
+    const currentLang = i18n.language || "vi";
+    headers.set("Accept-Language", currentLang);
     return headers;
   },
 });
@@ -94,7 +98,7 @@ const baseQueryWithReauth: BaseQueryFn<
 
 // ─── Helper: build query string ────────────────────────
 
-function toQueryString(params: Record<string, unknown>): string {
+function toQueryString(params: Record<string, any>): string {
   const parts: string[] = [];
   for (const [key, val] of Object.entries(params)) {
     if (val !== undefined && val !== null && val !== "") {
@@ -252,19 +256,16 @@ export const flashcardApi = createApi({
     // Search flashcards
     searchFlashCards: builder.query<FlashCardSearchResult, SearchParams>({
       query: (params) => {
-        const qs = toQueryString(params as Record<string, unknown>);
+        const qs = toQueryString(params);
         return `${API_ENDPOINTS.FLASHCARDS.SEARCH}${qs}`;
       },
       transformResponse: (response: ApiResponse<FlashCardSearchResult>) =>
-        response.data || { results: [], pagination: {} as PaginationDTO },
+        response.data || { flashCards: [], pagination: {} as PaginationDTO },
       providesTags: [{ type: "FlashCard", id: "SEARCH" }],
     }),
 
     // Start learning a flashcard
-    startLearning: builder.mutation<
-      UserStudyProgressDTO,
-      number | string
-    >({
+    startLearning: builder.mutation<UserStudyProgressDTO, number | string>({
       query: (flashCardId) => ({
         url: API_ENDPOINTS.FLASHCARDS.START_LEARNING(flashCardId),
         method: "POST",
@@ -460,11 +461,11 @@ export const flashcardApi = createApi({
     // Search flashlists
     searchFlashLists: builder.query<FlashListSearchResult, SearchParams>({
       query: (params) => {
-        const qs = toQueryString(params as Record<string, unknown>);
+        const qs = toQueryString(params);
         return `${API_ENDPOINTS.FLASHLISTS.SEARCH}${qs}`;
       },
       transformResponse: (response: ApiResponse<FlashListSearchResult>) =>
-        response.data || { results: [], pagination: {} as PaginationDTO },
+        response.data || { flashLists: [], pagination: {} as PaginationDTO },
       providesTags: [{ type: "FlashList", id: "SEARCH" }],
     }),
   }),

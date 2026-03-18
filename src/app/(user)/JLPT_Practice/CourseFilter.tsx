@@ -1,87 +1,112 @@
 "use client";
-import React, { useState } from "react";
+import Input from "@/components/common/Input";
+import { Button } from "@/components/ui/button";
 
 interface CourseFilterProps {
   search: string;
   onSearchChange: (val: string) => void;
   activeLevel: string;
   onLevelChange: (val: string) => void;
+  activeCategory: string;
+  onCategoryChange: (val: string) => void;
 }
+
+const LEVELS = [
+  { id: "all", label: "Tất cả" },
+  { id: "N5", label: "N5" },
+  { id: "N4", label: "N4" },
+  { id: "N3", label: "N3" },
+  { id: "N2", label: "N2" },
+  { id: "N1", label: "N1" },
+];
+
+const CATEGORIES = [
+  { id: "all", label: "Tất cả" },
+  { id: "full_test", label: "Đề full" },
+  { id: "vocabulary_grammar", label: "Từ vựng & Ngữ pháp" },
+  { id: "reading", label: "Đọc hiểu" },
+  { id: "listening", label: "Nghe hiểu" },
+];
 
 export default function CourseFilter({
   search,
   onSearchChange,
   activeLevel,
   onLevelChange,
+  activeCategory,
+  onCategoryChange,
 }: CourseFilterProps) {
-  const levels = ["Tất cả", "N5", "N4", "N3", "N2", "N1"];
-  const types = ["Đề full", "Từ vựng", "Ngữ pháp", "Đọc hiểu", "Nghe hiểu"];
-  const [activeType, setActiveType] = useState("Đề full");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  const handleSearch = () => {
+    /* search on change via debounce in parent */
+  };
 
   return (
-    <section className="relative z-10 mb-12">
-      <div className="bg-slate-800/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 flex items-center justify-between gap-6">
-        
-        {/* PHẦN LỌC DROPDOWN */}
-        <div className="flex items-center gap-3">
-          {/* Lọc cấp độ */}
-          <div className="relative">
-            <select
-              value={activeLevel}
-              onChange={(e) => onLevelChange(e.target.value)}
-              className="appearance-none h-10 pl-4 pr-10 bg-slate-800/80 text-slate-200 border border-slate-700/50 hover:bg-slate-700 rounded-full text-sm font-semibold focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-sm"
-            >
-              {levels.map((level) => (
-                <option key={level} value={level} className="bg-slate-800 text-slate-200 font-medium">
-                  {level === "Tất cả" ? "Tất cả cấp độ" : level}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
-          </div>
+    <div className="bg-card glass-card p-6 md:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-xl">
+      {/* Search bar */}
+      <div className="relative mb-6">
+        <Input
+          icon="search"
+          placeholder="Tìm kiếm đề thi JLPT (VD: N3 đề thi thử, N2...)"
+          type="text"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          className="pr-28"
+        />
+        <Button
+          onClick={handleSearch}
+          className="absolute inset-y-2 right-2 px-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-lg text-sm transition-colors shadow-lg shadow-secondary/20"
+        >
+          Tìm kiếm
+        </Button>
+      </div>
 
-          {/* Lọc loại đề */}
-          <div className="relative">
-            <select
-              value={activeType}
-              onChange={(e) => setActiveType(e.target.value)}
-              className="appearance-none h-10 pl-4 pr-10 bg-slate-800/80 text-slate-200 border border-slate-700/50 hover:bg-slate-700 rounded-full text-sm font-semibold focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-sm"
+      {/* Level + Category filters */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Level */}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-muted-foreground text-sm font-bold mr-2 uppercase tracking-wide">
+            Trình độ:
+          </span>
+          {LEVELS.map((level) => (
+            <Button
+              key={level.id}
+              onClick={() => onLevelChange(level.id)}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                activeLevel === level.id
+                  ? "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30 hover:scale-105"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border font-medium hover:border-input"
+              }`}
             >
-              {types.map((type) => (
-                <option key={type} value={type} className="bg-slate-800 text-slate-200 font-medium">
-                  {type}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
-          </div>
+              {level.label}
+            </Button>
+          ))}
         </div>
 
-        {/*  PHẦN TÌM KIẾM  */}
-        <div className="relative flex-1 min-w-[280px] h-10 shrink-0 group">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <span className="material-symbols-outlined text-slate-500 text-[20px] group-focus-within:text-pink-400 transition">
-              search
-            </span>
+        <div className="hidden md:block w-px bg-border" />
+
+        {/* Category / test type */}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-muted-foreground text-sm font-bold mr-2 uppercase tracking-wide">
+            Danh mục:
           </span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Tìm kiếm đề thi..."
-            className="w-full h-10 bg-slate-900/50 text-white border border-slate-700/50 rounded-full pl-10 pr-4 text-sm
-            focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 placeholder:text-slate-500 transition-all"
-          />
+          {CATEGORIES.map((cat) => (
+            <Button
+              key={cat.id}
+              onClick={() => onCategoryChange(cat.id)}
+              className={`px-4 py-1.5 rounded-full text-sm transition-all ${
+                activeCategory === cat.id
+                  ? "bg-secondary text-secondary-foreground font-bold shadow-lg shadow-secondary/30"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border font-medium hover:border-input"
+              }`}
+            >
+              {cat.label}
+            </Button>
+          ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

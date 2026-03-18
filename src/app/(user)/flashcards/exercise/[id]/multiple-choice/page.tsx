@@ -6,6 +6,7 @@ import {
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
 } from "@/store/services/flashcardApi";
+import { Button } from "@/components/ui/button";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface MultipleChoiceQuestion {
@@ -56,11 +57,11 @@ export default function MultipleChoiceExercisePage({
     const cards = flashcard.cards;
     const picked = shuffle(cards).slice(0, Math.min(10, cards.length));
 
-    const qs: MultipleChoiceQuestion[] = picked.map((card, idx) => {
+    const qs: MultipleChoiceQuestion[] = picked.map((card: any, idx) => {
       const isV2M = Math.random() > 0.5;
       if (isV2M) {
         const wrong = shuffle(
-          cards.filter((c) => c.meaning !== card.meaning).map((c) => c.meaning),
+          cards.filter((c: any) => c.meaning !== card.meaning).map((c: any) => c.meaning),
         ).slice(0, 3);
         return {
           id: idx,
@@ -73,8 +74,8 @@ export default function MultipleChoiceExercisePage({
       } else {
         const wrong = shuffle(
           cards
-            .filter((c) => c.vocabulary !== card.vocabulary)
-            .map((c) => c.vocabulary),
+            .filter((c: any) => c.vocabulary !== card.vocabulary)
+            .map((c: any) => c.vocabulary),
         ).slice(0, 3);
         return {
           id: idx,
@@ -149,7 +150,7 @@ export default function MultipleChoiceExercisePage({
     );
   }
 
-  if (error || !flashcard || flashcard.cards.length < 4) {
+  if (error || !flashcard || !flashcard.cards || flashcard.cards.length < 4) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-screen bg-background gap-4">
         <span className="material-symbols-outlined text-6xl text-red-400">
@@ -301,7 +302,7 @@ export default function MultipleChoiceExercisePage({
             )}
 
             <div className="flex gap-3 justify-center pt-2">
-              <button
+              <Button
                 onClick={generateQuestions}
                 className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl transition-all flex items-center gap-2"
               >
@@ -309,7 +310,7 @@ export default function MultipleChoiceExercisePage({
                   replay
                 </span>
                 Làm lại
-              </button>
+              </Button>
               <Link
                 href={`/flashcards/exercise/${id}/fill-blank`}
                 className="px-6 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground font-bold rounded-xl transition-all flex items-center gap-2"
@@ -444,7 +445,7 @@ export default function MultipleChoiceExercisePage({
               }
 
               return (
-                <button
+                <Button
                   key={idx}
                   onClick={() => handleSelect(option)}
                   disabled={isAnswered}
@@ -467,7 +468,7 @@ export default function MultipleChoiceExercisePage({
                     {option}
                   </span>
                   {iconEl}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -541,7 +542,7 @@ export default function MultipleChoiceExercisePage({
             })}
           </div>
 
-          <button
+          <Button
             onClick={handleNext}
             disabled={!isAnswered}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
@@ -558,7 +559,7 @@ export default function MultipleChoiceExercisePage({
                 ? "assessment"
                 : "arrow_forward"}
             </span>
-          </button>
+          </Button>
         </div>
       </footer>
     </div>

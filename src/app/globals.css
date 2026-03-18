@@ -198,6 +198,18 @@
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 
+  /* Glass Panel — used in flashcard detail hero page */
+  .glass-panel {
+    background: color-mix(in oklch, var(--card) 70%, transparent);
+    border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .dark .glass-panel {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
   /* Text Glow */
   .text-glow {
     text-shadow: 0 0 15px rgba(244, 114, 182, 0.6);
@@ -207,6 +219,47 @@
   .sakura-petal {
     mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 0C50 0 70 30 70 60C70 85 50 100 50 100C50 100 30 85 30 60C30 30 50 0 50 0Z" fill="black"/></svg>');
     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 0C50 0 70 30 70 60C70 85 50 100 50 100C50 100 30 85 30 60C30 30 50 0 50 0Z" fill="black"/></svg>');
+  }
+
+  /* Sakura falling layer (used by video call pages) */
+  .sakura-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .sakura-item {
+    position: absolute;
+    top: -10%;
+    width: 14px;
+    height: 14px;
+    opacity: 0.75;
+    filter: blur(0.2px);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.75), rgba(255, 182, 193, 0.95) 45%, rgba(244, 114, 182, 0.6) 80%);
+    animation-name: sakura-fall, sakura-sway;
+    animation-timing-function: linear, ease-in-out;
+    animation-iteration-count: infinite, infinite;
+    will-change: transform;
+  }
+
+  @keyframes sakura-fall {
+    from {
+      transform: translate3d(var(--sx, 0px), -10vh, 0) rotate(var(--r0, 0deg));
+    }
+    to {
+      transform: translate3d(var(--sx2, 0px), 110vh, 0) rotate(var(--r1, 360deg));
+    }
+  }
+
+  @keyframes sakura-sway {
+    0%,
+    100% {
+      margin-left: -6px;
+    }
+    50% {
+      margin-left: 6px;
+    }
   }
 
   /* 3D Effects */

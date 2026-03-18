@@ -1,0 +1,155 @@
+{
+  "common": {
+    "home": "Home",
+    "course": "Courses",
+    "flashcard": "Flashcards",
+    "management": "Management",
+    "notification": "Notifications",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "login": "Login",
+    "logout": "Logout",
+    "creating": "Creating...",
+    "jlptPractice": "JLPT practice",
+    "booking": "Booking",
+    "aiPractice": "AI Sensei",
+    "themeToggle": "Light / Dark",
+    "searchPlaceholder": "Search...",
+    "noResults": "No results found",
+    "register": "Register"
+  },
+  "sidebar": {
+    "subtitle": "Learn Japanese",
+    "premiumTitle": "Premium Plan",
+    "premiumHeading": "Upgrade to Premium",
+    "viewDetails": "View Details",
+    "loginToStart": "Login to start",
+    "studentLevel": "Student",
+    "logoutSuccess": "Logged out successfully!",
+    "logoutFailed": "Logout failed"
+  },
+  "languageSwitcher": {
+    "title": "Language Settings",
+    "searchPlaceholder": "Search language...",
+    "noResults": "No matching language found"
+  },
+  "auth": {
+    "loginSuccess": "Login successful",
+    "loginFail": "Login failed",
+    "registerSuccess": "Registration successful",
+    "username": "Username",
+    "fullname": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "orContinueWith": "Or continue with",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "registerNow": "Register now",
+    "loginNow": "Login now",
+    "processing": "Processing...",
+    "subTitle": "No.1 Japanese Learning Platform in Vietnam",
+    "loginWelcome": "Welcome back to FUJI",
+    "loginFailed": "Login failed. Please try again.",
+    "invalidCredentials": "Incorrect username or password",
+    "emailAlreadyExists": "Email already exists",
+    "usernameAlreadyExists": "Username already exists",
+    "sendOtpSuccess": "OTP has been sent",
+    "sendOtpCheckEmail": "Please check your email {{email}}",
+    "sendOtpFailed": "Failed to send OTP. Please try again.",
+    "otpInvalid": "OTP code is invalid",
+    "otpExpired": "OTP code has expired",
+    "otpInvalidOrExpired": "OTP code is invalid or has expired",
+    "registerCanLogin": "You can log in now.",
+    "verifyOtpSuccess": "OTP verification successful",
+    "userNotFound": "User not found",
+    "accountNotActivated": "Account has not been activated",
+    "accountDisabled": "Account is not activated or has been locked",
+    "googleVerifySuccess": "Google verification successful",
+    "googleWelcome": "Welcome to FUJI",
+    "refreshSuccess": "Token refreshed successfully",
+    "logoutSuccess": "Logout successful",
+    "google": "Google",
+    "backToEdit": "Back to edit information",
+    "confirmOtp": "Confirm OTP",
+    "otpSentTo": "OTP has been sent to your email",
+    "oauth2OtpSentTo": "Google verification code sent to",
+    "termsPrefix": "By registering, you agree to",
+    "termsOfService": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy",
+    "fujiFooter": "of FUJI.",
+    "validation": {
+      "usernameRequired": "Please enter your username",
+      "fullnameRequired": "Please enter your full name",
+      "emailRequired": "Please enter your email",
+      "emailInvalid": "Invalid email address",
+      "passwordRequired": "Please enter your password",
+      "passwordMin": "Password must be at least 6 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsNotMatch": "Passwords do not match",
+      "otpRequired": "Please enter all 6 digits"
+    }
+  },
+  "api": {
+    "loading": "Loading data...",
+    "error": "Something went wrong",
+    "validation": {
+      "invalid": "Invalid data"
+    },
+    "unexpectedError": "A system error has occurred",
+    "networkError": "Unable to connect to the server",
+    "createFailed": "An error occurred while creating. Please try again."
+  },
+  "flashlist": {
+    "listSuccess": "Fetched FlashList successfully",
+    "detailSuccess": "Fetched FlashList detail successfully",
+    "createSuccess": "FlashList created successfully",
+    "updateSuccess": "FlashList updated successfully",
+    "deleteSuccess": "FlashList deleted successfully",
+    "deleteAllSuccess": "All FlashLists for the user deleted successfully",
+    "rateSuccess": "FlashList rated successfully",
+    "addCardSuccess": "FlashCard added to FlashList successfully",
+    "removeCardSuccess": "FlashCard removed from FlashList successfully",
+    "searchSuccess": "FlashList search completed successfully",
+    "validationFailed": "FlashList data is invalid",
+    "validate": {
+      "titleRequired": "Please enter a FlashList title",
+      "privateCardInPublicList": "Cannot add private FlashCards to a public FlashList. Please unselect private FlashCards or set the FlashList to private."
+    },
+    "create": "Create Flash List"
+  },
+  "flashcard": {
+    "visibility": {
+      "otherPrivate": "Private FlashCard owned by another user",
+      "ownPrivateInPublicList": "Cannot add your private FlashCard to a public FlashList"
+    },
+    "validate": {
+      "nameRequired": "Please enter a FlashCard set name",
+      "minOneCard": "Please enter at least one card"
+    },
+    "create": "Create Flash Card"
+  },
+  "home": {
+    "badge": "No.1 Japanese Learning Platform",
+    "title": "Learn Japanese",
+    "easier": "Made Easier.",
+    "description": "Conquer Japanese with FUJI. Personalized learning path with AI support.",
+    "getStarted": "Get Started",
+    "watchDemo": "Watch Demo",
+    "stats": {
+      "students": "Students",
+      "courses": "Courses",
+      "jlptPassRate": "JLPT Pass Rate",
+      "teachers": "Teachers"
+    },
+    "coursesSection": {
+      "title": "Your Courses",
+      "subtitle": "Continue your Japanese conquest journey!",
+      "viewAll": "View All",
+      "aiTitle": "Kaiwa with AI Sensei",
+      "aiDescription": "Practice natural Japanese with a smart 24/7 AI tutor. Instant feedback on pronunciation.",
+      "practiceNow": "Practice Now"
+    }
+  }
+}

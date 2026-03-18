@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const LEVELS = ["N5", "N4", "N3", "N2", "N1"] as const;
 
@@ -66,11 +67,11 @@ export function VoiceChatSection() {
               ))}
             </div>
           </div>
-          <button className="group relative inline-flex items-center justify-center gap-3 bg-[#F472B6] hover:bg-pink-400 text-white text-lg font-bold px-10 py-5 rounded-2xl shadow-[0_0_30px_rgba(244,114,182,0.4)] hover:shadow-[0_0_50px_rgba(244,114,182,0.6)] transition-all transform hover:-translate-y-1">
+          <Button className="group relative inline-flex items-center justify-center gap-3 bg-[#F472B6] hover:bg-pink-400 text-white text-lg font-bold px-10 py-5 rounded-2xl shadow-[0_0_30px_rgba(244,114,182,0.4)] hover:shadow-[0_0_50px_rgba(244,114,182,0.6)] transition-all transform hover:-translate-y-1">
             <span className="absolute -inset-1 rounded-2xl border border-pink-400 opacity-50 animate-ping"></span>
             <span className="material-symbols-outlined text-3xl">mic</span>
             <span>Bắt đầu ghép cặp</span>
-          </button>
+          </Button>
           <div className="mt-8 flex items-center gap-2 text-slate-500 text-sm">
             <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>124 người đang online</span>

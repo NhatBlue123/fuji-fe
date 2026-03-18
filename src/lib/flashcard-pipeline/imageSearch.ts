@@ -108,12 +108,16 @@ async function fetchFromProxy(
       title?: string;
       width?: number;
       height?: number;
+      cloudinaryPublicId?: string;
+      sourceUrl?: string;
     }) => ({
       url: item.imageUrl || "",
       thumbnailUrl: item.thumbnailUrl || item.imageUrl || "",
       title: item.title || "",
       width: item.width,
       height: item.height,
+      cloudinaryPublicId: item.cloudinaryPublicId,
+      sourceUrl: item.sourceUrl,
     }),
   );
 }
@@ -142,4 +146,45 @@ export function clearImageCache() {
 
 export function getImageCacheSize(): number {
   return imageCache.size;
+}
+
+// ─── Resolve: upload single image to Cloudinary on select ─
+
+export interface ResolvedImage {
+  cloudinaryUrl: string;
+  cloudinaryPublicId: string | null;
+  sourceUrl: string;
+  cacheHit: boolean;
+}
+
+/**
+ * Resolve a single external image URL to a Cloudinary URL.
+ * Called when user selects an image from search results.
+ * Backend checks cache first; uploads to Cloudinary only if not cached.
+ */
+export async function resolveImage(
+  sourceUrl: string,
+  signal?: AbortSignal,
+): Promise<ResolvedImage> {
+  const res = await fetch(`${API_BASE}/media/resolve-image`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sourceUrl }),
+    signal,
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`Resolve image failed: ${res.status} ${errBody}`);
+  }
+
+  const json = await res.json();
+  const data = json.data || json;
+
+  return {
+    cloudinaryUrl: data.cloudinaryUrl || sourceUrl,
+    cloudinaryPublicId: data.cloudinaryPublicId || null,
+    sourceUrl: data.sourceUrl || sourceUrl,
+    cacheHit: data.cacheHit ?? false,
+  };
 }

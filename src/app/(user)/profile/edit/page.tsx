@@ -2,20 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, User, Phone, BookOpen } from "lucide-react";
+import { Upload, User, Phone } from "lucide-react";
 import Image from "next/image";
+import { useUpdateProfileMutation } from "@/store/services/user/userApi";
+import { Button } from "@/components/ui/button";
+import { Input as UIInput } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select as UISelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const [updateProfile] = useUpdateProfileMutation();
+
   const [isSaving, setIsSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
-  /* ===== MOCK DATA (GET /api/me) ===== */
   const [form, setForm] = useState({
-    fullname: "Dương Công Lượng",
+    fullName: "Dương Công Lượng",
     phone: "0123456789",
-    gender: "male",
-    jlpt_level: "N5",
+    gender: "MALE",
+    jlptLevel: "N5",
     bio: "Đam mê học tiếng Nhật 🇯🇵",
     avatar: "",
   });
@@ -25,54 +37,75 @@ export default function EditProfilePage() {
   };
 
   const handleAvatarChange = (e: any) => {
-    setAvatarFile(e.target.files[0]);
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setAvatarFile(file);
+
+    // preview ảnh ngay
+    setForm({
+      ...form,
+      avatar: URL.createObjectURL(file),
+    });
   };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsSaving(true);
 
-    const data = new FormData();
-    data.append("fullname", form.fullname);
-    data.append("phone", form.phone);
-    data.append("gender", form.gender);
-    data.append("jlptLevel", form.jlpt_level);
-    data.append("bio", form.bio);
-    if (avatarFile) data.append("avatar", avatarFile);
+    try {
+      const data = new FormData();
 
-    // await fetch("/api/profile", { method: "PATCH", body: data });
+      data.append("fullName", form.fullName);
+      data.append("phone", form.phone);
+      data.append("gender", form.gender);
+      data.append("jlptLevel", form.jlptLevel);
+      data.append("bio", form.bio);
 
-    setTimeout(() => {
-      setIsSaving(false);
+      if (avatarFile) {
+        data.append("avatar", avatarFile);
+      }
+
+      await updateProfile(data).unwrap();
+
+      alert("Cập nhật thành công");
       router.push("/profile");
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+      alert("Cập nhật thất bại");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
       <div className="mx-auto max-w-6xl bg-slate-900 border border-slate-800 rounded-2xl p-8">
-        <h1 className="text-2xl font-bold text-slate-100">Chỉnh sửa hồ sơ</h1>
+        <h1 className="text-2xl font-bold text-slate-100 mb-8">
+          Chỉnh sửa hồ sơ
+        </h1>
 
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
-          {/* ===== LEFT: AVATAR ===== */}
+          {/* ===== AVATAR ===== */}
           <div className="flex flex-col items-center gap-4">
-            <div className="mt-20 w-46 h-46 rounded-full bg-indigo-500 flex items-center justify-center text-white text-4xl overflow-hidden">
+            <div className="mt-8 w-40 h-40 rounded-full bg-indigo-500 flex items-center justify-center text-white text-4xl overflow-hidden">
               {form.avatar ? (
                 <Image
                   src={form.avatar}
                   alt="avatar"
-                  width={144}
-                  height={144}
+                  width={160}
+                  height={160}
+                  className="object-cover w-full h-full"
                 />
               ) : (
-                <User size={48} />
+                <User size={60} />
               )}
             </div>
 
-            <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg text-sm">
+            <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg text-sm hover:bg-slate-700 transition">
               <Upload size={16} /> Đổi ảnh
               <input
                 type="file"
@@ -83,12 +116,12 @@ export default function EditProfilePage() {
             </label>
           </div>
 
-          {/* ===== RIGHT: FORM ===== */}
+          {/* ===== FORM ===== */}
           <div className="md:col-span-2 space-y-5">
             <Input
               label="Họ và tên"
-              name="fullname"
-              value={form.fullname}
+              name="fullName"
+              value={form.fullName}
               onChange={handleChange}
             />
 
@@ -105,15 +138,21 @@ export default function EditProfilePage() {
               <label className="text-sm text-slate-300 mb-1 block">
                 Giới tính
               </label>
-              <select
-                name="gender"
+              <UISelect
                 value={form.gender}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                onValueChange={(v) =>
+                  handleChange({ target: { name: "gender", value: v } } as any)
+                }
               >
-                <option value="male">Nam</option>
-                <option value="female">Nữ</option>
-              </select>
+                <SelectTrigger className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200">
+                  <SelectValue placeholder="Chọn giới tính" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MALE">Nam</SelectItem>
+                  <SelectItem value="FEMALE">Nữ</SelectItem>
+                  <SelectItem value="OTHER">Khác</SelectItem>
+                </SelectContent>
+              </UISelect>
             </div>
 
             {/* JLPT */}
@@ -121,18 +160,25 @@ export default function EditProfilePage() {
               <label className="text-sm text-slate-300 mb-1 block">
                 Trình độ JLPT
               </label>
-              <select
-                name="jlpt_level"
-                value={form.jlpt_level}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+              <UISelect
+                value={form.jlptLevel}
+                onValueChange={(v) =>
+                  handleChange({
+                    target: { name: "jlptLevel", value: v },
+                  } as any)
+                }
               >
-                <option value="N5">N5</option>
-                <option value="N4">N4</option>
-                <option value="N3">N3</option>
-                <option value="N2">N2</option>
-                <option value="N1">N1</option>
-              </select>
+                <SelectTrigger className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200">
+                  <SelectValue placeholder="Chọn trình độ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["N5", "N4", "N3", "N2", "N1"].map((n) => (
+                    <SelectItem key={n} value={n}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </UISelect>
             </div>
 
             {/* Bio */}
@@ -140,7 +186,7 @@ export default function EditProfilePage() {
               <label className="text-sm text-slate-300 mb-1 block">
                 Giới thiệu
               </label>
-              <textarea
+              <Textarea
                 name="bio"
                 value={form.bio}
                 onChange={handleChange}
@@ -151,21 +197,21 @@ export default function EditProfilePage() {
 
             {/* ACTIONS */}
             <div className="flex gap-3 pt-4">
-              <button
+              <Button
                 type="button"
                 onClick={() => router.push("/profile")}
                 className="flex-1 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 transition"
               >
                 Hủy
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition disabled:opacity-50"
               >
                 {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
-              </button>
+              </Button>
             </div>
           </div>
         </form>
@@ -174,7 +220,8 @@ export default function EditProfilePage() {
   );
 }
 
-/* ===== Input ===== */
+/* ===== COMPONENTS ===== */
+
 function Input({ label, icon, ...props }: any) {
   return (
     <div>
@@ -185,9 +232,11 @@ function Input({ label, icon, ...props }: any) {
             {icon}
           </div>
         )}
-        <input
+        <UIInput
           {...props}
-          className={`w-full ${icon ? "pl-10" : "pl-4"} pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200`}
+          className={`w-full ${
+            icon ? "pl-10" : "pl-4"
+          } pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200`}
         />
       </div>
     </div>

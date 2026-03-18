@@ -2,25 +2,29 @@
 
 import { FEATURED_COURSES } from "@/types/course";
 import { CourseCard } from "@/components/user-component/course/CourseCard";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 
 // ✅ Client Component with static data - fast render
 export function CoursesSection() {
+  const { t } = useTranslation();
+
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-24">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tracking-tight">
-            Khóa học của bạn
+            {t("home.coursesSection.title")}
           </h2>
           <p className="text-muted-foreground dark:text-slate-400 mt-1">
-            Tiếp tục hành trình chinh phục tiếng Nhật nào!
+            {t("home.coursesSection.subtitle")}
           </p>
         </div>
         <a
           className="hidden md:flex items-center gap-1 text-primary dark:text-blue-400 font-bold hover:text-blue-300 transition-colors"
           href="/course"
         >
-          Xem tất cả{" "}
+          {t("home.coursesSection.viewAll")}{" "}
           <span className="material-symbols-outlined text-sm">
             arrow_forward
           </span>
@@ -48,20 +52,19 @@ export function CoursesSection() {
               </span>
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
-              Kaiwa với AI Sensei{" "}
+              {t("home.coursesSection.aiTitle")}{" "}
               <span className="align-top text-[10px] bg-secondary text-white px-1.5 py-0.5 rounded ml-1 animate-pulse">
                 NEW
               </span>
             </h3>
             <p className="text-sm text-blue-100 mb-6 opacity-80 leading-relaxed">
-              Luyện nói tiếng Nhật tự nhiên với trợ lý ảo thông minh 24/7. Phản
-              hồi tức thì về phát âm và ngữ điệu.
+              {t("home.coursesSection.aiDescription")}
             </p>
             <div className="mt-auto">
-              <button className="w-full py-3 rounded-xl bg-secondary hover:bg-pink-400 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/30">
+              <Button className="w-full py-3 rounded-xl bg-secondary hover:bg-pink-400 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/40 transform hover:translate-y-[-2px]">
                 <span className="material-symbols-outlined text-lg">mic</span>
-                Luyện tập ngay
-              </button>
+                {t("home.coursesSection.practiceNow")}
+              </Button>
             </div>
           </div>
         </div>

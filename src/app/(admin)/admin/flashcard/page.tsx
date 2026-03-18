@@ -9,12 +9,13 @@ import { FlashcardList } from "@/components/admin/admin-flashcard/FlashcardList"
 export default function FlashcardPage() {
     const [activeTab, setActiveTab] = useState("sets");
 
-    return (
-        <div className="min-h-screen bg-slate-50/30">
-            <div className="p-8 lg:p-12 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <FlashcardHeader />
+  const handleDeleteCard = (id: number) => {
+    setCards(cards.filter((c) => c.id !== id));
+  };
 
-                <FlashcardTabs activeTab={activeTab} onTabChange={setActiveTab} />
+  return (
+    <div className="space-y-6">
+      <FlashcardHeader />
 
                 <div className="animate-in fade-in duration-500">
                     {activeTab === "sets" ? (

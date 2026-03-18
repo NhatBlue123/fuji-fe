@@ -11,8 +11,12 @@ import type {
 
 // Base query with authentication
 const baseQuery = async (args: any) => {
-  const { url, method = "GET", body } = typeof args === "string" ? { url: args } : args;
-  
+  const {
+    url,
+    method = "GET",
+    body,
+  } = typeof args === "string" ? { url: args } : args;
+
   const headers: HeadersInit = {};
 
   // Only set Content-Type for JSON, let browser set it for FormData
@@ -38,9 +42,11 @@ const baseQuery = async (args: any) => {
   }
 
   const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, config);
-  
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: response.statusText }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: response.statusText }));
     throw new Error(error.message || "Request failed");
   }
 
@@ -62,12 +68,15 @@ export const jlptApi = createApi({
     // Get published tests by level (for students)
     getPublishedTests: builder.query<
       PaginatedResponse<JlptTest>,
-      { level?: JLPTLevel; page?: number; size?: number; search?: string }
+      { level?: JLPTLevel; testType?: string; page?: number; size?: number; search?: string }
     >({
-      query: ({ level, page = 0, size = 10, search = "" }) => {
+      query: ({ level, testType, page = 0, size = 10, search = "" }) => {
         let url = `/jlpt-tests/published?page=${page}&size=${size}`;
         if (level) {
           url += `&level=${level}`;
+        }
+        if (testType && testType !== "all") {
+          url += `&testType=${testType}`;
         }
         if (search) {
           url += `&search=${encodeURIComponent(search)}`;
@@ -84,7 +93,12 @@ export const jlptApi = createApi({
       PaginatedResponse<JlptTest>,
       { page?: number; size?: number; sortBy?: string; sortDir?: string }
     >({
-      query: ({ page = 0, size = 10, sortBy = "createdAt", sortDir = "desc" }) =>
+      query: ({
+        page = 0,
+        size = 10,
+        sortBy = "createdAt",
+        sortDir = "desc",
+      }) =>
         `/jlpt-tests?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`,
       transformResponse: (response: ApiResponse<PaginatedResponse<JlptTest>>) =>
         response.data,
@@ -142,7 +156,8 @@ export const jlptApi = createApi({
     // Get current user's attempts
     getMyAttempts: builder.query<TestAttemptResult[], void>({
       query: () => "/jlpt-test-attempts/my-attempts",
-      transformResponse: (response: ApiResponse<TestAttemptResult[]>) => response.data,
+      transformResponse: (response: ApiResponse<TestAttemptResult[]>) =>
+        response.data,
       providesTags: ["JlptAttempts"],
     }),
   }),

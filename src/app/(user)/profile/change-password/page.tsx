@@ -3,17 +3,24 @@
 import { useState } from "react";
 import { Eye, EyeOff, Lock, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useChangePasswordMutation } from "@/store/services/user/userApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
 
+  // ===== STATE =====
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [changePassword, { isLoading }] = useChangePasswordMutation();
+
+  // ===== SUBMIT =====
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -32,42 +39,53 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    // TODO: call API change password
+    try {
+      const res = await changePassword({
+        currentPassword,
+        newPassword,
+      }).unwrap();
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/");
+      console.log("Success:", res);
+
+      alert("Đổi mật khẩu thành công!");
+
+      localStorage.removeItem("access_token");
+
+      router.push("/");
+    } catch (err: any) {
+      console.error("Change password error:", err);
+
+      setError(err?.data?.message || err?.error || "Đổi mật khẩu thất bại.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-16">
       <div className="mx-auto max-w-6xl bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
-        <button
+        <Button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition w-fit"
         >
           <ArrowLeft size={16} />
           Quay lại
-        </button>
+        </Button>
 
-        {/* ===== CENTER FORM ===== */}
         <div className="mx-auto max-w-md space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-indigo-600/20 flex items-center justify-center">
               <Lock className="text-indigo-400" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-100">
-              Đổi mật khẩu
-            </h1>
+
+            <h1 className="text-2xl font-bold text-slate-100">Đổi mật khẩu</h1>
+
             <p className="text-sm text-slate-400">
               Để bảo mật tài khoản học tiếng Nhật của bạn
             </p>
           </div>
 
-          {/* Form */}
+          {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Current */}
             <Field
               label="Mật khẩu hiện tại"
               type={showPassword ? "text" : "password"}
@@ -75,7 +93,6 @@ export default function ChangePasswordPage() {
               onChange={setCurrentPassword}
             />
 
-            {/* New */}
             <Field
               label="Mật khẩu mới"
               type={showPassword ? "text" : "password"}
@@ -83,7 +100,6 @@ export default function ChangePasswordPage() {
               onChange={setNewPassword}
             />
 
-            {/* Confirm */}
             <Field
               label="Xác nhận mật khẩu mới"
               type={showPassword ? "text" : "password"}
@@ -91,24 +107,28 @@ export default function ChangePasswordPage() {
               onChange={setConfirmPassword}
             />
 
-            {/* Toggle */}
-            <button
+            {/* Toggle show password */}
+            <Button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-            </button>
+            </Button>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
 
-            <button
+            {/* Submit */}
+            <Button
               type="submit"
-              className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition"
+              disabled={isLoading}
+              className="w-full py-3 rounded-lg bg-indigo-600
+                         hover:bg-indigo-500 text-white font-semibold
+                         transition disabled:opacity-50"
             >
-              Cập nhật mật khẩu
-            </button>
+              {isLoading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+            </Button>
           </form>
 
           <p className="text-xs text-center text-slate-500">
@@ -120,7 +140,6 @@ export default function ChangePasswordPage() {
   );
 }
 
-/* ===== Reusable Field ===== */
 function Field({
   label,
   type,
@@ -135,7 +154,8 @@ function Field({
   return (
     <div className="space-y-1">
       <label className="text-sm text-slate-300">{label}</label>
-      <input
+
+      <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}

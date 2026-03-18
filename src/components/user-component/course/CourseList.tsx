@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 import {
   useGetAllCoursesQuery,
   useSearchCoursesQuery,
@@ -112,9 +113,9 @@ function UserCourseCard({ course }: { course: CourseResponseDTO }) {
           >
             Chi tiết
           </Link>
-          <button className="flex-1 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 text-sm hover:shadow-secondary/40">
+          <Button className="flex-1 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 text-sm hover:shadow-secondary/40">
             Đăng ký
-          </button>
+          </Button>
         </div>
       </div>
     </div>

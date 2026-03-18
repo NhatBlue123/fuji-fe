@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/components/common";
-import { useAuth } from "@/store/hooks";
-import { useAppDispatch } from "@/store/hooks";
+import { useAuth, useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
 import Image from "next/image";
+import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -16,270 +18,201 @@ const Sidebar = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
+
   const [isMounted, setIsMounted] = useState(false);
 
-  // Prevent hydration mismatch by only showing user info after client mount
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => setIsMounted(true), []);
 
-  // Check if user is admin or teacher
   const isAdminOrTeacher =
-    roles && (roles.includes("ADMIN") || roles.includes("TEACHER"));
+    roles &&
+    (roles.includes("ADMIN") ||
+      roles.includes("ROLE_ADMIN") ||
+      roles.includes("INSTRUCTOR") ||
+      roles.includes("ROLE_INSTRUCTOR"));
+
+  const isActive = (path: string) => pathname === path;
+
+  const navClass = (path: string) =>
+    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+      isActive(path)
+        ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
+        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:font-bold group"
+    }`;
+
+  const iconClass = (path: string) =>
+    `material-symbols-outlined text-[20px] leading-none align-middle text-current transition-all ${
+      isActive(path)
+        ? "filled opacity-100"
+        : "opacity-95 group-hover:filled group-hover:opacity-100"
+    }`;
+
+  const actionIconClass =
+    "material-symbols-outlined text-[18px] leading-none align-middle text-current";
 
   const handleLogout = async () => {
     try {
       await dispatch(logoutThunk()).unwrap();
-      toast.success("Đăng xuất thành công!");
+      toast.success(t("sidebar.logoutSuccess"));
       router.push("/");
     } catch {
-      toast.error("Đăng xuất thất bại");
+      toast.error(t("sidebar.logoutFailed"));
     }
   };
 
-  const isActive = (path: string) => {
-    return pathname === path;
-  };
-
   return (
-    <aside className="hidden w-64 flex-col bg-sidebar border-r border-sidebar-border md:flex shadow-xl z-20 transition-colors duration-300">
+    <aside className="hidden w-64 flex-col bg-sidebar border-r border-sidebar-border md:flex shadow-xl z-20">
+      {/* ========= LOGO ========= */}
       <Link
         href="/"
-        className="flex items-center gap-3 px-6 py-8 hover:bg-sidebar-accent/50 transition-colors cursor-pointer"
+        className="flex items-center gap-3 px-6 py-8 hover:bg-sidebar-accent/50 transition"
       >
-        <div className="relative flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white overflow-hidden shadow-lg shadow-blue-500/30">
+        <div className="size-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center shadow-lg">
           <span className="material-symbols-outlined text-3xl">landscape</span>
         </div>
-        <div className="flex flex-col">
-          <h1 className="text-xl font-black tracking-tight text-sidebar-foreground">
-            FUJI
-          </h1>
-          <p className="text-xs text-muted-foreground font-medium">
-            Học Tiếng Nhật
+
+        <div>
+          <h1 className="text-xl font-black text-sidebar-foreground">FUJI</h1>
+          <p className="text-xs text-muted-foreground">
+            {isMounted ? t("sidebar.subtitle") : ""}
           </p>
         </div>
       </Link>
+
+      {/* ========= MENU ========= */}
       <nav className="flex-1 overflow-y-auto px-4 space-y-1">
-        <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
-          href="/"
-        >
-          <span
-            className={`material-symbols-outlined ${
-              isActive("/") ? "filled" : ""
-            }`}
-          >
-            home
-          </span>
-          <span>Trang chủ</span>
+        <Link href="/" className={navClass("/")}>
+          <span className={iconClass("/")}>home</span>
+          {t("common.home")}
         </Link>
-        <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/course")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
-          href="/course"
-        >
-          <span
-            className={`material-symbols-outlined ${
-              isActive("/course")
-                ? "filled"
-                : "group-hover:text-sidebar-primary transition-colors"
-            }`}
-          >
-            menu_book
-          </span>
-          <span>Khóa học</span>
+
+        <Link href="/course" className={navClass("/course")}>
+          <span className={iconClass("/course")}>menu_book</span>
+          {t("common.course")}
         </Link>
-        <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="/JLPT_Practice"
-        >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            assignment
-          </span>
-          <span>Luyện thi JLPT</span>
+
+        <Link href="/JLPT_Practice" className={navClass("/JLPT_Practice")}>
+          <span className={iconClass("/JLPT_Practice")}>assignment</span>
+          {t("common.jlptPractice")}
         </Link>
-        <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
-        >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            book_online
-          </span>
-          <span>Booking</span>
-          {/* <span className="ml-auto bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-secondary/30">
-            3
-          </span> */}
+
+        <Link href="/booking" className={navClass("/booking")}>
+          <span className={iconClass("/booking")}>book_online</span>
+          {t("common.booking")}
         </Link>
-        <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
-        >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            smart_toy
-          </span>
-          <span>Luyện tập AI</span>
+
+        <Link href="/ai-chat" className={navClass("/ai-chat")}>
+          <span className={iconClass("/ai-chat")}>smart_toy</span>
+          {t("common.aiPractice")}
         </Link>
-        <Link
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isActive("/flashcards")
-              ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-          }`}
-          href="/flashcards"
-        >
-          <span
-            className={`material-symbols-outlined ${
-              isActive("/flashcards")
-                ? "filled"
-                : "group-hover:text-sidebar-primary transition-colors"
-            }`}
-          >
-            style
-          </span>
-          <span>Thẻ ghi nhớ</span>
+
+        <Link href="/video-call" className={navClass("/video-call")}>
+          <span className={iconClass("/video-call")}>video_chat</span>
+          Video call
         </Link>
-        <div className="my-4 border-t border-sidebar-border mx-4"></div>
-        <Link
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary transition-all font-medium group"
-          href="#"
-        >
-          <span className="material-symbols-outlined group-hover:text-blue-600 dark:group-hover:text-white transition-colors">
-            notifications
-          </span>
-          <span>Thông báo</span>
+
+        <Link href="/flashcards" className={navClass("/flashcards")}>
+          <span className={iconClass("/flashcards")}>style</span>
+          {t("common.flashcard")}
         </Link>
+
+        <div className="my-4 border-t border-sidebar-border" />
+
+        <Link href="/notifications" className={navClass("/notifications")}>
+          <span className={iconClass("/notifications")}>notifications</span>
+          {t("common.notification")}
+        </Link>
+
+        <Link href="/settings" className={navClass("/settings")}>
+          <span className={iconClass("/settings")}>settings</span>
+          {t("common.management")}
+        </Link>
+
         {isMounted && isAdminOrTeacher && (
-          <Link
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              isActive("/admin")
-                ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary font-medium group"
-            }`}
-            href="/admin"
-          >
-            <span
-              className={`material-symbols-outlined ${
-                isActive("/admin")
-                  ? "filled"
-                  : "group-hover:text-blue-600 dark:group-hover:text-white transition-colors"
-              }`}
-            >
-              admin_panel_settings
-            </span>
-            <span>Quản lý</span>
+          <Link href="/admin" className={navClass("/admin")}>
+            <span className={iconClass("/admin")}>admin_panel_settings</span>
+            Admin
           </Link>
         )}
       </nav>
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-4">
-        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 dark:from-blue-900 dark:to-indigo-950 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer shadow-lg shadow-blue-900/20 ring-1 ring-white/10">
-          <div className="absolute -right-2 -top-2 opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
-            <span className="material-symbols-outlined text-6xl text-yellow-300">
-              diamond
-            </span>
-          </div>
-          <p className="text-xs font-medium opacity-80 mb-1 text-blue-200">
-            Gói cao cấp
-          </p>
-          <h3 className="font-bold text-sm mb-2">Nâng cấp Premium</h3>
-          <button className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg backdrop-blur-sm transition-colors w-full border border-white/10">
-            Xem chi tiết
-          </button>
+
+      {/* ========= FOOTER ========= */}
+      <div className="p-4 border-t flex flex-col gap-4">
+        {/* Premium */}
+        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl p-4 text-white">
+          <p className="text-xs opacity-80">{t("sidebar.premiumTitle")}</p>
+          <h3 className="font-bold text-sm mb-2">
+            {t("sidebar.premiumHeading")}
+          </h3>
+          <Button
+            variant="ghost"
+            className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full"
+          >
+            {t("sidebar.viewDetails")}
+          </Button>
         </div>
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-muted-foreground">
-              contrast
-            </span>
-            <span className="text-sm font-bold text-sidebar-foreground">
-              Sáng / Tối
-            </span>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              checked={theme === "dark"}
-              className="sr-only peer"
-              type="checkbox"
-              onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+
+        {/* Theme + Language */}
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            variant="ghost"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs text-foreground/90"
+          >
+            <span className={actionIconClass}>contrast</span>
+            {t("common.themeToggle")}
+          </Button>
+
+          <LanguageSwitcher className="h-8" />
+        </div>
+
+        {/* User */}
+        {isMounted && isAuthenticated && user ? (
+          <div className="flex items-center gap-3 px-2">
+            <Image
+              src={user.avatar || user.avatarUrl || "/images/avt-default.jpg"}
+              alt="avatar"
+              width={40}
+              height={40}
+              className="rounded-full"
             />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-          </label>
-        </div>
-        <div className="flex items-center gap-3 px-2">
-          {isMounted && isAuthenticated && user ? (
-            <>
-              <div className="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0">
-                <Image
-                  src={
-                    user.avatar || user.avatarUrl || "/images/avt-default.jpg"
-                  }
-                  alt={user.fullname || user.fullName || user.username}
-                  width={40}
-                  height={40}
-                  className="size-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "/images/avt-default.jpg";
-                  }}
-                />
-              </div>
-              <div>
-                <Link
-                  href="/profile"
-                  className="flex-1 min-w-0 block rounded-lg
-                   hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
-                   transition p-1"
-                >
-                  <p className="text-sm font-bold text-sidebar-foreground truncate">
-                    {user.fullname || user.fullName || user.username}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user.level ? `Học viên ${user.level}` : user.email}
-                  </p>
-                </Link>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-gray-400 hover:text-red-400 transition-colors ml-auto"
-                title="Đăng xuất"
-              >
-                <span className="material-symbols-outlined">logout</span>
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-sidebar-accent transition-colors group"
-            >
-              <div className="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0">
-                <Image
-                  src="/images/avt-default.jpg"
-                  alt="Đăng nhập"
-                  width={40}
-                  height={40}
-                  className="size-full object-cover"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-sidebar-foreground group-hover:text-primary truncate">
-                  Đăng nhập
+
+            <div className="flex-1">
+              <Link href="/profile">
+                <p className="text-sm font-bold truncate">
+                  {user.fullname || user.fullName || user.username}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
-                  Đăng nhập để bắt đầu
+                  {user.level
+                    ? `${t("sidebar.studentLevel")} ${user.level}`
+                    : user.email}
                 </p>
-              </div>
-              <span className="material-symbols-outlined text-muted-foreground group-hover:text-primary ml-auto">
-                login
-              </span>
-            </Link>
-          )}
-        </div>
+              </Link>
+            </div>
+
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="text-foreground/90 hover:text-red-500"
+            >
+              <span className={actionIconClass}>logout</span>
+            </Button>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-sidebar-accent"
+          >
+            <Image
+              src="/images/avt-default.jpg"
+              alt="login"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+            <span className="font-bold">{t("common.login")}</span>
+          </Link>
+        )}
       </div>
     </aside>
   );

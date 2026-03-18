@@ -135,7 +135,14 @@ export default function FlashListDetailPage({
                   <span className="material-symbols-outlined text-blue-400">
                     update
                   </span>
-                  <span>Cập nhật {formatDate(flashlist.updatedAt)}</span>
+                  <span>
+                    Cập nhật{" "}
+                    {formatDate(
+                      flashlist.updatedAt ||
+                        flashlist.createdAt ||
+                        new Date().toISOString(),
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-blue-400">
@@ -145,12 +152,14 @@ export default function FlashListDetailPage({
                     {flashlist.user?.fullName || flashlist.user?.username}
                   </span>
                 </div>
-                {flashlist.averageRating > 0 && (
+                {(flashlist.averageRating || 0) > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-yellow-400">
                       star
                     </span>
-                    <span>{flashlist.averageRating.toFixed(1)} / 5.0</span>
+                    <span>
+                      {(flashlist.averageRating || 0).toFixed(1)} / 5.0
+                    </span>
                   </div>
                 )}
               </div>
@@ -209,7 +218,7 @@ export default function FlashListDetailPage({
                   Ngày tạo
                 </span>
                 <span className="text-xl font-bold text-foreground">
-                  {formatDate(flashlist.createdAt)}
+                  {formatDate(flashlist.createdAt || new Date().toISOString())}
                 </span>
               </div>
             </div>
@@ -233,7 +242,7 @@ export default function FlashListDetailPage({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {flashcards.map((fc) => (
+                {flashcards.map((fc: any) => (
                   <Link key={fc.id} href={`/flashcards/detail/${fc.id}`}>
                     <article className="group relative bg-card border border-border/40 rounded-2xl overflow-hidden hover:border-blue-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 flex flex-col h-full">
                       <div className="relative h-48 bg-slate-800 overflow-hidden flex items-center justify-center">

@@ -18,16 +18,31 @@ export const useAuth = () => {
     isInitialized,
   } = useAppSelector((state) => state.auth);
 
+  const normalizedRoles = Array.from(
+    new Set([
+      ...roles,
+      ...(user?.role ? [user.role] : []),
+      ...(user?.role ? [`ROLE_${user.role}`] : []),
+    ]),
+  );
+
   return {
     user,
     accessToken,
-    roles,
+    roles: normalizedRoles,
     isAuthenticated,
     isLoading,
     error,
     isInitialized,
     // Helper kiểm tra role
-    hasRole: (role: string) => roles.includes(role),
-    isAdmin: roles.includes("ROLE_ADMIN") || roles.includes("ADMIN"),
+    hasRole: (role: string) => normalizedRoles.includes(role),
+    isAdmin:
+      normalizedRoles.includes("ROLE_ADMIN") ||
+      normalizedRoles.includes("ADMIN"),
+    isTeacher:
+      normalizedRoles.includes("ROLE_INSTRUCTOR") ||
+      normalizedRoles.includes("INSTRUCTOR") ||
+      normalizedRoles.includes("ROLE_TEACHER") ||
+      normalizedRoles.includes("TEACHER"),
   };
 };

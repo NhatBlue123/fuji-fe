@@ -16,6 +16,7 @@ import {
   rebuildStructureWithCounts,
   findMondaiForQuestion,
   getQuestionNumbers,
+  getStructureForTestType,
   type JLPTLevel,
   type MondaiConfig,
   type SectionConfig,
@@ -25,7 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings, Sparkles } from "lucide-react";
+import AIQuestionGenerator, { type AIGeneratedQuestion } from "@/components/admin/AIQuestionGenerator";
 import type { SectionKey } from "@/lib/jlpt-structure";
 import { renderJlptText } from "@/lib/renderJlptText";
 // ─── Mondai override types ────────────────────────────────────────────────────
@@ -145,7 +147,7 @@ function PassagePanel({
             value={passageText}
             onChange={(e) => setPassageText(e.target.value)}
             placeholder="Nhập đoạn văn / bài đọc tiếng Nhật..."
-            className="font-jp text-sm bg-white resize-y"
+            className="font-jp text-sm bg-background text-foreground resize-y"
           />
           {requires_audio && (
             <AudioUploader
@@ -192,7 +194,8 @@ function SectionSidebar({
           {section.mondai.map((mondai) => {
             const nums = getQuestionNumbers(mondai);
             const actualQuestions = mondaiLeaves.get(mondai.number) || [];
-            const displayNums = actualQuestions.length > 0 ? actualQuestions.map(q => q.questionOrder) : nums;
+            const actualNums = actualQuestions.map((q) => q.questionOrder);
+            const displayNums = Array.from(new Set([...nums, ...actualNums])).sort((a, b) => a - b);
             
             // Re-calculate "filled" based on actual answerable ones
             const filled = actualQuestions.length;
@@ -319,6 +322,7 @@ export default function AdminExamLayout() {
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(null);
   const [showSetup, setShowSetup] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -366,11 +370,18 @@ export default function AdminExamLayout() {
 
   const structure = useMemo<SectionConfig[]>(() => {
     if (!test?.level) return [];
+    const testType = test.testType ?? "full_test";
     const hasAnyCount = Object.values(countMap).some((c) => c > 0);
-    return hasAnyCount
-      ? rebuildStructureWithCounts(test.level as JLPTLevel, countMap)
-      : JLPT_STRUCTURE[test.level as JLPTLevel] ?? [];
-  }, [test?.level, countMap]);
+    if (hasAnyCount) {
+      // Rebuild with custom counts but still filter by testType
+      const rebuilt = rebuildStructureWithCounts(test.level as JLPTLevel, countMap);
+      const targetSectionNames = new Set(
+        getStructureForTestType(test.level as JLPTLevel, testType).map((s) => s.name)
+      );
+      return rebuilt.filter((s) => targetSectionNames.has(s.name));
+    }
+    return getStructureForTestType(test.level as JLPTLevel, testType);
+  }, [test?.level, test?.testType, countMap]);
 
   const questionsMap = useMemo<QuestionsMap>(() => {
     if (!test?.questions) return {};
@@ -448,6 +459,7 @@ export default function AdminExamLayout() {
   // ── Select question → populate form ──────────────────────────────────────
   const handleSelectQuestion = (n: number) => {
     setSelectedQuestionNumber(n);
+    setShowAIPanel(false);
 
     const found = findMondaiInStructure(n);
     if (!found) return;
@@ -622,6 +634,15 @@ export default function AdminExamLayout() {
             <Settings className="h-4 w-4 mr-1" />
             Cấu hình mondai
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAIPanel((s) => !s)}
+            className={showAIPanel ? "border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/20" : ""}
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            AI Tạo câu hỏi
+          </Button>
           <Badge variant="outline">{test.isPublished ? "Published" : "Draft"}</Badge>
         </div>
       </header>
@@ -714,6 +735,108 @@ export default function AdminExamLayout() {
             <div className="text-muted-foreground">Không tìm thấy cấu trúc cho câu {selectedQuestionNumber}</div>
           ) : (
             <div className="max-w-2xl space-y-6">
+              {/* AI Question Generator Panel */}
+              {showAIPanel && derived && (
+                <AIQuestionGenerator
+                  level={test.level}
+                  mondaiNumber={derived.mondai.number}
+                  mondaiTitle={mondaiOverrides[derived.mondai.number]?.instruction || derived.mondai.title}
+                  mondaiStart={derived.mondai.start}
+                  mondaiEnd={derived.mondai.end}
+                  initialStart={selectedQuestionNumber}
+                  section={derived.section.sectionKeys[0] as "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING"}
+                  onConfirm={async (questions: AIGeneratedQuestion[], startFrom: number) => {
+                    if (!derived) return;
+                    
+                    setSaving(true);
+                    setShowAIPanel(false);
+                    
+                    try {
+                      // Bắt đầu chèn từ startFrom do User chỉ định
+                      let currentQNum = startFrom;
+                      const { section, mondai } = derived;
+                      const sectionKey = section.sectionKeys[0] as SectionKey;
+                      const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
+                      const effectiveMondaiTitle = overrideInstruction || mondai.title;
+
+                      // Step 1: Handle passage if required (only once for the batch)
+                      let parentId: number | null = derived.existingParent?.id ?? null;
+                      
+                      const firstQ = questions[0];
+                      if (firstQ?.passageText && mondai.requires_passage) {
+                        setPassageText(firstQ.passageText); // Update UI
+                        
+                        const passagePayload: CreateQuestionDTO = {
+                          mondaiNumber: mondai.number,
+                          mondaiTitle: effectiveMondaiTitle,
+                          parentId: null,
+                          questionOrder: mondai.start - 1,
+                          section: sectionKey,
+                          contentText: firstQ.passageText,
+                          options: undefined,
+                          correctOption: undefined,
+                          audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+                        };
+
+                        if (derived.existingParent) {
+                          const updated = await updateQuestion({ id: derived.existingParent.id, data: passagePayload }).unwrap();
+                          parentId = updated.id;
+                        } else {
+                          const created = await addQuestion({ testId, data: passagePayload }).unwrap();
+                          parentId = created.id;
+                        }
+                      }
+
+                      // Step 2: Save each generated question sequentially
+                      for (let i = 0; i < questions.length; i++) {
+                        const q = questions[i];
+                        if (currentQNum > mondai.end) break; // Don't overflow mondai bounds
+                        
+                        const targetNode = questionsMap[mondai.number];
+                        const existingChild = targetNode?.children[currentQNum] ?? null;
+                        
+                        // Parse options array to string length 4 for frontend UI state consistency, but send JSON string
+                        const parsedOptions = q.options.length === 4 ? q.options : [...q.options, "", "", "", ""].slice(0, 4);
+
+                        const childPayload: CreateQuestionDTO = {
+                          mondaiNumber: mondai.number,
+                          mondaiTitle: effectiveMondaiTitle,
+                          parentId: parentId,
+                          questionOrder: currentQNum,
+                          section: sectionKey,
+                          contentText: q.contentText,
+                          options: JSON.stringify(parsedOptions) as any,
+                          correctOption: q.correctOption,
+                          explanation: q.explanation || undefined,
+                          points: 1.0,
+                          audioMediaId: mondai.requires_audio && !mondai.requires_passage ? (audioMediaId ?? undefined) : undefined,
+                          imageMediaId: imageMediaId ?? undefined,
+                        };
+
+                        if (existingChild) {
+                          await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
+                        } else {
+                          await addQuestion({ testId, data: childPayload }).unwrap();
+                        }
+
+                        currentQNum++;
+                      }
+
+                      // Move UI selection to the last created question (or its end)
+                      const finalQNum = Math.min(currentQNum, mondai.end);
+                      handleSelectQuestion(finalQNum);
+                      alert(`Đã chèn và lưu thành công ${questions.length} câu hỏi! (Từ câu ${startFrom})`);
+                      
+                    } catch (error) {
+                      console.error("Lỗi khi lưu batch AI:", error);
+                      alert("Có lỗi xảy ra khi lưu hàng loạt câu hỏi.");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                />
+              )}
+
               {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">{derived.section.name}</span>

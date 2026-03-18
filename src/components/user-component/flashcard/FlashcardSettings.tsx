@@ -10,6 +10,7 @@ import {
 } from "@/store/services/flashcardApi";
 import { getMockImage } from "@/lib/mockImages";
 import { useFlashcardPipeline } from "@/hooks/useFlashcardPipeline";
+import { resolveImage, searchImages } from "@/lib/flashcard-pipeline";
 import TermPreviewList from "@/components/user-component/flashcard/TermPreviewList";
 
 interface CardEdit {
@@ -121,11 +122,30 @@ export default function FlashcardSettings({
   const [singlePronunciation, setSinglePronunciation] = useState("");
   const [singleExample, setSingleExample] = useState("");
   const [singlePreviewUrl, setSinglePreviewUrl] = useState("");
-  const [singleImageSearch, setSingleImageSearch] = useState("");
   const [singleSearchResults, setSingleSearchResults] = useState<
     { url: string; title: string }[]
   >([]);
   const [singleSearching, setSingleSearching] = useState(false);
+
+  const [singleResolving, setSingleResolving] = useState(false);
+
+  const handleSingleImageSelect = (imageUrl: string) => {
+    // Immediately show the raw URL as preview
+    setSinglePreviewUrl(imageUrl);
+    // Resolve to Cloudinary URL in background
+    setSingleResolving(true);
+    resolveImage(imageUrl)
+      .then((resolved) => {
+        setSinglePreviewUrl(resolved.cloudinaryUrl);
+      })
+      .catch((err) => {
+        console.error("Failed to resolve single image:", err);
+        // Keep the raw URL as fallback
+      })
+      .finally(() => {
+        setSingleResolving(false);
+      });
+  };
 
   // Multi-add state
   const [multiContent, setMultiContent] = useState("");
@@ -152,7 +172,7 @@ export default function FlashcardSettings({
       setLevel(flashcard.level || "");
       setIsPublic(flashcard.isPublic !== false);
       setCards(
-        flashcard.cards.map((card) => ({
+        (flashcard.cards || []).map((card) => ({
           id: card.id,
           vocabulary: card.vocabulary || "",
           meaning: card.meaning || "",
@@ -164,7 +184,16 @@ export default function FlashcardSettings({
     }
   }, [flashcard]);
 
+  const [resolvingImages, setResolvingImages] = useState<
+    Record<string, boolean>
+  >({});
+  // Store resolved Cloudinary URLs separately so visual selection (raw URL match) stays intact
+  const [resolvedTermImages, setResolvedTermImages] = useState<
+    Record<string, string>
+  >({});
+
   const handleTermImageSelect = (termKey: string, imageUrl: string) => {
+    // Toggle: if same raw URL, deselect
     setSelectedTermImages((prev) => {
       if (prev[termKey] === imageUrl) {
         const next = { ...prev };
@@ -173,6 +202,33 @@ export default function FlashcardSettings({
       }
       return { ...prev, [termKey]: imageUrl };
     });
+
+    // If deselecting (same image clicked), also remove resolved
+    if (selectedTermImages[termKey] === imageUrl) {
+      setResolvedTermImages((prev) => {
+        const next = { ...prev };
+        delete next[termKey];
+        return next;
+      });
+      return;
+    }
+
+    // Resolve: upload to Cloudinary (or get cached URL)
+    setResolvingImages((prev) => ({ ...prev, [termKey]: true }));
+    resolveImage(imageUrl)
+      .then((resolved) => {
+        // Store resolved URL separately — don't overwrite selectedTermImages
+        setResolvedTermImages((prev) => ({
+          ...prev,
+          [termKey]: resolved.cloudinaryUrl,
+        }));
+      })
+      .catch((err) => {
+        console.error("Failed to resolve image:", err);
+      })
+      .finally(() => {
+        setResolvingImages((prev) => ({ ...prev, [termKey]: false }));
+      });
   };
 
   // Drag and drop handlers for reordering
@@ -243,47 +299,25 @@ export default function FlashcardSettings({
     setSingleExample("");
     setSinglePreviewUrl("");
     setSingleSearchResults([]);
-    setSingleImageSearch("");
 
     setActiveTab("cards");
   };
 
-  // Search images for single card
+  // Search images for single card — uses vocabulary term directly
   const handleSingleImageSearch = async () => {
-    const query = singleImageSearch.trim() || singleVocab.trim();
+    const query = singleVocab.trim();
     if (!query) return;
     setSingleSearching(true);
     try {
-      const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-          query,
-        )}&per_page=8&client_id=demo`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setSingleSearchResults(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data.results?.map((r: any) => ({
-            url: r.urls?.small || r.urls?.thumb,
-            title: r.alt_description || query,
-          })) || [],
-        );
-      } else {
-        // Fallback mock
-        setSingleSearchResults(
-          Array.from({ length: 6 }, (_, i) => ({
-            url: getMockImage(i),
-            title: `${query} ${i + 1}`,
-          })),
-        );
-      }
-    } catch {
+      const results = await searchImages(query, { maxResults: 10 });
       setSingleSearchResults(
-        Array.from({ length: 6 }, (_, i) => ({
-          url: getMockImage(i),
-          title: `${query} ${i + 1}`,
+        results.map((r) => ({
+          url: r.url,
+          title: r.title || query,
         })),
       );
+    } catch {
+      setSingleSearchResults([]);
     } finally {
       setSingleSearching(false);
     }
@@ -315,7 +349,8 @@ export default function FlashcardSettings({
         meaning: parsed.meaning,
         pronunciation: parsed.pronunciation,
         exampleSentence: parsed.exampleSentence,
-        previewUrl: selectedTermImages[termKey] || null,
+        previewUrl:
+          resolvedTermImages[termKey] || selectedTermImages[termKey] || null,
         isNew: true,
         _tempId: `temp-${Date.now()}-${index}`,
       };
@@ -330,6 +365,7 @@ export default function FlashcardSettings({
     setCards((prev) => [...prev, ...validCards]);
     setMultiContent("");
     setSelectedTermImages({});
+    setResolvedTermImages({});
     setActiveTab("cards");
   };
 
@@ -390,7 +426,7 @@ export default function FlashcardSettings({
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
-        <span className="material-symbols-outlined text-5xl text-pink-400 animate-spin">
+        <span className="material-symbols-outlined text-5xl text-primary animate-spin">
           progress_activity
         </span>
       </div>
@@ -411,7 +447,7 @@ export default function FlashcardSettings({
               {isModal && onClose ? (
                 <button
                   onClick={onClose}
-                  className="flex items-center justify-center size-10 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border"
+                  className="flex items-center justify-center size-10 rounded-full bg-muted hover:bg-card text-muted-foreground hover:text-foreground transition-all border border-border"
                 >
                   <span className="material-symbols-outlined text-xl">
                     close
@@ -420,7 +456,7 @@ export default function FlashcardSettings({
               ) : (
                 <Link
                   href={`/flashcards/detail/${id}`}
-                  className="flex items-center justify-center size-10 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border"
+                  className="flex items-center justify-center size-10 rounded-full bg-muted hover:bg-card text-muted-foreground hover:text-foreground transition-all border border-border"
                 >
                   <span className="material-symbols-outlined text-xl">
                     close
@@ -441,14 +477,14 @@ export default function FlashcardSettings({
               {isModal && onClose ? (
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-secondary/50 hover:bg-secondary border border-border text-foreground font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg bg-muted hover:bg-card border border-border text-foreground font-medium transition-colors"
                 >
                   Hủy
                 </button>
               ) : (
                 <Link
                   href={`/flashcards/detail/${id}`}
-                  className="px-4 py-2 rounded-lg bg-secondary/50 hover:bg-secondary border border-border text-foreground font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg bg-muted hover:bg-card border border-border text-foreground font-medium transition-colors"
                 >
                   Hủy
                 </Link>
@@ -456,7 +492,7 @@ export default function FlashcardSettings({
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {saving ? (
                   <>
@@ -488,8 +524,8 @@ export default function FlashcardSettings({
                   onClick={() => setActiveTab(tab.id as TabType)}
                   className={`flex items-center gap-2 px-6 py-3 font-medium transition-all ${
                     activeTab === tab.id
-                      ? "text-pink-500 border-b-2 border-pink-500 bg-pink-500/5"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      ? "text-primary border-b-2 border-primary bg-primary/5"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <span className="material-symbols-outlined text-sm">
@@ -519,7 +555,7 @@ export default function FlashcardSettings({
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none transition-colors"
+                    className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                     placeholder="Nhập tên bộ thẻ..."
                   />
                 </div>
@@ -531,7 +567,7 @@ export default function FlashcardSettings({
                   <select
                     value={level}
                     onChange={(e) => setLevel(e.target.value)}
-                    className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground focus:border-pink-500 focus:outline-none transition-colors"
+                    className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary focus:outline-none transition-colors"
                   >
                     <option value="">Không xác định</option>
                     <option value="N5">N5 - Sơ cấp</option>
@@ -552,7 +588,7 @@ export default function FlashcardSettings({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none transition-colors resize-none"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors resize-none"
                   placeholder="Nhập mô tả..."
                 />
               </div>
@@ -568,7 +604,7 @@ export default function FlashcardSettings({
                     <p className="text-xs text-muted-foreground">Tổng thẻ</p>
                   </div>
                   <div className="text-center border-x border-border">
-                    <p className="text-2xl font-bold text-pink-400">
+                    <p className="text-2xl font-bold text-primary">
                       {studyTimeMinutes}
                     </p>
                     <p className="text-xs text-muted-foreground">Phút học</p>
@@ -583,7 +619,7 @@ export default function FlashcardSettings({
 
                 {/* Visibility Toggle — fixed CSS */}
                 <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
-                  <span className="material-symbols-outlined text-pink-400">
+                  <span className="material-symbols-outlined text-primary">
                     {isPublic ? "public" : "lock"}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -599,7 +635,7 @@ export default function FlashcardSettings({
                   <button
                     onClick={() => setIsPublic(!isPublic)}
                     className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                      isPublic ? "bg-pink-500" : "bg-muted-foreground/30"
+                      isPublic ? "bg-primary" : "bg-muted-foreground/30"
                     }`}
                   >
                     <span
@@ -651,10 +687,10 @@ export default function FlashcardSettings({
                     }
                     className={`flex-shrink-0 w-44 bg-card border rounded-xl overflow-hidden transition-all cursor-pointer select-none ${
                       draggedIndex === index
-                        ? "border-pink-500 shadow-lg shadow-pink-500/20 scale-[1.02] opacity-50"
+                        ? "border-primary shadow-lg shadow-primary/20 scale-[1.02] opacity-50"
                         : editingCardIndex === index
-                          ? "border-pink-500 ring-2 ring-pink-500/30"
-                          : "border-border hover:border-pink-500/30"
+                          ? "border-primary ring-2 ring-primary/30"
+                          : "border-border hover:border-primary/30"
                     } ${card.isNew ? "ring-2 ring-green-500/50" : ""}`}
                   >
                     {/* Preview Image */}
@@ -683,7 +719,7 @@ export default function FlashcardSettings({
                         {card.vocabulary || "—"}
                       </p>
                       {card.pronunciation && (
-                        <p className="text-[11px] text-pink-400 truncate">
+                        <p className="text-[11px] text-primary truncate">
                           /{card.pronunciation}/
                         </p>
                       )}
@@ -703,7 +739,7 @@ export default function FlashcardSettings({
                   <p>Chưa có thẻ nào trong bộ này</p>
                   <button
                     onClick={() => setActiveTab("add")}
-                    className="mt-4 text-pink-400 hover:underline"
+                    className="mt-4 text-primary hover:underline"
                   >
                     Thêm thẻ ngay
                   </button>
@@ -715,7 +751,7 @@ export default function FlashcardSettings({
                 <div className="mt-6 bg-card border border-border rounded-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                      <span className="material-symbols-outlined text-pink-400">
+                      <span className="material-symbols-outlined text-primary">
                         edit
                       </span>
                       Chỉnh sửa thẻ #{editingCardIndex + 1}
@@ -732,7 +768,7 @@ export default function FlashcardSettings({
                       </button>
                       <button
                         onClick={() => setEditingCardIndex(null)}
-                        className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary border border-border transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted border border-border transition-colors"
                       >
                         Đóng
                       </button>
@@ -754,7 +790,7 @@ export default function FlashcardSettings({
                             e.target.value,
                           )
                         }
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none font-japanese"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none font-japanese"
                       />
                     </div>
                     <div className="space-y-2">
@@ -771,7 +807,7 @@ export default function FlashcardSettings({
                             e.target.value,
                           )
                         }
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                       />
                     </div>
                   </div>
@@ -791,7 +827,7 @@ export default function FlashcardSettings({
                             e.target.value,
                           )
                         }
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         placeholder="Phiên âm..."
                       />
                     </div>
@@ -809,7 +845,7 @@ export default function FlashcardSettings({
                             e.target.value,
                           )
                         }
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         placeholder="Ví dụ câu..."
                       />
                     </div>
@@ -829,7 +865,7 @@ export default function FlashcardSettings({
                           e.target.value,
                         )
                       }
-                      className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                      className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                       placeholder="URL hình ảnh..."
                     />
                   </div>
@@ -847,8 +883,8 @@ export default function FlashcardSettings({
                   onClick={() => setAddMode("single")}
                   className={`px-6 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                     addMode === "single"
-                      ? "bg-pink-500 text-white"
-                      : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-card"
                   }`}
                 >
                   <span className="material-symbols-outlined">add</span>
@@ -858,8 +894,8 @@ export default function FlashcardSettings({
                   onClick={() => setAddMode("multiple")}
                   className={`px-6 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                     addMode === "multiple"
-                      ? "bg-pink-500 text-white"
-                      : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-card"
                   }`}
                 >
                   <span className="material-symbols-outlined">queue</span>
@@ -871,7 +907,7 @@ export default function FlashcardSettings({
                 /* Single Card Add — full width */
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-pink-400">
+                    <span className="material-symbols-outlined text-primary">
                       add_circle
                     </span>
                     Thêm một thẻ mới
@@ -886,7 +922,7 @@ export default function FlashcardSettings({
                         type="text"
                         value={singleVocab}
                         onChange={(e) => setSingleVocab(e.target.value)}
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none font-japanese"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none font-japanese"
                         placeholder="例: 日本語"
                       />
                     </div>
@@ -898,7 +934,7 @@ export default function FlashcardSettings({
                         type="text"
                         value={singleMeaning}
                         onChange={(e) => setSingleMeaning(e.target.value)}
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         placeholder="例: Tiếng Nhật"
                       />
                     </div>
@@ -913,7 +949,7 @@ export default function FlashcardSettings({
                         type="text"
                         value={singlePronunciation}
                         onChange={(e) => setSinglePronunciation(e.target.value)}
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         placeholder="例: nihongo"
                       />
                     </div>
@@ -925,59 +961,44 @@ export default function FlashcardSettings({
                         type="text"
                         value={singleExample}
                         onChange={(e) => setSingleExample(e.target.value)}
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         placeholder="例: 私は日本語を学びます"
                       />
                     </div>
                   </div>
 
-                  {/* Image Search Section */}
+                  {/* Image Section — auto-search from vocabulary, no URL shown */}
                   <div className="space-y-3 mb-6 p-4 bg-muted/10 border border-border rounded-xl">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Hình ảnh
-                    </label>
-                    {/* URL input */}
-                    <input
-                      type="text"
-                      value={singlePreviewUrl}
-                      onChange={(e) => setSinglePreviewUrl(e.target.value)}
-                      className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
-                      placeholder="Nhập URL hình ảnh hoặc tìm kiếm bên dưới..."
-                    />
-                    {/* Image search bar */}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={singleImageSearch}
-                        onChange={(e) => setSingleImageSearch(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSingleImageSearch()
-                        }
-                        className="flex-1 bg-input border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none"
-                        placeholder={`Tìm ảnh "${singleVocab || "từ vựng"}"...`}
-                      />
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Hình ảnh
+                      </label>
                       <button
                         onClick={handleSingleImageSearch}
-                        disabled={singleSearching}
-                        className="px-4 py-2.5 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 text-white rounded-xl transition-colors flex items-center gap-1.5 text-sm font-medium"
+                        disabled={singleSearching || !singleVocab.trim()}
+                        className="px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium"
                       >
                         <span className="material-symbols-outlined text-sm">
-                          {singleSearching ? "progress_activity" : "search"}
+                          {singleSearching
+                            ? "progress_activity"
+                            : "image_search"}
                         </span>
-                        Tìm
+                        {singleSearching
+                          ? "Đang tìm..."
+                          : `Tìm ảnh "${singleVocab.trim() || "..."}"`}
                       </button>
                     </div>
                     {/* Search results grid */}
                     {singleSearchResults.length > 0 && (
-                      <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 mt-2">
+                      <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                         {singleSearchResults.map((img, idx) => (
                           <button
                             key={idx}
-                            onClick={() => setSinglePreviewUrl(img.url)}
+                            onClick={() => handleSingleImageSelect(img.url)}
                             className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
                               singlePreviewUrl === img.url
-                                ? "border-pink-500 ring-2 ring-pink-500/30"
-                                : "border-border hover:border-pink-500/40"
+                                ? "border-primary ring-2 ring-primary/30"
+                                : "border-border hover:border-primary/40"
                             }`}
                           >
                             <img
@@ -989,7 +1010,7 @@ export default function FlashcardSettings({
                         ))}
                       </div>
                     )}
-                    {/* Preview selected image */}
+                    {/* Preview selected image (no URL shown) */}
                     {singlePreviewUrl && (
                       <div className="flex items-center gap-3 mt-2 p-2 bg-card border border-border rounded-lg">
                         <img
@@ -998,8 +1019,16 @@ export default function FlashcardSettings({
                           className="w-16 h-16 object-cover rounded-lg"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-muted-foreground truncate">
-                            {singlePreviewUrl}
+                          <p className="text-xs text-green-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">
+                              check_circle
+                            </span>
+                            Đã chọn hình ảnh
+                            {singleResolving && (
+                              <span className="text-primary animate-pulse ml-1">
+                                đang tải lên...
+                              </span>
+                            )}
                           </p>
                         </div>
                         <button
@@ -1016,7 +1045,7 @@ export default function FlashcardSettings({
 
                   <button
                     onClick={addSingleCard}
-                    className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
                     <span className="material-symbols-outlined">add</span>
                     Thêm thẻ
@@ -1026,7 +1055,7 @@ export default function FlashcardSettings({
                 /* Multiple Cards Add */
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-pink-400">
+                    <span className="material-symbols-outlined text-primary">
                       queue
                     </span>
                     Thêm nhiều thẻ cùng lúc
@@ -1042,7 +1071,7 @@ export default function FlashcardSettings({
                         value={multiContent}
                         onChange={(e) => setMultiContent(e.target.value)}
                         rows={15}
-                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none resize-none font-mono text-sm"
+                        className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none font-mono text-sm"
                         placeholder={`từ vựng - nghĩa <ví dụ câu> :/phát âm/:\n\nVí dụ:\n日本語 - tiếng Nhật <日本語を学ぶ> :/にほんご/:\nありがとう - cảm ơn :/arigatou/:\nhello - xin chào <hello world>`}
                       />
                       <div className="text-xs text-muted-foreground space-y-1 p-3 bg-muted/10 border border-border rounded-lg">
@@ -1050,19 +1079,19 @@ export default function FlashcardSettings({
                           Hướng dẫn nhập:
                         </p>
                         <p>
-                          <span className="text-pink-400 font-mono">
+                          <span className="text-primary font-mono">
                             từ vựng - nghĩa
                           </span>{" "}
                           — bắt buộc
                         </p>
                         <p>
-                          <span className="text-pink-400 font-mono">
+                          <span className="text-primary font-mono">
                             &lt;ví dụ câu&gt;
                           </span>{" "}
                           — tùy chọn, đặt trong dấu {"<>"}
                         </p>
                         <p>
-                          <span className="text-pink-400 font-mono">
+                          <span className="text-primary font-mono">
                             :/phát âm/:
                           </span>{" "}
                           — tùy chọn, đặt trong{" "}
@@ -1091,7 +1120,7 @@ export default function FlashcardSettings({
                             .split("\n")
                             .filter((l) => l.trim()).length === 0
                         }
-                        className="w-full py-4 mt-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
+                        className="w-full py-4 mt-4 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                       >
                         <span className="material-symbols-outlined">add</span>
                         Thêm tất cả thẻ
@@ -1163,7 +1192,7 @@ export default function FlashcardSettings({
                               {card.vocabulary}
                             </p>
                             {card.pronunciation && (
-                              <p className="text-[11px] text-pink-400 truncate">
+                              <p className="text-[11px] text-primary truncate">
                                 /{card.pronunciation}/
                               </p>
                             )}

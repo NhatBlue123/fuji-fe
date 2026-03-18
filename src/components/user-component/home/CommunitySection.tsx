@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 export function CommunitySection() {
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-20">
@@ -13,9 +15,12 @@ export function CommunitySection() {
             Thảo luận sôi nổi nhất hôm nay
           </p>
         </div>
-        <button className="text-sm font-bold text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors border border-border dark:border-slate-700 px-4 py-2 rounded-lg hover:border-input dark:hover:border-slate-500 hover:bg-muted dark:hover:bg-slate-800">
+        <Button
+          variant="ghost"
+          className="text-sm font-bold text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors border border-border dark:border-slate-700 px-4 py-2 rounded-lg hover:border-input dark:hover:border-slate-500 hover:bg-muted dark:hover:bg-slate-800"
+        >
           Tham gia thảo luận
-        </button>
+        </Button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card dark:bg-[#1E293B] p-6 rounded-2xl border border-border dark:border-slate-700/50 hover:border-purple-500/30 transition-colors group cursor-pointer">

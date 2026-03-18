@@ -2,10 +2,13 @@
 
 import { use, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
 } from "@/store/services/flashcardApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface ExerciseQuestion {
@@ -55,7 +58,7 @@ export default function FillBlankExercisePage({
     const shuffled = shuffle(cards);
     const half = Math.ceil(shuffled.length / 2);
 
-    const vocabQs = shuffled.slice(0, half).map((card, idx) => ({
+    const vocabQs = shuffled.slice(0, half).map((card: any, idx) => ({
       id: idx,
       type: "fill_vocab" as const,
       question: card.meaning || "",
@@ -63,7 +66,7 @@ export default function FillBlankExercisePage({
       hint: card.pronunciation || "",
     }));
 
-    const meaningQs = shuffled.slice(half).map((card, idx) => ({
+    const meaningQs = shuffled.slice(half).map((card: any, idx) => ({
       id: idx + half,
       type: "fill_meaning" as const,
       question: card.vocabulary || "",
@@ -169,7 +172,7 @@ export default function FillBlankExercisePage({
     );
   }
 
-  if (error || !flashcard || flashcard.cards.length < 4) {
+  if (error || !flashcard || !flashcard.cards || flashcard.cards.length < 4) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-screen bg-background gap-4">
         <span className="material-symbols-outlined text-6xl text-red-400">
@@ -336,7 +339,7 @@ export default function FillBlankExercisePage({
             </div>
 
             <div className="flex gap-3 justify-center pt-2">
-              <button
+              <Button
                 onClick={generateQuestions}
                 className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl transition-all flex items-center gap-2"
               >
@@ -344,7 +347,7 @@ export default function FillBlankExercisePage({
                   replay
                 </span>
                 Làm lại
-              </button>
+              </Button>
               <Link
                 href={`/flashcards/exercise/${id}/multiple-choice`}
                 className="px-6 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground font-bold rounded-xl transition-all flex items-center gap-2"
@@ -456,7 +459,7 @@ export default function FillBlankExercisePage({
 
             {/* Input */}
             <div className="relative">
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 value={currentAnswer}
@@ -487,12 +490,12 @@ export default function FillBlankExercisePage({
                 autoComplete="off"
               />
               {currentAnswer.trim() && !checkedCurrent && (
-                <button
+                <Button
                   onClick={handleCheck}
                   className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold rounded-lg transition-colors"
                 >
                   Kiểm tra
-                </button>
+                </Button>
               )}
               {checkedCurrent && (
                 <span
@@ -563,7 +566,7 @@ export default function FillBlankExercisePage({
       <footer className="px-6 py-4 border-t border-border bg-background/80 backdrop-blur-md">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
           {/* Nav buttons */}
-          <button
+          <Button
             onClick={handlePrev}
             disabled={currentIndex === 0}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border border-border ${
@@ -576,7 +579,7 @@ export default function FillBlankExercisePage({
               arrow_back
             </span>
             Trước
-          </button>
+          </Button>
 
           {/* Question pills */}
           <div className="flex gap-1.5 flex-wrap justify-center max-w-[60%]">
@@ -598,7 +601,7 @@ export default function FillBlankExercisePage({
                   " ring-2 ring-pink-500 ring-offset-1 ring-offset-background";
               }
               return (
-                <button
+                <Button
                   key={q.id}
                   onClick={() => {
                     setCurrentIndex(idx);
@@ -607,14 +610,14 @@ export default function FillBlankExercisePage({
                   className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${pillClass}`}
                 >
                   {idx + 1}
-                </button>
+                </Button>
               );
             })}
           </div>
 
           {/* Next / Submit */}
           {currentIndex === questions.length - 1 ? (
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={!allAnswered}
               className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
@@ -625,9 +628,9 @@ export default function FillBlankExercisePage({
             >
               Nộp bài
               <span className="material-symbols-outlined text-base">send</span>
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={handleNext}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-secondary/50 hover:bg-secondary border border-border transition-all"
             >
@@ -635,7 +638,7 @@ export default function FillBlankExercisePage({
               <span className="material-symbols-outlined text-base">
                 arrow_forward
               </span>
-            </button>
+            </Button>
           )}
         </div>
       </footer>

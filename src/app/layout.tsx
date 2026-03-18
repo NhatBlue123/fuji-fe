@@ -2,7 +2,8 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import "material-symbols/outlined.css";
-import { ThemeProvider, ExtensionCleanup } from "@/components/common";
+import "@/app/globals.css";
+import { ThemeProvider, ExtensionCleanup, I18nProvider } from "@/components/common";
 import { Toaster } from "@/components/ui/sonner";
 import RtkProvider from "./providers";
 
@@ -90,18 +91,21 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <ExtensionCleanup />
 
-        <RtkProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-          </ThemeProvider>
-        </RtkProvider>
+        <I18nProvider>
+          <RtkProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </RtkProvider>
+        </I18nProvider>
       </body>
+
     </html>
   );
 }

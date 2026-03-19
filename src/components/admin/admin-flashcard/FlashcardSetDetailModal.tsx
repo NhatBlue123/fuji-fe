@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,21 +18,23 @@ import {
     Plus,
     Edit,
     Trash2,
-    Eye,
-    X,
-    Filter,
-    Download,
-    CheckCircle2,
-    Clock,
-    AlertCircle,
-    Bookmark,
-    Upload,
+    RefreshCw,
+    Loader2
 } from "lucide-react";
 import { FlashcardSet, Flashcard } from "@/types/flashcard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { exportFlashcardsToExcel } from "./flashcardUtils";
-import { ImportFlashcardModal } from "./ImportFlashcardModal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DeleteFlashcardDialog } from "./DeleteFlashcardDialog";
+import { useDeleteFlashcardMutation } from "@/store/services/admin/flashcardApi";
+
 interface FlashcardSetDetailModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -36,9 +42,8 @@ interface FlashcardSetDetailModalProps {
     cards: Flashcard[];
     onViewCard?: (card: Flashcard, index: number) => void;
     onEditCard?: (card: Flashcard) => void;
-    onDeleteCard?: (id: number) => void;
     onAddCard?: () => void;
-    onImportClick?: () => void;
+    onRefresh?: () => void;
 }
 
 export const FlashcardSetDetailModal = ({
@@ -46,295 +51,200 @@ export const FlashcardSetDetailModal = ({
     onOpenChange,
     set,
     cards,
-    onViewCard,
     onEditCard,
-    onDeleteCard,
     onAddCard,
-    onImportClick,
+    onRefresh,
 }: FlashcardSetDetailModalProps) => {
     const [searchQuery, setSearchQuery] = useState("");
-    const [savedCards, setSavedCards] = useState<number[]>([]);
-    const [openImport, setOpenImport] = useState(false);
-    const [showFilter, setShowFilter] = useState(false);
-    const [statusFilter, setStatusFilter] = useState<"all" | "learned" | "not_learned" | "review">("all");
+    const [deleteCardTarget, setDeleteCardTarget] = useState<Flashcard | null>(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    if (!set) return null;
+    const [deleteCard, { isLoading: isDeletingCard }] = useDeleteFlashcardMutation();
 
     const filteredCards = cards.filter(card => {
         const matchSearch =
-            card.kanji.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            card.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            card.hiragana.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchStatus =
-            statusFilter === "all" ? true : card.studyStatus === statusFilter;
-
-        return matchSearch && matchStatus;
+            (card.kanji?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+            (card.meaning?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+            (card.hiragana?.toLowerCase() || "").includes(searchQuery.toLowerCase());
+        return matchSearch;
     });
 
-    const totalViews = cards.reduce(
-        (sum, card) => sum + (card.viewCount ?? 0),
-        0
-    );
+    const stats = [
+        { label: "Tổng số thẻ", value: cards.length, color: "text-muted-foreground" },
+        { label: "Đã thuộc", value: cards.filter(c=>c.studyStatus==='learned').length, color: "text-emerald-600" },
+        { label: "Cần ôn tập", value: cards.filter(c=>c.studyStatus==='review').length, color: "text-amber-600" },
+    ];
 
-    const toggleSaveCard = (id: number) => {
-        if (savedCards.includes(id)) {
-            setSavedCards(savedCards.filter(cardId => cardId !== id));
-            toast.info("Đã bỏ lưu thẻ");
-        } else {
-            setSavedCards([...savedCards, id]);
-            toast.success("Đã lưu thẻ!");
+    const handleRefresh = async () => {
+        if (!onRefresh) return;
+        setIsRefreshing(true);
+        try {
+            await onRefresh();
+            await new Promise(r => setTimeout(r, 600));
+            toast.success("Dữ liệu đã được cập nhật!");
+        } catch (error) {
+            toast.error("Lấy dữ liệu thất bại");
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
-    const stats = [
-        {
-            label: "Tổng số",
-            value: cards.length,
-            icon: Layers,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50",
-        },
-        {
-            label: "Đã học",
-            value: cards.filter(c => c.studyStatus === 'learned').length,
-            icon: CheckCircle2,
-            color: "text-emerald-600",
-            bg: "bg-emerald-50",
-        },
-        {
-            label: "Chưa học",
-            value: cards.filter(c => c.studyStatus === 'not_learned').length,
-            icon: Clock,
-            color: "text-orange-600",
-            bg: "bg-orange-50",
-        },
-        {
-            label: "Cần ôn",
-            value: cards.filter(c => c.studyStatus === 'review').length,
-            icon: AlertCircle,
-            color: "text-rose-600",
-            bg: "bg-rose-50",
-        },
-        {
-            label: "Tổng lượt xem",
-            value: totalViews,
-            icon: Eye,
-            color: "text-sky-600",
-            bg: "bg-sky-50",
-        },
-    ];
-
-
+    const handleDeleteCard = async () => {
+        if (!deleteCardTarget) return;
+        try {
+            await deleteCard(deleteCardTarget.id).unwrap();
+            toast.success("Xóa thẻ thành công!");
+            setDeleteCardTarget(null);
+        } catch (error: any) {
+            toast.error(error?.data?.message || "Xóa thẻ thất bại");
+        }
+    };
 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
-                    {/* Header Section */}
-                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-8 text-white">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md">
-                                <Layers className="size-8 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-3xl font-black tracking-tight mb-1">{set.name}</h2>
-                                <p className="text-indigo-100 font-bold text-sm opacity-90">{set.lesson}</p>
-                            </div>
+                <DialogContent className="max-w-[1000px] h-[85vh] p-0 flex flex-col">
+                    <DialogHeader className="p-6 border-b shrink-0 flex flex-row items-center justify-between">
+                        <div className="flex flex-col gap-1">
+                            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                <Layers className="size-5 text-muted-foreground" />
+                                Danh sách thẻ: {set?.name}
+                            </DialogTitle>
+                            <DialogDescription className="text-sm">
+                                Hiển thị {filteredCards.length} / {cards.length} thẻ kiến thức bài {set?.lesson}
+                            </DialogDescription>
                         </div>
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={handleRefresh} 
+                                disabled={isRefreshing}
+                                className="size-9 p-0"
+                            >
+                                <RefreshCw className={cn("size-4", isRefreshing && "animate-spin text-primary")} />
+                            </Button>
+                            <Button onClick={onAddCard} size="sm" className="gap-2 h-9 px-4 font-bold bg-slate-900 hover:bg-slate-800 transition-all shadow-sm">
+                                <Plus className="size-4" /> Thêm thẻ mới
+                            </Button>
+                        </div>
+                    </DialogHeader>
 
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-5 gap-4">
-                            {stats.map((stat, i) => (
-                                <div key={i} className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
-                                            <stat.icon className="size-4 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-wider text-indigo-200">{stat.label}</p>
-                                            <p className="text-2xl font-black">{stat.value}</p>
-                                        </div>
-                                    </div>
+                    {/* Quick Stats - Standardized Typography */}
+                    <div className="px-6 py-4 bg-muted/20 border-b flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-8">
+                            {stats.map(s => (
+                                <div key={s.label} className="flex flex-col">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{s.label}</span>
+                                    <span className={cn("text-xl font-bold leading-tight mt-0.5", s.color)}>{s.value}</span>
                                 </div>
                             ))}
                         </div>
-                    </div>
-
-                    {/* Search & Actions Bar */}
-                    <div className="px-8 py-4 border-b border-slate-100 bg-white">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-
-                            {/* Search Box */}
-                            <div className="relative w-full max-w-xl group">
-
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-
-                                <Input
-                                    placeholder="Tìm kiếm từ vựng trong bộ này..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10 pr-4 h-12 bg-white border border-slate-200 rounded-xl shadow-sm
-                       focus-visible:ring-2 focus-visible:ring-indigo-500/20
-                       focus-visible:border-indigo-500 transition-all"
-                                />
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-3">
-
-                                <Button
-                                    onClick={onAddCard}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-12 px-6 rounded-xl shadow-md transition-all"
-                                >
-                                    <Plus className="size-4 mr-2" />
-                                    Thêm Thẻ
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        exportFlashcardsToExcel(
-                                            cards,
-                                            `flashcards_${new Date().toISOString().split('T')[0]}.xlsx`
-                                        );
-                                        toast.success("Đã xuất file Excel thành công!");
-                                    }}
-                                    className="h-12 px-6 rounded-xl font-semibold border-slate-200 text-slate-600 hover:bg-slate-50"
-                                >
-                                    <Upload className="size-4 mr-2" />
-                                    Export Excel
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setOpenImport(true)}
-                                    className="h-12 px-6 rounded-xl font-semibold border-slate-200 text-slate-600 hover:bg-slate-50"
-                                >
-                                    <Download className="size-4 mr-2" />
-                                    Import Excel
-                                </Button>
-
-                            </div>
-
+                        <div className="relative w-full sm:w-72">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Tìm từ vựng, hán tự, nghĩa..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 h-10 border-slate-200 focus:border-primary/50 transition-all text-sm"
+                            />
                         </div>
-
                     </div>
 
-                    {/* Cards Grid - Scrollable */}
-                    <div className="flex-1 overflow-y-auto px-8 py-6 bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 bg-white">
                         {filteredCards.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {filteredCards.map((card, index) => (
-                                    <div
-                                        key={card.id}
-                                        className="group relative bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                                        onClick={() => onViewCard?.(card, index)}
-                                    >
-                                        {/* Header Mini */}
-                                        <div className="flex justify-between items-start mb-4">
-                                            <Badge variant="secondary" className={cn(
-                                                "px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider border-none",
-                                                card.type === "Kanji" ? "bg-orange-50 text-orange-600" : "bg-amber-50 text-amber-600"
-                                            )}>
-                                                {card.type}
-                                            </Badge>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleSaveCard(card.id);
-                                                }}
-                                                className={cn(
-                                                    "size-8 rounded-lg transition-all",
-                                                    savedCards.includes(card.id)
-                                                        ? "bg-amber-100 text-amber-600 scale-110 shadow-sm"
-                                                        : "text-slate-300 hover:text-amber-600 hover:bg-amber-50"
-                                                )}
-                                            >
-                                                <Bookmark className={cn("size-4", savedCards.includes(card.id) ? "fill-current" : "")} />
-                                            </Button>
-                                        </div>
-
-                                        {/* Content Area */}
-                                        <div className="text-center space-y-2 mb-6">
-                                            <h3 className="text-3xl font-black text-slate-900 tracking-tight hover:text-indigo-600 transition-colors">
-                                                {card.kanji}
-                                            </h3>
-                                            <p className="text-xs font-bold text-slate-400 bg-slate-50 inline-block px-3 py-1 rounded-lg">
-                                                {card.hiragana}
-                                            </p>
-                                            <div className="h-px w-8 bg-slate-100 mx-auto my-3" />
-                                            <p className="text-md font-bold text-indigo-600 tracking-tight leading-tight">
-                                                {card.meaning}
-                                            </p>
-                                            <p className="text-[11px] text-slate-500 font-medium italic line-clamp-1 opacity-70">
-                                                "{card.example}"
-                                            </p>
-                                        </div>
-
-                                        {/* Footer */}
-                                        <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
-                                            <div className="flex items-center gap-2">
-                                                {card.studyStatus === 'learned' && <CheckCircle2 className="size-3 text-emerald-500" />}
-                                                {card.studyStatus === 'review' && <AlertCircle className="size-3 text-rose-500" />}
-                                                {card.studyStatus === 'not_learned' && <Clock className="size-3 text-slate-300" />}
-                                            </div>
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onEditCard?.(card);
-                                                    }}
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600"
-                                                >
-                                                    <Edit className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDeleteCard?.(card.id);
-                                                    }}
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-slate-50/50">
+                                        <TableRow className="hover:bg-transparent border-b">
+                                            <TableHead className="w-14 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">STT</TableHead>
+                                            <TableHead className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Hán tự / Từ vựng</TableHead>
+                                            <TableHead className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">Cách đọc</TableHead>
+                                            <TableHead className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Ý nghĩa (VN)</TableHead>
+                                            <TableHead className="text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Trạng thái</TableHead>
+                                            <TableHead className="text-right pr-6 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Thao tác</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredCards.map((card, idx) => (
+                                            <TableRow key={card.id || idx} className="group hover:bg-slate-50/80 transition-colors border-b last:border-0">
+                                                <TableCell className="text-center text-xs font-medium text-slate-400">{idx + 1}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col py-1">
+                                                        <span className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight">{card.kanji}</span>
+                                                        <span className="text-[10px] font-medium text-slate-400 mt-0.5 italic">{card.type}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary" className="font-medium bg-slate-100/80 text-slate-600 border-slate-200 text-xs px-2 py-0.5">
+                                                        {card.hiragana}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="font-semibold text-slate-700 text-sm max-w-[200px] truncate">{card.meaning}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-[10px] font-bold px-2 py-0.5 border-none shadow-none leading-none",
+                                                            card.studyStatus === 'learned' ? "bg-emerald-50 text-emerald-600" :
+                                                            card.studyStatus === 'review' ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"
+                                                        )}
+                                                    >
+                                                        {card.studyStatus === 'learned' ? "ĐÃ THUỘC" : card.studyStatus === 'review' ? "CẦN ÔN" : "MỚI HỌC"}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right pr-6">
+                                                   <div className="flex items-center justify-end gap-1">
+                                                       <Button 
+                                                          size="icon" 
+                                                          variant="ghost" 
+                                                          onClick={() => onEditCard?.(card)} 
+                                                          className="size-8 rounded-md opacity-0 group-hover:opacity-100 transition-all hover:bg-slate-100"
+                                                        >
+                                                           <Edit className="size-3.5 text-muted-foreground" />
+                                                       </Button>
+                                                       <Button 
+                                                          size="icon" 
+                                                          variant="ghost" 
+                                                          onClick={() => setDeleteCardTarget(card)} 
+                                                          className="size-8 rounded-md opacity-0 group-hover:opacity-100 transition-all text-destructive hover:bg-destructive/10"
+                                                        >
+                                                           <Trash2 className="size-3.5" />
+                                                       </Button>
+                                                   </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
                         ) : (
-                            <div className="py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
-                                <div className="size-16 bg-slate-50 rounded-2xl shadow-sm mx-auto flex items-center justify-center mb-4">
-                                    <Search className="size-8 text-slate-200" />
+                            <div className="py-24 text-center flex flex-col items-center gap-4 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+                                <div className="p-4 rounded-full bg-slate-100">
+                                    <Search className="size-8 text-slate-400" />
                                 </div>
-                                <p className="text-slate-500 font-bold text-lg">Chưa có thẻ nào trong bộ này</p>
-                                <p className="text-slate-400 text-sm mb-6">Hãy thêm thẻ mới hoặc import từ Excel</p>
-                                <Button
-                                    onClick={onAddCard}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-6 rounded-xl gap-2 shadow-lg shadow-indigo-500/20"
-                                >
-                                    <Plus className="size-5 stroke-[3px]" />
-                                    Thêm Thẻ Đầu Tiên
-                                </Button>
+                                <div className="space-y-1">
+                                    <p className="font-bold text-slate-900">Không tìm thấy thẻ học nào</p>
+                                    <p className="text-xs text-muted-foreground">Thử điều chỉnh từ khóa tìm kiếm.</p>
+                                </div>
+                                <Button size="sm" variant="outline" onClick={() => setSearchQuery("")} className="mt-2 text-xs font-bold border-slate-300">XÓA BỘ LỌC</Button>
                             </div>
                         )}
                     </div>
+
+                    <DialogFooter className="p-4 border-t bg-slate-50/30 shrink-0">
+                        <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-9 px-6 font-bold text-[11px] uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition-all border-slate-300">ĐÓNG</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <ImportFlashcardModal
-                open={openImport}
-                onOpenChange={setOpenImport}
-                onImportSuccess={(data) => {
-                    console.log("Imported cards:", data);
-                    toast.success(`Đã import ${data.length} thẻ`);
-                }}
+
+            <DeleteFlashcardDialog
+                open={deleteCardTarget !== null}
+                onOpenChange={(open) => !open && setDeleteCardTarget(null)}
+                title={deleteCardTarget?.kanji}
+                isDeleting={isDeletingCard}
+                onConfirm={handleDeleteCard}
+                type="card"
             />
         </>
     );

@@ -8,6 +8,7 @@ import type {
   TestAttemptResult,
   PaginatedResponse,
 } from "@/types/jlpt";
+import type { AnswerReview, QuestionReportPayload, QuestionReport } from "@/types/jlpt-review";
 
 // Base query with authentication
 const baseQuery = async (args: any) => {
@@ -160,6 +161,25 @@ export const jlptApi = createApi({
         response.data,
       providesTags: ["JlptAttempts"],
     }),
+
+    // Get attempt review details (per-question)
+    getAttemptReview: builder.query<AnswerReview[], number>({
+      query: (id) => `/jlpt-test-attempts/${id}/review`,
+      transformResponse: (response: ApiResponse<AnswerReview[]>) =>
+        response.data,
+      providesTags: (result, error, id) => [{ type: "JlptAttempts", id }],
+    }),
+
+    // Create question report
+    createQuestionReport: builder.mutation<QuestionReport, QuestionReportPayload>({
+      query: (body) => ({
+        url: "/jlpt-question-reports",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<QuestionReport>) =>
+        response.data,
+    }),
   }),
 });
 
@@ -170,4 +190,6 @@ export const {
   useSubmitTestMutation,
   useGetAttemptByIdQuery,
   useGetMyAttemptsQuery,
+  useGetAttemptReviewQuery,
+  useCreateQuestionReportMutation,
 } = jlptApi;

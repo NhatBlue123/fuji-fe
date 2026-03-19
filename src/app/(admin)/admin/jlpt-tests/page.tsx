@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,6 +9,10 @@ import {
   useDeleteTestMutation,
   useUpdateTestMutation,
   useCreateTestMutation,
+  useAttachQuestionBankItemToTestMutation,
+  useGetTestByIdQuery,
+  useUpdateQuestionMutation,
+  useDeleteQuestionMutation,
 } from "@/store/services/adminJlptApi";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +62,16 @@ import {
   BookOpen,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import {
+  getStructureForTestType,
+  getQuestionNumbers,
+  type JLPTLevel,
+  type SectionKey,
+  type MondaiConfig,
+} from "@/lib/jlpt-structure";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
+import type { CreateQuestionDTO, JlptQuestionAdmin, QuestionBankItem } from "@/store/services/adminJlptApi";
 
 // ─── Level color map ──────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -70,8 +84,8 @@ const LEVEL_COLORS: Record<string, string> = {
 
 const INITIAL_FORM = {
   title: "",
-  level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
-  testType: "full_test" as "full_test" | "vocabulary_grammar" | "reading" | "listening",
+  level: "" as any,
+  testType: "" as any,
   description: "",
   duration: 120,
   totalQuestions: 0,
@@ -101,17 +115,46 @@ export default function AdminJLPTTestsPage() {
   const { data: allTests = [] } = useGetAllTestsStatsQuery();
   const [deleteTest] = useDeleteTestMutation();
   const [createTest, { isLoading: isCreating }] = useCreateTestMutation();
+  const [attachQuestionBankItemToTest] =
+    useAttachQuestionBankItemToTestMutation();
 
   // ── Create/Edit form state ─────────────────────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTestId, setEditingTestId] = useState<number | null>(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [autoGenerateWithBank, setAutoGenerateWithBank] = useState(false);
+  const [generatingFromBank, setGeneratingFromBank] = useState(false);
 
   const [updateTest, { isLoading: isUpdating }] = useUpdateTestMutation();
+  const [updateQuestion, updateQuestionState] = useUpdateQuestionMutation();
+  const [deleteQuestion, deleteQuestionState] = useDeleteQuestionMutation();
+
+  // ── Preview/review state (tree Mondai) ───────────────────────────────
+  const [previewTestId, setPreviewTestId] = useState<number | null>(null);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(
+    null,
+  );
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+
+  const [draftContentText, setDraftContentText] = useState("");
+  const [draftOptions, setDraftOptions] = useState("");
+  const [draftCorrectOption, setDraftCorrectOption] = useState<number | undefined>(
+    undefined,
+  );
+  const [draftExplanation, setDraftExplanation] = useState("");
+
+  const {
+    data: previewTest,
+    isLoading: isPreviewLoading,
+    isFetching: isPreviewFetching,
+  } = useGetTestByIdQuery(previewTestId ?? 0, {
+    skip: previewTestId == null,
+  });
 
   const openCreateForm = () => {
     setEditingTestId(null);
     setFormData(INITIAL_FORM);
+    setAutoGenerateWithBank(false);
     setShowCreateForm(true);
   };
 
@@ -129,6 +172,7 @@ export default function AdminJLPTTestsPage() {
       readingPassScore: test.readingPassScore || 19,
       listeningPassScore: test.listeningPassScore || 19,
     });
+    setAutoGenerateWithBank(false);
     setShowCreateForm(true);
   };
 
@@ -136,6 +180,211 @@ export default function AdminJLPTTestsPage() {
     setShowCreateForm(false);
     setEditingTestId(null);
     setFormData(INITIAL_FORM);
+    setAutoGenerateWithBank(false);
+    setPreviewTestId(null);
+    setSelectedQuestionId(null);
+    setReviewConfirmed(false);
+  };
+
+  interface MondaiNode {
+    parent: JlptQuestionAdmin | null;
+    children: Record<number, JlptQuestionAdmin>;
+  }
+
+  type QuestionsMap = Record<number, MondaiNode>;
+
+  function buildQuestionsMap(questions: JlptQuestionAdmin[]): QuestionsMap {
+    const map: QuestionsMap = {};
+    for (const q of questions) {
+      if (!map[q.mondaiNumber]) map[q.mondaiNumber] = { parent: null, children: {} };
+
+      if (q.parentId == null) {
+        if (q.children && q.children.length > 0) {
+          map[q.mondaiNumber].parent = q;
+          for (const child of q.children) {
+            map[q.mondaiNumber].children[child.questionOrder] = child;
+          }
+        } else {
+          if (q.options != null || q.correctOption != null) {
+            map[q.mondaiNumber].children[q.questionOrder] = q;
+          } else {
+            map[q.mondaiNumber].parent = q;
+          }
+        }
+      }
+    }
+    return map;
+  }
+
+  const flatPreviewQuestions = useMemo(() => {
+    const parents = previewTest?.questions ?? [];
+    const out: JlptQuestionAdmin[] = [];
+    for (const p of parents) {
+      out.push(p);
+      const children = p.children ?? [];
+      for (const c of children) out.push(c);
+    }
+    return out;
+  }, [previewTest]);
+
+  const selectedQuestion = useMemo(() => {
+    if (selectedQuestionId == null) return null;
+    return (
+      flatPreviewQuestions.find((q) => q.id === selectedQuestionId) ?? null
+    );
+  }, [flatPreviewQuestions, selectedQuestionId]);
+
+  const structure = useMemo(() => {
+    const level = formData.level as JLPTLevel | undefined;
+    const testType = formData.testType as string | undefined;
+    if (!level || !testType) return [];
+    return getStructureForTestType(level, testType);
+  }, [formData.level, formData.testType]);
+
+  const questionsMap = useMemo<QuestionsMap>(() => {
+    const parents = previewTest?.questions ?? [];
+    return parents.length > 0 ? buildQuestionsMap(parents) : {};
+  }, [previewTest]);
+
+  const mondaiConfigs = useMemo(() => {
+    const map = new Map<number, MondaiConfig>();
+    for (const section of structure) {
+      for (const mondai of section.mondai) {
+        if (!map.has(mondai.number)) map.set(mondai.number, mondai);
+      }
+    }
+    return Array.from(map.values());
+  }, [structure]);
+
+  useEffect(() => {
+    if (previewTestId == null) return;
+    if (selectedQuestionId != null) return;
+    if (flatPreviewQuestions.length === 0) return;
+    setSelectedQuestionId(flatPreviewQuestions[0].id);
+  }, [previewTestId, flatPreviewQuestions, selectedQuestionId]);
+
+  useEffect(() => {
+    if (!selectedQuestion) return;
+    setDraftContentText(selectedQuestion.contentText ?? "");
+
+    const opts = selectedQuestion.options;
+    if (Array.isArray(opts)) setDraftOptions(JSON.stringify(opts));
+    else if (typeof opts === "string") setDraftOptions(opts);
+    else setDraftOptions("");
+
+    setDraftCorrectOption(selectedQuestion.correctOption ?? undefined);
+    setDraftExplanation(selectedQuestion.explanation ?? "");
+  }, [selectedQuestion]);
+
+  const generateQuestionsFromBank = async (testId: number) => {
+    const token = getAccessToken();
+    if (!token) throw new Error("Chưa đăng nhập hoặc không có access token.");
+
+    const level = formData.level as JLPTLevel;
+    const testType = formData.testType as string;
+    const structure = getStructureForTestType(level, testType);
+
+    const shouldIncludeMondai = (mondai: any) => {
+      if (testType === "full_test") return true;
+      if (testType === "vocabulary_grammar") return !mondai.requires_passage;
+      if (testType === "reading") return mondai.requires_passage;
+      if (testType === "listening") return mondai.requires_audio;
+      return true;
+    };
+
+    for (const section of structure) {
+      const sectionKey = section.sectionKeys[0] as SectionKey;
+      for (const mondai of section.mondai) {
+        if (!shouldIncludeMondai(mondai)) continue;
+
+        const nums = getQuestionNumbers(mondai);
+        const count = nums.length;
+        const extra = mondai.requires_passage ? 1 : 0;
+        const pageSizeLocal = count + extra;
+
+        const params = new URLSearchParams({
+          level,
+          section: sectionKey,
+          mondaiNumber: String(mondai.number),
+          page: "0",
+          size: String(pageSizeLocal),
+        });
+
+        const bankRes = await fetch(
+          `${API_CONFIG.BASE_URL}/jlpt-question-bank?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Accept-Language":
+                localStorage.getItem("i18nextLng") || "vi",
+            },
+            credentials: "include",
+          },
+        );
+
+        if (!bankRes.ok) {
+          const bankJson = await bankRes.json().catch(() => ({}));
+          throw new Error(bankJson?.message || bankRes.statusText);
+        }
+
+        const bankJson = await bankRes.json();
+        const items = (bankJson?.data?.content ?? []) as QuestionBankItem[];
+        const sorted = [...items].sort((a, b) => a.id - b.id);
+
+        if (mondai.requires_passage) {
+          const parentItem =
+            sorted.find((i) => (i.passageText ?? "").trim().length > 0) ??
+            sorted[0];
+          if (!parentItem) continue;
+
+          const parentCreated = await attachQuestionBankItemToTest({
+            bankItemId: parentItem.id,
+            testId,
+            section: sectionKey,
+            questionOrder: mondai.start - 1,
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            parentQuestionId: null,
+          }).unwrap();
+
+          const childrenCandidates = sorted.filter(
+            (i) => i.id !== parentItem.id,
+          );
+
+          for (
+            let i = 0;
+            i < count && i < childrenCandidates.length;
+            i++
+          ) {
+            const q = childrenCandidates[i];
+            await attachQuestionBankItemToTest({
+              bankItemId: q.id,
+              testId,
+              section: sectionKey,
+              questionOrder: nums[i],
+              mondaiNumber: mondai.number,
+              mondaiTitle: mondai.title,
+              parentQuestionId: parentCreated.id,
+            }).unwrap();
+          }
+        } else {
+          const selected = sorted.slice(0, count);
+          for (let i = 0; i < selected.length; i++) {
+            const q = selected[i];
+            await attachQuestionBankItemToTest({
+              bankItemId: q.id,
+              testId,
+              section: sectionKey,
+              questionOrder: nums[i],
+              mondaiNumber: mondai.number,
+              mondaiTitle: mondai.title,
+              parentQuestionId: null,
+            }).unwrap();
+          }
+        }
+      }
+    }
   };
 
   const updateField = (field: string, value: any) =>
@@ -155,6 +404,18 @@ export default function AdminJLPTTestsPage() {
         closeForm();
       } else {
         const result = await createTest(formData).unwrap();
+        if (autoGenerateWithBank) {
+          setGeneratingFromBank(true);
+          try {
+            await generateQuestionsFromBank(result.id);
+          } finally {
+            setGeneratingFromBank(false);
+          }
+          // Keep modal open for review/edit before navigating
+          closeForm();
+          router.push(`/admin/jlpt-tests/create?previewTestId=${result.id}`);
+          return;
+        }
         closeForm();
         router.push(`/admin/jlpt-tests/${result.id}/questions`);
       }
@@ -227,12 +488,23 @@ export default function AdminJLPTTestsPage() {
           <h1 className="text-3xl font-bold tracking-tight">JLPT Tests</h1>
           <p className="text-muted-foreground">Quản lý đề thi JLPT</p>
         </div>
-        {canCreate && (
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Tạo đề thi mới
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link href="/admin/jlpt-question-bank">
+              Quản lý ngân hàng câu hỏi
+            </Link>
           </Button>
-        )}
+          {canCreate && (
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Tạo đề thi mới
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -293,7 +565,7 @@ export default function AdminJLPTTestsPage() {
                       <div className="space-y-2">
                         <Label htmlFor="level">Cấp độ *</Label>
                         <Select value={formData.level} onValueChange={(v) => updateField("level", v)}>
-                          <SelectTrigger id="level"><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="level"><SelectValue placeholder="Chọn cấp độ" /></SelectTrigger>
                           <SelectContent>
                             {["N5", "N4", "N3", "N2", "N1"].map(l => (
                               <SelectItem key={l} value={l}>{l}</SelectItem>
@@ -305,7 +577,7 @@ export default function AdminJLPTTestsPage() {
                       <div className="space-y-2">
                         <Label htmlFor="testType">Loại đề thi *</Label>
                         <Select value={formData.testType} onValueChange={(v) => updateField("testType", v)}>
-                          <SelectTrigger id="testType"><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="testType"><SelectValue placeholder="Chọn loại đề thi" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="full_test">Full Test (Đề thi đầy đủ)</SelectItem>
                             <SelectItem value="vocabulary_grammar">Từ vựng &amp; Ngữ pháp (言語知識)</SelectItem>
@@ -314,16 +586,7 @@ export default function AdminJLPTTestsPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowCreateForm(false)}
-                        className="shrink-0 -mt-1 -mr-1"
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-                    </CardHeader>
+                    </div>
 
                     {/* Duration — full width now that totalQuestions is removed */}
                     <div className="space-y-2">
@@ -420,12 +683,22 @@ export default function AdminJLPTTestsPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                       <Button type="submit" disabled={isCreating || isUpdating}>
                         {editingTestId 
                           ? (isUpdating ? "Đang cập nhật..." : "Lưu thay đổi") 
-                          : (isCreating ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi")}
+                          : (isCreating || generatingFromBank ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi")}
                       </Button>
+                      {!editingTestId && (
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={autoGenerateWithBank}
+                            onChange={(e) => setAutoGenerateWithBank(e.target.checked)}
+                          />
+                          Tạo sẵn câu hỏi từ ngân hàng (1 bước)
+                        </label>
+                      )}
                       <Button
                         type="button"
                         variant="outline"

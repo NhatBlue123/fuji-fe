@@ -20,6 +20,7 @@ import {
   Sun,
   Moon,
   Layers,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -91,6 +92,12 @@ const navGroups: NavGroup[] = [
         title: "Đề thi",
         href: "/admin/jlpt-tests",
         icon: BookOpenCheck,
+      },
+      {
+        title: "Báo cáo ",
+        href: "/admin/reports",
+        icon: AlertTriangle,
+        adminOnly: true,
       },
     ],
   },

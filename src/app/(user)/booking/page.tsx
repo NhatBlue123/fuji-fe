@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import BookingModal from "./bookingmodal/page";
+import { Button } from "@/components/ui/button";
 
 const teachers = [
   {
@@ -165,7 +166,7 @@ export default function TeacherBookingDashboard() {
                     <span className="material-symbols-outlined text-sm">payments</span>
                     <span>{selectedPrice || "Khoảng giá"}</span>
                     <span className="material-symbols-outlined text-sm">expand_more</span>
-                  </button>
+                  </Button>
                 </div>
 
                 <button className="flex items-center gap-2 bg-background border border-border px-4 py-2 rounded-lg text-muted-foreground text-sm font-bold hover:border-secondary hover:text-secondary transition-all">
@@ -242,7 +243,7 @@ export default function TeacherBookingDashboard() {
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all text-muted-foreground hover:text-secondary disabled:opacity-50 disabled:pointer-events-none"
           >
             <span className="material-symbols-outlined text-sm">chevron_left</span>
-          </button>
+          </Button>
 
           {/* PAGE NUMBERS */}
           {pages.map((p) => (
@@ -277,7 +278,7 @@ export default function TeacherBookingDashboard() {
             className="size-10 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent hover:border-secondary transition-all text-muted-foreground hover:text-secondary disabled:opacity-50 disabled:pointer-events-none"
           >
             <span className="material-symbols-outlined text-sm">chevron_right</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -286,7 +287,7 @@ export default function TeacherBookingDashboard() {
       )}
 
       {/* FLOAT BUTTON */}
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-secondary-foreground rounded-full shadow-lg shadow-secondary/30 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl z-40">
+      <Button className="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-secondary-foreground rounded-full shadow-lg shadow-secondary/30 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl z-40">
         💬
       </Button>
     </div>

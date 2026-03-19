@@ -213,10 +213,10 @@ export default function PaymentStatus({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button onClick={() => refetch()} disabled={isStatusLoading} className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-indigo-500/20 font-bold text-xs uppercase">
+                <Button onClick={() => refetch()} disabled={isStatusLoading} className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-400 font-bold text-xs uppercase">
                   {isStatusLoading ? "Đang check..." : "Kiểm tra ngay"}
                 </Button>
-                <Button onClick={() => setIsConfirming(true)} variant="ghost" className="h-12 rounded-xl text-slate-500 hover:text-red-400 font-bold text-xs uppercase">
+                <Button onClick={() => setIsConfirming(true)} variant="ghost" className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-400 font-bold text-xs uppercase">
                   Hủy giao dịch
                 </Button>
               </div>

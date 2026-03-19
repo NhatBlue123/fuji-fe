@@ -16,7 +16,7 @@ export default function PaymentSuccessPage() {
     }, 1000);
 
     const redirect = setTimeout(() => {
-      window.location.href = "/user/premium";
+      window.location.href = "/premium";
     }, 10000);
 
     return () => {
@@ -30,7 +30,7 @@ export default function PaymentSuccessPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0c10] text-slate-200 flex items-center justify-center p-6 relative overflow-hidden">
-      
+
       {/* Background Decor - Hiệu ứng ánh sáng rực rỡ hơn cho chiến thắng */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full animate-pulse" />
@@ -39,9 +39,9 @@ export default function PaymentSuccessPage() {
 
       <div className="relative z-10 max-w-5xl w-full">
         <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)]">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-12">
-            
+
             {/* CỘT TRÁI: HIỆU ỨNG THÀNH CÔNG (Chiếm 5/12) */}
             <div className="lg:col-span-5 bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent p-12 flex flex-col items-center justify-center text-center border-b lg:border-b-0 lg:border-r border-white/5">
               <div className="relative mb-8">
@@ -66,7 +66,7 @@ export default function PaymentSuccessPage() {
               {/* Progress Bar đếm ngược */}
               <div className="mt-10 w-full max-w-[200px] space-y-2">
                 <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-emerald-500 transition-all duration-1000 ease-linear"
                     style={{ width: `${(countdown / 10) * 100}%` }}
                   />
@@ -90,9 +90,9 @@ export default function PaymentSuccessPage() {
               {/* Wallet Card - Hiển thị số dư phong cách hiện đại */}
               <div className="bg-gradient-to-r from-slate-900 to-slate-800 border border-white/5 rounded-[2rem] p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <CreditCard size={100} />
+                  <CreditCard size={100} />
                 </div>
-                
+
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Số dư hiện tại</p>
                 <div className="flex items-end gap-3">
                   <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
@@ -121,8 +121,8 @@ export default function PaymentSuccessPage() {
                   <div>
                     <p className="text-slate-500 text-xs uppercase mb-1">Trạng thái</p>
                     <div className="flex items-center gap-2 text-emerald-400 uppercase font-black text-[10px] tracking-widest">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Hoàn thành
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Hoàn thành
                     </div>
                   </div>
                   <div>
@@ -150,7 +150,7 @@ export default function PaymentSuccessPage() {
             </div>
           </div>
         </div>
-        
+
         <p className="text-center mt-8 text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">
           Cảm ơn bạn đã tin tưởng hệ thống của chúng tôi
         </p>

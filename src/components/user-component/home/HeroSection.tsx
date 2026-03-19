@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 // Thêm các import mới
 import Particles, { initParticlesEngine } from "@tsparticles/react";
-import { loadSlim } from "@tsparticles/slim"; 
+import { loadSlim } from "@tsparticles/slim";
 
 export function HeroSection() {
   const { t } = useTranslation();
@@ -87,10 +87,10 @@ export function HeroSection() {
       <div className="relative z-10 max-w-2xl text-white pt-10">
         {/* ... Giữ nguyên phần code hiển thị Title, Badge, Description và Buttons của bạn ... */}
         <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 mb-6 shadow-glow">
-           <span className="size-2 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_#F472B6]"></span>
-           <span className="text-xs font-bold tracking-wide uppercase text-secondary">
-             {t("home.badge")}
-           </span>
+          <span className="size-2 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_#F472B6]"></span>
+          <span className="text-xs font-bold tracking-wide uppercase text-secondary">
+            {t("home.badge")}
+          </span>
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-7xl font-black leading-tight mb-4 tracking-tight drop-shadow-lg">
           {t("home.title")} <br />

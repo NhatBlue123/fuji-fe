@@ -34,7 +34,7 @@ export default function TopupContent() {
   } | null>(null)
 
   const packages = [
-    { id: 1, price: 10000, flowers: 1 },
+    { id: 1, price: 10000, flowers: 10 },
     { id: 2, price: 20000, flowers: 20 },
     { id: 3, price: 50000, flowers: 50, bonus: 5 },
     { id: 4, price: 100000, flowers: 100, bonus: 20, isPopular: true },

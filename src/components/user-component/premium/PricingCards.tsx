@@ -7,34 +7,39 @@ export default function PricingCards() {
       {/* ===== Thẻ Miễn Phí ===== */}
       <div className="bg-card text-card-foreground rounded-2xl p-8 border border-border flex flex-col relative transition-colors">
         <p className="text-muted-foreground text-sm font-semibold tracking-wider mb-2">
-          CƠ BẢN
+          TRẢI NGHIỆM
         </p>
 
-        <h3 className="text-3xl font-bold mb-4">Miễn phí</h3>
+        <h3 className="text-3xl font-bold mb-4">Free</h3>
 
         <div className="flex items-end mb-6">
           <span className="text-5xl font-bold">0đ</span>
-          <span className="text-muted-foreground ml-2 mb-1">/ vĩnh viễn</span>
+          <span className="text-muted-foreground ml-2 mb-1">/ mãi mãi</span>
         </div>
 
         <button className="w-full bg-muted hover:bg-muted/80 text-foreground font-semibold py-3 rounded-xl transition mb-8">
-          Bắt đầu ngay
+          Khám phá ngay
         </button>
 
         <ul className="space-y-4 flex-1">
           <li className="flex items-center">
             <CheckCircle2 className="w-5 h-5 text-primary mr-3" />
-            10 flashcard mỗi bộ
-          </li>
-
-          <li className="flex items-center">
-            <CheckCircle2 className="w-5 h-5 text-primary mr-3" />3 khóa học cơ
-            bản
+            Truy cập kho Flashcard cộng đồng
           </li>
 
           <li className="flex items-center">
             <CheckCircle2 className="w-5 h-5 text-primary mr-3" />
-            Ôn tập hàng ngày
+            Tạo tối đa 3 bộ học tập cá nhân
+          </li>
+
+          <li className="flex items-center">
+            <CheckCircle2 className="w-5 h-5 text-primary mr-3" />
+            Thuật toán Spaced Repetition cơ bản
+          </li>
+
+          <li className="flex items-center">
+            <CheckCircle2 className="w-5 h-5 text-primary mr-3" />
+            Đồng bộ hóa trên 1 thiết bị
           </li>
         </ul>
       </div>
@@ -47,11 +52,11 @@ export default function PricingCards() {
             bg-secondary text-secondary-foreground 
             px-4 py-1 rounded-full text-xs font-bold tracking-wider"
         >
-          PHỔ BIẾN NHẤT
+          TIẾT KIỆM NHẤT
         </div>
 
         <p className="text-secondary text-sm font-semibold tracking-wider mb-2 uppercase">
-          Học tập đỉnh cao
+          Lộ trình bứt phá
         </p>
 
         <h3 className="text-3xl font-bold mb-4">Premium</h3>
@@ -67,22 +72,33 @@ export default function PricingCards() {
         </div>
 
         <button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-3 rounded-xl transition mb-8 shadow-lg shadow-secondary/30">
-          Nâng cấp ngay
+          Nâng cấp Pro ngay
         </button>
 
         <ul className="space-y-4 flex-1">
           <li className="flex items-center">
             <CheckCircle2 className="w-5 h-5 text-secondary mr-3" />
-            50 flashcard mỗi bộ
+            Không giới hạn số lượng Flashcard
           </li>
 
           <li className="flex items-center">
             <CheckCircle2 className="w-5 h-5 text-secondary mr-3" />
-            Toàn bộ khóa học VIP
+            AI thông minh tự tạo bộ thẻ từ PDF/Ảnh
           </li>
+
           <li className="flex items-center">
             <CheckCircle2 className="w-5 h-5 text-secondary mr-3" />
-            AI hỗ trợ học tập 24/7
+            Chế độ học ngoại tuyến (Offline)
+          </li>
+
+          <li className="flex items-center">
+            <CheckCircle2 className="w-5 h-5 text-secondary mr-3" />
+            Phân tích chuyên sâu tiến độ học tập
+          </li>
+
+          <li className="flex items-center">
+            <CheckCircle2 className="w-5 h-5 text-secondary mr-3" />
+            Ưu tiên hỗ trợ & Không quảng cáo
           </li>
         </ul>
       </div>

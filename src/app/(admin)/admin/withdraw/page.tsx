@@ -74,8 +74,7 @@ export default function AdminWithdrawManagement() {
     const searchLower = search.toLowerCase();
     const matchSearch =
       req.id.toString().includes(searchLower) ||
-      (req.user?.fullName || "").toLowerCase().includes(searchLower) ||
-      (req.user?.email || "").toLowerCase().includes(searchLower);
+      (req.fullName || "").toLowerCase().includes(searchLower);
 
     return matchFilter && matchSearch;
   });
@@ -231,8 +230,8 @@ export default function AdminWithdrawManagement() {
                           </div>
                         </td>
                         <td className="p-4 align-middle">
-                          <div className="font-medium">{req.user?.fullName || "Người dùng ẩn danh"}</div>
-                          <div className="text-xs text-muted-foreground">{req.user?.email || ""}</div>
+                          <div className="font-medium">{req.fullName || "Người dùng ẩn danh"}</div>
+                          <div className="text-xs text-muted-foreground">Mã ID: {req.userId}</div>
                         </td>
                         <td className="p-4 align-middle font-semibold whitespace-nowrap">
                           {req.amount.toLocaleString()}đ

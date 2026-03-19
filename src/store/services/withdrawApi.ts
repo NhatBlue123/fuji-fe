@@ -15,11 +15,8 @@ export interface WithdrawRequestData {
   accountHolder: string;
   status: string;
   createdAt: string;
-  user: {
-    id: number;
-    fullName: string;
-    email: string;
-  };
+  userId: number;
+  fullName: string;
 }
 
 export interface ApiResponse<T> {

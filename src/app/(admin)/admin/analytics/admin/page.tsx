@@ -39,39 +39,7 @@ const AdminDashboard = () => {
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 flex flex-col min-w-0">
         
-        {/* BEGIN: Header */}
-        <header className="h-20 flex items-center justify-between px-8 sticky top-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-40 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-tr from-cyan-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Zap size={22} className="text-white fill-current" />
-            </div>
-            <h2 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-pink-600 dark:from-cyan-400 dark:to-pink-400">
-              Admin Dashboard
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-5">
-            {/* Search bar hidden on mobile */}
-            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-2xl border border-transparent focus-within:border-cyan-500 transition-all">
-              <Search size={18} className="text-slate-400" />
-              <input type="text" placeholder="Tìm kiếm..." className="bg-transparent border-none focus:ring-0 text-sm ml-2 dark:text-white" />
-            </div>
-
-            {/* Dark Mode Toggle */}
-            <button 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-500 dark:text-yellow-400 shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-110 transition-all"
-            >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-
-            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 pr-4 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
-              <img className="w-8 h-8 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Avatar" />
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 hidden sm:block">Admin</span>
-            </div>
-          </div>
-        </header>
-
+        
         {/* BEGIN: Content Area */}
         <div className="p-8 space-y-8 max-w-[1600px] mx-auto w-full">
           

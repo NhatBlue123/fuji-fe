@@ -206,6 +206,34 @@ export interface MediaUploadResponse {
   format: string;
 }
 
+export interface ExcelImportRowDTO {
+  level: string;
+  section: string;
+  questionType: string;
+  difficulty: string;
+  mondaiNumber: string;
+  mondaiTitle: string;
+  passageText: string;
+  contentText: string;
+  option1: string;
+  option2: string;
+  option3: string;
+  option4: string;
+  correctOption: string;
+  explanation: string;
+  imageUrl: string;
+  audioUrl: string;
+  tags: string;
+}
+
+export interface ImportResultDTO {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
+  previewRows?: ExcelImportRowDTO[];
+}
+
 // ============================================================================
 // API SERVICE
 // ============================================================================
@@ -436,6 +464,25 @@ export const adminJlptApi = createApi({
       ],
     }),
 
+    importExcel: builder.mutation<ImportResultDTO, FormData>({
+      query: (formData) => ({
+        url: "/jlpt-question-bank/import",
+        method: "POST",
+        body: formData,
+      }),
+      transformResponse: (response: ApiResponse<ImportResultDTO>) => response.data,
+      invalidatesTags: ["QuestionBank"],
+    }),
+
+    previewImportExcel: builder.mutation<ImportResultDTO, FormData>({
+      query: (formData) => ({
+        url: "/jlpt-question-bank/import/preview",
+        method: "POST",
+        body: formData,
+      }),
+      transformResponse: (response: ApiResponse<ImportResultDTO>) => response.data,
+    }),
+
     // ========================================================================
     // MEDIA UPLOAD
     // ========================================================================
@@ -523,6 +570,8 @@ export const {
   useUpdateQuestionBankItemMutation,
   useDeleteQuestionBankItemMutation,
   useAttachQuestionBankItemToTestMutation,
+  useImportExcelMutation,
+  usePreviewImportExcelMutation,
   useGetJlptQuestionReportsQuery,
   useUpdateJlptQuestionReportMutation,
 } = adminJlptApi;

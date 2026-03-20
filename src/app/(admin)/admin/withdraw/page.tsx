@@ -24,9 +24,15 @@ import {
   useRejectWithdrawRequestMutation,
 } from "@/store/services/withdrawApi";
 
+import { TransferModal } from "./TransferModal";
+
 export default function AdminWithdrawManagement() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   const { data: response, isLoading, refetch } = useGetAllWithdrawRequestsQuery();
   const [approveRequest] = useApproveWithdrawRequestMutation();
@@ -34,14 +40,23 @@ export default function AdminWithdrawManagement() {
 
   const requests = response?.data || [];
 
-  const handleApprove = async (id: number) => {
-    if (confirm(`Bạn có chắc chắn muốn duyệt và ĐÃ CHUYỂN TIỀN cho yêu cầu #${id} không?`)) {
-      try {
-        await approveRequest(id).unwrap();
-        toast.success(`Đã xác nhận thanh toán cho yêu cầu #${id}`);
-      } catch (error: any) {
-        toast.error(error?.data?.message || `Lỗi khi duyệt yêu cầu #${id}`);
-      }
+  const handleOpenTransferModal = (req: any) => {
+    setSelectedRequest(req);
+    setIsTransferModalOpen(true);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedRequest) return;
+    setIsApproving(true);
+    try {
+      await approveRequest(selectedRequest.id).unwrap();
+      toast.success(`Đã xác nhận thanh toán cho yêu cầu #${selectedRequest.id}`);
+      setIsTransferModalOpen(false);
+      setSelectedRequest(null);
+    } catch (error: any) {
+      toast.error(error?.data?.message || `Lỗi khi duyệt yêu cầu #${selectedRequest.id}`);
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -234,7 +249,7 @@ export default function AdminWithdrawManagement() {
                           <div className="text-xs text-muted-foreground">Mã ID: {req.userId}</div>
                         </td>
                         <td className="p-4 align-middle font-semibold whitespace-nowrap">
-                          {req.amount.toLocaleString()}đ
+                          {(req.amount-10000).toLocaleString()}đ
                         </td>
                         <td className="p-4 align-middle">
                           <div className="space-y-1">
@@ -258,12 +273,12 @@ export default function AdminWithdrawManagement() {
                               <>
                                 <Button 
                                   variant="outline" 
-                                  size="icon"
-                                  className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950"
-                                  title="Duyệt rút tiền (Đã chuyển khoản)"
-                                  onClick={() => handleApprove(req.id)}
+                                  size="sm"
+                                  className="h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950 px-3"
+                                  title="Chuyển tiền"
+                                  onClick={() => handleOpenTransferModal(req)}
                                 >
-                                  <CheckCircle className="h-4 w-4" />
+                                  <Banknote className="h-4 w-4 mr-1" /> Chuyển tiền
                                 </Button>
                                 <Button 
                                   variant="outline" 
@@ -290,6 +305,14 @@ export default function AdminWithdrawManagement() {
           </div>
         </CardContent>
       </Card>
+
+      <TransferModal 
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onConfirm={handleApprove}
+        isConfirming={isApproving}
+        request={selectedRequest}
+      />
     </div>
   );
 }

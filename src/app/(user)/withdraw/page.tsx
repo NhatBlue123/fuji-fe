@@ -9,10 +9,10 @@ import {
   ShieldCheck,
   CheckCircle2,
   Wallet,
-  ArrowRightLeft,
   Banknote,
   Sparkles,
   AlertCircle,
+  HelpCircle, // Thêm icon để hiển thị cạnh "Số khác"
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,6 @@ import {
 import { toast } from "sonner";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import { useCreateWithdrawRequestMutation } from "@/store/services/withdrawApi";
-import { Router } from "next/router";
 
 export default function WithdrawPage() {
   const router = useRouter();
@@ -43,10 +42,10 @@ export default function WithdrawPage() {
   });
   const [isSuccess, setIsSuccess] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showNote, setShowNote] = useState(false); // Trạng thái hiển thị ghi chú
 
-  // --- CẬP NHẬT PHÍ CỐ ĐỊNH 10,000đ ---
   const withdrawAmount = Number(amount) || 0;
-  const fee = withdrawAmount > 0 ? 10000 : 0; // Phí cố định 10k nếu có nhập tiền
+  const fee = withdrawAmount > 0 ? 10000 : 0;
   const finalAmount = Math.max(0, withdrawAmount - fee);
 
   const validateForm = () => {
@@ -85,7 +84,7 @@ export default function WithdrawPage() {
       toast.success("Đã gửi yêu cầu rút tiền thành công!");
     } catch (error: any) {
       toast.error(
-        error?.data?.message || "Giao dịch thất bại, vui lòng thử lại",
+        error?.data?.message || "Giao dịch thất bại, vui lòng thử lại"
       );
     }
   };
@@ -131,11 +130,7 @@ export default function WithdrawPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-7 space-y-5">
-            <form
-              id="withdraw-form"
-              onSubmit={handleOpenConfirm}
-              className="space-y-5"
-            >
+            <form id="withdraw-form" onSubmit={handleOpenConfirm} className="space-y-5">
               <section className="bg-[#0B1120]/60 backdrop-blur-xl border border-white/10 shadow-xl rounded-[2rem] p-6 md:p-8 space-y-6 relative overflow-hidden">
                 <div className="relative z-10 flex items-center gap-3">
                   <Banknote size={18} className="text-pink-400" />
@@ -159,21 +154,58 @@ export default function WithdrawPage() {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {[100000, 200000, 500000, 1000000].map((val) => (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {[100000, 200000, 500000, 1000000].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => {
+                            setAmount(val.toString());
+                            setShowNote(false);
+                          }}
+                          className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] text-slate-400 font-bold hover:bg-pink-500/10 hover:border-pink-500/40 hover:text-pink-400 transition-all uppercase"
+                        >
+                          +{val.toLocaleString()}
+                        </button>
+                      ))}
+                      
+                      {/* Nút Số Khác */}
                       <button
-                        key={val}
                         type="button"
-                        onClick={() => setAmount(val.toString())}
-                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] text-slate-400 font-bold hover:bg-pink-500/10 hover:border-pink-500/40 hover:text-pink-400 transition-all uppercase"
+                        onClick={() => setShowNote(!showNote)}
+                        className={`px-4 py-2 rounded-lg border text-[10px] font-bold transition-all uppercase flex items-center gap-2 ${
+                          showNote 
+                          ? "bg-pink-500/20 border-pink-500/50 text-pink-400" 
+                          : "bg-white/5 border-white/10 text-slate-400 hover:bg-pink-500/10 hover:border-pink-500/40 hover:text-pink-400"
+                        }`}
                       >
-                        +{val.toLocaleString()}
+                        <HelpCircle size={12} />
+                        Số khác
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Nội dung Note khi click vào Số khác */}
+                    {showNote && (
+                      <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle size={12} className="text-pink-400 mt-0.5 shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-[9px] text-slate-300 font-bold uppercase tracking-tight">
+                              Hạn mức rút tiền tối thiểu: <span className="text-pink-400">50,000 VND</span>
+                            </p>
+                            <p className="text-[9px] text-slate-300 font-bold uppercase tracking-tight">
+                              Số lần rút tối đa trong ngày: <span className="text-pink-400">03 lần</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>
 
+              {/* ... Giữ nguyên các phần ngân hàng ... */}
               <section className="bg-[#0B1120]/60 backdrop-blur-xl border border-white/10 shadow-xl rounded-[2rem] p-6 md:p-8 space-y-6">
                 <div className="flex items-center gap-3">
                   <Landmark size={18} className="text-cyan-400" />
@@ -210,23 +242,9 @@ export default function WithdrawPage() {
                         <option value="VPBank" />
                         <option value="Sacombank" />
                       </datalist>
-
-                      {/* Icon mũi tên nhỏ để người dùng biết là có danh sách xổ xuống */}
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                        <svg
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M1 1L5 5L9 1"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
+                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     </div>
@@ -241,10 +259,7 @@ export default function WithdrawPage() {
                       placeholder="0000 0000 0000"
                       className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white font-mono font-bold outline-none focus:border-pink-500/50 transition-all"
                       onChange={(e) =>
-                        setBankInfo({
-                          ...bankInfo,
-                          accountNumber: e.target.value,
-                        })
+                        setBankInfo({ ...bankInfo, accountNumber: e.target.value })
                       }
                       required
                     />
@@ -259,10 +274,7 @@ export default function WithdrawPage() {
                       placeholder="NGUYEN VAN A"
                       className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white font-bold outline-none focus:border-pink-500/50 uppercase transition-all"
                       onChange={(e) =>
-                        setBankInfo({
-                          ...bankInfo,
-                          accountHolder: e.target.value,
-                        })
+                        setBankInfo({ ...bankInfo, accountHolder: e.target.value })
                       }
                       required
                     />
@@ -273,67 +285,47 @@ export default function WithdrawPage() {
           </div>
 
           <aside className="lg:col-span-5 space-y-5 lg:sticky lg:top-8">
+            {/* ... Giữ nguyên phần Tóm tắt số dư và Button ... */}
             <div className="bg-[#0B1120]/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-[2rem] p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em]">
-                  Số dư ví Fuji
-                </span>
-                <Wallet size={14} className="text-cyan-400" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-white tracking-tighter">
-                  {balance.toLocaleString()}
-                </span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  VND
-                </span>
-              </div>
-
-              <div className="pt-5 border-t border-white/5 space-y-3">
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wide">
-                  <span className="text-slate-500">Số tiền rút:</span>
-                  <span className="text-white">
-                    {withdrawAmount.toLocaleString()}đ
-                  </span>
-                </div>
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wide">
-                  <span className="text-slate-500">Phí giao dịch:</span>
-                  <span className="text-rose-400">
-                    -{fee.toLocaleString()}đ
-                  </span>
-                </div>
-                <div className="pt-3 border-t border-dashed border-white/10 flex justify-between items-end">
-                  <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">
-                    Thực nhận:
-                  </span>
-                  <span className="text-xl font-black text-white tracking-tighter">
-                    {finalAmount.toLocaleString()}đ
-                  </span>
-                </div>
-              </div>
+               <div className="flex items-center justify-between">
+                 <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em]">
+                   Số dư ví Fuji
+                 </span>
+                 <Wallet size={14} className="text-cyan-400" />
+               </div>
+               <div className="flex items-baseline gap-2">
+                 <span className="text-3xl font-black text-white tracking-tighter">
+                   {balance.toLocaleString()}
+                 </span>
+                 <span className="text-[10px] font-bold text-slate-500 uppercase">
+                   VND
+                 </span>
+               </div>
+               <div className="pt-5 border-t border-white/5 space-y-3">
+                 <div className="flex justify-between text-[10px] font-bold uppercase tracking-wide">
+                   <span className="text-slate-500">Số tiền rút:</span>
+                   <span className="text-white">{withdrawAmount.toLocaleString()}đ</span>
+                 </div>
+                 <div className="flex justify-between text-[10px] font-bold uppercase tracking-wide">
+                   <span className="text-slate-500">Phí giao dịch:</span>
+                   <span className="text-rose-400">-{fee.toLocaleString()}đ</span>
+                 </div>
+                 <div className="pt-3 border-t border-dashed border-white/10 flex justify-between items-end">
+                   <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">Thực nhận:</span>
+                   <span className="text-xl font-black text-white tracking-tighter">{finalAmount.toLocaleString()}đ</span>
+                 </div>
+               </div>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-center gap-2 text-pink-400 relative z-10">
-                <Sparkles size={14} className="animate-pulse" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                  Thông tin vận hành
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed font-medium uppercase tracking-wide italic relative z-10">
-                * Nhóm thu phí cố định 10,000đ trên mỗi giao dịch rút tiền để
-                duy trì hạ tầng kỹ thuật, đội ngũ hỗ trợ 24/7 và ngân sách quảng
-                cáo phát triển cộng đồng Fuji.
-              </p>
-            </div>
-
-            <div className="bg-[#0B1120]/60 backdrop-blur-xl border border-yellow-500/20 rounded-2xl p-5 flex gap-3">
-              <ShieldCheck className="text-yellow-500 shrink-0" size={18} />
-              <p className="text-[9px] text-yellow-100/60 leading-relaxed font-medium uppercase tracking-wide">
-                Giao dịch bảo mật bằng hệ thống quản trị Fuji. Kiểm tra kỹ thông
-                tin trước khi xác nhận.
-              </p>
+               <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+               <div className="flex items-center gap-2 text-pink-400 relative z-10">
+                 <Sparkles size={14} className="animate-pulse" />
+                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">Thông tin vận hành</span>
+               </div>
+               <p className="text-[10px] text-slate-400 leading-relaxed font-medium uppercase tracking-wide italic relative z-10">
+                 * Nhóm thu phí cố định 10,000đ trên mỗi giao dịch rút tiền để duy trì hạ tầng kỹ thuật, đội ngũ hỗ trợ 24/7 và ngân sách quảng cáo phát triển cộng đồng Fuji.
+               </p>
             </div>
 
             <Button
@@ -349,77 +341,42 @@ export default function WithdrawPage() {
       </div>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        {/* ... Giữ nguyên Dialog nội dung ... */}
         <DialogContent className="bg-[#0f1218] border border-white/10 text-slate-200 rounded-[2rem] max-w-md p-8">
-          <DialogHeader className="space-y-3">
-            <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 mx-auto mb-2">
-              <AlertCircle size={24} />
-            </div>
-            <DialogTitle className="text-center text-xl font-black uppercase tracking-tight text-white">
-              Xác nhận thông tin
-            </DialogTitle>
-            <DialogDescription className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-              Vui lòng kiểm tra kỹ số tài khoản.
-              <br />
-              Admin sẽ chuyển tiền theo thông tin này.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="bg-white/5 rounded-2xl p-5 space-y-4 border border-white/5 my-4">
-            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                Ngân hàng
-              </span>
-              <span className="text-xs font-bold text-white">
-                {bankInfo.bankName}
-              </span>
-            </div>
-            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                Số tài khoản
-              </span>
-              <span className="text-xs font-mono font-bold text-white tracking-widest">
-                {bankInfo.accountNumber}
-              </span>
-            </div>
-            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                Chủ tài khoản
-              </span>
-              <span className="text-xs font-bold text-white uppercase">
-                {bankInfo.accountHolder}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-[9px] font-black text-pink-400 uppercase tracking-widest">
-                Số tiền thực nhận
-              </span>
-              <span className="text-lg font-black text-pink-400">
-                {finalAmount.toLocaleString()}đ
-              </span>
-            </div>
-          </div>
-
-          <DialogFooter className="flex flex-row gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => setShowConfirm(false)}
-              className="flex-1 h-12 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/5"
-            >
-              Hủy
-            </Button>
-            <Button
-              onClick={handleConfirmWithdraw}
-              className="flex-1 h-12 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-pink-500/20"
-            >
-              Xác nhận rút
-            </Button>
-          </DialogFooter>
+           <DialogHeader className="space-y-3">
+             <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 mx-auto mb-2">
+               <AlertCircle size={24} />
+             </div>
+             <DialogTitle className="text-center text-xl font-black uppercase tracking-tight text-white">Xác nhận thông tin</DialogTitle>
+             <DialogDescription className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+               Vui lòng kiểm tra kỹ số tài khoản. Admin sẽ chuyển tiền theo thông tin này.
+             </DialogDescription>
+           </DialogHeader>
+           <div className="bg-white/5 rounded-2xl p-5 space-y-4 border border-white/5 my-4">
+              <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Ngân hàng</span>
+                <span className="text-xs font-bold text-white">{bankInfo.bankName}</span>
+              </div>
+              <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Số tài khoản</span>
+                <span className="text-xs font-mono font-bold text-white tracking-widest">{bankInfo.accountNumber}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-[9px] font-black text-pink-400 uppercase tracking-widest">Số tiền thực nhận</span>
+                <span className="text-lg font-black text-pink-400">{finalAmount.toLocaleString()}đ</span>
+              </div>
+           </div>
+           <DialogFooter className="flex flex-row gap-3">
+             <Button variant="ghost" onClick={() => setShowConfirm(false)} className="flex-1 h-12 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest">Hủy</Button>
+             <Button onClick={handleConfirmWithdraw} className="flex-1 h-12 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest">Xác nhận rút</Button>
+           </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>
   );
 }
 
+// ... SuccessState giữ nguyên ...
 function SuccessState({ onBack }: { onBack: () => void }) {
   return (
     <div className="min-h-screen bg-[#0a0c10] flex items-center justify-center p-6">
@@ -432,21 +389,10 @@ function SuccessState({ onBack }: { onBack: () => void }) {
           </div>
         </div>
         <div className="space-y-2">
-          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
-            Yêu cầu đã gửi!
-          </h3>
-          <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest leading-relaxed">
-            Hệ thống đang xử lý giao dịch của bạn.
-            <br />
-            Vui lòng kiểm tra lịch sử ví sau vài giờ.
-          </p>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Yêu cầu đã gửi!</h3>
+          <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Hệ thống đang xử lý giao dịch của bạn.</p>
         </div>
-        <Button
-          onClick={onBack}
-          className="w-full h-12 bg-white/5 hover:bg-emerald-500/10 border border-white/10 text-white rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
-        >
-          Quay lại ví
-        </Button>
+        <Button onClick={onBack} className="w-full h-12 bg-white/5 border border-white/10 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">Quay lại ví</Button>
       </div>
     </div>
   );

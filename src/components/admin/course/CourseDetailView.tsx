@@ -92,7 +92,6 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   } = useGetCourseByIdQuery(courseId);
   const { data: lessons, isLoading: lessonsLoading } =
     useGetLessonsByCourseQuery(courseId);
-
   const [deleteLesson, { isLoading: isDeletingLesson }] =
     useDeleteLessonMutation();
   const [deleteCourse, { isLoading: isDeletingCourse }] =

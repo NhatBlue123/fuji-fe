@@ -192,6 +192,10 @@ export const authApi = createApi({
         body: credentials,
       }),
       transformResponse: (response: ApiResponse<LoginResponseData>) => {
+        const data = response?.data;
+        if (data?.accessToken) {
+          setAccessToken(data.accessToken); 
+        }
         // Backend wraps in ApiResponse, extract the data
         if (response?.data) return response.data;
         return response as unknown as LoginResponseData;

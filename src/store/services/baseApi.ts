@@ -22,6 +22,6 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["AdminUser", "MyPermissions"],
+  tagTypes: ["Wallet", "Payment", "AdminUser", "MyPermissions", "Withdraw"],
   endpoints: () => ({}),
 });

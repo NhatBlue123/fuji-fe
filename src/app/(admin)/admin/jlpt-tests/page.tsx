@@ -9,6 +9,7 @@ import {
   useDeleteTestMutation,
   useUpdateTestMutation,
   useCreateTestMutation,
+  useAddQuestionMutation,
   useAttachQuestionBankItemToTestMutation,
   useGetTestByIdQuery,
   useUpdateQuestionMutation,
@@ -40,6 +41,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -60,6 +62,8 @@ import {
   TrendingUp,
   BarChart3,
   BookOpen,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -119,6 +123,7 @@ export default function AdminJLPTTestsPage() {
   const { data: allTests = [] } = useGetAllTestsStatsQuery();
   const [deleteTest] = useDeleteTestMutation();
   const [createTest, { isLoading: isCreating }] = useCreateTestMutation();
+  const [addQuestion] = useAddQuestionMutation();
   const [attachQuestionBankItemToTest] =
     useAttachQuestionBankItemToTestMutation();
 
@@ -126,8 +131,10 @@ export default function AdminJLPTTestsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTestId, setEditingTestId] = useState<number | null>(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [autoGenerateWithAI, setAutoGenerateWithAI] = useState(false);
   const [autoGenerateWithBank, setAutoGenerateWithBank] = useState(false);
   const [generatingFromBank, setGeneratingFromBank] = useState(false);
+  const [generatingWithAI, setGeneratingWithAI] = useState(false);
 
   const [updateTest, { isLoading: isUpdating }] = useUpdateTestMutation();
   const [updateQuestion, updateQuestionState] = useUpdateQuestionMutation();
@@ -158,6 +165,7 @@ export default function AdminJLPTTestsPage() {
   const openCreateForm = () => {
     setEditingTestId(null);
     setFormData(INITIAL_FORM);
+    setAutoGenerateWithAI(false);
     setAutoGenerateWithBank(false);
     setShowCreateForm(true);
   };
@@ -177,6 +185,7 @@ export default function AdminJLPTTestsPage() {
       listeningPassScore: test.listeningPassScore || 19,
     });
     setAutoGenerateWithBank(false);
+    setAutoGenerateWithAI(false);
     setShowCreateForm(true);
   };
 
@@ -184,6 +193,7 @@ export default function AdminJLPTTestsPage() {
     setShowCreateForm(false);
     setEditingTestId(null);
     setFormData(INITIAL_FORM);
+    setAutoGenerateWithAI(false);
     setAutoGenerateWithBank(false);
     setPreviewTestId(null);
     setSelectedQuestionId(null);
@@ -237,6 +247,8 @@ export default function AdminJLPTTestsPage() {
       flatPreviewQuestions.find((q) => q.id === selectedQuestionId) ?? null
     );
   }, [flatPreviewQuestions, selectedQuestionId]);
+  const selectedMondaiNumber = selectedQuestion?.mondaiNumber ?? null;
+  const shouldRequireReviewConfirm = previewTestId != null;
 
   const structure = useMemo(() => {
     const level = formData.level as JLPTLevel | undefined;
@@ -399,6 +411,80 @@ export default function AdminJLPTTestsPage() {
     if (!isNaN(numValue)) updateField(field, numValue);
   };
 
+  const generateQuestionsWithAI = async (testId: number) => {
+    const level = formData.level as JLPTLevel;
+    const testType = formData.testType as string;
+    const structure = getStructureForTestType(level, testType);
+
+    for (const section of structure) {
+      const sectionKey = section.sectionKeys[0] as SectionKey;
+      for (const mondai of section.mondai) {
+        const nums = getQuestionNumbers(mondai);
+        const count = nums.length;
+
+        const aiRes = await fetch("/api/ai/generate-questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level,
+            section: sectionKey,
+            count,
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            testType,
+          }),
+        });
+        const aiJson = await aiRes.json();
+        if (!aiRes.ok) {
+          throw new Error(aiJson.error || "AI generate failed");
+        }
+
+        const questions = (aiJson.questions || []) as {
+          contentText: string;
+          options: string[];
+          correctOption: number;
+          explanation: string;
+          passageText: string;
+        }[];
+
+        let parentId: number | null = null;
+        const first = questions[0];
+        if (mondai.requires_passage && first?.passageText) {
+          const parentPayload: CreateQuestionDTO = {
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            parentId: null,
+            questionOrder: mondai.start - 1,
+            section: sectionKey as any,
+            contentText: first.passageText,
+          };
+          const createdParent = await addQuestion({
+            testId,
+            data: parentPayload,
+          }).unwrap();
+          parentId = createdParent.id;
+        }
+
+        for (let i = 0; i < questions.length && i < nums.length; i++) {
+          const q = questions[i];
+          const payload: CreateQuestionDTO = {
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            parentId: mondai.requires_passage ? parentId : null,
+            questionOrder: nums[i],
+            section: sectionKey as any,
+            contentText: q.contentText,
+            options: JSON.stringify(q.options) as any,
+            correctOption: q.correctOption,
+            explanation: q.explanation || undefined,
+            points: 1.0,
+          };
+          await addQuestion({ testId, data: payload }).unwrap();
+        }
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -415,9 +501,22 @@ export default function AdminJLPTTestsPage() {
           } finally {
             setGeneratingFromBank(false);
           }
-          // Keep modal open for review/edit before navigating
-          closeForm();
-          router.push(`/admin/jlpt-tests/create?previewTestId=${result.id}`);
+          // Keep modal open and show review panel on the right
+          setPreviewTestId(result.id);
+          setSelectedQuestionId(null);
+          setReviewConfirmed(false);
+          return;
+        }
+        if (autoGenerateWithAI) {
+          setGeneratingWithAI(true);
+          try {
+            await generateQuestionsWithAI(result.id);
+          } finally {
+            setGeneratingWithAI(false);
+          }
+          setPreviewTestId(result.id);
+          setSelectedQuestionId(null);
+          setReviewConfirmed(false);
           return;
         }
         closeForm();
@@ -526,11 +625,18 @@ export default function AdminJLPTTestsPage() {
           <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
             <div className="flex min-h-full items-start justify-center px-4 py-10">
               <div
-                className="w-full max-w-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300"
+                className={`w-full pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300 ${
+                  previewTestId ? "max-w-7xl" : "max-w-2xl"
+                }`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <form onSubmit={handleSubmit}>
-                  <Card className="shadow-2xl border-border">
+                <div
+                  className={`grid gap-4 items-start ${
+                    previewTestId ? "lg:grid-cols-[1fr_420px]" : "grid-cols-1"
+                  }`}
+                >
+                  <form onSubmit={handleSubmit}>
+                    <Card className="shadow-2xl border-border">
                     <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
                       <div>
                         <CardTitle className="text-xl">
@@ -794,15 +900,51 @@ export default function AdminJLPTTestsPage() {
 
                       {/* Actions */}
                       <div className="flex gap-3 pt-2">
+                        {!editingTestId && (
+                          <>
+                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={autoGenerateWithAI}
+                                onChange={(e) => {
+                                  const next = e.target.checked;
+                                  setAutoGenerateWithAI(next);
+                                  if (next) setAutoGenerateWithBank(false);
+                                }}
+                              />
+                              Tạo full câu hỏi bằng AI theo cấp độ đã chọn
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={autoGenerateWithBank}
+                                onChange={(e) => {
+                                  const next = e.target.checked;
+                                  setAutoGenerateWithBank(next);
+                                  if (next) setAutoGenerateWithAI(false);
+                                }}
+                              />
+                              Lấy câu hỏi từ ngân hàng đề thi
+                            </label>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
                         <Button
                           type="submit"
-                          disabled={isCreating || isUpdating}
+                          disabled={
+                            isCreating ||
+                            isUpdating ||
+                            generatingFromBank ||
+                            generatingWithAI
+                          }
                         >
                           {editingTestId
                             ? isUpdating
                               ? "Đang cập nhật..."
                               : "Lưu thay đổi"
-                            : isCreating
+                            : isCreating || generatingFromBank || generatingWithAI
                               ? "Đang tạo..."
                               : "Tạo đề thi và thêm câu hỏi"}
                         </Button>
@@ -815,8 +957,265 @@ export default function AdminJLPTTestsPage() {
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
-                </form>
+                    </Card>
+                  </form>
+
+                  {previewTestId ? (
+                    <Card className="shadow-2xl border-border overflow-hidden lg:sticky lg:top-4">
+                      <CardHeader>
+                        <CardTitle className="text-base">
+                          Review câu hỏi đã tạo
+                        </CardTitle>
+                        <CardDescription>
+                          {isPreviewLoading
+                            ? "Đang tải..."
+                            : `Test ID: ${previewTestId} • ${flatPreviewQuestions.length} câu`}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="rounded-md border">
+                          <ScrollArea className="h-[320px]">
+                            <div className="space-y-3 p-2">
+                              {isPreviewLoading || isPreviewFetching ? (
+                                <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground justify-center">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Đang tải cây Mondai...
+                                </div>
+                              ) : flatPreviewQuestions.length === 0 ||
+                                mondaiConfigs.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  Chưa có câu hỏi nào.
+                                </div>
+                              ) : (
+                                mondaiConfigs.map((mondai) => {
+                                  const node = questionsMap[mondai.number];
+                                  if (!node) return null;
+
+                                  const open =
+                                    selectedMondaiNumber === mondai.number;
+                                  const expected =
+                                    getQuestionNumbers(mondai).length;
+                                  const filled = Object.keys(
+                                    node.children ?? {},
+                                  ).length;
+
+                                  return (
+                                    <details
+                                      key={mondai.number}
+                                      open={open}
+                                      className={`rounded-md border p-2 ${
+                                        open
+                                          ? "border-primary/40 bg-muted/30"
+                                          : "border-border"
+                                      }`}
+                                    >
+                                      <summary className="list-none cursor-pointer select-none">
+                                        <div className="flex items-center gap-2">
+                                          <Badge
+                                            variant="default"
+                                            className="text-[10px]"
+                                          >
+                                            問{mondai.number}
+                                          </Badge>
+                                          <div className="min-w-0">
+                                            <div className="text-xs font-medium truncate">
+                                              {mondai.title}
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground">
+                                              {filled}/{expected} câu
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </summary>
+                                      <div className="mt-2 space-y-1">
+                                        {getQuestionNumbers(mondai).map(
+                                          (qNum) => {
+                                            const child =
+                                              node.children?.[qNum];
+                                            if (!child) return null;
+                                            return (
+                                              <button
+                                                key={qNum}
+                                                type="button"
+                                                className={`w-full text-left rounded border px-2 py-1 text-xs ${
+                                                  child.id === selectedQuestionId
+                                                    ? "border-primary/50 bg-background"
+                                                    : "border-border hover:bg-muted/30"
+                                                }`}
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  setSelectedQuestionId(child.id);
+                                                }}
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="font-medium">
+                                                    Câu {qNum}
+                                                  </span>
+                                                  <span className="text-[10px] text-muted-foreground">
+                                                    #{child.id}
+                                                  </span>
+                                                </div>
+                                                <div className="mt-1 text-[10px] line-clamp-2 text-muted-foreground">
+                                                  {child.contentText}
+                                                </div>
+                                              </button>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    </details>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </div>
+
+                        <div className="rounded-md border p-3 space-y-3">
+                          {selectedQuestion ? (
+                            <>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="space-y-0.5">
+                                  <div className="text-sm font-semibold">
+                                    Edit câu #{selectedQuestion.id}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Mondai {selectedQuestion.mondaiNumber} •
+                                    Order {selectedQuestion.questionOrder}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    router.push(
+                                      `/admin/jlpt-tests/${previewTestId}/questions`,
+                                    )
+                                  }
+                                  disabled={
+                                    shouldRequireReviewConfirm &&
+                                    !reviewConfirmed
+                                  }
+                                >
+                                  Đồng ý & chuyển trang{" "}
+                                  <ArrowRight className="h-4 w-4 ml-1" />
+                                </Button>
+                              </div>
+
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <input
+                                  type="checkbox"
+                                  checked={reviewConfirmed}
+                                  onChange={(e) =>
+                                    setReviewConfirmed(e.target.checked)
+                                  }
+                                />
+                                Đã review xong, cho phép chuyển trang câu hỏi
+                              </label>
+
+                              <div className="space-y-2">
+                                <Label>Nội dung (contentText)</Label>
+                                <Textarea
+                                  value={draftContentText}
+                                  onChange={(e) =>
+                                    setDraftContentText(e.target.value)
+                                  }
+                                  rows={4}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Options (JSON string)</Label>
+                                <Textarea
+                                  value={draftOptions}
+                                  onChange={(e) => setDraftOptions(e.target.value)}
+                                  rows={3}
+                                  placeholder='["a","b","c","d"]'
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label>Correct option</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={4}
+                                    value={draftCorrectOption ?? ""}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      if (v === "") setDraftCorrectOption(undefined);
+                                      else setDraftCorrectOption(Number(v));
+                                    }}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Explanation</Label>
+                                  <Input
+                                    value={draftExplanation}
+                                    onChange={(e) =>
+                                      setDraftExplanation(e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!selectedQuestion) return;
+                                    try {
+                                      await updateQuestion({
+                                        id: selectedQuestion.id,
+                                        data: {
+                                          contentText: draftContentText,
+                                          options: draftOptions,
+                                          correctOption: draftCorrectOption,
+                                          explanation: draftExplanation,
+                                        },
+                                      }).unwrap();
+                                      alert("Đã lưu câu hỏi!");
+                                    } catch (err: any) {
+                                      alert(err?.message || "Lưu thất bại");
+                                    }
+                                  }}
+                                  disabled={updateQuestionState.isLoading}
+                                >
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Lưu
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!selectedQuestion) return;
+                                    if (!confirm("Xóa câu hỏi này khỏi đề?")) return;
+                                    try {
+                                      await deleteQuestion(
+                                        selectedQuestion.id,
+                                      ).unwrap();
+                                      setSelectedQuestionId(null);
+                                      alert("Đã xóa câu hỏi!");
+                                    } catch (err: any) {
+                                      alert(err?.message || "Xóa thất bại");
+                                    }
+                                  }}
+                                  disabled={deleteQuestionState.isLoading}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Xóa
+                                </Button>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              Chọn câu hỏi ở danh sách bên trên để review/sửa.
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

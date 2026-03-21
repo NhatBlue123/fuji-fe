@@ -78,9 +78,9 @@ export default function CreateJLPTTestPage() {
 
   const [createdTestId, setCreatedTestId] = useState<number | null>(null);
   const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
-  const [creationFromBank, setCreationFromBank] = useState(false);
+  const [creationMode, setCreationMode] = useState<"bank" | "ai" | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const shouldRequireReviewConfirm = creationFromBank || isPreviewOnly;
+  const shouldRequireReviewConfirm = creationMode !== null || isPreviewOnly;
 
   const [draftContentText, setDraftContentText] = useState("");
   const [draftOptions, setDraftOptions] = useState("");
@@ -99,7 +99,7 @@ export default function CreateJLPTTestPage() {
     if (!isPreviewOnly) return;
     setCreatedTestId(previewTestId);
     setSelectedQuestionId(null);
-    setCreationFromBank(true);
+    setCreationMode("bank");
     setReviewConfirmed(false);
   }, [isPreviewOnly, previewTestId]);
 
@@ -152,11 +152,15 @@ export default function CreateJLPTTestPage() {
   }, [createdTest?.questions]);
 
   const structure = useMemo(() => {
-    const level = formData.level as JLPTLevel | undefined;
-    const testType = formData.testType as string | undefined;
+    const level =
+      (formData.level as JLPTLevel | undefined) ??
+      ((createdTest as any)?.level as JLPTLevel | undefined);
+    const testType =
+      (formData.testType as string | undefined) ??
+      ((createdTest as any)?.testType as string | undefined);
     if (!level || !testType) return [];
     return getStructureForTestType(level, testType);
-  }, [formData.level, formData.testType]);
+  }, [formData.level, formData.testType, createdTest]);
 
   const mondaiConfigs = useMemo<MondaiConfig[]>(() => {
     const map = new Map<number, MondaiConfig>();
@@ -315,11 +319,11 @@ export default function CreateJLPTTestPage() {
         setCreatingQuestions(true);
         setCreatedTestId(result.id);
         setSelectedQuestionId(null);
-        setCreationFromBank(true);
+        setCreationMode("bank");
         setReviewConfirmed(false);
         try {
           await generateQuestionsFromBank(result.id);
-          alert("Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công!");
+          alert("Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
           return;
         } finally {
           setCreatingQuestions(false);
@@ -327,7 +331,7 @@ export default function CreateJLPTTestPage() {
       }
 
       if (!autoGenerateWithAI) {
-        setCreationFromBank(false);
+        setCreationMode(null);
         setReviewConfirmed(false);
         alert("Tạo đề thi thành công!");
         router.push(`/admin/jlpt-tests/${result.id}/questions`);
@@ -336,7 +340,9 @@ export default function CreateJLPTTestPage() {
 
       // Auto-generate questions with AI (1-step flow)
       setCreatingQuestions(true);
-      setCreationFromBank(false);
+      setCreationMode("ai");
+      setCreatedTestId(result.id);
+      setSelectedQuestionId(null);
       setReviewConfirmed(false);
       try {
         const level = formData.level as JLPTLevel;
@@ -409,8 +415,7 @@ export default function CreateJLPTTestPage() {
           }
         }
 
-        alert("Tạo đề thi + sinh sẵn câu hỏi thành công! (Lưu ý: Listening cần upload audio sau)");
-        router.push(`/admin/jlpt-tests/${result.id}/questions`);
+        alert("Tạo đề thi + sinh sẵn câu hỏi bằng AI thành công! Vui lòng review trước khi chuyển sang trang câu hỏi. (Listening cần upload audio sau)");
       } finally {
         setCreatingQuestions(false);
       }
@@ -433,7 +438,11 @@ export default function CreateJLPTTestPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-4">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
+      <div
+        className={`grid grid-cols-1 gap-6 items-start ${
+          createdTestId ? "lg:grid-cols-[1fr_420px]" : ""
+        }`}
+      >
         {!isPreviewOnly && (
           <div className="space-y-6">
           <div>
@@ -646,8 +655,8 @@ export default function CreateJLPTTestPage() {
           </div>
         )}
 
-        <div className="space-y-3">
-          {createdTestId ? (
+        {createdTestId ? (
+          <div className="space-y-3 lg:sticky lg:top-4">
             <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-base">Review câu hỏi đã tạo</CardTitle>
@@ -659,7 +668,7 @@ export default function CreateJLPTTestPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="rounded-md border">
-                  <ScrollArea className="h-[280px]">
+                  <ScrollArea className="h-[320px]">
                     <div className="space-y-3 p-2">
                       {isCreatedTestLoading || isCreatedTestFetching ? (
                         <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground justify-center">
@@ -818,6 +827,16 @@ export default function CreateJLPTTestPage() {
                           >
                             Mở trang chỉnh sửa đầy đủ <ArrowRight className="h-4 w-4 ml-1" />
                           </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() =>
+                              router.push(`/admin/jlpt-tests/${createdTestId}/questions`)
+                            }
+                            disabled={shouldRequireReviewConfirm && !reviewConfirmed}
+                          >
+                            Đồng ý & chuyển sang trang câu hỏi
+                          </Button>
                         </div>
                       </div>
 
@@ -943,22 +962,13 @@ export default function CreateJLPTTestPage() {
                 </div>
               </CardContent>
             </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Review câu hỏi</CardTitle>
-                <CardDescription>
-                  Sau khi tạo đề bằng chế độ “từ ngân hàng”, danh sách câu hỏi sẽ hiện ở đây.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-          {creatingQuestions ? (
-            <div className="text-xs text-muted-foreground">
-              Đang tạo câu hỏi... (có thể mất vài phút tùy lượng câu trong ngân hàng)
-            </div>
-          ) : null}
-        </div>
+            {creatingQuestions ? (
+              <div className="text-xs text-muted-foreground">
+                Đang tạo câu hỏi... (có thể mất vài phút tùy lượng câu trong ngân hàng)
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

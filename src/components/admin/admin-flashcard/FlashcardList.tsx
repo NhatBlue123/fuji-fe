@@ -114,7 +114,7 @@ export const FlashcardList = ({
 
   const confirmDelete = () => {
     if (deletingCardId) {
-      onDeleteCard(deletingCardId);
+      onDeleteCard?.(deletingCardId);
       toast.success("Đã xóa thẻ");
       setDeletingCardId(null);
     }

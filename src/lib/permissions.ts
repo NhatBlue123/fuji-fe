@@ -133,6 +133,7 @@ export const PERMISSION_ROUTE_MAP: Record<string, string> = {
  */
 export const ROUTE_PERMISSION_MAP: Record<string, string> = {
   "/admin": "DASHBOARD_VIEW",
+  "/admin/teacher-dashboard": "DASHBOARD_VIEW",
   "/admin/analytics": "ANALYTICS_VIEW",
   "/admin/courses": "COURSE_VIEW",
   "/admin/flashcard": "FLASHCARD_VIEW",

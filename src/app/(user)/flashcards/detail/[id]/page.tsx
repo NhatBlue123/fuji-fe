@@ -51,7 +51,7 @@ export default function FlashcardSetDetailPage({
   const userProgress = flashcard.userProgress;
 
   // Format date
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
     const now = new Date();
@@ -64,7 +64,7 @@ export default function FlashcardSetDetailPage({
   };
 
   // Format next review date
-  const formatNextReview = (dateStr: string | null) => {
+  const formatNextReview = (dateStr?: string | null) => {
     if (!dateStr) return "Chưa xác định";
     const date = new Date(dateStr);
     const now = new Date();
@@ -302,8 +302,8 @@ export default function FlashcardSetDetailPage({
                   </span>
                 </span>
                 <span className="text-xs text-blue-300 mt-1">
-                  {userProgress && userProgress.rememberedCount > 0
-                    ? `+${userProgress.rememberedCount} thẻ hôm nay`
+                  {userProgress && (userProgress.rememberedCount || 0) > 0
+                    ? `+${userProgress.rememberedCount || 0} thẻ hôm nay`
                     : "Chưa có thẻ nào"}
                 </span>
               </div>

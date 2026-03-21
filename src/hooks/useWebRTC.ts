@@ -21,6 +21,12 @@
 
 import { useRef, useCallback, useEffect, useState } from "react";
 
+interface IceServerConfig {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
 export interface WebRTCHook {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
@@ -38,11 +44,34 @@ export interface WebRTCHook {
   cleanup: () => void;
 }
 
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" },
-];
+let cachedIceServers: RTCIceServer[] | null = null;
+
+async function loadIceServers(): Promise<RTCIceServer[]> {
+  if (cachedIceServers) return cachedIceServers;
+
+  try {
+    // Directly call backend on port 8181 in dev
+    const res = await fetch("http://localhost:8181/api/video-call/config");
+    if (!res.ok) {
+      throw new Error(`ICE config HTTP ${res.status}`);
+    }
+    const data: { iceServers?: IceServerConfig[] } = await res.json();
+    if (data.iceServers && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+      cachedIceServers = data.iceServers as RTCIceServer[];
+      return cachedIceServers;
+    }
+  } catch (err) {
+    console.warn("[WebRTC] Failed to load ICE config from backend, falling back to default STUN only.", err);
+  }
+
+  // Fallback: original hardcoded STUN list
+  cachedIceServers = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+  ];
+  return cachedIceServers;
+}
 
 export function useWebRTC(): WebRTCHook {
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -63,14 +92,15 @@ export function useWebRTC(): WebRTCHook {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const ensurePC = useCallback(() => {
+  const ensurePC = useCallback(async () => {
     // Recreate if PC doesn't exist or was previously closed
     if (pcRef.current && pcRef.current.connectionState !== "closed") {
       return pcRef.current;
     }
 
-    console.log("[WebRTC] Creating new RTCPeerConnection");
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const iceServers = await loadIceServers();
+    console.log("[WebRTC] Creating new RTCPeerConnection with ICE servers:", iceServers);
+    const pc = new RTCPeerConnection({ iceServers });
 
     pc.onicecandidate = (e) => {
       if (e.candidate) iceCbRef.current?.(e.candidate);
@@ -103,7 +133,7 @@ export function useWebRTC(): WebRTCHook {
       localStreamRef.current = stream;
       setLocalStream(stream);
 
-      const pc = ensurePC();
+      const pc = await ensurePC();
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
     } catch (err) {
       console.error("[WebRTC] getUserMedia failed:", err);
@@ -112,7 +142,7 @@ export function useWebRTC(): WebRTCHook {
   }, [ensurePC]);
 
   const createOffer = useCallback(async () => {
-    const pc = ensurePC();
+    const pc = await ensurePC();
     console.log("[WebRTC] createOffer - signalingState:", pc.signalingState, "| tracks:", pc.getSenders().length);
     const offer = await pc.createOffer();
     console.log("[WebRTC] setLocalDescription (offer)...");
@@ -133,7 +163,7 @@ export function useWebRTC(): WebRTCHook {
   };
 
   const createAnswer = useCallback(async (offer: RTCSessionDescriptionInit) => {
-    const pc = ensurePC();
+    const pc = await ensurePC();
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
     await flushCandidates();
     const answer = await pc.createAnswer();

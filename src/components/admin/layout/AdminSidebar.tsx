@@ -20,6 +20,7 @@ import {
   Sun,
   Moon,
   Layers,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -45,10 +46,6 @@ interface NavItem {
   badge?: string;
   /** If true, only ADMIN can see this item */
   adminOnly?: boolean;
-  children?: {
-    title: string;
-    href: string;
-  }[];
 }
 
 interface NavGroup {
@@ -66,7 +63,13 @@ const navGroups: NavGroup[] = [
         icon: LayoutDashboard,
       },
       {
-        title: "Thống kê ",
+        title: "Teacher Dashboard",
+        href: "/admin/teacher-dashboard",
+        icon: FileText,
+      },
+      {
+        title: "Thống kê",
+        href: "/admin/analytics",
         icon: BarChart3,
         children: [
           {
@@ -285,13 +288,38 @@ export function AdminSidebar() {
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         {!collapsed && (
-                          <span className="flex-1">{item.title}</span>
+                          <>
+                            <span className="flex-1">{item.title}</span>
+                            {item.badge && (
+                              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
                         )}
                       </Link>
                     );
 
+
+                    if (collapsed) {
+                      return (
+                        <Tooltip key={item.href}>
+                          <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8}>
+                            <p>{item.title}</p>
+                            {item.badge && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({item.badge})
+                              </span>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
                     return (
-                      <React.Fragment key={item.title}>
+                      <React.Fragment key={item.href}>
+
                         {linkContent}
                       </React.Fragment>
                     );

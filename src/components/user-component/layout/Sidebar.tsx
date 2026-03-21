@@ -10,8 +10,8 @@ import Image from "next/image";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
-import TopupModal from "@/components/user-component/premium/TopupModal";
 import { Button } from "@/components/ui/button";
+import TopupModal from "@/components/user-component/premium/TopupModal";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -38,13 +38,18 @@ const Sidebar = () => {
     `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
       isActive(path)
         ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-primary hover:font-bold group"
+        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:font-bold group"
     }`;
 
   const iconClass = (path: string) =>
-    `material-symbols-outlined ${
-      isActive(path) ? "filled" : "group-hover:filled"
+    `material-symbols-outlined text-[20px] leading-none align-middle text-current transition-all ${
+      isActive(path)
+        ? "filled opacity-100"
+        : "opacity-95 group-hover:filled group-hover:opacity-100"
     }`;
+
+  const actionIconClass =
+    "material-symbols-outlined text-[18px] leading-none align-middle text-current";
 
   const handleLogout = async () => {
     try {
@@ -143,8 +148,8 @@ const Sidebar = () => {
           </h3>
           <Button
             variant="ghost"
-            onClick={() => setIsPremiumModalOpen(true)}
             className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full"
+            onClick={() => setIsPremiumModalOpen(true)}
           >
             {t("sidebar.viewDetails")}
           </Button>
@@ -155,11 +160,9 @@ const Sidebar = () => {
           <Button
             variant="ghost"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs"
+            className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs text-foreground/90"
           >
-            <span className="material-symbols-outlined text-[16px]">
-              contrast
-            </span>
+            <span className={actionIconClass}>contrast</span>
             {t("common.themeToggle")}
           </Button>
 
@@ -193,9 +196,9 @@ const Sidebar = () => {
             <Button
               variant="ghost"
               onClick={handleLogout}
-              className="text-gray-400 hover:text-red-400"
+              className="text-foreground/90 hover:text-red-500"
             >
-              <span className="material-symbols-outlined">logout</span>
+              <span className={actionIconClass}>logout</span>
             </Button>
           </div>
         ) : (

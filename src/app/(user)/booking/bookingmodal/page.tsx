@@ -1,27 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-const classes = [
-  {
-    teacher: "Sakura Sensei",
-    subject: "Kaiwa & Pronunciation (N3)",
-    date: "Hôm nay, 24 Oct",
-    time: "19:30 - 20:30",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD9krVS6kNBZafdHAS4ToHczl32IJ-qSiqbG49QjX99eiHVpZPRbpYd_5XKLAL09C589qY-h-RdQNQNkAyXT59O1gXi4fp3f-CUOb-ta_swbMNcrVDyJKLoPRSzunARF23OsGluY6AEOzqFs6Xk-8kzB4Q6iCP_xC_MIJhDA6RD4Auw-UBG9WWMwiUYH1xrm8mxNI-UJfuDICdXchj6gYYN7mL8aI8uWo4l6rVKiJN44t4gZetX6Go6kcpDZhEpump-VP-CWeuGpx0J",
-    status: "join",
-  },
-  {
-    teacher: "Tanaka Sensei",
-    subject: "Kanji & Grammar Advanced",
-    date: "Thứ 6, 26 Oct",
-    time: "09:00 - 10:30",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBIeLvsgcoa3uitY5ecItviIFtPSFrZgvE0akISdGNn6gGqSMCyDn2EvFGI-Mt6_fL1Z0PhQ5BDQWcSJQC4h4XccTjfoR8JfijfyNFLv8XKoklX1BGnMe7wra29f7_FQuxQx5Ph_A0DPfsVPvn-ucj7pbb-Djx6-dr5vFod8sy_xBbJa00Jk59_UdJNLtXkVUMQov22wet0hRTCTd0T6_B4PJLs1De1GchBsX8w-QMlLbd5v9-OL6-EcTeL-gIr_s8Z1357EnO7fM87",
-    status: "waiting",
-  },
-];
+import { Button } from "@/components/ui/button";
 
 const courses = [
   {
@@ -46,55 +27,88 @@ const courses = [
   },
 ];
 
-export default function MySchedule() {
+const classes = [
+  {
+    teacher: "Tanaka Sensei",
+    subject: "Giao tiếp N3",
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9",
+    date: "15/10",
+    time: "09:00",
+    status: "join",
+  },
+  {
+    teacher: "Yuki Sensei",
+    subject: "Kanji N2",
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9",
+    date: "16/10",
+    time: "14:00",
+    status: "waiting",
+  },
+];
+
+const times = [
+  "08:00", "09:00", "10:00", "11:00",
+  "13:00", "14:00", "15:00", "16:00",
+  "17:00", "18:00", "19:00", "20:00",
+];
+
+const disabledTimes = ["11:00", "14:00", "18:00"];
+
+export default function BookingModalPage() {
+  const [selectedDate, setSelectedDate] = useState<number>(15);
+  const [selectedTime, setSelectedTime] = useState<string>("");
+
   return (
-    <main className="flex-1 overflow-y-auto bg-[#0f172a] px-6 relative">
-      {/* glow background */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[120px] -mr-64 -mt-64"></div>
-      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-pink-500/5 rounded-full blur-[100px] -ml-32 -mb-32"></div>
-
+    <div className="min-h-screen bg-[#0B0F1A] text-white">
       {/* HEADER */}
-      <header className="sticky top-0 z-10 flex items-center justify-between px-10 py-6 border-b border-white/10 backdrop-blur-md bg-[#0f172a]/80">
-        <div>
-          <h2 className="text-slate-100 text-4xl font-black mb-2">
-            Lịch học của tôi
-          </h2>
-          <p className="text-slate-400 text-xl">
-            Theo dõi và quản lý các buổi học trực tuyến
-          </p>
-        </div>
-
-        <div className="flex items-center gap-6">
-          {/* search */}
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-              search
-            </span>
-
-            <input
-              placeholder="Tìm khóa học, giáo viên..."
-              className="bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm w-64 focus:outline-none focus:border-pink-500"
-            />
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0B0F1A]/90 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/booking">
+              <Button
+                variant="ghost"
+                className="size-10 rounded-full hover:bg-white/5 transition flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+              </Button>
+            </Link>
+            <h2 className="text-xl font-bold">Đặt lịch học với Sensei</h2>
           </div>
 
-          {/* filter */}
-          <button className="flex items-center justify-center size-10 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-pink-500 transition">
-            <span className="material-symbols-outlined">tune</span>
-          </button>
+          <div className="flex items-center gap-6">
+            {/* search */}
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                search
+              </span>
+              <input
+                placeholder="Tìm khóa học, giáo viên..."
+                className="bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm w-64 focus:outline-none focus:border-pink-500"
+              />
+            </div>
 
-          {/* avatar */}
-          <div className="size-10 rounded-full border-2 border-pink-500/30 p-0.5">
-            <img
-              className="w-full h-full rounded-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9"
-            />
+            {/* filter */}
+            <button className="flex items-center justify-center size-10 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-pink-500 transition">
+              <span className="material-symbols-outlined">tune</span>
+            </button>
+
+            {/* avatar */}
+            <div className="size-10 rounded-full border-2 border-pink-500/30 p-0.5">
+              <img
+                className="w-full h-full rounded-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9"
+                alt="avatar"
+              />
+            </div>
           </div>
         </div>
       </header>
 
       {/* CONTENT */}
-      <div className="px-10 py-8">
-        {/* FILTER */}
+      <main className="px-10 py-8">
+        {/* FILTER TABS */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
             <button className="px-6 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-sm font-bold">
@@ -125,9 +139,9 @@ export default function MySchedule() {
               <div className="flex items-center gap-4 flex-1">
                 <img
                   src={c.avatar}
+                  alt={c.teacher}
                   className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
                 />
-
                 <div>
                   <h4 className="text-slate-100 font-bold">{c.teacher}</h4>
                   <p className="text-pink-400 text-sm">{c.subject}</p>
@@ -140,7 +154,6 @@ export default function MySchedule() {
                   <p className="text-slate-500 text-xs">Ngày</p>
                   <p className="text-white font-bold">{c.date}</p>
                 </div>
-
                 <div className="flex flex-col items-center">
                   <p className="text-slate-500 text-xs">Giờ</p>
                   <p className="text-white font-bold">{c.time}</p>
@@ -159,6 +172,129 @@ export default function MySchedule() {
               </button>
             </div>
           ))}
+        </div>
+
+        {/* DATE & TIME PICKER */}
+        <div className="mt-12 grid grid-cols-12 gap-8">
+          {/* LEFT PANEL - INFO */}
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            <div className="bg-[#161B22]/50 rounded-2xl p-6 border border-white/5">
+              <div className="flex items-center gap-3 text-sm mb-2">
+                <span className="material-symbols-outlined text-pink-500">
+                  verified
+                </span>
+                <span className="text-slate-400">JLPT N1 Certified</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm mb-2">
+                <span className="material-symbols-outlined text-pink-500">
+                  schedule
+                </span>
+                <span className="text-slate-400">Thành viên từ 2021</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <span className="material-symbols-outlined text-pink-500">
+                  language
+                </span>
+                <span className="text-slate-400">Tiếng Nhật, Tiếng Anh</span>
+              </div>
+            </div>
+
+            {/* NOTE */}
+            <div className="bg-[#161B22]/50 rounded-2xl p-6 border border-white/5">
+              <h4 className="text-sm font-bold mb-4 uppercase tracking-widest text-gray-400">
+                Lưu ý đặt lịch
+              </h4>
+              <ul className="space-y-3 text-xs text-gray-400">
+                <li>• Hủy trước 24h để hoàn tiền</li>
+                <li>• Vui lòng đến đúng giờ</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* RIGHT PANEL */}
+          <div className="col-span-12 lg:col-span-8 space-y-8">
+            {/* DATE */}
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold">Chọn ngày học</h3>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold">Tháng 10, 2024</span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      className="size-8 rounded-lg border border-white/10 flex items-center justify-center hover:border-pink-500 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        chevron_left
+                      </span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="size-8 rounded-lg border border-white/10 flex items-center justify-center hover:border-pink-500 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        chevron_right
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
+                  const isSelected = day === selectedDate;
+                  return (
+                    <Button
+                      key={day}
+                      variant="ghost"
+                      onClick={() => setSelectedDate(day)}
+                      className={`h-20 rounded-xl border flex items-start p-2 font-bold transition ${
+                        isSelected
+                          ? "bg-[#0B0F1A] border-pink-500 shadow-[0_0_15px_rgba(255,92,141,0.4)]"
+                          : "bg-[#161B22] border-gray-700 hover:border-pink-500"
+                      }`}
+                    >
+                      {day}
+                    </Button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* TIME */}
+            <section>
+              <h3 className="text-lg font-bold mb-4">Chọn khung giờ</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {times.map((time) => {
+                  const disabled = disabledTimes.includes(time);
+                  const selected = selectedTime === time;
+                  return (
+                    <Button
+                      key={time}
+                      variant="ghost"
+                      disabled={disabled}
+                      onClick={() => setSelectedTime(time)}
+                      className={`px-4 py-3 rounded-xl border text-sm font-medium transition ${
+                        disabled
+                          ? "opacity-40 cursor-not-allowed bg-[#161B22]/50 border-gray-700"
+                          : selected
+                            ? "border-pink-500 bg-pink-500/10 text-pink-400 shadow-[0_0_15px_rgba(255,92,141,0.4)]"
+                            : "bg-[#161B22] border-gray-700 hover:border-pink-500"
+                      }`}
+                    >
+                      {time}
+                    </Button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* CONFIRM */}
+            <div className="flex justify-end pt-4">
+              <Button className="px-12 py-4 bg-pink-500 rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition shadow-[0_0_30px_rgba(255,92,141,0.4)]">
+                Xác nhận đặt lịch
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* COURSE RECOMMEND */}
@@ -181,49 +317,16 @@ export default function MySchedule() {
                     play_circle
                   </span>
                 </div>
-
                 <p className="text-xs font-bold text-pink-400 uppercase">
                   {course.tag}
                 </p>
-
                 <h5 className="text-white font-bold text-sm">{course.title}</h5>
-
                 <p className="text-slate-500 text-xs mt-1">{course.lessons}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
-    </main>
-  );
-}
-
-/* STAT CARD */
-
-function StatCard({ title, value, extra, icon, highlight }: any) {
-  return (
-    <div
-      className={`rounded-2xl p-6 relative overflow-hidden bg-white/5 border border-white/10 ${
-        highlight ? "border-pink-500/30 bg-pink-500/5" : ""
-      }`}
-    >
-      <span className="material-symbols-outlined absolute top-4 right-4 opacity-20 text-5xl">
-        {icon}
-      </span>
-
-      <p className="text-slate-400 text-sm">{title}</p>
-
-      <div className="flex items-end gap-3 mt-2">
-        <span
-          className={`text-3xl font-bold ${
-            highlight ? "text-pink-500" : "text-white"
-          }`}
-        >
-          {value}
-        </span>
-
-        <span className="text-pink-400 text-sm">{extra}</span>
-      </div>
+      </main>
     </div>
   );
 }

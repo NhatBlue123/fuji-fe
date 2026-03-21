@@ -39,5 +39,10 @@ export const useAuth = () => {
     isAdmin:
       normalizedRoles.includes("ROLE_ADMIN") ||
       normalizedRoles.includes("ADMIN"),
+    isTeacher:
+      normalizedRoles.includes("ROLE_INSTRUCTOR") ||
+      normalizedRoles.includes("INSTRUCTOR") ||
+      normalizedRoles.includes("ROLE_TEACHER") ||
+      normalizedRoles.includes("TEACHER"),
   };
 };

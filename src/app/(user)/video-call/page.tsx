@@ -64,6 +64,43 @@ function SearchingDots() {
   );
 }
 
+function SakuraFall({ density = 18 }: { density?: number }) {
+  return (
+    <div className="sakura-layer">
+      {Array.from({ length: density }).map((_, i) => {
+        const left = (i / density) * 100;
+        const duration = 9 + (i % 6) * 1.25;
+        const delay = (i % 9) * -1.3;
+        const size = 10 + (i % 5) * 2;
+        const opacity = 0.25 + (i % 7) * 0.08;
+        const sx = (i % 6) * 6 - 14;
+        const sx2 = (i % 5) * 7 - 16;
+        const r0 = (i % 7) * 25;
+        const r1 = 220 + (i % 9) * 30;
+
+        return (
+          <span
+            key={i}
+            className="sakura-item sakura-petal"
+            style={{
+              left: `${left}%`,
+              width: `${size}px`,
+              height: `${size}px`,
+              opacity,
+              animationDuration: `${duration}s, ${2.6 + (i % 4) * 0.35}s`,
+              animationDelay: `${delay}s, ${delay * 0.6}s`,
+              ["--sx"]: `${sx}px`,
+              ["--sx2"]: `${sx2}px`,
+              ["--r0"]: `${r0}deg`,
+              ["--r1"]: `${r1}deg`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function VideoCallMatchingPage() {
   const router = useRouter();
   const signaling = useSignaling();
@@ -102,8 +139,10 @@ export default function VideoCallMatchingPage() {
 
   // Attach local stream to video element
   useEffect(() => {
-    if (localVideoRef.current && webrtc.localStream)
-      localVideoRef.current.srcObject = webrtc.localStream;
+    if (!localVideoRef.current || !webrtc.localStream) return;
+    localVideoRef.current.srcObject = webrtc.localStream;
+    // Some browsers need an explicit play() after srcObject is set.
+    localVideoRef.current.play?.().catch(() => {});
   }, [webrtc.localStream]);
 
   // ── Listen for match-found ────────────────────────────────────────────────
@@ -186,6 +225,7 @@ export default function VideoCallMatchingPage() {
       )}
       style={{ height: "calc(100vh - 64px)" }}
     >
+      <SakuraFall density={22} />
       {/* ── Blurred background pattern ── */}
       <div
         className="absolute inset-0 opacity-10 pointer-events-none"
@@ -254,18 +294,24 @@ export default function VideoCallMatchingPage() {
       <div className="relative z-10 flex items-center justify-center gap-4 flex-1 px-6 w-full max-w-3xl">
         {/* User camera */}
         <div className="relative flex-1 max-w-sm aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black/40">
-          {cameraReady ? (
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className={cn(
-                "w-full h-full object-cover scale-x-[-1]", // mirror effect
-                !isCameraOn && "opacity-0",
-              )}
-            />
-          ) : null}
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={cn(
+              "w-full h-full object-cover scale-x-[-1]", // mirror effect
+              !isCameraOn && "opacity-0",
+            )}
+          />
+
+          {/* Loading overlay while stream is starting */}
+          {!webrtc.localStream && isCameraOn && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55">
+              <Loader2 className="h-7 w-7 text-white/70 animate-spin mb-2" />
+              <p className="text-white/60 text-sm">Đang bật camera...</p>
+            </div>
+          )}
 
           {/* Camera off overlay */}
           {!isCameraOn && (

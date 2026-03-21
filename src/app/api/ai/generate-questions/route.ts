@@ -11,6 +11,65 @@ interface GenerateQuestionsRequest {
   testType?: string;
 }
 
+// ── Mondai focus mapping (per level / section / mondai) ───────────────────────
+const MONDAI_FOCUS: Record<
+  GenerateQuestionsRequest["level"],
+  Partial<Record<GenerateQuestionsRequest["section"], Record<number, string>>>
+> = {
+  N5: {
+    VOCABULARY: {
+      1: "Kanji reading: choose the correct reading (ひらがな) for the given kanji.",
+      2: "Orthography: choose the correct kanji/kana spelling for the word.",
+      3: "Context vocabulary: choose the most natural word in context.",
+      4: "Paraphrase: choose the option with similar meaning.",
+    },
+  },
+  N4: {
+    VOCABULARY: {
+      1: "Kanji reading: choose the correct reading for basic N4 kanji in daily life context.",
+      2: "Orthography: choose the correct written form (kanji/kana).",
+      3: "Context vocabulary: choose the word that fits the sentence meaning.",
+      4: "Paraphrase: choose a word/phrase with similar meaning.",
+      5: "Usage: choose the word whose usage fits the given sentence.",
+    },
+  },
+  N3: {
+    VOCABULARY: {
+      1: "Kanji: focus on 読み方 of intermediate N3 kanji. Choose the correct reading in kana.",
+      2: "Vocabulary meaning (語彙): choose the word with the correct meaning.",
+      3: "Choose the most appropriate word to complete the sentence in context.",
+      4: "Paraphrase (言い換え): choose the option that has the closest meaning to the underlined phrase.",
+      5: "Usage (用法): choose the sentence where the given word/grammar is used correctly.",
+    },
+  },
+  N2: {
+    VOCABULARY: {
+      1: "Kanji reading: advanced kanji reading questions for N2.",
+      2: "Orthography: choose correct written form (kanji/kana) for advanced words.",
+      3: "Word formation (語形成): choose the correct derived word or compound.",
+      4: "Context vocabulary: choose the best word for the context.",
+      5: "Paraphrase of near-synonyms (類義語): subtle differences in meaning.",
+      6: "Usage: choose the sentence with correct usage of the given word/expression.",
+    },
+    GRAMMAR: {
+      7: "Sentence grammar 1: choose the correct grammar pattern to complete sentences.",
+      8: "Sentence grammar 2: higher difficulty grammar completion.",
+    },
+  },
+  N1: {
+    VOCABULARY: {
+      1: "Kanji reading: high-level kanji reading for N1.",
+      2: "Context vocabulary: choose the best word according to the nuance.",
+      3: "Paraphrase / near-synonym (言い換え類義語): subtle nuance differences.",
+      4: "Usage: choose the sentence where the advanced word is used correctly.",
+    },
+    GRAMMAR: {
+      5: "Sentence grammar 1: advanced grammar pattern completion.",
+      6: "Sentence grammar 2: very difficult grammar discrimination.",
+    },
+  },
+};
+
 // ── Schema ép kiểu JSON output ────────────────────────────────────────────────
 const questionSchema: Schema = {
   type: SchemaType.ARRAY,
@@ -40,9 +99,16 @@ const questionSchema: Schema = {
 function buildPrompt(req: GenerateQuestionsRequest): string {
   const { level, section, count, mondaiNumber, mondaiTitle } = req;
 
+  const focus =
+    MONDAI_FOCUS[level]?.[section]?.[mondaiNumber] ??
+    (mondaiTitle
+      ? `Follow the JLPT ${level} style for "${mondaiTitle}".`
+      : "Follow the official JLPT question style for this section and level.");
+
   if (section === "READING") {
     return `You are a professional JLPT test creator for level ${level}.
 Section: ${section} (Mondai ${mondaiNumber}: ${mondaiTitle || ""}).
+Focus: ${focus}
 
 Instructions:
 - Generate EXACTLY ONE reading passage (about 200-300 characters for N4/N5, 400-600 characters for N2/N3) related to daily life or general topics.
@@ -55,6 +121,7 @@ Instructions:
 
   return `You are a professional JLPT test creator for level ${level}.
 Section: ${section} (Mondai ${mondaiNumber}: ${mondaiTitle || ""}).
+Focus: ${focus}
 
 Instructions:
 - Generate EXACTLY ${count} questions.
@@ -95,10 +162,8 @@ export async function POST(req: NextRequest) {
     const prompt = buildPrompt(body);
     const result = await model.generateContent(prompt);
 
-    // Nhờ có responseSchema, kết quả trả về chắc chắn là JSON hợp lệ
     const questions = JSON.parse(result.response.text());
 
-    // Đảm bảo passageText chỉ có ở câu đầu tiên
     const sanitized = questions.map((q: any, i: number) => ({
       ...q,
       passageText: i === 0 ? q.passageText || "" : "",

@@ -120,6 +120,7 @@ const baseQueryWithReauth: BaseQueryFn<
 
 interface ApiResponse<T = unknown> {
   success: boolean;
+  message?: string;
   // Backend trả về key i18n (ví dụ "auth.loginSuccess")
   messageKey?: string;
   data?: T;
@@ -162,6 +163,12 @@ interface RefreshResponseData {
 export interface VerifyOtpRequest {
   email: string;
   otpCode: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otpCode: string;
+  newPassword: string;
 }
 
 export interface OAuth2VerifyOtpRequest {
@@ -295,24 +302,33 @@ export const authApi = createApi({
       }),
     }),
 
-    // Forgot password
-    forgotPassword: builder.mutation<ApiResponse, { email: string }>({
-      query: ({ email }) => ({
-        url: API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+    // Verify OTP quên mật khẩu (chỉ kiểm tra, không xóa)
+    verifyForgotPasswordOtp: builder.mutation<
+      ApiResponse<string>,
+      VerifyOtpRequest
+    >({
+      query: (data) => ({
+        url: API_ENDPOINTS.AUTH.VERIFY_FORGOT_PASSWORD_OTP,
         method: "POST",
-        body: { email },
+        body: data,
       }),
     }),
 
-    // Reset password
-    resetPassword: builder.mutation<
-      ApiResponse,
-      { token: string; password: string }
-    >({
-      query: ({ token, password }) => ({
-        url: API_ENDPOINTS.AUTH.RESET_PASSWORD,
+    // Forgot password (Gửi OTP)
+    forgotPassword: builder.mutation<ApiResponse<string>, { email: string }>({
+      query: (data) => ({
+        url: "/auth/forgot-password/send-otp",
         method: "POST",
-        body: { token, password },
+        body: data,
+      }),
+    }),
+
+    // Reset password (Sử dụng OTP xác thực)
+    resetPassword: builder.mutation<ApiResponse<string>, ResetPasswordRequest>({
+      query: (data) => ({
+        url: "/auth/forgot-password/reset",
+        method: "POST",
+        body: data,
       }),
     }),
   }),
@@ -331,5 +347,6 @@ export const {
   useGetCurrentUserQuery,
   useLazyGetCurrentUserQuery,
   useForgotPasswordMutation,
+  useVerifyForgotPasswordOtpMutation,
   useResetPasswordMutation,
 } = authApi;

@@ -73,6 +73,24 @@ export const withdrawApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Withdraw", "Wallet"],
     }),
+    
+    // --- PAYOUT API (CHUYỂN TIỀN TỰ ĐỘNG) ---
+    // Gọi API để tạo lệnh chuyển khoản tự động
+    createPayout: builder.mutation<ApiResponse<{ orderId: string; status: string }>, number>({
+      query: (id) => ({
+        url: `/admin/withdraw/${id}/payout`, // Mutation URL
+        method: "POST",
+      }),
+      invalidatesTags: ["Withdraw"],
+    }),
+    
+    // API kiểm tra trạng thái chuyển khoản tự động (Polling)
+    getPayoutStatus: builder.query<ApiResponse<{ orderId: string; status: "PENDING" | "SUCCESS" | "FAILED" | "COMPLETED"; message?: string }>, string>({
+      query: (orderId) => ({
+        url: `/admin/withdraw/payout-status/${orderId}`, // Polling URL
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -83,4 +101,6 @@ export const {
   useGetAllWithdrawRequestsQuery,
   useApproveWithdrawRequestMutation,
   useRejectWithdrawRequestMutation,
+  useCreatePayoutMutation,
+  useGetPayoutStatusQuery,
 } = withdrawApi;

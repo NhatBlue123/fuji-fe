@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Copy, CheckCircle } from "lucide-react";
+import { Copy, CheckCircle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useCreatePayoutMutation, useGetPayoutStatusQuery } from "@/store/services/withdrawApi";
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -33,13 +34,71 @@ export function TransferModal({
   isConfirming,
   request,
 }: TransferModalProps) {
+  const [payoutOrderId, setPayoutOrderId] = useState<string | null>(null);
+
+  const [createPayout, { isLoading: isCreatingPayout }] = useCreatePayoutMutation();
+  const { data: payoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
+    skip: !payoutOrderId,
+    pollingInterval: 3000,
+  });
+
+  useEffect(() => {
+    if (payoutStatus?.data?.status === "SUCCESS" || payoutStatus?.data?.status === "COMPLETED") {
+      toast.success("Chuyển tiền tự động kết thúc hoặc thành công!");
+      setPayoutOrderId(null);
+      onConfirm();
+    } else if (payoutStatus?.data?.status === "FAILED") {
+      toast.error(payoutStatus?.data?.message || "Chuyển khoản thất bại!");
+      setPayoutOrderId(null);
+    }
+  }, [payoutStatus, onConfirm]);
+
+  const handleAutoPayout = async () => {
+    try {
+      const res = await createPayout(request!.id).unwrap();
+      if (res.data?.orderId) {
+        setPayoutOrderId(res.data.orderId);
+        toast.info("Đang xử lý chuyển tiền tự động, vui lòng chờ...");
+      } else {
+        toast.success("Đã ghi nhận yêu cầu chuyển tiền tự động!");
+        onConfirm();
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Lỗi khi gọi API chuyển tiền tự động");
+    }
+  };
+
+  const resetStateAndClose = () => {
+    setPayoutOrderId(null);
+    onClose();
+  };
+
   if (!request) return null;
 
   // Giảm 10,000đ phí rút tiền như trong UI
   const transferAmount = request.amount - 10000;
   // Format để tạo QR vietqr: amount=..., addInfo=..., accountName=...
   const orderId = `RUTTIEN${request.id}`;
-  const qrUrl = `https://img.vietqr.io/image/${request.bankName}-${request.accountNumber}-compact2.png?amount=${transferAmount}&addInfo=${orderId}&accountName=${encodeURIComponent(request.accountHolder)}`;
+  
+  // Format lại tên ngân hàng cho VietQR (chuyển đổi danh sách từ form của User sang mã VietQR)
+  const getVietQRBankCode = (bankName: string) => {
+    const mapping: Record<string, string> = {
+      "MB Bank": "mbbank",
+      "Vietcombank": "vietcombank",
+      "Techcombank": "techcombank",
+      "Agribank": "agribank",
+      "BIDV": "bidv",
+      "VietinBank": "vietinbank",
+      "ACB": "acb",
+      "TPBank": "tpbank",
+      "VPBank": "vpbank",
+      "Sacombank": "sacombank",
+    };
+    return mapping[bankName] || bankName.toLowerCase().replace(/\s+/g, "");
+  };
+  const bankCode = getVietQRBankCode(request.bankName);
+
+  const qrUrl = `https://img.vietqr.io/image/${bankCode}-${request.accountNumber}-compact2.png?amount=${transferAmount}&addInfo=${orderId}&accountName=${encodeURIComponent(request.accountHolder)}`;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -47,8 +106,8 @@ export function TransferModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && resetStateAndClose()}>
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Chuyển tiền cho Giảng viên</DialogTitle>
           <DialogDescription>
@@ -65,6 +124,8 @@ export function TransferModal({
                 width={200} 
                 height={200} 
                 className="rounded-lg"
+                unoptimized
+                priority
               />
             </div>
             <p className="text-xs text-muted-foreground text-center">
@@ -81,14 +142,27 @@ export function TransferModal({
           </div>
         </div>
 
-        <DialogFooter className="flex space-x-2 sm:justify-end">
-          <Button variant="outline" onClick={onClose} disabled={isConfirming}>
-            Đóng
-          </Button>
-          <Button onClick={onConfirm} disabled={isConfirming} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <CheckCircle className="mr-2 h-4 w-4" />
-            {isConfirming ? "Đang xử lý..." : "Xác nhận chuyển thành công"}
-          </Button>
+        <DialogFooter className="flex flex-col sm:flex-row sm:justify-between items-center w-full mt-4 gap-4 sm:gap-0">
+          <div className="w-full sm:w-auto">
+            <Button 
+              type="button"
+              onClick={handleAutoPayout} 
+              disabled={isConfirming || isCreatingPayout || !!payoutOrderId} 
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              {payoutOrderId || isCreatingPayout ? "Đang xử lý tự động..." : "Thanh toán tự động qua Cổng Payout"}
+            </Button>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto justify-end">
+            <Button variant="outline" onClick={resetStateAndClose} disabled={isConfirming || !!payoutOrderId}>
+              Đóng
+            </Button>
+            <Button onClick={onConfirm} disabled={isConfirming || !!payoutOrderId} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {isConfirming ? "Đang xử lý..." : "Xác nhận chuyển tay thành công"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

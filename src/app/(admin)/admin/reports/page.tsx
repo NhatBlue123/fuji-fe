@@ -52,7 +52,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-type ReportTab = "jlpt" | "payment" | "course" | "other";
+type ReportTab = "jlpt" | "jlpt_feedback" | "payment" | "course" | "other";
 
 const STATUS_OPTIONS: { value: SystemReportStatus; label: string }[] = [
   { value: "OPEN", label: "Mở" },
@@ -110,6 +110,8 @@ function TabLabel({ tab }: { tab: ReportTab }) {
   switch (tab) {
     case "jlpt":
       return "JLPT (câu hỏi sai)";
+    case "jlpt_feedback":
+      return "Phản hồi hệ thống";
     case "payment":
       return "Thanh toán";
     case "course":
@@ -136,11 +138,13 @@ export default function AdminReportsPage() {
     useState<QuestionReport | null>(null);
 
   const systemCategory: ReportCategory | undefined = useMemo(() => {
+    if (tab === "jlpt_feedback") return undefined;
     if (tab === "payment") return "PAYMENT";
     if (tab === "course") return "COURSE";
     if (tab === "other") return "OTHER";
     return undefined;
   }, [tab]);
+  const systemSubjectType = undefined;
 
   const shouldLoadSystem = tab !== "jlpt";
   const shouldLoadJlpt = tab === "jlpt";
@@ -148,6 +152,7 @@ export default function AdminReportsPage() {
   const systemQuery = useGetSystemReportsQuery(
     {
       category: systemCategory,
+      subjectType: systemSubjectType,
       status,
       priority,
       search: search.trim() || undefined,
@@ -218,7 +223,7 @@ export default function AdminReportsPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-5 w-5" />
-        <h1 className="text-2xl font-bold">Quản lý báo cáo</h1>
+        <h1 className="text-2xl font-bold">Quản lý báo cáo và phản hồi</h1>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => resetForTab(v as ReportTab)}>
@@ -226,6 +231,9 @@ export default function AdminReportsPage() {
           <TabsList className="w-full md:w-auto">
             <TabsTrigger value="jlpt">
               <TabLabel tab="jlpt" />
+            </TabsTrigger>
+            <TabsTrigger value="jlpt_feedback">
+              <TabLabel tab="jlpt_feedback" />
             </TabsTrigger>
             <TabsTrigger value="payment">
               <TabLabel tab="payment" />
@@ -311,6 +319,7 @@ export default function AdminReportsPage() {
                 <TableRow>
                   <TableHead className="w-[45%]">Tiêu đề</TableHead>
                   <TableHead>Đối tượng</TableHead>
+                  <TableHead>Phản hồi người dùng</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Ưu tiên</TableHead>
                   <TableHead>Ngày tạo</TableHead>
@@ -320,19 +329,19 @@ export default function AdminReportsPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6}>Đang tải…</TableCell>
+                    <TableCell colSpan={7}>Đang tải…</TableCell>
                   </TableRow>
                 )}
                 {!isLoading && isError && (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       Không tải được dữ liệu. Hãy thử lại.
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && !isError && (!rows || rows.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6}>Không có báo cáo.</TableCell>
+                    <TableCell colSpan={7}>Không có báo cáo.</TableCell>
                   </TableRow>
                 )}
 
@@ -353,6 +362,11 @@ export default function AdminReportsPage() {
                       </TableCell>
                       <TableCell>
                         {r.subjectType || "-"} {r.subjectId ? `#${r.subjectId}` : ""}
+                      </TableCell>
+                      <TableCell>
+                        <div className="line-clamp-2 text-sm text-muted-foreground">
+                          {r.description || "-"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusBadgeVariant(r.status)}>
@@ -394,6 +408,11 @@ export default function AdminReportsPage() {
                         </div>
                       </TableCell>
                       <TableCell>Question #{r.questionId}</TableCell>
+                      <TableCell>
+                        <div className="line-clamp-2 text-sm text-muted-foreground">
+                          {r.reason || "-"}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={statusBadgeVariant(r.status)}>
                           {r.status}

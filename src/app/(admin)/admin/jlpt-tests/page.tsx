@@ -72,6 +72,7 @@ import {
   type JLPTLevel,
   type SectionKey,
   type MondaiConfig,
+  type SectionConfig,
 } from "@/lib/jlpt-structure";
 import { API_CONFIG } from "@/config/api";
 import { getAccessToken } from "@/lib/token";
@@ -308,10 +309,41 @@ export default function AdminJLPTTestsPage() {
       return true;
     };
 
+    const resolveSectionKeyForMondai = (
+      section: SectionConfig,
+      mondai: MondaiConfig,
+      testTypeInput: string,
+    ): SectionKey => {
+      const keys = section.sectionKeys;
+      if (keys.length === 1) return keys[0] as SectionKey;
+      if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+      if (mondai.requires_passage && keys.includes("READING")) return "READING";
+
+      const title = mondai.title || "";
+      if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        return "GRAMMAR";
+      }
+      if (
+        keys.includes("VOCABULARY") &&
+        keys.includes("GRAMMAR") &&
+        keys.includes("READING")
+      ) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        if (/文法/.test(title)) return "GRAMMAR";
+        return "VOCABULARY";
+      }
+
+      if (testTypeInput === "reading" && keys.includes("READING")) return "READING";
+      if (testTypeInput === "listening" && keys.includes("LISTENING")) return "LISTENING";
+      if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
+      return keys[0] as SectionKey;
+    };
+
     for (const section of structure) {
-      const sectionKey = section.sectionKeys[0] as SectionKey;
       for (const mondai of section.mondai) {
         if (!shouldIncludeMondai(mondai)) continue;
+        const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
 
         const nums = getQuestionNumbers(mondai);
         const count = nums.length;

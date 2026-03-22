@@ -60,6 +60,7 @@ export const adminReportApi = createApi({
       PaginatedResponse<SystemReport>,
       {
         category?: ReportCategory;
+        subjectType?: string;
         status?: SystemReportStatus;
         priority?: ReportPriority;
         search?: string;
@@ -75,6 +76,7 @@ export const adminReportApi = createApi({
         const p = params ?? {};
         const sp = new URLSearchParams();
         if (p.category) sp.set("category", p.category);
+        if (p.subjectType) sp.set("subjectType", p.subjectType);
         if (p.status) sp.set("status", p.status);
         if (p.priority) sp.set("priority", p.priority);
         if (p.search) sp.set("search", p.search);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   useGetQuestionBankItemsQuery,
   useCreateQuestionBankItemMutation,
@@ -9,15 +9,18 @@ import {
   useDeleteQuestionBankItemMutation,
   useUploadAudioMutation,
   useUploadImageMutation,
+  useImportExcelMutation,
+  usePreviewImportExcelMutation,
   type QuestionBankItem,
   type CreateQuestionBankItemDTO,
+  type ExcelImportRowDTO,
 } from "@/store/services/adminJlptApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Sparkles } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Sparkles, Upload } from "lucide-react";
 
 type Level = QuestionBankItem["level"];
 type Section = QuestionBankItem["section"];
@@ -58,6 +61,14 @@ export default function JlptQuestionBankPage() {
   const [deleteItem, { isLoading: deleting }] = useDeleteQuestionBankItemMutation();
   const [uploadAudio] = useUploadAudioMutation();
   const [uploadImage] = useUploadImageMutation();
+  const [importExcel, { isLoading: isImporting }] = useImportExcelMutation();
+  const [previewImportExcel, { isLoading: isPreviewing }] = usePreviewImportExcelMutation();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<ExcelImportRowDTO[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const [editing, setEditing] = useState<QuestionBankItem | null>(null);
   const [form, setForm] = useState<Partial<CreateQuestionBankItemDTO>>({});
@@ -162,6 +173,72 @@ export default function JlptQuestionBankPage() {
     }
   };
 
+  const handlePreviewImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await previewImportExcel(fd).unwrap();
+      
+      setImportFile(file);
+      setImportPreview(res.previewRows || []);
+      setImportErrors(res.errors || []);
+      
+      const detectedErrors = res.errors?.length ?? 0;
+      if (detectedErrors > 0) {
+        // Each row can contain multiple validation errors (e.g. thiếu level + thiếu section),
+        // so show both "error detections" and "affected rows" to avoid confusing mismatch.
+        const uniqueErrorRows = new Set(
+          (res.errors || [])
+            .map((err) => {
+              const match = err.match(/row\s+(\d+)/i);
+              return match?.[1] ?? null;
+            })
+            .filter(Boolean),
+        ).size;
+
+        const rowsText = uniqueErrorRows > 0 ? `, trên ${uniqueErrorRows} dòng` : "";
+        alert(
+          `Cảnh báo: Phát hiện ${detectedErrors} lỗi${rowsText} trong file Excel. Vui lòng xem chi tiết!`,
+        );
+      }
+    } catch (error: any) {
+      console.error(error);
+      const errMsg = error?.data?.message || error?.message || "Preview lỗi";
+      alert(`Lỗi preview: ${errMsg}`);
+      setImportFile(null);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const cancelImport = () => {
+    setImportFile(null);
+    setImportPreview([]);
+    setImportErrors([]);
+  };
+
+  const confirmImport = async () => {
+    if (!importFile) return;
+    try {
+      const fd = new FormData();
+      fd.append("file", importFile);
+      const res = await importExcel(fd).unwrap();
+      
+      alert(`Import thành công ${res.success} câu hỏi vào ngân hàng!`);
+      cancelImport();
+      refetch();
+    } catch (error: any) {
+      console.error(error);
+      const errMsg = error?.data?.message || error?.message || "Lưu import lỗi";
+      alert(`Lỗi lưu: ${errMsg}`);
+    }
+  };
+
   const generateAI = async () => {
     if (!level || !section) {
       setAiError("Hãy chọn Level và Phần thi để AI tạo câu hỏi.");
@@ -218,27 +295,48 @@ export default function JlptQuestionBankPage() {
         extraTag = "ngữ pháp";
       }
 
-      const payloads: CreateQuestionBankItemDTO[] = aiPreview.map((q) => ({
-        level,
-        section,
-        difficulty: "MEDIUM",
-        mondaiNumber: aiMondaiNumber,
-        mondaiTitle: aiMondaiTitle || undefined,
-        passageText: q.passageText || undefined,
-        contentText: q.contentText,
-        options: JSON.stringify(q.options),
-        correctOption: q.correctOption,
-        explanation: q.explanation,
-        points: 1.0,
-        tags: [baseTags.join(","), extraTag].filter(Boolean).join(","),
-      }));
+      const payloads: CreateQuestionBankItemDTO[] = aiPreview.map((q, i) => {
+        // Sanitize options: ensure it's a valid JSON array string
+        let optionsStr: string;
+        if (Array.isArray(q.options)) {
+          optionsStr = JSON.stringify(q.options);
+        } else if (typeof q.options === "string") {
+          optionsStr = q.options;
+        } else {
+          optionsStr = "[]";
+        }
+
+        // Sanitize correctOption: must be >= 1
+        const correctOpt = typeof q.correctOption === "number" && q.correctOption >= 1
+          ? q.correctOption
+          : 1;
+
+        // Sanitize contentText: must not be blank
+        const content = (q.contentText || "").trim() || `Câu hỏi ${i + 1}`;
+
+        return {
+          level,
+          section,
+          difficulty: "MEDIUM",
+          mondaiNumber: aiMondaiNumber,
+          mondaiTitle: aiMondaiTitle || undefined,
+          passageText: q.passageText || undefined,
+          contentText: content,
+          options: optionsStr,
+          correctOption: correctOpt,
+          explanation: q.explanation || undefined,
+          points: 1.0,
+          tags: [baseTags.join(","), extraTag].filter(Boolean).join(","),
+        };
+      });
       await bulkCreate(payloads).unwrap();
       alert(`Đã lưu ${payloads.length} câu hỏi AI vào ngân hàng`);
       setAiPreview([]);
       refetch();
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Lưu câu hỏi AI vào ngân hàng thất bại");
+      const errMsg = e?.data?.message || e?.message || "Lưu câu hỏi AI vào ngân hàng thất bại";
+      alert(`Lỗi: ${errMsg}`);
     }
   };
 
@@ -254,11 +352,81 @@ export default function JlptQuestionBankPage() {
             Lưu trữ và tái sử dụng câu hỏi cho nhiều đề thi (AI hoặc tự tạo).
           </p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1" />
-          Thêm câu hỏi
-        </Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".xlsx"
+            onChange={handlePreviewImport}
+          />
+          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isPreviewing || isImporting}>
+            {(isPreviewing || isImporting) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
+            Import Excel
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1" />
+            Thêm câu hỏi
+          </Button>
+        </div>
       </div>
+
+      {/* Excel Import Preview */}
+      {(importFile || importPreview.length > 0 || importErrors.length > 0) && (
+        <div className="border rounded-md bg-accent/50 p-4 space-y-4 shadow-sm border-blue-200 dark:border-blue-900">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-blue-600" />
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                Preview Import Excel: {importFile?.name}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={cancelImport}>Hủy</Button>
+              <Button size="sm" onClick={confirmImport} disabled={isImporting || importPreview.length === 0}>
+                {isImporting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Duyệt & Lưu ({importPreview.length} câu)
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-green-700 dark:text-green-400">✅ Hợp lệ ({importPreview.length} câu):</p>
+              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+                {importPreview.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Không có dòng nào hợp lệ.</p>
+                ) : (
+                  importPreview.map((row, idx) => (
+                    <div key={idx} className="border bg-background rounded p-2 text-xs">
+                      <div className="flex gap-2 mb-1">
+                        <span className="font-semibold bg-muted px-1 rounded">{row.level}</span>
+                        <span className="font-semibold bg-muted px-1 rounded">{row.section}</span>
+                      </div>
+                      <p className="line-clamp-2">{row.contentText}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400">❌ Lỗi ({importErrors.length} phát hiện):</p>
+              <div className="max-h-[300px] overflow-y-auto pr-2">
+                {importErrors.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Không tìm thấy lỗi.</p>
+                ) : (
+                  <ul className="list-disc pl-4 text-xs text-red-600 dark:text-red-400 space-y-1">
+                    {importErrors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Generator */}
       <div className="border rounded-md bg-background p-4 space-y-3">
@@ -331,14 +499,18 @@ export default function JlptQuestionBankPage() {
                 {aiPreview.map((q, idx) => (
                   <div key={idx} className="border rounded-md p-3 text-xs">
                     {q.passageText ? (
-                      <div className="mb-2 whitespace-pre-wrap rounded bg-blue-50 border border-blue-200 p-2">
+                      <div className="mb-2 whitespace-pre-wrap rounded bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-2 text-blue-900 dark:text-blue-200">
                         {q.passageText}
                       </div>
                     ) : null}
-                    <p className="font-medium mb-2 whitespace-pre-wrap">{q.contentText}</p>
+                    <p className="font-medium mb-2 whitespace-pre-wrap text-foreground">{q.contentText}</p>
                     <div className="grid grid-cols-2 gap-2">
                       {q.options?.map((opt, i) => (
-                        <div key={i} className={`rounded border px-2 py-1 ${i + 1 === q.correctOption ? "border-green-400 bg-green-50" : ""}`}>
+                        <div key={i} className={`rounded border px-2 py-1 text-foreground ${
+                          i + 1 === q.correctOption
+                            ? "border-green-400 bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-300 font-semibold"
+                            : "bg-muted border-border"
+                        }`}>
                           <span className="text-muted-foreground mr-1">{i + 1}.</span>
                           {opt}
                         </div>

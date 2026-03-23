@@ -234,7 +234,7 @@ export default function AIQuestionGenerator({
               )}
 
               {/* Question text */}
-              <p className={`text-sm font-jp leading-relaxed pl-3 ${!preview.passageText ? 'mt-2' : ''}`}>{preview.contentText}</p>
+              <p className={`text-sm font-jp leading-relaxed pl-3 text-foreground ${!preview.passageText ? 'mt-2' : ''}`}>{preview.contentText}</p>
 
               {/* Options grid */}
               <div className="grid grid-cols-2 gap-1.5 pl-3">
@@ -244,7 +244,7 @@ export default function AIQuestionGenerator({
                     className={`rounded-md px-2.5 py-1.5 text-xs font-jp ${
                       i + 1 === preview.correctOption
                         ? "bg-green-100 dark:bg-green-950/50 border border-green-400 text-green-800 dark:text-green-300 font-semibold"
-                        : "bg-muted border border-border"
+                        : "bg-muted border border-border text-foreground"
                     }`}
                   >
                     <span className="text-muted-foreground mr-1">{i + 1}.</span>

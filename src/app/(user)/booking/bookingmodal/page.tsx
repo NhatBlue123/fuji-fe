@@ -1,229 +1,204 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-const classes = [
-  {
-    teacher: "Sakura Sensei",
-    subject: "Kaiwa & Pronunciation (N3)",
-    date: "Hôm nay, 24 Oct",
-    time: "19:30 - 20:30",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD9krVS6kNBZafdHAS4ToHczl32IJ-qSiqbG49QjX99eiHVpZPRbpYd_5XKLAL09C589qY-h-RdQNQNkAyXT59O1gXi4fp3f-CUOb-ta_swbMNcrVDyJKLoPRSzunARF23OsGluY6AEOzqFs6Xk-8kzB4Q6iCP_xC_MIJhDA6RD4Auw-UBG9WWMwiUYH1xrm8mxNI-UJfuDICdXchj6gYYN7mL8aI8uWo4l6rVKiJN44t4gZetX6Go6kcpDZhEpump-VP-CWeuGpx0J",
-    status: "join",
-  },
-  {
-    teacher: "Tanaka Sensei",
-    subject: "Kanji & Grammar Advanced",
-    date: "Thứ 6, 26 Oct",
-    time: "09:00 - 10:30",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBIeLvsgcoa3uitY5ecItviIFtPSFrZgvE0akISdGNn6gGqSMCyDn2EvFGI-Mt6_fL1Z0PhQ5BDQWcSJQC4h4XccTjfoR8JfijfyNFLv8XKoklX1BGnMe7wra29f7_FQuxQx5Ph_A0DPfsVPvn-ucj7pbb-Djx6-dr5vFod8sy_xBbJa00Jk59_UdJNLtXkVUMQov22wet0hRTCTd0T6_B4PJLs1De1GchBsX8w-QMlLbd5v9-OL6-EcTeL-gIr_s8Z1357EnO7fM87",
-    status: "waiting",
-  },
-];
+import { useCancelBookingMutation, useGetMyBookingsQuery } from "@/store/services/bookingApi";
 
-const courses = [
-  {
-    title: "Từ vựng N2 siêu tốc",
-    lessons: "24 bài giảng • 12 giờ",
-    tag: "N2 Prep",
-  },
-  {
-    title: "Tiếng Nhật công sở",
-    lessons: "15 bài giảng • 8 giờ",
-    tag: "Business",
-  },
-  {
-    title: "Văn hóa giao tiếp Nhật",
-    lessons: "10 bài giảng • 5 giờ",
-    tag: "Culture",
-  },
-  {
-    title: "Luyện giọng chuẩn Tokyo",
-    lessons: "12 bài giảng • 6 giờ",
-    tag: "Pronunciation",
-  },
-];
+type Tab = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
-export default function MySchedule() {
+function formatDate(v: string) {
+  return new Date(v).toLocaleDateString("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function formatTimeRange(startAt: string, endAt: string) {
+  const s = new Date(startAt);
+  const e = new Date(endAt);
+  const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${hhmm(s)} - ${hhmm(e)}`;
+}
+
+export default function MySchedulePage() {
+  const [tab, setTab] = useState<Tab>("UPCOMING");
+  
+  // State để quản lý việc hiển thị Modal xác nhận hủy
+  // Nếu bằng null là đóng, nếu có ID là đang mở Modal cho class đó
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const { data, isLoading, isFetching, isError } = useGetMyBookingsQuery({ status: tab });
+  const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
+
+  const items = data ?? [];
+
+  // Hàm thực hiện hủy thực sự khi bấm "Đồng ý" trên Modal
+  const handleConfirmCancel = async () => {
+    if (deletingId === null) return;
+    try {
+      await cancelBooking({ bookingId: deletingId }).unwrap();
+      // Thành công thì tự đóng modal
+      setDeletingId(null);
+    } catch (e) {
+      console.error("Lỗi khi hủy lịch:", e);
+      alert("Không thể hủy lịch, vui lòng thử lại sau.");
+    }
+  };
+
   return (
-    <main className="flex-1 overflow-y-auto bg-[#0f172a] px-6 relative">
-      {/* glow background */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[120px] -mr-64 -mt-64"></div>
-      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-pink-500/5 rounded-full blur-[100px] -ml-32 -mb-32"></div>
-
-      {/* HEADER */}
-      <header className="sticky top-0 z-10 flex items-center justify-between px-10 py-6 border-b border-white/10 backdrop-blur-md bg-[#0f172a]/80">
-        <div>
-          <h2 className="text-slate-100 text-4xl font-black mb-2">
-            Lịch học của tôi
-          </h2>
-          <p className="text-slate-400 text-xl">
-            Theo dõi và quản lý các buổi học trực tuyến
-          </p>
-        </div>
-
-        <div className="flex items-center gap-6">
-          {/* search */}
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-              search
-            </span>
-
-            <input
-              placeholder="Tìm khóa học, giáo viên..."
-              className="bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm w-64 focus:outline-none focus:border-pink-500"
-            />
-          </div>
-
-          {/* filter */}
-          <button className="flex items-center justify-center size-10 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-pink-500 transition">
-            <span className="material-symbols-outlined">tune</span>
-          </button>
-
-          {/* avatar */}
-          <div className="size-10 rounded-full border-2 border-pink-500/30 p-0.5">
-            <img
-              className="w-full h-full rounded-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9"
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* CONTENT */}
+    <main className="flex-1 overflow-y-auto bg-[#0f172a] px-6 relative min-h-screen">
       <div className="px-10 py-8">
-        {/* FILTER */}
+        {/* Tab Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-            <button className="px-6 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-sm font-bold">
-              Sắp tới
-            </button>
-            <button className="px-6 py-2 text-slate-400 text-sm">
-              Đã hoàn thành
-            </button>
-            <button className="px-6 py-2 text-slate-400 text-sm">Đã hủy</button>
+            {(["UPCOMING", "COMPLETED", "CANCELLED"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                  tab === t ? "bg-secondary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {t === "UPCOMING" ? "Sắp tới" : t === "COMPLETED" ? "Đã hoàn thành" : "Đã hủy"}
+              </button>
+            ))}
           </div>
 
           <Link href="/booking">
-            <button className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded-xl text-sm font-bold text-pink-500">
-              <span className="material-symbols-outlined text-sm">add</span>
-              Đặt lịch mới
-            </button>
-          </Link>
+  <button className="flex items-center gap-2 px-4 py-2 bg-secondary/10 border border-secondary/30 rounded-xl text-sm font-bold text-secondary hover:bg-secondary/20 transition-all active:scale-95">
+    <span className="material-symbols-outlined text-sm">add</span>
+    Đặt lịch mới
+  </button>
+</Link>
         </div>
 
-        {/* CLASS LIST */}
-        <div className="space-y-4">
-          {classes.map((c, i) => (
-            <div
-              key={i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6"
-            >
-              {/* teacher */}
-              <div className="flex items-center gap-4 flex-1">
-                <img
-                  src={c.avatar}
-                  className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
-                />
+        {/* Trạng thái Loading / Lỗi */}
+        {(isLoading || isFetching) && <div className="text-slate-400 animate-pulse">Đang tải lịch của bạn...</div>}
 
+        {isError && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            Không tải được lịch của bạn. Vui lòng kiểm tra lại kết nối.
+          </div>
+        )}
+
+        {!isLoading && !isFetching && !isError && items.length === 0 && (
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">
+            Không có dữ liệu lịch học trong mục này.
+          </div>
+        )}
+
+        {/* Danh sách lịch học */}
+        <div className="space-y-4">
+          {items.map((c) => (
+            <div
+              key={c.bookingId}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
+            >
+              <div className="flex items-center gap-4 flex-1 w-full">
+                <img
+                  src={c.teacherAvatarUrl || "/images/avt-default.jpg"}
+                  className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
+                  alt="Teacher"
+                />
                 <div>
-                  <h4 className="text-slate-100 font-bold">{c.teacher}</h4>
+                  <h4 className="text-slate-100 font-bold">{c.teacherName}</h4>
                   <p className="text-pink-400 text-sm">{c.subject}</p>
                 </div>
               </div>
 
-              {/* date */}
               <div className="flex items-center gap-8 px-8 border-x border-white/10">
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs">Ngày</p>
-                  <p className="text-white font-bold">{c.date}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">Ngày</p>
+                  <p className="text-white font-bold">{formatDate(c.startAt)}</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs">Giờ</p>
-                  <p className="text-white font-bold">{c.time}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">Giờ</p>
+                  <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
                 </div>
               </div>
 
-              {/* action */}
-              <button
-                className={`px-8 py-3 rounded-xl text-sm font-bold ${
-                  c.status === "join"
-                    ? "bg-secondary hover:bg-secondary/90 text-white"
-                    : "bg-white/10 text-slate-300"
-                }`}
-              >
-                {c.status === "join" ? "Vào lớp" : "Chờ lớp"}
-              </button>
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                {tab === "UPCOMING" && (
+                  <>
+                    <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-secondary hover:bg-secondary/90 text-white transition-all">
+                      {new Date() >= new Date(c.startAt) ? "Vào lớp" : "Chờ lớp"}
+                    </button>
+                    <button
+                      disabled={isCancelling}
+                      onClick={() => setDeletingId(c.bookingId)}
+                      className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                    >
+                      Hủy
+                    </button>
+                  </>
+                )}
+
+                {tab === "COMPLETED" && (
+                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">
+                    Hoàn thành
+                  </span>
+                )}
+
+                {tab === "CANCELLED" && (
+                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
+                    Đã hủy
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* COURSE RECOMMEND */}
-        <div className="mt-12">
-          <h3 className="text-slate-100 font-bold mb-6 flex items-center gap-2">
-            <span className="material-symbols-outlined text-pink-500">
-              verified
-            </span>
-            Gợi ý khóa học cho bạn
-          </h3>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {courses.map((course, i) => (
-              <div
-                key={i}
-                className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-pink-500/40 transition"
-              >
-                <div className="aspect-video bg-slate-800 rounded-lg mb-3 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-pink-400 text-4xl">
-                    play_circle
-                  </span>
-                </div>
-
-                <p className="text-xs font-bold text-pink-400 uppercase">
-                  {course.tag}
-                </p>
-
-                <h5 className="text-white font-bold text-sm">{course.title}</h5>
-
-                <p className="text-slate-500 text-xs mt-1">{course.lessons}</p>
+      {/* --- MODAL XÁC NHẬN HỦY (Chỉ hiện khi deletingId khác null) --- */}
+      {deletingId !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Lớp nền mờ */}
+          <div 
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            onClick={() => !isCancelling && setDeletingId(null)} 
+          />
+          
+        {/* Nội dung Modal */}
+          <div className="relative bg-[#1e293b] border border-white/10 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
-            ))}
+              
+              <h3 className="text-xl font-bold text-white mb-2">Xác nhận hủy lớp</h3>
+              <p className="text-slate-400 text-sm mb-8">
+                Bạn có chắc chắn muốn hủy lịch học này không? Hành động này sẽ không thể hoàn tác sau khi xác nhận.
+              </p>
+              
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setDeletingId(null)}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
+                >
+                  Để sau
+                </button>
+                
+                <button 
+                  onClick={handleConfirmCancel}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-secondary/20"
+                >
+                  {isCancelling ? (
+                    <>
+                      <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Đang hủy...
+                    </>
+                  ) : "Đồng ý hủy"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </main>
-  );
-}
-
-/* STAT CARD */
-
-function StatCard({ title, value, extra, icon, highlight }: any) {
-  return (
-    <div
-      className={`rounded-2xl p-6 relative overflow-hidden bg-white/5 border border-white/10 ${
-        highlight ? "border-pink-500/30 bg-pink-500/5" : ""
-      }`}
-    >
-      <span className="material-symbols-outlined absolute top-4 right-4 opacity-20 text-5xl">
-        {icon}
-      </span>
-
-      <p className="text-slate-400 text-sm">{title}</p>
-
-      <div className="flex items-end gap-3 mt-2">
-        <span
-          className={`text-3xl font-bold ${
-            highlight ? "text-pink-500" : "text-white"
-          }`}
-        >
-          {value}
-        </span>
-
-        <span className="text-pink-400 text-sm">{extra}</span>
-      </div>
-    </div>
   );
 }

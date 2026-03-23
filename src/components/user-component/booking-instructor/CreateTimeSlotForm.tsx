@@ -36,7 +36,7 @@ export default function CreateTimeSlotForm() {
     description: string;
   } | null>(null);
 
-  const [daysOfWeek, setDaysOfWeek] = useState<Weekday[]>(["MON", "WED", "FRI"]);
+  const [daysOfWeek, setDaysOfWeek] = useState<Weekday[]>([]);
   const [timeRanges, setTimeRanges] = useState<TimeRange[]>([{ start: "19:00", end: "20:00" }]);
 
   const [loading, setLoading] = useState(false);
@@ -138,7 +138,7 @@ export default function CreateTimeSlotForm() {
       const data: BulkResponse | undefined = res?.data?.data;
 
       const description = data
-        ? `Tạo lịch thành công: ${data.created}/${data.requested} buổi. Bỏ qua ${data.skipped} buổi trùng.`
+        ? `Tạo lịch thành công`
         : "Tạo lịch thành công.";
 
       setNotice({
@@ -199,7 +199,7 @@ export default function CreateTimeSlotForm() {
         
         <section className="xl:col-span-2 glass-card rounded-none xl:rounded-2xl border border-border border-l-0 border-t-0 xl:border-l xl:border-t p-6 md:p-8">
 
-          <h1 className="text-3xl font-black tracking-tight">Tạo lịch rảnh giảng dạy</h1>
+          <h1 className="text-3xl font-black tracking-tight">Tạo lịch giảng dạy</h1>
 
           <div className="mt-6 inline-flex rounded-xl p-1 bg-card border border-border">
             <button

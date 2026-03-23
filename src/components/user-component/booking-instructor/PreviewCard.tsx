@@ -42,7 +42,7 @@ export default function PreviewCard({ mode, subject, price, ranges, estimatedSlo
 
         <div className="h-px bg-border my-4" />
 
-        <p className="text-muted-foreground text-sm">Ước tính buổi tạo</p>
+        <p className="text-muted-foreground text-sm">Ước tính số buổi tạo</p>
         <p className="text-2xl font-black text-secondary">{estimatedSlots}</p>
       </div>
     </aside>

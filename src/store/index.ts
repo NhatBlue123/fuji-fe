@@ -38,6 +38,7 @@ export const store = configureStore({
       .concat(adminJlptApi.middleware)
       .concat(adminFlashcardApi.middleware)
       .concat(userApi.middleware)
+      .concat(adminRevenueApi.middleware)
       .concat(baseApi.middleware)
       .concat(courseApi.middleware)
       .concat(adminReportApi.middleware)

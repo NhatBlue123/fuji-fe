@@ -4,15 +4,7 @@
  */
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-
-// Resolve signaling URL in a way that works across devices:
-// - Prefer explicit NEXT_PUBLIC_SIGNALING_URL (for production / custom domains)
-// - Fallback: use current hostname + default signaling port (8081)
-const SIGNALING_URL =
-  typeof window === "undefined"
-    ? process.env.NEXT_PUBLIC_SIGNALING_URL || "http://localhost:8081"
-    : process.env.NEXT_PUBLIC_SIGNALING_URL ||
-      `${window.location.protocol}//${window.location.hostname}:8081`;
+import { getSignalingUrl } from "@/lib/video-call-urls";
 
 export interface SignalingHook {
   socket: Socket | null;
@@ -39,7 +31,7 @@ let globalSocket: Socket | null = null;
 let activeCount = 0;
 
 if (typeof window !== "undefined") {
-  globalSocket = io(SIGNALING_URL, {
+  globalSocket = io(getSignalingUrl(), {
     transports: ["websocket", "polling"],
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
@@ -47,7 +39,7 @@ if (typeof window !== "undefined") {
   });
 
   globalSocket.on("connect", () => {
-    console.log("[Signaling] Connected:", globalSocket?.id);
+    console.log("[Signaling] Connected:", globalSocket?.id, "| server:", getSignalingUrl());
   });
 
   globalSocket.on("connect_error", (err) => {

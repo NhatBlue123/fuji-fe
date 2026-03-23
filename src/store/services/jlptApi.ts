@@ -9,6 +9,7 @@ import type {
   PaginatedResponse,
 } from "@/types/jlpt";
 import type { AnswerReview, QuestionReportPayload, QuestionReport } from "@/types/jlpt-review";
+import type { SystemReport } from "@/types/admin-reports";
 
 // Base query with authentication
 const baseQuery = async (args: any) => {
@@ -186,6 +187,25 @@ export const jlptApi = createApi({
         method: "POST",
         body,
       }),
+
+    // Optional feedback for overall JLPT test quality (not per-question report)
+    createExamFeedback: builder.mutation<
+      SystemReport,
+      { testId: number; attemptId: number; feedback: string; testTitle?: string }
+    >({
+      query: ({ testId, attemptId, feedback, testTitle }) => ({
+        url: "/admin/reports",
+        method: "POST",
+        body: {
+          category: "OTHER",
+          title: `Feedback đề JLPT${testTitle ? ` - ${testTitle}` : ""} (attempt ${attemptId})`,
+          description: feedback,
+          priority: "MEDIUM",
+          subjectType: "JLPT_TEST_FEEDBACK",
+          subjectId: String(testId),
+        },
+      }),
+      transformResponse: (response: ApiResponse<SystemReport>) => response.data,
     }),
   }),
 });
@@ -200,4 +220,5 @@ export const {
   useGetAttemptReviewQuery,
   useReportViolationMutation,
   useCreateQuestionReportMutation,
+  useCreateExamFeedbackMutation,
 } = jlptApi;

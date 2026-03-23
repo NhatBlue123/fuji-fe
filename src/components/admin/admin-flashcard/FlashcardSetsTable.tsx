@@ -296,7 +296,6 @@ export const FlashcardSetsTable = () => {
         set={viewingSet}
         cards={apiFlashcards?.filter(c => c.lesson === viewingSet?.lesson) || []}
         onEditCard={(card) => setEditingCard(card)}
-        onDeleteCard={() => toast.success("Thẻ đã được đánh dấu xóa")}
         onAddCard={() => setIsCreateCardModalOpen(true)}
       />
 

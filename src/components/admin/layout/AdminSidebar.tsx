@@ -71,6 +71,16 @@ const navGroups: NavGroup[] = [
         title: "Thống kê",
         href: "/admin/analytics",
         icon: BarChart3,
+        children: [
+          {
+            title: "Giáo viên",
+            href: '/admin/analytics/teachers',
+          },
+          {
+            title: "Admin",
+            href: '/admin/analytics/admin',
+          },
+        ],
       },
     ],
   },
@@ -80,6 +90,12 @@ const navGroups: NavGroup[] = [
       {
         title: "Người dùng",
         href: "/admin/users",
+        icon: Users,
+        adminOnly: true,
+      },
+      {
+        title: "Rút tiền",
+        href: "/admin/withdraw",
         icon: Users,
         adminOnly: true,
       },
@@ -97,12 +113,6 @@ const navGroups: NavGroup[] = [
         title: "Đề thi",
         href: "/admin/jlpt-tests",
         icon: BookOpenCheck,
-      },
-      {
-        title: "Báo cáo ",
-        href: "/admin/reports",
-        icon: AlertTriangle,
-        adminOnly: true,
       },
     ],
   },
@@ -140,7 +150,7 @@ export function AdminSidebar() {
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, canAccessRoute } = usePermissions();
-
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -204,15 +214,70 @@ export function AdminSidebar() {
                     <Separator className="mb-2 bg-sidebar-border" />
                   )}
                   {visibleItems.map((item) => {
-                    const isActive =
-                      pathname === item.href ||
-                      (item.href !== "/admin" &&
-                        pathname.startsWith(item.href));
                     const Icon = item.icon;
+                    const hasChildren =
+                      item.children && item.children.length > 0;
+
+                    const isOpen = openMenu === item.title;
+
+                    const isActive =
+                      item.href &&
+                      (pathname === item.href ||
+                        (item.href !== "/admin" &&
+                          pathname.startsWith(item.href)));
+
+                    if (hasChildren) {
+                      return (
+                        <div key={item.title}>
+                          <button
+                            onClick={() =>
+                              setOpenMenu(isOpen ? null : item.title)
+                            }
+                            className={cn(
+                              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                              "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              collapsed && "justify-center px-2",
+                            )}
+                          >
+                            <Icon className="h-4 w-4 shrink-0" />
+
+                            {!collapsed && (
+                              <>
+                                <span className="flex-1 text-left">
+                                  {item.title}
+                                </span>
+                                <ChevronRight
+                                  className={cn(
+                                    "h-4 w-4 transition-transform",
+                                    isOpen && "rotate-90",
+                                  )}
+                                />
+                              </>
+                            )}
+                          </button>
+
+                          {isOpen && !collapsed && (
+                            <div className="ml-6 mt-1 flex flex-col gap-1">
+                              {item.children?.map((child) => (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  className={cn(
+                                    "rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent",
+                                  )}
+                                >
+                                  {child.title}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
 
                     const linkContent = (
                       <Link
-                        href={item.href}
+                        href={item.href!}
                         className={cn(
                           "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                           isActive
@@ -235,6 +300,7 @@ export function AdminSidebar() {
                       </Link>
                     );
 
+
                     if (collapsed) {
                       return (
                         <Tooltip key={item.href}>
@@ -253,6 +319,7 @@ export function AdminSidebar() {
 
                     return (
                       <React.Fragment key={item.href}>
+
                         {linkContent}
                       </React.Fragment>
                     );

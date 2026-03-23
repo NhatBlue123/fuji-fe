@@ -180,6 +180,13 @@ export const jlptApi = createApi({
       transformResponse: (response: ApiResponse<QuestionReport>) =>
         response.data,
     }),
+    reportViolation: builder.mutation<void, { type: string; severity?: string; testId?: string; description?: string }>({
+      query: (body) => ({
+        url: "/users/me/violations/report",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -191,5 +198,6 @@ export const {
   useGetAttemptByIdQuery,
   useGetMyAttemptsQuery,
   useGetAttemptReviewQuery,
+  useReportViolationMutation,
   useCreateQuestionReportMutation,
 } = jlptApi;

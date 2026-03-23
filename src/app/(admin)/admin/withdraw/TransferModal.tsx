@@ -17,6 +17,7 @@ interface TransferModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onSuccess: () => void;
   isConfirming: boolean;
   request: {
     id: number;
@@ -31,6 +32,7 @@ export function TransferModal({
   isOpen,
   onClose,
   onConfirm,
+  onSuccess,
   isConfirming,
   request,
 }: TransferModalProps) {
@@ -46,12 +48,13 @@ export function TransferModal({
     if (payoutStatus?.data?.status === "SUCCESS" || payoutStatus?.data?.status === "COMPLETED") {
       toast.success("Chuyển tiền tự động kết thúc hoặc thành công!");
       setPayoutOrderId(null);
-      onConfirm();
+      onSuccess();
     } else if (payoutStatus?.data?.status === "FAILED") {
       toast.error(payoutStatus?.data?.message || "Chuyển khoản thất bại!");
       setPayoutOrderId(null);
     }
-  }, [payoutStatus, onConfirm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payoutStatus]);
 
   const handleAutoPayout = async () => {
     try {
@@ -61,7 +64,7 @@ export function TransferModal({
         toast.info("Đang xử lý chuyển tiền tự động, vui lòng chờ...");
       } else {
         toast.success("Đã ghi nhận yêu cầu chuyển tiền tự động!");
-        onConfirm();
+        onSuccess();
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Lỗi khi gọi API chuyển tiền tự động");
@@ -75,8 +78,7 @@ export function TransferModal({
 
   if (!request) return null;
 
-  // Giảm 10,000đ phí rút tiền như trong UI
-  const transferAmount = request.amount - 10000;
+  const transferAmount = request.amount;
   // Format để tạo QR vietqr: amount=..., addInfo=..., accountName=...
   const orderId = `RUTTIEN${request.id}`;
   

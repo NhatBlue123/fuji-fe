@@ -46,8 +46,7 @@ export default function WithdrawPage() {
   const [showNote, setShowNote] = useState(false); // Trạng thái hiển thị ghi chú
 
   const withdrawAmount = Number(amount) || 0;
-  const fee = withdrawAmount > 0 ? 10000 : 0;
-  const finalAmount = Math.max(0, withdrawAmount - fee);
+  const finalAmount = withdrawAmount;
 
   const validateForm = () => {
     if (withdrawAmount < 50000) {
@@ -336,12 +335,6 @@ export default function WithdrawPage() {
                     {withdrawAmount.toLocaleString()}đ
                   </span>
                 </div>
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wide">
-                  <span className="text-slate-500">Phí giao dịch:</span>
-                  <span className="text-rose-400">
-                    -{fee.toLocaleString()}đ
-                  </span>
-                </div>
                 <div className="pt-3 border-t border-dashed border-white/10 flex justify-between items-end">
                   <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">
                     Thực nhận:
@@ -353,20 +346,7 @@ export default function WithdrawPage() {
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-center gap-2 text-pink-400 relative z-10">
-                <Sparkles size={14} className="animate-pulse" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                  Thông tin vận hành
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed font-medium uppercase tracking-wide italic relative z-10">
-                * Nhóm thu phí cố định 10,000đ trên mỗi giao dịch rút tiền để
-                duy trì hạ tầng kỹ thuật, đội ngũ hỗ trợ 24/7 và ngân sách quảng
-                cáo phát triển cộng đồng Fuji.
-              </p>
-            </div>
+
 
             <Button
               form="withdraw-form"

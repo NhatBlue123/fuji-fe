@@ -187,6 +187,7 @@ export const jlptApi = createApi({
         method: "POST",
         body,
       }),
+    }),
 
     // Optional feedback for overall JLPT test quality (not per-question report)
     createExamFeedback: builder.mutation<

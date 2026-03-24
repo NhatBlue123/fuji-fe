@@ -3,6 +3,7 @@
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { AuthInitializer } from "@/hooks/useAuthInit";
+import { NotificationProvider } from "@/providers/NotificationProvider";
 import "@/i18n";
 
 export default function RtkProvider({
@@ -12,7 +13,9 @@ export default function RtkProvider({
 }) {
   return (
     <Provider store={store}>
-      <AuthInitializer>{children}</AuthInitializer>
+      <AuthInitializer>
+        <NotificationProvider>{children}</NotificationProvider>
+      </AuthInitializer>
     </Provider>
   );
 }

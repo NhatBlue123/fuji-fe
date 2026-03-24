@@ -16,7 +16,10 @@
     "themeToggle": "Light / Dark",
     "searchPlaceholder": "Search...",
     "noResults": "No results found",
-    "register": "Register"
+    "register": "Register",
+    "viewAll": "View All",
+    "noNotifications": "No new notifications",
+    "profile": "Profile"
   },
   "sidebar": {
     "subtitle": "Learn Japanese",
@@ -26,7 +29,8 @@
     "loginToStart": "Login to start",
     "studentLevel": "Student",
     "logoutSuccess": "Logged out successfully!",
-    "logoutFailed": "Logout failed"
+    "logoutFailed": "Logout failed",
+    "logout": "Logout"
   },
   "languageSwitcher": {
     "title": "Language Settings",

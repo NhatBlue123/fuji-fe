@@ -31,7 +31,7 @@ let globalSocket: Socket | null = null;
 let activeCount = 0;
 
 if (typeof window !== "undefined") {
-  globalSocket = io(getSignalingUrl(), {
+  globalSocket = io(getSignalingUrl() + "/video-call", {
     transports: ["websocket", "polling"],
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,

@@ -1,23 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowLeft, Bell, CreditCard, Landmark } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCreateBookingMutation, useGetBookingQuoteQuery } from "@/store/services/bookingApi";
-
-function formatVnd(v: number) {
-  return `${v.toLocaleString("vi-VN")}đ`;
-}
+import {
+  useCreateBookingMutation,
+  useCreateBulkBookingMutation,
+  useGetBookingQuoteQuery,
+  useGetBulkBookingQuoteMutation,
+} from "@/store/services/bookingApi";
 
 function formatDate(v: string) {
-  const d = new Date(v);
-  return d.toLocaleDateString("vi-VN");
+  return new Date(v).toLocaleDateString("vi-VN");
 }
 
 function formatTimeRange(startAt: string, endAt: string) {
   const s = new Date(startAt);
   const e = new Date(endAt);
-  const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const hhmm = (d: Date) =>
+    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return `${hhmm(s)} - ${hhmm(e)}`;
 }
 
@@ -26,26 +27,62 @@ export default function PaymentPage() {
   const searchParams = useSearchParams();
 
   const timeSlotId = Number(searchParams.get("timeSlotId"));
-  const validId = Number.isFinite(timeSlotId) && timeSlotId > 0;
+  const teacherId = Number(searchParams.get("teacherId"));
+  const timeSlotIdsParam = searchParams.get("timeSlotIds") || "";
 
-  const [method, setMethod] = useState("card");
+  const bulkIds = useMemo(
+    () =>
+      timeSlotIdsParam
+        .split(",")
+        .map((x) => Number(x.trim()))
+        .filter((x) => Number.isFinite(x) && x > 0),
+    [timeSlotIdsParam]
+  );
+
+  const isSingleMode = Number.isFinite(timeSlotId) && timeSlotId > 0;
+  const isBulkMode =
+    Number.isFinite(teacherId) &&
+    teacherId > 0 &&
+    bulkIds.length > 0;
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { data: quote, isLoading, isFetching } = useGetBookingQuoteQuery(
+  const { data: singleQuote, isLoading, isFetching } = useGetBookingQuoteQuery(
     { timeSlotId },
-    { skip: !validId }
+    { skip: !isSingleMode }
   );
 
-  const [createBooking, { isLoading: isCreating }] = useCreateBookingMutation();
+  const [getBulkQuote, { data: bulkQuote, isLoading: isBulkQuoteLoading }] =
+    useGetBulkBookingQuoteMutation();
 
-  const canConfirm = useMemo(() => !!quote && quote.canPay, [quote]);
+  useEffect(() => {
+    if (!isBulkMode) return;
+    getBulkQuote({ teacherId, timeSlotIds: bulkIds });
+  }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
+
+  const [createBooking, { isLoading: isCreatingSingle }] = useCreateBookingMutation();
+  const [createBulkBooking, { isLoading: isCreatingBulk }] = useCreateBulkBookingMutation();
+
+  const isCreating = isCreatingSingle || isCreatingBulk;
+  const quote = isSingleMode ? singleQuote : bulkQuote;
+  const canConfirm = !!quote && quote.canPay;
 
   const onConfirm = async () => {
-    if (!validId) return;
     setErrorMsg("");
+
     try {
-      await createBooking({ timeSlotId }).unwrap();
+      if (isSingleMode) {
+        await createBooking({ timeSlotId }).unwrap();
+      } else if (isBulkMode) {
+        await createBulkBooking({
+          teacherId,
+          timeSlotIds: bulkIds,
+        }).unwrap();
+      } else {
+        return;
+      }
+
       setShowSuccess(true);
     } catch (e: any) {
       setErrorMsg(e?.data?.message || "Không thể xác nhận thanh toán.");
@@ -66,136 +103,134 @@ export default function PaymentPage() {
           </div>
           <h2 className="text-2xl font-bold text-slate-100">Thanh toán</h2>
         </div>
-
-
       </header>
-        <div className="max-w-md mx-auto space-y-8"> 
-          {/* 1. Phần tiêu đề  */}
-          <div className="text-center"> 
-            <h1 className="text-3xl font-bold text-slate-100 mb-2">Xác nhận thanh toán</h1>
-            <p className="text-slate-400">Kiểm tra thông tin đơn hàng trước khi đặt lịch.</p>
+
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-slate-100 mb-2">Xác nhận thanh toán</h1>
+          <p className="text-slate-400">
+            Kiểm tra thông tin đơn hàng trước khi đặt lịch.
+          </p>
+        </div>
+
+        {!isSingleMode && !isBulkMode && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center">
+            Thiếu dữ liệu booking trên URL.
           </div>
+        )}
 
-          {!validId && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300 text-center">
-              Thiếu timeSlotId trên URL.
-            </div>
-          )}
+        {(isLoading || isFetching || isBulkQuoteLoading) && (
+          <div className="text-slate-400 text-center animate-pulse">
+            Đang tải thông tin đơn hàng...
+          </div>
+        )}
 
-          {(isLoading || isFetching) && (
-            <div className="text-slate-400 text-center animate-pulse">
-              Đang tải thông tin đơn hàng...
-            </div>
-          )}
+        {quote && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-100 mb-6 border-b border-slate-800 pb-4">
+              Tóm tắt đơn hàng
+            </h3>
 
-          {/* 2. Phần khung tóm tắt đơn hàng */}
-          {quote && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-              <h3 className="text-lg font-bold text-slate-100 mb-6 border-b border-slate-800 pb-4">
-                Tóm tắt đơn hàng
-              </h3>
-
+            {"items" in quote ? (
               <div className="space-y-6">
-                {/* Ảnh minh họa */}
-                <div 
-                  className="aspect-video w-full rounded-xl bg-cover bg-center border border-slate-800" 
-                  style={{ backgroundImage: 'url("https://picsum.photos/500/300")' }} 
-                />
-
-                {/* Thông tin môn học & Giáo viên */}
                 <div>
-                  <p className="text-pink-500 text-xs font-bold uppercase mb-1">Học phần: {quote.subject}</p>
                   <p className="text-slate-100 font-bold text-lg">GV. {quote.teacherName}</p>
+                  <p className="text-slate-400 text-sm mt-1">
+                    {quote.slotCount} buổi đã chọn
+                  </p>
                 </div>
 
-                {/* Thời gian */}
-                <div className="space-y-3 text-sm text-slate-400 bg-white/5 p-3 rounded-lg">
-                  <p className="flex items-center gap-2"><span>📅</span> {formatDate(quote.startAt)}</p>
-                  <p className="flex items-center gap-2"><span>⏰</span> {formatTimeRange(quote.startAt, quote.endAt)} ({quote.durationMinutes} phút)</p>
+                <div className="space-y-3 max-h-80 overflow-auto">
+                  {quote.items.map((item) => (
+                    <div
+                      key={item.timeSlotId}
+                      className="rounded-xl border border-slate-800 bg-white/5 p-4"
+                    >
+                      <p className="text-pink-400 font-bold">{item.subject}</p>
+                      <p className="text-slate-300 text-sm mt-1">
+                        {formatDate(item.startAt)} | {formatTimeRange(item.startAt, item.endAt)}
+                      </p>
+                      <p className="text-slate-400 text-sm mt-1">
+                        {item.durationMinutes} phút
+                      </p>
+                      <p className="text-slate-100 text-sm mt-2">
+                        {item.totalBlossom} Blossom
+                      </p>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Chi tiết giá tiền */}
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Học phí</span>
-                    <span>{quote.tuitionBlossom} 🌸</span>
+                    <span>{quote.tuitionBlossom} Blossom</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} 🌸</span>
+                    <span>{quote.serviceFeeBlossom} Blossom</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
-                    <span className="text-pink-500">{quote.totalBlossom} 🌸</span>
+                    <span className="text-pink-500">{quote.totalBlossom} Blossom</span>
                   </div>
                 </div>
-
-                {/* Thông báo lỗi nếu không đủ tiền */}
-                {!quote.canPay && (
-                  <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                    {quote.message}
-                  </div>
-                )}
-
-                {errorMsg && (
-                  <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                    {errorMsg}
-                  </div>
-                )}
-
-                {/* Nút thanh toán */}
-                <button
-                  onClick={onConfirm}
-                  disabled={!canConfirm || isCreating}
-                  className="w-full py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl shadow-lg shadow-secondary/20 transition-all active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isCreating ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Đang xử lý...
-                    </div>
-                  ) : (
-                    "Xác nhận thanh toán"
-                  )}
-                </button>
               </div>
-            </div>
-          )}
-        </div>
-    </main>
-  );
-}
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <p className="text-pink-500 text-xs font-bold uppercase mb-1">
+                    Học phần: {quote.subject}
+                  </p>
+                  <p className="text-slate-100 font-bold text-lg">GV. {quote.teacherName}</p>
+                </div>
 
-function PaymentOption({
-  value,
-  method,
-  setMethod,
-  title,
-  desc,
-  icon,
-  label,
-  color,
-}: any) {
-  return (
-    <label className="flex items-center justify-between p-4 bg-slate-900 border border-slate-800 rounded-xl cursor-pointer hover:border-pink-500 transition">
-      <div className="flex items-center gap-4">
-        <div className={`size-12 rounded-lg flex items-center justify-center text-white font-bold ${color}`}>
-          {icon ? icon : label}
-        </div>
-        <div>
-          <p className="font-medium text-slate-100">{title}</p>
-          <p className="text-xs text-slate-500">{desc}</p>
-        </div>
+                <div className="space-y-3 text-sm text-slate-400 bg-white/5 p-3 rounded-lg">
+                  <p>{formatDate(quote.startAt)}</p>
+                  <p>
+                    {formatTimeRange(quote.startAt, quote.endAt)} ({quote.durationMinutes} phút)
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-800 space-y-3">
+                  <div className="flex justify-between text-slate-400 text-sm">
+                    <span>Học phí</span>
+                    <span>{quote.tuitionBlossom} Blossom</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400 text-sm">
+                    <span>Phí dịch vụ</span>
+                    <span>{quote.serviceFeeBlossom} Blossom</span>
+                  </div>
+                  <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
+                    <span>Tổng cộng</span>
+                    <span className="text-pink-500">{quote.totalBlossom} Blossom</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!quote.canPay && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 mt-6">
+                {quote.message}
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 mt-4">
+                {errorMsg}
+              </div>
+            )}
+
+            <button
+              onClick={onConfirm}
+              disabled={!canConfirm || isCreating}
+              className="w-full mt-6 py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl shadow-lg shadow-secondary/20 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {isCreating ? "Đang xử lý..." : "Xác nhận thanh toán"}
+            </button>
+          </div>
+        )}
       </div>
-
-      <input
-        type="radio"
-        name="payment"
-        checked={method === value}
-        onChange={() => setMethod(value)}
-        className="w-5 h-5 accent-pink-500"
-      />
-    </label>
+    </main>
   );
 }
 

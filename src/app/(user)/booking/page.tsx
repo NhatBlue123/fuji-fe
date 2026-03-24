@@ -32,7 +32,6 @@ export default function SlotListPage() {
     return () => clearInterval(timer);
   }, []);
 
-//tạo phần chạy lịch ăn cắp ý tưởng bên momo
   const days = useMemo(() => {
     const base = new Date();
     return Array.from({ length: 365 }).map((_, i) => {
@@ -94,7 +93,6 @@ export default function SlotListPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto p-8 space-y-8">
-        {/* Thanh chọn ngày */}
         <div className="glass-card rounded-2xl p-4 overflow-hidden relative group">
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x select-none">
             {days.map((d, idx) => {
@@ -137,10 +135,9 @@ export default function SlotListPage() {
           </div>
         )}
 
-        {/* Kiểm tra mảng sau khi đã lọc */}
         {!isLoading && !isFetching && !isError && filteredSlots.length === 0 && (
           <div className="glass-card rounded-2xl p-6 text-muted-foreground">
-            Hiện không có khung giờ nào khả dụng .
+            Hiện không có khung giờ nào khả dụng.
           </div>
         )}
 
@@ -180,12 +177,25 @@ export default function SlotListPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => router.push(`/booking/bookappointment?timeSlotId=${slot.timeSlotId}`)}
-                className="w-full py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all shadow-lg shadow-secondary/20"
-              >
-                Đặt lịch ngay
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() =>
+                    router.push(`/booking/bookappointment?timeSlotId=${slot.timeSlotId}`)
+                  }
+                  className="flex-1 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all shadow-lg shadow-secondary/20"
+                >
+                  Đặt lịch ngay
+                </button>
+
+                <button
+                  onClick={() =>
+                    router.push(`/booking/teacher-schedule?teacherId=${slot.teacherId}`)
+                  }
+                  className="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-slate-200 font-semibold hover:bg-white/10 transition-all"
+                >
+                  Xem lịch GV
+                </button>
+              </div>
             </div>
           ))}
         </div>

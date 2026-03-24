@@ -1,18 +1,20 @@
-// D:\Cap2\FE\fuji-fe\src\store\services\bookingApi.ts
 import { baseApi } from "./baseApi";
 import type {
   ApiEnvelope,
   BookingQuote,
   BookingStatusTab,
+  BulkBookingQuote,
   CreateBookingRequest,
   CreateBookingResponse,
+  CreateBulkBookingRequest,
+  CreateBulkBookingResponse,
   DiscoveryResponse,
   MyBookingItem,
+  TeacherAvailabilityResponse,
 } from "@/types/booking";
 
 export const bookingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // 1) Discovery slots (booking list page)
     getDiscoverySlots: builder.query<
       DiscoveryResponse,
       { date: string; keyword?: string; teacherId?: number }
@@ -28,16 +30,34 @@ export const bookingApi = baseApi.injectEndpoints({
       providesTags: [{ type: "Booking", id: "DISCOVERY" }],
     }),
 
-    // 2) Quote booking (bookappointment page)
+    getTeacherAvailability: builder.query<
+      TeacherAvailabilityResponse,
+      { teacherId: number; fromDate: string; toDate: string }
+    >({
+      query: ({ teacherId, fromDate, toDate }) =>
+        `/time-slots/teacher/${teacherId}/availability?fromDate=${fromDate}&toDate=${toDate}`,
+      transformResponse: (res: ApiEnvelope<TeacherAvailabilityResponse>) => res.data,
+      providesTags: (_r, _e, arg) => [{ type: "Booking", id: `TEACHER_${arg.teacherId}` }],
+    }),
+
     getBookingQuote: builder.query<BookingQuote, { timeSlotId: number }>({
       query: ({ timeSlotId }) => `/bookings/quote?timeSlotId=${timeSlotId}`,
       transformResponse: (res: ApiEnvelope<BookingQuote>) => res.data,
-      providesTags: (_r, _e, arg) => [
-        { type: "Booking", id: `QUOTE_${arg.timeSlotId}` },
-      ],
+      providesTags: (_r, _e, arg) => [{ type: "Booking", id: `QUOTE_${arg.timeSlotId}` }],
     }),
 
-    // 3) Create booking
+    getBulkBookingQuote: builder.mutation<
+      BulkBookingQuote,
+      { teacherId: number; timeSlotIds: number[] }
+    >({
+      query: (body) => ({
+        url: "/bookings/quote-bulk",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: ApiEnvelope<BulkBookingQuote>) => res.data,
+    }),
+
     createBooking: builder.mutation<CreateBookingResponse, CreateBookingRequest>({
       query: (body) => ({
         url: "/bookings",
@@ -51,14 +71,28 @@ export const bookingApi = baseApi.injectEndpoints({
       ],
     }),
 
-    // 4) My bookings (bookingmodal tabs)
+    createBulkBooking: builder.mutation<
+      CreateBulkBookingResponse,
+      CreateBulkBookingRequest
+    >({
+      query: (body) => ({
+        url: "/bookings/bulk",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: ApiEnvelope<CreateBulkBookingResponse>) => res.data,
+      invalidatesTags: [
+        { type: "Booking", id: "DISCOVERY" },
+        { type: "Booking", id: "MY_BOOKINGS" },
+      ],
+    }),
+
     getMyBookings: builder.query<MyBookingItem[], { status: BookingStatusTab }>({
       query: ({ status }) => `/bookings/me?status=${status}`,
       transformResponse: (res: ApiEnvelope<MyBookingItem[]>) => res.data,
       providesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
     }),
 
-    // 5) Cancel booking
     cancelBooking: builder.mutation<{ message: string }, { bookingId: number }>({
       query: ({ bookingId }) => ({
         url: `/bookings/${bookingId}/cancel`,
@@ -77,9 +111,11 @@ export const bookingApi = baseApi.injectEndpoints({
 
 export const {
   useGetDiscoverySlotsQuery,
+  useGetTeacherAvailabilityQuery,
   useGetBookingQuoteQuery,
-  useLazyGetBookingQuoteQuery,
+  useGetBulkBookingQuoteMutation,
   useCreateBookingMutation,
+  useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
   useCancelBookingMutation,
 } = bookingApi;

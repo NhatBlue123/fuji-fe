@@ -1,6 +1,7 @@
 "use client";
 import Input from "@/components/common/Input";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface CourseFilterProps {
   search: string;

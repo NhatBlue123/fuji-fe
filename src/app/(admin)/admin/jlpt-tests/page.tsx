@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,6 +9,11 @@ import {
   useDeleteTestMutation,
   useUpdateTestMutation,
   useCreateTestMutation,
+  useAddQuestionMutation,
+  useAttachQuestionBankItemToTestMutation,
+  useGetTestByIdQuery,
+  useUpdateQuestionMutation,
+  useDeleteQuestionMutation,
 } from "@/store/services/adminJlptApi";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +41,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -56,8 +62,21 @@ import {
   TrendingUp,
   BarChart3,
   BookOpen,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import {
+  getStructureForTestType,
+  getQuestionNumbers,
+  type JLPTLevel,
+  type SectionKey,
+  type MondaiConfig,
+  type SectionConfig,
+} from "@/lib/jlpt-structure";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
+import type { CreateQuestionDTO, JlptQuestionAdmin, QuestionBankItem } from "@/store/services/adminJlptApi";
 
 // ─── Level color map ──────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -71,7 +90,11 @@ const LEVEL_COLORS: Record<string, string> = {
 const INITIAL_FORM = {
   title: "",
   level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
-  testType: "full_test" as "full_test" | "vocabulary_grammar" | "reading" | "listening",
+  testType: "full_test" as
+    | "full_test"
+    | "vocabulary_grammar"
+    | "reading"
+    | "listening",
   description: "",
   duration: 120,
   totalQuestions: 0,
@@ -101,17 +124,50 @@ export default function AdminJLPTTestsPage() {
   const { data: allTests = [] } = useGetAllTestsStatsQuery();
   const [deleteTest] = useDeleteTestMutation();
   const [createTest, { isLoading: isCreating }] = useCreateTestMutation();
+  const [addQuestion] = useAddQuestionMutation();
+  const [attachQuestionBankItemToTest] =
+    useAttachQuestionBankItemToTestMutation();
 
   // ── Create/Edit form state ─────────────────────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTestId, setEditingTestId] = useState<number | null>(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [autoGenerateWithAI, setAutoGenerateWithAI] = useState(false);
+  const [autoGenerateWithBank, setAutoGenerateWithBank] = useState(false);
+  const [generatingFromBank, setGeneratingFromBank] = useState(false);
+  const [generatingWithAI, setGeneratingWithAI] = useState(false);
 
   const [updateTest, { isLoading: isUpdating }] = useUpdateTestMutation();
+  const [updateQuestion, updateQuestionState] = useUpdateQuestionMutation();
+  const [deleteQuestion, deleteQuestionState] = useDeleteQuestionMutation();
+
+  // ── Preview/review state (tree Mondai) ───────────────────────────────
+  const [previewTestId, setPreviewTestId] = useState<number | null>(null);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(
+    null,
+  );
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+
+  const [draftContentText, setDraftContentText] = useState("");
+  const [draftOptions, setDraftOptions] = useState("");
+  const [draftCorrectOption, setDraftCorrectOption] = useState<number | undefined>(
+    undefined,
+  );
+  const [draftExplanation, setDraftExplanation] = useState("");
+
+  const {
+    data: previewTest,
+    isLoading: isPreviewLoading,
+    isFetching: isPreviewFetching,
+  } = useGetTestByIdQuery(previewTestId ?? 0, {
+    skip: previewTestId == null,
+  });
 
   const openCreateForm = () => {
     setEditingTestId(null);
     setFormData(INITIAL_FORM);
+    setAutoGenerateWithAI(false);
+    setAutoGenerateWithBank(false);
     setShowCreateForm(true);
   };
 
@@ -129,6 +185,8 @@ export default function AdminJLPTTestsPage() {
       readingPassScore: test.readingPassScore || 19,
       listeningPassScore: test.listeningPassScore || 19,
     });
+    setAutoGenerateWithBank(false);
+    setAutoGenerateWithAI(false);
     setShowCreateForm(true);
   };
 
@@ -136,6 +194,245 @@ export default function AdminJLPTTestsPage() {
     setShowCreateForm(false);
     setEditingTestId(null);
     setFormData(INITIAL_FORM);
+    setAutoGenerateWithAI(false);
+    setAutoGenerateWithBank(false);
+    setPreviewTestId(null);
+    setSelectedQuestionId(null);
+    setReviewConfirmed(false);
+  };
+
+  interface MondaiNode {
+    parent: JlptQuestionAdmin | null;
+    children: Record<number, JlptQuestionAdmin>;
+  }
+
+  type QuestionsMap = Record<number, MondaiNode>;
+
+  function buildQuestionsMap(questions: JlptQuestionAdmin[]): QuestionsMap {
+    const map: QuestionsMap = {};
+    for (const q of questions) {
+      if (!map[q.mondaiNumber]) map[q.mondaiNumber] = { parent: null, children: {} };
+
+      if (q.parentId == null) {
+        if (q.children && q.children.length > 0) {
+          map[q.mondaiNumber].parent = q;
+          for (const child of q.children) {
+            map[q.mondaiNumber].children[child.questionOrder] = child;
+          }
+        } else {
+          if (q.options != null || q.correctOption != null) {
+            map[q.mondaiNumber].children[q.questionOrder] = q;
+          } else {
+            map[q.mondaiNumber].parent = q;
+          }
+        }
+      }
+    }
+    return map;
+  }
+
+  const flatPreviewQuestions = useMemo(() => {
+    const parents = previewTest?.questions ?? [];
+    const out: JlptQuestionAdmin[] = [];
+    for (const p of parents) {
+      out.push(p);
+      const children = p.children ?? [];
+      for (const c of children) out.push(c);
+    }
+    return out;
+  }, [previewTest]);
+
+  const selectedQuestion = useMemo(() => {
+    if (selectedQuestionId == null) return null;
+    return (
+      flatPreviewQuestions.find((q) => q.id === selectedQuestionId) ?? null
+    );
+  }, [flatPreviewQuestions, selectedQuestionId]);
+  const selectedMondaiNumber = selectedQuestion?.mondaiNumber ?? null;
+  const shouldRequireReviewConfirm = previewTestId != null;
+
+  const structure = useMemo(() => {
+    const level = formData.level as JLPTLevel | undefined;
+    const testType = formData.testType as string | undefined;
+    if (!level || !testType) return [];
+    return getStructureForTestType(level, testType);
+  }, [formData.level, formData.testType]);
+
+  const questionsMap = useMemo<QuestionsMap>(() => {
+    const parents = previewTest?.questions ?? [];
+    return parents.length > 0 ? buildQuestionsMap(parents) : {};
+  }, [previewTest]);
+
+  const mondaiConfigs = useMemo(() => {
+    const map = new Map<number, MondaiConfig>();
+    for (const section of structure) {
+      for (const mondai of section.mondai) {
+        if (!map.has(mondai.number)) map.set(mondai.number, mondai);
+      }
+    }
+    return Array.from(map.values());
+  }, [structure]);
+
+  useEffect(() => {
+    if (previewTestId == null) return;
+    if (selectedQuestionId != null) return;
+    if (flatPreviewQuestions.length === 0) return;
+    setSelectedQuestionId(flatPreviewQuestions[0].id);
+  }, [previewTestId, flatPreviewQuestions, selectedQuestionId]);
+
+  useEffect(() => {
+    if (!selectedQuestion) return;
+    setDraftContentText(selectedQuestion.contentText ?? "");
+
+    const opts = selectedQuestion.options;
+    if (Array.isArray(opts)) setDraftOptions(JSON.stringify(opts));
+    else if (typeof opts === "string") setDraftOptions(opts);
+    else setDraftOptions("");
+
+    setDraftCorrectOption(selectedQuestion.correctOption ?? undefined);
+    setDraftExplanation(selectedQuestion.explanation ?? "");
+  }, [selectedQuestion]);
+
+  const generateQuestionsFromBank = async (testId: number) => {
+    const token = getAccessToken();
+    if (!token) throw new Error("Chưa đăng nhập hoặc không có access token.");
+
+    const level = formData.level as JLPTLevel;
+    const testType = formData.testType as string;
+    const structure = getStructureForTestType(level, testType);
+
+    const shouldIncludeMondai = (mondai: any) => {
+      if (testType === "full_test") return true;
+      if (testType === "vocabulary_grammar") return !mondai.requires_passage;
+      if (testType === "reading") return mondai.requires_passage;
+      if (testType === "listening") return mondai.requires_audio;
+      return true;
+    };
+
+    const resolveSectionKeyForMondai = (
+      section: SectionConfig,
+      mondai: MondaiConfig,
+      testTypeInput: string,
+    ): SectionKey => {
+      const keys = section.sectionKeys;
+      if (keys.length === 1) return keys[0] as SectionKey;
+      if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+      if (mondai.requires_passage && keys.includes("READING")) return "READING";
+
+      const title = mondai.title || "";
+      if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        return "GRAMMAR";
+      }
+      if (
+        keys.includes("VOCABULARY") &&
+        keys.includes("GRAMMAR") &&
+        keys.includes("READING")
+      ) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        if (/文法/.test(title)) return "GRAMMAR";
+        return "VOCABULARY";
+      }
+
+      if (testTypeInput === "reading" && keys.includes("READING")) return "READING";
+      if (testTypeInput === "listening" && keys.includes("LISTENING")) return "LISTENING";
+      if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
+      return keys[0] as SectionKey;
+    };
+
+    for (const section of structure) {
+      for (const mondai of section.mondai) {
+        if (!shouldIncludeMondai(mondai)) continue;
+        const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
+
+        const nums = getQuestionNumbers(mondai);
+        const count = nums.length;
+        const extra = mondai.requires_passage ? 1 : 0;
+        const pageSizeLocal = count + extra;
+
+        const params = new URLSearchParams({
+          level,
+          section: sectionKey,
+          mondaiNumber: String(mondai.number),
+          page: "0",
+          size: String(pageSizeLocal),
+        });
+
+        const bankRes = await fetch(
+          `${API_CONFIG.BASE_URL}/jlpt-question-bank?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Accept-Language":
+                localStorage.getItem("i18nextLng") || "vi",
+            },
+            credentials: "include",
+          },
+        );
+
+        if (!bankRes.ok) {
+          const bankJson = await bankRes.json().catch(() => ({}));
+          throw new Error(bankJson?.message || bankRes.statusText);
+        }
+
+        const bankJson = await bankRes.json();
+        const items = (bankJson?.data?.content ?? []) as QuestionBankItem[];
+        const sorted = [...items].sort((a, b) => a.id - b.id);
+
+        if (mondai.requires_passage) {
+          const parentItem =
+            sorted.find((i) => (i.passageText ?? "").trim().length > 0) ??
+            sorted[0];
+          if (!parentItem) continue;
+
+          const parentCreated = await attachQuestionBankItemToTest({
+            bankItemId: parentItem.id,
+            testId,
+            section: sectionKey,
+            questionOrder: mondai.start - 1,
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            parentQuestionId: null,
+          }).unwrap();
+
+          const childrenCandidates = sorted.filter(
+            (i) => i.id !== parentItem.id,
+          );
+
+          for (
+            let i = 0;
+            i < count && i < childrenCandidates.length;
+            i++
+          ) {
+            const q = childrenCandidates[i];
+            await attachQuestionBankItemToTest({
+              bankItemId: q.id,
+              testId,
+              section: sectionKey,
+              questionOrder: nums[i],
+              mondaiNumber: mondai.number,
+              mondaiTitle: mondai.title,
+              parentQuestionId: parentCreated.id,
+            }).unwrap();
+          }
+        } else {
+          const selected = sorted.slice(0, count);
+          for (let i = 0; i < selected.length; i++) {
+            const q = selected[i];
+            await attachQuestionBankItemToTest({
+              bankItemId: q.id,
+              testId,
+              section: sectionKey,
+              questionOrder: nums[i],
+              mondaiNumber: mondai.number,
+              mondaiTitle: mondai.title,
+              parentQuestionId: null,
+            }).unwrap();
+          }
+        }
+      }
+    }
   };
 
   const updateField = (field: string, value: any) =>
@@ -144,6 +441,80 @@ export default function AdminJLPTTestsPage() {
   const handleNumberChange = (field: string, value: string) => {
     const numValue = value === "" ? 0 : parseInt(value);
     if (!isNaN(numValue)) updateField(field, numValue);
+  };
+
+  const generateQuestionsWithAI = async (testId: number) => {
+    const level = formData.level as JLPTLevel;
+    const testType = formData.testType as string;
+    const structure = getStructureForTestType(level, testType);
+
+    for (const section of structure) {
+      const sectionKey = section.sectionKeys[0] as SectionKey;
+      for (const mondai of section.mondai) {
+        const nums = getQuestionNumbers(mondai);
+        const count = nums.length;
+
+        const aiRes = await fetch("/api/ai/generate-questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level,
+            section: sectionKey,
+            count,
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            testType,
+          }),
+        });
+        const aiJson = await aiRes.json();
+        if (!aiRes.ok) {
+          throw new Error(aiJson.error || "AI generate failed");
+        }
+
+        const questions = (aiJson.questions || []) as {
+          contentText: string;
+          options: string[];
+          correctOption: number;
+          explanation: string;
+          passageText: string;
+        }[];
+
+        let parentId: number | null = null;
+        const first = questions[0];
+        if (mondai.requires_passage && first?.passageText) {
+          const parentPayload: CreateQuestionDTO = {
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            parentId: null,
+            questionOrder: mondai.start - 1,
+            section: sectionKey as any,
+            contentText: first.passageText,
+          };
+          const createdParent = await addQuestion({
+            testId,
+            data: parentPayload,
+          }).unwrap();
+          parentId = createdParent.id;
+        }
+
+        for (let i = 0; i < questions.length && i < nums.length; i++) {
+          const q = questions[i];
+          const payload: CreateQuestionDTO = {
+            mondaiNumber: mondai.number,
+            mondaiTitle: mondai.title,
+            parentId: mondai.requires_passage ? parentId : null,
+            questionOrder: nums[i],
+            section: sectionKey as any,
+            contentText: q.contentText,
+            options: JSON.stringify(q.options) as any,
+            correctOption: q.correctOption,
+            explanation: q.explanation || undefined,
+            points: 1.0,
+          };
+          await addQuestion({ testId, data: payload }).unwrap();
+        }
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,6 +526,31 @@ export default function AdminJLPTTestsPage() {
         closeForm();
       } else {
         const result = await createTest(formData).unwrap();
+        if (autoGenerateWithBank) {
+          setGeneratingFromBank(true);
+          try {
+            await generateQuestionsFromBank(result.id);
+          } finally {
+            setGeneratingFromBank(false);
+          }
+          // Keep modal open and show review panel on the right
+          setPreviewTestId(result.id);
+          setSelectedQuestionId(null);
+          setReviewConfirmed(false);
+          return;
+        }
+        if (autoGenerateWithAI) {
+          setGeneratingWithAI(true);
+          try {
+            await generateQuestionsWithAI(result.id);
+          } finally {
+            setGeneratingWithAI(false);
+          }
+          setPreviewTestId(result.id);
+          setSelectedQuestionId(null);
+          setReviewConfirmed(false);
+          return;
+        }
         closeForm();
         router.push(`/admin/jlpt-tests/${result.id}/questions`);
       }
@@ -227,12 +623,23 @@ export default function AdminJLPTTestsPage() {
           <h1 className="text-3xl font-bold tracking-tight">JLPT Tests</h1>
           <p className="text-muted-foreground">Quản lý đề thi JLPT</p>
         </div>
-        {canCreate && (
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Tạo đề thi mới
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link href="/admin/jlpt-question-bank">
+              Quản lý ngân hàng câu hỏi
+            </Link>
           </Button>
-        )}
+          {canCreate && (
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Tạo đề thi mới
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -249,195 +656,599 @@ export default function AdminJLPTTestsPage() {
           {/* Form panel — scrollable overlay */}
           <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
             <div className="flex min-h-full items-start justify-center px-4 py-10">
-            <div
-              className="w-full max-w-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <form onSubmit={handleSubmit}>
-                <Card className="shadow-2xl border-border">
-                  <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
-                    <div>
-                      <CardTitle className="text-xl">
-                        {editingTestId ? "Chỉnh sửa đề thi JLPT" : "Tạo đề thi JLPT mới"}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {editingTestId ? "Cập nhật thông tin của đề thi" : "Điền thông tin cơ bản của đề thi"}
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={closeForm}
-                      className="shrink-0 -mt-1 -mr-1"
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </CardHeader>
-
-                  <CardContent className="space-y-5">
-                    {/* Title */}
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Tiêu đề *</Label>
-                      <Input
-                        id="title"
-                        placeholder="VD: JLPT N3 Tháng 7/2024"
-                        value={formData.title}
-                        onChange={(e) => updateField("title", e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {/* Level & Test Type */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="level">Cấp độ *</Label>
-                        <Select value={formData.level} onValueChange={(v) => updateField("level", v)}>
-                          <SelectTrigger id="level"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {["N5", "N4", "N3", "N2", "N1"].map(l => (
-                              <SelectItem key={l} value={l}>{l}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="testType">Loại đề thi *</Label>
-                        <Select value={formData.testType} onValueChange={(v) => updateField("testType", v)}>
-                          <SelectTrigger id="testType"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="full_test">Full Test (Đề thi đầy đủ)</SelectItem>
-                            <SelectItem value="vocabulary_grammar">Từ vựng &amp; Ngữ pháp (言語知識)</SelectItem>
-                            <SelectItem value="reading">Đọc hiểu (読解)</SelectItem>
-                            <SelectItem value="listening">Nghe hiểu (聴解)</SelectItem>
-                          </SelectContent>
-                        </Select>
+              <div
+                className={`w-full pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300 ${
+                  previewTestId ? "max-w-7xl" : "max-w-2xl"
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className={`grid gap-4 items-start ${
+                    previewTestId ? "lg:grid-cols-[1fr_420px]" : "grid-cols-1"
+                  }`}
+                >
+                  <form onSubmit={handleSubmit}>
+                    <Card className="shadow-2xl border-border">
+                    <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+                      <div>
+                        <CardTitle className="text-xl">
+                          {editingTestId
+                            ? "Chỉnh sửa đề thi JLPT"
+                            : "Tạo đề thi JLPT mới"}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {editingTestId
+                            ? "Cập nhật thông tin của đề thi"
+                            : "Điền thông tin cơ bản của đề thi"}
+                        </CardDescription>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => setShowCreateForm(false)}
+                        onClick={closeForm}
                         className="shrink-0 -mt-1 -mr-1"
                       >
                         <X className="h-5 w-5" />
                       </Button>
                     </CardHeader>
 
-                    {/* Duration — full width now that totalQuestions is removed */}
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Thời gian (phút) *</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        min="1"
-                        value={formData.duration || ""}
-                        onChange={(e) => handleNumberChange("duration", e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {/* Pass Scores — adaptive per testType */}
-                    <div className="space-y-3">
+                    <CardContent className="space-y-5">
+                      {/* Title */}
                       <div className="space-y-2">
-                        <Label htmlFor="description">Mô tả</Label>
-                        <Textarea
-                          id="description"
-                          placeholder="Mô tả ngắn về đề thi này..."
-                          rows={2}
-                          value={formData.description}
-                          onChange={(e) =>
-                            updateField("description", e.target.value)
-                          }
+                        <Label htmlFor="title">Tiêu đề *</Label>
+                        <Input
+                          id="title"
+                          placeholder="VD: JLPT N3 Tháng 7/2024"
+                          value={formData.title}
+                          onChange={(e) => updateField("title", e.target.value)}
+                          required
                         />
-                        <p className="text-xs text-muted-foreground">
-                          {formData.testType === "full_test" ? "Thường là 90–100" : "Điểm tối thiểu để đỗ phần thi này"}
-                        </p>
                       </div>
 
-                      {/* full_test: hiện cả 3 mục liệt */}
-                      {formData.testType === "full_test" && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
-                              <Input id="langPass" type="number" min="0"
-                                value={formData.languageKnowledgePassScore || ""}
-                                onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="readPass">Liệt đọc</Label>
-                              <Input id="readPass" type="number" min="0"
-                                value={formData.readingPassScore || ""}
-                                onChange={(e) => handleNumberChange("readingPassScore", e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="listenPass">Liệt nghe</Label>
-                              <Input id="listenPass" type="number" min="0"
-                                value={formData.listeningPassScore || ""}
-                                onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)} />
-                            </div>
-                          </div>
+                      {/* Level & Test Type */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="level">Cấp độ *</Label>
+                          <Select
+                            value={formData.level}
+                            onValueChange={(v) => updateField("level", v)}
+                          >
+                            <SelectTrigger id="level">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {["N5", "N4", "N3", "N2", "N1"].map((l) => (
+                                <SelectItem key={l} value={l}>
+                                  {l}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="testType">Loại đề thi *</Label>
+                          <Select
+                            value={formData.testType}
+                            onValueChange={(v) => updateField("testType", v)}
+                          >
+                            <SelectTrigger id="testType">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="full_test">
+                                Full Test (Đề thi đầy đủ)
+                              </SelectItem>
+                              <SelectItem value="vocabulary_grammar">
+                                Từ vựng &amp; Ngữ pháp (言語知識)
+                              </SelectItem>
+                              <SelectItem value="reading">
+                                Đọc hiểu (読解)
+                              </SelectItem>
+                              <SelectItem value="listening">
+                                Nghe hiểu (聴解)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowCreateForm(false)}
+                          className="shrink-0 -mt-1 -mr-1"
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
+
+                      {/* Duration — full width now that totalQuestions is removed */}
+                      <div className="space-y-2">
+                        <Label htmlFor="duration">Thời gian (phút) *</Label>
+                        <Input
+                          id="duration"
+                          type="number"
+                          min="1"
+                          value={formData.duration || ""}
+                          onChange={(e) =>
+                            handleNumberChange("duration", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+
+                      {/* Pass Scores — adaptive per testType */}
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Mô tả</Label>
+                          <Textarea
+                            id="description"
+                            placeholder="Mô tả ngắn về đề thi này..."
+                            rows={2}
+                            value={formData.description}
+                            onChange={(e) =>
+                              updateField("description", e.target.value)
+                            }
+                          />
                           <p className="text-xs text-muted-foreground">
-                            Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ trượt dù tổng điểm cao.
+                            {formData.testType === "full_test"
+                              ? "Thường là 90–100"
+                              : "Điểm tối thiểu để đỗ phần thi này"}
                           </p>
                         </div>
-                      )}
 
-                      {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
-                      {formData.testType === "vocabulary_grammar" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="langPass">Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)</Label>
-                          <Input id="langPass" type="number" min="0"
-                            value={formData.languageKnowledgePassScore || ""}
-                            onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)} />
-                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần ngôn ngữ (thường là 19)</p>
+                        {/* full_test: hiện cả 3 mục liệt */}
+                        {formData.testType === "full_test" && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="langPass">Liệt ngôn ngữ</Label>
+                                <Input
+                                  id="langPass"
+                                  type="number"
+                                  min="0"
+                                  value={
+                                    formData.languageKnowledgePassScore || ""
+                                  }
+                                  onChange={(e) =>
+                                    handleNumberChange(
+                                      "languageKnowledgePassScore",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="readPass">Liệt đọc</Label>
+                                <Input
+                                  id="readPass"
+                                  type="number"
+                                  min="0"
+                                  value={formData.readingPassScore || ""}
+                                  onChange={(e) =>
+                                    handleNumberChange(
+                                      "readingPassScore",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="listenPass">Liệt nghe</Label>
+                                <Input
+                                  id="listenPass"
+                                  type="number"
+                                  min="0"
+                                  value={formData.listeningPassScore || ""}
+                                  onChange={(e) =>
+                                    handleNumberChange(
+                                      "listeningPassScore",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp
+                              hơn sẽ trượt dù tổng điểm cao.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
+                        {formData.testType === "vocabulary_grammar" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="langPass">
+                              Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)
+                            </Label>
+                            <Input
+                              id="langPass"
+                              type="number"
+                              min="0"
+                              value={formData.languageKnowledgePassScore || ""}
+                              onChange={(e) =>
+                                handleNumberChange(
+                                  "languageKnowledgePassScore",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu phần ngôn ngữ (thường là 19)
+                            </p>
+                          </div>
+                        )}
+
+                        {/* reading: chỉ hiện liệt đọc */}
+                        {formData.testType === "reading" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="readPass">
+                              Liệt đọc (phần đọc hiểu)
+                            </Label>
+                            <Input
+                              id="readPass"
+                              type="number"
+                              min="0"
+                              value={formData.readingPassScore || ""}
+                              onChange={(e) =>
+                                handleNumberChange(
+                                  "readingPassScore",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu phần đọc (thường là 19)
+                            </p>
+                          </div>
+                        )}
+
+                        {/* listening: chỉ hiện liệt nghe */}
+                        {formData.testType === "listening" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="listenPass">
+                              Liệt nghe (phần nghe hiểu)
+                            </Label>
+                            <Input
+                              id="listenPass"
+                              type="number"
+                              min="0"
+                              value={formData.listeningPassScore || ""}
+                              onChange={(e) =>
+                                handleNumberChange(
+                                  "listeningPassScore",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Điểm tối thiểu phần nghe (thường là 19)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3 pt-2">
+                        {!editingTestId && (
+                          <>
+                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={autoGenerateWithAI}
+                                onChange={(e) => {
+                                  const next = e.target.checked;
+                                  setAutoGenerateWithAI(next);
+                                  if (next) setAutoGenerateWithBank(false);
+                                }}
+                              />
+                              Tạo full câu hỏi bằng AI theo cấp độ đã chọn
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={autoGenerateWithBank}
+                                onChange={(e) => {
+                                  const next = e.target.checked;
+                                  setAutoGenerateWithBank(next);
+                                  if (next) setAutoGenerateWithAI(false);
+                                }}
+                              />
+                              Lấy câu hỏi từ ngân hàng đề thi
+                            </label>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <Button
+                          type="submit"
+                          disabled={
+                            isCreating ||
+                            isUpdating ||
+                            generatingFromBank ||
+                            generatingWithAI
+                          }
+                        >
+                          {editingTestId
+                            ? isUpdating
+                              ? "Đang cập nhật..."
+                              : "Lưu thay đổi"
+                            : isCreating || generatingFromBank || generatingWithAI
+                              ? "Đang tạo..."
+                              : "Tạo đề thi và thêm câu hỏi"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={closeForm}
+                        >
+                          Hủy
+                        </Button>
+                      </div>
+                    </CardContent>
+                    </Card>
+                  </form>
+
+                  {previewTestId ? (
+                    <Card className="shadow-2xl border-border overflow-hidden lg:sticky lg:top-4">
+                      <CardHeader>
+                        <CardTitle className="text-base">
+                          Review câu hỏi đã tạo
+                        </CardTitle>
+                        <CardDescription>
+                          {isPreviewLoading
+                            ? "Đang tải..."
+                            : `Test ID: ${previewTestId} • ${flatPreviewQuestions.length} câu`}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="rounded-md border">
+                          <ScrollArea className="h-[320px]">
+                            <div className="space-y-3 p-2">
+                              {isPreviewLoading || isPreviewFetching ? (
+                                <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground justify-center">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Đang tải cây Mondai...
+                                </div>
+                              ) : flatPreviewQuestions.length === 0 ||
+                                mondaiConfigs.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  Chưa có câu hỏi nào.
+                                </div>
+                              ) : (
+                                mondaiConfigs.map((mondai) => {
+                                  const node = questionsMap[mondai.number];
+                                  if (!node) return null;
+
+                                  const open =
+                                    selectedMondaiNumber === mondai.number;
+                                  const expected =
+                                    getQuestionNumbers(mondai).length;
+                                  const filled = Object.keys(
+                                    node.children ?? {},
+                                  ).length;
+
+                                  return (
+                                    <details
+                                      key={mondai.number}
+                                      open={open}
+                                      className={`rounded-md border p-2 ${
+                                        open
+                                          ? "border-primary/40 bg-muted/30"
+                                          : "border-border"
+                                      }`}
+                                    >
+                                      <summary className="list-none cursor-pointer select-none">
+                                        <div className="flex items-center gap-2">
+                                          <Badge
+                                            variant="default"
+                                            className="text-[10px]"
+                                          >
+                                            問{mondai.number}
+                                          </Badge>
+                                          <div className="min-w-0">
+                                            <div className="text-xs font-medium truncate">
+                                              {mondai.title}
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground">
+                                              {filled}/{expected} câu
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </summary>
+                                      <div className="mt-2 space-y-1">
+                                        {getQuestionNumbers(mondai).map(
+                                          (qNum) => {
+                                            const child =
+                                              node.children?.[qNum];
+                                            if (!child) return null;
+                                            return (
+                                              <button
+                                                key={qNum}
+                                                type="button"
+                                                className={`w-full text-left rounded border px-2 py-1 text-xs ${
+                                                  child.id === selectedQuestionId
+                                                    ? "border-primary/50 bg-background"
+                                                    : "border-border hover:bg-muted/30"
+                                                }`}
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  setSelectedQuestionId(child.id);
+                                                }}
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="font-medium">
+                                                    Câu {qNum}
+                                                  </span>
+                                                  <span className="text-[10px] text-muted-foreground">
+                                                    #{child.id}
+                                                  </span>
+                                                </div>
+                                                <div className="mt-1 text-[10px] line-clamp-2 text-muted-foreground">
+                                                  {child.contentText}
+                                                </div>
+                                              </button>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    </details>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </ScrollArea>
                         </div>
-                      )}
 
-                      {/* reading: chỉ hiện liệt đọc */}
-                      {formData.testType === "reading" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="readPass">Liệt đọc (phần đọc hiểu)</Label>
-                          <Input id="readPass" type="number" min="0"
-                            value={formData.readingPassScore || ""}
-                            onChange={(e) => handleNumberChange("readingPassScore", e.target.value)} />
-                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần đọc (thường là 19)</p>
+                        <div className="rounded-md border p-3 space-y-3">
+                          {selectedQuestion ? (
+                            <>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="space-y-0.5">
+                                  <div className="text-sm font-semibold">
+                                    Edit câu #{selectedQuestion.id}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Mondai {selectedQuestion.mondaiNumber} •
+                                    Order {selectedQuestion.questionOrder}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    router.push(
+                                      `/admin/jlpt-tests/${previewTestId}/questions`,
+                                    )
+                                  }
+                                  disabled={
+                                    shouldRequireReviewConfirm &&
+                                    !reviewConfirmed
+                                  }
+                                >
+                                  Đồng ý & chuyển trang{" "}
+                                  <ArrowRight className="h-4 w-4 ml-1" />
+                                </Button>
+                              </div>
+
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <input
+                                  type="checkbox"
+                                  checked={reviewConfirmed}
+                                  onChange={(e) =>
+                                    setReviewConfirmed(e.target.checked)
+                                  }
+                                />
+                                Đã review xong, cho phép chuyển trang câu hỏi
+                              </label>
+
+                              <div className="space-y-2">
+                                <Label>Nội dung (contentText)</Label>
+                                <Textarea
+                                  value={draftContentText}
+                                  onChange={(e) =>
+                                    setDraftContentText(e.target.value)
+                                  }
+                                  rows={4}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Options (JSON string)</Label>
+                                <Textarea
+                                  value={draftOptions}
+                                  onChange={(e) => setDraftOptions(e.target.value)}
+                                  rows={3}
+                                  placeholder='["a","b","c","d"]'
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label>Correct option</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={4}
+                                    value={draftCorrectOption ?? ""}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      if (v === "") setDraftCorrectOption(undefined);
+                                      else setDraftCorrectOption(Number(v));
+                                    }}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Explanation</Label>
+                                  <Input
+                                    value={draftExplanation}
+                                    onChange={(e) =>
+                                      setDraftExplanation(e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!selectedQuestion) return;
+                                    try {
+                                      await updateQuestion({
+                                        id: selectedQuestion.id,
+                                        data: {
+                                          contentText: draftContentText,
+                                          options: draftOptions,
+                                          correctOption: draftCorrectOption,
+                                          explanation: draftExplanation,
+                                        },
+                                      }).unwrap();
+                                      alert("Đã lưu câu hỏi!");
+                                    } catch (err: any) {
+                                      alert(err?.message || "Lưu thất bại");
+                                    }
+                                  }}
+                                  disabled={updateQuestionState.isLoading}
+                                >
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Lưu
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!selectedQuestion) return;
+                                    if (!confirm("Xóa câu hỏi này khỏi đề?")) return;
+                                    try {
+                                      await deleteQuestion(
+                                        selectedQuestion.id,
+                                      ).unwrap();
+                                      setSelectedQuestionId(null);
+                                      alert("Đã xóa câu hỏi!");
+                                    } catch (err: any) {
+                                      alert(err?.message || "Xóa thất bại");
+                                    }
+                                  }}
+                                  disabled={deleteQuestionState.isLoading}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Xóa
+                                </Button>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              Chọn câu hỏi ở danh sách bên trên để review/sửa.
+                            </div>
+                          )}
                         </div>
-                      )}
-
-                      {/* listening: chỉ hiện liệt nghe */}
-                      {formData.testType === "listening" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="listenPass">Liệt nghe (phần nghe hiểu)</Label>
-                          <Input id="listenPass" type="number" min="0"
-                            value={formData.listeningPassScore || ""}
-                            onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)} />
-                          <p className="text-xs text-muted-foreground">Điểm tối thiểu phần nghe (thường là 19)</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-2">
-                      <Button type="submit" disabled={isCreating || isUpdating}>
-                        {editingTestId 
-                          ? (isUpdating ? "Đang cập nhật..." : "Lưu thay đổi") 
-                          : (isCreating ? "Đang tạo..." : "Tạo đề thi và thêm câu hỏi")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={closeForm}
-                      >
-                        Hủy
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </form>
-            </div>
+                      </CardContent>
+                    </Card>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
         </>

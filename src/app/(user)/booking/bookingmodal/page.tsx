@@ -170,7 +170,7 @@ export default function MySchedulePage() {
               
               <h3 className="text-xl font-bold text-white mb-2">Xác nhận hủy lớp</h3>
               <p className="text-slate-400 text-sm mb-8">
-                Bạn có chắc chắn muốn hủy lịch học này không? Hành động này sẽ không thể hoàn tác sau khi xác nhận.
+                 Bạn sẽ phải chịu 50% phí hủy lớp.Bạn có chắc chắn muốn hủy lịch học này không?
               </p>
               
               <div className="flex gap-3 w-full">

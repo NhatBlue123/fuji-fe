@@ -1,13 +1,19 @@
 "use client";
 
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useGetAttemptByIdQuery } from "@/store/services/jlptApi";
+import {
+  useGetAttemptByIdQuery,
+  useGetAttemptReviewQuery,
+  useCreateQuestionReportMutation,
+  useCreateExamFeedbackMutation,
+} from "@/store/services/jlptApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Clock, Trophy, Target } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Trophy, Target, AlertTriangle } from "lucide-react";
 import type { AnswerDetail } from "@/types/jlpt";
+import type { AnswerReview } from "@/types/jlpt-review";
 
 function JLPTResultPageInner() {
   const router = useRouter();
@@ -19,6 +25,16 @@ function JLPTResultPageInner() {
     isLoading,
     error,
   } = useGetAttemptByIdQuery(Number(attemptId), { skip: !attemptId });
+
+  const {
+    data: review,
+  } = useGetAttemptReviewQuery(Number(attemptId), { skip: !attemptId });
+
+  const [createReport] = useCreateQuestionReportMutation();
+  const [createExamFeedback, createExamFeedbackState] = useCreateExamFeedbackMutation();
+  const [reportingQuestionId, setReportingQuestionId] = React.useState<number | null>(null);
+  const [reportReason, setReportReason] = React.useState("");
+  const [examFeedback, setExamFeedback] = React.useState("");
 
   if (isLoading) {
     return (
@@ -58,7 +74,7 @@ function JLPTResultPageInner() {
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Parse answer details if available
+  // Parse answer details if available (fallback only)
   let answerDetails: AnswerDetail[] = [];
   try {
     if (attempt.userAnswers) {
@@ -231,6 +247,207 @@ function JLPTResultPageInner() {
             </div>
           )}
         </div>
+
+        {/* Optional test feedback */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Feedback đề thi (tuỳ chọn)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-slate-400">
+              Nếu bạn thấy đề thi/câu hỏi có vấn đề (quá khó, lỗi nội dung, format), bạn có thể gửi góp ý để team cải thiện.
+              Bạn có thể bỏ qua phần này.
+            </p>
+            <textarea
+              className="w-full h-24 rounded bg-slate-900 border border-slate-600 text-sm text-white p-2"
+              value={examFeedback}
+              onChange={(e) => setExamFeedback(e.target.value)}
+              placeholder="Ví dụ: Câu 12 có 2 đáp án đúng / phần đọc hơi thiếu ngữ cảnh..."
+            />
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                className="bg-slate-800 text-white border-slate-600 hover:bg-slate-700"
+                disabled={createExamFeedbackState.isLoading || !examFeedback.trim()}
+                onClick={async () => {
+                  try {
+                    await createExamFeedback({
+                      testId: attempt.testId,
+                      attemptId: attempt.id,
+                      testTitle: attempt.test?.title,
+                      feedback: examFeedback.trim(),
+                    }).unwrap();
+                    alert("Đã gửi feedback đề thi. Cảm ơn bạn!");
+                    setExamFeedback("");
+                  } catch (e) {
+                    console.error(e);
+                    alert("Gửi feedback thất bại, hãy thử lại.");
+                  }
+                }}
+              >
+                Gửi feedback đề thi
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Question review list */}
+        {review && review.length > 0 && (
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                Chi tiết từng câu hỏi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {review.map((r: AnswerReview, idx: number) => {
+                let options: string[] = [];
+                if (r.options) {
+                  try {
+                    const parsed = JSON.parse(r.options);
+                    if (Array.isArray(parsed)) options = parsed;
+                  } catch {
+                    // ignore parse error
+                  }
+                }
+                const isCorrect = r.isCorrect;
+                return (
+                  <div
+                    key={r.questionId}
+                    className="p-3 rounded-lg border border-slate-700 bg-slate-900 space-y-2"
+                  >
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-slate-200">
+                          Câu {idx + 1} • 問題{r.mondaiNumber} {r.mondaiTitle ? `- ${r.mondaiTitle}` : ""}
+                        </span>
+                        <span className="text-slate-400">
+                          Phần: {r.section}
+                        </span>
+                      </div>
+                      <Badge variant={isCorrect ? "default" : "destructive"}>
+                        {isCorrect ? "Đúng" : "Sai"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap text-slate-100">
+                      {r.contentText}
+                    </p>
+                    {options.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                        {options.map((opt, i) => {
+                          const choice = i + 1;
+                          const isUser = r.selected === choice;
+                          const isAns = r.correctOption === choice;
+                          return (
+                            <div
+                              key={i}
+                              className={[
+                                "px-2 py-1 rounded border",
+                                isAns
+                                  ? "border-green-500 bg-green-900/40"
+                                  : "border-slate-600 bg-slate-800",
+                                isUser && !isAns && "border-red-500 bg-red-900/40",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            >
+                              <span className="text-slate-400 mr-1">{choice}.</span>
+                              <span>{opt}</span>
+                              {isUser && (
+                                <span className="ml-1 text-[10px] text-pink-300">
+                                  (bạn chọn)
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {r.explanation && (
+                      <p className="text-xs text-slate-300 mt-2 whitespace-pre-wrap">
+                        <span className="font-semibold text-slate-100">Giải thích: </span>
+                        {r.explanation}
+                      </p>
+                    )}
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs border-amber-400 text-amber-300 hover:bg-amber-500/10"
+                        onClick={() => {
+                          setReportingQuestionId(r.questionId);
+                          setReportReason("");
+                        }}
+                      >
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        Báo cáo câu hỏi
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Report modal (simple overlay) */}
+        {reportingQuestionId && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 w-full max-w-md space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  Báo cáo câu hỏi
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReportingQuestionId(null)}
+                >
+                  Đóng
+                </Button>
+              </div>
+              <p className="text-xs text-slate-400">
+                Hãy mô tả ngắn gọn vấn đề: đáp án sai, câu mơ hồ, lỗi chính tả,...
+              </p>
+              <textarea
+                className="w-full h-24 rounded bg-slate-800 border border-slate-600 text-xs text-white p-2"
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setReportingQuestionId(null)}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!reportReason.trim()}
+                  onClick={async () => {
+                    try {
+                      await createReport({
+                        questionId: reportingQuestionId,
+                        attemptId: attempt.id,
+                        reason: reportReason.trim(),
+                      }).unwrap();
+                      alert("Đã gửi báo cáo. Cảm ơn bạn!");
+                      setReportingQuestionId(null);
+                    } catch (e) {
+                      console.error(e);
+                      alert("Gửi báo cáo thất bại, hãy thử lại.");
+                    }
+                  }}
+                >
+                  Gửi báo cáo
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

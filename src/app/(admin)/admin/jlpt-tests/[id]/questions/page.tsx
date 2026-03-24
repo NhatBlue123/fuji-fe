@@ -8,6 +8,10 @@ import {
   useUpdateQuestionMutation,
   useUploadAudioMutation,
   useUploadImageMutation,
+  useAttachQuestionBankItemToTestMutation,
+  useGetQuestionBankItemsQuery,
+  useBulkCreateQuestionBankItemsMutation,
+  type QuestionBankItem,
   type JlptQuestionAdmin,
   type CreateQuestionDTO,
 } from "@/store/services/adminJlptApi";
@@ -318,11 +322,14 @@ export default function AdminExamLayout() {
   const [updateQuestion] = useUpdateQuestionMutation();
   const [uploadAudio] = useUploadAudioMutation();
   const [uploadImage] = useUploadImageMutation();
+  const [attachFromBank] = useAttachQuestionBankItemToTestMutation();
+  const [bulkCreateBank] = useBulkCreateQuestionBankItemsMutation();
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(null);
   const [showSetup, setShowSetup] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showBankModal, setShowBankModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -455,6 +462,23 @@ export default function AdminExamLayout() {
     if (!selectedQuestionNumber) return "";
     return subLabels[selectedQuestionNumber] ?? String(selectedQuestionNumber);
   }, [selectedQuestionNumber, subLabels]);
+
+  // ── Question bank modal state ───────────────────────────────────────────────
+  const [bankSearch, setBankSearch] = useState("");
+  const bankLevel = test?.level as JLPTLevel | undefined;
+  const bankSection = derived?.section.sectionKeys[0] as SectionKey | undefined;
+  const { data: bankPage } = useGetQuestionBankItemsQuery(
+    showBankModal && bankLevel && bankSection
+      ? {
+          level: bankLevel,
+          section: bankSection,
+          search: bankSearch || undefined,
+          page: 0,
+          size: 20,
+        }
+      : undefined,
+  );
+  const bankItems: QuestionBankItem[] = bankPage?.content ?? [];
 
   // ── Select question → populate form ──────────────────────────────────────
   const handleSelectQuestion = (n: number) => {
@@ -610,7 +634,7 @@ export default function AdminExamLayout() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100vh-4rem)] relative">
       {/* Top bar */}
       <header className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-border bg-background">
         <div className="flex items-center gap-3">
@@ -642,6 +666,13 @@ export default function AdminExamLayout() {
           >
             <Sparkles className="h-4 w-4 mr-1" />
             AI Tạo câu hỏi
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowBankModal(true)}
+          >
+            Ngân hàng câu hỏi
           </Button>
           <Badge variant="outline">{test.isPublished ? "Published" : "Draft"}</Badge>
         </div>
@@ -745,7 +776,7 @@ export default function AdminExamLayout() {
                   mondaiEnd={derived.mondai.end}
                   initialStart={selectedQuestionNumber}
                   section={derived.section.sectionKeys[0] as "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING"}
-                  onConfirm={async (questions: AIGeneratedQuestion[], startFrom: number) => {
+                  onConfirm={async (questions: AIGeneratedQuestion[], startFrom: number, saveToBank: boolean) => {
                     if (!derived) return;
                     
                     setSaving(true);
@@ -820,6 +851,44 @@ export default function AdminExamLayout() {
                         }
 
                         currentQNum++;
+                      }
+
+                      // Optionally save to bank
+                      if (saveToBank) {
+                        try {
+                          const baseTags = [test.level as JLPTLevel, sectionKey, "ai"];
+                          let extraTag = "";
+                          const lowerTitle = (effectiveMondaiTitle || "").toLowerCase();
+                          if (lowerTitle.includes("kanji") || lowerTitle.includes("漢字")) {
+                            extraTag = "cách đọc kanji";
+                          } else if (lowerTitle.includes("語彙") || lowerTitle.includes("từ vựng")) {
+                            extraTag = "từ vựng";
+                          } else if (lowerTitle.includes("文脈") || lowerTitle.includes("ngữ cảnh")) {
+                            extraTag = "từ theo ngữ cảnh";
+                          } else if (lowerTitle.includes("言い換え")) {
+                            extraTag = "paraphrase";
+                          } else if (lowerTitle.includes("文法")) {
+                            extraTag = "ngữ pháp";
+                          }
+
+                          const payloads = questions.map((q) => ({
+                            level: test.level as JLPTLevel,
+                            section: sectionKey,
+                            difficulty: "MEDIUM" as const,
+                            mondaiNumber: mondai.number,
+                            mondaiTitle: effectiveMondaiTitle,
+                            passageText: q.passageText,
+                            contentText: q.contentText,
+                            options: JSON.stringify(q.options),
+                            correctOption: q.correctOption,
+                            explanation: q.explanation,
+                            points: 1.0,
+                            tags: [baseTags.join(","), extraTag].filter(Boolean).join(","),
+                          }));
+                          await bulkCreateBank(payloads as any).unwrap();
+                        } catch (err) {
+                          console.error("Lưu ngân hàng câu hỏi thất bại", err);
+                        }
                       }
 
                       // Move UI selection to the last created question (or its end)
@@ -1030,6 +1099,74 @@ export default function AdminExamLayout() {
           )}
         </main>
       </div>
+
+      {/* Question Bank Modal */}
+      {showBankModal && derived && (
+        <div className="absolute inset-0 z-40 bg-black/40 flex items-center justify-center">
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] flex flex-col">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Chọn câu hỏi từ ngân hàng</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowBankModal(false)}>
+                Đóng
+              </Button>
+            </div>
+            <div className="p-4 space-y-3 overflow-y-auto">
+              <Input
+                placeholder="Tìm theo nội dung / tags..."
+                value={bankSearch}
+                onChange={(e) => setBankSearch(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <div className="space-y-2">
+                {bankItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="w-full text-left border rounded-md p-3 text-xs flex flex-col gap-1 hover:bg-muted/40"
+                    onClick={async () => {
+                      if (!derived || !selectedQuestionNumber) return;
+                      try {
+                        await attachFromBank({
+                          bankItemId: item.id,
+                          testId,
+                          section: derived.section.sectionKeys[0] as any,
+                          questionOrder: selectedQuestionNumber,
+                          mondaiNumber: derived.mondai.number,
+                          mondaiTitle: derived.mondai.title,
+                          parentQuestionId: derived.existingParent?.id ?? null,
+                        }).unwrap();
+                        setShowBankModal(false);
+                        handleSelectQuestion(selectedQuestionNumber);
+                      } catch (e) {
+                        console.error(e);
+                        alert("Gắn câu hỏi từ ngân hàng thất bại");
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">
+                        {item.level} • {item.section}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {item.difficulty}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2">{item.contentText}</p>
+                    {item.tags && (
+                      <p className="text-[10px] text-muted-foreground">Tags: {item.tags}</p>
+                    )}
+                  </button>
+                ))}
+                {bankItems.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Không có câu hỏi nào trong ngân hàng với bộ lọc hiện tại.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -22,8 +22,8 @@ interface AIQuestionGeneratorProps {
   mondaiEnd: number;
   initialStart: number;
   section: "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
-  /** Gọi khi user xác nhận → điền dữ liệu vào form cha. Truyền kèm vị trí bắt đầu dãy câu hỏi */
-  onConfirm: (questions: AIGeneratedQuestion[], startFrom: number) => void;
+  /** Gọi khi user xác nhận → điền dữ liệu vào form cha. Truyền kèm vị trí bắt đầu dãy câu hỏi và cờ lưu vào ngân hàng */
+  onConfirm: (questions: AIGeneratedQuestion[], startFrom: number, saveToBank: boolean) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -41,6 +41,7 @@ export default function AIQuestionGenerator({
   const [previewList, setPreviewList] = useState<AIGeneratedQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [model, setModel] = useState("");
+  const [saveToBank, setSaveToBank] = useState(false);
   
   // Dải câu hỏi cần tạo
   const [startQ, setStartQ] = useState<number>(initialStart);
@@ -111,7 +112,7 @@ export default function AIQuestionGenerator({
 
   const handleConfirm = () => {
     if (previewList.length === 0) return;
-    onConfirm(previewList, startQ);
+    onConfirm(previewList, startQ, saveToBank);
     setPreviewList([]);
   };
 
@@ -193,6 +194,20 @@ export default function AIQuestionGenerator({
         </div>
       </div>
 
+      {/* Save to bank toggle */}
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <input
+          id="ai-save-to-bank"
+          type="checkbox"
+          className="h-3.5 w-3.5 accent-purple-600"
+          checked={saveToBank}
+          onChange={(e) => setSaveToBank(e.target.checked)}
+        />
+        <label htmlFor="ai-save-to-bank" className="cursor-pointer">
+          Lưu các câu hỏi AI vào ngân hàng câu hỏi JLPT
+        </label>
+      </div>
+
       {/* Error */}
       {error && (
         <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
@@ -219,7 +234,7 @@ export default function AIQuestionGenerator({
               )}
 
               {/* Question text */}
-              <p className={`text-sm font-jp leading-relaxed pl-3 ${!preview.passageText ? 'mt-2' : ''}`}>{preview.contentText}</p>
+              <p className={`text-sm font-jp leading-relaxed pl-3 text-foreground ${!preview.passageText ? 'mt-2' : ''}`}>{preview.contentText}</p>
 
               {/* Options grid */}
               <div className="grid grid-cols-2 gap-1.5 pl-3">
@@ -229,7 +244,7 @@ export default function AIQuestionGenerator({
                     className={`rounded-md px-2.5 py-1.5 text-xs font-jp ${
                       i + 1 === preview.correctOption
                         ? "bg-green-100 dark:bg-green-950/50 border border-green-400 text-green-800 dark:text-green-300 font-semibold"
-                        : "bg-muted border border-border"
+                        : "bg-muted border border-border text-foreground"
                     }`}
                   >
                     <span className="text-muted-foreground mr-1">{i + 1}.</span>

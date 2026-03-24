@@ -11,6 +11,7 @@ import { useAntiCheat } from "@/hooks/useAntiCheat";
 import {
   useGetTestByIdQuery,
   useSubmitTestMutation,
+  useReportViolationMutation,
 } from "@/store/services/jlptApi";
 import type { UserAnswer } from "@/types/jlpt";
 import {
@@ -64,6 +65,7 @@ function JLPTtestPageInner() {
   } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
   const [submitTest] = useSubmitTestMutation();
+  const [reportViolation] = useReportViolationMutation();
 
   const allQuestions = testData?.questions || [];
 
@@ -165,6 +167,14 @@ function JLPTtestPageInner() {
 
   const handleViolation = useCallback(
     (warning: import("@/hooks/useAntiCheat").AntiCheatWarning) => {
+      // Gửi báo cáo vi phạm về backend ngay lập tức
+      reportViolation({
+        // Chuyển đổi type sang định dạng backend hiểu được
+        type: warning.type === 'tab_switch' ? 'TAB_SWITCH' : (warning.type === 'devtools' ? 'DEVTOOLS' : 'COPY_PASTE'),
+        description: warning.message,
+        testId: testId || undefined
+      });
+
       if (
         warning.type === "tab_switch" &&
         warning.count &&
@@ -174,7 +184,7 @@ function JLPTtestPageInner() {
         submitExam();
       }
     },
-    [submitExam]
+    [submitExam, reportViolation, testId]
   );
 
   const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } =

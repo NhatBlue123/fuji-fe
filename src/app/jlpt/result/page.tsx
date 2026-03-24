@@ -2,7 +2,12 @@
 
 import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useGetAttemptByIdQuery, useGetAttemptReviewQuery, useCreateQuestionReportMutation } from "@/store/services/jlptApi";
+import {
+  useGetAttemptByIdQuery,
+  useGetAttemptReviewQuery,
+  useCreateQuestionReportMutation,
+  useCreateExamFeedbackMutation,
+} from "@/store/services/jlptApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +31,10 @@ function JLPTResultPageInner() {
   } = useGetAttemptReviewQuery(Number(attemptId), { skip: !attemptId });
 
   const [createReport] = useCreateQuestionReportMutation();
+  const [createExamFeedback, createExamFeedbackState] = useCreateExamFeedbackMutation();
   const [reportingQuestionId, setReportingQuestionId] = React.useState<number | null>(null);
   const [reportReason, setReportReason] = React.useState("");
+  const [examFeedback, setExamFeedback] = React.useState("");
 
   if (isLoading) {
     return (
@@ -241,6 +248,49 @@ function JLPTResultPageInner() {
           )}
         </div>
 
+        {/* Optional test feedback */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Feedback đề thi (tuỳ chọn)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-slate-400">
+              Nếu bạn thấy đề thi/câu hỏi có vấn đề (quá khó, lỗi nội dung, format), bạn có thể gửi góp ý để team cải thiện.
+              Bạn có thể bỏ qua phần này.
+            </p>
+            <textarea
+              className="w-full h-24 rounded bg-slate-900 border border-slate-600 text-sm text-white p-2"
+              value={examFeedback}
+              onChange={(e) => setExamFeedback(e.target.value)}
+              placeholder="Ví dụ: Câu 12 có 2 đáp án đúng / phần đọc hơi thiếu ngữ cảnh..."
+            />
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                className="bg-slate-800 text-white border-slate-600 hover:bg-slate-700"
+                disabled={createExamFeedbackState.isLoading || !examFeedback.trim()}
+                onClick={async () => {
+                  try {
+                    await createExamFeedback({
+                      testId: attempt.testId,
+                      attemptId: attempt.id,
+                      testTitle: attempt.test?.title,
+                      feedback: examFeedback.trim(),
+                    }).unwrap();
+                    alert("Đã gửi feedback đề thi. Cảm ơn bạn!");
+                    setExamFeedback("");
+                  } catch (e) {
+                    console.error(e);
+                    alert("Gửi feedback thất bại, hãy thử lại.");
+                  }
+                }}
+              >
+                Gửi feedback đề thi
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Question review list */}
         {review && review.length > 0 && (
           <Card className="bg-slate-800 border-slate-700">
@@ -323,7 +373,7 @@ function JLPTResultPageInner() {
                     <div className="flex justify-end">
                       <Button
                         variant="outline"
-                        size="xs"
+                        size="sm"
                         className="text-xs border-amber-400 text-amber-300 hover:bg-amber-500/10"
                         onClick={() => {
                           setReportingQuestionId(r.questionId);

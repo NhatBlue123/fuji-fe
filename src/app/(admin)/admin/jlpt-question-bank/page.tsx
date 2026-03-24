@@ -186,8 +186,23 @@ export default function JlptQuestionBankPage() {
       setImportPreview(res.previewRows || []);
       setImportErrors(res.errors || []);
       
-      if (res.errors?.length > 0) {
-        alert(`Cảnh báo: Phát hiện ${res.failed} lỗi trong file Excel. Vui lòng xem chi tiết!`);
+      const detectedErrors = res.errors?.length ?? 0;
+      if (detectedErrors > 0) {
+        // Each row can contain multiple validation errors (e.g. thiếu level + thiếu section),
+        // so show both "error detections" and "affected rows" to avoid confusing mismatch.
+        const uniqueErrorRows = new Set(
+          (res.errors || [])
+            .map((err) => {
+              const match = err.match(/row\s+(\d+)/i);
+              return match?.[1] ?? null;
+            })
+            .filter(Boolean),
+        ).size;
+
+        const rowsText = uniqueErrorRows > 0 ? `, trên ${uniqueErrorRows} dòng` : "";
+        alert(
+          `Cảnh báo: Phát hiện ${detectedErrors} lỗi${rowsText} trong file Excel. Vui lòng xem chi tiết!`,
+        );
       }
     } catch (error: any) {
       console.error(error);

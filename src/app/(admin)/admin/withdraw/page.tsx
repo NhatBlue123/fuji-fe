@@ -50,9 +50,10 @@ export default function AdminWithdrawManagement() {
     setIsApproving(true);
     try {
       await approveRequest(selectedRequest.id).unwrap();
-      toast.success(`Đã xác nhận thanh toán cho yêu cầu #${selectedRequest.id}`);
+      toast.success(`✅ Đã chuyển tiền thành công cho yêu cầu #${selectedRequest.id}! Trạng thái đã được cập nhật.`);
       setIsTransferModalOpen(false);
       setSelectedRequest(null);
+      refetch();
     } catch (error: any) {
       toast.error(error?.data?.message || `Lỗi khi duyệt yêu cầu #${selectedRequest.id}`);
     } finally {
@@ -66,6 +67,7 @@ export default function AdminWithdrawManagement() {
       try {
         await rejectRequest(id).unwrap();
         toast.error(`Đã từ chối yêu cầu #${id}. Lý do: ${reason}`);
+        refetch();
       } catch (error: any) {
         toast.error(error?.data?.message || `Lỗi khi từ chối yêu cầu #${id}`);
       }
@@ -74,6 +76,7 @@ export default function AdminWithdrawManagement() {
 
   // Tính toán Stats
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+  const processingCount = requests.filter(r => r.status === 'PROCESSING').length;
   const totalPaid = requests
     .filter(r => r.status === 'COMPLETED')
     .reduce((sum, r) => sum + r.amount, 0);
@@ -84,6 +87,7 @@ export default function AdminWithdrawManagement() {
     const matchFilter = filter === 'all' 
       ? true 
       : filter === 'pending' ? req.status === 'PENDING' 
+      : filter === 'processing' ? req.status === 'PROCESSING'
       : filter === 'completed' ? req.status === 'COMPLETED' : req.status === 'REJECTED';
       
     const searchLower = search.toLowerCase();
@@ -122,6 +126,9 @@ export default function AdminWithdrawManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingCount}</div>
+            {processingCount > 0 && (
+              <p className="text-xs text-blue-600 mt-1">({processingCount} đang xử lý)</p>
+            )}
             <p className="text-xs text-muted-foreground mt-1">Yêu cầu cần xử lý</p>
           </CardContent>
         </Card>
@@ -191,6 +198,13 @@ export default function AdminWithdrawManagement() {
                 Đã duyệt
               </Button>
               <Button 
+                variant={filter === 'processing' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter('processing')}
+              >
+                Đang xử lý
+              </Button>
+              <Button 
                 variant={filter === 'rejected' ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter('rejected')}
@@ -249,7 +263,7 @@ export default function AdminWithdrawManagement() {
                           <div className="text-xs text-muted-foreground">Mã ID: {req.userId}</div>
                         </td>
                         <td className="p-4 align-middle font-semibold whitespace-nowrap">
-                          {(req.amount-10000).toLocaleString()}đ
+                          {req.amount.toLocaleString()}đ
                         </td>
                         <td className="p-4 align-middle">
                           <div className="space-y-1">
@@ -261,6 +275,8 @@ export default function AdminWithdrawManagement() {
                         <td className="p-4 align-middle">
                           {req.status === 'PENDING' ? (
                             <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 hover:bg-orange-100">Chờ duyệt</Badge>
+                          ) : req.status === 'PROCESSING' ? (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100 animate-pulse">Đang xử lý</Badge>
                           ) : req.status === 'COMPLETED' ? (
                             <Badge variant="default" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100">Đã chuyển</Badge>
                           ) : (
@@ -291,6 +307,11 @@ export default function AdminWithdrawManagement() {
                                 </Button>
                               </>
                             )}
+                            {req.status === 'PROCESSING' && (
+                              <Badge variant="outline" className="text-blue-600 border-blue-300 animate-pulse">
+                                <Clock className="h-3 w-3 mr-1" /> Đang chuyển...
+                              </Badge>
+                            )}
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -310,6 +331,11 @@ export default function AdminWithdrawManagement() {
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
         onConfirm={handleApprove}
+        onSuccess={() => {
+          setIsTransferModalOpen(false);
+          setSelectedRequest(null);
+          refetch();
+        }}
         isConfirming={isApproving}
         request={selectedRequest}
       />

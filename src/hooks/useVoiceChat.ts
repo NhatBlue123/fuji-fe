@@ -5,9 +5,12 @@ import {
   useVoiceChatMutation,
   useEndVoiceSessionMutation,
 } from "@/store/services/voice/voiceApi";
-import type { VoiceState, VoiceTranscriptItem } from "@/types/voice";
+import type { VoiceState, VoiceTranscriptItem, VoiceChatResponse } from "@/types/voice";
+import type { Socket } from "socket.io-client";
 
 interface UseVoiceChatOptions {
+  /** Socket.IO instance kết nối tới AI-FUJI */
+  socket: Socket | null;
   onTranscriptUpdate?: (transcript: VoiceTranscriptItem) => void;
   onStatusChange?: (status: VoiceState["status"]) => void;
   onError?: (error: string) => void;
@@ -15,7 +18,10 @@ interface UseVoiceChatOptions {
   onAudioProgress?: (progress: number) => void;
 }
 
-export function useVoiceChat(options: UseVoiceChatOptions = {}) {
+/** Timeout chờ socket event (ms) */
+const JOB_TIMEOUT_MS = 60_000;
+
+export function useVoiceChat(options: UseVoiceChatOptions) {
   const [state, setState] = useState<VoiceState>({
     status: "idle",
     sessionCode: null,
@@ -45,6 +51,52 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
       options.onStatusChange?.(status);
     },
     [options],
+  );
+
+  /**
+   * Chờ kết quả job qua Socket.IO events.
+   * Trả về VoiceChatResponse khi `voice:job:completed` được emit.
+   */
+  const waitForJobResult = useCallback(
+    (jobId: string): Promise<VoiceChatResponse> => {
+      const socket = options.socket;
+
+      // Fallback nếu không có socket — ko thể nhận kết quả
+      if (!socket || !socket.connected) {
+        return Promise.reject(
+          new Error("Socket chưa kết nối đến AI service"),
+        );
+      }
+
+      return new Promise<VoiceChatResponse>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("Timeout: không nhận được phản hồi từ AI"));
+        }, JOB_TIMEOUT_MS);
+
+        const cleanup = () => {
+          clearTimeout(timer);
+          socket.off("voice:job:completed", onCompleted);
+          socket.off("voice:job:failed", onFailed);
+        };
+
+        const onCompleted = (data: { jobId: string; result: VoiceChatResponse }) => {
+          if (data.jobId !== jobId) return;
+          cleanup();
+          resolve(data.result);
+        };
+
+        const onFailed = (data: { jobId: string; error?: string }) => {
+          if (data.jobId !== jobId) return;
+          cleanup();
+          reject(new Error(data.error || "Job xử lý thất bại"));
+        };
+
+        socket.on("voice:job:completed", onCompleted);
+        socket.on("voice:job:failed", onFailed);
+      });
+    },
+    [options.socket],
   );
 
   /**
@@ -107,7 +159,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
   }, [updateStatus, options]);
 
   /**
-   * Dừng thu âm → convert base64 → gửi BE → phát audio response
+   * Dừng thu âm → convert base64 → gửi AI service → chờ socket event → phát audio
    */
   const stopRecording = useCallback(async () => {
     const recorder = mediaRecorderRef.current;
@@ -131,7 +183,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
         // Convert blob → base64
         const base64 = await blobToBase64(blob);
 
-        // Gửi lên BE
+        // Gửi lên AI service
         updateStatus("processing");
         const config = chatConfigRef.current;
         if (!config) {
@@ -145,7 +197,8 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
         }
 
         try {
-          const result = await voiceChatMutation({
+          // Bước 1: Gửi request → nhận jobId (202 async)
+          const { jobId } = await voiceChatMutation({
             level: config.level,
             context: config.context,
             goals: config.goals,
@@ -154,6 +207,9 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
             preferredVoice: config.preferredVoice,
             session: sessionCodeRef.current || undefined,
           }).unwrap();
+
+          // Bước 2: Chờ kết quả qua socket
+          const result = await waitForJobResult(jobId);
 
           // Lưu session code cho lượt tiếp
           if (result.session) {
@@ -216,7 +272,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
 
       recorder.stop();
     });
-  }, [voiceChatMutation, updateStatus, options]);
+  }, [voiceChatMutation, waitForJobResult, updateStatus, options]);
 
   /**
    * Kết thúc session hoàn toàn

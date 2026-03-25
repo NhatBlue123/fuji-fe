@@ -19,6 +19,7 @@ import {
   useGetVoiceSessionsQuery,
   useGetVoiceSessionDetailQuery,
 } from "@/store/services/voice/voiceApi";
+import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import type {
   VoiceTranscriptItem,
   VoiceSessionHistory,
@@ -570,7 +571,10 @@ function SenseiPanel() {
       skip: !selectedSessionCode,
     });
 
+  const { socket } = useAIChatSocket();
+
   const voice = useVoiceChat({
+    socket,
     onError: (err: string) => console.error("Voice error:", err),
     onAudioProgress: setAudioProgress,
   });

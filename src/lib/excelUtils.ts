@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 import { Flashcard } from '@/types/flashcard';
 
 /**
@@ -139,4 +140,37 @@ export const downloadExcelTemplate = () => {
     ];
 
     XLSX.writeFile(workbook, 'flashcard_template.xlsx');
+};
+
+/**
+ * Export violation logs to Excel file
+ */
+export const exportViolationLogsToExcel = (logs: any[], username: string = 'User') => {
+    const data = logs.map((log: any, index: number) => ({
+        'STT': index + 1,
+        'Thời gian': format(new Date(log.createdAt), 'HH:mm dd/MM/yyyy'),
+        'Mô tả': log.description,
+        'Loại': log.type || '-',
+        'Mã đề/Lớp': log.testId || '-',
+        'Mức độ': log.severity === 'HIGH' ? 'Cao' : log.severity === 'MEDIUM' ? 'Trung bình' : 'Thấp',
+        'Trạng thái': log.isHandled ? 'Đã xử lý' : 'Chưa xử lý',
+        'Địa chỉ IP': log.ipAddress || '-'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Violation Logs');
+
+    worksheet['!cols'] = [
+        { wch: 5 },  // STT
+        { wch: 20 }, // Thời gian
+        { wch: 40 }, // Mô tả
+        { wch: 15 }, // Loại
+        { wch: 15 }, // Mã đề/Lớp
+        { wch: 10 }, // Mức độ
+        { wch: 12 }, // Trạng thái
+        { wch: 15 }, // IP
+    ];
+
+    XLSX.writeFile(workbook, `violation_report_${username.toLowerCase()}.xlsx`);
 };

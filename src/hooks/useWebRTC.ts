@@ -20,6 +20,7 @@
 "use client";
 
 import { useRef, useCallback, useEffect, useState } from "react";
+import { getVideoCallIceConfigUrl } from "@/lib/video-call-urls";
 
 interface IceServerConfig {
   urls: string | string[];
@@ -50,8 +51,8 @@ async function loadIceServers(): Promise<RTCIceServer[]> {
   if (cachedIceServers) return cachedIceServers;
 
   try {
-    // Directly call backend on port 8181 in dev
-    const res = await fetch("http://localhost:8181/api/video-call/config");
+    // Must use same host as API (not hardcoded localhost) so 2+ devices on LAN work
+    const res = await fetch(getVideoCallIceConfigUrl());
     if (!res.ok) {
       throw new Error(`ICE config HTTP ${res.status}`);
     }

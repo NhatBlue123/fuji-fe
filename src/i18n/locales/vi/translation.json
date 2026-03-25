@@ -16,7 +16,10 @@
     "themeToggle": "Sáng / Tối",
     "searchPlaceholder": "Tìm kiếm...",
     "noResults": "Không có kết quả",
-    "register": "Đăng ký"
+    "register": "Đăng ký",
+    "viewAll": "Xem tất cả",
+    "noNotifications": "Không có thông báo mới",
+    "profile": "Hồ sơ"
   },
   "sidebar": {
     "subtitle": "Học Tiếng Nhật",
@@ -26,7 +29,8 @@
     "loginToStart": "Đăng nhập để bắt đầu",
     "studentLevel": "Học viên",
     "logoutSuccess": "Đăng xuất thành công!",
-    "logoutFailed": "Đăng xuất thất bại"
+    "logoutFailed": "Đăng xuất thất bại",
+    "logout": "Đăng xuất"
   },
   "languageSwitcher": {
     "title": "Cài đặt ngôn ngữ",

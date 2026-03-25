@@ -14,6 +14,7 @@ import walletReducer from "./slices/walletSlice";
 import { adminFlashcardApi } from "./services/admin/flashcardApi";
 import { userApi } from "./services/admin/userApi";
 import { adminReportApi } from "./services/adminReportApi";
+import { adminRevenueApi } from "./services/adminRevenueApi";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -29,6 +30,7 @@ export const store = configureStore({
     [adminFlashcardApi.reducerPath]: adminFlashcardApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [adminReportApi.reducerPath]: adminReportApi.reducer,
+    [adminRevenueApi.reducerPath]: adminRevenueApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
@@ -38,7 +40,7 @@ export const store = configureStore({
       .concat(adminJlptApi.middleware)
       .concat(adminFlashcardApi.middleware)
       .concat(userApi.middleware)
-      //.concat(adminRevenueApi.middleware)
+      .concat(adminRevenueApi.middleware)
       .concat(baseApi.middleware)
       .concat(courseApi.middleware)
       .concat(adminReportApi.middleware)

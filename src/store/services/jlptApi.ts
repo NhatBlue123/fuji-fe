@@ -181,6 +181,13 @@ export const jlptApi = createApi({
       transformResponse: (response: ApiResponse<QuestionReport>) =>
         response.data,
     }),
+    reportViolation: builder.mutation<void, { type: string; severity?: string; testId?: string; description?: string }>({
+      query: (body) => ({
+        url: "/users/me/violations/report",
+        method: "POST",
+        body,
+      }),
+    }),
 
     // Optional feedback for overall JLPT test quality (not per-question report)
     createExamFeedback: builder.mutation<
@@ -212,6 +219,7 @@ export const {
   useGetAttemptByIdQuery,
   useGetMyAttemptsQuery,
   useGetAttemptReviewQuery,
+  useReportViolationMutation,
   useCreateQuestionReportMutation,
   useCreateExamFeedbackMutation,
 } = jlptApi;

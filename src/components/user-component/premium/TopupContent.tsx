@@ -21,7 +21,6 @@ export default function TopupContent() {
   const [createPayment, { isLoading }] = useCreatePaymentMutation()
 
   const balance = wallet?.balance || 0
-  const availableBalance=wallet?.availableBalance || 0
   const [selectedPackage, setSelectedPackage] = useState<number>(4)
   const [selectedPayment, setSelectedPayment] = useState<string>("bank")
   
@@ -105,7 +104,7 @@ export default function TopupContent() {
             SỐ DƯ HIỆN TẠI :
           </div>
           <div className="flex items-center text-2xl font-bold">
-            <span>{Math.floor(availableBalance / 1000)}</span>
+            <span>{Math.floor(balance / 1000)}</span>
             <span className="text-3xl ml-1">🌸</span>
           </div>
         </div>

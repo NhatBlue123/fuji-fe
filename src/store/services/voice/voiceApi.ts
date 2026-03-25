@@ -39,6 +39,10 @@ export const voiceApi = aiBaseApi.injectEndpoints({
     getVoiceSessionDetail: builder.query<VoiceSessionHistory, string>({
       query: (sessionCode) => `/api/voice/sessions/${sessionCode}`,
     }),
+
+    getPublishedTopics: builder.query<any[], void>({
+      query: () => "/api/voice/topics",
+    }),
   }),
 });
 
@@ -47,4 +51,5 @@ export const {
   useEndVoiceSessionMutation,
   useGetVoiceSessionsQuery,
   useGetVoiceSessionDetailQuery,
+  useGetPublishedTopicsQuery,
 } = voiceApi;

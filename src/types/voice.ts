@@ -12,6 +12,8 @@ export interface VoiceChatRequest {
   preferredVoice?: string;
   memorySummary?: string;
   session?: string;
+  topicId?: number;
+  scenarioId?: number;
 }
 
 /** Furigana segment từ n8n */

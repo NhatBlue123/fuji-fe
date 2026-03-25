@@ -118,6 +118,11 @@ const navGroups: NavGroup[] = [
         href: "/admin/jlpt-tests",
         icon: BookOpenCheck,
       },
+      {
+        title: "Luyện nói AI",
+        href: "/admin/voice-topics",
+        icon: BookOpen,
+      },
     ],
   },
   {

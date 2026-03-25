@@ -284,23 +284,27 @@ const ChatInputArea = memo(function ChatInputArea({
 const RightSidebar = memo(function RightSidebar({
   settingsTitle,
   feedbackTitle,
-  selectedTopic,
+  topics,
+  selectedTopicId,
   onTopicChange,
-  selectedLevel,
-  onLevelChange,
+  scenarios,
+  selectedScenarioId,
+  onScenarioChange,
 }: {
   settingsTitle: string;
   feedbackTitle: string;
-  selectedTopic: string;
+  topics: any[];
+  selectedTopicId: number | null;
   onTopicChange: (v: string) => void;
-  selectedLevel: string;
-  onLevelChange: (v: string) => void;
+  scenarios: any[];
+  selectedScenarioId: number | null;
+  onScenarioChange: (v: string) => void;
 }) {
   return (
-    <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0">
+    <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
       {/* Settings */}
       <div className="p-6 border-b border-border">
-        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-bold text-foreground tracking-wider mb-4 flex items-center gap-2">
           <span className="material-symbols-outlined text-base text-secondary">
             tune
           </span>
@@ -308,75 +312,56 @@ const RightSidebar = memo(function RightSidebar({
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-2">
+            <label className="block text-[13px] font-semibold text-foreground mb-2">
               Chủ đề hội thoại
             </label>
-            <Select value={selectedTopic} onValueChange={onTopicChange}>
+            <Select value={selectedTopicId?.toString() || ""} onValueChange={onTopicChange}>
               <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all">
                 <SelectValue placeholder="Chọn chủ đề" />
               </SelectTrigger>
               <SelectContent>
-                {TOPICS.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                {topics.map((t) => (
+                  <SelectItem key={t.id} value={t.id.toString()}>
+                    {t.title}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-2">
-              Trình độ mục tiêu
+            <label className="block text-[13px] font-semibold text-foreground mb-2 mt-4">
+              Kịch bản (độ khó)
             </label>
-            <div className="flex flex-wrap gap-2">
-              {LEVELS.map((lvl) => (
-                <Button
-                  key={lvl}
-                  onClick={() => onLevelChange(lvl)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                    selectedLevel === lvl
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                      : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            <div className="space-y-2">
+              {scenarios.map((s) => (
+                <div
+                  key={s.id}
+                  onClick={() => onScenarioChange(s.id.toString())}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedScenarioId === s.id
+                      ? "bg-primary/5 border-primary shadow-sm"
+                      : "bg-card border-border hover:border-primary/50"
                   }`}
                 >
-                  {lvl}
-                </Button>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-bold shrink-0">
+                      {s.level}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground truncate">
+                      {s.title}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground line-clamp-2">
+                    {s.situation}
+                  </p>
+                </div>
               ))}
+              {scenarios.length === 0 && (
+                <p className="text-[11px] text-muted-foreground italic text-center py-2">
+                  (Không có kịch bản)
+                </p>
+              )}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Feedback */}
-      <div className="p-6 border-b border-border">
-        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-          <span className="material-symbols-outlined text-base text-secondary">
-            psychology
-          </span>
-          {feedbackTitle}
-        </h3>
-        <div className="space-y-4">
-          <div className="bg-green-500/5 border border-green-500/20 p-4 rounded-xl">
-            <div className="flex items-center gap-2 mb-2 text-green-600 dark:text-green-400">
-              <span className="material-symbols-outlined text-lg">
-                check_circle
-              </span>
-              <span className="text-xs font-bold uppercase">Điểm mạnh</span>
-            </div>
-            <p className="text-xs text-foreground/80 leading-relaxed">
-              Phát âm từ vựng về &ldquo;địa điểm&rdquo; rất rõ ràng. Phản xạ trả
-              lời câu hỏi &ldquo;Đi đâu&rdquo; nhanh chóng.
-            </p>
-          </div>
-          <div className="bg-orange-500/5 border border-orange-500/20 p-4 rounded-xl">
-            <div className="flex items-center gap-2 mb-2 text-orange-600 dark:text-orange-400">
-              <span className="material-symbols-outlined text-lg">warning</span>
-              <span className="text-xs font-bold uppercase">Cần cải thiện</span>
-            </div>
-            <p className="text-xs text-foreground/80 leading-relaxed">
-              Chú ý trợ từ &ldquo;ni&rdquo; (に) khi nói về đích đến. Bạn đôi
-              khi dùng nhầm thành &ldquo;de&rdquo; (で).
-            </p>
           </div>
         </div>
       </div>
@@ -549,10 +534,45 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
   );
 });
 
+import { useGetPublishedTopicsQuery } from "@/store/services/voice/voiceApi";
+
+// ... previous code up to SenseiPanel
 function SenseiPanel() {
   const [showHistory, setShowHistory] = useState(true);
-  const [selectedLevel, setSelectedLevel] = useState("N4");
-  const [selectedTopic, setSelectedTopic] = useState("shopping");
+
+  // Topics & Scenarios state
+  const { data: topics = [] } = useGetPublishedTopicsQuery();
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null);
+  
+  // Auto-select first topic and its first scenario when data loads
+  useEffect(() => {
+    if (topics.length > 0 && !selectedTopicId) {
+      setSelectedTopicId(topics[0].id);
+      if (topics[0].scenarios?.length > 0) {
+        setSelectedScenarioId(topics[0].scenarios[0].id);
+      }
+    }
+  }, [topics, selectedTopicId]);
+
+  // Derived selected entities
+  const selectedTopic = topics.find((t: any) => t.id === selectedTopicId);
+  const selectedScenario = selectedTopic?.scenarios?.find((s: any) => s.id === selectedScenarioId);
+
+  // Handle topic change
+  const handleTopicChange = (topicIdStr: string) => {
+    const topicId = Number(topicIdStr);
+    setSelectedTopicId(topicId);
+    const topic = topics.find((t) => t.id === topicId);
+    if (topic?.scenarios?.length > 0) {
+      setSelectedScenarioId(topic[0].scenarios[0].id);
+    } else {
+      setSelectedScenarioId(null);
+    }
+  };
+
+  // Popup state
+  const [showEvaluationPopup, setShowEvaluationPopup] = useState(false);
 
   // Session history
   const [showSessionList, setShowSessionList] = useState(false);
@@ -573,10 +593,15 @@ function SenseiPanel() {
 
   const { socket } = useAIChatSocket();
 
+  const handleAutoClose = useCallback(() => {
+    setShowEvaluationPopup(true);
+  }, []);
+
   const voice = useVoiceChat({
     socket,
     onError: (err: string) => console.error("Voice error:", err),
     onAudioProgress: setAudioProgress,
+    onAutoClose: handleAutoClose,
   });
 
   const {
@@ -592,21 +617,19 @@ function SenseiPanel() {
   const isRecording = state.status === "recording";
   const isProcessing = state.status === "processing";
 
-  // Map topic value sang label tiếng Việt cho context
-  const topicLabel = useMemo(() => {
-    const found = TOPICS.find((t) => t.value === selectedTopic);
-    return found ? found.label : selectedTopic;
-  }, [selectedTopic]);
-
   const handleStartSession = useCallback(() => {
+    if (!selectedTopic || !selectedScenario) return;
     setSelectedSessionCode(null);
     startSession({
-      level: selectedLevel,
-      context: `Luyện hội thoại: ${topicLabel}`,
-      goals: "luyện phản xạ giao tiếp tự nhiên",
+      level: selectedScenario.level,
+      context: `Chủ đề: ${selectedTopic.title}. Tình huống: ${selectedScenario.situation}. Vai trò AI: ${selectedScenario.aiRole}`,
+      goals: "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
       preferredVoice: "alloy",
+      topicId: selectedTopic.id,
+      scenarioId: selectedScenario.id,
     });
-  }, [startSession, selectedLevel, topicLabel]);
+  }, [startSession, selectedScenario, selectedTopic]);
+
 
   const handleStopSession = useCallback(async () => {
     await stopSession();
@@ -1185,11 +1208,48 @@ function SenseiPanel() {
       <RightSidebar
         settingsTitle="Thiết lập cho Sensei"
         feedbackTitle="Nhận xét của Sensei"
-        selectedTopic={selectedTopic}
-        onTopicChange={setSelectedTopic}
-        selectedLevel={selectedLevel}
-        onLevelChange={setSelectedLevel}
+        topics={topics}
+        selectedTopicId={selectedTopicId}
+        onTopicChange={handleTopicChange}
+        scenarios={selectedTopic?.scenarios || []}
+        selectedScenarioId={selectedScenarioId}
+        onScenarioChange={(v) => setSelectedScenarioId(Number(v))}
       />
+
+      {/* Evaluation Popup */}
+      {showEvaluationPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                <span className="material-symbols-outlined text-3xl">sports_score</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Đã hoàn thành!</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có muốn xem điểm không?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="w-full font-bold"
+                  onClick={() => setShowEvaluationPopup(false)}
+                >
+                  Nói tiếp
+                </Button>
+                <Button
+                  className="w-full bg-primary text-primary-foreground font-bold hover:bg-primary/90"
+                  onClick={() => {
+                    setShowEvaluationPopup(false);
+                    handleStopSession();
+                  }}
+                >
+                  Xem kết quả
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1409,10 +1469,12 @@ function AssistantPanel() {
       <RightSidebar
         settingsTitle="Thiết lập Trợ giảng"
         feedbackTitle="Phân tích câu hỏi"
-        selectedTopic={selectedTopic}
+        topics={TOPICS.map(t => ({ id: t.value, title: t.label }))}
+        selectedTopicId={selectedTopic as any}
         onTopicChange={setSelectedTopic}
-        selectedLevel={selectedLevel}
-        onLevelChange={setSelectedLevel}
+        scenarios={LEVELS.map(l => ({ id: l, title: l, level: l, situation: '' }))}
+        selectedScenarioId={selectedLevel as any}
+        onScenarioChange={setSelectedLevel}
       />
     </div>
   );

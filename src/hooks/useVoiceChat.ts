@@ -16,6 +16,8 @@ interface UseVoiceChatOptions {
   onError?: (error: string) => void;
   /** Gọi liên tục khi đang phát audio (progress 0→1) */
   onAudioProgress?: (progress: number) => void;
+  /** Gọi khi AI detect đến lượt cuối cùng và nhả ((close)) */
+  onAutoClose?: () => void;
 }
 
 /** Timeout chờ socket event (ms) */
@@ -43,6 +45,8 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
     context: string;
     goals: string;
     preferredVoice: string;
+    topicId?: number;
+    scenarioId?: number;
   } | null>(null);
 
   const updateStatus = useCallback(
@@ -108,12 +112,16 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
       context: string;
       goals?: string;
       preferredVoice?: string;
+      topicId?: number;
+      scenarioId?: number;
     }) => {
       chatConfigRef.current = {
         level: config.level,
         context: config.context,
         goals: config.goals || "",
         preferredVoice: config.preferredVoice || "alloy",
+        topicId: config.topicId,
+        scenarioId: config.scenarioId,
       };
       sessionCodeRef.current = null;
       setState({
@@ -206,6 +214,8 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
             audioFormat: "webm",
             preferredVoice: config.preferredVoice,
             session: sessionCodeRef.current || undefined,
+            topicId: config.topicId,
+            scenarioId: config.scenarioId,
           }).unwrap();
 
           // Bước 2: Chờ kết quả qua socket
@@ -229,11 +239,19 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
             newItems.push(userItem);
             options.onTranscriptUpdate?.(userItem);
           }
-          if (result.aiResponse?.text) {
-            const furigana = result.aiResponse.furigana;
+          
+          let aiText = result.aiResponse?.text || "";
+          let isAutoClose = false;
+          if (aiText.includes("((close))")) {
+            isAutoClose = true;
+            aiText = aiText.replace("((close))", "").trim();
+          }
+
+          if (aiText) {
+            const furigana = result.aiResponse?.furigana;
             const aiItem: VoiceTranscriptItem = {
               role: "assistant",
-              transcript: result.aiResponse.text,
+              transcript: aiText,
               translationVi: furigana?.translation || undefined,
               furigana: furigana || undefined,
               audioBase64: result.audioBase64 || undefined,
@@ -260,6 +278,12 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
           }
 
           updateStatus("idle");
+
+          // Báo hiệu FE hiển thị popup kết thúc nếu thấy ((close))
+          if (isAutoClose) {
+            // @ts-ignore - Ta sẽ thêm onAutoClose vào Options sau
+            options.onAutoClose?.();
+          }
         } catch (err) {
           const message =
             err instanceof Error ? err.message : "Lỗi khi gửi voice";

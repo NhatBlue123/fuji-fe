@@ -118,7 +118,7 @@ const Sidebar = () => {
             const Icon = item.icon;
             
             return (
-              <Tooltip key={item.path} disabled={!isCollapsed}>
+              <Tooltip key={item.path}>
                 <TooltipTrigger asChild>
                   <Link 
                     href={item.path} 
@@ -150,9 +150,11 @@ const Sidebar = () => {
                     <div className="absolute inset-0 bg-white/0 group-active:bg-white/10 transition-colors" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
-                  {item.customLabel || item.label}
-                </TooltipContent>
+                {isCollapsed && (
+                  <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
+                    {item.customLabel || item.label}
+                  </TooltipContent>
+                )}
               </Tooltip>
             );
           })}
@@ -160,7 +162,7 @@ const Sidebar = () => {
           <div className="my-6 border-t border-sidebar-border mx-2 opacity-50" />
 
           {isMounted && isAdminOrTeacher && (
-            <Tooltip disabled={!isCollapsed}>
+            <Tooltip>
               <TooltipTrigger asChild>
                 <Link 
                   href="/admin" 
@@ -173,7 +175,9 @@ const Sidebar = () => {
                   {!isCollapsed && <span className="text-[11px] font-bold tracking-widest uppercase">Admin Workspace</span>}
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-secondary text-white font-bold">Admin Workspace</TooltipContent>
+              {isCollapsed && (
+                <TooltipContent side="right" className="bg-secondary text-white font-bold">Admin Workspace</TooltipContent>
+              )}
             </Tooltip>
           )}
         </nav>

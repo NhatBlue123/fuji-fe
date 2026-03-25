@@ -259,8 +259,23 @@ export const flashcardApi = createApi({
         const qs = toQueryString(params);
         return `${API_ENDPOINTS.FLASHCARDS.SEARCH}${qs}`;
       },
-      transformResponse: (response: ApiResponse<FlashCardSearchResult>) =>
-        response.data || { flashCards: [], pagination: {} as PaginationDTO },
+      transformResponse: (response: ApiResponse<FlashCardSearchResult>) => {
+        const data = response.data;
+        if (!data) {
+          return {
+            results: [],
+            flashCards: [],
+            pagination: {} as PaginationDTO,
+          };
+        }
+
+        const normalized = data.results ?? data.flashCards ?? [];
+        return {
+          ...data,
+          results: normalized,
+          flashCards: data.flashCards ?? normalized,
+        };
+      },
       providesTags: [{ type: "FlashCard", id: "SEARCH" }],
     }),
 
@@ -464,8 +479,23 @@ export const flashcardApi = createApi({
         const qs = toQueryString(params);
         return `${API_ENDPOINTS.FLASHLISTS.SEARCH}${qs}`;
       },
-      transformResponse: (response: ApiResponse<FlashListSearchResult>) =>
-        response.data || { flashLists: [], pagination: {} as PaginationDTO },
+      transformResponse: (response: ApiResponse<FlashListSearchResult>) => {
+        const data = response.data;
+        if (!data) {
+          return {
+            results: [],
+            flashLists: [],
+            pagination: {} as PaginationDTO,
+          };
+        }
+
+        const normalized = data.results ?? data.flashLists ?? [];
+        return {
+          ...data,
+          results: normalized,
+          flashLists: data.flashLists ?? normalized,
+        };
+      },
       providesTags: [{ type: "FlashList", id: "SEARCH" }],
     }),
   }),

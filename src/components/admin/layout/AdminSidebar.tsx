@@ -46,6 +46,10 @@ interface NavItem {
   badge?: string;
   /** If true, only ADMIN can see this item */
   adminOnly?: boolean;
+  children?: Array<{
+    title: string;
+    href: string;
+  }>;
 }
 
 interface NavGroup {

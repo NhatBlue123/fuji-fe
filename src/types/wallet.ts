@@ -14,4 +14,5 @@ export interface TransactionResponse {
   number: number;
   size: number;
   totalPages: number;
+  totalElements?: number;
 }

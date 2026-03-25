@@ -154,7 +154,7 @@ export default function PaymentPage() {
                         {item.durationMinutes} phút
                       </p>
                       <p className="text-slate-100 text-sm mt-2">
-                        {item.totalBlossom} Blossom
+                        {item.totalBlossom} 🌸
                       </p>
                     </div>
                   ))}
@@ -163,15 +163,15 @@ export default function PaymentPage() {
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Học phí</span>
-                    <span>{quote.tuitionBlossom} Blossom</span>
+                    <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} Blossom</span>
+                    <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
-                    <span className="text-pink-500">{quote.totalBlossom} Blossom</span>
+                    <span className="text-500">{quote.totalBlossom} 🌸</span>
                   </div>
                 </div>
               </div>
@@ -194,15 +194,15 @@ export default function PaymentPage() {
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Học phí</span>
-                    <span>{quote.tuitionBlossom} Blossom</span>
+                    <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} Blossom</span>
+                    <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
-                    <span className="text-pink-500">{quote.totalBlossom} Blossom</span>
+                    <span className="text-pink-500">{quote.totalBlossom} 🌸</span>
                   </div>
                 </div>
               </div>

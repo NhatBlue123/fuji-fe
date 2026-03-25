@@ -290,6 +290,7 @@ const RightSidebar = memo(function RightSidebar({
   scenarios,
   selectedScenarioId,
   onScenarioChange,
+  disabled = false,
 }: {
   settingsTitle: string;
   feedbackTitle: string;
@@ -299,6 +300,7 @@ const RightSidebar = memo(function RightSidebar({
   scenarios: any[];
   selectedScenarioId: number | null;
   onScenarioChange: (v: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
@@ -315,8 +317,8 @@ const RightSidebar = memo(function RightSidebar({
             <label className="block text-[13px] font-semibold text-foreground mb-2">
               Chủ đề hội thoại
             </label>
-            <Select value={selectedTopicId?.toString() || ""} onValueChange={onTopicChange}>
-              <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all">
+            <Select disabled={disabled} value={selectedTopicId?.toString() || ""} onValueChange={onTopicChange}>
+              <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-60">
                 <SelectValue placeholder="Chọn chủ đề" />
               </SelectTrigger>
               <SelectContent>
@@ -336,8 +338,10 @@ const RightSidebar = memo(function RightSidebar({
               {scenarios.map((s) => (
                 <div
                   key={s.id}
-                  onClick={() => onScenarioChange(s.id.toString())}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                  onClick={() => !disabled && onScenarioChange(s.id.toString())}
+                  className={`p-3 rounded-lg border transition-all ${
+                    disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                  } ${
                     selectedScenarioId === s.id
                       ? "bg-primary/5 border-primary shadow-sm"
                       : "bg-card border-border hover:border-primary/50"
@@ -541,7 +545,8 @@ function SenseiPanel() {
   const [showHistory, setShowHistory] = useState(true);
 
   // Topics & Scenarios state
-  const { data: topics = [] } = useGetPublishedTopicsQuery();
+  const { data: rawTopics, isFetching: topicsLoading } = useGetPublishedTopicsQuery();
+  const topics = Array.isArray(rawTopics) ? rawTopics : [];
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null);
   
@@ -549,7 +554,7 @@ function SenseiPanel() {
   useEffect(() => {
     if (topics.length > 0 && !selectedTopicId) {
       setSelectedTopicId(topics[0].id);
-      if (topics[0].scenarios?.length > 0) {
+      if (Array.isArray(topics[0].scenarios) && topics[0].scenarios.length > 0) {
         setSelectedScenarioId(topics[0].scenarios[0].id);
       }
     }
@@ -565,7 +570,7 @@ function SenseiPanel() {
     setSelectedTopicId(topicId);
     const topic = topics.find((t) => t.id === topicId);
     if (topic?.scenarios?.length > 0) {
-      setSelectedScenarioId(topic[0].scenarios[0].id);
+      setSelectedScenarioId(topic.scenarios[0].id);
     } else {
       setSelectedScenarioId(null);
     }
@@ -622,13 +627,14 @@ function SenseiPanel() {
     setSelectedSessionCode(null);
     startSession({
       level: selectedScenario.level,
-      context: `Chủ đề: ${selectedTopic.title}. Tình huống: ${selectedScenario.situation}. Vai trò AI: ${selectedScenario.aiRole}`,
+      context: `Chủ đề: ${selectedTopic.title}. Tình huống: ${selectedScenario.situation}. Vai trò AI: ${selectedScenario.aiRole}. Tính cách: ${selectedScenario.aiPersonality || "thân thiện"}. Mẫu hội thoại:\n${selectedScenario.sampleConversation || ""}`,
       goals: "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
       preferredVoice: "alloy",
       topicId: selectedTopic.id,
       scenarioId: selectedScenario.id,
+      openingLine: selectedScenario.openingLine || undefined,
     });
-  }, [startSession, selectedScenario, selectedTopic]);
+  }, [startSession, selectedScenario, selectedTopic, isSessionActive]);
 
 
   const handleStopSession = useCallback(async () => {
@@ -919,15 +925,15 @@ function SenseiPanel() {
                     // Karaoke: live play (last AI) hoặc replay (bất kỳ AI nào)
                     const isReplaying = replayIdx === msg.id;
                     const karaokeIndex =
-                      isLastAi && isPlaying && msg.furigana
+                      isLastAi && isPlaying && msg.furigana?.segments
                         ? Math.floor(
                             audioProgress * msg.furigana.segments.length,
                           ) - 1
-                        : isReplaying && msg.furigana
+                        : isReplaying && msg.furigana?.segments
                           ? Math.floor(
                               replayProgress * msg.furigana.segments.length,
                             ) - 1
-                          : isLastAi && !isPlaying && msg.furigana
+                          : isLastAi && !isPlaying && msg.furigana?.segments
                             ? msg.furigana.segments.length
                             : -1;
 
@@ -941,7 +947,7 @@ function SenseiPanel() {
                           </div>
                         </div>
                         <div className="space-y-1 flex-1 min-w-0">
-                          {msg.furigana ? (
+                          {msg.furigana?.segments ? (
                             <FuriganaDisplay
                               furigana={msg.furigana}
                               highlightIndex={karaokeIndex}
@@ -1214,6 +1220,7 @@ function SenseiPanel() {
         scenarios={selectedTopic?.scenarios || []}
         selectedScenarioId={selectedScenarioId}
         onScenarioChange={(v) => setSelectedScenarioId(Number(v))}
+        disabled={isSessionActive}
       />
 
       {/* Evaluation Popup */}
@@ -1475,6 +1482,7 @@ function AssistantPanel() {
         scenarios={LEVELS.map(l => ({ id: l, title: l, level: l, situation: '' }))}
         selectedScenarioId={selectedLevel as any}
         onScenarioChange={setSelectedLevel}
+        disabled={isTyping}
       />
     </div>
   );

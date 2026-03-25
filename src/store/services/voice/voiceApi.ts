@@ -1,4 +1,5 @@
 import { aiBaseApi } from "../aiBaseApi";
+import { baseApi } from "../baseApi";
 import type {
   VoiceChatRequest,
   VoiceChatResponse,
@@ -40,8 +41,23 @@ export const voiceApi = aiBaseApi.injectEndpoints({
       query: (sessionCode) => `/api/voice/sessions/${sessionCode}`,
     }),
 
+    startVoiceSession: builder.mutation<
+      { success: boolean },
+      { openingLine: string; preferredVoice?: string; session?: string | null }
+    >({
+      query: (data) => ({
+        url: "/api/voice/start-session",
+        method: "POST",
+        body: data,
+      }),
+    }),
+  }),
+});
+
+export const userVoiceTopicApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
     getPublishedTopics: builder.query<any[], void>({
-      query: () => "/api/voice/topics",
+      query: () => "/voice/topics",
     }),
   }),
 });
@@ -51,5 +67,7 @@ export const {
   useEndVoiceSessionMutation,
   useGetVoiceSessionsQuery,
   useGetVoiceSessionDetailQuery,
-  useGetPublishedTopicsQuery,
+  useStartVoiceSessionMutation,
 } = voiceApi;
+
+export const { useGetPublishedTopicsQuery } = userVoiceTopicApi;

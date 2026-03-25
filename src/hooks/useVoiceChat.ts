@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import {
   useVoiceChatMutation,
   useEndVoiceSessionMutation,
+  useStartVoiceSessionMutation,
 } from "@/store/services/voice/voiceApi";
 import type { VoiceState, VoiceTranscriptItem, VoiceChatResponse } from "@/types/voice";
 import type { Socket } from "socket.io-client";
@@ -33,6 +34,7 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
 
   const [voiceChatMutation] = useVoiceChatMutation();
   const [endSessionMutation] = useEndVoiceSessionMutation();
+  const [startVoiceSessionMutation] = useStartVoiceSessionMutation();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -47,6 +49,7 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
     preferredVoice: string;
     topicId?: number;
     scenarioId?: number;
+    openingLine?: string;
   } | null>(null);
 
   const updateStatus = useCallback(
@@ -107,21 +110,24 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
    * Bắt đầu session mới — chỉ set config, chưa record
    */
   const startSession = useCallback(
-    (config: {
+    async (config: {
       level: string;
       context: string;
       goals?: string;
       preferredVoice?: string;
       topicId?: number;
       scenarioId?: number;
+      openingLine?: string;
     }) => {
+      const voice = config.preferredVoice || "alloy";
       chatConfigRef.current = {
         level: config.level,
         context: config.context,
         goals: config.goals || "",
-        preferredVoice: config.preferredVoice || "alloy",
+        preferredVoice: voice,
         topicId: config.topicId,
         scenarioId: config.scenarioId,
+        openingLine: config.openingLine,
       };
       sessionCodeRef.current = null;
       setState({
@@ -130,9 +136,85 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
         error: null,
         transcriptHistory: [],
       });
+
+      // Nếu có openingLine → AI nói trước
+      if (config.openingLine) {
+        updateStatus("processing");
+        const socket = options.socket;
+
+        try {
+          // Tạo Promise lắng nghe socket TRƯỚC khi gọi HTTP
+          const waitPromise = socket?.connected
+            ? new Promise<void>((resolve) => {
+                const timer = setTimeout(() => {
+                  socket.off("voice:job:completed", onOpening);
+                  updateStatus("idle");
+                  resolve();
+                }, 20_000);
+
+                const onOpening = async (data: { jobId: string; result: any }) => {
+                  if (!String(data.jobId).startsWith("opening-")) return;
+                  clearTimeout(timer);
+                  socket.off("voice:job:completed", onOpening);
+
+                  const result = data.result;
+                  const now = new Date().toISOString();
+
+                  if (result.aiResponse?.text) {
+                    const furigana = result.aiResponse?.furigana;
+                    const aiItem: VoiceTranscriptItem = {
+                      role: "assistant",
+                      transcript: result.aiResponse.text,
+                      translationVi: furigana?.translation || undefined,
+                      furigana: furigana || undefined,
+                      audioBase64: result.audioBase64 || undefined,
+                      audioFormat: result.audioFormat || "mp3",
+                      createdAt: now,
+                    };
+                    options.onTranscriptUpdate?.(aiItem);
+                    setState((prev) => ({
+                      ...prev,
+                      transcriptHistory: [...prev.transcriptHistory, aiItem],
+                    }));
+                  }
+
+                  if (result.audioBase64) {
+                    updateStatus("playing");
+                    await playBase64Audio(
+                      result.audioBase64,
+                      result.audioFormat || "mp3",
+                      options.onAudioProgress,
+                    );
+                  }
+
+                  updateStatus("idle");
+                  resolve();
+                };
+
+                socket.on("voice:job:completed", onOpening);
+              })
+            : Promise.resolve();
+
+          // Gọi HTTP sau khi listener đã ready
+          await startVoiceSessionMutation({
+            openingLine: config.openingLine,
+            preferredVoice: voice,
+            session: null,
+          }).unwrap();
+
+          await waitPromise;
+        } catch (err) {
+          console.error("startVoiceSession err:", err);
+          updateStatus("idle");
+        }
+      }
     },
-    [],
+    [startVoiceSessionMutation, updateStatus, options],
   );
+
+  // Removed listenForOpening - logic moved inline into startSession to fix race condition
+
+
 
   /**
    * Bắt đầu thu âm (push-to-talk: nhấn giữ)

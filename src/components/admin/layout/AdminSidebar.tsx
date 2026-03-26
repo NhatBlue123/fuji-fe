@@ -91,7 +91,6 @@ const navGroups: NavGroup[] = [
         title: "Người dùng",
         href: "/admin/users",
         icon: Users,
-        adminOnly: true,
       },
       {
         title: "Rút tiền",
@@ -119,6 +118,11 @@ const navGroups: NavGroup[] = [
   {
     label: "Hệ thống",
     items: [
+      {
+        title: "Báo cáo & Phản hồi",
+        href: "/admin/reports",
+        icon: AlertTriangle,
+      },
       {
         title: "Thông báo",
         href: "/admin/notifications",

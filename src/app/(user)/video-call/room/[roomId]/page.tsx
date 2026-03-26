@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -9,6 +10,7 @@ import {
   Mic, MicOff, Video, VideoOff, WifiOff, RefreshCw,
   AlertTriangle, PhoneOff, Send, SkipForward,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -431,7 +433,7 @@ export default function VideoCallRoomPage() {
         <Button
           variant="outline"
           className="h-11 px-4 rounded-full border-amber-500/60 text-amber-300 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md"
-          onClick={() => alert("Báo cáo đã được ghi nhận.")}
+          onClick={() => toast.success("Báo cáo đã được ghi nhận.")}
         >
           <AlertTriangle className="h-4 w-4" />
           Báo cáo

@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings, Sparkles } from "lucide-react";
 import AIQuestionGenerator, { type AIGeneratedQuestion } from "@/components/admin/AIQuestionGenerator";
 import type { SectionKey } from "@/lib/jlpt-structure";
+import { toast } from "sonner";
 import { renderJlptText } from "@/lib/renderJlptText";
 // ─── Mondai override types ────────────────────────────────────────────────────
 interface MondaiOverride {
@@ -200,8 +201,6 @@ function SectionSidebar({
             const actualQuestions = mondaiLeaves.get(mondai.number) || [];
             const actualNums = actualQuestions.map((q) => q.questionOrder);
             const displayNums = Array.from(new Set([...nums, ...actualNums])).sort((a, b) => a - b);
-            
-            // Re-calculate "filled" based on actual answerable ones
             const filled = actualQuestions.length;
 
             return (
@@ -235,7 +234,6 @@ function SectionSidebar({
                   {displayNums.map((n) => {
                     const isSaved = actualQuestions.some(q => q.questionOrder === n);
                     const isCurrent = selectedQ === n;
-                    // Exact match sequential subLabel from DB logic: 45.1, 46.1...
                     const subLabel = subLabels[n] ?? String(n);
                     return (
                       <button
@@ -423,8 +421,18 @@ export default function AdminExamLayout() {
     
     if (!test?.questions) return { subLabels: labels, mondaiLeaves: leavesMap };
 
+    // Build a set of listening mondai numbers to exclude from sidebar
+    const listeningMondaiNums = new Set<number>();
+    structure.forEach((section) => {
+      if (section.sectionKeys.includes("LISTENING")) {
+        section.mondai.forEach((m) => listeningMondaiNums.add(m.number));
+      }
+    });
+
     // 1. Group only answerable questions (leaves) by mondaiNumber for the sidebar dots status
+    // Skip listening mondai — they are managed separately
     test.questions.forEach((q) => {
+      if (listeningMondaiNums.has(q.mondaiNumber)) return;
       // If it's a child OR a standalone question with options/correctOption, it's a leaf
       if (q.parentId != null || q.options != null || q.correctOption != null) {
         if (!leavesMap.has(q.mondaiNumber)) leavesMap.set(q.mondaiNumber, []);
@@ -437,6 +445,9 @@ export default function AdminExamLayout() {
     let currentLabelNumber = 1;
 
     structure.forEach((section) => {
+      // Skip LISTENING — admin does not manage listening slots here
+      if (section.sectionKeys.includes("LISTENING")) return;
+
       section.mondai.forEach((mondai) => {
         const nums = getQuestionNumbers(mondai);
 
@@ -525,7 +536,7 @@ export default function AdminExamLayout() {
       setAudioMediaId(result.id);
       setAudioPreviewUrl(result.url);
     } catch {
-      alert("Upload audio thất bại");
+      toast.error("Upload audio thất bại");
     } finally {
       setUploadingAudio(false);
     }
@@ -539,7 +550,7 @@ export default function AdminExamLayout() {
       const result = await uploadImage(fd).unwrap();
       setImageMediaId(result.id);
     } catch {
-      alert("Upload ảnh thất bại");
+      toast.error("Upload ảnh thất bại");
     } finally {
       setUploadingImage(false);
     }
@@ -613,7 +624,7 @@ export default function AdminExamLayout() {
 
     } catch (err) {
       console.error(err);
-      alert("Lưu câu hỏi thất bại!");
+      toast.error("Lưu câu hỏi thất bại!");
     } finally {
       setSaving(false);
     }
@@ -786,7 +797,28 @@ export default function AdminExamLayout() {
                       // Bắt đầu chèn từ startFrom do User chỉ định
                       let currentQNum = startFrom;
                       const { section, mondai } = derived;
-                      const sectionKey = section.sectionKeys[0] as SectionKey;
+                      
+                      // Resolve the correct section key for this specific mondai
+                      // (important for mixed sections like 文法・読解 that cover GRAMMAR + READING)
+                      const resolveSectionKey = (): SectionKey => {
+                        const keys = section.sectionKeys;
+                        if (keys.length === 1) return keys[0] as SectionKey;
+                        if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+                        if (mondai.requires_passage && keys.includes("READING")) return "READING";
+                        const title = mondai.title || "";
+                        if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+                          if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+                          return "GRAMMAR";
+                        }
+                        if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR") && keys.includes("READING")) {
+                          if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+                          if (/文法/.test(title)) return "GRAMMAR";
+                          return "VOCABULARY";
+                        }
+                        return keys[0] as SectionKey;
+                      };
+                      const sectionKey = resolveSectionKey();
+
                       const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
                       const effectiveMondaiTitle = overrideInstruction || mondai.title;
 
@@ -894,11 +926,11 @@ export default function AdminExamLayout() {
                       // Move UI selection to the last created question (or its end)
                       const finalQNum = Math.min(currentQNum, mondai.end);
                       handleSelectQuestion(finalQNum);
-                      alert(`Đã chèn và lưu thành công ${questions.length} câu hỏi! (Từ câu ${startFrom})`);
+                      toast.success(`Đã chèn và lưu thành công ${questions.length} câu hỏi! (Từ câu ${startFrom})`);
                       
                     } catch (error) {
                       console.error("Lỗi khi lưu batch AI:", error);
-                      alert("Có lỗi xảy ra khi lưu hàng loạt câu hỏi.");
+                      toast.error("Có lỗi xảy ra khi lưu hàng loạt câu hỏi.");
                     } finally {
                       setSaving(false);
                     }
@@ -962,7 +994,7 @@ export default function AdminExamLayout() {
                       const start = textarea.selectionStart;
                       const end = textarea.selectionEnd;
                       if (start === end) {
-                        alert("Hãy chọn (bôi đen) từ bạn muốn gạch chân trước!");
+                        toast.error("Hãy chọn (bôi đen) từ bạn muốn gạch chân trước!");
                         return;
                       }
                       const selected = questionText.slice(start, end);
@@ -1139,7 +1171,7 @@ export default function AdminExamLayout() {
                         handleSelectQuestion(selectedQuestionNumber);
                       } catch (e) {
                         console.error(e);
-                        alert("Gắn câu hỏi từ ngân hàng thất bại");
+                        toast.error("Gắn câu hỏi từ ngân hàng thất bại");
                       }
                     }}
                   >

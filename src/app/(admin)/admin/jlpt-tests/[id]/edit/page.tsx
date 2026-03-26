@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 export default function EditJLPTTestPage() {
   const params = useParams();
@@ -65,10 +66,10 @@ export default function EditJLPTTestPage() {
         id: testId,
         data: formData,
       }).unwrap();
-      alert("Cập nhật đề thi thành công!");
+      toast.success("Cập nhật đề thi thành công!");
       router.push("/admin/jlpt-tests");
     } catch (err) {
-      alert("Cập nhật thất bại!");
+      toast.error("Cập nhật thất bại!");
       console.error(err);
     }
   };

@@ -273,9 +273,15 @@ export const ChatInputArea = memo(function ChatInputArea({
 });
 
 /** Shared right sidebar */
+export interface SenseiFeedback {
+  score?: number;
+  comment?: string;
+  strengths?: string[];
+  improvements?: string[];
+}
+
 export const RightSidebar = memo(function RightSidebar({
   settingsTitle,
-  feedbackTitle,
   topics,
   selectedTopicId,
   onTopicChange,
@@ -283,9 +289,9 @@ export const RightSidebar = memo(function RightSidebar({
   selectedScenarioId,
   onScenarioChange,
   disabled = false,
+  feedback,
 }: {
   settingsTitle: string;
-  feedbackTitle: string;
   topics: any[];
   selectedTopicId: number | null;
   onTopicChange: (v: string) => void;
@@ -293,6 +299,7 @@ export const RightSidebar = memo(function RightSidebar({
   selectedScenarioId: number | null;
   onScenarioChange: (v: string) => void;
   disabled?: boolean;
+  feedback?: SenseiFeedback | null;
 }) {
   return (
     <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
@@ -309,7 +316,11 @@ export const RightSidebar = memo(function RightSidebar({
             <label className="block text-[13px] font-semibold text-foreground mb-2">
               Chủ đề hội thoại
             </label>
-            <Select disabled={disabled} value={selectedTopicId?.toString() || ""} onValueChange={onTopicChange}>
+            <Select
+              disabled={disabled}
+              value={selectedTopicId?.toString() || ""}
+              onValueChange={onTopicChange}
+            >
               <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-60">
                 <SelectValue placeholder="Chọn chủ đề" />
               </SelectTrigger>
@@ -332,7 +343,9 @@ export const RightSidebar = memo(function RightSidebar({
                   key={s.id}
                   onClick={() => !disabled && onScenarioChange(s.id.toString())}
                   className={`p-3 rounded-lg border transition-all ${
-                    disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                    disabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer"
                   } ${
                     selectedScenarioId === s.id
                       ? "bg-primary/5 border-primary shadow-sm"
@@ -362,55 +375,121 @@ export const RightSidebar = memo(function RightSidebar({
         </div>
       </div>
 
-      {/* Suggestions */}
+      {/* Sensei Feedback / Suggestions */}
       <div className="p-6 pb-8">
         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
           <span className="material-symbols-outlined text-base text-primary">
-            lightbulb
+            rate_review
           </span>
-          Đề xuất tiếp theo
+          Nhận xét của ss
         </h3>
         <div className="space-y-3">
-          <div className="group bg-card hover:bg-muted border border-border rounded-xl p-3 transition-all cursor-pointer">
-            <div className="flex gap-3">
-              <div className="size-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-lg">
-                  edit_note
+          {feedback ? (
+            <>
+              {/* Điểm số */}
+              {feedback.score !== undefined && (
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Điểm số
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-yellow-500 text-lg">
+                        star
+                      </span>
+                      <span className="text-lg font-bold text-foreground">
+                        {feedback.score}/100
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${feedback.score}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Nhận xét chính */}
+              {feedback.comment && (
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-secondary text-base">
+                      chat
+                    </span>
+                    <span className="text-xs font-bold text-foreground">
+                      Nhận xét
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {feedback.comment}
+                  </p>
+                </div>
+              )}
+
+              {/* Điểm mạnh */}
+              {feedback.strengths && feedback.strengths.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-green-500 text-base">
+                      thumb_up
+                    </span>
+                    <span className="text-xs font-bold text-foreground">
+                      Điểm mạnh
+                    </span>
+                  </div>
+                  <ul className="space-y-1">
+                    {feedback.strengths.map((strength, idx) => (
+                      <li
+                        key={idx}
+                        className="text-xs text-muted-foreground flex items-start gap-1.5"
+                      >
+                        <span className="text-green-500 mt-0.5">✓</span>
+                        {strength}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Cần cải thiện */}
+              {feedback.improvements && feedback.improvements.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-orange-500 text-base">
+                      trending_up
+                    </span>
+                    <span className="text-xs font-bold text-foreground">
+                      Cần cải thiện
+                    </span>
+                  </div>
+                  <ul className="space-y-1">
+                    {feedback.improvements.map((item, idx) => (
+                      <li
+                        key={idx}
+                        className="text-xs text-muted-foreground flex items-start gap-1.5"
+                      >
+                        <span className="text-orange-500 mt-0.5">→</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-muted/50 border border-border rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-muted-foreground text-xl">
+                  rate_review
                 </span>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground group-hover:text-secondary transition-colors">
-                  Luyện Kanji N4
-                </h4>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Bài 12: Chủ đề Mua sắm
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Hoàn thành một phiên hội thoại để nhận nhận xét từ Sensei
+              </p>
             </div>
-            <Button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors border border-border">
-              Luyện ngay
-            </Button>
-          </div>
-          <div className="group bg-card hover:bg-muted border border-border rounded-xl p-3 transition-all cursor-pointer">
-            <div className="flex gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-lg">
-                  assignment
-                </span>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                  Đề JLPT N4 - Đọc hiểu
-                </h4>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Luyện tập đoạn văn ngắn
-                </p>
-              </div>
-            </div>
-            <Button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-primary hover:text-primary-foreground transition-colors border border-border">
-              Làm bài
-            </Button>
-          </div>
+          )}
         </div>
       </div>
     </aside>

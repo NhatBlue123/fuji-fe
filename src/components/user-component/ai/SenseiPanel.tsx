@@ -10,11 +10,16 @@ import {
   useGetPublishedTopicsQuery,
 } from "@/store/services/voice/voiceApi";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
-import type { VoiceTranscriptItem, VoiceSessionHistory, VoiceTopic } from "@/types/voice";
+import type {
+  VoiceTranscriptItem,
+  VoiceSessionHistory,
+  VoiceTopic,
+} from "@/types/voice";
 import {
   FuriganaDisplay,
   RightSidebar,
   type SenseiMessage,
+  type SenseiFeedback,
 } from "./shared";
 
 /* ------------------------------------------------------------------ */
@@ -46,7 +51,7 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
     const video = videoRef.current;
     if (!video) return;
     if (playing) {
-      video.play().catch(() => { });
+      video.play().catch(() => {});
     } else {
       video.pause();
     }
@@ -61,19 +66,12 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
     if (!ctx) return;
 
     const WHITE_THRESHOLD = 220; // R,G,B all above this → transparent
+    let hasDrawnInitialFrame = false;
 
-    const draw = () => {
-      if (video.paused || video.ended) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
-
+    const drawFrame = () => {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
-      if (vw === 0 || vh === 0) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
+      if (vw === 0 || vh === 0) return false;
 
       /* Crop middle 80%: skip top 10%, take 80%, skip bottom 10% */
       const cropY = Math.floor(vh * 0.1);
@@ -100,7 +98,24 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
       }
 
       ctx.putImageData(frame, 0, 0);
-      rafRef.current = requestAnimationFrame(draw);
+      return true;
+    };
+
+    const draw = () => {
+      // Vẽ frame nếu video đang play hoặc chưa vẽ frame nào (để hiển thị frame đầu tiên)
+      if (!video.paused && !video.ended) {
+        drawFrame();
+        hasDrawnInitialFrame = true;
+        rafRef.current = requestAnimationFrame(draw);
+      } else if (!hasDrawnInitialFrame && video.readyState >= 2) {
+        // Video đã load enough data nhưng chưa play → vẽ frame đầu tiên
+        if (drawFrame()) {
+          hasDrawnInitialFrame = true;
+        }
+        rafRef.current = requestAnimationFrame(draw);
+      } else {
+        rafRef.current = requestAnimationFrame(draw);
+      }
     };
 
     rafRef.current = requestAnimationFrame(draw);
@@ -137,17 +152,28 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
 export default function SenseiPanel() {
   const [showHistory, setShowHistory] = useState(true);
 
+  // Sensei feedback state - lưu nhận xét sau khi kết thúc phiên
+  const [feedback, setFeedback] = useState<SenseiFeedback | null>(null);
+
   // Topics & Scenarios state
-  const { data: rawTopics, isFetching: topicsLoading } = useGetPublishedTopicsQuery();
-  const topics: VoiceTopic[] = Array.isArray(rawTopics) ? (rawTopics as VoiceTopic[]) : [];
+  const { data: rawTopics, isFetching: topicsLoading } =
+    useGetPublishedTopicsQuery();
+  const topics: VoiceTopic[] = Array.isArray(rawTopics)
+    ? (rawTopics as VoiceTopic[])
+    : [];
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
-  const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(
+    null,
+  );
 
   // Auto-select first topic and its first scenario when data loads
   useEffect(() => {
     if (topics.length > 0 && !selectedTopicId) {
       setSelectedTopicId(topics[0].id);
-      if (Array.isArray(topics[0].scenarios) && topics[0].scenarios.length > 0) {
+      if (
+        Array.isArray(topics[0].scenarios) &&
+        topics[0].scenarios.length > 0
+      ) {
         setSelectedScenarioId(topics[0].scenarios[0].id);
       }
     }
@@ -155,7 +181,9 @@ export default function SenseiPanel() {
 
   // Derived selected entities
   const selectedTopic = topics.find((t) => t.id === selectedTopicId);
-  const selectedScenario = selectedTopic?.scenarios?.find((s) => s.id === selectedScenarioId);
+  const selectedScenario = selectedTopic?.scenarios?.find(
+    (s) => s.id === selectedScenarioId,
+  );
 
   // Handle topic change
   const handleTopicChange = (topicIdStr: string) => {
@@ -174,7 +202,9 @@ export default function SenseiPanel() {
 
   // Session history
   const [showSessionList, setShowSessionList] = useState(false);
-  const [selectedSessionCode, setSelectedSessionCode] = useState<string | null>(null);
+  const [selectedSessionCode, setSelectedSessionCode] = useState<string | null>(
+    null,
+  );
   const [audioProgress, setAudioProgress] = useState(0);
   const { data: sessions, refetch: refetchSessions } = useGetVoiceSessionsQuery(
     undefined,
@@ -214,10 +244,12 @@ export default function SenseiPanel() {
   const handleStartSession = useCallback(() => {
     if (!selectedTopic || !selectedScenario) return;
     setSelectedSessionCode(null);
+    setFeedback(null); // Xóa feedback cũ khi bắt đầu phiên mới
     startSession({
       level: selectedScenario.level,
       context: `Chủ đề: ${selectedTopic.title}. Tình huống: ${selectedScenario.situation}. Vai trò AI: ${selectedScenario.aiRole}. Tính cách: ${selectedScenario.aiPersonality || "thân thiện"}. Mẫu hội thoại:\n${selectedScenario.sampleConversation || ""}`,
-      goals: "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
+      goals:
+        "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
       preferredVoice: "alloy",
       topicId: selectedTopic.id,
       scenarioId: selectedScenario.id,
@@ -228,7 +260,32 @@ export default function SenseiPanel() {
   const handleStopSession = useCallback(async () => {
     await stopSession();
     if (showSessionList) refetchSessions();
-  }, [stopSession, showSessionList, refetchSessions]);
+
+    // Tạo feedback dựa trên lịch sử hội thoại (mock - sẽ thay bằng API thực)
+    const messageCount = state.transcriptHistory.filter(
+      (t) => t.role === "user",
+    ).length;
+    if (messageCount > 0) {
+      // Tính điểm dựa trên số lượng tin nhắn (mock logic)
+      const baseScore = Math.min(70 + messageCount * 5, 95);
+      const score = Math.floor(baseScore);
+
+      setFeedback({
+        score,
+        comment: `Bạn đã tham gia ${messageCount} lượt hội thoại. Giọng điệu tự nhiên, phản xạ tốt. Cần cải thiện thêm về ngữ pháp và từ vựng phức tạp.`,
+        strengths: [
+          "Phát âm rõ ràng, dễ nghe",
+          "Phản xạ nhanh trong hội thoại",
+          "Sử dụng đúng ngữ cảnh",
+        ],
+        improvements: [
+          "Cần mở rộng từ vựng về chủ đề này",
+          "Chú ý cách sử dụng trợ từ は và が",
+          "Luyện thêm về cách chia động từ thể lịch sự",
+        ],
+      });
+    }
+  }, [stopSession, showSessionList, refetchSessions, state.transcriptHistory]);
 
   const handleMicDown = useCallback(() => {
     if (!isSessionActive || isProcessing || isPlaying) return;
@@ -331,20 +388,25 @@ export default function SenseiPanel() {
               <div className="absolute -top-4 -right-8 bg-card/90 dark:bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-2xl rounded-bl-none shadow-lg rotate-6 animate-pulse z-20 border border-border">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`size-2 rounded-full ${isSessionActive
-                      ? isRecording
-                        ? "bg-red-500"
-                        : isProcessing
-                          ? "bg-yellow-500"
-                          : isPlaying
-                            ? "bg-green-500"
-                            : "bg-green-500"
-                      : "bg-gray-400"
-                      }`}
+                    className={`size-2 rounded-full ${
+                      isSessionActive
+                        ? isRecording
+                          ? "bg-red-500"
+                          : isProcessing
+                            ? "bg-yellow-500"
+                            : isPlaying
+                              ? "bg-green-500"
+                              : "bg-green-500"
+                        : "bg-gray-400"
+                    }`}
                   />
                   <p className="text-xs font-bold">
-                    {!isSessionActive && state.status === "idle" && "Bắt đầu phiên để nói"}
-                    {isSessionActive && state.status === "idle" && "Giữ mic để nói"}
+                    {!isSessionActive &&
+                      state.status === "idle" &&
+                      "Bắt đầu phiên để nói"}
+                    {isSessionActive &&
+                      state.status === "idle" &&
+                      "Giữ mic để nói"}
                     {state.status === "recording" && "Đang nghe bạn nói..."}
                     {state.status === "processing" && "Đang xử lý..."}
                     {state.status === "playing" && "Sensei đang nói..."}
@@ -387,14 +449,15 @@ export default function SenseiPanel() {
                     onPointerUp={handleMicUp}
                     onPointerLeave={handleMicUp}
                     disabled={isProcessing || isPlaying}
-                    className={`relative size-16 md:size-20 rounded-full flex items-center justify-center border-4 border-background transition-all duration-300 group ${isRecording
-                      ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-[0_0_40px_rgba(239,68,68,0.4)] scale-110"
-                      : isProcessing
-                        ? "bg-gradient-to-br from-yellow-500 to-orange-500 shadow-[0_0_20px_rgba(234,179,8,0.3)] cursor-wait"
-                        : isPlaying
-                          ? "bg-gradient-to-br from-secondary to-purple-600 shadow-[0_0_20px_rgba(168,85,247,0.3)] cursor-wait"
-                          : "bg-gradient-to-br from-pink-500/80 to-rose-600/80 shadow-[0_0_20px_rgba(244,114,182,0.2)] hover:shadow-[0_0_40px_rgba(244,114,182,0.4)] hover:scale-105"
-                      }`}
+                    className={`relative size-16 md:size-20 rounded-full flex items-center justify-center border-4 border-background transition-all duration-300 group ${
+                      isRecording
+                        ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-[0_0_40px_rgba(239,68,68,0.4)] scale-110"
+                        : isProcessing
+                          ? "bg-gradient-to-br from-yellow-500 to-orange-500 shadow-[0_0_20px_rgba(234,179,8,0.3)] cursor-wait"
+                          : isPlaying
+                            ? "bg-gradient-to-br from-secondary to-purple-600 shadow-[0_0_20px_rgba(168,85,247,0.3)] cursor-wait"
+                            : "bg-gradient-to-br from-pink-500/80 to-rose-600/80 shadow-[0_0_20px_rgba(244,114,182,0.2)] hover:shadow-[0_0_40px_rgba(244,114,182,0.4)] hover:scale-105"
+                    }`}
                   >
                     <span className="material-symbols-outlined text-3xl md:text-4xl text-white drop-shadow-md">
                       {isRecording
@@ -506,9 +569,13 @@ export default function SenseiPanel() {
                     const isReplaying = replayIdx === msg.id;
                     const karaokeIndex =
                       isLastAi && isPlaying && msg.furigana?.segments
-                        ? Math.floor(audioProgress * msg.furigana.segments.length) - 1
+                        ? Math.floor(
+                            audioProgress * msg.furigana.segments.length,
+                          ) - 1
                         : isReplaying && msg.furigana?.segments
-                          ? Math.floor(replayProgress * msg.furigana.segments.length) - 1
+                          ? Math.floor(
+                              replayProgress * msg.furigana.segments.length,
+                            ) - 1
                           : isLastAi && !isPlaying && msg.furigana?.segments
                             ? msg.furigana.segments.length
                             : -1;
@@ -547,10 +614,11 @@ export default function SenseiPanel() {
                             <button
                               onClick={() => handleReplay(msg)}
                               disabled={isPlaying || isReplaying}
-                              className={`mt-1 inline-flex items-center gap-1 text-xs transition-colors ${isReplaying
-                                ? "text-secondary"
-                                : "text-muted-foreground hover:text-secondary"
-                                } disabled:opacity-50`}
+                              className={`mt-1 inline-flex items-center gap-1 text-xs transition-colors ${
+                                isReplaying
+                                  ? "text-secondary"
+                                  : "text-muted-foreground hover:text-secondary"
+                              } disabled:opacity-50`}
                             >
                               <span className="material-symbols-outlined text-sm">
                                 {isReplaying ? "volume_up" : "replay"}
@@ -599,7 +667,9 @@ export default function SenseiPanel() {
               <span className="material-symbols-outlined text-lg">
                 {showSessionList ? "close" : "history"}
               </span>
-              {showSessionList ? "Đóng lịch sử" : "Xem lịch sử hội thoại gần đây"}
+              {showSessionList
+                ? "Đóng lịch sử"
+                : "Xem lịch sử hội thoại gần đây"}
             </Button>
           </div>
 
@@ -628,13 +698,16 @@ export default function SenseiPanel() {
                         className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/40 hover:bg-muted border border-border/50 hover:border-primary/30 transition-all text-left group"
                       >
                         <div
-                          className={`size-9 rounded-full flex items-center justify-center shrink-0 ${s.status === "completed"
-                            ? "bg-green-500/10 text-green-500"
-                            : "bg-yellow-500/10 text-yellow-500"
-                            }`}
+                          className={`size-9 rounded-full flex items-center justify-center shrink-0 ${
+                            s.status === "completed"
+                              ? "bg-green-500/10 text-green-500"
+                              : "bg-yellow-500/10 text-yellow-500"
+                          }`}
                         >
                           <span className="material-symbols-outlined text-lg">
-                            {s.status === "completed" ? "check_circle" : "pending"}
+                            {s.status === "completed"
+                              ? "check_circle"
+                              : "pending"}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -692,12 +765,15 @@ export default function SenseiPanel() {
                   </div>
                   {sessionDetail && (
                     <span className="text-[10px] text-muted-foreground">
-                      {new Date(sessionDetail.createdAt).toLocaleString("vi-VN", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {new Date(sessionDetail.createdAt).toLocaleString(
+                        "vi-VN",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
                     </span>
                   )}
                 </div>
@@ -727,10 +803,11 @@ export default function SenseiPanel() {
                           className={`flex gap-3 ${t.role === "user" ? "opacity-80" : ""}`}
                         >
                           <div
-                            className={`shrink-0 size-8 rounded-full mt-0.5 flex items-center justify-center ${t.role === "assistant"
-                              ? "bg-gradient-to-br from-secondary to-purple-600 p-0.5"
-                              : "bg-muted border border-border"
-                              }`}
+                            className={`shrink-0 size-8 rounded-full mt-0.5 flex items-center justify-center ${
+                              t.role === "assistant"
+                                ? "bg-gradient-to-br from-secondary to-purple-600 p-0.5"
+                                : "bg-muted border border-border"
+                            }`}
                           >
                             {t.role === "assistant" ? (
                               <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
@@ -755,7 +832,7 @@ export default function SenseiPanel() {
                               <button
                                 onClick={() => {
                                   const audio = new Audio(t.audioUrl);
-                                  audio.play().catch(() => { });
+                                  audio.play().catch(() => {});
                                 }}
                                 className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-secondary transition-colors"
                               >
@@ -779,7 +856,6 @@ export default function SenseiPanel() {
 
       <RightSidebar
         settingsTitle="Thiết lập cho Sensei"
-        feedbackTitle="Nhận xét của Sensei"
         topics={topics}
         selectedTopicId={selectedTopicId}
         onTopicChange={handleTopicChange}
@@ -787,6 +863,7 @@ export default function SenseiPanel() {
         selectedScenarioId={selectedScenarioId}
         onScenarioChange={(v) => setSelectedScenarioId(Number(v))}
         disabled={isSessionActive}
+        feedback={feedback}
       />
 
       {/* Evaluation Popup */}
@@ -795,11 +872,14 @@ export default function SenseiPanel() {
           <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                <span className="material-symbols-outlined text-3xl">sports_score</span>
+                <span className="material-symbols-outlined text-3xl">
+                  sports_score
+                </span>
               </div>
               <h3 className="text-xl font-bold mb-2">Đã hoàn thành!</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có muốn xem điểm không?
+                Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có
+                muốn xem điểm không?
               </p>
               <div className="flex gap-3">
                 <Button

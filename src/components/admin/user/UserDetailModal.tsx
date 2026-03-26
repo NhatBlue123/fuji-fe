@@ -164,6 +164,12 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     gradeAccess: true,
     analyticsAccess: true,
   });
+  
+  const [isEditingBasic, setIsEditingBasic] = useState(false);
+  const [basicForm, setBasicForm] = useState({ fullName: "", email: "" });
+  const [emailError, setEmailError] = useState("");
+  const [isBasicSubmitting, setIsBasicSubmitting] = useState(false);
+  const [showConfirmEmailChange, setShowConfirmEmailChange] = useState(false);
   const [chartRange, setChartRange] = useState<'day' | 'week' | 'month'>('week');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmSave, setShowConfirmSave] = useState(false);
@@ -233,6 +239,14 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
         gradeAccess: user.gradeAccess ?? true,
         analyticsAccess: user.analyticsAccess ?? true,
       });
+      
+      setBasicForm({
+        fullName: user.fullName || "",
+        email: user.email || "",
+      });
+      setIsEditingBasic(false);
+      setEmailError("");
+      
       setRoleChangeWarning(null);
       setWarningMessage("");
       setInstructorLogSearch("");
@@ -386,6 +400,69 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     }
   };
 
+  const isBasicDirty = basicForm.fullName !== (user?.fullName || "") || basicForm.email !== (user?.email || "");
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setEmailError("Email không hợp lệ");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const handleBasicEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setBasicForm(prev => ({ ...prev, email: val }));
+    if (emailError) validateEmail(val);
+  };
+
+  const handleBasicSaveClick = () => {
+    if (!basicForm.fullName.trim() || basicForm.fullName.trim().length < 3) {
+      toast.error("Họ tên phải có ít nhất 3 ký tự");
+      return;
+    }
+    if (!validateEmail(basicForm.email)) return;
+    
+    if (basicForm.email !== user?.email) {
+      setShowConfirmEmailChange(true);
+    } else {
+      executeBasicSave();
+    }
+  };
+
+  const executeBasicSave = async () => {
+    if (!user) return;
+    setIsBasicSubmitting(true);
+    try {
+      const response = await api.put(`/users/me/${user.id}`, {
+        ...formData,
+        fullName: basicForm.fullName,
+        email: basicForm.email,
+      });
+      if (response.data.success) {
+        toast.success("Cập nhật thông tin cơ bản thành công");
+        setFormData(prev => ({ ...prev, fullName: basicForm.fullName, email: basicForm.email }));
+        setIsEditingBasic(false);
+        if (onUserUpdated) onUserUpdated();
+      } else {
+        toast.error(response.data.message || "Cập nhật thất bại");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Lỗi hệ thống khi cập nhật");
+    } finally {
+      setIsBasicSubmitting(false);
+      setShowConfirmEmailChange(false);
+    }
+  };
+
+  const handleBasicCancel = () => {
+    setBasicForm({ fullName: user?.fullName || "", email: user?.email || "" });
+    setEmailError("");
+    setIsEditingBasic(false);
+  };
+
   const handleSave = async () => {
     if (!user) return;
     if (!formData.fullName.trim() || formData.fullName.trim().length < 3) {
@@ -493,6 +570,21 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       setIsSubmitting(false);
     }
   };
+
+  const isFormDirty = useMemo(() => {
+    if (!user) return false;
+    return (
+      formData.role !== (user.role || "STUDENT") ||
+      formData.isActive !== user.isActive ||
+      formData.examAccess !== (user.examAccess ?? true) ||
+      formData.contentAccess !== (user.contentAccess ?? true) ||
+      formData.chatAccess !== (user.chatAccess ?? true) ||
+      formData.deviceLimit !== (user.deviceLimit ?? 1) ||
+      formData.courseCreateAccess !== (user.courseCreateAccess ?? true) ||
+      formData.gradeAccess !== (user.gradeAccess ?? true) ||
+      formData.analyticsAccess !== (user.analyticsAccess ?? true)
+    );
+  }, [formData, user]);
 
   const isStudent = user?.role === "STUDENT";
   const isInstructor = user?.role === "INSTRUCTOR";
@@ -664,30 +756,91 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                 </Card>
 
                 <Card className="shadow-sm border-border rounded-xl bg-card overflow-hidden">
-                  <CardHeader className="px-6 py-4 border-b bg-muted/20">
+                  <CardHeader className="px-6 py-4 border-b bg-muted/20 flex flex-row items-center justify-between">
                     <CardTitle className="text-xs font-bold text-foreground tracking-wider flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-blue-500" />
                       Thông tin cơ bản
                     </CardTitle>
+                    {!isEditingBasic ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditingBasic(true)}
+                        className="h-8 text-[10px] font-bold"
+                      >
+                        Chỉnh sửa
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleBasicCancel}
+                          className="h-8 text-[10px] font-bold"
+                          disabled={isBasicSubmitting}
+                        >
+                          Hủy
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleBasicSaveClick}
+                          disabled={isBasicSubmitting || !isBasicDirty}
+                          className="h-8 text-[10px] font-bold"
+                        >
+                          {isBasicSubmitting && <Loader2 className="size-3 mr-2 animate-spin" />}
+                          Lưu thay đổi
+                        </Button>
+                      </div>
+                    )}
                   </CardHeader>
-                  <CardContent className="p-6 space-y-6">
+                  <CardContent className="p-6 space-y-6 transition-all duration-300">
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground">Họ và tên đầy đủ</Label>
-                      <Input
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        className="h-10 border-border rounded-lg text-sm bg-background"
-                        placeholder="Nhập họ và tên..."
-                      />
+                      {isEditingBasic ? (
+                        <Input
+                          value={basicForm.fullName}
+                          onChange={(e) => setBasicForm({ ...basicForm, fullName: e.target.value })}
+                          className="h-10 border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 transition-all"
+                          placeholder="Nhập họ và tên..."
+                          disabled={isBasicSubmitting}
+                        />
+                      ) : (
+                        <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
+                          {basicForm.fullName || "Chưa cập nhật"}
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-muted-foreground">Địa chỉ Email</Label>
-                      <Input
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="h-10 border-border rounded-lg text-sm bg-background"
-                        placeholder="example@fuji.edu.vn"
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-muted-foreground">Địa chỉ Email</Label>
+                        {isEditingBasic && (
+                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            Email (nhạy cảm)
+                          </span>
+                        )}
+                      </div>
+                      {isEditingBasic ? (
+                        <div className="space-y-1">
+                          <Input
+                            value={basicForm.email}
+                            onChange={handleBasicEmailChange}
+                            className={`h-10 rounded-lg text-sm bg-background transition-all focus:ring-2 ${emailError ? 'border-destructive focus:ring-destructive/20' : 'border-border focus:ring-primary/20'}`}
+                            placeholder="example@fuji.edu.vn"
+                            disabled={isBasicSubmitting}
+                          />
+                          {emailError && (
+                            <p className="text-[10px] font-semibold text-destructive mt-1 flex items-center gap-1 animate-in slide-in-from-top-1">
+                              <AlertTriangle className="size-3" />
+                              {emailError}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
+                          {basicForm.email || "Chưa cập nhật"}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1339,7 +1492,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
             </Button>
             <Button
               onClick={() => setShowConfirmSave(true)}
-              disabled={isSubmitting}
+              disabled={!isFormDirty || isSubmitting}
               className="h-10 px-8 bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 rounded-xl shadow-sm transition-all"
             >
               {isSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : "Lưu thay đổi"}
@@ -1355,13 +1508,34 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
             <DialogTitle>Xác nhận thay đổi</DialogTitle>
             <DialogDescription>
               Hành động này sẽ cập nhật các thông tin bảo mật và phân quyền cho người dùng <strong>{user?.username}</strong>.
-              Mọi phiên đăng nhập hiện tại sẽ bị vô hiệu hóa để áp dụng quyền mới.
+              {formData.role !== user?.role && (
+                <span className="block mt-2 text-rose-500 font-medium">
+                  Mọi phiên đăng nhập hiện tại sẽ bị vô hiệu hóa để áp dụng quyền mới.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowConfirmSave(false)}>Hủy</Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Xác nhận cập nhật"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConfirmEmailChange} onOpenChange={setShowConfirmEmailChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận thay đổi Email</DialogTitle>
+            <DialogDescription>
+              Bạn đang thay đổi địa chỉ email hệ thống của người dùng này từ <strong>{user?.email}</strong> thành <strong>{basicForm.email}</strong>. Hành động này có thể ảnh hưởng đến việc đăng nhập và thông báo của họ.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowConfirmEmailChange(false)}>Hủy</Button>
+            <Button onClick={executeBasicSave} disabled={isBasicSubmitting} className="bg-amber-600 hover:bg-amber-700 text-white">
+              {isBasicSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Xác nhận đổi"}
             </Button>
           </DialogFooter>
         </DialogContent>

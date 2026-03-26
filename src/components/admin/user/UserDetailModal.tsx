@@ -285,7 +285,6 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       return matchesSearch && matchesSeverity && matchesStatus;
     });
 
-    // Then group identical logs occurring close in time (within same hour for same description)
     const grouped: any[] = [];
     filtered.forEach(log => {
       const last = grouped[grouped.length - 1];
@@ -294,7 +293,6 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
       if (last && last.description === log.description && last.testId === log.testId && (lastTime - logTime) < 3600000) {
         last.count = (last.count || 1) + 1;
-        // Keep the newest ID or some reference if needed
       } else {
         grouped.push({ ...log, count: 1 });
       }
@@ -1064,25 +1062,25 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="exam-access" className="text-sm font-medium text-foreground">Truy cập bài thi</Label>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between h-10">
+                            <Label htmlFor="exam-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập bài thi</Label>
                             <Switch
                               id="exam-access"
                               checked={formData.examAccess}
                               onCheckedChange={(checked) => setFormData({ ...formData, examAccess: checked })}
                             />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="content-access" className="text-sm font-medium text-foreground">Truy cập nội dung</Label>
+                          <div className="flex items-center justify-between h-10">
+                            <Label htmlFor="content-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập nội dung</Label>
                             <Switch
                               id="content-access"
                               checked={formData.contentAccess}
                               onCheckedChange={(checked) => setFormData({ ...formData, contentAccess: checked })}
                             />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="chat-access" className="text-sm font-medium text-foreground">Truy cập trò chuyện</Label>
+                          <div className="flex items-center justify-between h-10">
+                            <Label htmlFor="chat-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập trò chuyện</Label>
                             <Switch
                               id="chat-access"
                               checked={formData.chatAccess}

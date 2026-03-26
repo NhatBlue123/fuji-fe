@@ -61,12 +61,12 @@ export default function TransactionHistory() {
         <div className="flex items-center justify-between">
           <button 
             onClick={() => router.back()}
-            className="group flex items-center gap-3 text-slate-500 hover:text-pink-400 transition-all font-bold"
+            className="group flex items-center gap-2 text-slate-500 hover:text-pink-400 transition-all font-bold"
           >
-            <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/5 group-hover:border-pink-500/20 transition-all">
-              <ArrowLeft size={20} />
+            <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/10 group-hover:border-pink-500/20 transition-all">
+              <ArrowLeft size={18} />
             </div>
-            <span className="tracking-widest uppercase text-[10px]">Trở lại</span>
+            <span className="text-[10px] tracking-widest uppercase">Quay lại</span>
           </button>
 
           <div className="flex items-center gap-6">

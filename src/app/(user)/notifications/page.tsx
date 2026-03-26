@@ -16,6 +16,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { useNotifications } from "@/providers/NotificationProvider";
@@ -33,13 +34,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-/**
- * NotificationsPage - Tinh chỉnh cuối:
- * - Loại bỏ Avatar tròn.
- * - Triển khai hành động Xóa kèm theo Hoàn tác (Undo).
- * - Sửa màu nút Xóa trong Dropdown (không dùng đỏ).
- * - Đồng bộ khoảng cách với Header (giảm py-10 xuống py-2).
- */
 export default function NotificationsPage() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, setNotifications } = useNotifications();
   const router = useRouter();
@@ -77,10 +71,10 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="w-full py-8 font-sans antialiased animate-in fade-in duration-300">
-      <div className="bg-card rounded-[2rem] border border-border shadow-2xl overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+    <div className="w-full px-4 sm:px-4 py-4 font-sans antialiased animate-in fade-in duration-300 max-w-4xl mx-auto">
+      <div className="bg-card rounded-[2rem] border border-border shadow-2xl overflow-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 140px)' }}>
         
-        {/* HEADER & TABS - Khoảng cách tối thiểu */}
+        {/* HEADER & TABS*/}
         <div className="px-6 py-5 border-b border-border bg-background/50 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-black tracking-tight uppercase">Thông báo</h1>
@@ -113,7 +107,7 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {/* NOTIFICATIONS LIST - Loại bỏ Avatar */}
+        {/* NOTIFICATIONS LIST*/}
         <ScrollArea className="flex-1">
           <div className="flex flex-col">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -133,7 +127,6 @@ export default function NotificationsPage() {
                         !n.isRead ? "bg-secondary/[0.03]" : "hover:bg-muted/30"
                       )}
                     >
-                      {/* Thay Avatar thành Icon loại thông báo hoặc chỉ Status Indicator */}
                       <div className={cn(
                         "size-2 rounded-full mt-2.5 flex-shrink-0 transition-all",
                         !n.isRead ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" : "bg-muted-foreground/20"
@@ -225,9 +218,11 @@ export default function NotificationsPage() {
 
         {/* FOOTER */}
         <div className="px-6 py-4 border-t border-border bg-muted/20 flex justify-center">
-            <Button variant="ghost" size="sm" className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase hover:text-secondary transition-all h-6">
-                Tùy chỉnh trung tâm thông báo
-            </Button>
+            <Link href="/settings?tab=notifications">
+              <Button variant="ghost" size="sm" className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase hover:text-secondary transition-all h-6">
+                  Tùy chỉnh trung tâm thông báo
+              </Button>
+            </Link>
         </div>
       </div>
     </div>

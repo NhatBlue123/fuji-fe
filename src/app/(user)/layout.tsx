@@ -1,6 +1,9 @@
+"use client";
+
+import Header from "@/components/user-component/layout/Header";
 import Sidebar from "@/components/user-component/layout/Sidebar";
-import MobieSidebar from "@/components/user-component/layout/Mobie-sidebar";
 import Footer from "@/components/user-component/layout/Footer";
+import MobieSidebar from "@/components/user-component/layout/Mobie-sidebar";
 
 export default function UserLayout({
   children,
@@ -10,14 +13,23 @@ export default function UserLayout({
   auth: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto relative scroll-smooth bg-background">
-        <MobieSidebar />
-        {children}
-        <Footer />
-      </main>
-      {auth}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header />
+        
+        {/* Main content Area*/}
+        <main className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col">
+          <MobieSidebar />
+          
+          <div className="flex-1">
+            {children}
+            {auth}
+          </div>
+          
+          <Footer />
+        </main>
+      </div>
     </div>
   );
 }

@@ -270,7 +270,7 @@ export const authApi = createApi({
     // Lấy thông tin user hiện tại (cần Bearer token)
     // Endpoint: GET /api/users/me
     getCurrentUser: builder.query<AuthUser, void>({
-      query: () => "/users/me",
+      query: () => "/users/me/me",
       transformResponse: (res: any): AuthUser => {
         // Backend returns ApiResponse<UserDTO> = { success, message, data: UserDTO }
         // We need to unwrap the 'data' field first

@@ -7,7 +7,6 @@ export const baseApi = createApi({
     baseUrl: "http://localhost:8181/api",
     credentials: "include",
     prepareHeaders: (headers) => {
-      // Token được lưu trong cookie, dùng getAccessToken() để đọc đúng
       const token = getAccessToken();
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
@@ -22,6 +21,6 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Wallet", "Payment", "AdminUser", "MyPermissions", "Withdraw"],
+  tagTypes: ["Wallet", "Payment", "AdminUser", "MyPermissions", "Withdraw", "VoiceTopic"],
   endpoints: () => ({}),
 });

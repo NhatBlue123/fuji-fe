@@ -43,9 +43,7 @@ export default function PaymentStatus({
     data: paymentStatus,
     refetch,
     isLoading: isStatusLoading,
-  } = useGetPaymentStatusQuery(orderId, {
-    skipPolling: true,
-  });
+  } = useGetPaymentStatusQuery(orderId);
 
   const [isConfirming, setIsConfirming] = useState(false);
 

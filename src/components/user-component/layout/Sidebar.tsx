@@ -1,29 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "@/components/common";
-import { useAuth, useAppDispatch } from "@/store/hooks";
-import { logoutThunk } from "@/store/slices/authSlice";
-import { toast } from "sonner";
-import Image from "next/image";
-import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Home, 
+  BookOpen, 
+  FileCheck, 
+  Calendar, 
+  Bot, 
+  Video, 
+  Layers, 
+  Settings, 
+  ShieldCheck,
+  Zap
+} from "lucide-react";
 import TopupModal from "@/components/user-component/premium/TopupModal";
+import { useNotifications } from "@/providers/NotificationProvider";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+/**
+ * Sidebar Component - Cập nhật sửa lỗi:
+ * - Hover khi mục đang chọn (isActive): Chữ giữ màu Trắng, không biến mất.
+ * - Đồng bộ Typography: Loại bỏ In nghiêng/Bold đặc biệt (matching look).
+ * - Match với giao diện UserSide bằng màu Secondary (Pink).
+ */
 const Sidebar = () => {
   const pathname = usePathname();
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated, roles } = useAuth();
-  const dispatch = useAppDispatch();
+  const { roles } = useAuth();
+  const { unreadCount } = useNotifications();
   const { t } = useTranslation();
 
   const [isMounted, setIsMounted] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved === "true") setIsCollapsed(true);
+  }, []);
+
+  const toggleSidebar = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem("sidebar-collapsed", String(newState));
+  };
 
   const isAdminOrTeacher =
     roles &&
@@ -34,195 +62,171 @@ const Sidebar = () => {
 
   const isActive = (path: string) => pathname === path;
 
-  const navClass = (path: string) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-      isActive(path)
-        ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-sm"
-        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:font-bold group"
-    }`;
-
-  const iconClass = (path: string) =>
-    `material-symbols-outlined text-[20px] leading-none align-middle text-current transition-all ${
-      isActive(path)
-        ? "filled opacity-100"
-        : "opacity-95 group-hover:filled group-hover:opacity-100"
-    }`;
-
-  const actionIconClass =
-    "material-symbols-outlined text-[18px] leading-none align-middle text-current";
-
-  const handleLogout = async () => {
-    try {
-      await dispatch(logoutThunk()).unwrap();
-      toast.success(t("sidebar.logoutSuccess"));
-      router.push("/");
-    } catch {
-      toast.error(t("sidebar.logoutFailed"));
-    }
-  };
+  const menuItems = [
+    { label: t("common.home"), path: "/", icon: Home },
+    { label: t("common.course"), path: "/course", icon: BookOpen },
+    { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
+    { label: t("common.booking"), path: "/booking", icon: Calendar },
+    { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
+    { label: "/video-call", path: "/video-call", icon: Video, customLabel: "Video call" },
+    { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
+    { label: "Cài đặt", path: "/settings", icon: Settings },
+  ];
 
   return (
-    <>
-    <aside className="hidden w-64 flex-col bg-sidebar border-r border-sidebar-border md:flex shadow-xl z-20">
-      {/* ========= LOGO ========= */}
-      <Link
-        href="/"
-        className="flex items-center gap-3 px-6 py-8 hover:bg-sidebar-accent/50 transition"
+    <TooltipProvider delayDuration={0}>
+      <aside 
+        className={cn(
+          "relative hidden flex-col bg-sidebar border-r border-sidebar-border md:flex transition-all duration-300 ease-in-out z-40 shadow-sm font-sans",
+          isCollapsed ? "w-16" : "w-58"
+        )}
       >
-        <div className="size-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center shadow-lg">
-          <span className="material-symbols-outlined text-3xl">landscape</span>
-        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-20 z-50 h-6 w-6 rounded-full border bg-background shadow-md hover:text-secondary hover:border-secondary transition-all active:scale-95 active:translate-y-[1px]"
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
 
-        <div>
-          <h1 className="text-xl font-black text-sidebar-foreground">FUJI</h1>
-          <p className="text-xs text-muted-foreground">
-            {isMounted ? t("sidebar.subtitle") : ""}
-          </p>
-        </div>
-      </Link>
-
-      {/* ========= MENU ========= */}
-      <nav className="flex-1 overflow-y-auto px-4 space-y-1">
-        <Link href="/" className={navClass("/")}>
-          <span className={iconClass("/")}>home</span>
-          {t("common.home")}
-        </Link>
-
-        <Link href="/course" className={navClass("/course")}>
-          <span className={iconClass("/course")}>menu_book</span>
-          {t("common.course")}
-        </Link>
-
-        <Link href="/JLPT_Practice" className={navClass("/JLPT_Practice")}>
-          <span className={iconClass("/JLPT_Practice")}>assignment</span>
-          {t("common.jlptPractice")}
-        </Link>
-
-        <Link href="/booking" className={navClass("/booking")}>
-          <span className={iconClass("/booking")}>book_online</span>
-          {t("common.booking")}
-        </Link>
-
-        <Link href="/ai-chat" className={navClass("/ai-chat")}>
-          <span className={iconClass("/ai-chat")}>smart_toy</span>
-          {t("common.aiPractice")}
-        </Link>
-
-        <Link href="/video-call" className={navClass("/video-call")}>
-          <span className={iconClass("/video-call")}>video_chat</span>
-          Video call
-        </Link>
-
-        <Link href="/flashcards" className={navClass("/flashcards")}>
-          <span className={iconClass("/flashcards")}>style</span>
-          {t("common.flashcard")}
-        </Link>
-
-        <div className="my-4 border-t border-sidebar-border" />
-
-        <Link href="/notifications" className={navClass("/notifications")}>
-          <span className={iconClass("/notifications")}>notifications</span>
-          {t("common.notification")}
-        </Link>
-
-        <Link href="/settings" className={navClass("/settings")}>
-          <span className={iconClass("/settings")}>settings</span>
-          {t("common.management")}
-        </Link>
-
-        {isMounted && isAdminOrTeacher && (
-          <Link href="/admin" className={navClass("/admin")}>
-            <span className={iconClass("/admin")}>admin_panel_settings</span>
-            Admin
-          </Link>
-        )}
-      </nav>
-
-      {/* ========= FOOTER ========= */}
-      <div className="p-4 border-t flex flex-col gap-4">
-        {/* Premium */}
-        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl p-4 text-white">
-          <p className="text-xs opacity-80">{t("sidebar.premiumTitle")}</p>
-          <h3 className="font-bold text-sm mb-2">
-            {t("sidebar.premiumHeading")}
-          </h3>
-          <Button
-            variant="ghost"
-            className="bg-white/20 hover:bg-white/30 text-xs font-bold py-1.5 px-3 rounded-lg w-full"
-            onClick={() => setIsPremiumModalOpen(true)}
-          >
-            {t("sidebar.viewDetails")}
-          </Button>
-        </div>
-
-        {/* Theme + Language */}
-        <div className="flex items-center justify-center gap-3">
-          <Button
-            variant="ghost"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs text-foreground/90"
-          >
-            <span className={actionIconClass}>contrast</span>
-            {t("common.themeToggle")}
-          </Button>
-
-          <LanguageSwitcher className="h-8" />
-        </div>
-
-        {/* User */}
-        {isMounted && isAuthenticated && user ? (
-          <div className="flex items-center gap-3 px-2">
-            <Image
-              src={user.avatar || user.avatarUrl || "/images/avt-default.jpg"}
-              alt="avatar"
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-
-            <div className="flex-1">
-              <Link href="/profile">
-                <p className="text-sm font-bold truncate">
-                  {user.fullname || user.fullName || user.username}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user.level
-                    ? `${t("sidebar.studentLevel")} ${user.level}`
-                    : user.email}
-                </p>
-              </Link>
-            </div>
-
-            <Button
-              variant="ghost"
-              onClick={handleLogout}
-              className="text-foreground/90 hover:text-red-500"
-            >
-              <span className={actionIconClass}>logout</span>
-            </Button>
+        <Link
+          href="/"
+          className={cn(
+            "flex h-16 items-center px-4 hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
+            isCollapsed ? "justify-center" : "gap-3 px-6"
+          )}
+        >
+          <div className="flex-shrink-0 size-9 rounded-xl bg-secondary text-white flex items-center justify-center shadow-lg shadow-secondary/20">
+            <span className="material-symbols-outlined text-2xl font-bold">landscape</span>
           </div>
-        ) : (
-          <Link
-            href="/login"
-            className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-sidebar-accent"
-          >
-            <Image
-              src="/images/avt-default.jpg"
-              alt="login"
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-            <span className="font-bold">{t("common.login")}</span>
-          </Link>
-        )}
-      </div>
-    </aside>
-    <TopupModal 
-        isOpen={isPremiumModalOpen} 
-        onClose={() => setIsPremiumModalOpen(false)} 
-      />
-    </>
+
+          {!isCollapsed && (
+            <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+              <h1 className="text-xl font-black text-sidebar-foreground leading-none tracking-tight">FUJI</h1>
+              <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
+                {isMounted ? t("sidebar.subtitle") : "Học Tiếng Nhật"}
+              </p>
+            </div>
+          )}
+        </Link>
+
+        {/* NAVIGATION MENU */}
+        <nav className="flex-1 overflow-y-auto px-3 pt-6 space-y-2">
+          {menuItems.map((item) => {
+            const active = isActive(item.path);
+            const Icon = item.icon;
+            
+            return (
+              <Tooltip key={item.path}>
+                <TooltipTrigger asChild>
+                  <Link 
+                    href={item.path} 
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                      active 
+                        ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white" 
+                        : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
+                    )}
+                  >
+                    <Icon className={cn(
+                      "h-5 w-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110",
+                      active ? "text-white stroke-[3px]" : "group-hover:text-secondary"
+                    )} />
+                    
+                    {!isCollapsed && (
+                      <span className={cn(
+                          "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
+                          active ? "text-white" : "group-hover:text-secondary"
+                        )}
+                      >
+                        {item.customLabel || item.label}
+                      </span>
+                    )}
+                    
+                    {active && !isCollapsed && (
+                      <div className="absolute right-0 w-1 h-6 bg-white/20 rounded-l-full" />
+                    )}
+                    <div className="absolute inset-0 bg-white/0 group-active:bg-white/10 transition-colors" />
+                  </Link>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
+                    {item.customLabel || item.label}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+
+          <div className="my-6 border-t border-sidebar-border mx-2 opacity-50" />
+
+          {isMounted && isAdminOrTeacher && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link 
+                  href="/admin" 
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group text-foreground font-bold hover:bg-secondary/5 hover:text-secondary border border-transparent hover:border-secondary/20",
+                    isActive("/admin") && "bg-secondary/10 text-secondary border-secondary/20"
+                  )}
+                >
+                  <ShieldCheck className="h-5 w-5 flex-shrink-0 group-hover:rotate-3 transition-transform text-secondary/70" />
+                  {!isCollapsed && <span className="text-[11px] font-bold tracking-widest uppercase">Admin Workspace</span>}
+                </Link>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right" className="bg-secondary text-white font-bold">Admin Workspace</TooltipContent>
+              )}
+            </Tooltip>
+          )}
+        </nav>
+
+        {/* PREMIUM CARD */}
+        <div className="p-4 border-t border-sidebar-border">
+          <div className={cn(
+            "bg-secondary/5 border border-secondary/20 rounded-[1.25rem] p-4 transition-all overflow-hidden relative group shadow-inner",
+            isCollapsed && "p-2 items-center flex justify-center aspect-square"
+          )}>
+            {isCollapsed ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg bg-secondary text-white hover:scale-110 shadow-lg shadow-secondary/30"
+                onClick={() => setIsPremiumModalOpen(true)}
+              >
+                <Zap className="size-4 fill-current" />
+              </Button>
+            ) : (
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="size-3.5 text-secondary fill-current animate-pulse" />
+                  <p className="text-[9px] uppercase font-black tracking-widest text-secondary opacity-70">
+                    Premium Plan
+                  </p>
+                </div>
+                <h3 className="font-bold text-[13px] mb-3 leading-snug tracking-tighter uppercase">
+                  {t("sidebar.premiumHeading") || "Nâng cấp gói học"}
+                </h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-[11px] font-black w-full border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary hover:text-white transition-all active:scale-95 rounded-xl uppercase tracking-widest"
+                  onClick={() => setIsPremiumModalOpen(true)}
+                >
+                  {t("sidebar.viewDetails") || "Xem chi tiết"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <TopupModal 
+          isOpen={isPremiumModalOpen} 
+          onClose={() => setIsPremiumModalOpen(false)} 
+        />
+      </aside>
+    </TooltipProvider>
   );
 };
 

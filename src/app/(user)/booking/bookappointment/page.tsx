@@ -1,254 +1,256 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Bell, CreditCard, Landmark } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  useCreateBookingMutation,
+  useCreateBulkBookingMutation,
+  useGetBookingQuoteQuery,
+  useGetBulkBookingQuoteMutation,
+} from "@/store/services/bookingApi";
+
+function formatDate(v: string) {
+  return new Date(v).toLocaleDateString("vi-VN");
+}
+
+function formatTimeRange(startAt: string, endAt: string) {
+  const s = new Date(startAt);
+  const e = new Date(endAt);
+  const hhmm = (d: Date) =>
+    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${hhmm(s)} - ${hhmm(e)}`;
+}
 
 export default function PaymentPage() {
   const router = useRouter();
-  const [method, setMethod] = useState("card");
+  const searchParams = useSearchParams();
+
+  const timeSlotId = Number(searchParams.get("timeSlotId"));
+  const teacherId = Number(searchParams.get("teacherId"));
+  const timeSlotIdsParam = searchParams.get("timeSlotIds") || "";
+
+  const bulkIds = useMemo(
+    () =>
+      timeSlotIdsParam
+        .split(",")
+        .map((x) => Number(x.trim()))
+        .filter((x) => Number.isFinite(x) && x > 0),
+    [timeSlotIdsParam]
+  );
+
+  const isSingleMode = Number.isFinite(timeSlotId) && timeSlotId > 0;
+  const isBulkMode =
+    Number.isFinite(teacherId) &&
+    teacherId > 0 &&
+    bulkIds.length > 0;
+
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const { data: singleQuote, isLoading, isFetching } = useGetBookingQuoteQuery(
+    { timeSlotId },
+    { skip: !isSingleMode }
+  );
+
+  const [getBulkQuote, { data: bulkQuote, isLoading: isBulkQuoteLoading }] =
+    useGetBulkBookingQuoteMutation();
+
+  useEffect(() => {
+    if (!isBulkMode) return;
+    getBulkQuote({ teacherId, timeSlotIds: bulkIds });
+  }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
+
+  const [createBooking, { isLoading: isCreatingSingle }] = useCreateBookingMutation();
+  const [createBulkBooking, { isLoading: isCreatingBulk }] = useCreateBulkBookingMutation();
+
+  const isCreating = isCreatingSingle || isCreatingBulk;
+  const quote = isSingleMode ? singleQuote : bulkQuote;
+  const canConfirm = !!quote && quote.canPay;
+
+  const onConfirm = async () => {
+    setErrorMsg("");
+
+    try {
+      if (isSingleMode) {
+        await createBooking({ timeSlotId }).unwrap();
+      } else if (isBulkMode) {
+        await createBulkBooking({
+          teacherId,
+          timeSlotIds: bulkIds,
+        }).unwrap();
+      } else {
+        return;
+      }
+
+      setShowSuccess(true);
+    } catch (e: any) {
+      setErrorMsg(e?.data?.message || "Không thể xác nhận thanh toán.");
+    }
+  };
 
   return (
     <main className="flex-1 overflow-y-auto bg-slate-950 p-8 min-h-screen">
-
-      {/* SUCCESS MODAL */}
       {showSuccess && <SuccessModal router={router} />}
 
-      {/* HEADER */}
       <header className="flex items-center justify-between mb-10">
-
         <div className="flex items-center gap-4">
-
-          <div
+          <button
             onClick={() => router.back()}
-            className="p-2 bg-slate-900 rounded-lg border border-slate-800 cursor-pointer hover:bg-white/5 transition"
+            className="group flex items-center gap-2 text-slate-500 hover:text-pink-400 transition-all font-bold"
           >
-            <ArrowLeft className="text-slate-100" size={20} />
-          </div>
-
-          <h2 className="text-2xl font-bold text-slate-100">
-            Thanh toán
-          </h2>
-
-        </div>
-
-        <div className="flex items-center gap-4">
-
-          <button className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-pink-500 transition">
-            <Bell size={18} />
+            <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/10 group-hover:border-pink-500/20 transition-all">
+              <ArrowLeft size={18} />
+            </div>
           </button>
-
-          <div
-            className="size-10 rounded-full bg-center bg-cover border border-slate-800"
-            style={{
-              backgroundImage:
-                'url("https://i.pravatar.cc/150")',
-            }}
-          />
-
+          <h2 className="text-2xl font-bold text-slate-100">Thanh toán</h2>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto space-y-8">
-
-        <div>
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">
-            Chọn phương thức thanh toán
-          </h1>
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-slate-100 mb-2">Xác nhận thanh toán</h1>
           <p className="text-slate-400">
-            Hoàn tất việc thanh toán để xác nhận lịch học của bạn.
+            Kiểm tra thông tin đơn hàng trước khi đặt lịch.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {!isSingleMode && !isBulkMode && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center">
+            Thiếu dữ liệu booking trên URL.
+          </div>
+        )}
 
-          {/* PAYMENT METHODS */}
-          <div className="lg:col-span-2 space-y-6">
+        {(isLoading || isFetching || isBulkQuoteLoading) && (
+          <div className="text-slate-400 text-center animate-pulse">
+            Đang tải thông tin đơn hàng...
+          </div>
+        )}
 
-            <h3 className="text-lg font-semibold text-slate-200">
-              Phương thức phổ biến
+        {quote && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-100 mb-6 border-b border-slate-800 pb-4">
+              Tóm tắt đơn hàng
             </h3>
 
-            <div className="space-y-3">
-
-              <PaymentOption
-                value="momo"
-                method={method}
-                setMethod={setMethod}
-                title="Ví MoMo"
-                desc="Thanh toán nhanh qua ứng dụng"
-                color="bg-[#a50064]"
-                label="MoMo"
-              />
-
-              <PaymentOption
-                value="card"
-                method={method}
-                setMethod={setMethod}
-                title="Thẻ Visa/Mastercard"
-                desc="Hỗ trợ tất cả ngân hàng"
-                icon={<CreditCard size={18} />}
-                color="bg-blue-600"
-              />
-
-              <PaymentOption
-                value="zalopay"
-                method={method}
-                setMethod={setMethod}
-                title="Ví ZaloPay"
-                desc="Ưu đãi giảm giá 5%"
-                label="ZaloPay"
-                color="bg-sky-500"
-              />
-
-              <PaymentOption
-                value="bank"
-                method={method}
-                setMethod={setMethod}
-                title="Chuyển khoản ngân hàng"
-                desc="Nhận thông tin qua email"
-                icon={<Landmark size={18} />}
-                color="bg-emerald-600"
-              />
-
-            </div>
-          </div>
-
-          {/* SUMMARY */}
-          <div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sticky top-8">
-
-              <h3 className="text-lg font-bold text-slate-100 mb-6 border-b border-slate-800 pb-4">
-                Tóm tắt đơn hàng
-              </h3>
-
+            {"items" in quote ? (
               <div className="space-y-6">
-
-                <div className="aspect-video w-full rounded-xl bg-cover bg-center border border-slate-800"
-                  style={{
-                    backgroundImage: 'url("https://picsum.photos/500/300")',
-                  }}
-                />
-
                 <div>
-                  <p className="text-pink-500 text-xs font-bold uppercase mb-1">
-                    Học phần: Giao tiếp
-                  </p>
-
-                  <p className="text-slate-100 font-bold text-lg">
-                    GV. Sakura Tanaka
+                  <p className="text-slate-100 font-bold text-lg">GV. {quote.teacherName}</p>
+                  <p className="text-slate-400 text-sm mt-1">
+                    {quote.slotCount} buổi đã chọn
                   </p>
                 </div>
 
-                <div className="space-y-3 text-sm text-slate-400">
-                  <p>📅 15/10/2023</p>
-                  <p>⏰ 19:00 - 20:00 (60 phút)</p>
+                <div className="space-y-3 max-h-80 overflow-auto">
+                  {quote.items.map((item) => (
+                    <div
+                      key={item.timeSlotId}
+                      className="rounded-xl border border-slate-800 bg-white/5 p-4"
+                    >
+                      <p className="text-pink-400 font-bold">{item.subject}</p>
+                      <p className="text-slate-300 text-sm mt-1">
+                        {formatDate(item.startAt)} | {formatTimeRange(item.startAt, item.endAt)}
+                      </p>
+                      <p className="text-slate-400 text-sm mt-1">
+                        {item.durationMinutes} phút
+                      </p>
+                      <p className="text-slate-100 text-sm mt-2">
+                        {item.totalBlossom} 🌸
+                      </p>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="pt-4 border-t border-slate-800 space-y-3">
-
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Học phí</span>
-                    <span>450.000đ</span>
+                    <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
-
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>22.500đ</span>
+                    <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
-
-                  <div className="flex justify-between text-slate-100 font-bold text-xl pt-2">
+                  <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
-                    <span className="text-pink-500">472.500đ</span>
+                    <span className="text-500">{quote.totalBlossom} 🌸</span>
                   </div>
-
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <p className="text-pink-500 text-xs font-bold uppercase mb-1">
+                    Học phần: {quote.subject}
+                  </p>
+                  <p className="text-slate-100 font-bold text-lg">GV. {quote.teacherName}</p>
                 </div>
 
-                <button
-                  onClick={() => setShowSuccess(true)}
-                  className="w-full py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl hover:scale-[1.02] active:scale-95 transition"
-                >
-                  Xác nhận thanh toán
-                </button>
+                <div className="space-y-3 text-sm text-slate-400 bg-white/5 p-3 rounded-lg">
+                  <p>{formatDate(quote.startAt)}</p>
+                  <p>
+                    {formatTimeRange(quote.startAt, quote.endAt)} ({quote.durationMinutes} phút)
+                  </p>
+                </div>
 
+                <div className="pt-4 border-t border-slate-800 space-y-3">
+                  <div className="flex justify-between text-slate-400 text-sm">
+                    <span>Học phí(1 buổi)</span>
+                    <span>{quote.tuitionBlossom} 🌸</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400 text-sm">
+                    <span>Phí dịch vụ</span>
+                    <span>{quote.serviceFeeBlossom} 🌸</span>
+                  </div>
+                  <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
+                    <span>Tổng cộng</span>
+                    <span className="text-pink-500">{quote.totalBlossom} 🌸</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
+            {!quote.canPay && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 mt-6">
+                {quote.message}
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 mt-4">
+                {errorMsg}
+              </div>
+            )}
+
+            <button
+              onClick={onConfirm}
+              disabled={!canConfirm || isCreating}
+              className="w-full mt-6 py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl shadow-lg shadow-secondary/20 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {isCreating ? "Đang xử lý..." : "Xác nhận thanh toán"}
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </main>
   );
 }
 
-/* PAYMENT OPTION */
-
-function PaymentOption({
-  value,
-  method,
-  setMethod,
-  title,
-  desc,
-  icon,
-  label,
-  color,
-}: any) {
-  return (
-    <label className="flex items-center justify-between p-4 bg-slate-900 border border-slate-800 rounded-xl cursor-pointer hover:border-pink-500 transition">
-
-      <div className="flex items-center gap-4">
-
-        <div className={`size-12 rounded-lg flex items-center justify-center text-white font-bold ${color}`}>
-          {icon ? icon : label}
-        </div>
-
-        <div>
-          <p className="font-medium text-slate-100">{title}</p>
-          <p className="text-xs text-slate-500">{desc}</p>
-        </div>
-
-      </div>
-
-      <input
-        type="radio"
-        name="payment"
-        checked={method === value}
-        onChange={() => setMethod(value)}
-        className="w-5 h-5 accent-pink-500"
-      />
-    </label>
-  );
-}
-
-/* SUCCESS MODAL */
-
 function SuccessModal({ router }: any) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-
       <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">
-
         <div className="size-24 rounded-full border-4 border-pink-500 flex items-center justify-center text-pink-500 mb-6">
           ✓
         </div>
-
-        <h1 className="text-3xl font-bold text-white mb-4">
-          Thanh toán thành công!
-        </h1>
-
-        <p className="text-slate-300 mb-6">
-          Bạn đã đặt lịch học thành công với Sakura Sensei.
-        </p>
-
+        <h1 className="text-3xl font-bold text-white mb-4">Thanh toán thành công!</h1>
+        <p className="text-slate-300 mb-6">Bạn đã đặt lịch học thành công.</p>
         <button
           onClick={() => router.push("/booking/bookingmodal")}
           className="w-full h-12 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl"
         >
           Xem lịch của tôi
         </button>
-
       </div>
     </div>
   );

@@ -46,6 +46,10 @@ interface NavItem {
   badge?: string;
   /** If true, only ADMIN can see this item */
   adminOnly?: boolean;
+  children?: Array<{
+    title: string;
+    href: string;
+  }>;
 }
 
 interface NavGroup {
@@ -113,6 +117,11 @@ const navGroups: NavGroup[] = [
         title: "Đề thi",
         href: "/admin/jlpt-tests",
         icon: BookOpenCheck,
+      },
+      {
+        title: "Luyện nói AI",
+        href: "/admin/voice-topics",
+        icon: BookOpen,
       },
     ],
   },

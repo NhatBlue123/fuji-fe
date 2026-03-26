@@ -95,12 +95,14 @@ export default function PaymentPage() {
 
       <header className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-4">
-          <div
+          <button
             onClick={() => router.back()}
-            className="p-2 bg-slate-900 rounded-lg border border-slate-800 cursor-pointer hover:bg-white/5 transition"
+            className="group flex items-center gap-2 text-slate-500 hover:text-pink-400 transition-all font-bold"
           >
-            <ArrowLeft className="text-slate-100" size={20} />
-          </div>
+            <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/10 group-hover:border-pink-500/20 transition-all">
+              <ArrowLeft size={18} />
+            </div>
+          </button>
           <h2 className="text-2xl font-bold text-slate-100">Thanh toán</h2>
         </div>
       </header>

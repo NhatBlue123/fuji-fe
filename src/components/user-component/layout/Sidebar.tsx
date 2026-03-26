@@ -70,7 +70,7 @@ const Sidebar = () => {
     { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
     { label: "/video-call", path: "/video-call", icon: Video, customLabel: "Video call" },
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
-    { label: t("common.management"), path: "/settings", icon: Settings },
+    { label: "Cài đặt", path: "/settings", icon: Settings },
   ];
 
   return (

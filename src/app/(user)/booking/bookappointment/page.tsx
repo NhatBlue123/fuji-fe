@@ -193,7 +193,7 @@ export default function PaymentPage() {
 
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>Học phí</span>
+                    <span>Học phí(1 buổi)</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">

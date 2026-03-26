@@ -35,7 +35,7 @@ export default function PreviewCard({ mode, subject, price, ranges, estimatedSlo
         <p className="text-muted-foreground text-sm">Môn học</p>
         <p>{subject || "-"}</p>
 
-        <p className="text-muted-foreground text-sm mt-3">Học phí</p>
+        <p className="text-muted-foreground text-sm mt-3">Học phí(1 buổi)</p>
         <p className="font-bold">
           {(price || 0).toLocaleString("vi-VN")}đ · {toBlossom(price)} 🌸
         </p>

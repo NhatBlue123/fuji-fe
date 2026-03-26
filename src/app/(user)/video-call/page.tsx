@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useSignaling } from "@/hooks/useSignaling";
@@ -59,7 +59,7 @@ function SakuraFall({ density = 18 }: { density?: number }) {
               ["--sx2"]: `${sx2}px`,
               ["--r0"]: `${r0}deg`,
               ["--r1"]: `${r1}deg`,
-            }}
+            } as CSSProperties}
           />
         );
       })}

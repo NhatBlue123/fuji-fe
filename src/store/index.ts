@@ -6,6 +6,7 @@ import { flashcardApi } from "./services/flashcardApi";
 import { courseApi } from "./services/courseApi";
 import { authListenerMiddleware } from "./middlewares/authMiddleware";
 import { baseApi } from "./services/baseApi";
+import { aiBaseApi } from "./services/aiBaseApi";
 import { jlptApi } from "./services/jlptApi";
 import { adminJlptApi } from "./services/adminJlptApi";
 
@@ -23,6 +24,7 @@ export const store = configureStore({
     // RTK Query reducers
     [authApi.reducerPath]: authApi.reducer,
     [baseApi.reducerPath]: baseApi.reducer,
+    [aiBaseApi.reducerPath]: aiBaseApi.reducer,
     [flashcardApi.reducerPath]: flashcardApi.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
     [jlptApi.reducerPath]: jlptApi.reducer,
@@ -42,6 +44,7 @@ export const store = configureStore({
       .concat(userApi.middleware)
       .concat(adminRevenueApi.middleware)
       .concat(baseApi.middleware)
+      .concat(aiBaseApi.middleware)
       .concat(courseApi.middleware)
       .concat(adminReportApi.middleware)
       .prepend(authListenerMiddleware.middleware),

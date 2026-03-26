@@ -4,18 +4,27 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import {
   useVoiceChatMutation,
   useEndVoiceSessionMutation,
+  useStartVoiceSessionMutation,
 } from "@/store/services/voice/voiceApi";
-import type { VoiceState, VoiceTranscriptItem } from "@/types/voice";
+import type { VoiceState, VoiceTranscriptItem, VoiceChatResponse } from "@/types/voice";
+import type { Socket } from "socket.io-client";
 
 interface UseVoiceChatOptions {
+  /** Socket.IO instance kết nối tới AI-FUJI */
+  socket: Socket | null;
   onTranscriptUpdate?: (transcript: VoiceTranscriptItem) => void;
   onStatusChange?: (status: VoiceState["status"]) => void;
   onError?: (error: string) => void;
   /** Gọi liên tục khi đang phát audio (progress 0→1) */
   onAudioProgress?: (progress: number) => void;
+  /** Gọi khi AI detect đến lượt cuối cùng và nhả ((close)) */
+  onAutoClose?: () => void;
 }
 
-export function useVoiceChat(options: UseVoiceChatOptions = {}) {
+/** Timeout chờ socket event (ms) */
+const JOB_TIMEOUT_MS = 60_000;
+
+export function useVoiceChat(options: UseVoiceChatOptions) {
   const [state, setState] = useState<VoiceState>({
     status: "idle",
     sessionCode: null,
@@ -25,6 +34,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
 
   const [voiceChatMutation] = useVoiceChatMutation();
   const [endSessionMutation] = useEndVoiceSessionMutation();
+  const [startVoiceSessionMutation] = useStartVoiceSessionMutation();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -37,6 +47,9 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
     context: string;
     goals: string;
     preferredVoice: string;
+    topicId?: number;
+    scenarioId?: number;
+    openingLine?: string;
   } | null>(null);
 
   const updateStatus = useCallback(
@@ -48,20 +61,73 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
   );
 
   /**
+   * Chờ kết quả job qua Socket.IO events.
+   * Trả về VoiceChatResponse khi `voice:job:completed` được emit.
+   */
+  const waitForJobResult = useCallback(
+    (jobId: string): Promise<VoiceChatResponse> => {
+      const socket = options.socket;
+
+      // Fallback nếu không có socket — ko thể nhận kết quả
+      if (!socket || !socket.connected) {
+        return Promise.reject(
+          new Error("Socket chưa kết nối đến AI service"),
+        );
+      }
+
+      return new Promise<VoiceChatResponse>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("Timeout: không nhận được phản hồi từ AI"));
+        }, JOB_TIMEOUT_MS);
+
+        const cleanup = () => {
+          clearTimeout(timer);
+          socket.off("voice:job:completed", onCompleted);
+          socket.off("voice:job:failed", onFailed);
+        };
+
+        const onCompleted = (data: { jobId: string; result: VoiceChatResponse }) => {
+          if (data.jobId !== jobId) return;
+          cleanup();
+          resolve(data.result);
+        };
+
+        const onFailed = (data: { jobId: string; error?: string }) => {
+          if (data.jobId !== jobId) return;
+          cleanup();
+          reject(new Error(data.error || "Job xử lý thất bại"));
+        };
+
+        socket.on("voice:job:completed", onCompleted);
+        socket.on("voice:job:failed", onFailed);
+      });
+    },
+    [options.socket],
+  );
+
+  /**
    * Bắt đầu session mới — chỉ set config, chưa record
    */
   const startSession = useCallback(
-    (config: {
+    async (config: {
       level: string;
       context: string;
       goals?: string;
       preferredVoice?: string;
+      topicId?: number;
+      scenarioId?: number;
+      openingLine?: string;
     }) => {
+      const voice = config.preferredVoice || "alloy";
       chatConfigRef.current = {
         level: config.level,
         context: config.context,
         goals: config.goals || "",
-        preferredVoice: config.preferredVoice || "alloy",
+        preferredVoice: voice,
+        topicId: config.topicId,
+        scenarioId: config.scenarioId,
+        openingLine: config.openingLine,
       };
       sessionCodeRef.current = null;
       setState({
@@ -70,9 +136,85 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
         error: null,
         transcriptHistory: [],
       });
+
+      // Nếu có openingLine → AI nói trước
+      if (config.openingLine) {
+        updateStatus("processing");
+        const socket = options.socket;
+
+        try {
+          // Tạo Promise lắng nghe socket TRƯỚC khi gọi HTTP
+          const waitPromise = socket?.connected
+            ? new Promise<void>((resolve) => {
+                const timer = setTimeout(() => {
+                  socket.off("voice:job:completed", onOpening);
+                  updateStatus("idle");
+                  resolve();
+                }, 20_000);
+
+                const onOpening = async (data: { jobId: string; result: any }) => {
+                  if (!String(data.jobId).startsWith("opening-")) return;
+                  clearTimeout(timer);
+                  socket.off("voice:job:completed", onOpening);
+
+                  const result = data.result;
+                  const now = new Date().toISOString();
+
+                  if (result.aiResponse?.text) {
+                    const furigana = result.aiResponse?.furigana;
+                    const aiItem: VoiceTranscriptItem = {
+                      role: "assistant",
+                      transcript: result.aiResponse.text,
+                      translationVi: furigana?.translation || undefined,
+                      furigana: furigana || undefined,
+                      audioBase64: result.audioBase64 || undefined,
+                      audioFormat: result.audioFormat || "mp3",
+                      createdAt: now,
+                    };
+                    options.onTranscriptUpdate?.(aiItem);
+                    setState((prev) => ({
+                      ...prev,
+                      transcriptHistory: [...prev.transcriptHistory, aiItem],
+                    }));
+                  }
+
+                  if (result.audioBase64) {
+                    updateStatus("playing");
+                    await playBase64Audio(
+                      result.audioBase64,
+                      result.audioFormat || "mp3",
+                      options.onAudioProgress,
+                    );
+                  }
+
+                  updateStatus("idle");
+                  resolve();
+                };
+
+                socket.on("voice:job:completed", onOpening);
+              })
+            : Promise.resolve();
+
+          // Gọi HTTP sau khi listener đã ready
+          await startVoiceSessionMutation({
+            openingLine: config.openingLine,
+            preferredVoice: voice,
+            session: null,
+          }).unwrap();
+
+          await waitPromise;
+        } catch (err) {
+          console.error("startVoiceSession err:", err);
+          updateStatus("idle");
+        }
+      }
     },
-    [],
+    [startVoiceSessionMutation, updateStatus, options],
   );
+
+  // Removed listenForOpening - logic moved inline into startSession to fix race condition
+
+
 
   /**
    * Bắt đầu thu âm (push-to-talk: nhấn giữ)
@@ -107,7 +249,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
   }, [updateStatus, options]);
 
   /**
-   * Dừng thu âm → convert base64 → gửi BE → phát audio response
+   * Dừng thu âm → convert base64 → gửi AI service → chờ socket event → phát audio
    */
   const stopRecording = useCallback(async () => {
     const recorder = mediaRecorderRef.current;
@@ -131,7 +273,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
         // Convert blob → base64
         const base64 = await blobToBase64(blob);
 
-        // Gửi lên BE
+        // Gửi lên AI service
         updateStatus("processing");
         const config = chatConfigRef.current;
         if (!config) {
@@ -145,7 +287,8 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
         }
 
         try {
-          const result = await voiceChatMutation({
+          // Bước 1: Gửi request → nhận jobId (202 async)
+          const { jobId } = await voiceChatMutation({
             level: config.level,
             context: config.context,
             goals: config.goals,
@@ -153,7 +296,12 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
             audioFormat: "webm",
             preferredVoice: config.preferredVoice,
             session: sessionCodeRef.current || undefined,
+            topicId: config.topicId,
+            scenarioId: config.scenarioId,
           }).unwrap();
+
+          // Bước 2: Chờ kết quả qua socket
+          const result = await waitForJobResult(jobId);
 
           // Lưu session code cho lượt tiếp
           if (result.session) {
@@ -173,11 +321,19 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
             newItems.push(userItem);
             options.onTranscriptUpdate?.(userItem);
           }
-          if (result.aiResponse?.text) {
-            const furigana = result.aiResponse.furigana;
+          
+          let aiText = result.aiResponse?.text || "";
+          let isAutoClose = false;
+          if (aiText.includes("((close))")) {
+            isAutoClose = true;
+            aiText = aiText.replace("((close))", "").trim();
+          }
+
+          if (aiText) {
+            const furigana = result.aiResponse?.furigana;
             const aiItem: VoiceTranscriptItem = {
               role: "assistant",
-              transcript: result.aiResponse.text,
+              transcript: aiText,
               translationVi: furigana?.translation || undefined,
               furigana: furigana || undefined,
               audioBase64: result.audioBase64 || undefined,
@@ -204,6 +360,12 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
           }
 
           updateStatus("idle");
+
+          // Báo hiệu FE hiển thị popup kết thúc nếu thấy ((close))
+          if (isAutoClose) {
+            // @ts-ignore - Ta sẽ thêm onAutoClose vào Options sau
+            options.onAutoClose?.();
+          }
         } catch (err) {
           const message =
             err instanceof Error ? err.message : "Lỗi khi gửi voice";
@@ -216,7 +378,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
 
       recorder.stop();
     });
-  }, [voiceChatMutation, updateStatus, options]);
+  }, [voiceChatMutation, waitForJobResult, updateStatus, options]);
 
   /**
    * Kết thúc session hoàn toàn

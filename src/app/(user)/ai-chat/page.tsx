@@ -1489,7 +1489,7 @@ function AssistantPanel() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Page shell — header + mode tabs + explicit panel variants            */
+/* Page shell — mode tabs + explicit panel variants                     */
 /* ------------------------------------------------------------------ */
 
 export default function AIChatPage() {
@@ -1497,30 +1497,6 @@ export default function AIChatPage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Header */}
-      <header className="h-16 border-b border-border bg-background/90 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-30">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-foreground tracking-tight">
-            Luyện tập AI
-          </h2>
-          <div className="h-6 w-px bg-border" />
-          <div className="flex items-center gap-1.5 bg-orange-500/10 text-orange-500 dark:text-orange-400 px-3 py-1 rounded-full text-sm font-bold border border-orange-500/20">
-            <span className="material-symbols-outlined text-lg">
-              local_fire_department
-            </span>
-            <span>15 ngày</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20">
-            <span className="material-symbols-outlined text-lg">
-              add_circle
-            </span>
-            Bắt đầu phiên mới
-          </Button>
-        </div>
-      </header>
-
       {/* Mode tabs — Chatbot first, Sensei second */}
       <div className="flex border-b border-border bg-muted/30 shrink-0">
         <Button

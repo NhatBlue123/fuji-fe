@@ -56,7 +56,8 @@ export const voiceApi = aiBaseApi.injectEndpoints({
 
 export const userVoiceTopicApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getPublishedTopics: builder.query<any[], void>({
+    // Replace 'unknown' with a specific type if available, e.g., PublishedTopic[]
+    getPublishedTopics: builder.query<unknown[], void>({
       query: () => "/voice/topics",
     }),
   }),

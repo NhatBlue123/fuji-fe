@@ -561,11 +561,35 @@ export default function AdminExamLayout() {
     if (!derived || !selectedQuestionNumber) return;
     const { mondai, section, existingChild, existingParent } = derived;
 
+    const resolveSectionKey = (): SectionKey => {
+      const keys = section.sectionKeys;
+      if (keys.length === 1) return keys[0] as SectionKey;
+      if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+      if (mondai.requires_passage && keys.includes("READING")) return "READING";
+      const title = mondai.title || "";
+      if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        return "GRAMMAR";
+      }
+      if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR") && keys.includes("READING")) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        if (/文法/.test(title)) return "GRAMMAR";
+        return "VOCABULARY";
+      }
+      return keys[0] as SectionKey;
+    };
+
+    const sectionKey = resolveSectionKey();
+    const isListeningSection =
+      sectionKey === "LISTENING" || section.sectionKeys.includes("LISTENING");
+
+    if (isListeningSection && !explanation.trim()) {
+      toast.error("Phần nghe bắt buộc nhập script nghe trước khi lưu.");
+      return;
+    }
+
     setSaving(true);
     try {
-      // Determine correct section key: pick first sectionKey as primary
-      const sectionKey = section.sectionKeys[0] as SectionKey;
-
       let parentId: number | null = existingParent?.id ?? null;
 
       // Step 1: Upsert passage (parent question) if this mondai requires passage
@@ -1080,12 +1104,20 @@ export default function AdminExamLayout() {
               {/* Explanation + Points */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm">Giải thích (tùy chọn)</Label>
+                <Label className="text-sm">
+                  {derived.mondai.requires_audio
+                    ? "Script nghe *"
+                    : "Giải thích (tùy chọn)"}
+                </Label>
                   <Textarea
                     rows={2}
                     value={explanation}
                     onChange={(e) => setExplanation(e.target.value)}
-                    placeholder="Giải thích đáp án đúng..."
+                  placeholder={
+                    derived.mondai.requires_audio
+                      ? "Nhập script nội dung nghe..."
+                      : "Giải thích đáp án đúng..."
+                  }
                     className="text-sm"
                   />
                 </div>
@@ -1105,7 +1137,12 @@ export default function AdminExamLayout() {
               <div className="sticky bottom-0 -mx-8 px-8 py-4 border-t border-border bg-background/95 backdrop-blur flex items-center gap-3">
                 <Button
                   onClick={handleSave}
-                  disabled={saving || !questionText.trim() || (derived.mondai.requires_audio && !audioMediaId)}
+                  disabled={
+                    saving ||
+                    !questionText.trim() ||
+                    (derived.mondai.requires_audio && !audioMediaId) ||
+                    (derived.mondai.requires_audio && !explanation.trim())
+                  }
                   className="min-w-32"
                 >
                   {saving ? (
@@ -1118,6 +1155,12 @@ export default function AdminExamLayout() {
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <Volume2 className="h-3 w-3" />
                     Bắt buộc upload audio cho phần Listening
+                  </p>
+                )}
+                {derived.mondai.requires_audio && !explanation.trim() && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    Bắt buộc nhập script nghe trước khi lưu
                   </p>
                 )}
                 {derived.existingChild && (

@@ -41,11 +41,13 @@ import { ROUTE_PERMISSION_MAP } from "@/lib/permissions";
 
 interface NavItem {
   title: string;
-  href: string;
+  href?: string;
   icon: React.ElementType;
   badge?: string;
   /** If true, only ADMIN can see this item */
   adminOnly?: boolean;
+  /** If present, render as nested links */
+  children?: Array<{ title: string; href: string }>;
 }
 
 interface NavGroup {
@@ -122,6 +124,11 @@ const navGroups: NavGroup[] = [
         title: "Báo cáo & Phản hồi",
         href: "/admin/reports",
         icon: AlertTriangle,
+      },
+      {
+        title: "Chat Moderation",
+        href: "/admin/chat-moderation",
+        icon: Shield,
       },
       {
         title: "Thông báo",
@@ -204,7 +211,7 @@ export function AdminSidebar() {
               const visibleItems = group.items.filter((item) => {
                 if (isAdmin) return true;
                 if (item.adminOnly) return false;
-                return canAccessRoute(item.href);
+                return item.href ? canAccessRoute(item.href) : false;
               });
               if (visibleItems.length === 0) return null;
               return (

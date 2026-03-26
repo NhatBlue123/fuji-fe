@@ -59,34 +59,6 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
 
-        {/* Chống flash theme - Script này phải chạy đồng bộ trong <head> */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-(function() {
-  try {
-    var theme = localStorage.getItem('theme');
-    var root = document.documentElement;
-
-    // Xóa các class theme cũ
-    root.classList.remove('light', 'dark');
-
-    // Áp dụng theme
-    if (theme === 'dark' || theme === 'light') {
-      root.classList.add(theme);
-    } else {
-      // Nếu chưa có theme hoặc theme = 'system', dùng system preference
-      var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.add(isDark ? 'dark' : 'light');
-    }
-  } catch(e) {
-    // Fallback: nếu lỗi thì dùng light mode
-    document.documentElement.classList.add('light');
-  }
-})();
-            `,
-          }}
-        />
       </head>
       <body suppressHydrationWarning>
         <ExtensionCleanup />

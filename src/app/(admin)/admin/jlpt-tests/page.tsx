@@ -96,8 +96,8 @@ const INITIAL_FORM = {
   level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
   testType: "full_test" as
     | "full_test"
-    | "vocabulary_grammar"
-    | "reading"
+    | "vocabulary"
+    | "grammar_reading"
     | "listening",
   description: "",
   duration: 120,
@@ -202,6 +202,53 @@ export default function AdminJLPTTestsPage() {
     setShowCreateForm(true);
   };
 
+  // ── Auto-calculate totals & durations ──────────────────────────────────────
+  useEffect(() => {
+    // Only auto-calc if we are in CREATE mode (not editing)
+    if (showCreateForm && !editingTestId) {
+      const struct = getStructureForTestType(formData.level, formData.testType);
+      let totalQ = 0;
+      struct.forEach((s) => {
+        s.mondai.forEach((m) => {
+          totalQ += m.end - m.start + 1;
+        });
+      });
+
+      // Mapping for default durations (minutes)
+      const durations: Record<string, Record<string, number>> = {
+        N1: { full_test: 170, vocabulary: 60, grammar_reading: 110, listening: 60 },
+        N2: { full_test: 155, vocabulary: 50, grammar_reading: 105, listening: 50 },
+        N3: { full_test: 140, vocabulary: 30, grammar_reading: 70, listening: 40 },
+        N4: { full_test: 115, vocabulary: 25, grammar_reading: 55, listening: 35 },
+        N5: { full_test: 90, vocabulary: 20, grammar_reading: 40, listening: 30 },
+      };
+
+      const defaultDur = durations[formData.level]?.[formData.testType] || 120;
+      
+      setFormData((prev) => ({
+        ...prev,
+        totalQuestions: totalQ,
+        duration: defaultDur,
+        passScore: formData.testType === "full_test" ? 90 : 45, // Rough estimate
+      }));
+    }
+  }, [formData.level, formData.testType, showCreateForm, editingTestId]);
+
+  // ── Auto-open edit form from redirect ───────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== "undefined" && data && data.content && data.content.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const editIdParam = urlParams.get("editId");
+      if (editIdParam) {
+        const targetTest = data.content.find((t: any) => t.id.toString() === editIdParam);
+        if (targetTest && !showCreateForm) {
+          openEditForm(targetTest);
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+    }
+  }, [data, showCreateForm]);
+
   const closeForm = () => {
     setShowCreateForm(false);
     setEditingTestId(null);
@@ -258,6 +305,22 @@ export default function AdminJLPTTestsPage() {
       setPdfParsing(false);
       // Reset file input so same file can be re-uploaded
       if (pdfFileInputRef.current) pdfFileInputRef.current.value = "";
+    }
+  };
+
+  const handlePdfSubmit = async () => {
+    if (editingTestId) {
+      await confirmPdfImport(editingTestId);
+    } else {
+      try {
+        const result = await createTest(formData).unwrap();
+        toast.success("Tạo đề thi mới thành công!");
+        setEditingTestId(result.id); 
+        await confirmPdfImport(result.id);
+      } catch (err) {
+        toast.error("Tạo đề thi thất bại, không thể import!");
+        console.error(err);
+      }
     }
   };
 
@@ -674,39 +737,50 @@ export default function AdminJLPTTestsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let currentTestId: number;
+
+      // 1. Process local test details
       if (editingTestId) {
         await updateTest({ id: editingTestId, data: formData }).unwrap();
         toast.success("Cập nhật đề thi thành công!");
-        closeForm();
+        currentTestId = editingTestId;
       } else {
         const result = await createTest(formData).unwrap();
-        if (autoGenerateWithBank) {
-          setGeneratingFromBank(true);
-          try {
-            await generateQuestionsFromBank(result.id);
-          } finally {
-            setGeneratingFromBank(false);
-          }
-          // Keep modal open and show review panel on the right
-          setPreviewTestId(result.id);
-          setSelectedQuestionId(null);
-          setReviewConfirmed(false);
-          return;
+        toast.success("Tạo đề thi mới thành công!");
+        currentTestId = result.id;
+      }
+
+      // 2. Process Generative actions
+      if (autoGenerateWithBank) {
+        setGeneratingFromBank(true);
+        try {
+          await generateQuestionsFromBank(currentTestId);
+        } finally {
+          setGeneratingFromBank(false);
         }
-        if (autoGenerateWithAI) {
-          setGeneratingWithAI(true);
-          try {
-            await generateQuestionsWithAI(result.id);
-          } finally {
-            setGeneratingWithAI(false);
-          }
-          setPreviewTestId(result.id);
-          setSelectedQuestionId(null);
-          setReviewConfirmed(false);
-          return;
+        setPreviewTestId(currentTestId);
+        setSelectedQuestionId(null);
+        setReviewConfirmed(false);
+        return;
+      }
+
+      if (autoGenerateWithAI) {
+        setGeneratingWithAI(true);
+        try {
+          await generateQuestionsWithAI(currentTestId);
+        } finally {
+          setGeneratingWithAI(false);
         }
-        closeForm();
-        router.push(`/admin/jlpt-tests/${result.id}/questions`);
+        setPreviewTestId(currentTestId);
+        setSelectedQuestionId(null);
+        setReviewConfirmed(false);
+        return;
+      }
+
+      // 3. Finalize
+      closeForm();
+      if (!editingTestId) {
+        router.push(`/admin/jlpt-tests/${currentTestId}/questions`);
       }
     } catch (err) {
       toast.error(editingTestId ? "Cập nhật thất bại!" : "Tạo đề thi thất bại!");
@@ -1013,10 +1087,10 @@ export default function AdminJLPTTestsPage() {
                         )}
 
                         {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
-                        {formData.testType === "vocabulary_grammar" && (
+                        {formData.testType === "vocabulary" && (
                           <div className="space-y-2">
                             <Label htmlFor="langPass">
-                              Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)
+                              Liệt ngôn ngữ (Từ vựng)
                             </Label>
                             <Input
                               id="langPass"
@@ -1037,10 +1111,10 @@ export default function AdminJLPTTestsPage() {
                         )}
 
                         {/* reading: chỉ hiện liệt đọc */}
-                        {formData.testType === "reading" && (
+                        {formData.testType === "grammar_reading" && (
                           <div className="space-y-2">
                             <Label htmlFor="readPass">
-                              Liệt đọc (phần đọc hiểu)
+                              Liệt (Ngữ pháp &amp; Đọc hiểu)
                             </Label>
                             <Input
                               id="readPass"
@@ -1085,9 +1159,79 @@ export default function AdminJLPTTestsPage() {
                         )}
                       </div>
 
+                      {/* ── Import câu hỏi từ PDF / Word ── */}
+                      <div className="p-4 bg-muted/40 rounded-lg border border-dashed space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            Import từ file PDF / Word
+                          </p>
+                          {pdfPreview && (
+                            <Badge variant="outline" className="text-xs bg-background">
+                              {pdfPreview.filter((q: any) => !q._error).length}/{pdfPreview.length} câu hợp lệ
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Hỗ trợ .pdf, .docx — AI tự động trích xuất Mondai.
+                        </p>
+                        <input
+                          ref={pdfFileInputRef}
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.docx,.doc"
+                          onChange={handlePdfFileChange}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={pdfParsing}
+                          className="w-full gap-2"
+                          onClick={() => pdfFileInputRef.current?.click()}
+                        >
+                          {pdfParsing ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Đang phân tích...</>
+                          ) : (
+                            <><Upload className="w-3 h-3" /> {pdfFileName ? `Đổi file: ${pdfFileName}` : "Tải tệp lên"}</>
+                          )}
+                        </Button>
+                        
+                        {pdfParseError && (
+                          <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-[11px] text-destructive">
+                            {pdfParseError}
+                          </div>
+                        )}
+
+                        {pdfPreview && pdfPreview.length > 0 && (
+                          <div className="space-y-2">
+                            <ScrollArea className="h-40 rounded border bg-background">
+                              <div className="text-[10px]">
+                                {pdfPreview.map((q: any, idx: number) => (
+                                  <div key={idx} className="p-1.5 border-b flex justify-between gap-2">
+                                    <span className="truncate opacity-70">問{q.mondaiNumber}: {q.contentText}</span>
+                                    {q._error ? <span className="text-destructive whitespace-nowrap">❌</span> : <span className="text-green-500 whitespace-nowrap">✅</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              className="w-full text-xs"
+                              disabled={pdfImporting || pdfPreview.filter((q: any) => !q._error).length === 0}
+                              onClick={handlePdfSubmit}
+                            >
+                              {pdfImporting ? "Đang import..." : `Xác nhận import (${pdfPreview.filter((q: any) => !q._error).length} câu)`}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+
                       {/* Actions */}
                       <div className="flex gap-3 pt-2">
-                        {!editingTestId && (
                           <>
                             <label className="flex items-center gap-2 text-sm text-muted-foreground">
                               <input
@@ -1114,7 +1258,6 @@ export default function AdminJLPTTestsPage() {
                               Lấy câu hỏi từ ngân hàng đề thi
                             </label>
                           </>
-                        )}
                       </div>
 
                       <div className="flex gap-3 pt-2">
@@ -1143,113 +1286,15 @@ export default function AdminJLPTTestsPage() {
                           Hủy
                         </Button>
                       </div>
-                      {/* ── Import câu hỏi từ PDF / Word ── */}
-                      {editingTestId && (
-                        <div className="pt-3 border-t space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-primary" />
-                              Import từ file PDF / Word
-                            </p>
-                            {pdfPreview && (
-                              <Badge variant="outline" className="text-xs">
-                                {pdfPreview.filter((q: any) => !q._error).length}/{pdfPreview.length} hợp lệ
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Tải lên đề thi PDF/DOCX — AI tự động trích xuất câu hỏi để bạn review trước khi import.
-                          </p>
-                          <input
-                            ref={pdfFileInputRef}
-                            type="file"
-                            className="hidden"
-                            accept=".pdf,.docx,.doc"
-                            onChange={handlePdfFileChange}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={pdfParsing}
-                            className="w-full gap-2 border-dashed"
-                            onClick={() => pdfFileInputRef.current?.click()}
-                          >
-                            {pdfParsing ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Đang phân tích file...</>
-                            ) : (
-                              <><Upload className="w-4 h-4" /> {pdfFileName ? `Tải lại: ${pdfFileName}` : "Chọn file PDF / Word"}</>
-                            )}
-                          </Button>
-                          {pdfParseError && (
-                            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-md text-xs text-destructive">
-                              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                              <span>{pdfParseError}</span>
-                            </div>
-                          )}
-                          {pdfPreview && pdfPreview.length > 0 && (
-                            <div className="space-y-2">
-                              <ScrollArea className="h-60 rounded-md border">
-                                <div className="text-xs">
-                                  <div className="grid grid-cols-[28px_44px_1fr_72px] gap-1 px-2 py-1.5 bg-muted font-medium text-muted-foreground sticky top-0 z-10">
-                                    <span>#</span>
-                                    <span>Mộnđai</span>
-                                    <span>Nội dung</span>
-                                    <span className="text-center">Trạng thái</span>
-                                  </div>
-                                  {pdfPreview.map((q: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className={`grid grid-cols-[28px_44px_1fr_72px] gap-1 px-2 py-1.5 border-t items-start ${q._error ? "bg-destructive/5" : ""}`}
-                                    >
-                                      <span className="text-muted-foreground">{idx + 1}</span>
-                                      <span className="font-mono text-muted-foreground">問{q.mondaiNumber}</span>
-                                      <div className="min-w-0">
-                                        <p className="truncate">{q.contentText}</p>
-                                        {q._error && <p className="text-destructive text-[11px] mt-0.5">{q._error}</p>}
-                                      </div>
-                                      <div className="flex justify-center">
-                                        {q._error ? (
-                                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">❌ Lỗi</Badge>
-                                        ) : (
-                                          <Badge className="text-[10px] px-1.5 py-0 bg-green-500 hover:bg-green-600">✅ Hợp lệ</Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </ScrollArea>
-                              <Button
-                                type="button"
-                                className="w-full gap-2"
-                                disabled={pdfImporting || pdfPreview.filter((q: any) => !q._error).length === 0}
-                                onClick={() => editingTestId && confirmPdfImport(editingTestId)}
-                              >
-                                {pdfImporting ? (
-                                  <><Loader2 className="w-4 h-4 animate-spin" />Đang import...</>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    Xác nhận import {pdfPreview.filter((q: any) => !q._error).length} câu hỏi hợp lệ
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       {!editingTestId && (
                         <div className="pt-1 border-t">
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5" />
-                            Import PDF/Word: tạo đề thi trước, sau đó mở chỉnh sửa để import câu hỏi từ file.
-                          </p>
+                          {/* We allow PDF import here too now */}
                         </div>
                       )}
                     </CardContent>
-                    </Card>
-                  </form>
+                  </Card>
+                </form>
 
                   {previewTestId ? (
 

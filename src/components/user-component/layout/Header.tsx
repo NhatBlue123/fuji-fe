@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import { Bell, Moon, Sun, User, LogOut, Settings, Sparkles } from "lucide-react";
 import { useTheme } from "@/components/common";
 import { useAuth, useAppDispatch } from "@/store/hooks";
@@ -42,6 +43,14 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
   const { unreadCount, notifications, markAsRead } = useNotifications();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid SSR/client auth mismatch hydration issues.
+  const canShowAuthUi = mounted && isAuthenticated;
 
   const getRoleLabel = () => {
     if (!roles) return "HỌC VIÊN";
@@ -88,7 +97,7 @@ const Header = () => {
         </Button>
 
         {/* ICON 3: NOTIFICATION (Chỉ hiện khi đã đăng nhập) */}
-        {isAuthenticated && (
+        {canShowAuthUi && (
           <Popover>
             <PopoverTrigger asChild>
               <Button 
@@ -153,10 +162,10 @@ const Header = () => {
           </Popover>
         )}
 
-        {isAuthenticated && <div className="h-6 w-[1px] bg-border mx-1 opacity-50" />}
+        {canShowAuthUi && <div className="h-6 w-[1px] bg-border mx-1 opacity-50" />}
 
         {/* ACCOUNT DROPDOWN (Chỉ hiện khi đã đăng nhập) */}
-        {isAuthenticated ? (
+        {canShowAuthUi ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-10 gap-2 px-1 hover:bg-transparent transition-all rounded-xl active:scale-95 active:translate-y-[1px] group">

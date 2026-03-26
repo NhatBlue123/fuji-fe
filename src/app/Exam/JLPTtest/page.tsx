@@ -97,6 +97,13 @@ function JLPTtestPageInner() {
   /* ===== FLATTEN QUESTIONS ===== */
   const leafQuestions = useMemo(() => {
     const flattened: any[] = [];
+    const mondaiPassageMap = new Map<number, boolean>();
+    examStructure.forEach((section) => {
+      section.mondai.forEach((m) => {
+        mondaiPassageMap.set(m.number, Boolean(m.requires_passage));
+      });
+    });
+
     const sortedQ = [...allQuestions].sort(
       (a, b) => a.questionOrder - b.questionOrder,
     );
@@ -104,17 +111,32 @@ function JLPTtestPageInner() {
     sortedQ.forEach((q) => {
       if (!q.children || q.children.length === 0) {
         const opts = parseOptions(q.options);
-        if (opts.length > 0) flattened.push({ ...q, options: opts });
+        if (opts.length > 0) {
+          flattened.push({
+            ...q,
+            options: opts,
+          });
+        }
       } else {
+        const parentQuestion = {
+          ...q,
+          isReadingPassage: mondaiPassageMap.get(q.mondaiNumber) === true,
+        };
         q.children.forEach((child: any) => {
           const opts = parseOptions(child.options);
-          flattened.push({ ...child, options: opts });
+          if (opts.length > 0) {
+            flattened.push({
+              ...child,
+              options: opts,
+              parent: parentQuestion,
+            });
+          }
         });
       }
     });
 
     return flattened;
-  }, [allQuestions]);
+  }, [allQuestions, examStructure]);
 
   const totalQuestions = leafQuestions.length;
   const duration = testData?.duration || 140;

@@ -16,11 +16,8 @@ export interface TransactionResponse {
   totalPages: number;
   totalElements?: number;
 }
-<<<<<<< HEAD
 export interface WalletInfo {
   availableBalance: number;
   balance: number;
   frozenBalance: number;
 }
-=======
->>>>>>> 5ec54e3cdd2a537cf6c1538db5fdf5836e73a65a

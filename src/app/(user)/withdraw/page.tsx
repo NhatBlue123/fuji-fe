@@ -349,7 +349,7 @@ export default function WithdrawPage() {
               form="withdraw-form"
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-14 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-lg shadow-pink-500/20 transition-all active:scale-95"
+              className="w-full h-14 rounded-xl bg-gradient-to-r bg-pink-400  hover:from-blue-600 text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-lg shadow-pink-500/20 transition-all active:scale-95"
             >
               {isSubmitting ? "Đang xử lý..." : "Gửi yêu cầu rút tiền"}
             </Button>

@@ -67,7 +67,7 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
             {/* Avatar Section */}
             <div className="relative group">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-br from-primary via-cyan-400 to-indigo-500 shadow-2xl">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-br from-primary via-cyan-400 to-pink-500 shadow-2xl">
                 <div className="w-full h-full rounded-[1.4rem] bg-[#0B1120] overflow-hidden relative border-4 border-[#0B1120]">
                   {user.avatarUrl ? (
                     <Image src={user.avatarUrl} alt="avatar" className="object-cover" fill sizes="160px" />
@@ -100,7 +100,7 @@ export default function ProfilePage() {
               </p>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
-                <Button asChild className="rounded-xl h-10 px-6 bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20">
+                <Button asChild className="rounded-xl h-10 px-6 bg-pink-400 hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20">
                   <Link href="/profile/edit">
                     <Edit size={16} className="mr-2" /> Chỉnh sửa
                   </Link>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
 
             {/* Stats Sidebar / Level */}
             <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-center space-y-3 min-w-[180px]">
-              <div className="p-3 bg-primary/20 rounded-2xl w-fit mx-auto border border-primary/30">
+              <div className="p-3 bg-pink-400 rounded-2xl w-fit mx-auto border border-primary/30">
                 <Trophy size={24} className="text-primary" />
               </div>
               <div>

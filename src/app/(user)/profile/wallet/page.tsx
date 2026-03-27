@@ -117,7 +117,7 @@ export default function FujiWallet() {
           
           <CardContent className="relative z-10 px-10 pb-12 pt-4">
             <div className="flex items-baseline gap-4">
-              <span className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-md">
+              <span className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-md">
                 {balance.toLocaleString()}
               </span>
               <span className="text-3xl font-black text-white/30 uppercase tracking-tighter">đ</span>

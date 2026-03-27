@@ -10,7 +10,7 @@ export interface FlashcardSet {
   status: string;
   lessonColor?: string;
   isPublic?: boolean;
-  level?: "N5" | "N4" | "N3" | "N2" | "N1";
+  level?: JlptLevel;
 }
 
 export interface Flashcard {
@@ -21,6 +21,8 @@ export interface Flashcard {
   example: string;
   lesson: string;
   type: string;
+  pronunciation?: string;
+  vocabulary?: string;
   studyStatus?: "learned" | "review" | "not_learned";
   viewCount: number;
 }
@@ -50,11 +52,13 @@ export interface CardResponseDTO extends CardDTO {
 }
 
 export interface UserStudyProgressDTO {
-  userId: number;
-  flashCardId: number;
-  progressPercentage: number;
-  rememberedCount: number;
-  totalCards: number;
+  userId?: number;
+  flashCardId?: number;
+  flashcardId?: number;
+  progressPercentage?: number;
+  rememberedCount?: number;
+  totalCards?: number;
+  studiedCards?: number;
   lastStudiedAt?: string;
   nextReviewAt?: string;
   isCompleted?: boolean;
@@ -63,7 +67,7 @@ export interface UserStudyProgressDTO {
 export interface UserDTO {
   id: number;
   username: string;
-  fullName: string;
+  fullName?: string;
   avatarUrl?: string;
 }
 
@@ -71,32 +75,43 @@ export interface FlashCardResponseDTO {
   id: number;
   name: string;
   description?: string;
-  level?: string;
+  level?: string | JlptLevel;
   thumbnailUrl?: string;
   isPublic: boolean;
   cardCount: number;
-  cards: CardResponseDTO[];
-  user: UserDTO;
+  cards?: CardResponseDTO[];
+  user?: UserDTO;
   userProgress?: UserStudyProgressDTO;
-  studyCount: number;
+  studyCount?: number;
+  rating?: number;
   createdAt?: string;
   updatedAt?: string;
-  rating?: number;
 }
 
 export interface FlashListResponseDTO {
   id: number;
   title: string;
   description?: string;
-  level?: string;
+  level?: string | JlptLevel;
   thumbnailUrl?: string;
   isPublic: boolean;
-  flashcards: any[];
-  user: UserDTO;
+  flashcards?: FlashCardResponseDTO[];
+  user?: UserDTO;
   rating?: number;
   averageRating?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface PaginationDTO {
+  page?: number;
+  size?: number;
+  total?: number;
+  totalPages?: number;
+  pageNumber?: number;
+  pageSize?: number;
+  totalElements?: number;
+  last?: boolean;
 }
 
 export interface FlashListPageDTO {
@@ -107,33 +122,35 @@ export interface FlashListPageDTO {
 
 export interface FlashCardSearchResult {
   results: FlashCardResponseDTO[];
+  flashCards: FlashCardResponseDTO[];
   pagination: PaginationDTO;
 }
 
 export interface FlashListSearchResult {
   results: FlashListResponseDTO[];
+  flashLists: FlashListResponseDTO[];
   pagination: PaginationDTO;
 }
 
-export interface PaginationDTO {
-  page?: number;
-  size?: number;
-  total?: number;
-  totalPages?: number;
-}
-
 export interface RatingRequestDTO {
-  rating: number;
+  rating?: number;
+  flashlistId?: number;
+  ratingValue?: number;
+  comment?: string;
 }
 
 export interface FlashCardListParams {
   page?: number;
   limit?: number;
+  search?: string;
+  level?: string;
 }
 
 export interface FlashListListParams {
   page?: number;
   limit?: number;
+  search?: string;
+  level?: string;
 }
 
 export interface SearchParams {
@@ -154,111 +171,4 @@ export function buildFlashcardFormData(
     formData.append("thumbnail", thumbnail);
   }
   return formData;
-}
-
-export interface CardDTO {
-  id?: number;
-  vocabulary: string;
-  meaning: string;
-  previewUrl?: string | null;
-  pronunciation?: string;
-  exampleSentence?: string;
-}
-
-export interface FlashCardResponseDTO {
-  id: number;
-  name: string;
-  description?: string;
-  cardCount: number;
-  thumbnailUrl?: string;
-  level?: JlptLevel;
-  isPublic: boolean;
-  user?: {
-    id: number;
-    username: string;
-    fullName?: string;
-  };
-  cards?: CardDTO[];
-  createdAt?: string;
-  updatedAt?: string;
-  studyCount?: number;
-  userProgress?: UserStudyProgressDTO;
-}
-
-export interface FlashListResponseDTO {
-  id: number;
-  title: string;
-  description?: string;
-  level?: JlptLevel;
-  isPublic: boolean;
-  user?: {
-    id: number;
-    username: string;
-    fullName?: string;
-  };
-  flashcards?: FlashCardResponseDTO[];
-  averageRating: number;
-  createdAt: string;
-  updatedAt: string;
-  thumbnailUrl?: string;
-}
-
-export interface FlashListPageDTO {
-  myLists: FlashListResponseDTO[];
-  publicLists: FlashListResponseDTO[];
-}
-
-export interface PaginationDTO {
-  pageNumber: number;
-  pageSize: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
-}
-
-export interface FlashCardSearchResult {
-  flashCards: FlashCardResponseDTO[];
-  pagination: PaginationDTO;
-}
-
-export interface FlashListSearchResult {
-  flashLists: FlashListResponseDTO[];
-  pagination: PaginationDTO;
-}
-
-export interface FlashCardListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  level?: string;
-}
-
-export interface FlashListListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  level?: string;
-}
-
-export interface SearchParams {
-  query: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface RatingRequestDTO {
-  flashlistId: number;
-  ratingValue: number;
-  comment?: string;
-}
-
-export interface UserStudyProgressDTO {
-  flashcardId: number;
-  studiedCards: number;
-  totalCards: number;
-  lastStudiedAt: string;
-  progressPercentage?: number;
-  isCompleted?: boolean;
-  rememberedCount?: number;
-  nextReviewAt?: string;
 }

@@ -14,4 +14,10 @@ export interface TransactionResponse {
   number: number;
   size: number;
   totalPages: number;
+  totalElements?: number;
+}
+export interface WalletInfo {
+  availableBalance: number;
+  balance: number;
+  frozenBalance: number;
 }

@@ -2,331 +2,203 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useCancelBookingMutation, useGetMyBookingsQuery } from "@/store/services/bookingApi";
 
-const courses = [
-  {
-    title: "Từ vựng N2 siêu tốc",
-    lessons: "24 bài giảng • 12 giờ",
-    tag: "N2 Prep",
-  },
-  {
-    title: "Tiếng Nhật công sở",
-    lessons: "15 bài giảng • 8 giờ",
-    tag: "Business",
-  },
-  {
-    title: "Văn hóa giao tiếp Nhật",
-    lessons: "10 bài giảng • 5 giờ",
-    tag: "Culture",
-  },
-  {
-    title: "Luyện giọng chuẩn Tokyo",
-    lessons: "12 bài giảng • 6 giờ",
-    tag: "Pronunciation",
-  },
-];
+type Tab = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
-const classes = [
-  {
-    teacher: "Tanaka Sensei",
-    subject: "Giao tiếp N3",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9",
-    date: "15/10",
-    time: "09:00",
-    status: "join",
-  },
-  {
-    teacher: "Yuki Sensei",
-    subject: "Kanji N2",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9",
-    date: "16/10",
-    time: "14:00",
-    status: "waiting",
-  },
-];
+function formatDate(v: string) {
+  return new Date(v).toLocaleDateString("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
 
-const times = [
-  "08:00", "09:00", "10:00", "11:00",
-  "13:00", "14:00", "15:00", "16:00",
-  "17:00", "18:00", "19:00", "20:00",
-];
+function formatTimeRange(startAt: string, endAt: string) {
+  const s = new Date(startAt);
+  const e = new Date(endAt);
+  const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${hhmm(s)} - ${hhmm(e)}`;
+}
 
-const disabledTimes = ["11:00", "14:00", "18:00"];
+export default function MySchedulePage() {
+  const [tab, setTab] = useState<Tab>("UPCOMING");
+  
+  // State để quản lý việc hiển thị Modal xác nhận hủy
+  // Nếu bằng null là đóng, nếu có ID là đang mở Modal cho class đó
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-export default function BookingModalPage() {
-  const [selectedDate, setSelectedDate] = useState<number>(15);
-  const [selectedTime, setSelectedTime] = useState<string>("");
+  const { data, isLoading, isFetching, isError } = useGetMyBookingsQuery({ status: tab });
+  const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
+
+  const items = data ?? [];
+
+  // Hàm thực hiện hủy thực sự khi bấm "Đồng ý" trên Modal
+  const handleConfirmCancel = async () => {
+    if (deletingId === null) return;
+    try {
+      await cancelBooking({ bookingId: deletingId }).unwrap();
+      // Thành công thì tự đóng modal
+      setDeletingId(null);
+    } catch (e) {
+      console.error("Lỗi khi hủy lịch:", e);
+      alert("Không thể hủy lịch, vui lòng thử lại sau.");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#0B0F1A] text-white">
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0B0F1A]/90 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/booking">
-              <Button
-                variant="ghost"
-                className="size-10 rounded-full hover:bg-white/5 transition flex items-center justify-center"
-              >
-                <span className="material-symbols-outlined">arrow_back</span>
-              </Button>
-            </Link>
-            <h2 className="text-xl font-bold">Đặt lịch học với Sensei</h2>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {/* search */}
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                search
-              </span>
-              <input
-                placeholder="Tìm khóa học, giáo viên..."
-                className="bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm w-64 focus:outline-none focus:border-pink-500"
-              />
-            </div>
-
-            {/* filter */}
-            <button className="flex items-center justify-center size-10 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-pink-500 transition">
-              <span className="material-symbols-outlined">tune</span>
-            </button>
-
-            {/* avatar */}
-            <div className="size-10 rounded-full border-2 border-pink-500/30 p-0.5">
-              <img
-                className="w-full h-full rounded-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAa6-kOZhF7ebF5mujILXAuQxsFPSgnQcE5VMEB-KjqVZHg3zEqXY5QKozYCklySzyRkWmW8mVdWEjRrHPjxQxilJlSReY36WavHmcXwcOZey0kpQStAio_GJbrs2n73Y7A7pmztL-Gny9f8XAcuIoyPUwY36FI4d5fpFeGn6kcRkxSIs101CS-aLarIt77ZZ-cct9ReUGcoggjJB8AovmjASY9Qv9AIn4r7jtjhebm1KH6cSD6eQWrhUObG8V-683jh3Fy4N6yfFD9"
-                alt="avatar"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* CONTENT */}
-      <main className="px-10 py-8">
-        {/* FILTER TABS */}
+    <main className="flex-1 overflow-y-auto bg-[#0f172a] px-6 relative min-h-screen">
+      <div className="px-10 py-8">
+        {/* Tab Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-            <button className="px-6 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-sm font-bold">
-              Sắp tới
-            </button>
-            <button className="px-6 py-2 text-slate-400 text-sm">
-              Đã hoàn thành
-            </button>
-            <button className="px-6 py-2 text-slate-400 text-sm">Đã hủy</button>
+            {(["UPCOMING", "COMPLETED", "CANCELLED"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                  tab === t ? "bg-secondary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {t === "UPCOMING" ? "Sắp tới" : t === "COMPLETED" ? "Đã hoàn thành" : "Đã hủy"}
+              </button>
+            ))}
           </div>
 
           <Link href="/booking">
-            <button className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded-xl text-sm font-bold text-pink-500">
-              <span className="material-symbols-outlined text-sm">add</span>
-              Đặt lịch mới
-            </button>
-          </Link>
+  <button className="flex items-center gap-2 px-4 py-2 bg-secondary/10 border border-secondary/30 rounded-xl text-sm font-bold text-secondary hover:bg-secondary/20 transition-all active:scale-95">
+    <span className="material-symbols-outlined text-sm">add</span>
+    Đặt lịch mới
+  </button>
+</Link>
         </div>
 
-        {/* CLASS LIST */}
+        {/* Trạng thái Loading / Lỗi */}
+        {(isLoading || isFetching) && <div className="text-slate-400 animate-pulse">Đang tải lịch của bạn...</div>}
+
+        {isError && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            Không tải được lịch của bạn. Vui lòng kiểm tra lại kết nối.
+          </div>
+        )}
+
+        {!isLoading && !isFetching && !isError && items.length === 0 && (
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">
+            Không có dữ liệu lịch học trong mục này.
+          </div>
+        )}
+
+        {/* Danh sách lịch học */}
         <div className="space-y-4">
-          {classes.map((c, i) => (
+          {items.map((c) => (
             <div
-              key={i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6"
+              key={c.bookingId}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
             >
-              {/* teacher */}
-              <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-4 flex-1 w-full">
                 <img
-                  src={c.avatar}
-                  alt={c.teacher}
+                  src={c.teacherAvatarUrl || "/images/avt-default.jpg"}
                   className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
+                  alt="Teacher"
                 />
                 <div>
-                  <h4 className="text-slate-100 font-bold">{c.teacher}</h4>
+                  <h4 className="text-slate-100 font-bold">{c.teacherName}</h4>
                   <p className="text-pink-400 text-sm">{c.subject}</p>
                 </div>
               </div>
 
-              {/* date */}
               <div className="flex items-center gap-8 px-8 border-x border-white/10">
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs">Ngày</p>
-                  <p className="text-white font-bold">{c.date}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">Ngày</p>
+                  <p className="text-white font-bold">{formatDate(c.startAt)}</p>
                 </div>
+
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs">Giờ</p>
-                  <p className="text-white font-bold">{c.time}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">Giờ</p>
+                  <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
                 </div>
               </div>
 
-              {/* action */}
-              <button
-                className={`px-8 py-3 rounded-xl text-sm font-bold ${
-                  c.status === "join"
-                    ? "bg-secondary hover:bg-secondary/90 text-white"
-                    : "bg-white/10 text-slate-300"
-                }`}
-              >
-                {c.status === "join" ? "Vào lớp" : "Chờ lớp"}
-              </button>
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                {tab === "UPCOMING" && (
+                  <>
+                    <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-secondary hover:bg-secondary/90 text-white transition-all">
+                      {new Date() >= new Date(c.startAt) ? "Vào lớp" : "Chờ lớp"}
+                    </button>
+                    <button
+                      disabled={isCancelling}
+                      onClick={() => setDeletingId(c.bookingId)}
+                      className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                    >
+                      Hủy
+                    </button>
+                  </>
+                )}
+
+                {tab === "COMPLETED" && (
+                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">
+                    Hoàn thành
+                  </span>
+                )}
+
+                {tab === "CANCELLED" && (
+                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
+                    Đã hủy
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* DATE & TIME PICKER */}
-        <div className="mt-12 grid grid-cols-12 gap-8">
-          {/* LEFT PANEL - INFO */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            <div className="bg-[#161B22]/50 rounded-2xl p-6 border border-white/5">
-              <div className="flex items-center gap-3 text-sm mb-2">
-                <span className="material-symbols-outlined text-pink-500">
-                  verified
-                </span>
-                <span className="text-slate-400">JLPT N1 Certified</span>
+      {/* --- MODAL XÁC NHẬN HỦY (Chỉ hiện khi deletingId khác null) --- */}
+      {deletingId !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Lớp nền mờ */}
+          <div 
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            onClick={() => !isCancelling && setDeletingId(null)} 
+          />
+          
+        {/* Nội dung Modal */}
+          <div className="relative bg-[#1e293b] border border-white/10 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
-              <div className="flex items-center gap-3 text-sm mb-2">
-                <span className="material-symbols-outlined text-pink-500">
-                  schedule
-                </span>
-                <span className="text-slate-400">Thành viên từ 2021</span>
+              
+              <h3 className="text-xl font-bold text-white mb-2">Xác nhận hủy lớp</h3>
+              <p className="text-slate-400 text-sm mb-8">
+                 Bạn sẽ phải chịu 50% phí hủy lớp.Bạn có chắc chắn muốn hủy lịch học này không?
+              </p>
+              
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setDeletingId(null)}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
+                >
+                  Để sau
+                </button>
+                
+                <button 
+                  onClick={handleConfirmCancel}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-secondary/20"
+                >
+                  {isCancelling ? (
+                    <>
+                      <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Đang hủy...
+                    </>
+                  ) : "Đồng ý hủy"}
+                </button>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="material-symbols-outlined text-pink-500">
-                  language
-                </span>
-                <span className="text-slate-400">Tiếng Nhật, Tiếng Anh</span>
-              </div>
-            </div>
-
-            {/* NOTE */}
-            <div className="bg-[#161B22]/50 rounded-2xl p-6 border border-white/5">
-              <h4 className="text-sm font-bold mb-4 uppercase tracking-widest text-gray-400">
-                Lưu ý đặt lịch
-              </h4>
-              <ul className="space-y-3 text-xs text-gray-400">
-                <li>• Hủy trước 24h để hoàn tiền</li>
-                <li>• Vui lòng đến đúng giờ</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* RIGHT PANEL */}
-          <div className="col-span-12 lg:col-span-8 space-y-8">
-            {/* DATE */}
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold">Chọn ngày học</h3>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-bold">Tháng 10, 2024</span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      className="size-8 rounded-lg border border-white/10 flex items-center justify-center hover:border-pink-500 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        chevron_left
-                      </span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="size-8 rounded-lg border border-white/10 flex items-center justify-center hover:border-pink-500 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        chevron_right
-                      </span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
-                  const isSelected = day === selectedDate;
-                  return (
-                    <Button
-                      key={day}
-                      variant="ghost"
-                      onClick={() => setSelectedDate(day)}
-                      className={`h-20 rounded-xl border flex items-start p-2 font-bold transition ${
-                        isSelected
-                          ? "bg-[#0B0F1A] border-pink-500 shadow-[0_0_15px_rgba(255,92,141,0.4)]"
-                          : "bg-[#161B22] border-gray-700 hover:border-pink-500"
-                      }`}
-                    >
-                      {day}
-                    </Button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* TIME */}
-            <section>
-              <h3 className="text-lg font-bold mb-4">Chọn khung giờ</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {times.map((time) => {
-                  const disabled = disabledTimes.includes(time);
-                  const selected = selectedTime === time;
-                  return (
-                    <Button
-                      key={time}
-                      variant="ghost"
-                      disabled={disabled}
-                      onClick={() => setSelectedTime(time)}
-                      className={`px-4 py-3 rounded-xl border text-sm font-medium transition ${
-                        disabled
-                          ? "opacity-40 cursor-not-allowed bg-[#161B22]/50 border-gray-700"
-                          : selected
-                            ? "border-pink-500 bg-pink-500/10 text-pink-400 shadow-[0_0_15px_rgba(255,92,141,0.4)]"
-                            : "bg-[#161B22] border-gray-700 hover:border-pink-500"
-                      }`}
-                    >
-                      {time}
-                    </Button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* CONFIRM */}
-            <div className="flex justify-end pt-4">
-              <Button className="px-12 py-4 bg-pink-500 rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition shadow-[0_0_30px_rgba(255,92,141,0.4)]">
-                Xác nhận đặt lịch
-              </Button>
             </div>
           </div>
         </div>
-
-        {/* COURSE RECOMMEND */}
-        <div className="mt-12">
-          <h3 className="text-slate-100 font-bold mb-6 flex items-center gap-2">
-            <span className="material-symbols-outlined text-pink-500">
-              verified
-            </span>
-            Gợi ý khóa học cho bạn
-          </h3>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {courses.map((course, i) => (
-              <div
-                key={i}
-                className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-pink-500/40 transition"
-              >
-                <div className="aspect-video bg-slate-800 rounded-lg mb-3 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-pink-400 text-4xl">
-                    play_circle
-                  </span>
-                </div>
-                <p className="text-xs font-bold text-pink-400 uppercase">
-                  {course.tag}
-                </p>
-                <h5 className="text-white font-bold text-sm">{course.title}</h5>
-                <p className="text-slate-500 text-xs mt-1">{course.lessons}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-    </div>
+      )}
+    </main>
   );
 }

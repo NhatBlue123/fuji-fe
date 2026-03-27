@@ -103,15 +103,12 @@ export default function WithdrawPage() {
           <div className="space-y-1">
             <button
               onClick={() => router.push("/profile/wallet")}
-              className="group flex items-center gap-2 text-slate-500 hover:text-pink-400 transition-all mb-2"
+              className="group flex items-center gap-2 text-slate-500 hover:text-pink-400 transition-all font-bold mb-2"
             >
-              <div className="p-1 rounded-lg bg-white/5 border border-white/5 group-hover:bg-pink-500/10 shadow-inner">
-                <ArrowLeft
-                  size={14}
-                  className="group-hover:-translate-x-0.5 transition-transform"
-                />
+              <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/10 group-hover:border-pink-500/20 transition-all">
+                <ArrowLeft size={18} />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em]">
+              <span className="text-[10px] tracking-widest uppercase">
                 Quay lại ví
               </span>
             </button>
@@ -352,7 +349,7 @@ export default function WithdrawPage() {
               form="withdraw-form"
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-14 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-lg shadow-pink-500/20 transition-all active:scale-95"
+              className="w-full h-14 rounded-xl bg-gradient-to-r bg-pink-400  hover:from-blue-600 text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-lg shadow-pink-500/20 transition-all active:scale-95"
             >
               {isSubmitting ? "Đang xử lý..." : "Gửi yêu cầu rút tiền"}
             </Button>

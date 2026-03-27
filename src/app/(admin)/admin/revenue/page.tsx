@@ -219,7 +219,7 @@ export default function AdminRevenuePage() {
                       />
                       <Tooltip 
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                        formatter={(value: number) => [`${value.toLocaleString()} đ`, 'Doanh thu']}
+                        formatter={(value) => [`${Number(value ?? 0).toLocaleString()} đ`, "Doanh thu"]}
                       />
                       <Legend iconType="circle" />
                       <Line type="monotone" dataKey="totalRevenue" name="Tổng thu" stroke="#10b981" strokeWidth={3} activeDot={{ r: 8 }} />
@@ -246,7 +246,7 @@ export default function AdminRevenuePage() {
                       <Tooltip 
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                         cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                        formatter={(value: number) => [`${value.toLocaleString()} đ`, 'Doanh thu']}
+                        formatter={(value) => [`${Number(value ?? 0).toLocaleString()} đ`, "Doanh thu"]}
                       />
                       <Legend iconType="circle" />
                       <Bar dataKey="bookingRevenue" name="Phí Booking" fill="#3b82f6" radius={[4, 4, 0, 0]} stackId="a" />

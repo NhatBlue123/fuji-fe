@@ -69,8 +69,6 @@ interface UserTableProps {
   isLoading?: boolean;
 }
 
-const DEFAULT_AVATAR = "https://png.pngtree.com/png-vector/20190623/ourlarge/pngtree-accountavataruser--flat-color-icon--vector-icon-banner-templ-png-image_1491720.jpg";
-
 export const UserTable: React.FC<UserTableProps> = ({
   users,
   onViewDetail,
@@ -122,7 +120,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                 <TableCell className="py-3">
                   <div className="flex items-center gap-3">
                     <Avatar className="size-9 rounded-full border-2 border-background shadow-sm ring-1 ring-border">
-                      <AvatarImage src={user.avatarUrl || DEFAULT_AVATAR} alt={user.username} />
+                      <AvatarImage src={user.avatarUrl || ""} alt={user.username} />
                       <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
                         {user.username.charAt(0).toUpperCase()}
                       </AvatarFallback>

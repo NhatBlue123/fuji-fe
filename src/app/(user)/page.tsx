@@ -10,18 +10,16 @@ import { CTASection } from "@/components/user-component/home/CTASection";
 
 export default function HomePage() {
   return (
-    <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background dark:bg-[#0f172a]">
-      <div className="max-w-7xl mx-auto w-full">
-        <HeroSection />
-        <StatsSection />
-        <CoursesSection />
-        <FlashcardsSection />
-        <JLPTSection />
-        <VoiceChatSection />
-        <LearningPathSection />
-        <CommunitySection />
-        <CTASection />
-      </div>
+    <div className="flex-1 bg-background dark:bg-[#0f172a]">
+      <HeroSection />
+      <StatsSection />
+      <CoursesSection />
+      <FlashcardsSection />
+      <JLPTSection />
+      <VoiceChatSection />
+      <LearningPathSection />
+      <CommunitySection />
+      <CTASection />
     </div>
   );
 }

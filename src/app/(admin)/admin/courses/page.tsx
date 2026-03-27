@@ -237,7 +237,9 @@ export default function CoursesPage() {
     router.push(`/admin/courses/${id}?edit`);
   };
 
-  const handleTogglePublish = async (course: (typeof data.content)[number]) => {
+  const handleTogglePublish = async (
+    course: NonNullable<typeof data>["content"][number],
+  ) => {
     if (!course.instructor?.id) {
       toast.error("Khóa học chưa có giảng viên, không thể cập nhật trạng thái");
       return;

@@ -12,6 +12,8 @@ export interface VoiceChatRequest {
   preferredVoice?: string;
   memorySummary?: string;
   session?: string;
+  topicId?: number;
+  scenarioId?: number;
 }
 
 /** Furigana segment từ n8n */
@@ -67,6 +69,25 @@ export interface VoiceTranscriptItem {
   audioFormat?: string;
   audioUrl?: string;
   createdAt: string;
+}
+
+/** Scenario trong topic */
+export interface VoiceScenario {
+  id: number;
+  title?: string;
+  situation: string;
+  aiRole: string;
+  aiPersonality?: string;
+  sampleConversation?: string;
+  openingLine?: string;
+  level: string;
+}
+
+/** Topic cho voice chat */
+export interface VoiceTopic {
+  id: number;
+  title: string;
+  scenarios: VoiceScenario[];
 }
 
 /** State cho voice chat hook */

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import { Bell, Moon, Sun, User, LogOut, Settings, Sparkles } from "lucide-react";
 import { useTheme } from "@/components/common";
 import { useAuth, useAppDispatch } from "@/store/hooks";
@@ -44,6 +45,14 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
   const { unreadCount, notifications, markAsRead } = useNotifications();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid SSR/client auth mismatch hydration issues.
+  const canShowAuthUi = mounted && isAuthenticated;
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);

@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSignaling } from "@/hooks/useSignaling";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useReconnect } from "@/hooks/useReconnect";
+import { useJapaneseSuggest } from "@/hooks/useJapaneseSuggest";
+import { useAuth } from "@/store/hooks";
+import { API_CONFIG } from "@/config/api";
 import {
   Mic, MicOff, Video, VideoOff, WifiOff, RefreshCw,
-  AlertTriangle, PhoneOff, Send, SkipForward,
+  AlertTriangle, PhoneOff, Send, SkipForward, Keyboard,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface MatchData {
@@ -22,6 +26,7 @@ interface MatchData {
   peerLevel: string;
   myLevel?: string;   // stored by matching page
   myName?: string;    // stored by matching page
+  myUserId?: string;  // stored by matching page (needed for moderation)
   isInitiator: boolean;
 }
 
@@ -31,6 +36,8 @@ interface ChatMsg {
   message: string;
   isMine: boolean;
   timestamp: number;
+  status?: "SENDING" | "SENT" | "DELIVERED" | "READ";
+  isViolation?: boolean;
 }
 
 export default function VideoCallRoomPage() {
@@ -41,6 +48,7 @@ export default function VideoCallRoomPage() {
   const signaling = useSignaling();
   const webrtc = useWebRTC();
   const reconnect = useReconnect(signaling, webrtc);
+  const { user: authUser, accessToken } = useAuth();
 
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [chatMsg, setChatMsg] = useState("");
@@ -49,9 +57,59 @@ export default function VideoCallRoomPage() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const chatListRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const matchDataRef = useRef<MatchData | null>(null);
   const cameraStartedRef = useRef(false);
+  const unreadIncomingIdsRef = useRef<Set<string>>(new Set());
+  const suggestDropdownRef = useRef<HTMLDivElement>(null);
+
+  // ── Japanese suggestion hook (romaji → hiragana/kanji, Ctrl+Space, history) ──
+  const jpSuggest = useJapaneseSuggest();
+  const {
+    suggestions,
+    isOpen: isSuggestOpen,
+    isLoading: isSuggestLoading,
+    selectedIndex,
+    triggerSuggest,
+    closeSuggestions,
+    selectSuggestion,
+    handleKeyDown: handleSuggestKeyDown,
+    convertSentence,
+  } = jpSuggest;
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
+
+  const [violationBanner, setViolationBanner] = useState<string | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportContent, setReportContent] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const violationBannerTimerRef = useRef<number | null>(null);
+
+  const shouldSendRead = useCallback(() => {
+    if (typeof document === "undefined") return false;
+    return (
+      document.visibilityState === "visible" &&
+      typeof document.hasFocus === "function" &&
+      document.hasFocus()
+    );
+  }, []);
+
+  // Keep this above effects that depend on it.
+  const isNearChatBottom = useCallback(() => {
+    const el = chatListRef.current;
+    if (!el) return true;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    return distance < 80;
+  }, []);
+
+  // If user types a romaji phrase (e.g. "nani wo"), offer one-click full conversion.
+  const fullSentenceSuggestion = useMemo(() => {
+    const trimmed = chatMsg.trim();
+    if (!trimmed || !/\s+/.test(trimmed)) return null;
+    const converted = convertSentence(trimmed);
+    if (!converted || converted === trimmed) return null;
+    return converted;
+  }, [chatMsg, convertSentence]);
 
   // ── Effect 1: Load match data ──────────────────────────────────────────────
   useEffect(() => {
@@ -95,16 +153,94 @@ export default function VideoCallRoomPage() {
       }
     );
 
-    signaling.on<{ senderName: string; message: string; timestamp: number }>(
+    signaling.on<{
+      roomId: string;
+      senderId: string;
+      senderName: string;
+      message: string;
+      timestamp: number;
+      messageId: string;
+      isViolation?: boolean;
+    }>(
       "receive-message",
       (payload) => {
+        const shouldStickBottom = isNearChatBottom();
+        const incomingId = payload.messageId;
         setMessages((prev) => [
           ...prev,
-          { id: Math.random().toString(36).slice(2), ...payload, isMine: false },
+          {
+            id: incomingId,
+            senderName: payload.senderName,
+            message: payload.message,
+            isMine: false,
+            timestamp: payload.timestamp,
+                status: "SENT",
+            isViolation: payload.isViolation,
+          },
         ]);
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+        unreadIncomingIdsRef.current.add(incomingId);
+
+        // Inform sender that we have received the message
+        signaling.sendMessageDelivered(roomId, [incomingId]);
+
+        // If we are actively viewing the room, mark as read immediately
+        if (shouldSendRead()) {
+          const ids = Array.from(unreadIncomingIdsRef.current);
+          unreadIncomingIdsRef.current.clear();
+          if (ids.length > 0) signaling.sendMessageRead(roomId, ids);
+        }
+        if (shouldStickBottom) {
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+        }
       }
     );
+
+    signaling.on<{
+      messageId: string;
+      timestamp: number;
+      isViolation?: boolean;
+    }>("message-sent", (payload) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.isMine && m.id === payload.messageId
+            ? {
+                ...m,
+                status:
+                  m.status === "DELIVERED" || m.status === "READ"
+                    ? m.status
+                    : "SENT",
+                timestamp: payload.timestamp,
+                isViolation: payload.isViolation ?? m.isViolation,
+              }
+            : m,
+        ),
+      );
+    });
+
+    signaling.on<{ roomId: string; messageIds: string[] }>(
+      "message_delivered",
+      (payload) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.isMine && payload.messageIds.includes(m.id)
+              ? m.status === "READ"
+                ? m
+                : { ...m, status: "DELIVERED" }
+              : m,
+          ),
+        );
+      },
+    );
+
+    signaling.on<{ roomId: string; messageIds: string[] }>("message_read", (payload) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.isMine && payload.messageIds.includes(m.id)
+            ? { ...m, status: "READ" }
+            : m,
+        ),
+      );
+    });
 
     signaling.on("peer-reconnected", async () => {
       console.log("[Signaling] Peer reconnected, re-initiating offer...");
@@ -117,10 +253,31 @@ export default function VideoCallRoomPage() {
 
     return () => {
       ["offer", "answer", "ice-candidate", "receive-message",
-       "peer-reconnected", "peer-left", "room-expired"].forEach(signaling.off);
+       "peer-reconnected", "peer-left", "room-expired", "message-sent", "message_delivered", "message_read"].forEach(
+        signaling.off,
+      );
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [roomId, isNearChatBottom]);
+
+  // ── Effect: when page regains focus/visibility, mark incoming messages as read ──
+  useEffect(() => {
+    if (!signaling.socket) return;
+    const tryFlushRead = () => {
+      if (!shouldSendRead()) return;
+      const ids = Array.from(unreadIncomingIdsRef.current);
+      if (ids.length === 0) return;
+      unreadIncomingIdsRef.current.clear();
+      signaling.sendMessageRead(roomId, ids);
+    };
+
+    window.addEventListener("focus", tryFlushRead);
+    document.addEventListener("visibilitychange", tryFlushRead);
+    return () => {
+      window.removeEventListener("focus", tryFlushRead);
+      document.removeEventListener("visibilitychange", tryFlushRead);
+    };
+  }, [roomId, shouldSendRead, signaling]);
 
   // ── Effect 3: Start camera + send offer ───────────────────────────────────
   useEffect(() => {
@@ -192,23 +349,286 @@ export default function VideoCallRoomPage() {
   }, [signaling, webrtc, reconnect, roomId, router]);
 
   const myName = matchData?.myName ?? "Tôi";
+  const myUserId =
+    String(authUser?.id ?? authUser?._id ?? matchData?.myUserId ?? "guest");
 
-  const handleSendMsg = useCallback(() => {
-    if (!chatMsg.trim()) return;
-    signaling.sendChatMessage(roomId, "me", myName, chatMsg.trim());
+  const detectViolationType = useCallback((content: string) => {
+    const msg = content.trim();
+    if (!msg) return null;
+
+    // If message contains any Japanese script, allow it.
+    // Example: "Quang Nam です" should be accepted.
+    const hasJapanese = /[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF]/.test(msg);
+    if (hasJapanese) return null;
+
+    // Vietnamese: detect diacritics + common Vietnamese words
+    const vietDiacritics =
+      /[àáảãạăắằẳẵặâầấậẩãđèéẻẽẹêềếểễệìíỉĩịòóỏõọơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/i;
+    const vietCommonWords =
+      /\b(và|nhưng|là|không|tôi|bạn|các|một|những|sao|như|bởi)\b/i;
+
+    if (vietDiacritics.test(msg) || vietCommonWords.test(msg)) {
+      return "VIETNAMESE" as const;
+    }
+
+    // English: a word of Latin letters without accents length > 3
+    const englishPlainWord = /\b[a-zA-Z]{4,}\b/;
+    if (englishPlainWord.test(msg)) {
+      return "ENGLISH" as const;
+    }
+
+    return null;
+  }, []);
+
+  const fetchBanStatus = useCallback(
+    async (userId: string) => {
+      const res = await fetch(
+        `${API_CONFIG.BASE_URL}/chat/ban-status/${encodeURIComponent(userId)}`,
+        {
+          method: "GET",
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          credentials: "include",
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      // Backend wraps in ApiResponse: { success, message, data }
+      return {
+        success: Boolean(json?.success),
+        banned: Boolean(json?.data?.banned),
+        type: json?.data?.type ?? null,
+        until: json?.data?.until ?? null,
+        violationCount: json?.data?.violationCount ?? 0,
+        code: json?.code,
+        message: json?.message,
+      };
+    },
+    [accessToken],
+  );
+
+  const postViolation = useCallback(
+    async (payload: {
+      userId: string;
+      sessionId: string;
+      violationType: "VIETNAMESE" | "ENGLISH" | "OTHER";
+      messageContent: string;
+    }) => {
+      const res = await fetch(`${API_CONFIG.BASE_URL}/chat/violation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+      const json = await res.json().catch(() => ({}));
+      return {
+        success: Boolean(json?.success),
+        code: json?.code ?? null,
+        message: json?.message ?? null,
+        data: json?.data ?? null,
+      };
+    },
+    [accessToken],
+  );
+
+  const handleSubmitReport = useCallback(async () => {
+    const trimmed = reportContent.trim();
+    if (!trimmed) {
+      toast.error("Vui lòng nhập nội dung báo cáo.");
+      return;
+    }
+    if (!matchData) return;
+
+    setIsSubmittingReport(true);
+    try {
+      const reporterIdRaw = authUser?.id ?? authUser?._id ?? matchData?.myUserId;
+      const reporterId =
+        typeof reporterIdRaw === "number"
+          ? reporterIdRaw
+          : Number.parseInt(String(reporterIdRaw ?? ""), 10);
+
+      const description = [
+        `Nội dung báo cáo: ${trimmed}`,
+        "",
+        "Thong tin nguoi bi bao cao:",
+        `- Ten: ${matchData.peerName}`,
+        `- User ID: ${matchData.peerId}`,
+        `- Trinh do: ${matchData.peerLevel}`,
+      ].join("\n");
+
+      const payload = {
+        category: "OTHER",
+        title: `Bao cao user video call: ${matchData.peerName}`,
+        description,
+        priority: "MEDIUM",
+        subjectType: "VIDEO_CALL_USER",
+        subjectId: String(matchData.peerId),
+        createdByUserId: Number.isFinite(reporterId) ? reporterId : undefined,
+      };
+
+      const res = await fetch(`${API_CONFIG.BASE_URL}/reports`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || "Gửi báo cáo thất bại");
+      }
+
+      toast.success("Báo cáo đã được ghi nhận.");
+      setIsReportModalOpen(false);
+      setReportContent("");
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể gửi báo cáo, vui lòng thử lại.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  }, [reportContent, matchData, authUser?.id, authUser?._id, accessToken]);
+
+  const formatChatTime = (ts: number) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const isToday =
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate();
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const hhmm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    if (isToday) return hhmm;
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${hhmm}`;
+  };
+
+  const replaceLastTokenWithSuggestion = useCallback(
+    (input: string, selected: string) => {
+      const trimmedRight = input.replace(/\s+$/g, "");
+      if (!trimmedRight) return `${selected} `;
+      const parts = trimmedRight.split(/\s+/);
+      parts[parts.length - 1] = selected;
+      return `${parts.join(" ")} `;
+    },
+    [],
+  );
+
+  // ── Trigger suggestions on input change ────────────────────────────────
+  useEffect(() => {
+    if (!isChatInputFocused || !chatMsg.trim()) {
+      closeSuggestions();
+      return;
+    }
+    const token = chatMsg.trim().split(/\s+/).pop() ?? "";
+    triggerSuggest(token);
+  }, [chatMsg, isChatInputFocused, triggerSuggest, closeSuggestions]);
+
+  // ── Handle click outside to close suggestions ─────────────────────────
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        suggestDropdownRef.current &&
+        !suggestDropdownRef.current.contains(e.target as Node)
+      ) {
+        closeSuggestions();
+      }
+    };
+    if (isSuggestOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isSuggestOpen, closeSuggestions]);
+
+  const handleSendMsg = useCallback(async () => {
+    const content = chatMsg.trim();
+    if (!content) return;
+
+    const messageId = crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now();
+
+    const sessionId = signaling.socket?.id ?? "";
+
+    // 1) Ban check first
+    const ban = await fetchBanStatus(myUserId);
+    if (ban?.banned) {
+      const untilText = ban.until
+        ? ` • Còn đến: ${new Date(ban.until).toLocaleString("vi-VN")}`
+        : "";
+      toast.error(`Bạn đang bị cấm chat${untilText}`, {
+        duration: 4000,
+      });
+      return;
+    }
+
+    // 2) Auto-detect violation (VN/EN) and report
+    const violationType = detectViolationType(content);
+    const isViolation = Boolean(violationType);
+
+    if (violationType) {
+      toast.warning("Vui lòng chỉ chat tiếng Nhật (VN/EN không được phép)", {
+        duration: 4000,
+      });
+      setViolationBanner("Vui lòng chỉ chat tiếng Nhật (VN/EN không được phép)");
+      if (violationBannerTimerRef.current) {
+        window.clearTimeout(violationBannerTimerRef.current);
+      }
+      violationBannerTimerRef.current = window.setTimeout(() => {
+        setViolationBanner(null);
+      }, 4000);
+
+      const report = await postViolation({
+        userId: myUserId,
+        sessionId,
+        violationType: violationType,
+        messageContent: content,
+      });
+
+      if (!report?.success && report?.code === "BAN_ACTIVE") {
+        // Backend may ban immediately when threshold is reached
+        const untilText = report?.data?.until
+          ? ` • Còn đến: ${new Date(report?.data?.until).toLocaleString("vi-VN")}`
+          : "";
+        toast.error(`Bạn đang bị cấm chat${untilText}`, {
+          duration: 4000,
+        });
+        return;
+      }
+      // For VIOLATION_WARNING (1-3 times), still allow sending to keep chat flow.
+    }
+
+    // 3) Send message via socket
     setMessages((prev) => [
       ...prev,
       {
-        id: Math.random().toString(36).slice(2),
+        id: messageId,
         senderName: myName,
-        message: chatMsg.trim(),
+        message: content,
         isMine: true,
         timestamp: Date.now(),
+        status: "SENDING",
+        isViolation,
       },
     ]);
+    signaling.sendChatMessage(roomId, myUserId, myName, content, messageId, isViolation);
     setChatMsg("");
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-  }, [chatMsg, signaling, roomId, myName]);
+    // Do not force auto-scroll when sending own message.
+    // Keep user's current reading position stable.
+  }, [
+    chatMsg,
+    signaling,
+    roomId,
+    myUserId,
+    myName,
+    detectViolationType,
+    fetchBanStatus,
+    postViolation,
+  ]);
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   const [sessionSeconds, setSessionSeconds] = useState(0);
@@ -285,7 +705,7 @@ export default function VideoCallRoomPage() {
                 "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg border border-white/15",
                 webrtc.isMicOn
                   ? "bg-slate-900/40 hover:bg-slate-900/70 text-slate-50"
-                  : "bg-rose-600/90 hover:bg-rose-700 text-white"
+                  : "bg-secondary hover:bg-secondary/90 text-white"
               )}
             >
               {webrtc.isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
@@ -296,7 +716,7 @@ export default function VideoCallRoomPage() {
                 "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg border border-white/15",
                 webrtc.isCameraOn
                   ? "bg-slate-900/40 hover:bg-slate-900/70 text-slate-50"
-                  : "bg-rose-600/90 hover:bg-rose-700 text-white"
+                  : "bg-secondary hover:bg-secondary/90 text-white"
               )}
             >
               {webrtc.isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
@@ -345,7 +765,7 @@ export default function VideoCallRoomPage() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0 bg-gradient-to-b from-slate-950/40 to-slate-900/40">
+          <div ref={chatListRef} className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0 bg-gradient-to-b from-slate-950/40 to-slate-900/40">
             {messages.length === 0 && (
               <div className="h-full flex items-center justify-center">
                 <p className="text-slate-500 text-xs text-center leading-relaxed">
@@ -375,6 +795,24 @@ export default function VideoCallRoomPage() {
                   )}
                 >
                   {msg.message}
+                  <div
+                    className={cn(
+                      "mt-1 flex items-center gap-2 justify-end text-[10px]",
+                      msg.isMine ? "text-slate-600" : "text-slate-400",
+                    )}
+                  >
+                    <span>{formatChatTime(msg.timestamp)}</span>
+                    {msg.isMine && msg.status ? (
+                      <>
+                        {msg.status === "SENDING" && <span>⏳</span>}
+                        {msg.status === "SENT" && <span>✓</span>}
+                        {msg.status === "DELIVERED" && <span>✓✓</span>}
+                        {msg.status === "READ" && (
+                          <span className="text-emerald-300">✓✓</span>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}
@@ -382,21 +820,139 @@ export default function VideoCallRoomPage() {
           </div>
 
           {/* Input */}
-          <div className="shrink-0 p-3 border-t border-white/10 flex gap-2 bg-slate-950/80">
-            <Input
-              value={chatMsg}
-              onChange={(e) => setChatMsg(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMsg()}
-              placeholder="Nhắn tin..."
-              className="bg-slate-900/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-sky-500"
-            />
+          <div className="shrink-0 p-3 border-t border-white/10 bg-slate-950/80">
+            <div className="flex gap-2 items-end">
+              <div className="relative flex-1">
+                {violationBanner && (
+                  <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-200 text-xs font-medium">
+                    {violationBanner}
+                  </div>
+                )}
+
+                {isSuggestOpen && suggestions.length > 0 && (
+                  <div
+                    ref={suggestDropdownRef}
+                    className="absolute bottom-full left-0 right-0 mb-2 z-20 rounded-2xl border border-white/10 bg-slate-950/95 shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden"
+                  >
+                    <div className="px-3 py-2 text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>
+                        Gợi ý từ vựng
+                        {isSuggestLoading ? " (đang tải...)" : ""}
+                      </span>
+                      <span className="text-[9px] flex items-center gap-1 text-slate-500">
+                        <Keyboard className="w-3 h-3" /> Ctrl+Space
+                      </span>
+                    </div>
+                    <div className="max-h-56 overflow-y-auto">
+                      {fullSentenceSuggestion && (
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 border-b border-white/10 bg-sky-500/10 hover:bg-sky-500/20 transition-colors"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setChatMsg(`${fullSentenceSuggestion} `);
+                            closeSuggestions();
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold text-sky-200">
+                              {fullSentenceSuggestion}
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/30 text-sky-100">
+                              Parse cả đoạn
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-300 mt-0.5">
+                            Chuyển toàn bộ romaji hiện tại sang hiragana
+                          </div>
+                        </button>
+                      )}
+                      {suggestions.map((s, idx) => (
+                        <button
+                          key={`${s.word}-${s.reading ?? idx}`}
+                          type="button"
+                          className={cn(
+                            "w-full text-left px-3 py-2 hover:bg-white/5 active:bg-white/10 transition-colors",
+                            selectedIndex === idx && "bg-sky-500/20",
+                          )}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            const result = selectSuggestion(s);
+                            setChatMsg((prev) =>
+                              replaceLastTokenWithSuggestion(prev, result),
+                            );
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold text-slate-50">
+                              {s.word}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              {s.scriptType === "HIRAGANA" && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">
+                                  Hiragana
+                                </span>
+                              )}
+                              {s.scriptType === "KANJI" && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300">
+                                  Kanji
+                                </span>
+                              )}
+                              {s.fromHistory && (
+                                <span className="text-[9px] text-amber-400/70">
+                                  ✓ lịch sử
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          {s.reading && s.reading !== s.word && (
+                            <div className="text-[11px] text-rose-300 mt-0.5">
+                              {s.reading}
+                            </div>
+                          )}
+                          {s.meaning && (
+                            <div className="text-[12px] text-slate-300 mt-1 line-clamp-1">
+                              {s.meaning}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Textarea
+                  value={chatMsg}
+                  onChange={(e) => setChatMsg(e.target.value)}
+                  placeholder="Nhắn tin... (Ctrl+Space để gợi ý)"
+                  className="min-h-[44px] max-h-[120px] resize-none bg-slate-900/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-sky-500"
+                  onFocus={() => setIsChatInputFocused(true)}
+                  onBlur={() => {
+                    window.setTimeout(() => {
+                      setIsChatInputFocused(false);
+                    }, 200);
+                  }}
+                  onKeyDown={(e) => {
+                    handleSuggestKeyDown(
+                      e,
+                      chatMsg.trim().split(/\s+/).pop() ?? "",
+                      (text) =>
+                        setChatMsg((prev) =>
+                          replaceLastTokenWithSuggestion(prev, text),
+                        ),
+                      handleSendMsg,
+                    );
+                  }}
+                />
+              </div>
             <Button
-              onClick={handleSendMsg}
+              onClick={() => handleSendMsg()}
               size="icon"
               className="shrink-0 bg-sky-500 hover:bg-sky-400 text-slate-950"
             >
               <Send className="h-4 w-4" />
             </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -411,7 +967,7 @@ export default function VideoCallRoomPage() {
         {/* End Call — center, accent */}
         <Button
           onClick={handleLeave}
-          className="h-12 px-8 rounded-full bg-rose-600 hover:bg-rose-500 text-slate-50 font-semibold tracking-wide gap-2 shadow-[0_18px_40px_rgba(248,113,113,0.6)]"
+          className="h-12 px-8 rounded-full bg-secondary hover:bg-secondary/90 text-slate-50 font-semibold tracking-wide gap-2 shadow-[0_18px_40px_rgba(217,70,239,0.45)]"
         >
           <PhoneOff className="h-4 w-4" />
           Kết thúc
@@ -431,12 +987,91 @@ export default function VideoCallRoomPage() {
         <Button
           variant="outline"
           className="h-11 px-4 rounded-full border-amber-500/60 text-amber-300 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md"
-          onClick={() => alert("Báo cáo đã được ghi nhận.")}
+          onClick={() => setIsReportModalOpen(true)}
         >
           <AlertTriangle className="h-4 w-4" />
           Báo cáo
         </Button>
       </div>
+
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-50 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-300" />
+                Báo cáo người dùng
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-slate-300 hover:text-slate-100"
+                onClick={() => setIsReportModalOpen(false)}
+                disabled={isSubmittingReport}
+              >
+                Đóng
+              </Button>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/70 p-3">
+              <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                Thông tin người bị báo cáo
+              </p>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-700">
+                  {matchData.peerAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={matchData.peerAvatarUrl}
+                      alt={matchData.peerName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-100">
+                    {matchData.peerName}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    ID: {matchData.peerId} • JLPT {matchData.peerLevel}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-slate-400 mb-2">
+                Nội dung báo cáo
+              </p>
+              <Textarea
+                value={reportContent}
+                onChange={(e) => setReportContent(e.target.value)}
+                placeholder="Mô tả cụ thể hành vi của người dùng..."
+                className="min-h-[110px] resize-none bg-slate-950/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-amber-500"
+                disabled={isSubmittingReport}
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                className="border-slate-600 text-slate-200"
+                onClick={() => setIsReportModalOpen(false)}
+                disabled={isSubmittingReport}
+              >
+                Hủy
+              </Button>
+              <Button
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950"
+                onClick={() => handleSubmitReport()}
+                disabled={isSubmittingReport || !reportContent.trim()}
+              >
+                {isSubmittingReport ? "Đang gửi..." : "Gửi báo cáo"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

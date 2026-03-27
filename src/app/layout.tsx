@@ -79,6 +79,16 @@ export default function RootLayout({
       var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       root.classList.add(isDark ? 'dark' : 'light');
     }
+    
+    // Cleanup extension attributes immediately to prevent hydration mismatch
+    var commonAttrs = ["bis_skin_checked", "data-new-gr-c-s-check-loaded", "data-gr-ext-installed"];
+    commonAttrs.forEach(function(attr) {
+      var elements = document.querySelectorAll("[" + attr + "]");
+      for (var i = 0; i < elements.length; i++) {
+        elements[i].removeAttribute(attr);
+      }
+    });
+
   } catch(e) {
     // Fallback: nếu lỗi thì dùng light mode
     document.documentElement.classList.add('light');

@@ -2,20 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Moon,
-  Sun,
-  ChevronDown,
   Clock,
   Users,
   Wallet,
-  Heart,
   TrendingUp,
   TrendingDown,
-  Plus,
   Zap,
+  ArrowUpRight,
+  ArrowDownRight,
+  Search,
+  Calendar,
+  Filter,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-// Import Recharts
 import {
   AreaChart,
   Area,
@@ -25,361 +24,351 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useGetTeacherIncomeStatsQuery } from "@/store/services/teacherApi";
+import { useGetTeacherDashboardQuery } from "@/store/services/teacherApi";
 
-// Dữ liệu mẫu cho biểu đồ
-const chartData = [
-  { name: "T2", income: 4000, expense: 2400 },
-  { name: "T3", income: 3000, expense: 1398 },
-  { name: "T4", income: 2000, expense: 9800 },
-  { name: "T5", income: 2780, expense: 3908 },
-  { name: "T6", income: 1890, expense: 4800 },
-  { name: "T7", income: 2390, expense: 3800 },
-  { name: "CN", income: 3490, expense: 4300 },
-];
+// Shadcn UI Components
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const Dashboard: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+const TeacherDashboard: React.FC = () => {
+  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { data: statsData, isLoading } = useGetTeacherIncomeStatsQuery();
+  const { data: dashboardData, isLoading } = useGetTeacherDashboardQuery();
 
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
   if (isLoading) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center min-w-0 bg-slate-50 dark:bg-slate-950 min-h-screen">
-        <div className="w-8 h-8 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin"></div>
-      </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      </div>
     );
   }
 
-  // Cấu hình màu sắc dựa trên theme
   const isDark = theme === "dark";
-  const gridColor = isDark ? "#1e293b" : "#f1f5f9"; // slate-800 : slate-100
-  const textColor = isDark ? "#94a3b8" : "#64748b"; // slate-400 : slate-500
+  const gridColor = isDark ? "hsl(var(--muted-foreground) / 0.1)" : "hsl(var(--muted-foreground) / 0.05)";
+  const textColor = "hsl(var(--muted-foreground))";
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(val);
+  };
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans transition-colors duration-500">
-      <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
-        {/* --- STATS SECTION GIỮ NGUYÊN --- */}
-        <section>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-pink-50 dark:border-slate-800 flex flex-col md:flex-row gap-8 shadow-xl shadow-pink-500/5 transition-all">
-            <div className="relative w-full md:w-[350px] h-[210px] bg-gradient-to-br from-slate-900 via-blue-900 to-pink-600 rounded-[1.5rem] p-6 text-white shadow-2xl shadow-cyan-500/20 overflow-hidden shrink-0 group transition-transform hover:scale-[1.02] duration-300 border border-white/10">
-              {/* Hiệu ứng ánh kim quét qua thẻ khi hover */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
-              {/* Trang trí: Các vòng tròn mờ ảo phía sau */}
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-400/20 rounded-full blur-[60px]"></div>
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-pink-500/20 rounded-full blur-[60px]"></div>
-
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                {/* Phần trên: Brand & Chip */}
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
-                      SenseiHub Premium
-                    </span>
-                    {/* Chip Ngân hàng */}
-                    <div className="mt-4 w-11 h-8 bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 rounded-md relative overflow-hidden shadow-inner">
-                      <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-black/20"></div>
-                      <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-black/20"></div>
-                    </div>
-                  </div>
-
-                  {/* Biểu tượng Contactless (Sóng không dây) */}
-                  <svg
-                    className="w-6 h-6 text-white/60"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
-                    <path d="M8 6a6 6 0 0 1 6 6" strokeLinecap="round" />
-                    <path d="M4 10a2 2 0 0 1 2 2" strokeLinecap="round" />
-                  </svg>
-                </div>
-
-                {/* Phần giữa: Số thẻ (Phông chữ mono đặc trưng của thẻ tín dụng) */}
-                <div className="mt-2">
-                  <p className="text-xl font-medium tracking-[0.15em] font-mono shadow-sm">
-                    4521 &nbsp; 8802 &nbsp; 3391 &nbsp; 5678
-                  </p>
-                </div>
-
-                {/* Phần dưới: Tên chủ thẻ & Thông tin phụ */}
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase opacity-60 font-bold">
-                      Card Holder
-                    </p>
-                    <p className="text-sm font-black tracking-widest uppercase">
-                      NGUYEN VAN A
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col items-end mr-2">
-                        <p className="text-[8px] uppercase opacity-60 leading-none">
-                          Valid Thru
-                        </p>
-                        <p className="text-xs font-bold font-mono">12/29</p>
-                      </div>
-                      {/* Logo loại thẻ (Gợi liên tưởng đến Visa/Mastercard bằng 2 vòng tròn) */}
-                      <div className="flex -space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-pink-500/80 backdrop-blur-sm border border-white/20"></div>
-                        <div className="w-8 h-8 rounded-full bg-cyan-400/80 backdrop-blur-sm border border-white/20"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 grid grid-cols-2 gap-5">
-              <StatItem
-                icon={<Clock size={20} className="text-cyan-500" />}
-                bg="bg-cyan-50 dark:bg-cyan-500/10"
-                label="Tổng số lớp"
-                value={`${statsData?.totalClasses || 0}`}
-                borderColor="group-hover:border-cyan-200 dark:group-hover:border-cyan-800"
-              />
-              <StatItem
-                icon={<Users size={20} className="text-pink-500" />}
-                bg="bg-pink-50 dark:bg-pink-500/10"
-                label="Học viên"
-                value={`${statsData?.totalStudents || 0}`}
-                borderColor="group-hover:border-pink-200 dark:group-hover:border-pink-800"
-              />
-              <StatItem
-                icon={
-                  <Wallet
-                    size={20}
-                    className="text-cyan-600 dark:text-cyan-400"
-                  />
-                }
-                bg="bg-cyan-100/50 dark:bg-cyan-400/10"
-                label="Tổng thu nhập"
-                value={`${(statsData?.totalRevenue || 0).toLocaleString()}₫`}
-                highlight="text-cyan-600 dark:text-cyan-400"
-                borderColor="group-hover:border-cyan-300 dark:group-hover:border-cyan-700"
-              />
-              <StatItem
-                icon={<Heart size={20} className="text-rose-500" />}
-                bg="bg-rose-50 dark:bg-rose-500/10"
-                label="Phí nền tảng"
-                value={`${(statsData?.totalPlatformFee || 0).toLocaleString()}₫`}
-                borderColor="group-hover:border-rose-200 dark:group-hover:border-rose-800"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* --- BIỂU ĐỒ ĐỘNG --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-slate-800 dark:text-slate-200">
-          <section className="lg:col-span-2 space-y-4 bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
-                <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">
-                  Biểu đồ tăng trưởng
-                </h3>
-                <div className="hidden sm:flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider">
-                  <span className="flex items-center gap-1.5 px-2 py-1 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-md">
-                    <span className="w-2 h-2 rounded-full bg-cyan-500"></span>{" "}
-                    Thu nhập
-                  </span>
-                </div>
-              </div>
-              <select className="text-xs font-bold bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-2.5 outline-none dark:text-white">
-                <option value="7days">7 ngày qua</option>
-                <option value="1month">1 tháng</option>
-                <option value="6months">6 tháng</option>
-                <option value="1year">1 năm</option>
-              </select>
-            </div>
-
-            {/* Chart Container */}
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={statsData?.monthlyStats || chartData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="colorIncome"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient
-                      id="colorExpense"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="5%" stopColor="#ec4899" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke={gridColor}
-                  />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: textColor, fontSize: 12, fontWeight: 600 }}
-                    dy={10}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: textColor, fontSize: 12, fontWeight: 600 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: isDark ? "#0f172a" : "#fff",
-                      borderRadius: "16px",
-                      border: "none",
-                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                    }}
-                    itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    stroke="#06b6d4"
-                    strokeWidth={4}
-                    fillOpacity={1}
-                    fill="url(#colorIncome)"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expense"
-                    stroke="#ec4899"
-                    strokeWidth={4}
-                    fillOpacity={1}
-                    fill="url(#colorExpense)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
-
-          {/* SIDEBAR VÀ CÁC PHẦN CÒN LẠI GIỮ NGUYÊN... */}
-          <section className="space-y-6">
-            {/* Report Item & Bank Card code ở đây */}
-            <div className="bg-white dark:bg-slate-900 p-7 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all">
-              <h3 className="text-lg font-extrabold dark:text-white mb-6">
-                Báo cáo
-              </h3>
-              <div className="space-y-4">
-                <ReportItem
-                  type="income"
-                  label="Tổng thu"
-                  amount={(statsData?.totalRevenue || 0).toLocaleString()}
-                  color="cyan"
-                />
-                <ReportItem
-                  type="expense"
-                  label="Thực nhận"
-                  amount={(statsData?.totalNetIncome || 0).toLocaleString()}
-                  color="pink"
-                />
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-7 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group transition-all">
-              <div className="p-5 bg-slate-900 dark:bg-black rounded-[1.5rem] text-white border border-white/5">
-                <p className="text-[10px] font-black opacity-40 uppercase tracking-widest">
-                  Linked Bank
-                </p>
-                <p className="text-sm font-black tracking-widest mb-4">
-                  MB BANK
-                </p>
-                <p className="text-xs font-bold tracking-[0.2em] mb-4">
-                  **** **** **** 6446
-                </p>
-                <div className="flex justify-between items-center">
-                  <p className="text-[9px] font-bold opacity-60 uppercase">
-                    NHO HY
-                  </p>
-                  <span className="text-[8px] bg-cyan-400 text-cyan-950 px-2 py-0.5 rounded font-black italic">
-                    VERIFIED
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Phân tích Giáo viên</h1>
+          <p className="text-muted-foreground">Theo dõi hiệu suất giảng dạy và thu nhập của bạn.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Calendar className="mr-2 h-4 w-4" />
+            30 ngày qua
+          </Button>
+          <Button size="sm">
+            Tải báo cáo
+          </Button>
         </div>
       </div>
-    </main>
+
+      {/* Overview Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Tổng thu nhập"
+          value={formatCurrency(dashboardData?.lifetimeEarnings || 0)}
+          description="Tổng doanh thu đã nhận"
+          icon={<Wallet className="h-4 w-4 text-primary" />}
+        />
+        <StatCard
+          title="Tăng trưởng tháng"
+          value={`${dashboardData?.monthOverMonthGrowth || 0}%`}
+          description={dashboardData?.monthOverMonthGrowth && dashboardData.monthOverMonthGrowth >= 0 ? "+12% so với tháng trước" : "-5% so với tháng trước"}
+          icon={dashboardData?.monthOverMonthGrowth && dashboardData.monthOverMonthGrowth >= 0 ? 
+            <TrendingUp className="h-4 w-4 text-emerald-500" /> : 
+            <TrendingDown className="h-4 w-4 text-rose-500" />
+          }
+          trend={dashboardData?.monthOverMonthGrowth && dashboardData.monthOverMonthGrowth >= 0 ? "up" : "down"}
+        />
+        <StatCard
+          title="Tổng giờ dạy"
+          value={`${dashboardData?.totalHoursTaught || 0}h`}
+          description="Buổi học đã hoàn thành"
+          icon={<Clock className="h-4 w-4 text-orange-500" />}
+        />
+        <StatCard
+          title="Đánh giá TB"
+          value={`${dashboardData?.averageRating || 0}/5.0`}
+          description="Dựa trên đánh giá học viên"
+          icon={<Zap className="h-4 w-4 text-yellow-500" />}
+        />
+      </div>
+
+      {/* Main Content Area */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+          <TabsTrigger value="students">Học viên xuất sắc</TabsTrigger>
+          <TabsTrigger value="courses">Doanh thu khóa học</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Main Chart */}
+            <Card className="lg:col-span-2 shadow-sm border-muted/60">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div className="space-y-1">
+                  <CardTitle>Luồng thu nhập</CardTitle>
+                  <CardDescription>Phân tích doanh thu hàng ngày</CardDescription>
+                </div>
+                <Select defaultValue="all">
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Lọc" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="courses">Khóa học</SelectItem>
+                    <SelectItem value="sessions">Buổi học</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent className="h-[350px] pl-2 pt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={dashboardData?.earningsOverTime || []}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: textColor, fontSize: 11 }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: textColor, fontSize: 11 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--background))",
+                        borderColor: "hsl(var(--border))",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="income"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#primaryGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Wallet Section */}
+            <Card className="shadow-lg border-muted/60 bg-gradient-to-br from-background to-muted/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-primary" />
+                  Số dư ví
+                </CardTitle>
+                <CardDescription>Rút thu nhập của bạn một cách dễ dàng</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Số dư khả dụng</span>
+                  <div className="text-4xl font-extrabold tracking-tight">
+                    {formatCurrency(dashboardData?.availableBalance || 0)}
+                  </div>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground">Đang chờ thanh toán</p>
+                    <p className="text-lg font-bold">{formatCurrency(dashboardData?.pendingPayouts || 0)}</p>
+                  </div>
+                  <Badge variant="secondary" className="animate-pulse">Đang xử lý</Badge>
+                </div>
+              </CardContent>
+              <CardFooter className="pt-2">
+                <Button className="w-full h-11" size="lg">Yêu cầu rút tiền</Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Students Tab */}
+        <TabsContent value="students">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle>Học viên xuất sắc</CardTitle>
+                <CardDescription>Những học viên đã đầu tư nhiều nhất vào các khóa học của bạn.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="search"
+                    placeholder="Tìm học viên..."
+                    className="h-9 w-64 rounded-md border border-input pl-8 pr-3 text-sm focus:ring-1 focus:ring-ring outline-none"
+                  />
+                </div>
+                <Button variant="outline" size="icon">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Học viên</TableHead>
+                    <TableHead>Lượt đặt</TableHead>
+                    <TableHead>Tổng chi tiêu</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboardData?.topStudents.map((student, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>{student.studentName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          {student.studentName}
+                        </div>
+                      </TableCell>
+                      <TableCell>{student.bookingCount}</TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(student.totalSpent)}</TableCell>
+                      <TableCell>
+                        <Badge variant={idx === 0 ? "default" : "secondary"}>
+                          {idx === 0 ? "VIP" : "Thường"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">Chi tiết</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!dashboardData?.topStudents || dashboardData.topStudents.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                        Không có dữ liệu học viên.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Courses Tab */}
+        <TabsContent value="courses">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dashboardData?.courseRevenueList.map((course, idx) => (
+              <Card key={idx} className="overflow-hidden group hover:border-primary/50 transition-colors shadow-sm">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-base font-bold line-clamp-1">{course.courseTitle}</CardTitle>
+                    <Badge variant="outline" className="text-[10px]">{course.studentCount} Học viên</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Doanh thu</p>
+                        <p className="text-xl font-black text-primary">{formatCurrency(course.revenue)}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <p className="text-[10px] font-bold text-emerald-500 flex items-center">
+                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> 8.2%
+                        </p>
+                      </div>
+                    </div>
+                    {/* Progress indicator */}
+                    <div className="w-full h-2 bg-muted rounded-full relative overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all duration-1000 ease-out"
+                        style={{ width: `${Math.min(100, (course.studentCount / 40) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground font-medium uppercase">
+                      <span>Độ phổ biến</span>
+                      <span>{Math.round((course.studentCount / 40) * 100)}%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {(!dashboardData?.courseRevenueList || dashboardData.courseRevenueList.length === 0) && (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 border rounded-xl bg-muted/20 text-muted-foreground italic">
+                Không có dữ liệu khóa học.
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
-/* --- Các Sub-components --- */
-const StatItem = ({ icon, bg, label, value, highlight, borderColor }: any) => (
-  <div
-    className={`bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 group hover:shadow-lg ${borderColor}`}
-  >
-    <div
-      className={`p-3 ${bg} rounded-xl transition-transform group-hover:scale-110`}
-    >
-      {icon}
-    </div>
-    <div>
-      <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">
-        {label}
+// Subcomponent for Stats Card
+const StatCard = ({ title, value, description, icon, trend }: any) => (
+  <Card className="shadow-sm border-muted/60 hover:shadow-md transition-shadow">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <div className="h-4 w-4 text-muted-foreground">{icon}</div>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold tracking-tight">{value}</div>
+      <p className="text-xs text-muted-foreground mt-1 flex items-center">
+        {trend === "up" && <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />}
+        {trend === "down" && <ArrowDownRight className="h-3 w-3 mr-1 text-rose-500" />}
+        {description}
       </p>
-      <p
-        className={`text-base font-black ${highlight ? highlight : "text-slate-700 dark:text-slate-100"}`}
-      >
-        {value}
-      </p>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 );
 
-const ReportItem = ({ type, label, amount, color }: any) => {
-  const isCyan = color === "cyan";
-  return (
-    <div
-      className={`flex items-center justify-between p-4 rounded-2xl border ${
-        isCyan
-          ? "bg-cyan-50/30 dark:bg-cyan-500/5 border-cyan-50 dark:border-cyan-500/10"
-          : "bg-pink-50/30 dark:bg-pink-500/5 border-pink-50 dark:border-pink-500/10"
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className={`p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm ${isCyan ? "text-cyan-500" : "text-pink-500"}`}
-        >
-          {type === "income" ? (
-            <TrendingUp size={18} />
-          ) : (
-            <TrendingDown size={18} />
-          )}
-        </div>
-        <div>
-          <p className="text-[9px] text-slate-400 font-black uppercase tracking-tighter">
-            {label}
-          </p>
-          <p className="text-sm font-black text-slate-700 dark:text-slate-200">
-            {amount} ₫
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Dashboard;
+export default TeacherDashboard;

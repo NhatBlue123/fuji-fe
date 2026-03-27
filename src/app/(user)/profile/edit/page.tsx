@@ -2,19 +2,32 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, Phone, Sparkles, ArrowLeft, Save, ShieldCheck, Camera, GraduationCap, PenTool } from "lucide-react";
+import { 
+  User, Phone, Sparkles, ArrowLeft, Save, 
+  Camera, GraduationCap, PenTool, CheckCircle2, 
+  ShieldCheck, Info
+} from "lucide-react";
 import { useUpdateProfileMutation } from "@/store/services/user/userApi";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { Button } from "@/components/ui/button";
-import { Input as UIInput } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select as UISelect,
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
 export default function EditProfilePage() {
@@ -79,7 +92,6 @@ export default function EditProfilePage() {
       }
 
       await updateProfile(data).unwrap();
-      // force reload to get updated avatar instead of cached one
       window.location.href = "/profile";
     } catch (err) {
       console.error(err);
@@ -93,53 +105,60 @@ export default function EditProfilePage() {
 
   if (!mounted || isLoading || isUninitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-background pb-12 pt-2">
-      <div className="max-w-3xl mx-auto px-4 md:px-6">
-        
-        {/* Simple Header */}
-        <div className="flex items-start gap-4 mb-6 ml-2">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto py-8 px-4">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
           <button 
             type="button"
             onClick={() => router.back()}
-            className="p-2 -ml-2 text-slate-500 hover:text-pink-500 dark:text-muted-foreground dark:hover:text-pink-400 transition-colors rounded-full hover:bg-pink-500/5 mt-1"
+            className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors mb-2"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={14} />
+            Quay lại
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-foreground">
-              Cấu Hình Hồ Sơ
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Thông tin cá nhân được cập nhật
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Hồ sơ cá nhân</h1>
+          <p className="text-muted-foreground">Quản lý thông tin và diện mạo của bạn trên hệ thống.</p>
         </div>
+        <Badge variant="secondary" className="w-fit h-fit px-3 py-1 gap-2 border-primary/20 bg-primary/5 text-primary">
+          <ShieldCheck size={14} /> Tài khoản bảo mật
+        </Badge>
+      </div>
 
-        {/* Form Container */}
-        <div className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl shadow-sm">
-          <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
-            
-            {/* Avatar Section */}
-            <div className="flex justify-center mb-6">
-              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                <div className="w-24 h-24 rounded-full bg-pink-500 text-white flex items-center justify-center text-3xl font-bold shadow-md overflow-hidden relative border-4 border-white dark:border-card">
-                  {avatarPreview ? (
-                    <Image src={avatarPreview} alt="avatar" className="object-cover" fill sizes="96px" />
-                  ) : (
-                    getInitials(form.fullName)
-                  )}
+      <Card className="shadow-lg border-muted/60">
+        <form onSubmit={handleSubmit}>
+          <CardHeader className="space-y-4 pb-8 border-b">
+            <div className="flex flex-col items-center gap-4">
+              <div 
+                className="relative group cursor-pointer" 
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-primary to-cyan-400 p-1 shadow-2xl transition-all hover:scale-105 active:scale-95 group-hover:shadow-primary/20">
+                  <div className="w-full h-full rounded-[1.4rem] bg-background overflow-hidden relative flex items-center justify-center border-4 border-background">
+                    {avatarPreview ? (
+                      <Image src={avatarPreview} alt="avatar" className="object-cover" fill sizes="128px" />
+                    ) : (
+                      <span className="text-4xl font-bold text-primary">{getInitials(form.fullName)}</span>
+                    )}
+                    
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-sm">
+                      <Camera size={28} className="text-white" />
+                    </div>
+                  </div>
                 </div>
-                {/* Camera Overlay */}
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-card hover:bg-pink-600 transition-colors">
-                  <Camera size={14} className="text-white" />
+                
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-background border border-muted shadow-xl rounded-2xl flex items-center justify-center text-primary">
+                   <PenTool size={18} />
                 </div>
+                
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -148,42 +167,56 @@ export default function EditProfilePage() {
                   onChange={handleAvatarChange}
                 />
               </div>
+              <div className="text-center">
+                <CardTitle className="text-xl font-bold">Ảnh đại diện</CardTitle>
+                <CardDescription>Nhấp để thay đổi ảnh</CardDescription>
+              </div>
             </div>
+          </CardHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-              
+          <CardContent className="pt-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Full Name */}
               <div className="md:col-span-2 space-y-2">
-                <CustomLabel icon={<PenTool size={16} className="text-pink-500" />} label="Họ và tên đã đặt" />
-                <UIInput 
+                <label className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                  <User size={14} className="text-primary" />
+                  Họ và tên
+                </label>
+                <Input 
                   name="fullName" 
                   value={form.fullName} 
                   onChange={handleChange}
-                  placeholder="Nhập họ và tên..."
-                  className="h-11 bg-slate-50/50 dark:bg-secondary focus-visible:ring-pink-500/30 text-slate-900 dark:text-foreground font-medium"
+                  placeholder="Nhập họ tên đầy đủ..."
+                  className="h-12 bg-muted/30 border-muted focus-visible:ring-primary/30 font-medium"
                 />
               </div>
 
               {/* Phone */}
               <div className="space-y-2">
-                <CustomLabel icon={<Phone size={16} className="text-pink-500" />} label="Số điện thoại" />
-                <UIInput 
+                <label className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                  <Phone size={14} className="text-primary" />
+                  Số điện thoại
+                </label>
+                <Input 
                   name="phone" 
                   value={form.phone} 
                   onChange={handleChange}
-                  placeholder="Nhập SĐT..."
-                  className="h-11 bg-slate-50/50 dark:bg-secondary focus-visible:ring-pink-500/30 text-slate-900 dark:text-foreground font-medium"
+                  placeholder="09xx..."
+                  className="h-12 bg-muted/30 border-muted focus-visible:ring-primary/30 font-medium"
                 />
               </div>
 
               {/* Gender */}
               <div className="space-y-2">
-                <CustomLabel icon={<User size={16} className="text-pink-500" />} label="Giới tính" />
-                <UISelect 
+                <label className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                  <Sparkles size={14} className="text-primary" />
+                  Giới tính
+                </label>
+                <Select 
                   value={form.gender} 
                   onValueChange={(v) => setForm({ ...form, gender: v })}
                 >
-                  <SelectTrigger className="h-11 bg-slate-50/50 dark:bg-secondary focus:ring-pink-500/30 text-slate-900 dark:text-foreground font-medium">
+                  <SelectTrigger className="h-12 bg-muted/30 border-muted focus:ring-primary/30 font-medium">
                     <SelectValue placeholder="Chọn giới tính" />
                   </SelectTrigger>
                   <SelectContent>
@@ -191,78 +224,81 @@ export default function EditProfilePage() {
                     <SelectItem value="FEMALE">Nữ</SelectItem>
                     <SelectItem value="OTHER">Khác</SelectItem>
                   </SelectContent>
-                </UISelect>
+                </Select>
               </div>
 
               {/* JLPT */}
               <div className="md:col-span-2 space-y-2">
-                <CustomLabel icon={<GraduationCap size={16} className="text-pink-500" />} label="Trình độ tiếng Nhật (JLPT)" />
-                <UISelect 
+                <label className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                  <GraduationCap size={14} className="text-primary" />
+                  Trình độ JLPT
+                </label>
+                <Select 
                   value={form.jlptLevel} 
                   onValueChange={(v) => setForm({ ...form, jlptLevel: v })}
                 >
-                  <SelectTrigger className="h-11 bg-slate-50/50 dark:bg-secondary focus:ring-pink-500/30 text-slate-900 dark:text-foreground font-medium">
+                  <SelectTrigger className="h-12 bg-muted/30 border-muted focus:ring-primary/30 font-medium">
                     <SelectValue placeholder="Chọn cấp độ JLPT" />
                   </SelectTrigger>
                   <SelectContent>
                     {["N1", "N2", "N3", "N4", "N5"].map((n) => (
-                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                      <SelectItem key={n} value={n} className="font-semibold">{n}</SelectItem>
                     ))}
                   </SelectContent>
-                </UISelect>
+                </Select>
               </div>
 
               {/* Bio */}
               <div className="md:col-span-2 space-y-2">
-                <CustomLabel icon={<Sparkles size={16} className="text-pink-500" />} label="Tiểu sử bản thân" />
+                <label className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                  <PenTool size={14} className="text-primary" />
+                  Giới thiệu bản thân
+                </label>
                 <Textarea 
                   name="bio" 
                   value={form.bio} 
                   onChange={handleChange}
-                  placeholder="Kể về hành trình chinh phục tiếng Nhật của bạn..."
-                  className="resize-none min-h-[100px] bg-slate-50/50 dark:bg-secondary focus-visible:ring-pink-500/30 text-slate-900 dark:text-foreground font-medium"
+                  placeholder="Chia sẻ về mục tiêu học tiếng Nhật của bạn..."
+                  className="resize-none min-h-[120px] bg-muted/30 border-muted focus-visible:ring-primary/30 font-medium"
                 />
               </div>
-              
             </div>
+          </CardContent>
 
-            <hr className="border-slate-100 dark:border-border my-8" />
+          <CardFooter className="bg-muted/20 border-t p-6 flex flex-col sm:flex-row gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/profile")}
+              className="flex-1 h-12 rounded-xl font-bold uppercase tracking-wider text-xs border-muted-foreground/20 hover:bg-background"
+            >
+              Hủy thay đổi
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="flex-[2] h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+            >
+              {isSaving ? (
+                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save size={18} />
+              )}
+              Lưu thay đổi
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
 
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push("/profile")}
-                className="w-full sm:w-auto sm:flex-1 h-11 border-slate-200 text-slate-600 hover:text-pink-500 hover:bg-pink-500/5 hover:border-pink-400/50 dark:border-border dark:text-slate-300 dark:hover:text-pink-400 dark:hover:bg-pink-500/5 dark:hover:border-pink-500/30 transition-all"
-              >
-                Hủy thay đổi
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSaving}
-                className="w-full sm:w-auto sm:flex-1 h-11 bg-pink-500 hover:bg-pink-600 text-white font-semibold flex items-center justify-center gap-2 shadow-md shadow-pink-500/20 transition-all"
-              >
-                {isSaving ? (
-                  <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Save size={18} />
-                )}
-                Lưu hồ sơ mới
-              </Button>
-            </div>
-          </form>
+      <div className="p-4 rounded-xl border bg-primary/5 flex items-start gap-4 border-primary/10">
+        <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-primary">Lưu ý bảo mật</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Thông tin của bạn được mã hóa và bảo vệ theo tiêu chuẩn quốc tế. Một số thông tin như JLPT sẽ giúp hệ thống gợi ý bài học phù hợp hơn.
+          </p>
         </div>
       </div>
     </div>
-  );
-}
-
-function CustomLabel({ label, icon }: { label: string, icon?: React.ReactNode }) {
-  return (
-    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-      {icon}
-      {label}
-    </label>
   );
 }

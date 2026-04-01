@@ -25,6 +25,8 @@ import type {
   VoiceSessionHistory,
   FuriganaData,
 } from "@/types/voice";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import PaywallPopup from "@/components/common/PaywallPopup";
 
 /* ------------------------------------------------------------------ */
 /* n8n Sensei API                                                       */
@@ -543,10 +545,12 @@ import { useGetPublishedTopicsQuery } from "@/store/services/voice/voiceApi";
 // ... previous code up to SenseiPanel
 function SenseiPanel() {
   const [showHistory, setShowHistory] = useState(true);
+  const { currentTier, hasAccess } = useFeatureAccess();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Topics & Scenarios state
   const { data: rawTopics, isFetching: topicsLoading } = useGetPublishedTopicsQuery();
-  const topics = Array.isArray(rawTopics) ? rawTopics : [];
+  const topics: any[] = Array.isArray(rawTopics) ? (rawTopics as any[]) : [];
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null);
   
@@ -623,6 +627,10 @@ function SenseiPanel() {
   const isProcessing = state.status === "processing";
 
   const handleStartSession = useCallback(() => {
+    if (!hasAccess("PRO")) {
+      setShowPaywall(true);
+      return;
+    }
     if (!selectedTopic || !selectedScenario) return;
     setSelectedSessionCode(null);
     startSession({
@@ -634,7 +642,7 @@ function SenseiPanel() {
       scenarioId: selectedScenario.id,
       openingLine: selectedScenario.openingLine || undefined,
     });
-  }, [startSession, selectedScenario, selectedTopic, isSessionActive]);
+  }, [startSession, selectedScenario, selectedTopic, isSessionActive, hasAccess]);
 
 
   const handleStopSession = useCallback(async () => {
@@ -776,15 +784,34 @@ function SenseiPanel() {
           {/* Session start/stop + mic buttons */}
           <div className="relative z-20 mb-6 flex flex-col items-center gap-3">
             {!isSessionActive ? (
-              <Button
-                onClick={handleStartSession}
-                className="px-6 py-3 rounded-full bg-gradient-to-br from-secondary to-purple-600 text-white font-bold text-sm shadow-lg shadow-secondary/30 hover:shadow-xl hover:scale-105 transition-all"
-              >
-                <span className="material-symbols-outlined mr-2">
-                  play_arrow
-                </span>
-                Bắt đầu phiên hội thoại
-              </Button>
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  onClick={handleStartSession}
+                  className="px-6 py-3 rounded-full bg-gradient-to-br from-secondary to-purple-600 text-white font-bold text-sm shadow-lg shadow-secondary/30 hover:shadow-xl hover:scale-105 transition-all"
+                >
+                  <span className="material-symbols-outlined mr-2">
+                    play_arrow
+                  </span>
+                  Bắt đầu phiên hội thoại
+                </Button>
+                {currentTier === "PRO" && (
+                  <p className="text-xs font-semibold text-secondary animate-pulse tracking-wide">
+                    Còn 10/10 lượt hôm nay
+                  </p>
+                )}
+                {currentTier === "PREMIUM" && (
+                  <p className="text-xs font-semibold text-purple-400 opacity-80 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">all_inclusive</span>
+                    Lượt dùng không giới hạn
+                  </p>
+                )}
+                {currentTier === "BASIC" && (
+                  <p className="text-xs font-semibold text-muted-foreground opacity-80 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">lock</span>
+                    Khóa với tài khoản BASIC
+                  </p>
+                )}
+              </div>
             ) : (
               <>
                 {/* Push-to-talk mic button */}
@@ -1257,6 +1284,14 @@ function SenseiPanel() {
           </div>
         </div>
       )}
+
+      <PaywallPopup 
+        isOpen={showPaywall} 
+        onClose={() => setShowPaywall(false)} 
+        title="Tính năng AI Sensei"
+        description="Tính năng luyện nói AI chân thực 1-1 chỉ dành cho tài khoản PRO trở lên. Nâng cấp ngay để không bỏ lỡ trải nghiệm tuyệt vời này!"
+        requiredTier="PRO"
+      />
     </div>
   );
 }

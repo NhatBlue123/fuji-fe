@@ -61,10 +61,12 @@ export default function FujiWallet() {
 
   return (
     // Đổi selection-bg sang pink
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto py-8 px-4 selection:bg-pink-500/30">
+    <main className="flex-1 flex flex-col px-6 overflow-hidden relative selection:bg-pink-500/30">
+      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px]" />
       
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-muted/50 pb-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-8 py-6 border-b border-white/5 bg-background/50 backdrop-blur-md">
         <div className="space-y-1">
           <button 
             type="button"
@@ -102,7 +104,9 @@ export default function FujiWallet() {
             <ArrowUpRight className="mr-2" size={18} strokeWidth={3} /> Rút Tiền
           </Button>
         </div>
-      </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Wallet Card - Đổi gradient nền sang tông hồng/purle mờ */}
@@ -120,7 +124,7 @@ export default function FujiWallet() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger><Info size={14} className="opacity-40 hover:opacity-100 text-pink-400" /></TooltipTrigger>
-                  <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 Backdrop-blur-xl">Số dư dùng để thanh toán dịch vụ Fuji</TooltipContent>
+                  <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">Số dư dùng để thanh toán dịch vụ Fuji</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
@@ -156,7 +160,7 @@ export default function FujiWallet() {
                       <MoreHorizontal size={20} />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#0f1218] border border-pink-500/20 text-slate-200 rounded-xl Backdrop-blur-xl min-w-[180px]">
+                  <DropdownMenuContent align="end" className="bg-[#0f1218] border border-pink-500/20 text-slate-200 rounded-xl backdrop-blur-xl min-w-[180px]">
                     <DropdownMenuItem className="hover:bg-pink-500/10 hover:text-pink-300 focus:bg-pink-500/10 focus:text-pink-300 cursor-pointer text-xs font-semibold py-2.5">Lấy mã QR thanh toán</DropdownMenuItem>
                     <DropdownMenuItem className="hover:bg-pink-500/10 hover:text-pink-300 focus:bg-pink-500/10 focus:text-pink-300 cursor-pointer text-xs font-semibold py-2.5">Cài đặt thông báo</DropdownMenuItem>
                     <DropdownMenuItem className="hover:bg-rose-500/10 hover:text-rose-400 focus:bg-rose-500/10 focus:text-rose-400 text-rose-400 cursor-pointer text-xs font-semibold py-2.5">Báo cáo sự cố</DropdownMenuItem>
@@ -183,7 +187,7 @@ export default function FujiWallet() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[100px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] dark:bg-[#0B1120]/60 dark:Backdrop-blur-xl">
+          <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[100px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl">
             <div>
               <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Hạng thành viên</p>
               <p className="text-xl font-black text-foreground dark:text-white uppercase tracking-tighter">Premium User</p>
@@ -197,7 +201,7 @@ export default function FujiWallet() {
       </div>
 
       {/* Transaction Section */}
-      <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 overflow-hidden rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:Backdrop-blur-xl transition-all duration-500">
+      <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 overflow-hidden rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl transition-all duration-500">
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b dark:border-white/5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-pink-500/10 dark:bg-pink-500/10 rounded-2xl text-pink-500 dark:text-pink-400 border border-pink-500/20 shadow-inner">
@@ -359,7 +363,8 @@ export default function FujiWallet() {
           </CardFooter>
         )}
       </Card>
-    </div>
+      </div>
+    </main>
   );
 }
 

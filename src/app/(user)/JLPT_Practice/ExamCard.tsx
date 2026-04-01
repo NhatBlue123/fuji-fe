@@ -107,11 +107,13 @@ export default function ExamCard({
             lock
           </span>
           <p className="text-white font-bold text-sm mb-3">
-            Thành viên Premium
+            Thành viên JLPT PRO
           </p>
-          <Button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">
-            Nâng cấp
-          </Button>
+          <Link href="/premium">
+            <Button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">
+              Nâng cấp ngay
+            </Button>
+          </Link>
         </div>
       )}
 

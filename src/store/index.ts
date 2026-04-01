@@ -16,6 +16,7 @@ import { adminFlashcardApi } from "./services/admin/flashcardApi";
 import { userApi } from "./services/admin/userApi";
 import { adminReportApi } from "./services/adminReportApi";
 import { adminRevenueApi } from "./services/adminRevenueApi";
+import { subscriptionApi } from "./services/subscriptionApi";
 export const store = configureStore({
   reducer: {
     auth: authReducer,

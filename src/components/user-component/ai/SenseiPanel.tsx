@@ -1,431 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import {
   useGetVoiceSessionsQuery,
   useGetVoiceSessionDetailQuery,
+  useGetPublishedTopicsQuery,
 } from "@/store/services/voice/voiceApi";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import type {
   VoiceTranscriptItem,
   VoiceSessionHistory,
-  FuriganaData,
+  VoiceTopic,
 } from "@/types/voice";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import PaywallPopup from "@/components/common/PaywallPopup";
+import {
+  FuriganaDisplay,
+  RightSidebar,
+  type SenseiMessage,
+  type SenseiFeedback,
+} from "./shared";
 
 /* ------------------------------------------------------------------ */
-/* n8n Sensei API                                                       */
-/* ------------------------------------------------------------------ */
-
-async function callSensei(
-  userInput: string,
-  sessionId: string,
-): Promise<string> {
-  const N8N_URL = process.env.NEXT_PUBLIC_N8N_SENSEI_URL!;
-  const response = await fetch(N8N_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chatInput: userInput,
-      sessionId,
-    }),
-  });
-  const data = await response.text();
-  return data;
-}
-
-/** Tách <think>...</think> ra khỏi phần nội dung chính */
-function parseResponse(raw: string): { think: string; content: string } {
-  const m = raw.match(/<think>([\s\S]*?)<\/think>/i);
-  const think = m ? m[1].trim() : "";
-  const content = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-  return { think, content };
-}
-
-/** Khối think — có thể mở/đóng */
-const ThinkBlock = memo(function ThinkBlock({ content }: { content: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mb-2">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span className="material-symbols-outlined text-sm">
-          {open ? "expand_less" : "expand_more"}
-        </span>
-        💭 Đã suy nghĩ xong
-      </button>
-      {open && (
-        <div className="mt-1 text-xs text-muted-foreground bg-muted/40 border border-border/50 rounded-lg p-3 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
-          {content}
-        </div>
-      )}
-    </div>
-  );
-});
-
-/* ------------------------------------------------------------------ */
-/* Types                                                                */
-/* ------------------------------------------------------------------ */
-
-type SenseiMessage = {
-  id: number;
-  role: "ai" | "user";
-  textJp?: string;
-  textVn?: string;
-  furigana?: FuriganaData;
-  audioBase64?: string;
-  audioFormat?: string;
-  feedback?: "good" | "bad";
-};
-
-type AssistantMessage = {
-  id: number;
-  role: "ai" | "user";
-  textJp?: string;
-  textVn?: string;
-  think?: string;
-};
-
-type PracticeMode = "sensei" | "assistant";
-
-/* ------------------------------------------------------------------ */
-/* Constants                                                            */
-/* ------------------------------------------------------------------ */
-
-const LEVELS = ["N5", "N4", "N3", "N2", "N1"] as const;
-
-const TOPICS = [
-  { value: "shopping", label: "Mua sắm (Shopping)" },
-  { value: "interview", label: "Phỏng vấn xin việc" },
-  { value: "restaurant", label: "Đặt món tại nhà hàng" },
-  { value: "direction", label: "Hỏi đường" },
-] as const;
-
-const ASSISTANT_CHIPS = [
-  { emoji: "📚", text: "Giải thích ngữ pháp て-form" },
-  { emoji: "🔤", text: "Cho ví dụ với から" },
-  { emoji: "❓", text: "Sự khác nhau giữa は và が" },
-  { emoji: "✍️", text: "Luyện viết Hiragana" },
-];
-
-/* ------------------------------------------------------------------ */
-/* Shared sub-components                                                */
-/* ------------------------------------------------------------------ */
-
-/**
- * Furigana display with karaoke highlight.
- * `highlightIndex` = index of last highlighted segment (-1 = none, segments.length = all).
- */
-const FuriganaDisplay = memo(function FuriganaDisplay({
-  furigana,
-  highlightIndex,
-}: {
-  furigana: FuriganaData;
-  highlightIndex: number;
-}) {
-  return (
-    <div className="space-y-2">
-      {/* Main line: kanji + furigana */}
-      <p className="text-foreground text-base font-medium leading-[2.2] flex flex-wrap gap-x-1">
-        {furigana.segments.map((seg, i) => {
-          const active = i <= highlightIndex;
-          return (
-            <ruby
-              key={i}
-              className={`transition-colors duration-300 ${
-                active
-                  ? "text-secondary"
-                  : highlightIndex >= 0
-                    ? "text-muted-foreground/50"
-                    : "text-foreground"
-              }`}
-            >
-              {seg.kanji}
-              {seg.hiragana && seg.hiragana !== seg.kanji && (
-                <rt className="text-[0.6em] font-normal text-muted-foreground">
-                  {seg.hiragana}
-                </rt>
-              )}
-            </ruby>
-          );
-        })}
-      </p>
-      {/* Romaji line */}
-      <p className="text-xs text-muted-foreground/60 leading-relaxed flex flex-wrap gap-x-2">
-        {furigana.segments.map((seg, i) => (
-          <span
-            key={i}
-            className={`transition-colors duration-300 ${
-              i <= highlightIndex ? "text-secondary/70" : ""
-            }`}
-          >
-            {seg.romaji}
-          </span>
-        ))}
-      </p>
-      {/* Vietnamese translation */}
-      {furigana.translation && (
-        <p className="text-xs text-muted-foreground italic">
-          🇻🇳 {furigana.translation}
-        </p>
-      )}
-    </div>
-  );
-});
-
-/** Three bouncing dots with label */
-const TypingIndicator = memo(function TypingIndicator({
-  label,
-}: {
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 ml-14 opacity-60">
-      <div className="flex gap-1">
-        {[0, 150, 300].map((delay) => (
-          <span
-            key={delay}
-            className="size-1.5 bg-muted-foreground rounded-full animate-bounce"
-            style={{ animationDelay: `${delay}ms` }}
-          />
-        ))}
-      </div>
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
-  );
-});
-
-/** Shared input area — receives string labels instead of boolean flags */
-const ChatInputArea = memo(function ChatInputArea({
-  input,
-  onInputChange,
-  onSend,
-  chips,
-  placeholder,
-  showEmoji = false,
-  showMic = false,
-}: {
-  input: string;
-  onInputChange: (v: string) => void;
-  onSend: () => void;
-  chips: { emoji: string; text: string }[];
-  placeholder: string;
-  showEmoji?: boolean;
-  showMic?: boolean;
-}) {
-  return (
-    <div className="p-6 border-t border-border bg-background/80 backdrop-blur-sm shrink-0">
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
-        {chips.map((chip) => (
-          <Button
-            key={chip.text}
-            onClick={() => onInputChange(chip.text)}
-            className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
-          >
-            {chip.emoji} {chip.text}
-          </Button>
-        ))}
-      </div>
-      <div className="relative flex items-center gap-3">
-        <div className="flex-1 relative">
-          <Input
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSend()}
-            className="w-full bg-card border border-border text-foreground rounded-xl py-3.5 pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-muted-foreground shadow-sm transition-all"
-            placeholder={placeholder}
-            type="text"
-          />
-          {showEmoji && (
-            <Button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-              <span className="material-symbols-outlined">
-                sentiment_satisfied
-              </span>
-            </Button>
-          )}
-        </div>
-        {showMic && (
-          <Button className="p-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-card transition-all flex items-center justify-center group shadow-sm">
-            <span className="material-symbols-outlined group-hover:scale-110 transition-transform">
-              mic
-            </span>
-          </Button>
-        )}
-        <Button
-          onClick={onSend}
-          disabled={!input.trim()}
-          className="p-3.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center shadow-lg shadow-primary/20 group disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined group-hover:translate-x-0.5 transition-transform">
-            send
-          </span>
-        </Button>
-      </div>
-    </div>
-  );
-});
-
-/** Shared right sidebar — receives string labels, not boolean mode prop */
-const RightSidebar = memo(function RightSidebar({
-  settingsTitle,
-  feedbackTitle,
-  topics,
-  selectedTopicId,
-  onTopicChange,
-  scenarios,
-  selectedScenarioId,
-  onScenarioChange,
-  disabled = false,
-}: {
-  settingsTitle: string;
-  feedbackTitle: string;
-  topics: any[];
-  selectedTopicId: number | null;
-  onTopicChange: (v: string) => void;
-  scenarios: any[];
-  selectedScenarioId: number | null;
-  onScenarioChange: (v: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
-      {/* Settings */}
-      <div className="p-6 border-b border-border">
-        <h3 className="text-sm font-bold text-foreground tracking-wider mb-4 flex items-center gap-2">
-          <span className="material-symbols-outlined text-base text-secondary">
-            tune
-          </span>
-          {settingsTitle}
-        </h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-[13px] font-semibold text-foreground mb-2">
-              Chủ đề hội thoại
-            </label>
-            <Select disabled={disabled} value={selectedTopicId?.toString() || ""} onValueChange={onTopicChange}>
-              <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-60">
-                <SelectValue placeholder="Chọn chủ đề" />
-              </SelectTrigger>
-              <SelectContent>
-                {topics.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="block text-[13px] font-semibold text-foreground mb-2 mt-4">
-              Kịch bản (độ khó)
-            </label>
-            <div className="space-y-2">
-              {scenarios.map((s) => (
-                <div
-                  key={s.id}
-                  onClick={() => !disabled && onScenarioChange(s.id.toString())}
-                  className={`p-3 rounded-lg border transition-all ${
-                    disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                  } ${
-                    selectedScenarioId === s.id
-                      ? "bg-primary/5 border-primary shadow-sm"
-                      : "bg-card border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-bold shrink-0">
-                      {s.level}
-                    </span>
-                    <span className="text-xs font-semibold text-foreground truncate">
-                      {s.title}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground line-clamp-2">
-                    {s.situation}
-                  </p>
-                </div>
-              ))}
-              {scenarios.length === 0 && (
-                <p className="text-[11px] text-muted-foreground italic text-center py-2">
-                  (Không có kịch bản)
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Suggestions */}
-      <div className="p-6 pb-8">
-        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-          <span className="material-symbols-outlined text-base text-primary">
-            lightbulb
-          </span>
-          Đề xuất tiếp theo
-        </h3>
-        <div className="space-y-3">
-          <div className="group bg-card hover:bg-muted border border-border rounded-xl p-3 transition-all cursor-pointer">
-            <div className="flex gap-3">
-              <div className="size-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-lg">
-                  edit_note
-                </span>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground group-hover:text-secondary transition-colors">
-                  Luyện Kanji N4
-                </h4>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Bài 12: Chủ đề Mua sắm
-                </p>
-              </div>
-            </div>
-            <Button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors border border-border">
-              Luyện ngay
-            </Button>
-          </div>
-          <div className="group bg-card hover:bg-muted border border-border rounded-xl p-3 transition-all cursor-pointer">
-            <div className="flex gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-lg">
-                  assignment
-                </span>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                  Đề JLPT N4 - Đọc hiểu
-                </h4>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Luyện tập đoạn văn ngắn
-                </p>
-              </div>
-            </div>
-            <Button className="mt-3 w-full py-1.5 rounded bg-muted text-xs text-foreground font-medium hover:bg-primary hover:text-primary-foreground transition-colors border border-border">
-              Làm bài
-            </Button>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-});
-
-/* ------------------------------------------------------------------ */
-/* SenseiPanel — explicit variant: voice conversation with AI avatar    */
+/* ChromaKeyVideo — removes white background from a video source        */
 /* ------------------------------------------------------------------ */
 
 const SENSEI_VIDEO_SRC = "/video/Chibi_Ninja_Sensei_Video_Generation.mp4";
@@ -468,19 +66,12 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
     if (!ctx) return;
 
     const WHITE_THRESHOLD = 220; // R,G,B all above this → transparent
+    let hasDrawnInitialFrame = false;
 
-    const draw = () => {
-      if (video.paused || video.ended) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
-
+    const drawFrame = () => {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
-      if (vw === 0 || vh === 0) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
+      if (vw === 0 || vh === 0) return false;
 
       /* Crop middle 80%: skip top 10%, take 80%, skip bottom 10% */
       const cropY = Math.floor(vh * 0.1);
@@ -507,7 +98,24 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
       }
 
       ctx.putImageData(frame, 0, 0);
-      rafRef.current = requestAnimationFrame(draw);
+      return true;
+    };
+
+    const draw = () => {
+      // Vẽ frame nếu video đang play hoặc chưa vẽ frame nào (để hiển thị frame đầu tiên)
+      if (!video.paused && !video.ended) {
+        drawFrame();
+        hasDrawnInitialFrame = true;
+        rafRef.current = requestAnimationFrame(draw);
+      } else if (!hasDrawnInitialFrame && video.readyState >= 2) {
+        // Video đã load enough data nhưng chưa play → vẽ frame đầu tiên
+        if (drawFrame()) {
+          hasDrawnInitialFrame = true;
+        }
+        rafRef.current = requestAnimationFrame(draw);
+      } else {
+        rafRef.current = requestAnimationFrame(draw);
+      }
     };
 
     rafRef.current = requestAnimationFrame(draw);
@@ -537,40 +145,52 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
   );
 });
 
-import { useGetPublishedTopicsQuery } from "@/store/services/voice/voiceApi";
+/* ------------------------------------------------------------------ */
+/* SenseiPanel — voice conversation with AI avatar                      */
+/* ------------------------------------------------------------------ */
 
-// ... previous code up to SenseiPanel
-function SenseiPanel() {
+export default function SenseiPanel() {
   const [showHistory, setShowHistory] = useState(true);
-  const { currentTier, hasAccess } = useFeatureAccess();
-  const [showPaywall, setShowPaywall] = useState(false);
+
+  // Sensei feedback state - lưu nhận xét sau khi kết thúc phiên
+  const [feedback, setFeedback] = useState<SenseiFeedback | null>(null);
 
   // Topics & Scenarios state
-  const { data: rawTopics, isFetching: topicsLoading } = useGetPublishedTopicsQuery();
-  const topics: any[] = Array.isArray(rawTopics) ? (rawTopics as any[]) : [];
+  const { data: rawTopics, isFetching: topicsLoading } =
+    useGetPublishedTopicsQuery();
+  const topics: VoiceTopic[] = Array.isArray(rawTopics)
+    ? (rawTopics as VoiceTopic[])
+    : [];
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
-  const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null);
-  
+  const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(
+    null,
+  );
+
   // Auto-select first topic and its first scenario when data loads
   useEffect(() => {
     if (topics.length > 0 && !selectedTopicId) {
       setSelectedTopicId(topics[0].id);
-      if (Array.isArray(topics[0].scenarios) && topics[0].scenarios.length > 0) {
+      if (
+        Array.isArray(topics[0].scenarios) &&
+        topics[0].scenarios.length > 0
+      ) {
         setSelectedScenarioId(topics[0].scenarios[0].id);
       }
     }
   }, [topics, selectedTopicId]);
 
   // Derived selected entities
-  const selectedTopic = topics.find((t: any) => t.id === selectedTopicId);
-  const selectedScenario = selectedTopic?.scenarios?.find((s: any) => s.id === selectedScenarioId);
+  const selectedTopic = topics.find((t) => t.id === selectedTopicId);
+  const selectedScenario = selectedTopic?.scenarios?.find(
+    (s) => s.id === selectedScenarioId,
+  );
 
   // Handle topic change
   const handleTopicChange = (topicIdStr: string) => {
     const topicId = Number(topicIdStr);
     setSelectedTopicId(topicId);
     const topic = topics.find((t) => t.id === topicId);
-    if (topic?.scenarios?.length > 0) {
+    if (topic && topic.scenarios && topic.scenarios.length > 0) {
       setSelectedScenarioId(topic.scenarios[0].id);
     } else {
       setSelectedScenarioId(null);
@@ -588,9 +208,7 @@ function SenseiPanel() {
   const [audioProgress, setAudioProgress] = useState(0);
   const { data: sessions, refetch: refetchSessions } = useGetVoiceSessionsQuery(
     undefined,
-    {
-      skip: !showSessionList,
-    },
+    { skip: !showSessionList },
   );
   const { data: sessionDetail, isFetching: isLoadingDetail } =
     useGetVoiceSessionDetailQuery(selectedSessionCode!, {
@@ -624,28 +242,50 @@ function SenseiPanel() {
   const isProcessing = state.status === "processing";
 
   const handleStartSession = useCallback(() => {
-    if (!hasAccess("PRO")) {
-      setShowPaywall(true);
-      return;
-    }
     if (!selectedTopic || !selectedScenario) return;
     setSelectedSessionCode(null);
+    setFeedback(null); // Xóa feedback cũ khi bắt đầu phiên mới
     startSession({
       level: selectedScenario.level,
       context: `Chủ đề: ${selectedTopic.title}. Tình huống: ${selectedScenario.situation}. Vai trò AI: ${selectedScenario.aiRole}. Tính cách: ${selectedScenario.aiPersonality || "thân thiện"}. Mẫu hội thoại:\n${selectedScenario.sampleConversation || ""}`,
-      goals: "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
+      goals:
+        "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
       preferredVoice: "alloy",
       topicId: selectedTopic.id,
       scenarioId: selectedScenario.id,
       openingLine: selectedScenario.openingLine || undefined,
     });
-  }, [startSession, selectedScenario, selectedTopic, isSessionActive, hasAccess]);
-
+  }, [startSession, selectedScenario, selectedTopic, isSessionActive]);
 
   const handleStopSession = useCallback(async () => {
     await stopSession();
     if (showSessionList) refetchSessions();
-  }, [stopSession, showSessionList, refetchSessions]);
+
+    // Tạo feedback dựa trên lịch sử hội thoại (mock - sẽ thay bằng API thực)
+    const messageCount = state.transcriptHistory.filter(
+      (t) => t.role === "user",
+    ).length;
+    if (messageCount > 0) {
+      // Tính điểm dựa trên số lượng tin nhắn (mock logic)
+      const baseScore = Math.min(70 + messageCount * 5, 95);
+      const score = Math.floor(baseScore);
+
+      setFeedback({
+        score,
+        comment: `Bạn đã tham gia ${messageCount} lượt hội thoại. Giọng điệu tự nhiên, phản xạ tốt. Cần cải thiện thêm về ngữ pháp và từ vựng phức tạp.`,
+        strengths: [
+          "Phát âm rõ ràng, dễ nghe",
+          "Phản xạ nhanh trong hội thoại",
+          "Sử dụng đúng ngữ cảnh",
+        ],
+        improvements: [
+          "Cần mở rộng từ vựng về chủ đề này",
+          "Chú ý cách sử dụng trợ từ は và が",
+          "Luyện thêm về cách chia động từ thể lịch sự",
+        ],
+      });
+    }
+  }, [stopSession, showSessionList, refetchSessions, state.transcriptHistory]);
 
   const handleMicDown = useCallback(() => {
     if (!isSessionActive || isProcessing || isPlaying) return;
@@ -657,7 +297,7 @@ function SenseiPanel() {
     stopRecording();
   }, [isRecording, stopRecording]);
 
-  // Transcript messages cho hiển thị
+  // Transcript messages
   const displayMessages: SenseiMessage[] = useMemo(() => {
     return state.transcriptHistory.map((t: VoiceTranscriptItem, i: number) => ({
       id: i,
@@ -678,7 +318,6 @@ function SenseiPanel() {
   const handleReplay = useCallback(
     (msg: SenseiMessage) => {
       if (!msg.audioBase64 || isPlaying) return;
-      // Dừng replay hiện tại nếu có
       if (replayAudioRef.current) {
         replayAudioRef.current.pause();
         replayAudioRef.current = null;
@@ -737,7 +376,7 @@ function SenseiPanel() {
             <div className="relative w-36 h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 animate-[float_6s_ease-in-out_infinite] group">
               {/* Glow behind avatar */}
               <div className="absolute inset-0 bg-gradient-to-t from-secondary/20 to-primary/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
-              {/* Chroma-keyed video avatar — no interaction */}
+              {/* Chroma-keyed video avatar */}
               <div className="w-full h-full flex items-center justify-center relative">
                 <ChromaKeyVideo
                   src={SENSEI_VIDEO_SRC}
@@ -745,7 +384,7 @@ function SenseiPanel() {
                   className="w-full h-full object-contain drop-shadow-2xl"
                 />
               </div>
-              {/* "Sensei status" badge */}
+              {/* Sensei status badge */}
               <div className="absolute -top-4 -right-8 bg-card/90 dark:bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-2xl rounded-bl-none shadow-lg rotate-6 animate-pulse z-20 border border-border">
                 <div className="flex items-center gap-1.5">
                   <span
@@ -781,34 +420,15 @@ function SenseiPanel() {
           {/* Session start/stop + mic buttons */}
           <div className="relative z-20 mb-6 flex flex-col items-center gap-3">
             {!isSessionActive ? (
-              <div className="flex flex-col items-center gap-2">
-                <Button
-                  onClick={handleStartSession}
-                  className="px-6 py-3 rounded-full bg-gradient-to-br from-secondary to-purple-600 text-white font-bold text-sm shadow-lg shadow-secondary/30 hover:shadow-xl hover:scale-105 transition-all"
-                >
-                  <span className="material-symbols-outlined mr-2">
-                    play_arrow
-                  </span>
-                  Bắt đầu phiên hội thoại
-                </Button>
-                {currentTier === "PRO" && (
-                  <p className="text-xs font-semibold text-secondary animate-pulse tracking-wide">
-                    Còn 10/10 lượt hôm nay
-                  </p>
-                )}
-                {currentTier === "PREMIUM" && (
-                  <p className="text-xs font-semibold text-purple-400 opacity-80 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">all_inclusive</span>
-                    Lượt dùng không giới hạn
-                  </p>
-                )}
-                {currentTier === "BASIC" && (
-                  <p className="text-xs font-semibold text-muted-foreground opacity-80 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">lock</span>
-                    Khóa với tài khoản BASIC
-                  </p>
-                )}
-              </div>
+              <Button
+                onClick={handleStartSession}
+                className="px-6 py-3 rounded-full bg-gradient-to-br from-secondary to-purple-600 text-white font-bold text-sm shadow-lg shadow-secondary/30 hover:shadow-xl hover:scale-105 transition-all"
+              >
+                <span className="material-symbols-outlined mr-2">
+                  play_arrow
+                </span>
+                Bắt đầu phiên hội thoại
+              </Button>
             ) : (
               <>
                 {/* Push-to-talk mic button */}
@@ -910,7 +530,7 @@ function SenseiPanel() {
               {/* Panel body — conversation messages */}
               {showHistory && (
                 <div className="p-4 flex-1 overflow-y-auto space-y-3">
-                  {/* Voice indicator — recording / processing (mới nhất → trên cùng) */}
+                  {/* Voice indicator — recording / processing */}
                   {(isRecording || isProcessing) && (
                     <div className="flex gap-4 opacity-70">
                       <div className="shrink-0 size-8 rounded-full bg-muted mt-1 border border-border flex items-center justify-center">
@@ -946,7 +566,6 @@ function SenseiPanel() {
                     const isLastAi =
                       msg.role === "ai" &&
                       msg.id === displayMessages.length - 1;
-                    // Karaoke: live play (last AI) hoặc replay (bất kỳ AI nào)
                     const isReplaying = replayIdx === msg.id;
                     const karaokeIndex =
                       isLastAi && isPlaying && msg.furigana?.segments
@@ -1036,7 +655,7 @@ function SenseiPanel() {
             </div>
           </div>
 
-          {/* Nút xem lịch sử session — đặt dưới lịch sử hội thoại hiện tại */}
+          {/* Nút xem lịch sử session */}
           <div className="z-10 mt-3 mb-2">
             <Button
               onClick={() => {
@@ -1121,7 +740,7 @@ function SenseiPanel() {
             </div>
           )}
 
-          {/* Session detail view — xem transcript của session cũ */}
+          {/* Session detail view */}
           {selectedSessionCode && (
             <div className="w-full max-w-2xl z-10 mb-2">
               <div className="bg-card/70 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-2xl">
@@ -1237,7 +856,6 @@ function SenseiPanel() {
 
       <RightSidebar
         settingsTitle="Thiết lập cho Sensei"
-        feedbackTitle="Nhận xét của Sensei"
         topics={topics}
         selectedTopicId={selectedTopicId}
         onTopicChange={handleTopicChange}
@@ -1245,6 +863,7 @@ function SenseiPanel() {
         selectedScenarioId={selectedScenarioId}
         onScenarioChange={(v) => setSelectedScenarioId(Number(v))}
         disabled={isSessionActive}
+        feedback={feedback}
       />
 
       {/* Evaluation Popup */}
@@ -1253,11 +872,14 @@ function SenseiPanel() {
           <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                <span className="material-symbols-outlined text-3xl">sports_score</span>
+                <span className="material-symbols-outlined text-3xl">
+                  sports_score
+                </span>
               </div>
               <h3 className="text-xl font-bold mb-2">Đã hoàn thành!</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có muốn xem điểm không?
+                Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có
+                muốn xem điểm không?
               </p>
               <div className="flex gap-3">
                 <Button
@@ -1281,284 +903,6 @@ function SenseiPanel() {
           </div>
         </div>
       )}
-
-      <PaywallPopup 
-        isOpen={showPaywall} 
-        onClose={() => setShowPaywall(false)} 
-        title="Tính năng AI Sensei"
-        description="Tính năng luyện nói AI chân thực 1-1 chỉ dành cho tài khoản PRO trở lên. Nâng cấp ngay để không bỏ lỡ trải nghiệm tuyệt vời này!"
-        requiredTier="PRO"
-      />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* AssistantPanel — explicit variant: study chatbot (plain text)        */
-/* ------------------------------------------------------------------ */
-
-function AssistantPanel() {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<AssistantMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [selectedLevel, setSelectedLevel] = useState("N4");
-  const [selectedTopic, setSelectedTopic] = useState("shopping");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
-
-  // Đếm thời gian chờ khi đang gọi API
-  useEffect(() => {
-    if (!isTyping) {
-      setElapsedMs(0);
-      return;
-    }
-    const start = Date.now();
-    const id = setInterval(() => setElapsedMs(Date.now() - start), 100);
-    return () => clearInterval(id);
-  }, [isTyping]);
-
-  const handleSend = useCallback(async () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    const sessionId = user?._id ?? user?.id?.toString() ?? "anonymous";
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), role: "user", textJp: trimmed },
-    ]);
-    setInput("");
-    setIsTyping(true);
-    try {
-      const raw = await callSensei(trimmed, sessionId);
-      const { think, content } = parseResponse(raw);
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: "ai", textVn: content, think },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          role: "ai",
-          textVn: "⚠️ Không thể kết nối Sensei. Vui lòng thử lại sau.",
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
-  }, [input, user]);
-
-  return (
-    <div className="flex flex-1 overflow-hidden">
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 && !isTyping ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
-              <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20">
-                <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-2xl">
-                    smart_toy
-                  </span>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">
-                  Trợ giảng AI FUJI
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Hỏi bất kỳ điều gì về tiếng Nhật — ngữ pháp, từ vựng, JLPT...
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center max-w-sm">
-                {ASSISTANT_CHIPS.map((chip) => (
-                  <button
-                    key={chip.text}
-                    onClick={() => setInput(chip.text)}
-                    className="px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
-                  >
-                    {chip.emoji} {chip.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex justify-center">
-                <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                  {new Date().toLocaleDateString("vi-VN", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-
-              {messages.map((msg) =>
-                msg.role === "ai" ? (
-                  <div
-                    key={msg.id}
-                    className="flex items-start gap-4 max-w-3xl"
-                  >
-                    <div className="size-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shrink-0 shadow-lg shadow-primary/20">
-                      <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                        <span className="material-symbols-outlined text-primary text-base">
-                          smart_toy
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-xs text-muted-foreground font-medium ml-1">
-                        Trợ giảng AI
-                      </div>
-                      <div className="bg-card border border-border p-4 rounded-2xl rounded-tl-none shadow-sm text-foreground leading-relaxed">
-                        {msg.think && <ThinkBlock content={msg.think} />}
-                        {msg.textJp && (
-                          <p className="font-bold text-lg mb-1">{msg.textJp}</p>
-                        )}
-                        {msg.textVn && (
-                          <div
-                            className="prose prose-sm dark:prose-invert max-w-none text-sm
-                        [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:mt-3
-                        [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mb-1.5 [&_h2]:mt-3
-                        [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:mt-2
-                        [&_p]:mb-2 [&_p]:leading-relaxed
-                        [&_ul]:mb-2 [&_ul]:pl-4 [&_ul]:list-disc
-                        [&_ol]:mb-2 [&_ol]:pl-4 [&_ol]:list-decimal
-                        [&_li]:mb-0.5
-                        [&_strong]:font-semibold [&_strong]:text-foreground
-                        [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono
-                        [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:mb-2
-                        [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
-                        [&_hr]:border-border [&_hr]:my-2"
-                          >
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.textVn}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2 mt-1">
-                        <Button
-                          variant="ghost"
-                          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                          title="Sao chép"
-                        >
-                          <span className="material-symbols-outlined text-lg">
-                            content_copy
-                          </span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    key={msg.id}
-                    className="flex items-start gap-4 max-w-3xl ml-auto flex-row-reverse"
-                  >
-                    <div className="size-10 rounded-full bg-muted shrink-0 border border-border flex items-center justify-center">
-                      <span className="material-symbols-outlined text-muted-foreground">
-                        person
-                      </span>
-                    </div>
-                    <div className="bg-primary text-primary-foreground p-4 rounded-2xl rounded-tr-none shadow-md shadow-primary/10 leading-relaxed">
-                      <p className="text-base">{msg.textJp}</p>
-                    </div>
-                  </div>
-                ),
-              )}
-
-              {isTyping && (
-                <div className="flex items-center gap-2 ml-14 opacity-60">
-                  <div className="flex gap-1">
-                    {[0, 150, 300].map((delay) => (
-                      <span
-                        key={delay}
-                        className="size-1.5 bg-muted-foreground rounded-full animate-bounce"
-                        style={{ animationDelay: `${delay}ms` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    Trợ giảng đang soạn...
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                    {(elapsedMs / 1000).toFixed(1)}s
-                  </span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-
-        <ChatInputArea
-          input={input}
-          onInputChange={setInput}
-          onSend={handleSend}
-          chips={ASSISTANT_CHIPS}
-          placeholder="Hỏi bất kỳ điều gì về tiếng Nhật..."
-        />
-      </div>
-
-      <RightSidebar
-        settingsTitle="Thiết lập Trợ giảng"
-        feedbackTitle="Phân tích câu hỏi"
-        topics={TOPICS.map(t => ({ id: t.value, title: t.label }))}
-        selectedTopicId={selectedTopic as any}
-        onTopicChange={setSelectedTopic}
-        scenarios={LEVELS.map(l => ({ id: l, title: l, level: l, situation: '' }))}
-        selectedScenarioId={selectedLevel as any}
-        onScenarioChange={setSelectedLevel}
-        disabled={isTyping}
-      />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Page shell — mode tabs + explicit panel variants                     */
-/* ------------------------------------------------------------------ */
-
-export default function AIChatPage() {
-  const [mode, setMode] = useState<PracticeMode>("assistant");
-
-  return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Mode tabs — Chatbot first, Sensei second */}
-      <div className="flex border-b border-border bg-muted/30 shrink-0">
-        <Button
-          variant="ghost"
-          onClick={() => setMode("assistant")}
-          className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold text-sm transition-all ${mode === "assistant"
-            ? "border-primary text-primary bg-primary/5"
-            : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-        >
-          <span className="material-symbols-outlined text-lg">smart_toy</span>
-          Chatbot AI
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setMode("sensei")}
-          className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold text-sm transition-all ${mode === "sensei"
-            ? "border-secondary text-secondary bg-secondary/5"
-            : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-        >
-          <span className="material-symbols-outlined text-lg">
-            record_voice_over
-          </span>
-          Giao tiếp với AI Sensei
-        </Button>
-      </div>
-
-      {/* Render explicit variant — no conditional inside one component */}
-      {mode === "assistant" ? <AssistantPanel /> : <SenseiPanel />}
     </div>
   );
 }

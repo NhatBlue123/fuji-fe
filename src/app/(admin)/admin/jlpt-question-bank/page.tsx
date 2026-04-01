@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
+import { JLPT_STRUCTURE } from "@/lib/jlpt-structure";
+import type { JLPTLevel, SectionKey } from "@/lib/jlpt-structure";
 import {
   useGetQuestionBankItemsQuery,
   useCreateQuestionBankItemMutation,
@@ -21,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Pencil, Trash2, Sparkles, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 type Level = QuestionBankItem["level"];
 type Section = QuestionBankItem["section"];
@@ -78,11 +81,27 @@ export default function JlptQuestionBankPage() {
   const [aiCount, setAiCount] = useState(5);
   const [aiMondaiNumber, setAiMondaiNumber] = useState<number>(1);
   const [aiMondaiTitle, setAiMondaiTitle] = useState<string>("");
+  const [aiTopic, setAiTopic] = useState<string>(""); // Optional topic/theme for AI
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiPreview, setAiPreview] = useState<
     { contentText: string; options: string[]; correctOption: number; explanation: string; passageText: string }[]
   >([]);
+
+  // Build mondai options for the AI panel from JLPT_STRUCTURE filtered by level+section
+  const aiMondaiOptions = useMemo(() => {
+    if (!level || !section) return [];
+    const sectionConfs = JLPT_STRUCTURE[level as JLPTLevel] ?? [];
+    const matched: { number: number; title: string }[] = [];
+    for (const sec of sectionConfs) {
+      if (sec.sectionKeys.includes(section as SectionKey)) {
+        for (const m of sec.mondai) {
+          matched.push({ number: m.number, title: m.title });
+        }
+      }
+    }
+    return matched;
+  }, [level, section]);
 
   const resetForm = () => {
     setEditing(null);
@@ -119,7 +138,7 @@ export default function JlptQuestionBankPage() {
 
   const handleSubmit = async () => {
     if (!form.level || !form.section || !form.contentText) {
-      alert("Level, Section và Nội dung câu hỏi là bắt buộc");
+      toast.error("Level, Section và Nội dung câu hỏi là bắt buộc");
       return;
     }
     try {
@@ -132,7 +151,7 @@ export default function JlptQuestionBankPage() {
       refetch();
     } catch (e) {
       console.error(e);
-      alert("Lưu câu hỏi ngân hàng thất bại");
+      toast.error("Lưu câu hỏi ngân hàng thất bại");
     }
   };
 
@@ -143,7 +162,7 @@ export default function JlptQuestionBankPage() {
       refetch();
     } catch (e) {
       console.error(e);
-      alert("Xóa câu hỏi ngân hàng thất bại");
+      toast.error("Xóa câu hỏi ngân hàng thất bại");
     }
   };
 
@@ -153,10 +172,10 @@ export default function JlptQuestionBankPage() {
       fd.append("file", file);
       const result = await uploadAudio(fd).unwrap();
       setForm((f) => ({ ...f, audioMediaId: result.id }));
-      alert("Upload audio thành công");
+      toast.success("Upload audio thành công");
     } catch (e) {
       console.error(e);
-      alert("Upload audio thất bại");
+      toast.error("Upload audio thất bại");
     }
   };
 
@@ -166,10 +185,10 @@ export default function JlptQuestionBankPage() {
       fd.append("file", file);
       const result = await uploadImage(fd).unwrap();
       setForm((f) => ({ ...f, imageMediaId: result.id }));
-      alert("Upload ảnh thành công");
+      toast.success("Upload ảnh thành công");
     } catch (e) {
       console.error(e);
-      alert("Upload ảnh thất bại");
+      toast.error("Upload ảnh thất bại");
     }
   };
 
@@ -200,14 +219,12 @@ export default function JlptQuestionBankPage() {
         ).size;
 
         const rowsText = uniqueErrorRows > 0 ? `, trên ${uniqueErrorRows} dòng` : "";
-        alert(
-          `Cảnh báo: Phát hiện ${detectedErrors} lỗi${rowsText} trong file Excel. Vui lòng xem chi tiết!`,
-        );
+        toast.warning(`Cảnh báo: Phát hiện ${detectedErrors} lỗi${rowsText} trong file Excel. Vui lòng xem chi tiết!`);
       }
     } catch (error: any) {
       console.error(error);
       const errMsg = error?.data?.message || error?.message || "Preview lỗi";
-      alert(`Lỗi preview: ${errMsg}`);
+      toast.error(`Lỗi preview: ${errMsg}`);
       setImportFile(null);
     } finally {
       if (fileInputRef.current) {
@@ -229,13 +246,13 @@ export default function JlptQuestionBankPage() {
       fd.append("file", importFile);
       const res = await importExcel(fd).unwrap();
       
-      alert(`Import thành công ${res.success} câu hỏi vào ngân hàng!`);
+      toast.success(`Import thành công ${res.success} câu hỏi vào ngân hàng!`);
       cancelImport();
       refetch();
     } catch (error: any) {
       console.error(error);
       const errMsg = error?.data?.message || error?.message || "Lưu import lỗi";
-      alert(`Lỗi lưu: ${errMsg}`);
+      toast.error(`Lỗi lưu: ${errMsg}`);
     }
   };
 
@@ -261,6 +278,7 @@ export default function JlptQuestionBankPage() {
           count: aiCount,
           mondaiNumber: aiMondaiNumber,
           mondaiTitle: aiMondaiTitle || undefined,
+          topic: aiTopic.trim() || undefined,
         }),
       });
       const json = await res.json();
@@ -326,17 +344,17 @@ export default function JlptQuestionBankPage() {
           correctOption: correctOpt,
           explanation: q.explanation || undefined,
           points: 1.0,
-          tags: [baseTags.join(","), extraTag].filter(Boolean).join(","),
+          tags: [baseTags.join(","), extraTag, aiTopic.trim() ? `chủ đề:${aiTopic.trim()}` : ""].filter(Boolean).join(","),
         };
       });
       await bulkCreate(payloads).unwrap();
-      alert(`Đã lưu ${payloads.length} câu hỏi AI vào ngân hàng`);
+      toast.success(`Đã lưu ${payloads.length} câu hỏi AI vào ngân hàng`);
       setAiPreview([]);
       refetch();
     } catch (e: any) {
       console.error(e);
       const errMsg = e?.data?.message || e?.message || "Lưu câu hỏi AI vào ngân hàng thất bại";
-      alert(`Lỗi: ${errMsg}`);
+      toast.error(`Lỗi: ${errMsg}`);
     }
   };
 
@@ -445,25 +463,73 @@ export default function JlptQuestionBankPage() {
             <p className="text-xs text-muted-foreground">
               AI dùng đúng Level/Phần đang chọn ở bộ lọc bên trên. Với Listening: AI chỉ sinh câu + đáp án, audio bạn upload thủ công (hoặc tích hợp TTS sau).
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Mondai selector — driven by JLPT_STRUCTURE for the chosen level+section */}
+            {aiMondaiOptions.length > 0 ? (
               <div className="space-y-1">
-                <Label className="text-xs">Mondai số</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={aiMondaiNumber}
-                  onChange={(e) => setAiMondaiNumber(Number(e.target.value) || 1)}
-                  className="h-8 text-xs"
-                />
+                <Label className="text-xs">Chọn loại câu hỏi (Mondai)</Label>
+                <Select
+                  value={String(aiMondaiNumber)}
+                  onValueChange={(v) => {
+                    const num = Number(v);
+                    setAiMondaiNumber(num);
+                    const found = aiMondaiOptions.find((m) => m.number === num);
+                    setAiMondaiTitle(found?.title ?? "");
+                  }}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Chọn mondai..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiMondaiOptions.map((m) => (
+                      <SelectItem key={m.number} value={String(m.number)}>
+                        問{m.number} — {m.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  Mondai {aiMondaiNumber}: {aiMondaiTitle || "(chưa chọn)"}
+                </p>
               </div>
-              <div className="space-y-1 md:col-span-2">
-                <Label className="text-xs">Mondai title (tuỳ chọn)</Label>
-                <Input
-                  value={aiMondaiTitle}
-                  onChange={(e) => setAiMondaiTitle(e.target.value)}
-                  className="h-8 text-xs"
-                />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Mondai số</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={aiMondaiNumber}
+                    onChange={(e) => setAiMondaiNumber(Number(e.target.value) || 1)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <Label className="text-xs">Mondai title</Label>
+                  <Input
+                    value={aiMondaiTitle}
+                    onChange={(e) => setAiMondaiTitle(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
               </div>
+            )}
+            {/* Topic / Theme input */}
+            <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                Chủ đề tạo câu hỏi
+                <span className="text-[10px] text-muted-foreground font-normal">(tuỳ chọn)</span>
+              </Label>
+              <Input
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="VD: hải sản, đất nước, giao thông, ẩm thực, trường học..."
+                className="h-9 text-xs"
+              />
+              {aiTopic.trim() && (
+                <p className="text-[10px] text-purple-600 dark:text-purple-400">
+                  ✨ AI sẽ tạo câu hỏi theo chủ đề: <span className="font-semibold">{aiTopic.trim()}</span>
+                </p>
+              )}
             </div>
             <div className="flex items-end gap-2">
               <div className="space-y-1">
@@ -531,7 +597,22 @@ export default function JlptQuestionBankPage() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
         <div className="space-y-1">
           <Label className="text-xs">Level</Label>
-          <Select value={level} onValueChange={(v: Level) => { setLevel(v); setPage(0); }}>
+          <Select value={level} onValueChange={(v: Level) => {
+            setLevel(v);
+            setPage(0);
+            setAiPreview([]);
+            // Reset mondai to first valid option for new level+section
+            const sectionConfs = JLPT_STRUCTURE[v as JLPTLevel] ?? [];
+            for (const sec of sectionConfs) {
+              if (!section || sec.sectionKeys.includes(section as SectionKey)) {
+                if (sec.mondai[0]) {
+                  setAiMondaiNumber(sec.mondai[0].number);
+                  setAiMondaiTitle(sec.mondai[0].title);
+                }
+                break;
+              }
+            }
+          }}>
             <SelectTrigger className="h-9 text-xs">
               <SelectValue placeholder="Tất cả" />
             </SelectTrigger>
@@ -546,7 +627,24 @@ export default function JlptQuestionBankPage() {
 
         <div className="space-y-1">
           <Label className="text-xs">Phần thi</Label>
-          <Select value={section} onValueChange={(v: Section) => { setSection(v); setPage(0); }}>
+          <Select value={section} onValueChange={(v: Section) => {
+            setSection(v);
+            setPage(0);
+            setAiPreview([]);
+            // Reset mondai to first valid option for new section
+            if (level) {
+              const sectionConfs = JLPT_STRUCTURE[level as JLPTLevel] ?? [];
+              for (const sec of sectionConfs) {
+                if (sec.sectionKeys.includes(v as SectionKey)) {
+                  if (sec.mondai[0]) {
+                    setAiMondaiNumber(sec.mondai[0].number);
+                    setAiMondaiTitle(sec.mondai[0].title);
+                  }
+                  break;
+                }
+              }
+            }
+          }}>
             <SelectTrigger className="h-9 text-xs">
               <SelectValue placeholder="Tất cả" />
             </SelectTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -64,6 +64,9 @@ import {
   BookOpen,
   Loader2,
   ArrowRight,
+  Upload,
+  FileText,
+  AlertCircle,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -77,6 +80,7 @@ import {
 import { API_CONFIG } from "@/config/api";
 import { getAccessToken } from "@/lib/token";
 import type { CreateQuestionDTO, JlptQuestionAdmin, QuestionBankItem } from "@/store/services/adminJlptApi";
+import { toast } from "sonner";
 
 // ─── Level color map ──────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -92,8 +96,8 @@ const INITIAL_FORM = {
   level: "N3" as "N5" | "N4" | "N3" | "N2" | "N1",
   testType: "full_test" as
     | "full_test"
-    | "vocabulary_grammar"
-    | "reading"
+    | "vocabulary"
+    | "grammar_reading"
     | "listening",
   description: "",
   duration: 120,
@@ -136,6 +140,14 @@ export default function AdminJLPTTestsPage() {
   const [autoGenerateWithBank, setAutoGenerateWithBank] = useState(false);
   const [generatingFromBank, setGeneratingFromBank] = useState(false);
   const [generatingWithAI, setGeneratingWithAI] = useState(false);
+
+  // ── PDF/Word import state ───────────────────────────────────────────────────
+  const pdfFileInputRef = useRef<HTMLInputElement>(null);
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState<any[] | null>(null);
+  const [pdfFileName, setPdfFileName] = useState("");
+  const [pdfImporting, setPdfImporting] = useState(false);
+  const [pdfParseError, setPdfParseError] = useState<string | null>(null);
 
   const [updateTest, { isLoading: isUpdating }] = useUpdateTestMutation();
   const [updateQuestion, updateQuestionState] = useUpdateQuestionMutation();
@@ -190,6 +202,53 @@ export default function AdminJLPTTestsPage() {
     setShowCreateForm(true);
   };
 
+  // ── Auto-calculate totals & durations ──────────────────────────────────────
+  useEffect(() => {
+    // Only auto-calc if we are in CREATE mode (not editing)
+    if (showCreateForm && !editingTestId) {
+      const struct = getStructureForTestType(formData.level, formData.testType);
+      let totalQ = 0;
+      struct.forEach((s) => {
+        s.mondai.forEach((m) => {
+          totalQ += m.end - m.start + 1;
+        });
+      });
+
+      // Mapping for default durations (minutes)
+      const durations: Record<string, Record<string, number>> = {
+        N1: { full_test: 170, vocabulary: 60, grammar_reading: 110, listening: 60 },
+        N2: { full_test: 155, vocabulary: 50, grammar_reading: 105, listening: 50 },
+        N3: { full_test: 140, vocabulary: 30, grammar_reading: 70, listening: 40 },
+        N4: { full_test: 115, vocabulary: 25, grammar_reading: 55, listening: 35 },
+        N5: { full_test: 90, vocabulary: 20, grammar_reading: 40, listening: 30 },
+      };
+
+      const defaultDur = durations[formData.level]?.[formData.testType] || 120;
+      
+      setFormData((prev) => ({
+        ...prev,
+        totalQuestions: totalQ,
+        duration: defaultDur,
+        passScore: formData.testType === "full_test" ? 90 : 45, // Rough estimate
+      }));
+    }
+  }, [formData.level, formData.testType, showCreateForm, editingTestId]);
+
+  // ── Auto-open edit form from redirect ───────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== "undefined" && data && data.content && data.content.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const editIdParam = urlParams.get("editId");
+      if (editIdParam) {
+        const targetTest = data.content.find((t: any) => t.id.toString() === editIdParam);
+        if (targetTest && !showCreateForm) {
+          openEditForm(targetTest);
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+    }
+  }, [data, showCreateForm]);
+
   const closeForm = () => {
     setShowCreateForm(false);
     setEditingTestId(null);
@@ -199,7 +258,143 @@ export default function AdminJLPTTestsPage() {
     setPreviewTestId(null);
     setSelectedQuestionId(null);
     setReviewConfirmed(false);
+    // Reset PDF import
+    setPdfPreview(null);
+    setPdfFileName("");
+    setPdfParseError(null);
   };
+
+  // ── PDF/Word import handlers ──────────────────────────────────────────────────
+  const handlePdfFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".pdf") && !name.endsWith(".docx") && !name.endsWith(".doc")) {
+      toast.error("Chỉ hỗ trợ file PDF, DOCX, DOC.");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("File quá lớn. Giới hạn tối đa 15MB.");
+      return;
+    }
+
+    setPdfFileName(file.name);
+    setPdfPreview(null);
+    setPdfParseError(null);
+    setPdfParsing(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("level", formData.level ?? "N5");
+
+      const res = await fetch("/api/ai/parse-exam-file", { method: "POST", body: fd });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setPdfParseError(json.error ?? "Lỗi phân tích file.");
+        return;
+      }
+
+      setPdfPreview(json.questions ?? []);
+      toast.success(`Đã trích xuất ${json.valid}/${json.total} câu hỏi hợp lệ`);
+    } catch (err: any) {
+      setPdfParseError(err?.message ?? "Lỗi kết nối server.");
+    } finally {
+      setPdfParsing(false);
+      // Reset file input so same file can be re-uploaded
+      if (pdfFileInputRef.current) pdfFileInputRef.current.value = "";
+    }
+  };
+
+  const handlePdfSubmit = async () => {
+    if (editingTestId) {
+      await confirmPdfImport(editingTestId);
+    } else {
+      try {
+        const result = await createTest(formData).unwrap();
+        toast.success("Tạo đề thi mới thành công!");
+        setEditingTestId(result.id); 
+        await confirmPdfImport(result.id);
+      } catch (err) {
+        toast.error("Tạo đề thi thất bại, không thể import!");
+        console.error(err);
+      }
+    }
+  };
+
+  const confirmPdfImport = async (testId: number) => {
+    if (!pdfPreview || pdfPreview.length === 0) return;
+    const validQuestions = pdfPreview.filter((q) => !q._error);
+    if (validQuestions.length === 0) {
+      toast.error("Không có câu hỏi hợp lệ để import.");
+      return;
+    }
+
+    setPdfImporting(true);
+    let imported = 0;
+    let failed = 0;
+
+    // Group by mondai to track passages across questions in the same mondai
+    const mondaiPassageId: Record<number, number | null> = {};
+
+    for (const q of validQuestions) {
+      try {
+        const mondai = q.mondaiNumber ?? 1;
+        const requiresPassage = (q.passageText ?? "").trim().length > 0;
+
+        let parentId: number | null = mondaiPassageId[mondai] ?? null;
+
+        // If this question has a passage and no parent created yet, create the parent
+        if (requiresPassage && parentId === null) {
+          const parentCreated = await addQuestion({
+            testId,
+            data: {
+              mondaiNumber: mondai,
+              mondaiTitle: q.mondaiTitle ?? "",
+              parentId: null,
+              questionOrder: (mondai - 1) * 10, // rough ordering
+              section: (q.section ?? "VOCABULARY") as any,
+              contentText: q.passageText,
+            },
+          }).unwrap();
+          parentId = parentCreated.id;
+          mondaiPassageId[mondai] = parentId;
+        }
+
+        await addQuestion({
+          testId,
+          data: {
+            mondaiNumber: mondai,
+            mondaiTitle: q.mondaiTitle ?? "",
+            parentId: requiresPassage ? parentId : null,
+            questionOrder: imported + 1,
+            section: (q.section ?? "VOCABULARY") as any,
+            contentText: q.contentText,
+            options: Array.isArray(q.options) ? JSON.stringify(q.options) : undefined,
+            correctOption: q.correctOption ?? undefined,
+            explanation: q.explanation ?? undefined,
+            points: 1.0,
+          },
+        }).unwrap();
+        imported++;
+      } catch {
+        failed++;
+      }
+    }
+
+    setPdfImporting(false);
+    if (failed === 0) {
+      toast.success(`✅ Đã import ${imported} câu hỏi từ file PDF vào đề thi!`);
+    } else {
+      toast.warning(`Import xong: ${imported} thành công, ${failed} thất bại.`);
+    }
+    // Refresh the preview panel
+    setPreviewTestId(testId);
+    setPdfPreview(null);
+  };
+
 
   interface MondaiNode {
     parent: JlptQuestionAdmin | null;
@@ -448,115 +643,149 @@ export default function AdminJLPTTestsPage() {
     const testType = formData.testType as string;
     const structure = getStructureForTestType(level, testType);
 
+    // ── Build spec lists per mondai to avoid hitting 8k token limit ─────────
+    const mondaiSpecs: Array<{
+      section: string;
+      mondaiNumber: number;
+      mondaiTitle: string;
+      count: number;
+      requires_passage: boolean;
+    }> = [];
+
+    for (const section of structure) {
+      const sectionKey = section.sectionKeys[0] as string;
+      for (const mondai of section.mondai) {
+        const nums = getQuestionNumbers(mondai);
+        mondaiSpecs.push({
+          section: sectionKey,
+          mondaiNumber: mondai.number,
+          mondaiTitle: mondai.title,
+          count: nums.length,
+          requires_passage: !!mondai.requires_passage,
+        });
+      }
+    }
+
+    // ── Fire parallel batch requests per MONDAI ──────────────────────────────
+    const promises = mondaiSpecs.map(async (spec) => {
+      const res = await fetch("/api/ai/generate-questions/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ level, testType, sections: [spec] }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `AI error for Mondai ${spec.mondaiNumber}`);
+      return json.results ?? [];
+    });
+
+    const resultsArrays = await Promise.all(promises);
+    const results = resultsArrays.flat();
+
+
+    // ── Save each mondai's questions to the exam ────────────────────────────
     for (const section of structure) {
       const sectionKey = section.sectionKeys[0] as SectionKey;
       for (const mondai of section.mondai) {
         const nums = getQuestionNumbers(mondai);
-        const count = nums.length;
+        const mondaiResult = results.find(
+          (r) => r.mondaiNumber === mondai.number && r.section === sectionKey
+        );
+        if (!mondaiResult) continue;
 
-        const aiRes = await fetch("/api/ai/generate-questions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            level,
-            section: sectionKey,
-            count,
-            mondaiNumber: mondai.number,
-            mondaiTitle: mondai.title,
-            testType,
-          }),
-        });
-        const aiJson = await aiRes.json();
-        if (!aiRes.ok) {
-          throw new Error(aiJson.error || "AI generate failed");
-        }
-
-        const questions = (aiJson.questions || []) as {
-          contentText: string;
-          options: string[];
-          correctOption: number;
-          explanation: string;
-          passageText: string;
-        }[];
+        const questions = mondaiResult.questions ?? [];
 
         let parentId: number | null = null;
         const first = questions[0];
         if (mondai.requires_passage && first?.passageText) {
-          const parentPayload: CreateQuestionDTO = {
-            mondaiNumber: mondai.number,
-            mondaiTitle: mondai.title,
-            parentId: null,
-            questionOrder: mondai.start - 1,
-            section: sectionKey as any,
-            contentText: first.passageText,
-          };
           const createdParent = await addQuestion({
             testId,
-            data: parentPayload,
+            data: {
+              mondaiNumber: mondai.number,
+              mondaiTitle: mondai.title,
+              parentId: null,
+              questionOrder: mondai.start - 1,
+              section: sectionKey as any,
+              contentText: first.passageText,
+            },
           }).unwrap();
           parentId = createdParent.id;
         }
 
         for (let i = 0; i < questions.length && i < nums.length; i++) {
           const q = questions[i];
-          const payload: CreateQuestionDTO = {
-            mondaiNumber: mondai.number,
-            mondaiTitle: mondai.title,
-            parentId: mondai.requires_passage ? parentId : null,
-            questionOrder: nums[i],
-            section: sectionKey as any,
-            contentText: q.contentText,
-            options: JSON.stringify(q.options) as any,
-            correctOption: q.correctOption,
-            explanation: q.explanation || undefined,
-            points: 1.0,
-          };
-          await addQuestion({ testId, data: payload }).unwrap();
+          await addQuestion({
+            testId,
+            data: {
+              mondaiNumber: mondai.number,
+              mondaiTitle: mondai.title,
+              parentId: mondai.requires_passage ? parentId : null,
+              questionOrder: nums[i],
+              section: sectionKey as any,
+              contentText: q.contentText,
+              options: JSON.stringify(Array.isArray(q.options) ? q.options : []) as any,
+              correctOption: typeof q.correctOption === "number" && q.correctOption >= 1 ? q.correctOption : 1,
+              explanation: q.explanation || undefined,
+              points: 1.0,
+            },
+          }).unwrap();
         }
       }
     }
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let currentTestId: number;
+
+      // 1. Process local test details
       if (editingTestId) {
         await updateTest({ id: editingTestId, data: formData }).unwrap();
-        alert("Cập nhật đề thi thành công!");
-        closeForm();
+        toast.success("Cập nhật đề thi thành công!");
+        currentTestId = editingTestId;
       } else {
         const result = await createTest(formData).unwrap();
-        if (autoGenerateWithBank) {
-          setGeneratingFromBank(true);
-          try {
-            await generateQuestionsFromBank(result.id);
-          } finally {
-            setGeneratingFromBank(false);
-          }
-          // Keep modal open and show review panel on the right
-          setPreviewTestId(result.id);
-          setSelectedQuestionId(null);
-          setReviewConfirmed(false);
-          return;
+        toast.success("Tạo đề thi mới thành công!");
+        currentTestId = result.id;
+      }
+
+      // 2. Process Generative actions
+      if (autoGenerateWithBank) {
+        setGeneratingFromBank(true);
+        try {
+          await generateQuestionsFromBank(currentTestId);
+        } finally {
+          setGeneratingFromBank(false);
         }
-        if (autoGenerateWithAI) {
-          setGeneratingWithAI(true);
-          try {
-            await generateQuestionsWithAI(result.id);
-          } finally {
-            setGeneratingWithAI(false);
-          }
-          setPreviewTestId(result.id);
-          setSelectedQuestionId(null);
-          setReviewConfirmed(false);
-          return;
+        setPreviewTestId(currentTestId);
+        setSelectedQuestionId(null);
+        setReviewConfirmed(false);
+        return;
+      }
+
+      if (autoGenerateWithAI) {
+        setGeneratingWithAI(true);
+        try {
+          await generateQuestionsWithAI(currentTestId);
+        } finally {
+          setGeneratingWithAI(false);
         }
-        closeForm();
-        router.push(`/admin/jlpt-tests/${result.id}/questions`);
+        setPreviewTestId(currentTestId);
+        setSelectedQuestionId(null);
+        setReviewConfirmed(false);
+        return;
+      }
+
+      // 3. Finalize
+      closeForm();
+      if (!editingTestId) {
+        router.push(`/admin/jlpt-tests/${currentTestId}/questions`);
       }
     } catch (err) {
-      alert(editingTestId ? "Cập nhật thất bại!" : "Tạo đề thi thất bại!");
-      console.error(err);
+      toast.error(editingTestId ? "Cập nhật thất bại!" : "Tạo đề thi thất bại!");
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[JLPT create] failed:", msg);
     }
   };
 
@@ -600,9 +829,9 @@ export default function AdminJLPTTestsPage() {
     if (confirm(`Xác nhận xóa đề thi: "${title}"?`)) {
       try {
         await deleteTest(id).unwrap();
-        alert("Xóa đề thi thành công!");
+        toast.success("Xóa đề thi thành công!");
       } catch {
-        alert("Xóa thất bại!");
+        toast.error("Xóa thất bại!");
       }
     }
   };
@@ -611,7 +840,7 @@ export default function AdminJLPTTestsPage() {
     try {
       await updateTest({ id, data: { isPublished: !currentStatus } }).unwrap();
     } catch {
-      alert("Cập nhật thất bại!");
+      toast.error("Cập nhật trạng thái thất bại!");
     }
   };
 
@@ -740,11 +969,11 @@ export default function AdminJLPTTestsPage() {
                               <SelectItem value="full_test">
                                 Full Test (Đề thi đầy đủ)
                               </SelectItem>
-                              <SelectItem value="vocabulary_grammar">
-                                Từ vựng &amp; Ngữ pháp (言語知識)
+                              <SelectItem value="vocabulary">
+                                Từ vựng (文字・語彙)
                               </SelectItem>
-                              <SelectItem value="reading">
-                                Đọc hiểu (読解)
+                              <SelectItem value="grammar_reading">
+                                Ngữ pháp và Đọc hiểu (文法・読解)
                               </SelectItem>
                               <SelectItem value="listening">
                                 Nghe hiểu (聴解)
@@ -858,10 +1087,10 @@ export default function AdminJLPTTestsPage() {
                         )}
 
                         {/* vocabulary_grammar: chỉ hiện liệt ngôn ngữ */}
-                        {formData.testType === "vocabulary_grammar" && (
+                        {formData.testType === "vocabulary" && (
                           <div className="space-y-2">
                             <Label htmlFor="langPass">
-                              Liệt ngôn ngữ (Từ vựng &amp; Ngữ pháp)
+                              Liệt ngôn ngữ (Từ vựng)
                             </Label>
                             <Input
                               id="langPass"
@@ -882,10 +1111,10 @@ export default function AdminJLPTTestsPage() {
                         )}
 
                         {/* reading: chỉ hiện liệt đọc */}
-                        {formData.testType === "reading" && (
+                        {formData.testType === "grammar_reading" && (
                           <div className="space-y-2">
                             <Label htmlFor="readPass">
-                              Liệt đọc (phần đọc hiểu)
+                              Liệt (Ngữ pháp &amp; Đọc hiểu)
                             </Label>
                             <Input
                               id="readPass"
@@ -930,9 +1159,79 @@ export default function AdminJLPTTestsPage() {
                         )}
                       </div>
 
+                      {/* ── Import câu hỏi từ PDF / Word ── */}
+                      <div className="p-4 bg-muted/40 rounded-lg border border-dashed space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            Import từ file PDF / Word
+                          </p>
+                          {pdfPreview && (
+                            <Badge variant="outline" className="text-xs bg-background">
+                              {pdfPreview.filter((q: any) => !q._error).length}/{pdfPreview.length} câu hợp lệ
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Hỗ trợ .pdf, .docx — AI tự động trích xuất Mondai.
+                        </p>
+                        <input
+                          ref={pdfFileInputRef}
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.docx,.doc"
+                          onChange={handlePdfFileChange}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={pdfParsing}
+                          className="w-full gap-2"
+                          onClick={() => pdfFileInputRef.current?.click()}
+                        >
+                          {pdfParsing ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Đang phân tích...</>
+                          ) : (
+                            <><Upload className="w-3 h-3" /> {pdfFileName ? `Đổi file: ${pdfFileName}` : "Tải tệp lên"}</>
+                          )}
+                        </Button>
+                        
+                        {pdfParseError && (
+                          <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-[11px] text-destructive">
+                            {pdfParseError}
+                          </div>
+                        )}
+
+                        {pdfPreview && pdfPreview.length > 0 && (
+                          <div className="space-y-2">
+                            <ScrollArea className="h-40 rounded border bg-background">
+                              <div className="text-[10px]">
+                                {pdfPreview.map((q: any, idx: number) => (
+                                  <div key={idx} className="p-1.5 border-b flex justify-between gap-2">
+                                    <span className="truncate opacity-70">問{q.mondaiNumber}: {q.contentText}</span>
+                                    {q._error ? <span className="text-destructive whitespace-nowrap">❌</span> : <span className="text-green-500 whitespace-nowrap">✅</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              className="w-full text-xs"
+                              disabled={pdfImporting || pdfPreview.filter((q: any) => !q._error).length === 0}
+                              onClick={handlePdfSubmit}
+                            >
+                              {pdfImporting ? "Đang import..." : `Xác nhận import (${pdfPreview.filter((q: any) => !q._error).length} câu)`}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+
                       {/* Actions */}
                       <div className="flex gap-3 pt-2">
-                        {!editingTestId && (
                           <>
                             <label className="flex items-center gap-2 text-sm text-muted-foreground">
                               <input
@@ -959,7 +1258,6 @@ export default function AdminJLPTTestsPage() {
                               Lấy câu hỏi từ ngân hàng đề thi
                             </label>
                           </>
-                        )}
                       </div>
 
                       <div className="flex gap-3 pt-2">
@@ -988,11 +1286,18 @@ export default function AdminJLPTTestsPage() {
                           Hủy
                         </Button>
                       </div>
+
+                      {!editingTestId && (
+                        <div className="pt-1 border-t">
+                          {/* We allow PDF import here too now */}
+                        </div>
+                      )}
                     </CardContent>
-                    </Card>
-                  </form>
+                  </Card>
+                </form>
 
                   {previewTestId ? (
+
                     <Card className="shadow-2xl border-border overflow-hidden lg:sticky lg:top-4">
                       <CardHeader>
                         <CardTitle className="text-base">
@@ -1205,9 +1510,9 @@ export default function AdminJLPTTestsPage() {
                                           explanation: draftExplanation,
                                         },
                                       }).unwrap();
-                                      alert("Đã lưu câu hỏi!");
+                                      toast.success("Đã lưu câu hỏi!");
                                     } catch (err: any) {
-                                      alert(err?.message || "Lưu thất bại");
+                                      toast.error(err?.message || "Lưu thất bại");
                                     }
                                   }}
                                   disabled={updateQuestionState.isLoading}
@@ -1226,9 +1531,9 @@ export default function AdminJLPTTestsPage() {
                                         selectedQuestion.id,
                                       ).unwrap();
                                       setSelectedQuestionId(null);
-                                      alert("Đã xóa câu hỏi!");
+                                      toast.success("Đã xóa câu hỏi!");
                                     } catch (err: any) {
-                                      alert(err?.message || "Xóa thất bại");
+                                      toast.error(err?.message || "Xóa thất bại");
                                     }
                                   }}
                                   disabled={deleteQuestionState.isLoading}
@@ -1602,3 +1907,4 @@ export default function AdminJLPTTestsPage() {
     </div>
   );
 }
+

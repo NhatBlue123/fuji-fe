@@ -21,4 +21,3 @@ export interface WalletInfo {
   balance: number;
   frozenBalance: number;
 }
-

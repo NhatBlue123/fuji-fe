@@ -13,7 +13,16 @@ export interface SignalingHook {
   sendOffer: (roomId: string, sdp: string) => void;
   sendAnswer: (roomId: string, sdp: string) => void;
   sendIceCandidate: (roomId: string, candidate: RTCIceCandidate) => void;
-  sendChatMessage: (roomId: string, senderId: string, senderName: string, message: string) => void;
+  sendChatMessage: (
+    roomId: string,
+    senderId: string,
+    senderName: string,
+    message: string,
+    messageId: string,
+    isViolation?: boolean
+  ) => void;
+  sendMessageDelivered: (roomId: string, messageIds: string[]) => void;
+  sendMessageRead: (roomId: string, messageIds: string[]) => void;
   leaveRoom: (roomId: string) => void;
   reconnectAttempt: (roomId: string, userId: string) => void;
   on: <T = unknown>(event: string, handler: (data: T) => void) => void;
@@ -29,12 +38,14 @@ export interface JoinQueuePayload {
 
 let globalSocket: Socket | null = null;
 let activeCount = 0;
+let lastTimeoutWarnAt = 0;
 
 if (typeof window !== "undefined") {
   globalSocket = io(getSignalingUrl() + "/video-call", {
     transports: ["websocket", "polling"],
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
+    timeout: 8000,
     autoConnect: false, // connect when first hook mounts
   });
 
@@ -43,7 +54,18 @@ if (typeof window !== "undefined") {
   });
 
   globalSocket.on("connect_error", (err) => {
-    console.error("[Signaling] Connection error:", err.message);
+    const msg = String(err?.message || "");
+    const isTimeout = msg.toLowerCase().includes("timeout");
+    if (isTimeout) {
+      const now = Date.now();
+      // Prevent noisy repeated timeout logs in dev console.
+      if (now - lastTimeoutWarnAt > 15000) {
+        lastTimeoutWarnAt = now;
+        console.warn("[Signaling] Server timeout. Video-call socket is temporarily unavailable.");
+      }
+      return;
+    }
+    console.error("[Signaling] Connection error:", msg);
   });
 }
 
@@ -88,8 +110,26 @@ export function useSignaling(): SignalingHook {
         sdpMid: candidate.sdpMid,
         sdpMLineIndex: candidate.sdpMLineIndex,
       }),
-    sendChatMessage: (roomId, senderId, senderName, message) =>
-      emit("send-message", { roomId, senderId, senderName, message }),
+    sendChatMessage: (
+      roomId,
+      senderId,
+      senderName,
+      message,
+      messageId,
+      isViolation
+    ) =>
+      emit("send-message", {
+        roomId,
+        senderId,
+        senderName,
+        message,
+        messageId,
+        isViolation,
+      }),
+    sendMessageDelivered: (roomId, messageIds) =>
+      emit("message_delivered", { roomId, messageIds }),
+    sendMessageRead: (roomId, messageIds) =>
+      emit("message_read", { roomId, messageIds }),
     leaveRoom: (roomId) => emit("leave-room", { roomId }),
     reconnectAttempt: (roomId, userId) =>
       emit("reconnect-attempt", { roomId, userId }),

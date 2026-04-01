@@ -55,12 +55,22 @@ export const adminFlashcardApi = createApi({
   endpoints: (builder) => ({
     getFlashcards: builder.query<Flashcard[], void>({
       query: () => "/flashcards",
-      transformResponse: (response: ApiResponse<Flashcard[]>) => response.data,
-      providesTags: (result) => 
-        result 
-          ? [...result.map(({ id }) => ({ type: "AdminFlashcard" as const, id })), { type: "AdminFlashcard", id: "LIST" }]
-          : [{ type: "AdminFlashcard", id: "LIST" }],
+      transformResponse: (response: ApiResponse<Flashcard[] | { content: Flashcard[] }>) => {
+        // Handle both plain array and paginated wrapper { content: [...] }
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        if (data && "content" in data && Array.isArray((data as any).content)) return (data as any).content;
+        return [];
+      },
+      providesTags: (result) => {
+        const list = Array.isArray(result) ? result : [];
+        return [
+          ...list.map(({ id }) => ({ type: "AdminFlashcard" as const, id })),
+          { type: "AdminFlashcard" as const, id: "LIST" },
+        ];
+      },
     }),
+
 
     // --- Card CRUD (Individual) ---
     deleteFlashcard: builder.mutation<ApiResponse<string>, number>({

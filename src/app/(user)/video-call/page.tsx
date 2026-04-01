@@ -74,7 +74,7 @@ function SearchingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-bounce"
+          className="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce"
           style={{ animationDelay: `${i * 0.18}s`, animationDuration: "0.8s" }}
         />
       ))}
@@ -86,7 +86,19 @@ export default function VideoCallMatchingPage() {
   const router = useRouter();
   const signaling = useSignaling();
   const webrtc = useWebRTC();
-  const { user: authUser } = useAuth();
+  const { user: authUser, isInitialized } = useAuth();
+
+  const resolveDisplayName = useCallback(() => {
+    const user = authUser as
+      | { fullName?: string; fullname?: string; username?: string }
+      | null
+      | undefined;
+    const candidate =
+      user?.fullName?.trim() ||
+      user?.fullname?.trim() ||
+      user?.username?.trim();
+    return candidate && candidate.length > 0 ? candidate : "Ẩn danh";
+  }, [authUser]);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const [showLevelPicker, setShowLevelPicker] = useState(false);
@@ -128,16 +140,17 @@ export default function VideoCallMatchingPage() {
       peerLevel: string;
       isInitiator: boolean;
     }>("match-found", (data) => {
-      const myName = authUser?.fullname || authUser?.username || "Ẩn danh";
+      const myName = resolveDisplayName();
       const myLevel = authUser?.level ?? level;
+      const myUserId = String(authUser?.id ?? authUser?._id ?? "guest");
       sessionStorage.setItem(
         "matchData",
-        JSON.stringify({ ...data, myName, myLevel }),
+        JSON.stringify({ ...data, myName, myLevel, myUserId }),
       );
       router.push(`/video-call/room/${data.roomId}`);
     });
     return () => signaling.off("match-found");
-  }, [signaling, router, authUser, level]);
+  }, [signaling, router, authUser, level, resolveDisplayName]);
 
   // ── Wait timer ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -159,9 +172,10 @@ export default function VideoCallMatchingPage() {
 
   const startSearch = useCallback(
     (searchLevel: JLPTLevel) => {
+      if (!isInitialized) return;
       setIsSearching(true);
       setWaitSeconds(0);
-      const displayName = authUser?.fullname || authUser?.username || "Ẩn danh";
+      const displayName = resolveDisplayName();
       const userId = String(
         authUser?.id ??
           authUser?._id ??
@@ -169,7 +183,7 @@ export default function VideoCallMatchingPage() {
       );
       signaling.joinQueue({ userId, jlptLevel: searchLevel, displayName });
     },
-    [signaling, authUser],
+    [signaling, authUser, isInitialized, resolveDisplayName],
   );
 
   const handleSearch = useCallback(
@@ -188,7 +202,7 @@ export default function VideoCallMatchingPage() {
 
   const isMicOn = webrtc.isMicOn;
   const isCameraOn = webrtc.isCameraOn;
-  const userName = authUser?.fullname || authUser?.username || "Bạn";
+  const userName = resolveDisplayName();
 
   return (
     <div
@@ -246,8 +260,8 @@ export default function VideoCallMatchingPage() {
                     setShowLevelPicker(false);
                   }}
                   className={cn(
-                    "w-full text-left px-4 py-3 text-gray-700 text-sm font-semibold hover:bg-rose-50 transition-colors flex justify-between items-center",
-                    l === level && "bg-rose-50 text-rose-600",
+                    "w-full text-left px-4 py-3 text-gray-700 text-sm font-semibold hover:bg-secondary/10 transition-colors flex justify-between items-center",
+                    l === level && "bg-secondary/10 text-secondary",
                   )}
                 >
                   <span>{l}</span>
@@ -331,11 +345,11 @@ export default function VideoCallMatchingPage() {
               {/* Ripple searching animation */}
               <div className="relative flex items-center justify-center">
                 <div
-                  className="absolute w-28 h-28 rounded-full bg-rose-100 animate-ping"
+                  className="absolute w-28 h-28 rounded-full bg-secondary/20 animate-ping"
                   style={{ animationDuration: "1.8s" }}
                 />
                 <div
-                  className="absolute w-20 h-20 rounded-full bg-rose-200/60 animate-ping"
+                  className="absolute w-20 h-20 rounded-full bg-secondary/30 animate-ping"
                   style={{ animationDuration: "1.8s", animationDelay: "0.4s" }}
                 />
                 <div className="w-16 h-16 rounded-full bg-blue-100 border-2 border-blue-200 flex items-center justify-center z-10">
@@ -383,8 +397,8 @@ export default function VideoCallMatchingPage() {
             className={cn(
               "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95",
               isMicOn
-                ? "bg-rose-500 hover:bg-rose-600 text-white"
-                : "bg-rose-500 hover:bg-rose-600 text-white",
+                ? "bg-secondary hover:bg-secondary/90 text-white"
+                : "bg-secondary hover:bg-secondary/90 text-white",
             )}
           >
             {isMicOn ? (
@@ -405,7 +419,7 @@ export default function VideoCallMatchingPage() {
           ) : (
             <button
               onClick={handleCancel}
-              className="w-12 h-12 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+              className="w-12 h-12 rounded-full bg-secondary hover:bg-secondary/90 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
             >
               <PhoneOff className="h-5 w-5" />
             </button>
@@ -416,7 +430,7 @@ export default function VideoCallMatchingPage() {
             onClick={webrtc.toggleCamera}
             className={cn(
               "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95",
-              "bg-rose-500 hover:bg-rose-600 text-white",
+              "bg-secondary hover:bg-secondary/90 text-white",
             )}
           >
             {isCameraOn ? (

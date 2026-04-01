@@ -1,13 +1,14 @@
 import { baseApi } from "./baseApi";
-import { TransactionResponse } from "@/types/wallet";
+import { TransactionResponse, WalletInfo } from "@/types/wallet";
 
 export const walletApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     
-    getWallet: builder.query<{ balance: number }, void>({
-      query: () => "/wallet/me",
-      providesTags: ["Wallet"]
-    }),
+    getWallet: builder.query<WalletInfo, void>({
+  query: () => "/wallet/me",
+  providesTags: ["Wallet"]
+}),
+
 
     getWalletHistory: builder.query<TransactionResponse, { page: number; size: number }>({
       query: ({ page, size }) => `/payments/history?page=${page}&size=${size}`,

@@ -3,12 +3,10 @@ import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import ExamCard from "./ExamCard";
 import { useState, useMemo, useEffect } from "react";
-import {
-  useGetPublishedTestsQuery,
-  useGetMyAttemptsQuery,
-} from "@/store/services/jlptApi";
+import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 import { Button } from "@/components/ui/button";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
@@ -16,6 +14,7 @@ export default function JlptPracticePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const pageSize = 9;
+  const { hasAccess } = useFeatureAccess();
 
   // Use debounce for search query
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -127,7 +126,12 @@ export default function JlptPracticePage() {
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {tests.map((test) => {
               const attempt = attemptsMap[test.id];
-              const status = attempt ? "done" : "new";
+              let status: "new" | "doing" | "done" | "locked" = attempt ? "done" : "new";
+              
+              if (!hasAccess("PRO") && ["N3", "N2", "N1"].includes(test.level)) {
+                status = "locked";
+              }
+
               const categoryLabel = CATEGORY_LABELS[test.testType ?? "full_test"] ?? test.testType;
               return (
                 <ExamCard

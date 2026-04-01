@@ -14,4 +14,5 @@ export interface AuthUser {
 
   active: boolean;
   createdAt: string;
+  subscriptionTier?: "BASIC" | "PRO" | "PREMIUM";
 }

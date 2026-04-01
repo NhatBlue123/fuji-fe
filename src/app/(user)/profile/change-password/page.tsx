@@ -91,9 +91,12 @@ export default function ChangePasswordPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto py-8 px-4 selection:bg-pink-500/30">
+    <main className="flex-1 flex flex-col px-6 overflow-hidden relative selection:bg-pink-500/30">
+      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px]" />
+
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-muted/50 pb-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 py-6 border-b border-white/5 bg-background/50 backdrop-blur-md">
         <div className="space-y-1">
           <button 
             type="button"
@@ -110,7 +113,10 @@ export default function ChangePasswordPage() {
         <Badge variant="secondary" className="w-fit h-fit px-3 py-1.5 gap-2 border border-cyan-500/20 bg-cyan-500/5 text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-widest text-[9px] shadow-[0_0_10px_rgba(6,182,212,0.15)]">
           <ShieldCheck size={14} /> Mã hóa E2E đang bật
         </Badge>
-      </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto p-8 animate-in fade-in duration-500">
+      <div className="w-full max-w-6xl mx-auto space-y-6">
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Form Card */}
@@ -314,6 +320,8 @@ export default function ChangePasswordPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      </div>
+    </main>
   );
 }

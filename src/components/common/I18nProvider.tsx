@@ -33,7 +33,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <I18nextProvider i18n={i18n} key={lang}>
-            <div style={{ visibility: isMounted ? "visible" : "hidden" }} className="contents">
+            <div suppressHydrationWarning style={{ visibility: isMounted ? "visible" : "hidden" }} className="contents">
                 {children}
             </div>
         </I18nextProvider>

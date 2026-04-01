@@ -13,7 +13,7 @@ export default function UserLayout({
   auth: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div suppressHydrationWarning className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />

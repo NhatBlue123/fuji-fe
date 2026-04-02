@@ -122,9 +122,22 @@ export default function MySchedulePage() {
               <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                 {tab === "UPCOMING" && (
                   <>
-                    <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-secondary hover:bg-secondary/90 text-white transition-all">
-                      {new Date() >= new Date(c.startAt) ? "Vào lớp" : "Chờ lớp"}
-                    </button>
+                    {c.canJoinVideoCall ? (
+                      <Link href={`/learn/session/${c.bookingId}`}>
+                        <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm">videocam</span>
+                          Vào phòng
+                        </button>
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
+                        title="Chỉ vào phòng được trước 5 phút so với giờ bắt đầu"
+                      >
+                        Chờ lớp
+                      </button>
+                    )}
                     <button
                       disabled={isCancelling}
                       onClick={() => setDeletingId(c.bookingId)}

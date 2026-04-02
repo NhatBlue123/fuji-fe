@@ -137,4 +137,20 @@ export type MyBookingItem = {
   startAt: string;
   endAt: string;
   durationMinutes: number;
+  canJoinVideoCall?: boolean;
+};
+
+export type VideoSessionResponse = {
+  sessionId: number;
+  bookingId: number;
+  roomKey: string;
+  status: string;
+  role: "TEACHER" | "STUDENT";
+  peerName: string;
+  peerAvatarUrl: string | null;
+  subject: string;
+  startAt: string;
+  endAt: string;
+  durationMinutes: number;
+  remainingSeconds: number;
 };

@@ -11,6 +11,7 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   TeacherAvailabilityResponse,
+  VideoSessionResponse,
 } from "@/types/booking";
 
 export const bookingApi = baseApi.injectEndpoints({
@@ -106,6 +107,27 @@ export const bookingApi = baseApi.injectEndpoints({
         { type: "Booking", id: "MY_BOOKINGS" },
       ],
     }),
+
+    getVideoSession: builder.mutation<VideoSessionResponse, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/video-session`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<VideoSessionResponse>) => res.data,
+    }),
+
+    submitSessionReview: builder.mutation<
+      { reviewId: number; rating: number; comment: string },
+      { bookingId: number; rating: number; comment?: string }
+    >({
+      query: ({ bookingId, ...body }) => ({
+        url: `/bookings/${bookingId}/review`,
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: ApiEnvelope<{ reviewId: number; rating: number; comment: string }>) => res.data,
+      invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
+    }),
   }),
 });
 
@@ -118,4 +140,6 @@ export const {
   useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
   useCancelBookingMutation,
+  useGetVideoSessionMutation,
+  useSubmitSessionReviewMutation,
 } = bookingApi;

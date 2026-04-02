@@ -28,7 +28,6 @@ export function HeroSection() {
 
   return (
     <div className="relative w-full min-h-[680px] flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-20 pb-72 overflow-hidden rounded-b-[3rem] shadow-2xl shadow-blue-900/20">
-      
       {/* Container Hiệu ứng Tuyết */}
       {init && (
         <Particles
@@ -99,17 +98,19 @@ export function HeroSection() {
         <p className="text-lg md:text-xl text-slate-300 mb-8 font-light max-w-lg leading-relaxed drop-shadow-md">
           {t("home.description")}
         </p>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Link
             href={isMounted && isAuthenticated ? "/course" : "/login"}
-            className="bg-secondary hover:bg-pink-400 text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-pink-500/40 flex items-center gap-2"
+            className="h-[52px] bg-pink-500 hover:bg-blue-500 text-white px-8 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group"
           >
             {t("home.getStarted")}
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+              arrow_forward
+            </span>
           </Link>
           <Button
             variant="ghost"
-            className="bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center gap-2 hover:border-white/40"
+            className="h-[52px] bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 hover:border-white/40"
           >
             <span className="material-symbols-outlined">play_circle</span>
             {t("home.watchDemo")}

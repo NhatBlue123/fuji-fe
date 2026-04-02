@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Save, Loader2, Volume2, FileText, CheckCircle, Underline, Settings, Sparkles } from "lucide-react";
 import AIQuestionGenerator, { type AIGeneratedQuestion } from "@/components/admin/AIQuestionGenerator";
 import type { SectionKey } from "@/lib/jlpt-structure";
+import { toast } from "sonner";
 import { renderJlptText } from "@/lib/renderJlptText";
 // ─── Mondai override types ────────────────────────────────────────────────────
 interface MondaiOverride {
@@ -200,8 +201,6 @@ function SectionSidebar({
             const actualQuestions = mondaiLeaves.get(mondai.number) || [];
             const actualNums = actualQuestions.map((q) => q.questionOrder);
             const displayNums = Array.from(new Set([...nums, ...actualNums])).sort((a, b) => a - b);
-            
-            // Re-calculate "filled" based on actual answerable ones
             const filled = actualQuestions.length;
 
             return (
@@ -235,7 +234,6 @@ function SectionSidebar({
                   {displayNums.map((n) => {
                     const isSaved = actualQuestions.some(q => q.questionOrder === n);
                     const isCurrent = selectedQ === n;
-                    // Exact match sequential subLabel from DB logic: 45.1, 46.1...
                     const subLabel = subLabels[n] ?? String(n);
                     return (
                       <button
@@ -423,8 +421,18 @@ export default function AdminExamLayout() {
     
     if (!test?.questions) return { subLabels: labels, mondaiLeaves: leavesMap };
 
+    // Build a set of listening mondai numbers to exclude from sidebar
+    const listeningMondaiNums = new Set<number>();
+    structure.forEach((section) => {
+      if (section.sectionKeys.includes("LISTENING")) {
+        section.mondai.forEach((m) => listeningMondaiNums.add(m.number));
+      }
+    });
+
     // 1. Group only answerable questions (leaves) by mondaiNumber for the sidebar dots status
+    // Skip listening mondai — they are managed separately
     test.questions.forEach((q) => {
+      if (listeningMondaiNums.has(q.mondaiNumber)) return;
       // If it's a child OR a standalone question with options/correctOption, it's a leaf
       if (q.parentId != null || q.options != null || q.correctOption != null) {
         if (!leavesMap.has(q.mondaiNumber)) leavesMap.set(q.mondaiNumber, []);
@@ -437,6 +445,9 @@ export default function AdminExamLayout() {
     let currentLabelNumber = 1;
 
     structure.forEach((section) => {
+      // Skip LISTENING — admin does not manage listening slots here
+      if (section.sectionKeys.includes("LISTENING")) return;
+
       section.mondai.forEach((mondai) => {
         const nums = getQuestionNumbers(mondai);
 
@@ -525,7 +536,7 @@ export default function AdminExamLayout() {
       setAudioMediaId(result.id);
       setAudioPreviewUrl(result.url);
     } catch {
-      alert("Upload audio thất bại");
+      toast.error("Upload audio thất bại");
     } finally {
       setUploadingAudio(false);
     }
@@ -539,7 +550,7 @@ export default function AdminExamLayout() {
       const result = await uploadImage(fd).unwrap();
       setImageMediaId(result.id);
     } catch {
-      alert("Upload ảnh thất bại");
+      toast.error("Upload ảnh thất bại");
     } finally {
       setUploadingImage(false);
     }
@@ -550,11 +561,35 @@ export default function AdminExamLayout() {
     if (!derived || !selectedQuestionNumber) return;
     const { mondai, section, existingChild, existingParent } = derived;
 
+    const resolveSectionKey = (): SectionKey => {
+      const keys = section.sectionKeys;
+      if (keys.length === 1) return keys[0] as SectionKey;
+      if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+      if (mondai.requires_passage && keys.includes("READING")) return "READING";
+      const title = mondai.title || "";
+      if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        return "GRAMMAR";
+      }
+      if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR") && keys.includes("READING")) {
+        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        if (/文法/.test(title)) return "GRAMMAR";
+        return "VOCABULARY";
+      }
+      return keys[0] as SectionKey;
+    };
+
+    const sectionKey = resolveSectionKey();
+    const isListeningSection =
+      sectionKey === "LISTENING" || section.sectionKeys.includes("LISTENING");
+
+    if (isListeningSection && !explanation.trim()) {
+      toast.error("Phần nghe bắt buộc nhập script nghe trước khi lưu.");
+      return;
+    }
+
     setSaving(true);
     try {
-      // Determine correct section key: pick first sectionKey as primary
-      const sectionKey = section.sectionKeys[0] as SectionKey;
-
       let parentId: number | null = existingParent?.id ?? null;
 
       // Step 1: Upsert passage (parent question) if this mondai requires passage
@@ -613,7 +648,7 @@ export default function AdminExamLayout() {
 
     } catch (err) {
       console.error(err);
-      alert("Lưu câu hỏi thất bại!");
+      toast.error("Lưu câu hỏi thất bại!");
     } finally {
       setSaving(false);
     }
@@ -786,7 +821,28 @@ export default function AdminExamLayout() {
                       // Bắt đầu chèn từ startFrom do User chỉ định
                       let currentQNum = startFrom;
                       const { section, mondai } = derived;
-                      const sectionKey = section.sectionKeys[0] as SectionKey;
+                      
+                      // Resolve the correct section key for this specific mondai
+                      // (important for mixed sections like 文法・読解 that cover GRAMMAR + READING)
+                      const resolveSectionKey = (): SectionKey => {
+                        const keys = section.sectionKeys;
+                        if (keys.length === 1) return keys[0] as SectionKey;
+                        if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+                        if (mondai.requires_passage && keys.includes("READING")) return "READING";
+                        const title = mondai.title || "";
+                        if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+                          if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+                          return "GRAMMAR";
+                        }
+                        if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR") && keys.includes("READING")) {
+                          if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+                          if (/文法/.test(title)) return "GRAMMAR";
+                          return "VOCABULARY";
+                        }
+                        return keys[0] as SectionKey;
+                      };
+                      const sectionKey = resolveSectionKey();
+
                       const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
                       const effectiveMondaiTitle = overrideInstruction || mondai.title;
 
@@ -894,11 +950,11 @@ export default function AdminExamLayout() {
                       // Move UI selection to the last created question (or its end)
                       const finalQNum = Math.min(currentQNum, mondai.end);
                       handleSelectQuestion(finalQNum);
-                      alert(`Đã chèn và lưu thành công ${questions.length} câu hỏi! (Từ câu ${startFrom})`);
+                      toast.success(`Đã chèn và lưu thành công ${questions.length} câu hỏi! (Từ câu ${startFrom})`);
                       
                     } catch (error) {
                       console.error("Lỗi khi lưu batch AI:", error);
-                      alert("Có lỗi xảy ra khi lưu hàng loạt câu hỏi.");
+                      toast.error("Có lỗi xảy ra khi lưu hàng loạt câu hỏi.");
                     } finally {
                       setSaving(false);
                     }
@@ -962,7 +1018,7 @@ export default function AdminExamLayout() {
                       const start = textarea.selectionStart;
                       const end = textarea.selectionEnd;
                       if (start === end) {
-                        alert("Hãy chọn (bôi đen) từ bạn muốn gạch chân trước!");
+                        toast.error("Hãy chọn (bôi đen) từ bạn muốn gạch chân trước!");
                         return;
                       }
                       const selected = questionText.slice(start, end);
@@ -1048,12 +1104,20 @@ export default function AdminExamLayout() {
               {/* Explanation + Points */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm">Giải thích (tùy chọn)</Label>
+                <Label className="text-sm">
+                  {derived.mondai.requires_audio
+                    ? "Script nghe *"
+                    : "Giải thích (tùy chọn)"}
+                </Label>
                   <Textarea
                     rows={2}
                     value={explanation}
                     onChange={(e) => setExplanation(e.target.value)}
-                    placeholder="Giải thích đáp án đúng..."
+                  placeholder={
+                    derived.mondai.requires_audio
+                      ? "Nhập script nội dung nghe..."
+                      : "Giải thích đáp án đúng..."
+                  }
                     className="text-sm"
                   />
                 </div>
@@ -1073,7 +1137,12 @@ export default function AdminExamLayout() {
               <div className="sticky bottom-0 -mx-8 px-8 py-4 border-t border-border bg-background/95 backdrop-blur flex items-center gap-3">
                 <Button
                   onClick={handleSave}
-                  disabled={saving || !questionText.trim() || (derived.mondai.requires_audio && !audioMediaId)}
+                  disabled={
+                    saving ||
+                    !questionText.trim() ||
+                    (derived.mondai.requires_audio && !audioMediaId) ||
+                    (derived.mondai.requires_audio && !explanation.trim())
+                  }
                   className="min-w-32"
                 >
                   {saving ? (
@@ -1086,6 +1155,12 @@ export default function AdminExamLayout() {
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <Volume2 className="h-3 w-3" />
                     Bắt buộc upload audio cho phần Listening
+                  </p>
+                )}
+                {derived.mondai.requires_audio && !explanation.trim() && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    Bắt buộc nhập script nghe trước khi lưu
                   </p>
                 )}
                 {derived.existingChild && (
@@ -1139,7 +1214,7 @@ export default function AdminExamLayout() {
                         handleSelectQuestion(selectedQuestionNumber);
                       } catch (e) {
                         console.error(e);
-                        alert("Gắn câu hỏi từ ngân hàng thất bại");
+                        toast.error("Gắn câu hỏi từ ngân hàng thất bại");
                       }
                     }}
                   >

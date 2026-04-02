@@ -116,6 +116,21 @@ export default function AIQuestionGenerator({
     setPreviewList([]);
   };
 
+  // Listening section cannot be AI-generated (needs audio files uploaded manually)
+  if (section === "LISTENING") {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/10 p-5 space-y-2 text-center">
+        <span className="text-2xl">🎧</span>
+        <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+          Phần Nghe (Listening) không hỗ trợ tạo tự động bằng AI
+        </p>
+        <p className="text-xs text-amber-700 dark:text-amber-300 opacity-80">
+          Vui lòng tạo câu hỏi nghe thủ công và upload file audio tương ứng.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border-2 border-dashed border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/10 p-4 space-y-4 max-h-[600px] overflow-y-auto">
       {/* Header row */}

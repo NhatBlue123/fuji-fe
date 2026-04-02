@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useGetPaymentStatusQuery } from "@/store/services/paymentApi";
 import { Button } from "@/components/ui/button";
+import { usePaymentSocket } from "@/providers/PaymentSocketProvider";
 
 interface PaymentStatusProps {
   orderId: string;
@@ -35,9 +36,11 @@ export default function PaymentStatus({
   onClose,
 }: PaymentStatusProps) {
   const router = useRouter();
+  const MAX_POLL_TIME = 300000; // 5 phút
   const [elapsedTime, setElapsedTime] = useState(0);
-  const MAX_POLL_TIME = 900000; // 15 phút
-  const POLL_INTERVAL = 20000; // 20 giây
+  const [lastCheckTime, setLastCheckTime] = useState(0);
+  const [isManualChecking, setIsManualChecking] = useState(false);
+  const [socketHandled, setSocketHandled] = useState(false);
 
   const {
     data: paymentStatus,
@@ -47,6 +50,33 @@ export default function PaymentStatus({
 
   const [isConfirming, setIsConfirming] = useState(false);
 
+  // ── Socket.IO realtime: topup-success ─────────────────────
+  const { isConnected, onTopupSuccess, onPaymentStatusChange } = usePaymentSocket();
+
+  useEffect(() => {
+    const unsubTopup = onTopupSuccess((data) => {
+      if (data.orderId === orderId) {
+        setSocketHandled(true);
+        toast.success(data.message || "Nạp tiền thành công!");
+        setTimeout(() => router.push("/premium/success"), 1000);
+      }
+    });
+
+    const unsubStatus = onPaymentStatusChange((data) => {
+      if (data.orderId === orderId) {
+        if (data.newStatus === "SUCCESS") {
+          setSocketHandled(true);
+          setTimeout(() => router.push("/premium/success"), 1000);
+        } else if (data.newStatus === "FAILED") {
+          setSocketHandled(true);
+          onClose();
+        }
+      }
+    });
+
+    return () => { unsubTopup(); unsubStatus(); };
+  }, [orderId, onTopupSuccess, onPaymentStatusChange, router, onClose]);
+
   // 1. Đếm ngược từng giây
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,7 +84,7 @@ export default function PaymentStatus({
         const nextValue = prev + 1000;
         if (nextValue >= MAX_POLL_TIME) {
           clearInterval(timer);
-          toast.error("Hết thời gian chờ giao dịch.");
+          toast.error("Giao dịch timeout. Nếu bạn đã chuyển khoản, hệ thống sẽ tự đối soát.", { duration: 5000 });
           onClose();
         }
         return nextValue;
@@ -63,24 +93,62 @@ export default function PaymentStatus({
     return () => clearInterval(timer);
   }, [onClose]);
 
-  // 2. Polling 20 giây một lần
+  // 2. Tự động kiểm tra DUY NHẤT 1 lần khi socket reconnect thành công hoặc mới mount
   useEffect(() => {
-    const pollTimer = setInterval(async () => {
+    if (socketHandled || !isConnected) return;
+    
+    let isMounted = true;
+    (async () => {
       try {
         const result = await refetch();
+        if (!isMounted || socketHandled) return;
+        
         if (result.data?.status === "SUCCESS") {
+          setSocketHandled(true);
           toast.success("Thanh toán thành công!");
           setTimeout(() => router.push("/premium/success"), 1000);
         } else if (result.data?.status === "FAILED") {
+          setSocketHandled(true);
           toast.error("Thanh toán thất bại.");
           onClose();
         }
       } catch (error) {
-        console.error("Polling error:", error);
+         console.error("Auto check error:", error);
       }
-    }, POLL_INTERVAL);
-    return () => clearInterval(pollTimer);
-  }, [refetch, onClose, router]);
+    })();
+    return () => { isMounted = false; };
+  }, [isConnected, refetch, onClose, router, socketHandled]);
+
+  // 3. Xử lý nút Manual Check rate-limited (5s cooldown)
+  const handleManualCheck = async () => {
+    if (socketHandled || isManualChecking) return;
+    const now = Date.now();
+    if (now - lastCheckTime < 5000) {
+      toast.info("Vui lòng đợi 5 giây giữa các lần kiểm tra.");
+      return;
+    }
+    
+    setIsManualChecking(true);
+    setLastCheckTime(now);
+    try {
+      const result = await refetch();
+      if (result.data?.status === "SUCCESS") {
+        setSocketHandled(true);
+        toast.success("Thanh toán thành công!");
+        setTimeout(() => router.push("/premium/success"), 1000);
+      } else if (result.data?.status === "FAILED") {
+        setSocketHandled(true);
+        toast.error("Thanh toán thất bại.");
+        onClose();
+      } else {
+        toast.info("Giao dịch đang chờ xác nhận...", { duration: 2000 });
+      }
+    } catch (error) {
+      toast.error("Lỗi khi tải lại trạng thái!");
+    } finally {
+      setIsManualChecking(false);
+    }
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -155,6 +223,21 @@ export default function PaymentStatus({
               </div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hỗ trợ mọi ngân hàng & Napas247</p>
             </div>
+            {/* Manual Check Link */}
+            <div className="mt-5 text-center">
+              <button 
+                onClick={handleManualCheck} 
+                disabled={isManualChecking || isStatusLoading}
+                className={`text-[11px] font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-2 mx-auto ${
+                  isManualChecking || isStatusLoading 
+                    ? "text-slate-500 cursor-not-allowed opacity-50" 
+                    : "text-pink-400 hover:text-pink-300 underline decoration-pink-500/30 underline-offset-4"
+                }`}
+              >
+                {(isManualChecking || isStatusLoading) && <RefreshCw size={12} className="animate-spin-slow" />}
+                Không tự động cập nhật? Kiểm tra trực tiếp
+              </button>
+            </div>
           </div>
 
           {/* RIGHT: Payment Info & Status */}
@@ -210,11 +293,8 @@ export default function PaymentStatus({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Button onClick={() => refetch()} disabled={isStatusLoading} className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-400 font-bold text-xs uppercase">
-                  {isStatusLoading ? "Đang check..." : "Kiểm tra ngay"}
-                </Button>
-                <Button onClick={() => setIsConfirming(true)} variant="ghost" className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-400 font-bold text-xs uppercase">
+              <div className="grid grid-cols-1 gap-3">
+                <Button onClick={() => setIsConfirming(true)} variant="ghost" className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-500/10 hover:border-pink-500/30 font-bold text-xs uppercase text-slate-400 hover:text-pink-400 transition-all">
                   Hủy giao dịch
                 </Button>
               </div>

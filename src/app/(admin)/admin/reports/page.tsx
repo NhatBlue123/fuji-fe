@@ -45,10 +45,12 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Paperclip,
   RefreshCw,
 } from "lucide-react";
 
@@ -138,7 +140,7 @@ export default function AdminReportsPage() {
     useState<QuestionReport | null>(null);
 
   const systemCategory: ReportCategory | undefined = useMemo(() => {
-    if (tab === "jlpt_feedback") return undefined;
+    if (tab === "jlpt_feedback") return "NOTIFICATION";
     if (tab === "payment") return "PAYMENT";
     if (tab === "course") return "COURSE";
     if (tab === "other") return "OTHER";
@@ -538,10 +540,54 @@ export default function AdminReportsPage() {
               </div>
 
               <div>
-                <div className="text-sm text-muted-foreground">Mô tả</div>
-                <div className="whitespace-pre-wrap text-sm">
+                <div className="text-sm text-muted-foreground flex items-center justify-between">
+                  <span>Mô tả</span>
+                  <Link 
+                    href={`/reports/${selectedSystemReport.id}`} 
+                    target="_blank"
+                    className="text-[10px] font-black uppercase text-secondary hover:underline"
+                  >
+                    Xem link chi tiết (User View)
+                  </Link>
+                </div>
+                <div className="whitespace-pre-wrap text-sm border bg-muted/10 p-3 rounded-lg mt-1">
                   {selectedSystemReport.description || "-"}
                 </div>
+                {selectedSystemReport.attachmentUrls && (
+                  <div className="mt-3 p-4 rounded-xl border-2 border-dashed bg-muted/20 border-muted group/attachments">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Paperclip className="size-3 text-secondary" /> 
+                        Tệp đính kèm ({selectedSystemReport.attachmentUrls.split(',').length})
+                      </div>
+                      <span className="text-[9px] font-black uppercase bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">Dữ liệu thực</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2.5">
+                       {selectedSystemReport.attachmentUrls.split(',').map((url, idx) => {
+                         const fullUrl = url.startsWith('/') ? `http://localhost:8181${url}` : url;
+                         const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
+                         
+                         return (
+                           <div key={idx} className="group/img relative size-20 rounded-xl overflow-hidden border border-muted-foreground/10 bg-muted hover:border-secondary/50 transition-all cursor-pointer">
+                              {isVideo ? (
+                                <video src={fullUrl} className="size-full object-cover opacity-90" />
+                              ) : (
+                                <img 
+                                  src={fullUrl} 
+                                  alt={`attachment-${idx}`} 
+                                  className="size-full object-cover opacity-90 group-hover/img:scale-110 group-hover/img:opacity-100 transition-all" 
+                                  onDoubleClick={() => window.open(fullUrl, '_blank')}
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                 <Paperclip className="size-5 text-white" />
+                              </div>
+                           </div>
+                         );
+                       })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

@@ -12,6 +12,7 @@ import { adminJlptApi } from "./services/adminJlptApi";
 
 import paymentReducer from './slices/paymentSlice';
 import walletReducer from "./slices/walletSlice";
+import { userPreferenceApi } from "./services/user/userPreferenceApi";
 import { adminFlashcardApi } from "./services/admin/flashcardApi";
 import { userApi } from "./services/admin/userApi";
 import { adminReportApi } from "./services/adminReportApi";
@@ -35,6 +36,7 @@ export const store = configureStore({
     [adminReportApi.reducerPath]: adminReportApi.reducer,
     [adminRevenueApi.reducerPath]: adminRevenueApi.reducer,
     [adminChatModerationApi.reducerPath]: adminChatModerationApi.reducer,
+    [userPreferenceApi.reducerPath]: userPreferenceApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
@@ -46,6 +48,7 @@ export const store = configureStore({
       .concat(userApi.middleware)
       .concat(adminRevenueApi.middleware)
       .concat(adminChatModerationApi.middleware)
+      .concat(userPreferenceApi.middleware)
       .concat(baseApi.middleware)
       .concat(aiBaseApi.middleware)
       .concat(courseApi.middleware)

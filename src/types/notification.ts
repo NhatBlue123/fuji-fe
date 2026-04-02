@@ -1,7 +1,9 @@
+
 export enum NotificationType {
   course = "course",
   system = "system",
   reminder = "reminder",
+  security = "security",
 }
 
 export interface Notification {
@@ -9,9 +11,9 @@ export interface Notification {
   title: string;
   content: string;
   type: NotificationType;
-  linkUrl?: string;
-  relatedType?: string;
-  relatedId?: number;
+  linkUrl?: string; 
+  relatedType?: string; 
+  relatedId?: number; 
   isRead: boolean;
   readAt?: string;
   createdAt: string;

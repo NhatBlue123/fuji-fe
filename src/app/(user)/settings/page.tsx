@@ -6,9 +6,7 @@ import {
   Settings,
   Palette,
   Bell,
-  Shield,
   Globe,
-  Monitor,
   Moon,
   Sun,
   Save,
@@ -17,6 +15,15 @@ import {
   ChevronRight,
   Check,
   Info,
+  LifeBuoy,
+  HandHelping,
+  MessageCircle,
+  HelpCircle,
+  Bug,
+  HeartHandshake,
+  Sparkles,
+  Shield,
+  Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,12 +42,15 @@ import { useTheme } from "@/components/common";
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
 import { toast } from "sonner";
+import { FeedbackDialog } from "@/components/common/FeedbackDialog";
+import { useGetMePreferencesQuery, useUpdateMePreferencesMutation } from "@/store/services/user/userPreferenceApi";
 
 const TABS = [
   { id: "appearance", label: "Giao diện", icon: Palette },
   { id: "notifications", label: "Thông báo", icon: Bell },
   { id: "language", label: "Ngôn ngữ", icon: Globe },
   { id: "security", label: "Bảo mật", icon: Shield },
+  { id: "support", label: "Hỗ trợ & Báo cáo", icon: LifeBuoy },
 ];
 
 export default function SettingsPage() {
@@ -48,6 +58,12 @@ export default function SettingsPage() {
   const { i18n } = useTranslation();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("appearance");
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -56,16 +72,36 @@ export default function SettingsPage() {
     }
   }, [searchParams]);
 
+  const { data: prefs, isLoading: isPrefsLoading } = useGetMePreferencesQuery();
+  const [updatePrefs, { isLoading: isUpdating }] = useUpdateMePreferencesMutation();
+
   const [notificationSettings, setNotificationSettings] = useState({
     courseUpdates: true,
     newMessages: true,
     examReminders: true,
-    systemAlerts: false,
+    systemAlerts: true,
     emailDigest: false,
   });
 
-  const handleSave = () => {
-    toast.success("Đã lưu cài đặt thành công!");
+  useEffect(() => {
+    if (prefs) {
+      setNotificationSettings({
+        courseUpdates: prefs.courseUpdates ?? true,
+        newMessages: prefs.newMessages ?? true,
+        examReminders: prefs.examReminders ?? true,
+        systemAlerts: prefs.systemAlerts ?? true,
+        emailDigest: prefs.emailDigest ?? false,
+      });
+    }
+  }, [prefs]);
+
+  const handleSave = async () => {
+    try {
+      await updatePrefs(notificationSettings).unwrap();
+      toast.success("Đã lưu cài đặt thành công!");
+    } catch (err) {
+      toast.error("Không thể lưu cài đặt. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -165,38 +201,46 @@ export default function SettingsPage() {
                   <p className="text-[11px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest mb-4 ml-1">
                     Chế độ hiển thị
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {[
-                      { value: "light", label: "Sáng", icon: Sun, color: "hover:text-amber-500 hover:border-amber-500/40 hover:bg-amber-500/10 hover:shadow-amber-500/10" },
-                      { value: "dark", label: "Tối", icon: Moon, color: "hover:text-indigo-400 hover:border-indigo-400/40 hover:bg-indigo-400/10 hover:shadow-indigo-500/10" },
-                      { value: "system", label: "Hệ thống", icon: Monitor, color: "hover:text-emerald-500 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-emerald-500/10" },
-                    ].map(({ value, label, icon: Icon, color }) => {
-                      const isSelected = theme === value;
-                      return (
-                        <button
-                          key={value}
-                          onClick={() => setTheme(value as any)}
-                          className={cn(
-                            "relative flex flex-col items-center gap-4 p-8 rounded-[1.5rem] border-2 transition-all duration-300 text-xs font-black uppercase tracking-widest shadow-inner",
-                            isSelected
-                              ? "border-pink-500 bg-pink-500/10 text-pink-600 dark:text-pink-400 shadow-md shadow-pink-500/20 scale-[1.02]"
-                              : `border-muted dark:border-white/10 dark:bg-black/20 text-muted-foreground dark:text-slate-400 ${color}`
-                          )}
-                        >
-                          {/* Active check icon */}
-                          {isSelected && (
-                            <div className="absolute top-4 right-4 size-6 rounded-full bg-pink-500 flex items-center justify-center shadow-lg shadow-pink-500/30">
-                              <Check className="size-3.5 text-white" strokeWidth={3.5} />
+                  {!mounted ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 opacity-20">
+                       <div className="h-40 rounded-[1.5rem] bg-muted animate-pulse" />
+                       <div className="h-40 rounded-[1.5rem] bg-muted animate-pulse" />
+                       <div className="h-40 rounded-[1.5rem] bg-muted animate-pulse" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      {[
+                        { value: "light", label: "Sáng", icon: Sun, color: "hover:text-amber-500 hover:border-amber-500/40 hover:bg-amber-500/10 hover:shadow-amber-500/10" },
+                        { value: "dark", label: "Tối", icon: Moon, color: "hover:text-indigo-400 hover:border-indigo-400/40 hover:bg-indigo-400/10 hover:shadow-indigo-500/10" },
+                        { value: "system", label: "Hệ thống", icon: Monitor, color: "hover:text-emerald-500 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-emerald-500/10" },
+                      ].map(({ value, label, icon: Icon, color }) => {
+                        const isSelected = theme === value;
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => setTheme(value as any)}
+                            className={cn(
+                              "relative flex flex-col items-center gap-4 p-8 rounded-[1.5rem] border-2 transition-all duration-300 text-xs font-black uppercase tracking-widest shadow-inner",
+                              isSelected
+                                ? "border-pink-500 bg-pink-500/10 text-pink-600 dark:text-pink-400 shadow-md shadow-pink-500/20 scale-[1.02]"
+                                : `border-muted dark:border-white/10 dark:bg-black/20 text-muted-foreground dark:text-slate-400 ${color}`
+                            )}
+                          >
+                            {/* Active check icon */}
+                            {isSelected && (
+                              <div className="absolute top-4 right-4 size-6 rounded-full bg-pink-500 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                                <Check className="size-3.5 text-white" strokeWidth={3.5} />
+                              </div>
+                            )}
+                            <div className={cn("p-4 rounded-2xl border bg-background shadow-sm transition-colors", isSelected ? "border-pink-500/30 text-pink-500" : "border-muted dark:border-white/10 dark:bg-white/5")}>
+                              <Icon className="size-8" strokeWidth={2} />
                             </div>
-                          )}
-                          <div className={cn("p-4 rounded-2xl border bg-background shadow-sm transition-colors", isSelected ? "border-pink-500/30 text-pink-500" : "border-muted dark:border-white/10 dark:bg-white/5")}>
-                            <Icon className="size-8" strokeWidth={2} />
-                          </div>
-                          <span>{label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            <span>{label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -246,10 +290,15 @@ export default function SettingsPage() {
                 <div className="flex justify-end pr-2">
                   <Button
                     onClick={handleSave}
+                    disabled={isUpdating || isPrefsLoading}
                     className="h-14 px-8 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest text-[11px] shadow-xl shadow-pink-500/20 transition-all active:scale-95 flex items-center gap-2"
                   >
-                    <Save className="size-5" />
-                    Bảo quản thiết lập
+                    {isUpdating ? (
+                      <div className="size-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    ) : (
+                      <Save className="size-5" />
+                    )}
+                    {isUpdating ? "Đang lưu..." : "Bảo quản thiết lập"}
                   </Button>
                 </div>
               </div>
@@ -269,22 +318,26 @@ export default function SettingsPage() {
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 ml-1">
                       Ngôn ngữ hiển thị
                     </label>
-                    <Select
-                      value={i18n.language}
-                      onValueChange={(val) => {
-                        i18n.changeLanguage(val);
-                        toast.success("Ngôn ngữ đã được thay đổi thành công!");
-                      }}
-                    >
-                      <SelectTrigger className="h-16 rounded-2xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus:ring-cyan-500/30 text-xs font-black uppercase tracking-widest shadow-inner px-6 text-foreground dark:text-white">
-                        <SelectValue placeholder="Chọn ngôn ngữ" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background dark:bg-[#0f1218] border border-muted dark:border-white/10 rounded-2xl shadow-2xl p-2">
-                        <SelectItem value="vi" className="text-xs font-black uppercase tracking-widest py-4 px-4 hover:bg-cyan-500/10 focus:bg-cyan-500/10 focus:text-cyan-500 rounded-xl cursor-pointer transition-colors">🇻🇳 Tiếng Việt</SelectItem>
-                        <SelectItem value="en" className="text-xs font-black uppercase tracking-widest py-4 px-4 hover:bg-cyan-500/10 focus:bg-cyan-500/10 focus:text-cyan-500 rounded-xl cursor-pointer transition-colors">🇺🇸 English</SelectItem>
-                        <SelectItem value="ja" className="text-xs font-black uppercase tracking-widest py-4 px-4 hover:bg-cyan-500/10 focus:bg-cyan-500/10 focus:text-cyan-500 rounded-xl cursor-pointer transition-colors">🇯🇵 日本語</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {mounted ? (
+                      <Select
+                        value={i18n.language}
+                        onValueChange={(val) => {
+                          i18n.changeLanguage(val);
+                          toast.success("Ngôn ngữ đã được thay đổi thành công!");
+                        }}
+                      >
+                        <SelectTrigger className="h-16 rounded-2xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus:ring-cyan-500/30 text-xs font-black uppercase tracking-widest shadow-inner px-6 text-foreground dark:text-white">
+                          <SelectValue placeholder="Chọn ngôn ngữ" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background dark:bg-[#0f1218] border border-muted dark:border-white/10 rounded-2xl shadow-2xl p-2">
+                          <SelectItem value="vi" className="text-xs font-black uppercase tracking-widest py-4 px-4 hover:bg-cyan-500/10 focus:bg-cyan-500/10 focus:text-cyan-500 rounded-xl cursor-pointer transition-colors">🇻🇳 Tiếng Việt</SelectItem>
+                          <SelectItem value="en" className="text-xs font-black uppercase tracking-widest py-4 px-4 hover:bg-cyan-500/10 focus:bg-cyan-500/10 focus:text-cyan-500 rounded-xl cursor-pointer transition-colors">🇺🇸 English</SelectItem>
+                          <SelectItem value="ja" className="text-xs font-black uppercase tracking-widest py-4 px-4 hover:bg-cyan-500/10 focus:bg-cyan-500/10 focus:text-cyan-500 rounded-xl cursor-pointer transition-colors">🇯🇵 日本語</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="h-16 w-full rounded-2xl bg-muted/40 animate-pulse" />
+                    )}
                   </div>
                   
                   <div className="p-5 rounded-2xl border bg-cyan-500/5 dark:bg-black/20 flex items-start gap-4 border-cyan-500/20 shadow-inner">
@@ -302,7 +355,6 @@ export default function SettingsPage() {
               </Card>
             )}
 
-            {/* === SECURITY === */}
             {activeTab === "security" && (
               <Card className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl border-muted dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in duration-500">
                 <CardHeader className="px-8 py-6 border-b border-muted dark:border-white/5 bg-muted/20 dark:bg-white/5">
@@ -350,9 +402,83 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             )}
+
+            {activeTab === "support" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <Card className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl border-muted dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-2xl rounded-[2.5rem] overflow-hidden">
+                  <CardHeader className="px-8 py-6 border-b border-muted dark:border-white/5 bg-muted/20 dark:bg-white/5">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-secondary">
+                      <LifeBuoy className="size-5" />
+                      Hỗ trợ & Báo cáo sự cố
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-8 space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-5 rounded-[1.5rem] bg-muted/20 border border-muted dark:border-white/5 space-y-4 hover:border-secondary/30 transition-all group">
+                        <div className="size-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+                          <HelpCircle className="size-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black uppercase tracking-tight text-foreground">Trung tâm trợ giúp</h4>
+                          <p className="text-[10px] font-bold text-muted-foreground leading-relaxed">
+                            Tìm câu trả lời cho các câu hỏi thường gặp về khóa học, thanh toán và tài khoản.
+                          </p>
+                        </div>
+                        <Button asChild className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] bg-secondary/10 hover:bg-secondary/20 text-secondary border-none h-10">
+                          <Link href="/help">Truy cập ngay</Link>
+                        </Button>
+                      </div>
+
+                      <div className="p-5 rounded-[1.5rem] bg-muted/20 border border-muted dark:border-white/5 space-y-4 hover:border-indigo-500/30 transition-all group">
+                        <div className="size-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                          <Bug className="size-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black uppercase tracking-tight text-foreground">Báo cáo sự cố</h4>
+                          <p className="text-[10px] font-bold text-muted-foreground leading-relaxed">
+                            Gặp lỗi khi sử dụng hệ thống? Hãy báo cáo cho đội ngũ kỹ thuật của FUJI để được hỗ trợ.
+                          </p>
+                        </div>
+                        <Button 
+                          className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] bg-indigo-500 text-white border-none shadow-lg shadow-indigo-500/20 h-10"
+                          onClick={() => setIsFeedbackOpen(true)}
+                        >
+                          Báo cáo ngay
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Separator className="opacity-50 dark:opacity-20" />
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Kênh liên hệ trực tiếp</p>
+                      <div className="flex flex-wrap gap-4">
+                        {[
+                          { label: "Hotline", value: "1900 8888", icon: HeartHandshake, color: "text-amber-500" },
+                          { label: "Email", value: "support@fuji.edu.vn", icon: MessageCircle, color: "text-pink-500" },
+                          { label: "Messenger", value: "fb.com/fuji.jlpt", icon: Sparkles, color: "text-blue-500" },
+                        ].map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div key={item.label} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-muted/30 border border-muted/50">
+                              <Icon className={cn("size-4", item.color)} />
+                              <div className="space-y-0.5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase">{item.label}</p>
+                                <p className="text-xs font-bold text-foreground">{item.value}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </div>
       </div>
+      <FeedbackDialog isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
   );
 }

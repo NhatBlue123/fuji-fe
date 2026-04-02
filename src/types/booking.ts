@@ -138,3 +138,30 @@ export type MyBookingItem = {
   endAt: string;
   durationMinutes: number;
 };
+export type TeacherScheduleSlot = {
+  timeSlotId: number;
+  status: "AVAILABLE" | "BOOKED";
+  startAt: string;
+  endAt: string;
+  durationMinutes: number;
+  subject: string;
+  tuitionVnd: number;
+  studentId: number | null;
+  studentName: string | null;
+  bookingStatus: "PENDING" | "CONFIRMED" | null;
+};
+
+export type TeacherScheduleGroup = {
+  date: string;
+  slots: TeacherScheduleSlot[];
+};
+
+export type TeacherScheduleResponse = {
+  teacherId: number;
+  teacherName: string;
+  teacherAvatarUrl: string | null;
+  timezone: string;
+  fromDate: string;
+  toDate: string;
+  items: TeacherScheduleGroup[];
+};

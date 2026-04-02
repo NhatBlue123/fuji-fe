@@ -32,6 +32,7 @@ export default function FujiWallet() {
   const { data: historyData, isLoading: isHistoryLoading } = useGetWalletHistoryQuery({ page, size });
 
   const balance = wallet?.balance || 0;
+  const availableBalance = wallet?.availableBalance || 0
   const transactions = historyData?.content || [];
   const totalPages = historyData?.totalPages || 0;
 
@@ -105,7 +106,7 @@ export default function FujiWallet() {
                   </div>
                   <div className="flex items-baseline gap-4">
                     <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-200 drop-shadow-sm tracking-tighter">
-                      {balance.toLocaleString()}
+                      {availableBalance.toLocaleString()}
                     </span>
                     <span className="text-2xl font-black text-pink-400/50 uppercase tracking-tighter">đ</span>
                   </div>
@@ -125,7 +126,7 @@ export default function FujiWallet() {
                   </div>
                   <div>
                     <div className="text-[10px] text-blue-200/50 font-black uppercase tracking-widest">Tương đương</div>
-                    <div className="text-xl font-black text-white">{(balance / 1000).toLocaleString()} <span className="text-xs text-blue-200/50">HOA</span></div>
+                    <div className="text-xl font-black text-white">{(availableBalance / 1000).toLocaleString()} <span className="text-xs text-blue-200">🌸</span></div>
                   </div>
                 </div>
                 

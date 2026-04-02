@@ -11,6 +11,7 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   TeacherAvailabilityResponse,
+  TeacherScheduleResponse,
 } from "@/types/booking";
 
 export const bookingApi = baseApi.injectEndpoints({
@@ -38,6 +39,16 @@ export const bookingApi = baseApi.injectEndpoints({
         `/time-slots/teacher/${teacherId}/availability?fromDate=${fromDate}&toDate=${toDate}`,
       transformResponse: (res: ApiEnvelope<TeacherAvailabilityResponse>) => res.data,
       providesTags: (_r, _e, arg) => [{ type: "Booking", id: `TEACHER_${arg.teacherId}` }],
+    }),
+
+    getMyTeacherSchedule: builder.query<
+      TeacherScheduleResponse,
+      { fromDate: string; toDate: string }
+    >({
+      query: ({ fromDate, toDate }) =>
+        `/time-slots/me/schedule?fromDate=${fromDate}&toDate=${toDate}`,
+      transformResponse: (res: ApiEnvelope<TeacherScheduleResponse>) => res.data,
+      providesTags: [{ type: "Booking", id: "MY_TEACHER_SCHEDULE" }],
     }),
 
     getBookingQuote: builder.query<BookingQuote, { timeSlotId: number }>({
@@ -118,4 +129,5 @@ export const {
   useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
   useCancelBookingMutation,
+  useGetMyTeacherScheduleQuery,
 } = bookingApi;

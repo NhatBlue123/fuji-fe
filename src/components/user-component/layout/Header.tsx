@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import { Bell, Moon, Sun, User, LogOut, Settings, Sparkles } from "lucide-react";
 import { useTheme } from "@/components/common";
 import { useAuth, useAppDispatch } from "@/store/hooks";
@@ -28,13 +29,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { vi, enUS, ja } from "date-fns/locale";
+import { vi } from "date-fns/locale";
 
-/**
- * Header Component - Tinh chỉnh cuối:
- * - Khắc phục lỗi mất Header khi chưa settle Auth.
- * - Khớp kích thước icon đồng bộ và lề nội bộ.
- */
 const Header = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -43,6 +39,11 @@ const Header = () => {
   const { user, isAuthenticated, roles } = useAuth();
   const { unreadCount, notifications, markAsRead } = useNotifications();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Avoid SSR/client auth mismatch hydration issues.
+  const canShowAuthUi = mounted && isAuthenticated;
+  
   const getRoleLabel = () => {
     if (!roles) return "HỌC VIÊN";
     if (roles.includes("ADMIN") || roles.includes("ROLE_ADMIN")) return "QUẢN TRỊ VIÊN";
@@ -67,7 +68,7 @@ const Header = () => {
     >
       
       <div className="flex items-center gap-4">
-        {/* FUJI Logo hoặc Brand nếu cần */}
+        {/* FUJI Logo*/}
       </div>
 
       <div className="flex items-center gap-1 md:gap-2">
@@ -75,7 +76,7 @@ const Header = () => {
         {/* ICON 1: LANGUAGE */}
         <LanguageSwitcher 
           hideLabel 
-          className="h-10 w-10 bg-transparent border-none hover:bg-transparent hover:text-secondary transition-all active:scale-90 active:translate-y-[1px] flex items-center justify-center p-0" 
+          className="h-10 w-10 bg-transparent border-none hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-secondary transition-all active:scale-90 active:translate-y-[1px] flex items-center justify-center p-0" 
         />
 
         {/* ICON 2: THEME */}
@@ -83,21 +84,21 @@ const Header = () => {
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="h-10 w-10 rounded-full hover:bg-transparent hover:text-secondary transition-all active:scale-90 active:translate-y-[1px]"
+          className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-secondary transition-all active:scale-90 active:translate-y-[1px]"
         >
           <Sun className="size-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute size-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
 
-        {/* ICON 3: NOTIFICATION (Chỉ hiện khi đã đăng nhập) */}
-        {isAuthenticated && (
+        {/* ICON 3: NOTIFICATION  */}
+        {mounted && isAuthenticated && (
           <Popover>
             <PopoverTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative h-10 w-10 rounded-full hover:bg-transparent hover:text-secondary transition-all active:scale-90 active:translate-y-[1px]"
+                className="relative h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-secondary transition-all active:scale-90 active:translate-y-[1px]"
               >
                 <Bell className="size-5" />
                 {unreadCount > 0 && (
@@ -128,20 +129,33 @@ const Header = () => {
                           if (n.linkUrl) router.push(n.linkUrl);
                         }}
                         className={cn(
-                          "flex flex-col gap-1 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
-                          !n.isRead && "bg-secondary/[0.04]"
+                          "flex items-start gap-3 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
+                          !n.isRead
+                            ? "bg-secondary/[0.06] dark:bg-secondary/[0.08] border-l-[3px] border-l-secondary"
+                            : "opacity-60 border-l-[3px] border-l-transparent"
                         )}
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className={cn(
-                            "text-[13px] font-bold truncate font-sans",
-                            !n.isRead ? "text-secondary" : "text-foreground/80"
-                          )}>{n.title}</span>
-                          {!n.isRead && <div className="size-2 rounded-full bg-secondary" />}
+                        <div className={cn(
+                          "size-2.5 rounded-full mt-2 flex-shrink-0 transition-all",
+                          !n.isRead ? "bg-secondary shadow-[0_0_6px_rgba(var(--secondary-rgb,59,130,246),0.4)]" : "bg-muted-foreground/15"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={cn(
+                              "text-[13px] font-bold truncate font-sans",
+                              !n.isRead ? "text-secondary" : "text-foreground/60"
+                            )}>{n.title}</span>
+                          </div>
+                          <p className={cn(
+                            "line-clamp-2 text-xs leading-relaxed font-sans",
+                            !n.isRead ? "text-muted-foreground" : "text-muted-foreground/60"
+                          )}>
+                            {n.content}
+                          </p>
+                          <span className="text-[9px] text-muted-foreground/40 font-bold mt-1 block">
+                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: vi })}
+                          </span>
                         </div>
-                        <p className="line-clamp-2 text-xs text-muted-foreground/80 leading-relaxed font-sans">
-                          {n.content}
-                        </p>
                       </button>
                     ))}
                   </div>
@@ -156,16 +170,16 @@ const Header = () => {
           </Popover>
         )}
 
-        {isAuthenticated && <div className="h-6 w-[1px] bg-border mx-1 opacity-50" />}
+        {mounted && isAuthenticated && <div className="h-6 w-[1px] bg-border mx-1 opacity-50" />}
 
         {/* ACCOUNT DROPDOWN (Chỉ hiện khi đã đăng nhập) */}
-        {isAuthenticated ? (
+        {mounted && isAuthenticated && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 gap-2 px-1 hover:bg-transparent transition-all rounded-xl active:scale-95 active:translate-y-[1px] group">
+              <Button variant="ghost" className="h-10 gap-2 px-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all rounded-xl active:scale-95 active:translate-y-[1px] group">
                 <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-secondary/30 transition-all ring-offset-background">
                   <AvatarImage src={user?.avatar || user?.avatarUrl || "/images/avt-default.jpg"} />
-                  <AvatarFallback className="bg-secondary text-white font-sans">{user?.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="bg-secondary text-white font-sans">{user?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="hidden flex-col items-start px-1 text-left md:flex">
                   <span className="text-[13px] font-bold leading-none truncate max-w-[120px] tracking-tight group-hover:text-secondary transition-colors font-sans">
@@ -181,7 +195,7 @@ const Header = () => {
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-10 w-10 border border-border pb-1">
                   <AvatarImage src={user?.avatar || user?.avatarUrl || "/images/avt-default.jpg"} />
-                  <AvatarFallback className="bg-secondary text-white font-sans">{user?.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="bg-secondary text-white font-sans">{user?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col overflow-hidden">
                   <p className="text-sm font-bold truncate font-sans">{user?.fullname || user?.fullName || user?.username}</p>
@@ -190,21 +204,21 @@ const Header = () => {
               </div>
               <DropdownMenuSeparator className="opacity-50" />
               <div className="px-1 py-1 space-y-0.5">
-                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3 hover:bg-secondary/5 focus:bg-secondary/5 transition-colors">
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800 transition-colors">
                   <Link href="/profile" className="flex items-center gap-3 w-full">
                       <User className="size-4 text-secondary" />
-                      <span className="text-sm font-medium font-sans">{t("common.profile") || "Hồ sơ cá nhân"}</span>
+                      <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">{t("common.profile") || "Hồ sơ cá nhân"}</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3 hover:bg-secondary/5 focus:bg-secondary/5 transition-colors">
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800 transition-colors">
                   <Link href="/settings" className="flex items-center gap-3 w-full">
                       <Settings className="size-4 text-secondary" />
-                      <span className="text-sm font-medium font-sans">{t("common.management") || "Cài đặt ứng dụng"}</span>
+                      <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">Cài đặt</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => router.push('/premium')}
-                  className="rounded-xl cursor-pointer py-3 hover:bg-secondary/5 focus:bg-secondary/5 transition-colors"
+                  className="rounded-xl cursor-pointer py-3 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800 transition-colors"
                 >
                   <div className="flex items-center gap-3 w-full text-secondary">
                     <Sparkles className="size-4" />
@@ -215,14 +229,16 @@ const Header = () => {
               <DropdownMenuSeparator className="opacity-50" />
               <DropdownMenuItem 
                 onSelect={handleLogout}
-                className="text-muted-foreground hover:text-secondary focus:text-secondary rounded-xl cursor-pointer py-3 font-bold uppercase text-[10px] tracking-widest mt-1 hover:bg-secondary/5 transition-all font-sans"
+                className="text-slate-600 dark:text-slate-400 hover:text-red-500 focus:text-red-500 dark:hover:text-red-400 dark:focus:text-red-400 rounded-xl cursor-pointer py-3 font-bold uppercase text-[10px] tracking-widest mt-1 hover:bg-red-50 focus:bg-red-50 dark:hover:bg-red-500/10 dark:focus:bg-red-500/10 transition-all font-sans"
               >
                 <LogOut className="mr-3 size-4" />
                 <span>{t("sidebar.logout") || "Đăng xuất"}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : (
+        )}
+
+        {mounted && !isAuthenticated && (
           <Button 
             variant="ghost" 
             onClick={() => router.push('/login')}

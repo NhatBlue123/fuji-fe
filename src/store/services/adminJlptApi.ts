@@ -56,7 +56,7 @@ const baseQuery = async (args: any) => {
 export interface CreateJlptTestDTO {
   title: string;
   level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
-  testType: 'full_test' | 'vocabulary_grammar' | 'reading' | 'listening';
+  testType: 'full_test' | 'vocabulary' | 'grammar_reading' | 'listening';
   description?: string;
   duration: number; // minutes
   totalQuestions: number;

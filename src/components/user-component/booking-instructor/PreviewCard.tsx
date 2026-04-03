@@ -24,7 +24,7 @@ export default function PreviewCard({ mode, subject, price, ranges, estimatedSlo
         <p className="text-muted-foreground text-sm">Khung giờ</p>
         <div className="mt-2 space-y-1">
           {ranges.map((r, i) => (
-            <p key={i} className="text-secondary font-bold">
+            <p key={i} className=" font-bold">
               {r.start} - {r.end}
             </p>
           ))}
@@ -33,9 +33,9 @@ export default function PreviewCard({ mode, subject, price, ranges, estimatedSlo
         <div className="h-px bg-border my-4" />
 
         <p className="text-muted-foreground text-sm">Môn học</p>
-        <p>{subject || "-"}</p>
+        <p className="font-bold">{subject || "-"}</p>
 
-        <p className="text-muted-foreground text-sm mt-3">Học phí</p>
+        <p className="text-muted-foreground text-sm mt-3">Học phí(1 buổi)</p>
         <p className="font-bold">
           {(price || 0).toLocaleString("vi-VN")}đ · {toBlossom(price)} 🌸
         </p>
@@ -43,7 +43,7 @@ export default function PreviewCard({ mode, subject, price, ranges, estimatedSlo
         <div className="h-px bg-border my-4" />
 
         <p className="text-muted-foreground text-sm">Ước tính số buổi tạo</p>
-        <p className="text-2xl font-black text-secondary">{estimatedSlots}</p>
+        <p className="text-3xl font-black">{estimatedSlots}</p>
       </div>
     </aside>
   );

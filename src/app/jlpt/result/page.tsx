@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Clock, Trophy, Target, AlertTriangle } from "lucide-react";
 import type { AnswerDetail } from "@/types/jlpt";
 import type { AnswerReview } from "@/types/jlpt-review";
+import { toast } from "sonner";
 
 function JLPTResultPageInner() {
   const router = useRouter();
@@ -277,11 +278,11 @@ function JLPTResultPageInner() {
                       testTitle: attempt.test?.title,
                       feedback: examFeedback.trim(),
                     }).unwrap();
-                    alert("Đã gửi feedback đề thi. Cảm ơn bạn!");
+                    toast.success("Đã gửi feedback đề thi. Cảm ơn bạn!");
                     setExamFeedback("");
                   } catch (e) {
                     console.error(e);
-                    alert("Gửi feedback thất bại, hãy thử lại.");
+                    toast.error("Gửi feedback thất bại, hãy thử lại.");
                   }
                 }}
               >
@@ -434,11 +435,11 @@ function JLPTResultPageInner() {
                         attemptId: attempt.id,
                         reason: reportReason.trim(),
                       }).unwrap();
-                      alert("Đã gửi báo cáo. Cảm ơn bạn!");
+                      toast.success("Đã gửi báo cáo câu hỏi. Cảm ơn bạn!");
                       setReportingQuestionId(null);
                     } catch (e) {
                       console.error(e);
-                      alert("Gửi báo cáo thất bại, hãy thử lại.");
+                      toast.error("Gửi báo cáo thất bại, hãy thử lại.");
                     }
                   }}
                 >

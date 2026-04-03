@@ -46,6 +46,39 @@ import {
   type SectionConfig,
   getQuestionNumbers,
 } from "@/lib/jlpt-structure";
+import { toast } from "sonner";
+
+// ─── Module-level helper: pick the correct sectionKey for a mondai ────────────
+function resolveSectionKeyForMondai(
+  section: SectionConfig,
+  mondai: MondaiConfig,
+  testTypeInput: string,
+): SectionKey {
+  const keys = section.sectionKeys;
+  if (keys.length === 1) return keys[0] as SectionKey;
+  if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+  if (mondai.requires_passage && keys.includes("READING")) return "READING";
+
+  const title = mondai.title || "";
+  if (keys.includes("GRAMMAR") && keys.includes("READING")) {
+    if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+    return "GRAMMAR";
+  }
+  if (
+    keys.includes("VOCABULARY") &&
+    keys.includes("GRAMMAR") &&
+    keys.includes("READING")
+  ) {
+    if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+    if (/文法/.test(title)) return "GRAMMAR";
+    return "VOCABULARY";
+  }
+
+  if (testTypeInput === "reading" && keys.includes("READING")) return "READING";
+  if (testTypeInput === "listening" && keys.includes("LISTENING")) return "LISTENING";
+  if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
+  return keys[0] as SectionKey;
+}
 
 export default function CreateJLPTTestPage() {
   const router = useRouter();
@@ -218,36 +251,7 @@ export default function CreateJLPTTestPage() {
       return true;
     };
 
-    const resolveSectionKeyForMondai = (
-      section: SectionConfig,
-      mondai: MondaiConfig,
-      testTypeInput: string,
-    ): SectionKey => {
-      const keys = section.sectionKeys;
-      if (keys.length === 1) return keys[0] as SectionKey;
-      if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
-      if (mondai.requires_passage && keys.includes("READING")) return "READING";
-
-      const title = mondai.title || "";
-      if (keys.includes("GRAMMAR") && keys.includes("READING")) {
-        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
-        return "GRAMMAR";
-      }
-      if (
-        keys.includes("VOCABULARY") &&
-        keys.includes("GRAMMAR") &&
-        keys.includes("READING")
-      ) {
-        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
-        if (/文法/.test(title)) return "GRAMMAR";
-        return "VOCABULARY";
-      }
-
-      if (testTypeInput === "reading" && keys.includes("READING")) return "READING";
-      if (testTypeInput === "listening" && keys.includes("LISTENING")) return "LISTENING";
-      if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
-      return keys[0] as SectionKey;
-    };
+    // resolveSectionKeyForMondai is defined at module level above
 
     for (const section of structure) {
       for (const mondai of section.mondai) {
@@ -355,7 +359,7 @@ export default function CreateJLPTTestPage() {
         setReviewConfirmed(false);
         try {
           await generateQuestionsFromBank(result.id);
-          alert("Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
+          toast.success("Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
           return;
         } finally {
           setCreatingQuestions(false);
@@ -365,7 +369,7 @@ export default function CreateJLPTTestPage() {
       if (!autoGenerateWithAI) {
         setCreationMode(null);
         setReviewConfirmed(false);
-        alert("Tạo đề thi thành công!");
+        toast.success("Tạo đề thi thành công!");
         router.push(`/admin/jlpt-tests/${result.id}/questions`);
         return;
       }
@@ -382,8 +386,11 @@ export default function CreateJLPTTestPage() {
         const structure = getStructureForTestType(level, testType);
 
         for (const section of structure) {
-          const sectionKey = section.sectionKeys[0] as SectionKey;
           for (const mondai of section.mondai) {
+            // Skip listening mondai — user will create those manually
+            if (mondai.requires_audio) continue;
+
+            const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
             const nums = getQuestionNumbers(mondai);
             const count = nums.length;
 
@@ -430,6 +437,11 @@ export default function CreateJLPTTestPage() {
             // Create children / standalone
             for (let i = 0; i < questions.length && i < nums.length; i++) {
               const q = questions[i];
+              const normalizedOptions = Array.isArray(q.options) ? q.options : [];
+              const normalizedCorrectOption =
+                typeof q.correctOption === "number" && q.correctOption >= 1
+                  ? q.correctOption
+                  : 1;
               const payload: CreateQuestionDTO = {
                 mondaiNumber: mondai.number,
                 mondaiTitle: mondai.title,
@@ -437,8 +449,8 @@ export default function CreateJLPTTestPage() {
                 questionOrder: nums[i],
                 section: sectionKey as any,
                 contentText: q.contentText,
-                options: JSON.stringify(q.options) as any,
-                correctOption: q.correctOption,
+                options: JSON.stringify(normalizedOptions) as any,
+                correctOption: normalizedCorrectOption,
                 explanation: q.explanation || undefined,
                 points: 1.0,
               };
@@ -447,13 +459,15 @@ export default function CreateJLPTTestPage() {
           }
         }
 
-        alert("Tạo đề thi + sinh sẵn câu hỏi bằng AI thành công! Vui lòng review trước khi chuyển sang trang câu hỏi. (Listening cần upload audio sau)");
+        toast.success("Tạo đề thi + sinh sẵn câu hỏi bằng AI thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
+        toast.warning("⚠️ Phần Nghe (Listening) chưa được tạo — vui lòng tạo thủ công trong trang câu hỏi.");
       } finally {
         setCreatingQuestions(false);
       }
     } catch (err) {
-      alert("Tạo đề thi thất bại!");
-      console.error(err);
+      toast.error("Tạo đề thi thất bại!");
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[JLPT create page] failed:", msg);
     }
   };
 
@@ -817,7 +831,10 @@ export default function CreateJLPTTestPage() {
                                           </span>
                                         </div>
                                         <div className="mt-1 text-[10px] line-clamp-2 text-muted-foreground">
-                                          {child.contentText}
+                                          {child.contentText
+                                            ? child.contentText
+                                            : <span className="text-red-500 font-medium">⚠ không có nội dung câu hỏi</span>
+                                          }
                                         </div>
                                       </button>
                                     );
@@ -954,9 +971,9 @@ export default function CreateJLPTTestPage() {
                                     : {}),
                                 },
                               }).unwrap();
-                              alert("Đã lưu câu hỏi!");
+                              toast.success("Đã lưu câu hỏi!");
                             } catch (err: any) {
-                              alert(err?.message || "Lưu thất bại");
+                              toast.error(err?.message || "Lưu thất bại");
                             }
                           }}
                           disabled={updateQuestionState.isLoading}
@@ -974,9 +991,9 @@ export default function CreateJLPTTestPage() {
                             try {
                               await deleteQuestion(selectedQuestion.id).unwrap();
                               setSelectedQuestionId(null);
-                              alert("Đã xóa câu hỏi!");
+                              toast.success("Đã xóa câu hỏi!");
                             } catch (err: any) {
-                              alert(err?.message || "Xóa thất bại");
+                              toast.error(err?.message || "Xóa thất bại");
                             }
                           }}
                           disabled={deleteQuestionState.isLoading}

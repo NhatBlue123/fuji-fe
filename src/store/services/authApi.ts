@@ -289,7 +289,16 @@ export const authApi = createApi({
           jlptLevel: userData.jlptLevel || "N5",
           active: userData.isActive ?? false,
           createdAt: userData.createdAt,
+          subscriptionTier: userData.subscriptionTier || "BASIC",
         };
+      },
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch({ type: "auth/updateUser", payload: data });
+        } catch (err) {
+          // do nothing on error
+        }
       },
       providesTags: ["User"],
     }),

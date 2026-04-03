@@ -13,22 +13,20 @@ export default function UserLayout({
   auth: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div suppressHydrationWarning className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
         
-        {/* Main content Area - Duy nhất vùng này được cuộn */}
+        {/* Main content Area*/}
         <main className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col">
           <MobieSidebar />
           
-          {/* Nội dung chính có Padding riêng */}
-          <div className="flex-1 px-4 md:px-8 lg:px-12">
+          <div className="flex-1">
             {children}
             {auth}
           </div>
-
-          {/* Footer nằm ở cuối luồng cuộn, trải dài 2 bên */}
+          
           <Footer />
         </main>
       </div>

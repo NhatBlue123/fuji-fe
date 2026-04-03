@@ -21,6 +21,7 @@ import {
   Moon,
   Layers,
   AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -41,7 +42,7 @@ import { ROUTE_PERMISSION_MAP } from "@/lib/permissions";
 
 interface NavItem {
   title: string;
-  href: string;
+  href?: string;
   icon: React.ElementType;
   badge?: string;
   /** If true, only ADMIN can see this item */
@@ -95,7 +96,6 @@ const navGroups: NavGroup[] = [
         title: "Người dùng",
         href: "/admin/users",
         icon: Users,
-        adminOnly: true,
       },
       {
         title: "Rút tiền",
@@ -107,6 +107,11 @@ const navGroups: NavGroup[] = [
         title: "Khóa học",
         href: "/admin/courses",
         icon: BookOpen,
+      },
+      {
+      title: "Lịch dạy",
+      href: "/admin/teacher-schedules",
+      icon: CalendarDays,
       },
       {
         title: "Flashcard",
@@ -128,6 +133,16 @@ const navGroups: NavGroup[] = [
   {
     label: "Hệ thống",
     items: [
+      {
+        title: "Báo cáo & Phản hồi",
+        href: "/admin/reports",
+        icon: AlertTriangle,
+      },
+      {
+        title: "Chat Moderation",
+        href: "/admin/chat-moderation",
+        icon: Shield,
+      },
       {
         title: "Thông báo",
         href: "/admin/notifications",
@@ -209,7 +224,7 @@ export function AdminSidebar() {
               const visibleItems = group.items.filter((item) => {
                 if (isAdmin) return true;
                 if (item.adminOnly) return false;
-                return canAccessRoute(item.href);
+                return item.href ? canAccessRoute(item.href) : false;
               });
               if (visibleItems.length === 0) return null;
               return (

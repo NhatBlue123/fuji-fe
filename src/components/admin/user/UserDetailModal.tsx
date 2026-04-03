@@ -150,6 +150,13 @@ interface UserDetailModalProps {
  * Bao gồm: Thông tin cá nhân, phân quyền truy cập, và nhật ký vi phạm/hoạt động
  */
 export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: UserDetailModalProps) {
+  type ChatBanInfo = {
+    userId: string;
+    banType: "TEMPORARY" | "PERMANENT";
+    banUntil?: string | null;
+    violationCount?: number;
+  } | null;
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -196,6 +203,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
   const [studentLogPage, setStudentLogPage] = useState(0);
   const [instructorLogPage, setInstructorLogPage] = useState(0);
   const [adminLogPage, setAdminLogPage] = useState(0);
+  const [chatBanInfo, setChatBanInfo] = useState<ChatBanInfo>(null);
+  const [isChatBanLoading, setIsChatBanLoading] = useState(false);
+  const [chatViolations, setChatViolations] = useState<any[]>([]);
   const PAGE_SIZE = 5;
 
   useEffect(() => {
@@ -257,6 +267,73 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchChatBan = async () => {
+      if (!user || !open) return;
+      setIsChatBanLoading(true);
+      try {
+        const res = await api.get(`/admin/bans/${user.id}`);
+        setChatBanInfo(res?.data?.data ?? null);
+      } catch {
+        setChatBanInfo(null);
+      } finally {
+        setIsChatBanLoading(false);
+      }
+    };
+    fetchChatBan();
+  }, [user, open]);
+
+  useEffect(() => {
+    const fetchChatViolations = async () => {
+      if (!user || !open) return;
+      try {
+        const res = await api.get(`/admin/violations/user/${user.id}`);
+        setChatViolations(res?.data?.data ?? []);
+      } catch {
+        setChatViolations([]);
+      }
+    };
+    fetchChatViolations();
+  }, [user, open]);
+
+  const handleSetChatBan = async (banType: "TEMPORARY" | "PERMANENT") => {
+    if (!user) return;
+    setIsChatBanLoading(true);
+    try {
+      const payload =
+        banType === "TEMPORARY"
+          ? { banType: "TEMPORARY", hours: 24 }
+          : { banType: "PERMANENT" };
+      const res = await api.post(`/admin/bans/${user.id}`, payload);
+      setChatBanInfo(res?.data?.data ?? null);
+      toast.success(
+        banType === "TEMPORARY"
+          ? "Đã cấm chat 24 giờ"
+          : "Đã cấm chat vĩnh viễn",
+      );
+      if (onUserUpdated) onUserUpdated();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể cập nhật cấm chat");
+    } finally {
+      setIsChatBanLoading(false);
+    }
+  };
+
+  const handleUnbanChat = async () => {
+    if (!user) return;
+    setIsChatBanLoading(true);
+    try {
+      await api.delete(`/admin/bans/${user.id}`);
+      setChatBanInfo(null);
+      toast.success("Đã gỡ cấm chat");
+      if (onUserUpdated) onUserUpdated();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể gỡ cấm chat");
+    } finally {
+      setIsChatBanLoading(false);
+    }
+  };
+
   const riskLevel = useMemo(() => {
     const violationsCount = user?.violationLogs?.length || 0;
 
@@ -266,26 +343,41 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
   }, [user?.violationLogs]);
 
   const filteredLogs = useMemo(() => {
-    if (!user?.violationLogs) return [];
+    const now = Date.now();
+    const hasActiveBan = Boolean(
+      chatBanInfo &&
+      (chatBanInfo.banType === "PERMANENT" ||
+        (chatBanInfo.banUntil && new Date(chatBanInfo.banUntil).getTime() > now)),
+    );
 
-    // First apply filters
-    const filtered = (user?.violationLogs || []).filter(log => {
+    const mapped = (chatViolations || []).map((v: any) => {
+      const severity =
+        v.violationType === "OTHER"
+          ? "HIGH"
+          : v.violationType === "VIETNAMESE" || v.violationType === "ENGLISH"
+            ? "MEDIUM"
+            : "LOW";
+      return {
+        id: Number(v.id),
+        createdAt: v.detectedAt,
+        description: v.messageContent || "Sử dụng ngôn từ không phù hợp",
+        type: v.violationType || "CHAT_VIOLATION",
+        severity,
+        isHandled: hasActiveBan,
+      };
+    });
+
+    return mapped.filter((log: any) => {
       const searchTerms = [
         log.description,
-        log.testId,
         log.type,
-        log.ipAddress,
-        log.browser,
-        log.device
-      ].filter(Boolean).map(s => s?.toLowerCase());
-      
+      ].filter(Boolean).map((s) => s?.toLowerCase());
       const matchesSearch = logSearch.trim() === "" || searchTerms.some(term => term?.includes(logSearch.toLowerCase()));
       const matchesSeverity = logSeverity === "all" || log.severity === logSeverity;
       const matchesStatus = logStatus === "all" || (logStatus === "HANDLED" ? log.isHandled : !log.isHandled);
       return matchesSearch && matchesSeverity && matchesStatus;
     });
 
-    // Then group identical logs occurring close in time (within same hour for same description)
     const grouped: any[] = [];
     filtered.forEach(log => {
       const last = grouped[grouped.length - 1];
@@ -294,7 +386,6 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
       if (last && last.description === log.description && last.testId === log.testId && (lastTime - logTime) < 3600000) {
         last.count = (last.count || 1) + 1;
-        // Keep the newest ID or some reference if needed
       } else {
         grouped.push({ ...log, count: 1 });
       }
@@ -342,6 +433,35 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
     return Object.entries(counts).map(([date, value]) => ({ date, value }));
   }, [user?.violationLogs, chartRange]);
+
+  const adminActivityLogs = useMemo(() => {
+    if (!user) return [];
+    const audit = (user.auditLogs || []).map((a: any) => ({
+      kind: "AUDIT" as const,
+      id: `audit-${a.id}`,
+      createdAt: a.createdAt,
+      action: a.action,
+      entityType: a.entityType,
+      entityId: a.entityId,
+      detail: a.newValues || a.oldValues || "",
+    }));
+
+    const chatViolations = (user.violationLogs || [])
+      .filter((v) => (v.type || "").startsWith("CHAT_"))
+      .map((v) => ({
+        kind: "CHAT" as const,
+        id: `chat-${v.id}`,
+        createdAt: v.createdAt,
+        action: v.type,
+        entityType: "CHAT",
+        entityId: v.id,
+        detail: v.description,
+      }));
+
+    return [...audit, ...chatViolations].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [user]);
 
   const handleRoleChange = (newRole: string) => {
     if (!user) return;
@@ -939,7 +1059,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                                 />
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Thời gian</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Mô tả</th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Hành động</th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">Mức độ</th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">Trạng thái</th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-right">Thao tác</th>
@@ -993,14 +1113,19 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                                   <td className="p-4 text-right align-middle">
                                     <div className="flex justify-end items-center">
                                       {log.isHandled ? (
-                                        <div className="h-8 w-[110px] flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full shadow-sm select-none">
+                                        <Button
+                                          onClick={handleUnbanChat}
+                                          disabled={isChatBanLoading}
+                                          className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
+                                        >
                                           <CheckCircle2 className="size-3" />
-                                          <span className="text-[9px] font-bold">Đã giải quyết</span>
-                                        </div>
+                                          Mở chat
+                                        </Button>
                                       ) : (
                                         <Button
-                                          onClick={() => setShowConfirmHandleLog({ id: log.id, description: log.description })}
-                                          className="h-8 w-[110px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
+                                          onClick={() => handleSetChatBan("TEMPORARY")}
+                                          disabled={isChatBanLoading}
+                                          className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
                                         >
                                           <CheckCircle2 className="size-3" />
                                           Xử lý ngay
@@ -1064,25 +1189,25 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="exam-access" className="text-sm font-medium text-foreground">Truy cập bài thi</Label>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between h-10">
+                            <Label htmlFor="exam-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập bài thi</Label>
                             <Switch
                               id="exam-access"
                               checked={formData.examAccess}
                               onCheckedChange={(checked) => setFormData({ ...formData, examAccess: checked })}
                             />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="content-access" className="text-sm font-medium text-foreground">Truy cập nội dung</Label>
+                          <div className="flex items-center justify-between h-10">
+                            <Label htmlFor="content-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập nội dung</Label>
                             <Switch
                               id="content-access"
                               checked={formData.contentAccess}
                               onCheckedChange={(checked) => setFormData({ ...formData, contentAccess: checked })}
                             />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="chat-access" className="text-sm font-medium text-foreground">Truy cập trò chuyện</Label>
+                          <div className="flex items-center justify-between h-10">
+                            <Label htmlFor="chat-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập trò chuyện</Label>
                             <Switch
                               id="chat-access"
                               checked={formData.chatAccess}
@@ -1112,6 +1237,66 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               className="h-10 border-border rounded-lg text-sm bg-background"
                             />
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-muted/10 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-bold text-foreground">
+                            Trạng thái cấm chat
+                          </div>
+                          {isChatBanLoading ? (
+                            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                          ) : chatBanInfo ? (
+                            <Badge
+                              variant="outline"
+                              className={
+                                chatBanInfo.banType === "PERMANENT"
+                                  ? "text-rose-600 border-rose-200 bg-rose-50"
+                                  : "text-amber-600 border-amber-200 bg-amber-50"
+                              }
+                            >
+                              {chatBanInfo.banType === "PERMANENT"
+                                ? "Đang cấm vĩnh viễn"
+                                : `Đang cấm đến ${chatBanInfo.banUntil ? format(new Date(chatBanInfo.banUntil), "HH:mm dd/MM/yyyy") : "-"}`}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
+                              Không bị cấm chat
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isChatBanLoading}
+                            onClick={() => handleSetChatBan("TEMPORARY")}
+                            className="text-[11px]"
+                          >
+                            Cấm chat 24h
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isChatBanLoading}
+                            onClick={() => handleSetChatBan("PERMANENT")}
+                            className="text-[11px]"
+                          >
+                            Cấm chat vĩnh viễn
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={isChatBanLoading}
+                            onClick={handleUnbanChat}
+                            className="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            Gỡ cấm chat
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -1390,6 +1575,79 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                       </div>
                     </CardContent>
                   </Card>
+
+                  <Card className="shadow-sm border-border rounded-xl bg-card overflow-hidden">
+                    <CardHeader className="px-6 py-4 border-b bg-muted/20 flex flex-row items-center justify-between">
+                      <CardTitle className="text-xs font-bold tracking-wider flex items-center gap-2 text-foreground">
+                        <Lock className="size-4 text-rose-500" />
+                        Quản lý cấm chat (giảng viên)
+                      </CardTitle>
+                      <Badge variant="outline" className="text-[9px] font-bold bg-rose-50 text-rose-600 border-none h-5">
+                        Kiểm duyệt chat
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="rounded-xl border border-border bg-muted/10 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-bold text-foreground">
+                            Trạng thái cấm chat
+                          </div>
+                          {isChatBanLoading ? (
+                            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                          ) : chatBanInfo ? (
+                            <Badge
+                              variant="outline"
+                              className={
+                                chatBanInfo.banType === "PERMANENT"
+                                  ? "text-rose-600 border-rose-200 bg-rose-50"
+                                  : "text-amber-600 border-amber-200 bg-amber-50"
+                              }
+                            >
+                              {chatBanInfo.banType === "PERMANENT"
+                                ? "Đang cấm vĩnh viễn"
+                                : `Đang cấm đến ${chatBanInfo.banUntil ? format(new Date(chatBanInfo.banUntil), "HH:mm dd/MM/yyyy") : "-"}`}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
+                              Không bị cấm chat
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isChatBanLoading}
+                            onClick={() => handleSetChatBan("TEMPORARY")}
+                            className="text-[11px]"
+                          >
+                            Cấm chat 24h
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isChatBanLoading}
+                            onClick={() => handleSetChatBan("PERMANENT")}
+                            className="text-[11px]"
+                          >
+                            Cấm chat vĩnh viễn
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={isChatBanLoading}
+                            onClick={handleUnbanChat}
+                            className="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            Gỡ cấm chat
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
 
@@ -1414,8 +1672,8 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {(user?.auditLogs || []).length > 0 ? (
-                          (user?.auditLogs || []).slice(adminLogPage * PAGE_SIZE, (adminLogPage + 1) * PAGE_SIZE).map((log: any) => (
+                        {adminActivityLogs.length > 0 ? (
+                          adminActivityLogs.slice(adminLogPage * PAGE_SIZE, (adminLogPage + 1) * PAGE_SIZE).map((log: any) => (
                             <tr key={log.id} className="hover:bg-muted/20 transition-all cursor-default group">
                               <td className="p-4 text-[11px] font-medium tabular-nums text-muted-foreground">
                                 {format(new Date(log.createdAt), 'HH:mm dd/MM/yyyy')}
@@ -1426,12 +1684,15 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                                 </Badge>
                               </td>
                               <td className="p-4 text-[11px] font-bold text-foreground/80">
-                                {log.entityType} <span className="text-muted-foreground font-medium">#{log.entityId}</span>
+                                {log.entityType || "-"}{" "}
+                                <span className="text-muted-foreground font-medium">
+                                  {log.entityId ? `#${log.entityId}` : ""}
+                                </span>
                               </td>
                               <td className="p-4 text-right">
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-all">
-                                  <Search className="size-3" />
-                                </Button>
+                                <div className="text-[10px] text-muted-foreground max-w-[240px] truncate ml-auto">
+                                  {log.detail || "-"}
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -1448,10 +1709,10 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                       </tbody>
                     </table>
                   </div>
-                  {Math.ceil((user?.auditLogs || []).length / PAGE_SIZE) > 1 && (
+                  {Math.ceil(adminActivityLogs.length / PAGE_SIZE) > 1 && (
                     <div className="p-4 border-t border-border flex justify-between items-center bg-muted/5">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-2 whitespace-nowrap">
-                        {(user?.auditLogs || []).length} kết quả
+                        {adminActivityLogs.length} kết quả
                       </span>
                       <Pagination>
                         <PaginationContent>
@@ -1463,13 +1724,13 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               className={adminLogPage === 0 ? "pointer-events-none opacity-50" : ""}
                             />
                           </PaginationItem>
-                          {renderPaginationItems(adminLogPage, Math.ceil((user?.auditLogs || []).length / PAGE_SIZE), setAdminLogPage)}
+                          {renderPaginationItems(adminLogPage, Math.ceil(adminActivityLogs.length / PAGE_SIZE), setAdminLogPage)}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
-                              onClick={(e) => { e.preventDefault(); setAdminLogPage(p => Math.min(Math.ceil((user?.auditLogs || []).length / PAGE_SIZE) - 1, p + 1)); }}
-                              aria-disabled={adminLogPage >= Math.ceil((user?.auditLogs || []).length / PAGE_SIZE) - 1}
-                              className={adminLogPage >= Math.ceil((user?.auditLogs || []).length / PAGE_SIZE) - 1 ? "pointer-events-none opacity-50" : ""}
+                              onClick={(e) => { e.preventDefault(); setAdminLogPage(p => Math.min(Math.ceil(adminActivityLogs.length / PAGE_SIZE) - 1, p + 1)); }}
+                              aria-disabled={adminLogPage >= Math.ceil(adminActivityLogs.length / PAGE_SIZE) - 1}
+                              className={adminLogPage >= Math.ceil(adminActivityLogs.length / PAGE_SIZE) - 1 ? "pointer-events-none opacity-50" : ""}
                             />
                           </PaginationItem>
                         </PaginationContent>

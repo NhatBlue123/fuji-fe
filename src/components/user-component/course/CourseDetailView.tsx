@@ -12,6 +12,7 @@ import {
 import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 // ─── Helpers ───────────────────────────────────────────
 
@@ -780,6 +781,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
   const [couponCode, setCouponCode] = useState("");
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
+  const { isPremium } = useFeatureAccess();
 
   const {
     data: course,
@@ -1027,9 +1029,25 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 </div>
 
                 {/* Buttons */}
-                <Button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
-                  {course.price === 0 ? "Đăng ký miễn phí" : "Mua ngay"}
-                </Button>
+                {!isPremium ? (
+                  <Button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
+                    {course.price === 0 ? "Đăng ký miễn phí" : "Mua ngay"}
+                  </Button>
+                ) : (
+                  <Link 
+                    href={lessons.length > 0 ? `/course/${courseId}/lesson/${[...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)[0].id}` : "#"} 
+                    className="block"
+                  >
+                    <Button 
+                      disabled={lessons.length === 0}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold transition-all shadow-lg shadow-purple-500/30 mb-3 text-base flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-xl">play_circle</span>
+                      {lessons.length > 0 ? "Vào học ngay" : "Chưa có bài học"}
+                    </Button>
+                  </Link>
+                )}
+                
                 <Button
                   variant="ghost"
                   className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm"

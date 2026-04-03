@@ -1,218 +1,330 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, Phone, Sparkles, ChevronLeft, Save, ShieldCheck } from "lucide-react";
+import {
+  User, Phone, Sparkles, ArrowLeft, Save,
+  Camera, GraduationCap, PenTool, ShieldCheck, Info
+} from "lucide-react";
 import { useUpdateProfileMutation } from "@/store/services/user/userApi";
+import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { Button } from "@/components/ui/button";
-import { Input as UIInput } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select as UISelect,
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 export default function EditProfilePage() {
   const router = useRouter();
   const [updateProfile] = useUpdateProfileMutation();
+  const { data: user, isLoading, isUninitialized } = useGetCurrentUserQuery();
 
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    fullName: "Dương Công Lượng",
-    phone: "0123456789",
+    fullName: "",
+    phone: "",
     gender: "MALE",
-    jlptLevel: "N5",
-    bio: "Đam mê học tiếng Nhật 🇯🇵",
+    jlptLevel: "",
+    bio: "",
   });
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        fullName: user.fullName || "",
+        phone: user.phone || "",
+        gender: user.gender || "MALE",
+        jlptLevel: user.jlptLevel || "",
+        bio: user.bio || "",
+      });
+      setAvatarPreview(user.avatarUrl || null);
+    }
+  }, [user]);
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const data = new FormData();
+      const profileData: any = {};
       Object.entries(form).forEach(([key, value]) => {
-        data.append(key, value);
+        if (value !== null && value !== undefined && value !== "") {
+          profileData[key] = value;
+        }
       });
 
+      const data = new FormData();
+      data.append("profile", new Blob([JSON.stringify(profileData)], { type: "application/json" }));
+      // Optional fallback if BE expects pure literal string (như ví dụ của bạn: JSON.stringify(profileData)) 
+      // Nhưng đối với Spring Boot @RequestPart("profile") UserDTO profile, thì Blob type application/json là chuẩn và an toàn nhất.
+
+      if (avatarFile) {
+        data.append("avatar", avatarFile);
+      }
+
       await updateProfile(data).unwrap();
-      router.push("/profile");
+      window.location.href = "/profile";
     } catch (err) {
       console.error(err);
-    } finally {
       setIsSaving(false);
     }
   };
 
-  if (!mounted) return null;
+  const getInitials = (name: string) => {
+    return name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "??";
+  };
+
+  if (!mounted || isLoading || isUninitialized) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0a0c10] text-slate-200 pb-20 selection:bg-pink-500/30">
-      {/* Background Decor */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 blur-[120px] rounded-full" />
-      </div>
+    <main className="flex-1 flex flex-col px-6 overflow-hidden relative selection:bg-pink-500/30">
+      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px]" />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-4 md:px-8 pt-12">
-        {/* Header & Back Button */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
-          <button 
-            onClick={() => router.back()}
-            className="group flex items-center gap-3 text-slate-500 hover:text-pink-400 transition-all font-bold"
-          >
-            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-pink-500/10 group-hover:border-pink-500/20 transition-all shadow-inner">
-              <ChevronLeft size={20} />
+      <div className="flex-1 overflow-y-auto p-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-6xl mx-auto space-y-6">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-muted/50 pb-8">
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-2"
+              >
+                <ArrowLeft size={14} /> Trở về
+              </button>
+              <h1 className="text-3xl font-black tracking-tight uppercase">
+                Chỉnh sửa <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">Hồ Sơ</span>
+              </h1>
+              <p className="text-muted-foreground text-sm font-medium">Cập nhật thông tin chi tiết của bạn.</p>
             </div>
-            <span className="tracking-widest uppercase text-[10px]">Quay lại</span>
-          </button>
+            <Badge variant="secondary" className="w-fit h-fit px-3 py-1.5 gap-2 border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest text-[9px]">
+              <ShieldCheck size={14} /> Đã xác thực bảo vệ
+            </Badge>
+          </div>
 
-          <div className="text-left md:text-right">
-            <h1 className="text-4xl font-black tracking-tighter text-white uppercase flex items-center md:justify-end gap-3">
-              Cấu hình <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-pink-200 to-white drop-shadow-sm font-black">Hồ sơ</span>
-            </h1>
-            <div className="flex items-center md:justify-end gap-2 mt-1">
-               <ShieldCheck size={14} className="text-pink-400" />
-               <p className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase">Thông tin cá nhân được bảo mật</p>
+          <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl transition-all duration-500 relative overflow-hidden">
+            {/* Glow Effects */}
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-cyan-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+            <form onSubmit={handleSubmit} className="relative z-10 lg:grid lg:grid-cols-12">
+              <CardHeader className="space-y-4 p-8 md:p-10 border-b dark:border-white/5 lg:col-span-4 lg:border-b-0 lg:border-r lg:dark:border-white/5">
+                <div className="flex flex-col items-center gap-4">
+                  <div
+                    className="relative group cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {/* Premium Avatar Container */}
+                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-500 shadow-2xl transition-all duration-500 group-hover:scale-105 active:scale-95 group-hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                      <div className="w-full h-full rounded-[1.4rem] bg-[#0B1120] overflow-hidden relative flex items-center justify-center border-4 border-[#0B1120]">
+                        {avatarPreview ? (
+                          <Image src={avatarPreview} alt="avatar" className="object-cover" fill sizes="160px" />
+                        ) : (
+                          <span className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-pink-400 to-cyan-400">
+                            {getInitials(form.fullName)}
+                          </span>
+                        )}
+
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-pink-500/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
+                          <div className="p-3 bg-black/50 rounded-2xl shadow-xl border border-white/10">
+                            <Camera size={28} className="text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#0B1120] border-2 border-white/10 shadow-[0_0_15px_rgba(236,72,153,0.5)] rounded-2xl flex items-center justify-center text-pink-500 transform transition-transform group-hover:rotate-12 group-hover:scale-110">
+                      <PenTool size={18} />
+                    </div>
+
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Ảnh đại diện</CardTitle>
+                    <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1 text-muted-foreground">Nhấp để cập nhật diện mạo</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-8 px-8 md:px-10 lg:col-span-8 lg:pt-10 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Full Name */}
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
+                      <User size={14} className="text-pink-500" />
+                      Họ và tên
+                    </label>
+                    <Input
+                      name="fullName"
+                      value={form.fullName}
+                      onChange={handleChange}
+                      placeholder="Nhập họ tên đầy đủ..."
+                      className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
+                      <Phone size={14} className="text-emerald-500" />
+                      Số điện thoại liên hệ
+                    </label>
+                    <Input
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="09xx..."
+                      className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner"
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
+                      <Sparkles size={14} className="text-cyan-500" />
+                      Giới tính
+                    </label>
+                    <Select
+                      value={form.gender}
+                      onValueChange={(v) => setForm({ ...form, gender: v })}
+                    >
+                      <SelectTrigger className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus:ring-pink-500/30 font-bold text-foreground dark:text-white shadow-inner">
+                        <SelectValue placeholder="Chọn giới tính" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background dark:bg-[#0f1218] border border-white/10 rounded-xl rounded-t-none border-t-0 p-1">
+                        <SelectItem value="MALE" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">Nam</SelectItem>
+                        <SelectItem value="FEMALE" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">Nữ</SelectItem>
+                        <SelectItem value="OTHER" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">Khác</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* JLPT */}
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
+                      <GraduationCap size={14} className="text-purple-500" />
+                      Trình độ cao nhất
+                    </label>
+                    <Select
+                      value={form.jlptLevel}
+                      onValueChange={(v) => setForm({ ...form, jlptLevel: v })}
+                    >
+                      <SelectTrigger className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus:ring-pink-500/30 font-bold text-foreground dark:text-white shadow-inner pl-4">
+                        <SelectValue placeholder="Chọn cấp độ JLPT phù hợp với bạn" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background dark:bg-[#0f1218] border border-white/10 rounded-xl rounded-t-none border-t-0 p-1">
+                        {["N1", "N2", "N3", "N4", "N5"].map((n) => (
+                          <SelectItem key={n} value={n} className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">
+                            Chứng chỉ {n}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Bio */}
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
+                      <PenTool size={14} className="text-amber-500" />
+                      Ghi chú riêng / Giới thiệu
+                    </label>
+                    <Textarea
+                      name="bio"
+                      value={form.bio}
+                      onChange={handleChange}
+                      placeholder="Khát vọng học tập hay đôi lời tản mạn..."
+                      className="resize-none min-h-[140px] p-4 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+
+              <CardFooter className="bg-muted/10 dark:bg-black/20 border-t dark:border-white/5 p-6 md:p-8 flex flex-col sm:flex-row gap-4 lg:col-span-8 lg:col-start-5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/profile")}
+                  className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-muted dark:border-white/10 dark:text-slate-400 dark:hover:text-white hover:bg-muted/50 dark:hover:bg-white/5"
+                >
+                  Hủy thay đổi
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-[2] h-14 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest text-[11px] shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Save size={20} />
+                  )}
+                  Lưu toàn bộ
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+
+          <div className="p-5 rounded-2xl border bg-cyan-500/5 dark:bg-[#0B1120]/60 flex items-start gap-4 border-cyan-500/20 dark:backdrop-blur-xl shadow-lg shadow-black/5 mt-4">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0 border border-cyan-500/20 shadow-inner">
+              <Info className="h-5 w-5 text-cyan-500" />
+            </div>
+            <div className="space-y-1 mt-0.5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400">Lưu ý bảo mật thông tin</p>
+              <p className="text-xs font-medium text-muted-foreground dark:text-slate-400 leading-relaxed max-w-2xl">
+                Tất cả dữ liệu hồ sơ của bạn được mã hóa an toàn ở DB 2 lớp. Một số thông tin như JLPT sẽ giúp hệ thống đề xuất bài thi thông minh hơn.
+              </p>
             </div>
           </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="bg-[#0B1120]/60 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden">
-            {/* Form Glow Effect */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full -mr-16 -mt-16 pointer-events-none" />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-              
-              {/* Full Name */}
-              <div className="md:col-span-2 group">
-                <CustomLabel label="Họ và tên đầy đủ" />
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 group-focus-within:text-pink-400 transition-colors" size={18} />
-                  <UIInput 
-                    name="fullName" 
-                    value={form.fullName} 
-                    onChange={handleChange}
-                    className="h-16 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500/50 transition-all text-white font-bold tracking-wide shadow-inner"
-                  />
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div className="group">
-                <CustomLabel label="Số điện thoại" />
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400" size={18} />
-                  <UIInput 
-                    name="phone" 
-                    value={form.phone} 
-                    onChange={handleChange}
-                    className="h-16 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500/50 text-white font-bold tracking-widest shadow-inner"
-                  />
-                </div>
-              </div>
-
-              {/* Gender Select */}
-              <div className="group">
-                <CustomLabel label="Giới tính" />
-                <UISelect 
-                  value={form.gender} 
-                  onValueChange={(v) => setForm({ ...form, gender: v })}
-                >
-                  <SelectTrigger className="h-16 bg-white/5 border border-white/10 rounded-2xl text-white font-bold px-6 focus:ring-4 focus:ring-pink-500/10 shadow-inner">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#0c0c14] border-white/10 text-white rounded-2xl">
-                    <SelectItem value="MALE" className="focus:bg-blue-500/20 focus:text-blue-400">Nam</SelectItem>
-                    <SelectItem value="FEMALE" className="focus:bg-pink-500/20 focus:text-pink-400">Nữ</SelectItem>
-                    <SelectItem value="OTHER" className="focus:bg-purple-500/20 focus:text-purple-400">Khác</SelectItem>
-                  </SelectContent>
-                </UISelect>
-              </div>
-
-              {/* JLPT Select */}
-              <div className="md:col-span-2 group">
-                <CustomLabel label="Trình độ tiếng Nhật (JLPT)" />
-                <UISelect 
-                  value={form.jlptLevel} 
-                  onValueChange={(v) => setForm({ ...form, jlptLevel: v })}
-                >
-                  <SelectTrigger className="h-16 bg-white/5 border border-white/10 rounded-2xl text-white font-bold px-6 focus:ring-4 focus:ring-pink-500/10 shadow-inner">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#0c0c14] border-white/10 text-white rounded-2xl grid grid-cols-5">
-                    {["N1", "N2", "N3", "N4", "N5"].map((n) => (
-                      <SelectItem key={n} value={n} className="focus:bg-pink-500/20 font-black">{n}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </UISelect>
-              </div>
-
-              {/* Bio */}
-              <div className="md:col-span-2 group">
-                <CustomLabel label="Tiểu sử bản thân" />
-                <Textarea 
-                  name="bio" 
-                  value={form.bio} 
-                  onChange={handleChange}
-                  placeholder="Kể về hành trình chinh phục tiếng Nhật của bạn..."
-                  className="min-h-[140px] bg-white/5 border border-white/10 rounded-[1.5rem] p-6 text-white focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500/50 transition-all font-medium leading-relaxed shadow-inner"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Button
-              type="button"
-              onClick={() => router.push("/profile")}
-              className="w-full sm:flex-1 h-16 rounded-[1.5rem] bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 font-bold transition-all uppercase tracking-widest text-[11px] shadow-inner"
-            >
-              Hủy thay đổi
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSaving}
-              className="relative group overflow-hidden w-full sm:flex-[2] h-16 rounded-[1.5rem] bg-gradient-to-br from-white/20 to-white/5 p-[1px] shadow-xl hover:shadow-pink-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/40 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative flex items-center justify-center gap-3 bg-[#0B1120]/80 backdrop-blur-xl group-hover:bg-white/10 text-white w-full h-full rounded-[1.5rem] transition-all duration-300">
-                {isSaving ? (
-                  <>
-                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                    <span className="uppercase tracking-widest text-xs font-black">Đang lưu...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save size={20} className="text-pink-400 group-hover:text-pink-200" /> 
-                    <span className="uppercase tracking-[0.2em] text-xs font-black">Lưu hồ sơ mới</span>
-                  </>
-                )}
-              </div>
-            </Button>
-          </div>
-        </form>
       </div>
-    </div>
-  );
-}
-
-function CustomLabel({ label }: { label: string }) {
-  return (
-    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3 ml-2 transition-colors group-focus-within:text-pink-400">
-      <Sparkles size={12} className="text-pink-500" /> {label}
-    </label>
+    </main>
   );
 }

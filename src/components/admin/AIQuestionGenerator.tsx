@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-export interface AIGeneratedQuestion {
+export interface AIGeneratedQuestion {      
   contentText: string;
   options: string[];
   correctOption: number;

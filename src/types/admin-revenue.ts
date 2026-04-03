@@ -26,28 +26,42 @@ export interface CourseStatistics {
   totalStudents: number;
 }
 
+export interface MonthlyRevenue {
+  year: number;
+  month: number;
+  bookingFeeRevenue: number;
+  withdrawalFeeRevenue: number;
+  courseRevenue: number;
+  totalRevenue: number;
+}
+
 export interface AdminRevenueStatsResponse {
   // Key monetary metrics
-  totalIncome: number;
-  monthlyIncome: number; // 30 days revenue
-  bookingIncome: number; // Total booking platform fees
-  courseIncome: number;  // Total course sales distributions
+  totalRevenue: number;
+  totalBookingFeeRevenue: number;
+  totalCourseRevenue: number;
+  totalWithdrawalFeeRevenue: number;
   
-  // Balance facts
-  withdrawn: number;
-  pendingWithdrawals: number;
-  currentBalance: number;
-  availableBalance: number;
+  totalPendingWithdrawalAmount: number;
+  totalCompletedWithdrawalAmount: number;
 
   // Chart data
-  monthlyIncomeBreakdown: RevenueChartData[];
-  
-  // Other stats
-  bookingStatistics: BookingStatistics;
-  courseStatistics: CourseStatistics;
+  monthlyRevenues: MonthlyRevenue[];
   
   // Recent transactions
-  recentTransactions: RecentTransaction[];
+  recentTransactions: AdminRevenueStatsResponse.RecentTransaction[];
+}
+
+// Nested namespace for RecentTransaction if needed or just use current
+export namespace AdminRevenueStatsResponse {
+    export interface RecentTransaction {
+        id: number;
+        type: string;
+        amount: number;
+        description: string;
+        referenceId: string;
+        createdAt: string;
+    }
 }
 
 // Just in case income is separated

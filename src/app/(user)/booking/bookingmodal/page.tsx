@@ -25,22 +25,13 @@ function formatTimeRange(startAt: string, endAt: string) {
 
 export default function MySchedulePage() {
   const { isTeacher, isInitialized } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Lấy role từ localStorage ngay khi mount để tránh delay
-  const getInitialTab = (): Tab => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("auth_state");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.user?.role === "INSTRUCTOR") return "MY_SLOTS";
-        }
-      } catch { /* ignore */ }
-    }
-    return "UPCOMING";
-  };
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-  const [tab, setTab] = useState<Tab>(getInitialTab);
+  const [tab, setTab] = useState<Tab>("UPCOMING");
 
   // Sync lại khi auth state thực sự đã init (phòng trường hợp localStorage stale)
   useEffect(() => {
@@ -95,7 +86,7 @@ export default function MySchedulePage() {
         {/* Tab Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-            {isTeacher && (
+            {isMounted && isTeacher && (
               <button
                 onClick={() => setTab("MY_SLOTS")}
                 className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -118,10 +109,10 @@ export default function MySchedulePage() {
             ))}
           </div>
 
-          <Link href={isTeacher ? "/booking/create-slot" : "/booking"}>
+          <Link href={isMounted && isTeacher ? "/admin/teacher-schedules/create-slot" : "/booking"}>
             <button className="flex items-center gap-2 px-4 py-2 bg-secondary/10 border border-secondary/30 rounded-xl text-sm font-bold text-secondary hover:bg-secondary/20 transition-all active:scale-95">
               <span className="material-symbols-outlined text-sm">add</span>
-              {isTeacher ? "Tạo lịch dạy" : "Đặt lịch mới"}
+              {isMounted && isTeacher ? "Tạo lịch dạy" : "Đặt lịch mới"}
             </button>
           </Link>
         </div>

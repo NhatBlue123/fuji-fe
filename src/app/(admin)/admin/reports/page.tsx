@@ -146,8 +146,7 @@ export default function AdminReportsPage() {
     if (tab === "other") return "OTHER";
     return undefined;
   }, [tab]);
-  const systemSubjectType =
-    tab === "jlpt_feedback" ? "JLPT_TEST_FEEDBACK" : undefined;
+  const systemSubjectType = undefined;
 
   const shouldLoadSystem = tab !== "jlpt";
   const shouldLoadJlpt = tab === "jlpt";
@@ -515,7 +514,7 @@ export default function AdminReportsPage() {
           }
         }}
       >
-        <SheetContent side="right" className="w-full sm:max-w-xl">
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Chi tiết báo cáo</SheetTitle>
           </SheetHeader>

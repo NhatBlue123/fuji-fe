@@ -160,4 +160,6 @@ export const {
   useGetMyTimeSlotsQuery,
   useCancelBookingMutation,
   useGetMyTeacherScheduleQuery,
+  useGetVideoSessionMutation,
+  useSubmitSessionReviewMutation,
 } = bookingApi;

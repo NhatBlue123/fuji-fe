@@ -128,11 +128,23 @@ export type CreateBulkBookingResponse = {
 
 export type BookingStatusTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
+export type MyTimeSlotItem = {
+  id: number;
+  subject: string;
+  startAt: string;
+  endAt: string;
+  price: number;
+  status: string; // AVAILABLE, BOOKED
+};
+
 export type MyBookingItem = {
   bookingId: number;
   status: string;
   teacherName: string;
   teacherAvatarUrl: string | null;
+  studentName: string | null;
+  studentAvatarUrl: string | null;
+  role: "STUDENT" | "TEACHER";
   subject: string;
   startAt: string;
   endAt: string;

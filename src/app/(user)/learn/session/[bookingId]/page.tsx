@@ -50,24 +50,46 @@ export default function TeacherSessionPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const joinedRef = useRef(false);
   const cameraStartedRef = useRef(false);
+  const offerSentRef = useRef(false);
+  const roomDataRef = useRef<BookingRoomJoined | null>(null);
+  const isInitiatorRef = useRef(false);
+  const mediaReadyRef = useRef(false);
 
   const myName = authUser?.fullName || authUser?.username || "Toi";
   const myUserId = String(authUser?.id ?? "guest");
 
-  // Join booking room on mount
+  useEffect(() => { roomDataRef.current = roomData; }, [roomData]);
+
+  // Join booking room once socket is connected
   useEffect(() => {
     if (joinedRef.current || !bookingId) return;
-    joinedRef.current = true;
-    booking.joinBookingRoom(bookingId, myName);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingId]);
+    const sock = booking.socket;
+    if (!sock) return;
 
-  // Listen for booking room events
+    const doJoin = () => {
+      if (joinedRef.current) return;
+      joinedRef.current = true;
+      booking.joinBookingRoom(bookingId, myName);
+    };
+
+    if (sock.connected) {
+      doJoin();
+    } else {
+      sock.once("connect", doJoin);
+      return () => { sock.off("connect", doJoin); };
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId, booking.socket?.connected]);
+
+  // All signaling event handlers — registered once on mount, use refs for latest state
   useEffect(() => {
+    // ── Booking room events ──
     booking.on<BookingRoomJoined>("booking-room-joined", (data) => {
       setRoomData(data);
+      roomDataRef.current = data;
+      isInitiatorRef.current = data.isInitiator;
       setRemainingSeconds(data.remainingSeconds);
-      if (data.peerOnline && data.isInitiator) {
+      if (data.peerOnline && data.isInitiator && mediaReadyRef.current) {
         startCallAsInitiator(data.roomId);
       }
     });
@@ -75,6 +97,10 @@ export default function TeacherSessionPage() {
     booking.on<BookingRoomJoined>("booking-peer-joined", (data) => {
       setRoomData((prev) => prev ? { ...prev, peerOnline: true } : data);
       toast.success(`${data.peerName} da vao phong`);
+      if (isInitiatorRef.current && mediaReadyRef.current) {
+        const rd = roomDataRef.current;
+        if (rd) startCallAsInitiator(rd.roomId);
+      }
     });
 
     booking.on<BookingRoomExpired>("booking-room-expired", () => {
@@ -97,21 +123,12 @@ export default function TeacherSessionPage() {
       handleLeave();
     });
 
-    return () => {
-      ["booking-room-joined", "booking-peer-joined", "booking-room-expired",
-       "booking-session-ended", "booking-error", "peer-left"].forEach(booking.off);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Signaling: offer/answer/ice
-  useEffect(() => {
-    if (!roomData) return;
-
+    // ── WebRTC signaling events ──
     booking.on<{ sdp: string }>("offer", async (payload) => {
       try {
         const answer = await webrtc.createAnswer(JSON.parse(payload.sdp));
-        booking.sendAnswer(roomData.roomId, JSON.stringify(answer));
+        const rd = roomDataRef.current;
+        if (rd) booking.sendAnswer(rd.roomId, JSON.stringify(answer));
       } catch (e) { console.error("[WebRTC] createAnswer failed:", e); }
     });
 
@@ -138,43 +155,60 @@ export default function TeacherSessionPage() {
     );
 
     booking.on("peer-reconnected", async () => {
-      const offer = await webrtc.createOffer();
-      booking.sendOffer(roomData.roomId, JSON.stringify(offer));
+      offerSentRef.current = false;
+      const rd = roomDataRef.current;
+      if (rd) {
+        const offer = await webrtc.createOffer();
+        booking.sendOffer(rd.roomId, JSON.stringify(offer));
+      }
     });
 
     return () => {
-      ["offer", "answer", "ice-candidate", "receive-message", "peer-reconnected"].forEach(booking.off);
+      ["booking-room-joined", "booking-peer-joined", "booking-room-expired",
+       "booking-session-ended", "booking-error", "peer-left",
+       "offer", "answer", "ice-candidate", "receive-message", "peer-reconnected"].forEach(booking.off);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomData?.roomId]);
+  }, []);
 
   // Start camera + WebRTC
   useEffect(() => {
     if (cameraStartedRef.current) return;
     cameraStartedRef.current = true;
 
+    webrtc.onConnectionStateChange((state) => {
+      setIsConnected(state === "connected");
+      const rd = roomDataRef.current;
+      if (rd) {
+        reconnect.handleConnectionStateChange(state, rd.roomId, myUserId);
+      }
+    });
+    webrtc.onIceCandidate((candidate) => {
+      const rd = roomDataRef.current;
+      if (rd) booking.sendIceCandidate(rd.roomId, candidate);
+    });
+
     (async () => {
-      try {
-        await webrtc.startLocalStream();
-        webrtc.onConnectionStateChange((state) => {
-          setIsConnected(state === "connected");
-          if (roomData) {
-            reconnect.handleConnectionStateChange(state, roomData.roomId, myUserId);
-          }
-        });
-        webrtc.onIceCandidate((candidate) => {
-          if (roomData) booking.sendIceCandidate(roomData.roomId, candidate);
-        });
-      } catch (err) { console.error("[WebRTC] Fatal:", err); }
+      await webrtc.startLocalStream();
+      mediaReadyRef.current = true;
+      const rd = roomDataRef.current;
+      if (rd && isInitiatorRef.current && rd.peerOnline) {
+        startCallAsInitiator(rd.roomId);
+      }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const startCallAsInitiator = useCallback(async (roomId: string) => {
+    if (offerSentRef.current) return;
+    offerSentRef.current = true;
     try {
       const offer = await webrtc.createOffer();
       booking.sendOffer(roomId, JSON.stringify(offer));
-    } catch (e) { console.error("[WebRTC] createOffer failed:", e); }
+    } catch (e) {
+      offerSentRef.current = false;
+      console.error("[WebRTC] createOffer failed:", e);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -10,6 +10,7 @@ import type {
   CreateBulkBookingResponse,
   DiscoveryResponse,
   MyBookingItem,
+  MyTimeSlotItem,
   TeacherAvailabilityResponse,
   VideoSessionResponse,
 } from "@/types/booking";
@@ -108,6 +109,12 @@ export const bookingApi = baseApi.injectEndpoints({
       ],
     }),
 
+    getMyTimeSlots: builder.query<MyTimeSlotItem[], void>({
+      query: () => `/time-slots/me`,
+      transformResponse: (res: ApiEnvelope<MyTimeSlotItem[]>) => res.data,
+      providesTags: [{ type: "Booking", id: "MY_SLOTS" }],
+    }),
+
     getVideoSession: builder.mutation<VideoSessionResponse, { bookingId: number }>({
       query: ({ bookingId }) => ({
         url: `/bookings/${bookingId}/video-session`,
@@ -139,6 +146,7 @@ export const {
   useCreateBookingMutation,
   useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
+  useGetMyTimeSlotsQuery,
   useCancelBookingMutation,
   useGetVideoSessionMutation,
   useSubmitSessionReviewMutation,

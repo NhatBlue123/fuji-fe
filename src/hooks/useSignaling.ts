@@ -46,7 +46,8 @@ if (typeof window !== "undefined") {
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
     timeout: 8000,
-    autoConnect: false, // connect when first hook mounts
+    autoConnect: false,
+    query: {},
   });
 
   globalSocket.on("connect", () => {
@@ -69,16 +70,30 @@ if (typeof window !== "undefined") {
   });
 }
 
+function getUserIdFromStorage(): string | null {
+  try {
+    const saved = localStorage.getItem("auth_state");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed?.user?.id ? String(parsed.user.id) : null;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 export function useSignaling(): SignalingHook {
   useEffect(() => {
     activeCount++;
     if (globalSocket && !globalSocket.connected) {
+      const userId = getUserIdFromStorage();
+      if (userId) {
+        (globalSocket.io.opts.query as Record<string, string>).userId = userId;
+      }
       globalSocket.connect();
     }
 
     return () => {
       activeCount--;
-      // Delay disconnect to survive page transitions (e.g. match -> room)
       setTimeout(() => {
         if (activeCount === 0 && globalSocket?.connected) {
           globalSocket.disconnect();

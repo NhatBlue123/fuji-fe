@@ -4,7 +4,7 @@ import { getAccessToken } from "@/lib/token";
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8181/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8181/api",
     credentials: "include",
     prepareHeaders: (headers) => {
       const token = getAccessToken();
@@ -21,6 +21,6 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Wallet", "Payment", "AdminUser", "MyPermissions", "Withdraw", "VoiceTopic"],
+  tagTypes: ["Wallet", "Payment", "AdminUser", "MyPermissions", "Withdraw", "VoiceTopic", "Booking"],
   endpoints: () => ({}),
 });

@@ -36,9 +36,9 @@
 
 .radialBg {
   background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in srgb, var(--color-secondary) 8%, transparent) 0%,
-    transparent 70%
+    ellipse 80% 50% at 50% 0%,
+    color-mix(in srgb, var(--color-primary) 5%, transparent) 0%,
+    transparent 65%
   );
 }
 
@@ -51,14 +51,11 @@
     color-mix(in srgb, var(--color-secondary) 30%, transparent);
 }
 
+/* Subtle focus rings — avoid heavy glow that clashes with dark UI */
 .shadowGlowRed {
-  box-shadow:
-    0 0 15px rgba(239, 68, 68, 0.1),
-    0 0 20px rgba(239, 68, 68, 0.3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(244 63 94) 35%, transparent);
 }
 
 .shadowGlowGreen {
-  box-shadow:
-    0 0 15px rgba(34, 197, 94, 0.1),
-    0 0 20px rgba(34, 197, 94, 0.3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(34 197 94) 35%, transparent);
 }

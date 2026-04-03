@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useCreatePayoutMutation, useGetPayoutStatusQuery } from "@/store/services/withdrawApi";
+import { usePaymentSocket } from "@/providers/PaymentSocketProvider";
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -37,16 +38,35 @@ export function TransferModal({
   request,
 }: TransferModalProps) {
   const [payoutOrderId, setPayoutOrderId] = useState<string | null>(null);
+  const [socketHandled, setSocketHandled] = useState(false);
 
   const [createPayout, { isLoading: isCreatingPayout }] = useCreatePayoutMutation();
   const { data: payoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
-    skip: !payoutOrderId,
-    pollingInterval: 3000,
+    skip: !payoutOrderId || socketHandled,
+    pollingInterval: 10000, // Fallback 10s, socket handles realtime
   });
 
+  // ── Socket.IO realtime: payout-success ─────────────────────
+  const { onPayoutSuccess } = usePaymentSocket();
+
   useEffect(() => {
+    const unsub = onPayoutSuccess((data) => {
+      // Match by withdrawRequestId với request hiện tại
+      if (request && data.withdrawRequestId === request.id) {
+        setSocketHandled(true);
+        setPayoutOrderId(null);
+        toast.success(data.message || "Chuyển tiền tự động thành công!");
+        onSuccess();
+      }
+    });
+    return () => unsub();
+  }, [request, onPayoutSuccess, onSuccess]);
+
+  // Polling fallback
+  useEffect(() => {
+    if (socketHandled) return;
     if (payoutStatus?.data?.status === "SUCCESS" || payoutStatus?.data?.status === "COMPLETED") {
-      toast.success("Chuyển tiền tự động kết thúc hoặc thành công!");
+      toast.success("Chuyển tiền tự động thành công!");
       setPayoutOrderId(null);
       onSuccess();
     } else if (payoutStatus?.data?.status === "FAILED") {
@@ -54,7 +74,7 @@ export function TransferModal({
       setPayoutOrderId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payoutStatus]);
+  }, [payoutStatus, socketHandled]);
 
   const handleAutoPayout = async () => {
     try {
@@ -73,6 +93,7 @@ export function TransferModal({
 
   const resetStateAndClose = () => {
     setPayoutOrderId(null);
+    setSocketHandled(false);
     onClose();
   };
 

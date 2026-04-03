@@ -1,4 +1,4 @@
-export type ReportCategory = "JLPT_QUESTION" | "PAYMENT" | "COURSE" | "OTHER";
+export type ReportCategory = "JLPT_QUESTION" | "PAYMENT" | "COURSE" | "NOTIFICATION" | "OTHER";
 
 export type SystemReportStatus =
   | "OPEN"
@@ -20,6 +20,7 @@ export interface SystemReport {
   createdByUserId?: number | null;
   createdByName?: string | null;
   adminNote?: string | null;
+  attachmentUrls?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +33,7 @@ export interface CreateSystemReportPayload {
   subjectType?: string;
   subjectId?: string;
   createdByUserId?: number;
+  attachmentUrls?: string;
 }
 
 export interface UpdateSystemReportPayload {

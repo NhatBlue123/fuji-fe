@@ -14,6 +14,7 @@ export interface User {
   gender: string;
   role?: string; // STUDENT, INSTRUCTOR, ADMIN
   level: "N5" | "N4" | "N3" | "N2" | "N1";
+  subscriptionTier?: "BASIC" | "PRO" | "PREMIUM";
   isActive: boolean;
   isAdmin: boolean;
   isOnline: boolean;

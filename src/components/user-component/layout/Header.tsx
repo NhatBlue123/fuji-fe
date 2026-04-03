@@ -29,13 +29,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { vi, enUS, ja } from "date-fns/locale";
+import { vi } from "date-fns/locale";
 
-/**
- * Header Component - Tinh chỉnh cuối:
- * - Khắc phục lỗi mất Header khi chưa settle Auth.
- * - Khớp kích thước icon đồng bộ và lề nội bộ.
- */
 const Header = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -43,15 +38,12 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
   const { unreadCount, notifications, markAsRead } = useNotifications();
+
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  useEffect(() => setMounted(true), []);
   // Avoid SSR/client auth mismatch hydration issues.
   const canShowAuthUi = mounted && isAuthenticated;
-
+  
   const getRoleLabel = () => {
     if (!roles) return "HỌC VIÊN";
     if (roles.includes("ADMIN") || roles.includes("ROLE_ADMIN")) return "QUẢN TRỊ VIÊN";
@@ -137,20 +129,33 @@ const Header = () => {
                           if (n.linkUrl) router.push(n.linkUrl);
                         }}
                         className={cn(
-                          "flex flex-col gap-1 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
-                          !n.isRead && "bg-secondary/[0.04]"
+                          "flex items-start gap-3 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
+                          !n.isRead
+                            ? "bg-secondary/[0.06] dark:bg-secondary/[0.08] border-l-[3px] border-l-secondary"
+                            : "opacity-60 border-l-[3px] border-l-transparent"
                         )}
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className={cn(
-                            "text-[13px] font-bold truncate font-sans",
-                            !n.isRead ? "text-secondary" : "text-foreground/80"
-                          )}>{n.title}</span>
-                          {!n.isRead && <div className="size-2 rounded-full bg-secondary" />}
+                        <div className={cn(
+                          "size-2.5 rounded-full mt-2 flex-shrink-0 transition-all",
+                          !n.isRead ? "bg-secondary shadow-[0_0_6px_rgba(var(--secondary-rgb,59,130,246),0.4)]" : "bg-muted-foreground/15"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={cn(
+                              "text-[13px] font-bold truncate font-sans",
+                              !n.isRead ? "text-secondary" : "text-foreground/60"
+                            )}>{n.title}</span>
+                          </div>
+                          <p className={cn(
+                            "line-clamp-2 text-xs leading-relaxed font-sans",
+                            !n.isRead ? "text-muted-foreground" : "text-muted-foreground/60"
+                          )}>
+                            {n.content}
+                          </p>
+                          <span className="text-[9px] text-muted-foreground/40 font-bold mt-1 block">
+                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: vi })}
+                          </span>
                         </div>
-                        <p className="line-clamp-2 text-xs text-muted-foreground/80 leading-relaxed font-sans">
-                          {n.content}
-                        </p>
                       </button>
                     ))}
                   </div>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
 import { bookingApi } from "@/store/services/bookingApi";
 import { BulkResponse, Mode, TimeRange, Weekday } from "./types";
@@ -28,7 +28,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function CreateTimeSlotForm() {
   const router = useRouter();
-  const dispatch = useDispatch();
   const [mode, setMode] = useState<Mode>("bulk");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -46,6 +45,10 @@ export default function CreateTimeSlotForm() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const handleGoBack = () => {
+  router.push("/admin/teacher-schedules/teaching-schedule");
+};
+
 
   const blossom = useMemo(() => toBlossom(price), [price]);
 
@@ -152,7 +155,6 @@ export default function CreateTimeSlotForm() {
         description,
       });
 
-      dispatch(bookingApi.util.invalidateTags([{ type: "Booking", id: "MY_SLOTS" }]));
       setTimeout(() => setNotice(null), 4000);
     } catch (e: any) {
       const message = e?.response?.data?.message || "Tạo lịch thất bại.";
@@ -211,7 +213,18 @@ export default function CreateTimeSlotForm() {
         
         <section className="xl:col-span-2 glass-card rounded-none xl:rounded-2xl border border-border border-l-0 border-t-0 xl:border-l xl:border-t p-6 md:p-8">
 
-          <h1 className="text-3xl font-black tracking-tight">Tạo lịch giảng dạy</h1>
+          <div className="flex flex-col items-start gap-4">
+              <button
+                type="button"
+                onClick={handleGoBack}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent hover:text-accent-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Quay lại
+              </button>
+              <h1 className="text-3xl font-black tracking-tight">Tạo lịch giảng dạy</h1>
+          </div>
+
 
           <div className="mt-6 inline-flex rounded-xl p-1 bg-card border border-border">
             <button

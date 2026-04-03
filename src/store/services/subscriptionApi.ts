@@ -5,7 +5,31 @@ export const subscriptionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getPlans: builder.query<SubscriptionPlan[], void>({
       query: () => "/subscription/plans",
-      transformResponse: (res: any) => res?.data || res,
+      transformResponse: (res: any) => {
+        const rawPlans = res?.data || res;
+        if (Array.isArray(rawPlans)) {
+          return rawPlans.map(plan => {
+            let features = [];
+            if (Array.isArray(plan.features)) {
+              features = plan.features;
+            } else if (typeof plan.features === "string") {
+              try {
+                features = JSON.parse(plan.features);
+              } catch (e) {
+                features = [plan.features];
+              }
+            }
+            features = features.map((f: any) => {
+              if (f !== null && typeof f === 'object') {
+                return f.description || f.featureCode || f.name || JSON.stringify(f);
+              }
+              return String(f);
+            });
+            return { ...plan, features };
+          });
+        }
+        return rawPlans;
+      },
       providesTags: ["Subscription"],
     }),
     subscribe: builder.mutation<string, { tier: string }>({

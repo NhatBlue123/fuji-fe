@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { 
   Plus, Wallet, ArrowUpRight, ArrowDownLeft, 
   Search, ChevronLeft, ChevronRight, ArrowLeft,
-  TrendingUp, History, Download, Info, CreditCard, MoreHorizontal
+  TrendingUp, History, Info, CreditCard,
+  ArrowDownRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -33,12 +34,6 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export default function FujiWallet() {
   const router = useRouter();
@@ -75,35 +70,15 @@ export default function FujiWallet() {
           >
             <ArrowLeft size={14} /> Quay lại
           </button>
-          {/* Badge - Chuyển sang tone hồng mờ */}
-          <Badge variant="secondary" className="px-3 py-1 gap-2 border-pink-500/20 bg-pink-500/5 text-pink-500 dark:text-pink-400 mb-2">
-            <CreditCard size={12} /> Tài khoản thanh toán
-          </Badge>
+         
+          
           <h1 className="text-4xl font-black tracking-tight uppercase">
             Ví <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">Fuji</span>
           </h1>
           <p className="text-muted-foreground">Quản lý số dư và lịch sử giao dịch của bạn.</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          {/* Nạp Tiền Button - Chủ đạo Hồng */}
-          <Button 
-            onClick={() => router.push("/premium?tab=topup")}
-            size="lg"
-            className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 bg-pink-400 hover:bg-pink-600 dark:bg-pink-600 dark:hover:bg-pink-500 text-white transition-all active:scale-95"
-          >
-            <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp Tiền
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => router.push('/withdraw')}
-            size="lg"
-            className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-xs border-muted-foreground/20 hover:bg-pink-400"
-          >
-            <ArrowUpRight className="mr-2" size={18} strokeWidth={3} /> Rút Tiền
-          </Button>
-        </div>
+
       </header>
 
       <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
@@ -115,30 +90,30 @@ export default function FujiWallet() {
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
           
-          <CardHeader className="relative z-10 pt-10 px-10">
-            <div className="flex items-center gap-3 text-white/60">
+          <CardHeader className="relative z-10 pt-6 px-10">
+            <div className="flex items-center gap-2 text-white/60">
               <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-inner">
-                <Wallet size={20} className="text-pink-400" />
+                <Wallet size={18} className="text-pink-400" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">Tổng số dư khả dụng</span>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger><Info size={14} className="opacity-40 hover:opacity-100 text-pink-400" /></TooltipTrigger>
+                  <TooltipTrigger><Info size={12} className="opacity-40 hover:opacity-100 text-pink-400" /></TooltipTrigger>
                   <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">Số dư dùng để thanh toán dịch vụ Fuji</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
           </CardHeader>
           
-          <CardContent className="relative z-10 px-10 pb-12 pt-4">
+          <CardContent className="relative z-10 px-10 pb-6 pt-4">
             <div className="flex items-baseline gap-4">
-              <span className="text-3xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <span className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                 {balance.toLocaleString()}
               </span>
               <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">đ</span>
             </div>
             
-            <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8">
+            <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8 justify-between">
               <div className="flex items-center gap-4 group cursor-help">
                 {/* Gradient Hoa anh đào đổi sang Pink-Purple */}
                 <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-purple-500 flex items-center justify-center font-black text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-500">
@@ -150,22 +125,23 @@ export default function FujiWallet() {
                 </div>
               </div>
               
-              <div className="ml-auto flex gap-3">
-                <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 transition-colors shadow-inner">
-                  <Download size={20} />
+              {/* Action Buttons */}
+              <div className="flex items-center gap-4 flex-1 md:flex-none md:w-auto">
+                <Button 
+                  onClick={() => router.push("/premium?tab=topup")}
+                  size="lg"
+                  className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
+                >
+                  <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp Tiền
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 transition-colors shadow-inner">
-                      <MoreHorizontal size={20} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#0f1218] border border-pink-500/20 text-slate-200 rounded-xl backdrop-blur-xl min-w-[180px]">
-                    <DropdownMenuItem className="hover:bg-pink-500/10 hover:text-pink-300 focus:bg-pink-500/10 focus:text-pink-300 cursor-pointer text-xs font-semibold py-2.5">Lấy mã QR thanh toán</DropdownMenuItem>
-                    <DropdownMenuItem className="hover:bg-pink-500/10 hover:text-pink-300 focus:bg-pink-500/10 focus:text-pink-300 cursor-pointer text-xs font-semibold py-2.5">Cài đặt thông báo</DropdownMenuItem>
-                    <DropdownMenuItem className="hover:bg-rose-500/10 hover:text-rose-400 focus:bg-rose-500/10 focus:text-rose-400 text-rose-400 cursor-pointer text-xs font-semibold py-2.5">Báo cáo sự cố</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                
+                <Button 
+                  onClick={() => router.push('/withdraw')}
+                  size="lg"
+                  className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
+                >
+                  <ArrowUpRight className="mr-2" size={18} strokeWidth={3} /> Rút Tiền
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -181,7 +157,7 @@ export default function FujiWallet() {
               <CardTitle className="text-5xl font-black text-pink-500 dark:text-pink-400 drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">{historyData?.totalElements || 0}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2 text-pink-500 dark:text-pink-400 font-bold text-[10px] uppercase tracking-wider bg-pink-500/10 border border-pink-500/20 inline-flex px-3 py-1.5 rounded-full shadow-inner animate-pulse">
+              <div className="flex items-center gap-2 text-pink-500 dark:text-pink-400 font-bold text-[10px] uppercase tracking-wider bg-pink-500/10 border border-pink-500/20 px-3 py-1.5 rounded-full shadow-inner animate-pulse">
                 <ArrowUpRight size={14} /> +12.5% vs tháng trước
               </div>
             </CardContent>
@@ -264,7 +240,7 @@ export default function FujiWallet() {
                         ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" 
                         : "bg-pink-50 text-pink-500 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20"
                       }`}>
-                        {tx.type === "DEPOSIT" || tx.amount > 0 ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                        {tx.type === "DEPOSIT" || tx.amount > 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-mono text-xs font-bold uppercase tracking-tighter text-foreground dark:text-slate-200">
@@ -281,7 +257,7 @@ export default function FujiWallet() {
                   </TableCell>
                   {/* Số tiền - Nạp màu Emerald, chi tiêu màu Trắng/Slate mặc định */}
                   <TableCell className={`px-8 py-6 text-right font-black text-xl tracking-tighter ${tx.type === "DEPOSIT" || tx.amount > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"}`}>
-                    {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : "-"}{tx.amount.toLocaleString()} 
+                    {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString()} 
                     <span className="text-[10px] ml-1 opacity-40">đ</span>
                   </TableCell>
                   <TableCell className="px-8 py-6 font-semibold text-xs text-muted-foreground dark:text-slate-400 tracking-tight">

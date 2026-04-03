@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -23,6 +23,9 @@ import type {
   FuriganaData,
 } from "@/types/voice";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { useAuth } from "@/store/hooks";
 import PaywallPopup from "@/components/common/PaywallPopup";
 
 /* ------------------------------------------------------------------ */

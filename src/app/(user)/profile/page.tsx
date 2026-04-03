@@ -69,7 +69,7 @@ export default function ProfilePage() {
         <div className="absolute inset-0 z-0">
           <div className="absolute top-[5%] right-[15%] w-[400px] h-[400px] bg-pink-500/10 dark:bg-pink-500/10 blur-[120px] rounded-full animate-pulse opacity-70" />
           <div className="absolute bottom-[10%] left-[10%] w-[500px] h-[500px] bg-cyan-500/10 dark:bg-cyan-500/10 blur-[120px] rounded-full opacity-60" />
-          <div className="w-full h-full bg-cover bg-bottom opacity-20 dark:opacity-30 mix-blend-overlay" style={{ backgroundImage: "url('https://img6.thuthuatphanmem.vn/uploads/2022/04/19/mau-background-ho-so-steam_083251986.jpg')" }}></div>
+          <div className="w-full h-full bg-cover bg-bottom opacity-20 dark:opacity-30 mix-blend-overlay" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c')" }}></div>
         </div>
 
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
@@ -120,11 +120,11 @@ export default function ProfilePage() {
                   </h1>
                   <Link href="/profile/subscription">
                     {displayTier === 'PREMIUM' ? (
-                      <Badge className="bg-gradient-to-r from-pink-500 to-purple-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(236,72,153,0.5)] hover:shadow-[0_0_25px_rgba(236,72,153,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
+                      <Badge className="bg-gradient-to-r from-pink-500 to-pink-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(236,72,153,0.5)] hover:shadow-[0_0_25px_rgba(236,72,153,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
                         Premium
                       </Badge>
                     ) : displayTier === 'PRO' ? (
-                      <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:shadow-[0_0_25px_rgba(6,182,212,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
+                      <Badge className="bg-gradient-to-r from-cyan-500 to-pink-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:shadow-[0_0_25px_rgba(6,182,212,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
                         Pro
                       </Badge>
                     ) : (
@@ -142,8 +142,8 @@ export default function ProfilePage() {
               </p>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
-                <Button asChild className="rounded-2xl h-11 px-6 bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-pink-500/20 transition-all">
-                  <Link href="/profile/edit">
+                <Button asChild className="rounded-2xl h-11 px-6 bg-secondary hover:bg-secondary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-pink-500/20 transition-all">
+                  <Link href="/profile/edit"> 
                     <Edit size={16} className="mr-2" /> Chỉnh sửa
                   </Link>
                 </Button>
@@ -155,7 +155,7 @@ export default function ProfilePage() {
 
             {/* Stats Sidebar / Level */}
             <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-muted dark:border-white/10 p-6 rounded-3xl text-center space-y-3 min-w-[200px] shadow-inner shadow-black/5 dark:shadow-none shrink-0 lg:ml-auto">
-              <div className="p-3 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl w-fit mx-auto border border-white/20 shadow-lg shadow-pink-500/20">
+              <div className="p-3 bg-secondary hover:bg-secondary/90 rounded-2xl w-fit mx-auto border border-white/20 shadow-lg shadow-pink-500/20">
                 <Trophy size={24} className="text-white" />
               </div>
               <div>
@@ -171,72 +171,50 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Details */}
-        <div className="lg:col-span-2 space-y-8">
-          <Card className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem]">
-            <CardHeader className="border-b dark:border-white/5 pb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-cyan-500/10 rounded-2xl text-cyan-500 dark:text-cyan-400 border border-cyan-500/20 shadow-inner">
-                  <User size={24} />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Thông tin chi tiết</CardTitle>
-                  <CardDescription className="text-muted-foreground dark:text-slate-400">Liên hệ và trình độ ngôn ngữ của bạn</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <InfoItem icon={<Mail size={16} />} label="Email liên hệ" value={user.email} color="cyan" />
-                <InfoItem icon={<Phone size={16} />} label="Số điện thoại" value={user.phone || "Chưa cập nhật"} color="emerald" />
-                <InfoItem icon={<Calendar size={16} />} label="Ngày tham gia" value={new Date(user.createdAt).toLocaleDateString("vi-VN")} color="purple" />
-                <InfoItem icon={<BookOpen size={16} />} label="Trình độ" value={`Tiếng Nhật - ${user.jlptLevel || "Chưa xác định"}`} color="pink" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <ActionCard 
-              href="/profile/change-password"
-              icon={<Key size={24} />}
-              title="Bảo mật tài khoản"
-              desc="Đổi mật khẩu định kỳ"
-              color="amber"
-            />
-            <ActionCard 
-              href="/profile/wallet"
-              icon={<Zap size={24} />}
-              title="Ví FUJI"
-              desc="Quản lý số dư của bạn"
-              color="pink"
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+  {/* Left Column - Details (Chiếm 2 phần) */}
+  <div className="lg:col-span-2">
+    <Card className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem]">
+      <CardHeader className="border-b dark:border-white/5 pb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-cyan-500/10 rounded-2xl text-cyan-500 dark:text-cyan-400 border border-cyan-500/20 shadow-inner">
+            <User size={24} />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Thông tin chi tiết</CardTitle>
+            <CardDescription className="text-muted-foreground dark:text-slate-400">Liên hệ và trình độ ngôn ngữ của bạn</CardDescription>
           </div>
         </div>
-
-        {/* Right Column - Stats Grid */}
-        <div className="space-y-4">
-          <Card className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 h-full rounded-[2.5rem]">
-            <CardHeader className="border-b dark:border-white/5 pb-6">
-              <CardTitle className="text-lg font-bold uppercase tracking-tight text-foreground dark:text-white">Thống kê học tập</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              <StatItem icon={<Star className="text-yellow-500" />} color="yellow" label="Điểm học" value="1,250" />
-              <Separator className="opacity-50 dark:opacity-20" />
-              <StatItem icon={<LayoutGrid className="text-blue-500 dark:text-blue-400" />} color="blue" label="Khóa học" value="08" />
-              <Separator className="opacity-50 dark:opacity-20" />
-              <StatItem icon={<ShieldCheck className="text-emerald-500" />} color="emerald" label="Bảo mật" value="Cao" />
-              <Separator className="opacity-50 dark:opacity-20" />
-              <StatItem icon={<Award className="text-indigo-500 dark:text-indigo-400" />} color="indigo" label="Chứng chỉ" value="02" />
-            </CardContent>
-            <CardFooter className="pt-2 pb-6 mt-4 opacity-50">
-              <Button variant="ghost" className="w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest text-muted-foreground dark:text-slate-400">
-                Lịch sử đang phát triển...
-              </Button>
-            </CardFooter>
-          </Card>
+      </CardHeader>
+      <CardContent className="pt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <InfoItem icon={<Mail size={16} />} label="Email liên hệ" value={user.email} color="cyan" />
+          <InfoItem icon={<Phone size={16} />} label="Số điện thoại" value={user.phone || "Chưa cập nhật"} color="text-blue-500 dark:text-blue-400" />
+          <InfoItem icon={<Calendar size={16} />} label="Ngày tham gia" value={new Date(user.createdAt).toLocaleDateString("vi-VN")} color="purple" />
+          <InfoItem icon={<BookOpen size={16} />} label="Trình độ" value={`Tiếng Nhật - ${user.jlptLevel || "Chưa xác định"}`} color="pink text-blue-500 dark:text-blue-400" />
         </div>
-      </div>
+      </CardContent>
+    </Card>
+  </div>
+
+  {/* Right Column - Actions (Chiếm 1 phần) */}
+  <div className="lg:col-span-1 space-y-6">
+    <ActionCard 
+      href="/profile/change-password"
+      icon={<Key size={24} />}
+      title="Bảo mật tài khoản"
+      desc="Đổi mật khẩu định kỳ"
+      color="amber bg-secondary hover:bg-secondary/90"
+    />
+    <ActionCard 
+      href="/profile/wallet"
+      icon={<Zap size={24} />}
+      title="Ví FUJI"
+      desc="Quản lý số dư của bạn"
+      color="pink bg-secondary hover:bg-secondary/90"
+    />
+  </div>
+</div>
 
       {/* Logout Modal */}
       {openLogout && (

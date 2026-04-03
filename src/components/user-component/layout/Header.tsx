@@ -31,8 +31,6 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
 
-import React, { useState, useEffect } from "react";
-
 /**
  * Header Component - Tinh chỉnh cuối:
  * - Khắc phục lỗi mất Header khi chưa settle Auth.
@@ -53,9 +51,6 @@ const Header = () => {
 
   // Avoid SSR/client auth mismatch hydration issues.
   const canShowAuthUi = mounted && isAuthenticated;
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const getRoleLabel = () => {
     if (!roles) return "HỌC VIÊN";

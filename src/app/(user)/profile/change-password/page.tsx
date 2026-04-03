@@ -259,7 +259,7 @@ export default function ChangePasswordPage() {
                 className="flex-[2] h-14 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest text-[11px] shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2"
               >
                 {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 transition rounded-full " />
                 ) : (
                   <Save size={20} />
                 )}
@@ -273,7 +273,7 @@ export default function ChangePasswordPage() {
         <div className="space-y-6">
           <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl">
             <CardHeader className="border-b dark:border-white/5 pb-6">
-              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-emerald-500">
+              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-pink-300">
                 <ShieldCheck size={18} /> Lời khuyên an toàn
               </CardTitle>
             </CardHeader>
@@ -286,7 +286,7 @@ export default function ChangePasswordPage() {
                 {text:"Thay đổi định kỳ 30 ngày/lần", icon: <CheckCircle2 size={16} />},
               ].map((tip, i) => (
                 <div key={i} className="flex items-start gap-4 group">
-                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-pink-300 dark:text-pink-400 border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner">
                     {tip.icon}
                   </div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 group-hover:text-foreground dark:group-hover:text-slate-200 transition-colors mt-0.5 leading-relaxed">{tip.text}</span>
@@ -299,12 +299,12 @@ export default function ChangePasswordPage() {
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-[30px]" />
             <CardContent className="p-6 md:p-8 flex gap-5 relative z-10">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-inner">
-                <ShieldAlert className="h-6 w-6 text-amber-500" />
+                <ShieldAlert className="h-6 w-6 text-pink-300" />
               </div>
               <div className="space-y-2">
-                <p className="text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest drop-shadow-sm">Ghi nhớ quan trọng</p>
-                <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed font-bold">
-                  Thay đổi mật khẩu sẽ <span className="text-amber-600 dark:text-amber-400">bắt buộc đăng xuất</span> tại tất cả các thiết bị. Hệ thống sẽ cấp lại access token ngay sau đó!
+                <p className="text-[10px] font-black text-pink-600 dark:text-pink-300 uppercase tracking-widest drop-shadow-sm">Ghi nhớ quan trọng</p>
+                <p className="text-[11px] text-amber-700/80 dark:text-pink-400/80 leading-relaxed font-bold">
+                  Thay đổi mật khẩu sẽ <span className="text-pink-300 dark:text-pink-400">bắt buộc đăng xuất</span> tại tất cả các thiết bị. Hệ thống sẽ cấp lại access token ngay sau đó!
                 </p>
               </div>
             </CardContent>

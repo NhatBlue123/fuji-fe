@@ -92,7 +92,7 @@ const Header = () => {
         </Button>
 
         {/* ICON 3: NOTIFICATION  */}
-        {mounted && isAuthenticated && (
+        {canShowAuthUi && (
           <Popover>
             <PopoverTrigger asChild>
               <Button 
@@ -170,10 +170,10 @@ const Header = () => {
           </Popover>
         )}
 
-        {mounted && isAuthenticated && <div className="h-6 w-[1px] bg-border mx-1 opacity-50" />}
+        {canShowAuthUi && <div className="h-6 w-[1px] bg-border mx-1 opacity-50" />}
 
         {/* ACCOUNT DROPDOWN (Chỉ hiện khi đã đăng nhập) */}
-        {mounted && isAuthenticated && (
+        {canShowAuthUi && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-10 gap-2 px-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all rounded-xl active:scale-95 active:translate-y-[1px] group">

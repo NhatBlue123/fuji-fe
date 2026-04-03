@@ -10,8 +10,10 @@ import type {
   CreateBulkBookingResponse,
   DiscoveryResponse,
   MyBookingItem,
+  MyTimeSlotItem,
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
+  VideoSessionResponse,
 } from "@/types/booking";
 
 export const bookingApi = baseApi.injectEndpoints({
@@ -117,6 +119,33 @@ export const bookingApi = baseApi.injectEndpoints({
         { type: "Booking", id: "MY_BOOKINGS" },
       ],
     }),
+
+    getMyTimeSlots: builder.query<MyTimeSlotItem[], void>({
+      query: () => `/time-slots/me`,
+      transformResponse: (res: ApiEnvelope<MyTimeSlotItem[]>) => res.data,
+      providesTags: [{ type: "Booking", id: "MY_SLOTS" }],
+    }),
+
+    getVideoSession: builder.mutation<VideoSessionResponse, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/video-session`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<VideoSessionResponse>) => res.data,
+    }),
+
+    submitSessionReview: builder.mutation<
+      { reviewId: number; rating: number; comment: string },
+      { bookingId: number; rating: number; comment?: string }
+    >({
+      query: ({ bookingId, ...body }) => ({
+        url: `/bookings/${bookingId}/review`,
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: ApiEnvelope<{ reviewId: number; rating: number; comment: string }>) => res.data,
+      invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
+    }),
   }),
 });
 
@@ -128,6 +157,9 @@ export const {
   useCreateBookingMutation,
   useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
+  useGetMyTimeSlotsQuery,
   useCancelBookingMutation,
   useGetMyTeacherScheduleQuery,
+  useGetVideoSessionMutation,
+  useSubmitSessionReviewMutation,
 } = bookingApi;

@@ -27,23 +27,14 @@ const initOptions: Parameters<typeof i18n.init>[0] = {
 };
 
 if (isClient) {
-  // Chỉ dùng LanguageDetector trên browser
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const LanguageDetector = require("i18next-browser-languagedetector").default;
+  // Khởi tạo với "vi" để khớp server render, tránh hydration mismatch.
+  // I18nProvider sẽ switch sang ngôn ngữ user đã chọn sau khi mount.
   i18n
-    .use(LanguageDetector)
     .use(initReactI18next)
-    .init({
-      ...initOptions,
-      detection: {
-        order: ["localStorage", "cookie", "navigator", "htmlTag"],
-        lookupLocalStorage: "i18nextLng",
-        caches: ["localStorage", "cookie"],
-      },
-    });
+    .init({ ...initOptions, lng: "vi" });
 } else {
-  // SSR: không dùng browser detector
-  i18n.use(initReactI18next).init(initOptions);
+  // SSR: luôn dùng "vi"
+  i18n.use(initReactI18next).init({ ...initOptions, lng: "vi" });
 }
 
 export default i18n;

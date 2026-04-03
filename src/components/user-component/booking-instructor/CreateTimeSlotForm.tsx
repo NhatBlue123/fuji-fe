@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
+import { bookingApi } from "@/store/services/bookingApi";
 import { BulkResponse, Mode, TimeRange, Weekday } from "./types";
 import {
   estimateSlots,
@@ -189,10 +190,16 @@ export default function CreateTimeSlotForm() {
       <div className="mt-6 flex justify-end">
         <button
           type="button"
-          onClick={() => setNotice(null)}
+          onClick={() => {
+            if (notice.type === "success") {
+              router.push("/booking/bookingmodal");
+            } else {
+              setNotice(null);
+            }
+          }}
           className="h-10 px-6 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold"
         >
-          OK
+          {notice.type === "success" ? "Xem lịch của tôi" : "OK"}
         </button>
       </div>
     </div>
@@ -325,9 +332,11 @@ export default function CreateTimeSlotForm() {
           <div className="mt-6 flex gap-3">
             <button
               type="button"
-              className="h-12 px-6 rounded-xl border border-border bg-card hover:bg-muted font-semibold"
+              onClick={() => router.back()}
+              className="h-12 px-6 rounded-xl border border-border bg-card hover:bg-muted font-semibold flex items-center gap-2"
             >
-              Hủy
+              <span className="material-symbols-outlined text-sm">arrow_back</span>
+              Quay lại
             </button>
             <button
               type="button"

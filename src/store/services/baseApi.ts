@@ -4,7 +4,7 @@ import { getAccessToken } from "@/lib/token";
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8181/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8181/api",
     credentials: "include",
     prepareHeaders: (headers) => {
       const token = getAccessToken();

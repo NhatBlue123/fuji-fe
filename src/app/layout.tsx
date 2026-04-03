@@ -53,48 +53,16 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${notoSansJP.variable} antialiased font-display`}
     >
-      <head>
-        {/* Favicon */}
+      <head suppressHydrationWarning>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
-
-        {/* Chống flash theme - Script này phải chạy đồng bộ trong <head> */}
+        {/* Chống flash theme - chạy đồng bộ trước React hydration (pattern của next-themes) */}
+        {/* suppressHydrationWarning ở <head> ngăn React complain về script tag này */}
         <script
+          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
-            __html: `
-(function() {
-  try {
-    var theme = localStorage.getItem('theme');
-    var root = document.documentElement;
-
-    // Xóa các class theme cũ
-    root.classList.remove('light', 'dark');
-
-    // Áp dụng theme
-    if (theme === 'dark' || theme === 'light') {
-      root.classList.add(theme);
-    } else {
-      // Nếu chưa có theme hoặc theme = 'system', dùng system preference
-      var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.add(isDark ? 'dark' : 'light');
-    }
-    
-    // Cleanup extension attributes immediately to prevent hydration mismatch
-    var commonAttrs = ["bis_skin_checked", "data-new-gr-c-s-check-loaded", "data-gr-ext-installed"];
-    commonAttrs.forEach(function(attr) {
-      var elements = document.querySelectorAll("[" + attr + "]");
-      for (var i = 0; i < elements.length; i++) {
-        elements[i].removeAttribute(attr);
-      }
-    });
-
-  } catch(e) {
-    // Fallback: nếu lỗi thì dùng light mode
-    document.documentElement.classList.add('light');
-  }
-})();
-            `,
+            __html: `(function(){try{var t=localStorage.getItem('theme'),r=document.documentElement;r.classList.remove('light','dark');if(t==='dark'||t==='light'){r.classList.add(t);}else{r.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}['bis_skin_checked','data-new-gr-c-s-check-loaded','data-gr-ext-installed'].forEach(function(a){document.querySelectorAll('['+a+']').forEach(function(el){el.removeAttribute(a);});});}catch(e){document.documentElement.classList.add('light');}})();`,
           }}
         />
       </head>

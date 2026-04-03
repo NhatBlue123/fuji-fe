@@ -1,3 +1,6 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Users,
   BookOpen,
@@ -5,7 +8,12 @@ import {
   DollarSign,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -18,83 +26,133 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-const stats = [
-  {
-    title: "Tổng người dùng",
-    value: "12,450",
-    change: "+12.5%",
-    trend: "up" as const,
-    icon: Users,
-    description: "so với tháng trước",
-  },
-  {
-    title: "Khóa học",
-    value: "48",
-    change: "+3",
-    trend: "up" as const,
-    icon: BookOpen,
-    description: "khóa mới trong tháng",
-  },
-  {
-    title: "Doanh thu",
-    value: "₫245.8M",
-    change: "+8.2%",
-    trend: "up" as const,
-    icon: DollarSign,
-    description: "so với tháng trước",
-  },
-  {
-    title: "Tỷ lệ hoàn thành",
-    value: "67.3%",
-    change: "-2.1%",
-    trend: "down" as const,
-    icon: TrendingUp,
-    description: "so với tháng trước",
-  },
-];
-
-const recentUsers = [
-  {
-    name: "Nguyễn Văn A",
-    email: "nguyenvana@email.com",
-    course: "N5 Cơ bản",
-    date: "2 giờ trước",
-  },
-  {
-    name: "Trần Thị B",
-    email: "tranthib@email.com",
-    course: "N4 Nâng cao",
-    date: "3 giờ trước",
-  },
-  {
-    name: "Lê Văn C",
-    email: "levanc@email.com",
-    course: "N3 Trung cấp",
-    date: "5 giờ trước",
-  },
-  {
-    name: "Phạm Thị D",
-    email: "phamthid@email.com",
-    course: "N5 Cơ bản",
-    date: "6 giờ trước",
-  },
-  {
-    name: "Hoàng Văn E",
-    email: "hoangvane@email.com",
-    course: "N2 Cao cấp",
-    date: "8 giờ trước",
-  },
-];
-
-const popularCourses = [
-  { name: "JLPT N5 - Cơ bản", students: 3420, completion: 78 },
-  { name: "JLPT N4 - Sơ trung cấp", students: 2180, completion: 65 },
-  { name: "JLPT N3 - Trung cấp", students: 1560, completion: 52 },
-  { name: "Kanji Master N5-N4", students: 1240, completion: 71 },
-  { name: "Kaiwa - Giao tiếp cơ bản", students: 980, completion: 83 },
-];
+// API & Types
+import api from "@/lib/api";
+import { ApiResponse, PaginatedResponse } from "@/types/api";
+import { AdminUser } from "@/components/admin/user/UserTable";
+import { CourseResponseDTO } from "@/types/course";
+import { AdminRevenueStatsResponse } from "@/types/admin-revenue";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 export default function AdminDashboardPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  
+  // Real data state
+  const [userStats, setUserStats] = useState<any>(null);
+  const [revenueStats, setRevenueStats] = useState<AdminRevenueStatsResponse | null>(null);
+  const [recentUsersData, setRecentUsersData] = useState<AdminUser[]>([]);
+  const [popularCoursesData, setPopularCoursesData] = useState<CourseResponseDTO[]>([]);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setIsError(false);
+    try {
+      const [
+        userStatsRes,
+        revenueStatsRes,
+        recentUsersRes,
+        popularCoursesRes
+      ] = await Promise.all([
+        api.get<ApiResponse<any>>("/users/me/stats"),
+        api.get<ApiResponse<AdminRevenueStatsResponse>>("/admin/stats/revenue"),
+        api.get<ApiResponse<PaginatedResponse<AdminUser>>>("/users/me/all", { 
+          params: { page: 0, size: 5, sortBy: "createdAt", sortDir: "desc" } 
+        }),
+        api.get<ApiResponse<PaginatedResponse<CourseResponseDTO>>>("/courses", {
+          params: { page: 0, size: 5, sortBy: "studentCount", sortDir: "desc" }
+        })
+      ]);
+
+      if (userStatsRes.data.success) setUserStats(userStatsRes.data.data);
+      if (revenueStatsRes.data.success) setRevenueStats(revenueStatsRes.data.data);
+      if (recentUsersRes.data.success) setRecentUsersData(recentUsersRes.data.data.content);
+      if (popularCoursesRes.data.success) setPopularCoursesData(popularCoursesRes.data.data.content);
+      
+    } catch (error) {
+      console.error("Dashboard fetch error:", error);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Đang tải dữ liệu FUJI Dashboard...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 border-2 border-dashed rounded-2xl bg-muted/20">
+        <AlertCircle className="h-12 w-12 text-destructive/50" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Tải dữ liệu thất bại</h3>
+          <p className="text-muted-foreground max-w-xs mx-auto">Đã có lỗi xảy ra khi kết nối tới hệ thống FUJI.</p>
+        </div>
+        <Button onClick={() => fetchData()} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" /> Thử lại
+        </Button>
+      </div>
+    );
+  }
+
+  // Data mapping
+  const stats = [
+    {
+      title: "Tổng người dùng",
+      value: (userStats?.totalUsers || 0).toLocaleString(),
+      change: "+12.5%", 
+      trend: "up" as const,
+      icon: Users,
+      description: "so với tháng trước",
+    },
+    {
+      title: "Khóa học",
+      value: (revenueStats?.courseStatistics?.totalCourses || 0).toString(),
+      change: "+3",
+      trend: "up" as const,
+      icon: BookOpen,
+      description: "khóa mới trong tháng",
+    },
+    {
+      title: "Doanh thu",
+      value: revenueStats?.monthlyIncome 
+        ? (revenueStats.monthlyIncome >= 1000000 
+          ? `₫${(revenueStats.monthlyIncome / 1000000).toFixed(1)}M` 
+          : `₫${(revenueStats.monthlyIncome / 1000).toFixed(0)}k`)
+        : "₫0",
+      change: "+8.2%",
+      trend: "up" as const,
+      icon: DollarSign,
+      description: "so với tháng trước",
+    },
+    {
+      title: "Vi phạm hệ thống",
+      value: (userStats?.totalViolations || 0).toLocaleString(),
+      change: "Cần xử lý",
+      trend: "up" as const,
+      icon: ShieldAlert,
+      description: "lượt vi phạm bảo mật",
+    },
+  ];
+
+
+  const popularCourses = popularCoursesData.map(c => ({
+    name: c.title,
+    students: c.studentCount || 0,
+    completion: 75 // Static since no completion rate available in CourseResponseDTO
+  }));
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -154,40 +212,48 @@ export default function AdminDashboardPage() {
                 <CardTitle>Người dùng mới</CardTitle>
                 <CardDescription>Danh sách đăng ký gần đây</CardDescription>
               </div>
-              <Button variant="outline" size="sm">
-                Xem tất cả
-              </Button>
+              <Link href="/admin/users">
+                <Button variant="outline" size="sm" className="font-semibold hover:bg-primary/5">
+                  Xem tất cả
+                </Button>
+              </Link>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentUsers.map((user, index) => (
-                <div key={index}>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {user.name.split(" ").pop()?.charAt(0)}
+              {recentUsersData.map((user, index) => (
+                <div key={user.id} className="group">
+                  <div className="flex items-center gap-4 hover:bg-muted/30 p-2 rounded-xl transition-all duration-300">
+                    <Avatar className="size-10 rounded-full border-2 border-background shadow-sm ring-1 ring-border group-hover:scale-105 transition-transform">
+                      <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
+                        {user.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user.name}
+                    <div className="flex-1 space-y-0.5">
+                      <p className="text-sm font-bold leading-none text-foreground group-hover:text-primary transition-colors">
+                        {user.fullName}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] text-muted-foreground font-medium">
                         {user.email}
                       </p>
                     </div>
                     <div className="text-right">
-                      <Badge variant="secondary" className="text-xs">
-                        {user.course}
-                      </Badge>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {user.date}
+                      <div className="mb-1">
+                        {user.role === 'ADMIN' ? (
+                          <Badge variant="outline" className="font-bold text-rose-600 bg-rose-50 border-rose-100 rounded-full px-2 py-0 text-[9px] uppercase">Quản trị</Badge>
+                        ) : user.role === 'INSTRUCTOR' ? (
+                          <Badge variant="outline" className="font-bold border-blue-100 text-blue-600 bg-blue-50 rounded-full px-2 py-0 text-[9px] uppercase">Giảng viên</Badge>
+                        ) : (
+                          <Badge variant="outline" className="font-bold border-blue-100 text-blue-600 bg-blue-50 rounded-full px-2 py-0 text-[9px] uppercase">Học viên</Badge>
+                        )}
+                      </div>
+                      <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                        {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true, locale: vi })}
                       </p>
                     </div>
                   </div>
-                  {index < recentUsers.length - 1 && (
-                    <Separator className="mt-4" />
+                  {index < recentUsersData.length - 1 && (
+                    <Separator className="mt-2 opacity-50" />
                   )}
                 </div>
               ))}

@@ -65,7 +65,7 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
    * Trả về VoiceChatResponse khi `voice:job:completed` được emit.
    */
   const waitForJobResult = useCallback(
-    (jobId: string): Promise<VoiceChatResponse> => {
+    (jobId: string, onPartialTranscript?: (transcript: string) => void): Promise<VoiceChatResponse> => {
       const socket = options.socket;
 
       // Fallback nếu không có socket — ko thể nhận kết quả
@@ -81,10 +81,17 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
           reject(new Error("Timeout: không nhận được phản hồi từ AI"));
         }, JOB_TIMEOUT_MS);
 
+        const onTranscript = (data: { jobId: string; transcript: string; session: string }) => {
+          if (data.jobId === jobId && onPartialTranscript) {
+            onPartialTranscript(data.transcript);
+          }
+        };
+
         const cleanup = () => {
           clearTimeout(timer);
           socket.off("voice:job:completed", onCompleted);
           socket.off("voice:job:failed", onFailed);
+          socket.off("voice:job:transcript", onTranscript);
         };
 
         const onCompleted = (data: { jobId: string; result: VoiceChatResponse }) => {
@@ -101,6 +108,7 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
 
         socket.on("voice:job:completed", onCompleted);
         socket.on("voice:job:failed", onFailed);
+        socket.on("voice:job:transcript", onTranscript);
       });
     },
     [options.socket],
@@ -300,8 +308,23 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
             scenarioId: config.scenarioId,
           }).unwrap();
 
+          let userTranscriptEmitted = false;
+
           // Bước 2: Chờ kết quả qua socket
-          const result = await waitForJobResult(jobId);
+          const result = await waitForJobResult(jobId, (transcript) => {
+            const now = new Date().toISOString();
+            const userItem: VoiceTranscriptItem = {
+              role: "user",
+              transcript,
+              createdAt: now,
+            };
+            userTranscriptEmitted = true;
+            options.onTranscriptUpdate?.(userItem);
+            setState((prev) => ({
+              ...prev,
+              transcriptHistory: [...prev.transcriptHistory, userItem],
+            }));
+          });
 
           // Lưu session code cho lượt tiếp
           if (result.session) {
@@ -312,7 +335,7 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
           // Thêm transcript vào history
           const now = new Date().toISOString();
           const newItems: VoiceTranscriptItem[] = [];
-          if (result.transcript) {
+          if (result.transcript && !userTranscriptEmitted) {
             const userItem: VoiceTranscriptItem = {
               role: "user",
               transcript: result.transcript,

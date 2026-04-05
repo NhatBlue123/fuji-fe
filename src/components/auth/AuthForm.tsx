@@ -22,6 +22,7 @@ import {
   useResetPasswordMutation,
 } from "@/store/services/authApi";
 import { useTranslation } from "react-i18next";
+import { getGoogleOAuthAuthorizationUrl } from "@/lib/backendOrigin";
 
 type AuthTab = "login" | "register" | "forgot_password";
 type RegisterStep = "register" | "otp";
@@ -570,8 +571,7 @@ export default function AuthForm({
                 <button
                   type="button"
                   onClick={() =>
-                  (window.location.href =
-                    "http://localhost:8181/oauth2/authorization/google")
+                    (window.location.href = getGoogleOAuthAuthorizationUrl())
                   }
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                 >
@@ -762,8 +762,7 @@ export default function AuthForm({
                       <button
                         type="button"
                         onClick={() =>
-                        (window.location.href =
-                          "http://localhost:8181/oauth2/authorization/google")
+                          (window.location.href = getGoogleOAuthAuthorizationUrl())
                         }
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all group"
                       >

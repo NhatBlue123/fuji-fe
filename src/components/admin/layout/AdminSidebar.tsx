@@ -21,6 +21,7 @@ import {
   Moon,
   Layers,
   AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -106,6 +107,11 @@ const navGroups: NavGroup[] = [
         title: "Khóa học",
         href: "/admin/courses",
         icon: BookOpen,
+      },
+      {
+      title: "Lịch dạy",
+      href: "/admin/teacher-schedules",
+      icon: CalendarDays,
       },
       {
         title: "Flashcard",

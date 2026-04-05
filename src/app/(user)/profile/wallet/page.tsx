@@ -48,6 +48,7 @@ export default function FujiWallet() {
   const { data: historyData, isLoading: isHistoryLoading } = useGetWalletHistoryQuery({ page, size });
 
   const balance = wallet?.balance || 0;
+  const availableBalance = wallet?.availableBalance || 0
   const transactions = historyData?.content || [];
   const totalPages = historyData?.totalPages || 0;
 

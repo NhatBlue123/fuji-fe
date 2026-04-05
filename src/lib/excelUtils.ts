@@ -174,3 +174,30 @@ export const exportViolationLogsToExcel = (logs: any[], username: string = 'User
 
     XLSX.writeFile(workbook, `violation_report_${username.toLowerCase()}.xlsx`);
 };
+
+/**
+ * Export revenue statistics to Excel file
+ */
+export const exportRevenueToExcel = (revenues: any[], filename: string = 'revenue_report.xlsx') => {
+    const data = revenues.map((m: any, index: number) => ({
+        'STT': index + 1,
+        'Thời gian': `${m.month}/${m.year}`,
+        'Bán khóa học (VND)': m.courseRevenue || 0,
+        'Phí nền tảng (VND)': m.bookingFeeRevenue || (m.totalRevenue ? m.totalRevenue - (m.courseRevenue || 0) : 0),
+        'Tổng cộng (VND)': (m.courseRevenue || 0) + (m.bookingFeeRevenue || (m.totalRevenue ? m.totalRevenue - (m.courseRevenue || 0) : 0))
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Doanh thu');
+
+    worksheet['!cols'] = [
+        { wch: 5 },  // STT
+        { wch: 15 }, // Thời gian
+        { wch: 25 }, // Bán khóa học
+        { wch: 25 }, // Phí nền tảng
+        { wch: 25 }, // Tổng cộng
+    ];
+
+    XLSX.writeFile(workbook, filename);
+};

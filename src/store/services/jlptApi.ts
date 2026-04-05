@@ -195,7 +195,7 @@ export const jlptApi = createApi({
       { testId: number; attemptId: number; feedback: string; testTitle?: string }
     >({
       query: ({ testId, attemptId, feedback, testTitle }) => ({
-        url: "/admin/reports",
+        url: "/reports",
         method: "POST",
         body: {
           category: "OTHER",

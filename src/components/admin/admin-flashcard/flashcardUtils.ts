@@ -1,6 +1,33 @@
+import * as XLSX from "xlsx";
+import type { CardResponseDTO, Flashcard } from "@/types/flashcard";
 
-import * as XLSX from 'xlsx';
-import { Flashcard } from '@/types/flashcard';
+/** Lấy dòng "Phân loại: …" đã ghi khi tạo/sửa bộ từ admin */
+export function parseLessonFromDescription(desc?: string | null): string {
+  if (!desc) return "";
+  const m = desc.match(/Phân loại:\s*([^\n]+)/);
+  return m ? m[1].trim() : "";
+}
+
+/** Bỏ đoạn Phân loại ở cuối mô tả để hiển thị phần mô tả “thuần” */
+export function stripTrailingLessonParagraph(desc?: string | null): string {
+  if (!desc) return "";
+  return desc.replace(/\n*\n*Phân loại:\s*[^\n]+$/m, "").trim();
+}
+
+/** Map API card → UI model dùng trong bảng admin */
+export function mapCardResponseToFlashcard(c: CardResponseDTO): Flashcard {
+  return {
+    id: c.id,
+    kanji: c.vocabulary,
+    hiragana: c.pronunciation?.trim() ? c.pronunciation : "—",
+    meaning: c.meaning,
+    example: c.exampleSentence || "",
+    lesson: "",
+    type: "Vocabulary",
+    studyStatus: "not_learned",
+    viewCount: 0,
+  };
+}
 
 /**
  * Export flashcards to Excel file

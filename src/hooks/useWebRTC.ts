@@ -21,6 +21,7 @@
 
 import { useRef, useCallback, useEffect, useState } from "react";
 import { getVideoCallIceConfigUrl } from "@/lib/video-call-urls";
+import { getAccessToken } from "@/lib/token";
 
 interface IceServerConfig {
   urls: string | string[];
@@ -52,7 +53,10 @@ async function loadIceServers(): Promise<RTCIceServer[]> {
 
   try {
     // Must use same host as API (not hardcoded localhost) so 2+ devices on LAN work
-    const res = await fetch(getVideoCallIceConfigUrl());
+    const headers: HeadersInit = {};
+    const token = getAccessToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(getVideoCallIceConfigUrl(), { headers });
     if (!res.ok) {
       throw new Error(`ICE config HTTP ${res.status}`);
     }
@@ -124,21 +128,27 @@ export function useWebRTC(): WebRTCHook {
   // ── Public API ────────────────────────────────────────────────────────────
 
   const startLocalStream = useCallback(async () => {
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: "user" },
         audio: { echoCancellation: true, noiseSuppression: true },
       });
+    } catch (err) {
+      console.warn("[WebRTC] getUserMedia failed, continuing without local media:", err);
+    }
 
-      // Update BOTH state (for React UI) and ref (for cleanup)
+    if (stream) {
       localStreamRef.current = stream;
       setLocalStream(stream);
+    }
 
-      const pc = await ensurePC();
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-    } catch (err) {
-      console.error("[WebRTC] getUserMedia failed:", err);
-      throw err;
+    const pc = await ensurePC();
+    if (stream) {
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream!));
+    } else {
+      pc.addTransceiver("video", { direction: "recvonly" });
+      pc.addTransceiver("audio", { direction: "recvonly" });
     }
   }, [ensurePC]);
 

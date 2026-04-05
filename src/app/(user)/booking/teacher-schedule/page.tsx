@@ -27,6 +27,16 @@ import { cn } from "@/lib/utils";
 import { useGetTeacherAvailabilityQuery } from "@/store/services/bookingApi";
 import type { DiscoverySlot } from "@/types/booking";
 
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: "T2", full: "Thứ 2" },
+  { value: 2, label: "T3", full: "Thứ 3" },
+  { value: 3, label: "T4", full: "Thứ 4" },
+  { value: 4, label: "T5", full: "Thứ 5" },
+  { value: 5, label: "T6", full: "Thứ 6" },
+  { value: 6, label: "T7", full: "Thứ 7" },
+  { value: 0, label: "CN", full: "Chủ nhật" },
+] as const;
+
 function toYmd(date: Date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -39,8 +49,16 @@ function parseLocalDate(value: string) {
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
+function addDaysLocal(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 function formatDateRange(fromDate: string, toDate: string) {
-  return `${parseLocalDate(fromDate).toLocaleDateString("vi-VN")} - ${parseLocalDate(toDate).toLocaleDateString("vi-VN")}`;
+  return `${parseLocalDate(fromDate).toLocaleDateString("vi-VN")} - ${parseLocalDate(
+    toDate
+  ).toLocaleDateString("vi-VN")}`;
 }
 
 function formatFullDate(date?: Date) {
@@ -57,9 +75,16 @@ function formatTimeRange(startAt: string, endAt: string) {
   const start = new Date(startAt);
   const end = new Date(endAt);
   const hhmm = (date: Date) =>
-    `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(
+      2,
+      "0"
+    )}`;
 
   return `${hhmm(start)} - ${hhmm(end)}`;
+}
+
+function toTimeKey(startAt: string, endAt: string) {
+  return `${formatTimeRange(startAt, endAt)}`;
 }
 
 function isAvailable(slot: DiscoverySlot) {
@@ -106,12 +131,28 @@ export default function TeacherSchedulePage() {
   const teacherId = Number(searchParams.get("teacherId"));
   const validTeacherId = Number.isFinite(teacherId) && teacherId > 0;
 
+  const leadTimeDate = useMemo(() => {
+    const next = new Date();
+    next.setHours(next.getHours() + 48);
+    return next;
+  }, []);
+  const minBookingDate = useMemo(() => toYmd(leadTimeDate), [leadTimeDate]);
+
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [timeZone, setTimeZone] = useState<string | undefined>();
 
+  const [repeatMode, setRepeatMode] = useState<"NONE" | "RECURRING">("NONE");
+  const [rangeStart, setRangeStart] = useState(minBookingDate);
+  const [rangeEnd, setRangeEnd] = useState(() => {
+    const next = new Date(leadTimeDate);
+    next.setMonth(next.getMonth() + 1);
+    return toYmd(next);
+  });
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
+  const [selectedTimeKeys, setSelectedTimeKeys] = useState<string[]>([]);
+
   const fromDate = useMemo(() => toYmd(new Date()), []);
-  const BOOKING_PANEL_HEIGHT = "lg:h-[540px]";
   const toDate = useMemo(() => {
     const next = new Date();
     next.setMonth(next.getMonth() + 6);
@@ -143,26 +184,25 @@ export default function TeacherSchedulePage() {
   }, [groups, selectedDate]);
 
   useEffect(() => {
-  if (groups.length === 0) {
-    if (selectedIds.length > 0) setSelectedIds([]); // Chỉ set nếu mảng cũ không rỗng
-    return;
-  }
+    if (groups.length === 0) {
+      if (selectedIds.length > 0) setSelectedIds([]);
+      return;
+    }
 
-  const availableIds = new Set(
-    groups.flatMap((group) =>
-      group.slots.filter(isAvailable).map((slot) => slot.timeSlotId)
-    )
-  );
+    const availableIds = new Set(
+      groups.flatMap((group) =>
+        group.slots.filter(isAvailable).map((slot) => slot.timeSlotId)
+      )
+    );
 
-  const nextIds = selectedIds.filter((id) => availableIds.has(id));
-
-  // Kiểm tra: Nếu số lượng phần tử khác nhau hoặc nội dung khác nhau thì mới set
-  if (nextIds.length !== selectedIds.length) {
-    setSelectedIds(nextIds);
-  }
-}, [groups]); 
+    const nextIds = selectedIds.filter((id) => availableIds.has(id));
+    if (nextIds.length !== selectedIds.length) {
+      setSelectedIds(nextIds);
+    }
+  }, [groups, selectedIds]);
 
   const selectedDateKey = selectedDate ? toYmd(selectedDate) : "";
+
   const selectedDaySlots = useMemo(() => {
     const slots = slotsByDate.get(selectedDateKey) ?? [];
     return [...slots].sort(
@@ -198,7 +238,7 @@ export default function TeacherSchedulePage() {
     [groups]
   );
 
-  const selectedSlots = useMemo(() => {
+  const manualSelectedSlots = useMemo(() => {
     const selectedSet = new Set(selectedIds);
 
     return groups
@@ -206,6 +246,127 @@ export default function TeacherSchedulePage() {
       .filter((slot) => selectedSet.has(slot.timeSlotId))
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [groups, selectedIds]);
+
+  const validRecurringRange =
+    !!rangeStart && !!rangeEnd && rangeStart >= minBookingDate && rangeStart <= rangeEnd;
+
+  const recurringPool = useMemo(() => {
+    if (!validRecurringRange) return [];
+
+    return groups
+      .flatMap((group) => group.slots)
+      .filter((slot) => {
+        if (!isAvailable(slot)) return false;
+        const slotDate = slot.startAt.slice(0, 10);
+        if (slotDate < rangeStart || slotDate > rangeEnd) return false;
+        return new Date(slot.startAt).getTime() >= leadTimeDate.getTime();
+      })
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }, [groups, validRecurringRange, rangeStart, rangeEnd, leadTimeDate]);
+
+  const recurringTimeOptions = useMemo(() => {
+    const map = new Map<
+      string,
+      { key: string; label: string; count: number; sortValue: number }
+    >();
+
+    recurringPool.forEach((slot) => {
+      const key = toTimeKey(slot.startAt, slot.endAt);
+      if (!map.has(key)) {
+        const start = new Date(slot.startAt);
+        map.set(key, {
+          key,
+          label: key,
+          count: 0,
+          sortValue: start.getHours() * 60 + start.getMinutes(),
+        });
+      }
+      map.get(key)!.count += 1;
+    });
+
+    return [...map.values()].sort((a, b) => a.sortValue - b.sortValue);
+  }, [recurringPool]);
+
+  useEffect(() => {
+    const optionKeys = new Set(recurringTimeOptions.map((item) => item.key));
+    setSelectedTimeKeys((prev) => prev.filter((item) => optionKeys.has(item)));
+  }, [recurringTimeOptions]);
+
+  const recurringMatchedSlots = useMemo(() => {
+    if (repeatMode !== "RECURRING") return [];
+    if (!validRecurringRange) return [];
+    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0) return [];
+
+    const weekdaySet = new Set(selectedWeekdays);
+    const timeKeySet = new Set(selectedTimeKeys);
+
+    return recurringPool.filter((slot) => {
+      const slotDay = new Date(slot.startAt).getDay();
+      const slotTimeKey = toTimeKey(slot.startAt, slot.endAt);
+      return weekdaySet.has(slotDay) && timeKeySet.has(slotTimeKey);
+    });
+  }, [
+    repeatMode,
+    validRecurringRange,
+    selectedWeekdays,
+    selectedTimeKeys,
+    recurringPool,
+  ]);
+
+  const recurringExpectedOccurrences = useMemo(() => {
+    if (repeatMode !== "RECURRING") return [];
+    if (!validRecurringRange) return [];
+    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0) return [];
+
+    const weekdaySet = new Set(selectedWeekdays);
+    const result: Array<{ date: string; timeKey: string }> = [];
+
+    let cursor = parseLocalDate(rangeStart);
+    const end = parseLocalDate(rangeEnd);
+
+    while (cursor.getTime() <= end.getTime()) {
+      if (weekdaySet.has(cursor.getDay())) {
+        selectedTimeKeys.forEach((timeKey) => {
+          result.push({
+            date: toYmd(cursor),
+            timeKey,
+          });
+        });
+      }
+      cursor = addDaysLocal(cursor, 1);
+    }
+
+    return result;
+  }, [
+    repeatMode,
+    validRecurringRange,
+    rangeStart,
+    rangeEnd,
+    selectedWeekdays,
+    selectedTimeKeys,
+  ]);
+
+  const recurringMatchedKeys = useMemo(() => {
+    return new Set(
+      recurringMatchedSlots.map(
+        (slot) => `${slot.startAt.slice(0, 10)}__${toTimeKey(slot.startAt, slot.endAt)}`
+      )
+    );
+  }, [recurringMatchedSlots]);
+
+  const skippedOccurrences = useMemo(() => {
+    return recurringExpectedOccurrences.filter(
+      (item) => !recurringMatchedKeys.has(`${item.date}__${item.timeKey}`)
+    );
+  }, [recurringExpectedOccurrences, recurringMatchedKeys]);
+
+  const effectiveSelectedSlots =
+    repeatMode === "RECURRING" ? recurringMatchedSlots : manualSelectedSlots;
+
+  const effectiveSelectedIds = useMemo(
+    () => effectiveSelectedSlots.map((slot) => slot.timeSlotId),
+    [effectiveSelectedSlots]
+  );
 
   const toggleSlot = (slot: DiscoverySlot) => {
     if (!isAvailable(slot)) return;
@@ -217,11 +378,27 @@ export default function TeacherSchedulePage() {
     );
   };
 
+  const toggleWeekday = (day: number) => {
+    setSelectedWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day]
+    );
+  };
+
+  const toggleTimeKey = (timeKey: string) => {
+    setSelectedTimeKeys((prev) =>
+      prev.includes(timeKey)
+        ? prev.filter((item) => item !== timeKey)
+        : [...prev, timeKey]
+    );
+  };
+
   const onGoInvoice = () => {
-    if (!validTeacherId || selectedIds.length === 0) return;
+    if (!validTeacherId || effectiveSelectedIds.length === 0) return;
 
     router.push(
-      `/booking/bookappointment?teacherId=${teacherId}&timeSlotIds=${selectedIds.join(",")}`
+      `/booking/bookappointment?teacherId=${teacherId}&timeSlotIds=${effectiveSelectedIds.join(
+        ","
+      )}`
     );
   };
 
@@ -257,7 +434,7 @@ export default function TeacherSchedulePage() {
             <div>
               <p className="text-sm text-muted-foreground">Booking</p>
               <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                Toàn bộ lịch rảnh của giáo viên
+                Đặt lịch theo giáo viên
               </h1>
             </div>
           </div>
@@ -301,7 +478,7 @@ export default function TeacherSchedulePage() {
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
                             <Badge variant="secondary" className="rounded-full px-3 py-1">
-                              Đặt lịch học 
+                              Đặt lịch học
                             </Badge>
                             <Badge
                               variant="outline"
@@ -315,7 +492,6 @@ export default function TeacherSchedulePage() {
                             <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
                               Giáo viên {data.teacherName}
                             </h2>
-                            
                           </div>
                         </div>
                       </div>
@@ -323,7 +499,7 @@ export default function TeacherSchedulePage() {
                       <div className="grid grid-cols-2 gap-3 sm:min-w-[320px] sm:grid-cols-3">
                         <MiniStat label="Ngày hiển thị" value={`${groups.length}`} />
                         <MiniStat label="Slot trống" value={`${availableSlotCount}`} />
-                        <MiniStat label="Đã chọn" value={`${selectedIds.length}`} />
+                        <MiniStat label="Đã chọn" value={`${effectiveSelectedIds.length}`} />
                       </div>
                     </div>
 
@@ -335,196 +511,442 @@ export default function TeacherSchedulePage() {
 
                       <span className="inline-flex items-center gap-2">
                         <Sparkles className="size-4 text-secondary" />
-                        {selectedIds.length > 0
-                          ? `${selectedIds.length} khung giờ đang được chọn`
-                          : "Chưa chọn khung giờ nào"}
+                        Chỉ lấy các slot đủ điều kiện đặt trước 48 giờ
                       </span>
                     </div>
                   </CardContent>
                 </Card>
 
-                
+                <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Thiết lập đặt lịch</CardTitle>
+                    <CardDescription>
+                      Bạn có thể đặt từng buổi hoặc đặt lặp theo lịch cố định trong
+                      một khoảng thời gian.
+                    </CardDescription>
+                  </CardHeader>
 
-                <Separator />
+                  <CardContent className="space-y-5">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="mb-2 block text-sm text-muted-foreground">
+                          Kiểu đặt lịch
+                        </span>
+                        <select
+                          value={repeatMode}
+                          onChange={(e) =>
+                            setRepeatMode(e.target.value as "NONE" | "RECURRING")
+                          }
+                          className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                        >
+                          <option value="NONE">Không lặp lại</option>
+                          <option value="RECURRING">Lặp lại theo lịch cố định</option>
+                        </select>
+                      </label>
 
-                <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
-  <Card
-    className={cn(
-      "flex flex-col border-border/60 bg-card/80 shadow-xl backdrop-blur",
-      BOOKING_PANEL_HEIGHT
-    )}
-  >
-    <CardHeader className="pb-4">
-      <CardTitle className="flex items-center gap-2 text-xl">
-        <CalendarDays className="size-5 text-primary" />
-        Chọn ngày học
-      </CardTitle>
-    </CardHeader>
+                      {repeatMode === "RECURRING" ? (
+                        <>
+                          <label className="block">
+                            <span className="mb-2 block text-sm text-muted-foreground">
+                              Start date
+                            </span>
+                            <input
+                              type="date"
+                              min={minBookingDate}
+                              value={rangeStart}
+                              onChange={(e) => setRangeStart(e.target.value)}
+                              className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                            />
+                          </label>
 
-    <CardContent className="flex min-h-0 flex-1 flex-col space-y-4">
-      <div className="rounded-[28px] border border-border/60 bg-background/70 p-3 shadow-sm">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={(date) => date && setSelectedDate(date)}
-          locale={vi}
-          timeZone={timeZone}
-          fromDate={parseLocalDate(fromDate)}
-          toDate={parseLocalDate(toDate)}
-          defaultMonth={selectedDate ?? parseLocalDate(fromDate)}
-          modifiers={{
-            hasAvailability: availableDates,
-            bookedOnly: bookedOnlyDates,
-          }}
-          modifiersClassNames={{
-            hasAvailability:
-              "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-primary [&>button]:font-semibold [&>button]:text-primary",
-            bookedOnly:
-              "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-destructive/80 [&>button]:text-muted-foreground",
-          }}
-          className="w-full rounded-3xl [--cell-size:2.8rem] md:[--cell-size:3rem]"
-        />
-      </div>
-
-      <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-        Chấm <span className="font-semibold text-primary">xanh</span> là ngày
-        còn khung giờ trống.
-      </div>
-    </CardContent>
-  </Card>
-
-  <Card
-    className={cn(
-      "flex flex-col border-border/60 bg-card/80 shadow-xl backdrop-blur",
-      BOOKING_PANEL_HEIGHT
-    )}
-  >
-    <CardHeader className="pb-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Clock3 className="size-5 text-primary" />
-            Khung giờ học
-          </CardTitle>
-          <CardDescription className="mt-2">
-            {formatFullDate(selectedDate)}
-          </CardDescription>
-        </div>
-
-        <Badge
-          variant="outline"
-          className="w-fit rounded-full border-border/70 bg-background/70 px-3 py-1 text-muted-foreground"
-        >
-          {selectedDaySlots.length} ca học trong ngày
-        </Badge>
-      </div>
-    </CardHeader>
-
-    <CardContent className="flex min-h-0 flex-1 flex-col pt-0">
-      {selectedDaySlots.length === 0 ? (
-        <div className="flex h-full items-center justify-center rounded-[28px] border border-dashed border-border bg-muted/25 px-6 py-12 text-center">
-          <div>
-            <p className="text-lg font-medium text-foreground">
-              Ngày này chưa có lịch học
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Hãy chọn ngày khác trên lịch hoặc đợi giáo viên mở thêm slot mới.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <ScrollArea className="min-h-0 flex-1 pr-4">
-          <div className="space-y-3">
-            {selectedDaySlots.map((slot) => {
-              const selected = selectedIds.includes(slot.timeSlotId);
-              const available = isAvailable(slot);
-
-              return (
-                <button
-                  key={slot.timeSlotId}
-                  type="button"
-                  disabled={!available}
-                  onClick={() => toggleSlot(slot)}
-                  className={cn(
-                    "w-full rounded-[24px] border px-4 py-4 text-left transition-all",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    selected && "border-secondary/40 bg-secondary/10 shadow-sm",
-                    !selected &&
-                      available &&
-                      "border-border/70 bg-background/60 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/5",
-                    !available &&
-                      "cursor-not-allowed border-destructive/15 bg-destructive/5 opacity-75"
-                  )}
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={cn(
-                          "flex size-11 shrink-0 items-center justify-center rounded-2xl border",
-                          selected &&
-                            "border-secondary/20 bg-secondary text-secondary-foreground",
-                          !selected &&
-                            available &&
-                            "border-primary/15 bg-primary/10 text-primary",
-                          !available &&
-                            "border-destructive/15 bg-destructive/10 text-destructive"
-                        )}
-                      >
-                        {selected ? (
-                          <CheckCheck className="size-4" />
-                        ) : (
-                          <Clock3 className="size-4" />
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-base font-semibold text-foreground">
-                            {formatTimeRange(slot.startAt, slot.endAt)}
-                          </p>
-
-                          {slot.subject ? (
-                            <Badge
-                              variant="outline"
-                              className="rounded-full border-border/70 bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
-                            >
-                              {slot.subject}
-                            </Badge>
-                          ) : null}
+                          <label className="block">
+                            <span className="mb-2 block text-sm text-muted-foreground">
+                              End date
+                            </span>
+                            <input
+                              type="date"
+                              min={rangeStart || minBookingDate}
+                              value={rangeEnd}
+                              onChange={(e) => setRangeEnd(e.target.value)}
+                              className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-muted-foreground">
+                          Chế độ này giữ nguyên cách chọn thủ công từng slot như hiện tại.
                         </div>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {slot.durationMinutes} phút
-                        </p>
-                      </div>
+                      )}
                     </div>
 
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "w-fit rounded-full px-3 py-1 text-xs font-semibold",
-                        selected &&
-                          "border-transparent bg-secondary text-secondary-foreground",
-                        !selected &&
-                          available &&
-                          "border-primary/15 bg-primary/10 text-primary",
-                        !available &&
-                          "border-destructive/15 bg-destructive/10 text-destructive"
-                      )}
-                    >
-                      {selected ? "Đã chọn" : available ? "Available" : "Booked"}
-                    </Badge>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </ScrollArea>
-      )}
-    </CardContent>
-  </Card>
-</div>
+                    {repeatMode === "RECURRING" ? (
+                      <>
+                        <div className="space-y-3">
+                          <div className="text-sm font-medium text-foreground">
+                            Chọn các thứ trong tuần
+                          </div>
 
+                          <div className="flex flex-wrap gap-2">
+                            {WEEKDAY_OPTIONS.map((day) => {
+                              const active = selectedWeekdays.includes(day.value);
+
+                              return (
+                                <button
+                                  key={day.value}
+                                  type="button"
+                                  onClick={() => toggleWeekday(day.value)}
+                                  className={cn(
+                                    "rounded-xl border px-4 py-2 text-sm font-semibold transition",
+                                    active
+                                      ? "border-secondary/30 bg-secondary text-secondary-foreground"
+                                      : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
+                                  )}
+                                >
+                                  {day.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-sm font-medium text-foreground">
+                            Chọn khung giờ lặp
+                          </div>
+
+                          {!validRecurringRange ? (
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
+                              Hãy chọn khoảng ngày hợp lệ trước.
+                            </div>
+                          ) : recurringTimeOptions.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
+                              Không có slot khả dụng trong khoảng ngày này.
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {recurringTimeOptions.map((option) => {
+                                const active = selectedTimeKeys.includes(option.key);
+
+                                return (
+                                  <button
+                                    key={option.key}
+                                    type="button"
+                                    onClick={() => toggleTimeKey(option.key)}
+                                    className={cn(
+                                      "rounded-xl border px-4 py-2 text-left transition",
+                                      active
+                                        ? "border-secondary/30 bg-secondary/10"
+                                        : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
+                                    )}
+                                  >
+                                    <div className="text-sm font-semibold text-foreground">
+                                      {option.label}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {option.count} slot khả dụng
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <MiniStat
+                            label="Buổi khớp"
+                            value={`${recurringMatchedSlots.length}`}
+                          />
+                          <MiniStat
+                            label="Buổi bị bỏ qua"
+                            value={`${skippedOccurrences.length}`}
+                          />
+                          <MiniStat
+                            label="Phạm vi"
+                            value={
+                              validRecurringRange
+                                ? `${formatDateRange(rangeStart, rangeEnd)}`
+                                : "--"
+                            }
+                          />
+                        </div>
+
+                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
+                          Nếu buổi nào trong lịch lặp không còn slot phù hợp hoặc không đủ
+                          điều kiện 48 giờ thì hệ thống sẽ tự bỏ qua buổi đó.
+                        </div>
+                      </>
+                    ) : null}
+                  </CardContent>
+                </Card>
+
+                {repeatMode === "NONE" ? (
+                  <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+                    <Card className="flex flex-col border-border/60 bg-card/80 shadow-xl backdrop-blur lg:h-[540px]">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                          <CalendarDays className="size-5 text-primary" />
+                          Chọn ngày học
+                        </CardTitle>
+                      </CardHeader>
+
+                      <CardContent className="flex min-h-0 flex-1 flex-col space-y-4">
+                        <div className="rounded-[28px] border border-border/60 bg-background/70 p-3 shadow-sm">
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            locale={vi}
+                            timeZone={timeZone}
+                            fromDate={parseLocalDate(fromDate)}
+                            toDate={parseLocalDate(toDate)}
+                            defaultMonth={selectedDate ?? parseLocalDate(fromDate)}
+                            modifiers={{
+                              hasAvailability: availableDates,
+                              bookedOnly: bookedOnlyDates,
+                            }}
+                            modifiersClassNames={{
+                              hasAvailability:
+                                "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-primary [&>button]:font-semibold [&>button]:text-primary",
+                              bookedOnly:
+                                "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-destructive/80 [&>button]:text-muted-foreground",
+                            }}
+                            className="w-full rounded-3xl [--cell-size:2.8rem] md:[--cell-size:3rem]"
+                          />
+                        </div>
+
+                        <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
+                          Chấm <span className="font-semibold text-primary">xanh</span> là
+                          ngày còn khung giờ trống.
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="flex flex-col border-border/60 bg-card/80 shadow-xl backdrop-blur lg:h-[540px]">
+                      <CardHeader className="pb-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <CardTitle className="flex items-center gap-2 text-xl">
+                              <Clock3 className="size-5 text-primary" />
+                              Khung giờ học
+                            </CardTitle>
+                            <CardDescription className="mt-2">
+                              {formatFullDate(selectedDate)}
+                            </CardDescription>
+                          </div>
+
+                          <Badge
+                            variant="outline"
+                            className="w-fit rounded-full border-border/70 bg-background/70 px-3 py-1 text-muted-foreground"
+                          >
+                            {selectedDaySlots.length} ca học trong ngày
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="flex min-h-0 flex-1 flex-col pt-0">
+                        {selectedDaySlots.length === 0 ? (
+                          <div className="flex h-full items-center justify-center rounded-[28px] border border-dashed border-border bg-muted/25 px-6 py-12 text-center">
+                            <div>
+                              <p className="text-lg font-medium text-foreground">
+                                Ngày này chưa có lịch học
+                              </p>
+                              <p className="mt-2 text-sm text-muted-foreground">
+                                Hãy chọn ngày khác trên lịch hoặc đợi giáo viên mở
+                                thêm slot mới.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <ScrollArea className="min-h-0 flex-1 pr-4">
+                            <div className="space-y-3">
+                              {selectedDaySlots.map((slot) => {
+                                const selected = selectedIds.includes(slot.timeSlotId);
+                                const available = isAvailable(slot);
+
+                                return (
+                                  <button
+                                    key={slot.timeSlotId}
+                                    type="button"
+                                    disabled={!available}
+                                    onClick={() => toggleSlot(slot)}
+                                    className={cn(
+                                      "w-full rounded-[24px] border px-4 py-4 text-left transition-all",
+                                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                                      selected && "border-secondary/40 bg-secondary/10 shadow-sm",
+                                      !selected &&
+                                        available &&
+                                        "border-border/70 bg-background/60 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/5",
+                                      !available &&
+                                        "cursor-not-allowed border-destructive/15 bg-destructive/5 opacity-75"
+                                    )}
+                                  >
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                      <div className="flex items-start gap-3">
+                                        <div
+                                          className={cn(
+                                            "flex size-11 shrink-0 items-center justify-center rounded-2xl border",
+                                            selected &&
+                                              "border-secondary/20 bg-secondary text-secondary-foreground",
+                                            !selected &&
+                                              available &&
+                                              "border-primary/15 bg-primary/10 text-primary",
+                                            !available &&
+                                              "border-destructive/15 bg-destructive/10 text-destructive"
+                                          )}
+                                        >
+                                          {selected ? (
+                                            <CheckCheck className="size-4" />
+                                          ) : (
+                                            <Clock3 className="size-4" />
+                                          )}
+                                        </div>
+
+                                        <div>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-base font-semibold text-foreground">
+                                              {formatTimeRange(slot.startAt, slot.endAt)}
+                                            </p>
+
+                                            {slot.subject ? (
+                                              <Badge
+                                                variant="outline"
+                                                className="rounded-full border-border/70 bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
+                                              >
+                                                {slot.subject}
+                                              </Badge>
+                                            ) : null}
+                                          </div>
+
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {slot.durationMinutes} phút
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "w-fit rounded-full px-3 py-1 text-xs font-semibold",
+                                          selected &&
+                                            "border-transparent bg-secondary text-secondary-foreground",
+                                          !selected &&
+                                            available &&
+                                            "border-primary/15 bg-primary/10 text-primary",
+                                          !available &&
+                                            "border-destructive/15 bg-destructive/10 text-destructive"
+                                        )}
+                                      >
+                                        {selected
+                                          ? "Đã chọn"
+                                          : available
+                                          ? "Available"
+                                          : "Booked"}
+                                      </Badge>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </ScrollArea>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <Sparkles className="size-5 text-primary" />
+                        Preview lịch lặp sẽ được book
+                      </CardTitle>
+                      <CardDescription>
+                        Hệ thống tự gom các slot còn trống đúng theo khoảng ngày, thứ
+                        trong tuần và khung giờ bạn đã chọn.
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      {selectedWeekdays.length === 0 || selectedTimeKeys.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">
+                          Hãy chọn các thứ trong tuần và ít nhất một khung giờ để xem
+                          preview.
+                        </div>
+                      ) : recurringMatchedSlots.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">
+                          Không tìm thấy slot khả dụng khớp với lịch lặp bạn đã chọn.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                              <div className="text-sm text-muted-foreground">
+                                Buổi sẽ book
+                              </div>
+                              <div className="mt-1 text-3xl font-black text-foreground">
+                                {recurringMatchedSlots.length}
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                              <div className="text-sm text-muted-foreground">
+                                Buổi bị bỏ qua
+                              </div>
+                              <div className="mt-1 text-3xl font-black text-foreground">
+                                {skippedOccurrences.length}
+                              </div>
+                            </div>
+                          </div>
+
+                          <ScrollArea className="h-[360px] pr-3">
+                            <div className="space-y-3">
+                              {recurringMatchedSlots.map((slot) => (
+                                <div
+                                  key={slot.timeSlotId}
+                                  className="rounded-2xl border border-secondary/20 bg-secondary/10 p-4"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-semibold text-foreground">
+                                        {parseLocalDate(slot.startAt.slice(0, 10)).toLocaleDateString(
+                                          "vi-VN",
+                                          {
+                                            weekday: "long",
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                          }
+                                        )}
+                                      </p>
+                                      <p className="mt-1 text-sm text-secondary">
+                                        {formatTimeRange(slot.startAt, slot.endAt)}
+                                      </p>
+                                    </div>
+
+                                    <Badge
+                                      variant="outline"
+                                      className="rounded-full border-secondary/20 bg-background/80"
+                                    >
+                                      {slot.subject || "Buổi học"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+
+                          {skippedOccurrences.length > 0 ? (
+                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ
+                              qua vì không còn slot phù hợp hoặc không đủ điều kiện đặt
+                              trước 48 giờ.
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </section>
 
               <aside className="h-fit xl:sticky xl:top-6">
@@ -534,30 +956,39 @@ export default function TeacherSchedulePage() {
                       Chuẩn bị thanh toán
                     </CardTitle>
                     <CardDescription>
-                      Giữ nguyên luồng chọn slot rồi chuyển sang phần thanh toán.
+                      Khi bấm tiếp tục, hệ thống sẽ gửi đúng danh sách slot đang được
+                      chọn sang trang quote/checkout.
                     </CardDescription>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                      <div className="text-sm text-muted-foreground">
-                        Số buổi đã chọn
-                      </div>
+                      <div className="text-sm text-muted-foreground">Số buổi đã chọn</div>
                       <div className="mt-1 text-3xl font-black text-foreground">
-                        {selectedIds.length}
+                        {effectiveSelectedIds.length}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <MiniStat
-                        label="Trong ngày"
-                        value={`${selectedDaySlots.filter((slot) =>
-                          selectedIds.includes(slot.timeSlotId)
-                        ).length}`}
+                        label={repeatMode === "RECURRING" ? "Khớp lịch" : "Trong ngày"}
+                        value={`${
+                          repeatMode === "RECURRING"
+                            ? recurringMatchedSlots.length
+                            : selectedDaySlots.filter((slot) =>
+                                selectedIds.includes(slot.timeSlotId)
+                              ).length
+                        }`}
                       />
                       <MiniStat
-                        label="Tổng slot trống"
-                        value={`${availableSlotCount}`}
+                        label={
+                          repeatMode === "RECURRING" ? "Bỏ qua" : "Tổng slot trống"
+                        }
+                        value={`${
+                          repeatMode === "RECURRING"
+                            ? skippedOccurrences.length
+                            : availableSlotCount
+                        }`}
                       />
                     </div>
 
@@ -565,17 +996,17 @@ export default function TeacherSchedulePage() {
 
                     <div className="space-y-3">
                       <div className="text-sm font-medium text-foreground">
-                        Các buổi đã chọn
+                        Các buổi sẽ gửi sang quote
                       </div>
 
-                      {selectedSlots.length === 0 ? (
+                      {effectiveSelectedSlots.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">
                           Chưa có buổi nào được chọn.
                         </div>
                       ) : (
                         <ScrollArea className="h-[280px] pr-3">
                           <div className="space-y-3">
-                            {selectedSlots.map((slot) => (
+                            {effectiveSelectedSlots.map((slot) => (
                               <div
                                 key={slot.timeSlotId}
                                 className="rounded-2xl border border-secondary/20 bg-secondary/10 p-3"
@@ -596,14 +1027,23 @@ export default function TeacherSchedulePage() {
                                     </p>
                                   </div>
 
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 rounded-xl text-muted-foreground hover:text-foreground"
-                                    onClick={() => toggleSlot(slot)}
-                                  >
-                                    Bỏ chọn
-                                  </Button>
+                                  {repeatMode === "NONE" ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 rounded-xl text-muted-foreground hover:text-foreground"
+                                      onClick={() => toggleSlot(slot)}
+                                    >
+                                      Bỏ chọn
+                                    </Button>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="rounded-full border-border/70 bg-background/70"
+                                    >
+                                      Tự động
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -614,7 +1054,7 @@ export default function TeacherSchedulePage() {
 
                     <Button
                       onClick={onGoInvoice}
-                      disabled={selectedIds.length === 0}
+                      disabled={effectiveSelectedIds.length === 0}
                       className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
                     >
                       Xem hóa đơn các buổi đã chọn

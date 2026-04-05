@@ -205,17 +205,17 @@ export default function PaymentPackages() {
               <Package className="text-primary" size={18} />
             </span>
           </div>
-          <p className="text-3xl font-black text-foreground">{plans.length}</p>
+          <p className="text-2xl font-black text-foreground">{plans.length}</p>
         </div>
         
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm border-l-4 border-l-primary">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm ">
           <div className="mb-4 flex items-start justify-between">
             <p className="text-sm font-semibold text-muted-foreground">Gói phổ biến nhất</p>
             <span className="rounded-lg border border-secondary/30 bg-secondary/20 px-2 py-1">
               <TrendingUp className="text-primary" size={18} />
             </span>
           </div>
-          <p className="text-3xl font-black text-foreground">{popularPlan?.name || "Chưa đặt"}</p>
+          <p className="text-2xl font-black text-foreground">{popularPlan?.name || "Chưa đặt"}</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -225,7 +225,7 @@ export default function PaymentPackages() {
               <CheckCircle2 className="text-emerald-500" size={18} />
             </span>
           </div>
-          <p className="text-3xl font-black text-foreground">{activePlans} <span className="text-lg text-muted-foreground font-medium">/ {plans.length}</span></p>
+          <p className="text-2xl font-black text-foreground">{activePlans} <span className="text-lg text-muted-foreground font-medium">/ {plans.length}</span></p>
         </div>
       </div>
 
@@ -302,10 +302,10 @@ export default function PaymentPackages() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
-                        <Edit3 className="w-4 h-4 text-blue-500" />
+                        <Edit3 className="w-4 h-4 " />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(plan)}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
+                        <Trash2 className="w-4 h-4 " />
                       </Button>
                     </TableCell>
                   </TableRow>

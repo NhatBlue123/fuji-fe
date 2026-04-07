@@ -535,12 +535,18 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[360px] w-full">
+          <div className="h-[360px] w-full min-h-[360px] min-w-0">
             {revenueChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                minWidth={0}
+                minHeight={0}
+              >
                 <LineChart
                   data={revenueChartData}
                   margin={{ top: 16, right: 20, left: 8, bottom: 20 }}
+                  key={`chart-${revenueChartData.length}`}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis

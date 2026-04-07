@@ -167,6 +167,21 @@ export const courseApi = createApi({
       invalidatesTags: [{ type: "Course", id: "LIST" }],
     }),
 
+    purchaseCourse: builder.mutation<
+      ApiResponse<null>,
+      { courseId: number; discountCode?: string }
+    >({
+      query: ({ courseId, discountCode }) => ({
+        url: `/courses/${courseId}/buy`,
+        method: "POST",
+        body: discountCode ? { discountCode } : {},
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Course", id: courseId },
+        { type: "Course", id: "LIST" },
+      ],
+    }),
+
     // ==================== RATING ====================
 
     rateCourse: builder.mutation<
@@ -295,6 +310,7 @@ export const {
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  usePurchaseCourseMutation,
   useRateCourseMutation,
   useGetCourseRatingsQuery,
   useGetLessonsByCourseQuery,

@@ -3,16 +3,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useGetCourseByIdQuery,
   useGetLessonsByCourseQuery,
   useGetCourseRatingsQuery,
   useGetAllCoursesQuery,
+  usePurchaseCourseMutation,
 } from "@/store/services/courseApi";
 import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useAuth, useAppDispatch } from "@/store/hooks";
+import { baseApi } from "@/store/services/baseApi";
+import { toast } from "sonner";
 
 // ─── Helpers ───────────────────────────────────────────
 
@@ -777,11 +782,17 @@ function ReviewsContent({
 // ─── Main Component ────────────────────────────────────
 
 export default function CourseDetailView({ courseId }: { courseId: number }) {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("curriculum");
   const [couponCode, setCouponCode] = useState("");
+  const [isPurchased, setIsPurchased] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
   const { isPremium } = useFeatureAccess();
+  const [purchaseCourse, { isLoading: isPurchasing }] =
+    usePurchaseCourseMutation();
 
   const {
     data: course,
@@ -791,6 +802,14 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
   const { data: lessons = [], isLoading: lessonsLoading } =
     useGetLessonsByCourseQuery(courseId);
+
+  const sortedLessons = [...lessons].sort(
+    (a, b) => a.lessonOrder - b.lessonOrder,
+  );
+  const firstLesson = sortedLessons[0];
+  const firstLessonHref = firstLesson
+    ? `/course/${courseId}/lesson/${firstLesson.id}`
+    : "#";
 
   // Sticky detection
   useEffect(() => {
@@ -814,6 +833,17 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   }, []);
+
+  const handleApplyCoupon = () => {
+    const normalizedCode = couponCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      toast.info("Vui lòng nhập mã ưu đãi.");
+      return;
+    }
+
+    setCouponCode(normalizedCode);
+    toast.success(`Đã áp dụng mã ${normalizedCode}.`);
+  };
 
   if (courseLoading) return <DetailSkeleton />;
 
@@ -841,6 +871,55 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
   const completedLessons = lessons.filter((l) => l.userCompleted).length;
+  const canAccessCourse = isPremium || isPurchased;
+
+  const handlePurchaseCourse = async () => {
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để mua khóa học.");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const discountCode = couponCode.trim();
+      await purchaseCourse({
+        courseId,
+        discountCode: discountCode || undefined,
+      }).unwrap();
+
+      setIsPurchased(true);
+      dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
+      toast.success(
+        course.price === 0
+          ? "Đăng ký khóa học thành công."
+          : "Thanh toán khóa học thành công.",
+      );
+
+      if (firstLesson) {
+        router.push(firstLessonHref);
+      }
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string }; error?: string };
+      const message =
+        err?.data?.message ||
+        err?.error ||
+        "Không thể thanh toán khóa học. Vui lòng thử lại.";
+
+      if (
+        typeof message === "string" &&
+        message.toLowerCase().includes("already purchased")
+      ) {
+        setIsPurchased(true);
+        toast.info("Bạn đã mua khóa học này trước đó.");
+        if (firstLesson) {
+          router.push(firstLessonHref);
+        }
+        return;
+      }
+
+      toast.error(message);
+    }
+  };
 
   return (
     <>
@@ -916,7 +995,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
           <div className="flex-shrink-0">
             {lessons.length > 0 ? (
               <Link
-                href={`/course/${courseId}/lesson/${[...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)[0].id}`}
+                href={firstLessonHref}
                 className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
               >
                 <span className="material-symbols-outlined filled">
@@ -1029,25 +1108,32 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 </div>
 
                 {/* Buttons */}
-                {!isPremium ? (
-                  <Button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
-                    {course.price === 0 ? "Đăng ký miễn phí" : "Mua ngay"}
+                {!canAccessCourse ? (
+                  <Button
+                    onClick={handlePurchaseCourse}
+                    disabled={isPurchasing}
+                    className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base"
+                  >
+                    {isPurchasing
+                      ? "Đang xử lý..."
+                      : course.price === 0
+                        ? "Đăng ký miễn phí"
+                        : "Mua ngay"}
                   </Button>
                 ) : (
-                  <Link 
-                    href={lessons.length > 0 ? `/course/${courseId}/lesson/${[...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)[0].id}` : "#"} 
-                    className="block"
-                  >
-                    <Button 
-                      disabled={lessons.length === 0}
+                  <Link href={firstLessonHref} className="block">
+                    <Button
+                      disabled={!firstLesson}
                       className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold transition-all shadow-lg shadow-purple-500/30 mb-3 text-base flex items-center justify-center gap-2"
                     >
-                      <span className="material-symbols-outlined text-xl">play_circle</span>
-                      {lessons.length > 0 ? "Vào học ngay" : "Chưa có bài học"}
+                      <span className="material-symbols-outlined text-xl">
+                        play_circle
+                      </span>
+                      {firstLesson ? "Vào học ngay" : "Chưa có bài học"}
                     </Button>
                   </Link>
                 )}
-                
+
                 <Button
                   variant="ghost"
                   className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm"
@@ -1143,7 +1229,11 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                     className="glass-input rounded-lg text-sm text-foreground px-3 py-2 w-full focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
                     placeholder="Nhập mã giảm giá"
                   />
-                  <Button className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors">
+                  <Button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors"
+                  >
                     Áp dụng
                   </Button>
                 </div>

@@ -9,6 +9,7 @@ import {
   useCallback,
 } from "react";
 import type { Socket } from "socket.io-client";
+import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -40,7 +41,7 @@ export function NotificationProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { accessToken, isAuthenticated, user } = useAuth();
+  const { accessToken, isAuthenticated, user, isInitialized } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -50,16 +51,21 @@ export function NotificationProvider({
    * Lấy danh sách thông báo từ Backend API
    */
   const fetchNotifications = useCallback(async () => {
-    if (!isAuthenticated || !accessToken) return;
+    // Chờ useAuthInit xác thực / refresh JWT — tránh gọi API khi token cookie còn hết hạn
+    // nhưng Redux đã hydrate isAuthenticated từ localStorage (401 lần đầu load).
+    if (!isInitialized || !isAuthenticated || !accessToken) return;
     try {
       const res = await api.get('/notifications');
       setNotifications(res.data.content);
       const count = res.data.content.filter((n: Notification) => !n.isRead).length;
       setUnreadCount(count);
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return;
+      }
       console.error("Failed to fetch notifications", error);
     }
-  }, [isAuthenticated, accessToken]);
+  }, [isInitialized, isAuthenticated, accessToken]);
 
   /**
    * Đánh dấu 1 thông báo là đã đọc
@@ -106,7 +112,7 @@ export function NotificationProvider({
   };
 
   useEffect(() => {
-    if (!isAuthenticated || !user) {
+    if (!isInitialized || !isAuthenticated || !user) {
       disconnectNotificationSocket();
       setSocket(null);
       setIsConnected(false);
@@ -148,7 +154,14 @@ export function NotificationProvider({
       s.off("new-notification", handleNewNotification);
       disconnectNotificationSocket();
     };
-  }, [accessToken, isAuthenticated, user, router, fetchNotifications]);
+  }, [
+    accessToken,
+    isInitialized,
+    isAuthenticated,
+    user,
+    router,
+    fetchNotifications,
+  ]);
 
   const value = useMemo(
     () => ({

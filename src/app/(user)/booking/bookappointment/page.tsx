@@ -48,17 +48,34 @@ export default function PaymentPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { data: singleQuote, isLoading, isFetching } = useGetBookingQuoteQuery(
+  const {
+    data: singleQuote,
+    isLoading,
+    isFetching,
+    isError: isSingleQuoteError,
+    error: singleQuoteError,
+  } = useGetBookingQuoteQuery(
     { timeSlotId },
     { skip: !isSingleMode }
   );
 
-  const [getBulkQuote, { data: bulkQuote, isLoading: isBulkQuoteLoading }] =
-    useGetBulkBookingQuoteMutation();
+  const [
+    getBulkQuote,
+    {
+      data: bulkQuote,
+      isLoading: isBulkQuoteLoading,
+      isError: isBulkQuoteError,
+      error: bulkQuoteError,
+    },
+  ] = useGetBulkBookingQuoteMutation();
 
   useEffect(() => {
     if (!isBulkMode) return;
-    getBulkQuote({ teacherId, timeSlotIds: bulkIds });
+    getBulkQuote({ teacherId, timeSlotIds: bulkIds })
+      .unwrap()
+      .catch((e: any) => {
+        setErrorMsg(e?.data?.message || "Không tải được thông tin hóa đơn.");
+      });
   }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
 
   const [createBooking, { isLoading: isCreatingSingle }] = useCreateBookingMutation();
@@ -67,6 +84,10 @@ export default function PaymentPage() {
   const isCreating = isCreatingSingle || isCreatingBulk;
   const quote = isSingleMode ? singleQuote : bulkQuote;
   const canConfirm = !!quote && quote.canPay;
+  const isQuoteError = isSingleMode ? isSingleQuoteError : isBulkQuoteError;
+  const quoteErrorMessage =
+    ((isSingleMode ? singleQuoteError : bulkQuoteError) as any)?.data?.message ||
+    "Không tải được thông tin hóa đơn.";
 
   const onConfirm = async () => {
     setErrorMsg("");
@@ -124,6 +145,18 @@ export default function PaymentPage() {
         {(isLoading || isFetching || isBulkQuoteLoading) && (
           <div className="text-slate-400 text-center animate-pulse">
             Đang tải thông tin đơn hàng...
+          </div>
+        )}
+
+        {isQuoteError && !quote && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center">
+            {quoteErrorMessage}
+          </div>
+        )}
+
+        {!isLoading && !isFetching && !isBulkQuoteLoading && !isQuoteError && !quote && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 text-center">
+            Không có dữ liệu hóa đơn cho slot đã chọn. Vui lòng chọn lại lịch.
           </div>
         )}
 

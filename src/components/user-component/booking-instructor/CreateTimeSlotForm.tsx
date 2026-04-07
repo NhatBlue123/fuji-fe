@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
-import { BulkResponse, Mode, TimeRange, Weekday } from "./types";
+import { Mode, TimeRange, Weekday } from "./types";
 import {
   estimateSlots,
   getWeekdayCodeFromDate,
@@ -180,16 +180,8 @@ export default function CreateTimeSlotForm() {
         };
       }
 
-      const res = await api.post("/time-slots/bulk", payload);
-      const data: BulkResponse | undefined = res?.data?.data;
-
-      setNotice({
-        type: "success",
-        title: "Đã lưu lịch rảnh",
-        description: data ? "Tạo lịch thành công." : "Tạo lịch thành công.",
-      });
-
-      setTimeout(() => setNotice(null), 4000);
+      await api.post("/time-slots/bulk", payload);
+      router.push("/admin/teacher-schedules/teaching-schedule");
     } catch (e: any) {
       const message = e?.response?.data?.message || "Tạo lịch thất bại.";
       setErr(message);

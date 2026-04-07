@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,9 @@ import {
   useGetCourseByIdQuery,
   useGetLessonsByCourseQuery,
   useGetLessonByIdQuery,
+  useTrackLessonProgressMutation,
 } from "@/store/services/courseApi";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import type { LessonResponseDTO, TaskType } from "@/types/course";
 import {
   MultipleChoiceTask,
@@ -74,6 +76,44 @@ function LessonSkeleton() {
             <div key={i} className="h-14 bg-muted rounded-lg" />
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LockedLessonNotice({
+  courseId,
+  lessonTitle,
+}: {
+  courseId: number;
+  lessonTitle?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center h-[100dvh] bg-background text-center px-6 -mt-[1px]">
+      <span className="material-symbols-outlined text-6xl text-muted-foreground/40 mb-4">
+        lock
+      </span>
+      <h2 className="text-2xl font-bold text-foreground mb-2">
+        Bài học này đã bị khóa
+      </h2>
+      <p className="text-muted-foreground mb-8 max-w-md">
+        {lessonTitle
+          ? `Bạn cần đăng ký khóa học để xem "${lessonTitle}".`
+          : "Bạn cần đăng ký khóa học để xem bài học này."}
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link
+          href={`/course/${courseId}`}
+          className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground font-bold hover:bg-secondary/90 transition-colors"
+        >
+          Về trang khóa học
+        </Link>
+        <Link
+          href={`/course/${courseId}`}
+          className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors"
+        >
+          Đăng ký để mở khóa
+        </Link>
       </div>
     </div>
   );
@@ -188,12 +228,15 @@ function SidebarLessonItem({
   lesson,
   isActive,
   courseId,
+  canAccessCourse,
 }: {
   lesson: LessonResponseDTO;
   isActive: boolean;
   courseId: number;
+  canAccessCourse: boolean;
 }) {
   const isVideo = lesson.lessonType === "video";
+  const canAccessLesson = canAccessCourse || lesson.isPreview;
 
   if (isActive) {
     return (
@@ -214,9 +257,43 @@ function SidebarLessonItem({
               <span className="text-[10px] bg-secondary text-white px-1.5 py-0.5 rounded font-bold shadow-sm">
                 Đang học
               </span>
+              {lesson.isPreview && (
+                <span className="text-[10px] bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">
+                  Xem thử
+                </span>
+              )}
             </div>
             {lesson.duration > 0 && (
               <span className="text-[11px] text-muted-foreground font-medium">
+                {formatDuration(lesson.duration)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canAccessLesson) {
+    return (
+      <div className="p-4 border-l-[3px] border-transparent flex gap-3 opacity-75 cursor-not-allowed">
+        <div className="mt-1">
+          <div className="size-6 rounded-full flex items-center justify-center border border-border bg-muted/50">
+            <span className="material-symbols-outlined text-[14px] text-muted-foreground">
+              lock
+            </span>
+          </div>
+        </div>
+        <div className="flex-1">
+          <h4 className="text-sm font-medium mb-1 text-muted-foreground">
+            {lesson.title}
+          </h4>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-amber-500 font-bold">
+              Đã khóa
+            </span>
+            {lesson.duration > 0 && (
+              <span className="text-[11px] text-muted-foreground/60">
                 {formatDuration(lesson.duration)}
               </span>
             )}
@@ -289,6 +366,7 @@ export default function LessonView({
   lessonId: number;
 }) {
   const router = useRouter();
+  const { isPremium } = useFeatureAccess();
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "qa" | "notes">(
     "overview",
   );
@@ -305,12 +383,27 @@ export default function LessonView({
     isLoading: lessonLoading,
     error: lessonError,
   } = useGetLessonByIdQuery(lessonId);
+  const [trackLessonProgress] = useTrackLessonProgressMutation();
 
   // Sorted lessons
   const sortedLessons = useMemo(
     () => [...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder),
     [lessons],
   );
+  const currentLessonMeta = sortedLessons.find((l) => l.id === lessonId);
+  const canAccessCourse = isPremium || Boolean(course?.isEnrolled);
+  const canAccessCurrentLesson =
+    canAccessCourse || Boolean(currentLessonMeta?.isPreview);
+
+  useEffect(() => {
+    if (!courseId || !lessonId || !canAccessCurrentLesson) return;
+
+    trackLessonProgress({ courseId, lessonId })
+      .unwrap()
+      .catch(() => {
+        // Tracking failures should not block lesson consumption.
+      });
+  }, [canAccessCurrentLesson, courseId, lessonId, trackLessonProgress]);
 
   // Progress calculation
   const completedCount = sortedLessons.filter((l) => l.userCompleted).length;
@@ -325,10 +418,34 @@ export default function LessonView({
     currentIndex < sortedLessons.length - 1
       ? sortedLessons[currentIndex + 1]
       : null;
+  const canAccessPrevLesson =
+    !!prevLesson && (canAccessCourse || prevLesson.isPreview);
+  const canAccessNextLesson =
+    !!nextLesson && (canAccessCourse || nextLesson.isPreview);
 
   // Loading
   if (courseLoading || lessonLoading || lessonsLoading) {
     return <LessonSkeleton />;
+  }
+
+  const lessonErrorStatus =
+    typeof lessonError === "object" &&
+    lessonError !== null &&
+    "status" in lessonError
+      ? Number((lessonError as { status?: number }).status)
+      : undefined;
+
+  if (
+    !lesson &&
+    (lessonErrorStatus === 403 ||
+      (Boolean(currentLessonMeta) && !canAccessCurrentLesson))
+  ) {
+    return (
+      <LockedLessonNotice
+        courseId={courseId}
+        lessonTitle={currentLessonMeta?.title}
+      />
+    );
   }
 
   // Error
@@ -563,7 +680,7 @@ export default function LessonView({
 
           {/* Navigation buttons */}
           <div className="flex items-center justify-between mt-8 pt-8 pb-4 border-t border-border">
-            {prevLesson ? (
+            {prevLesson && canAccessPrevLesson ? (
               <Link
                 href={`/course/${courseId}/lesson/${prevLesson.id}`}
                 className="flex items-center gap-2 px-5 py-3 bg-card hover:bg-muted text-foreground rounded-xl border border-border transition-all font-medium text-sm group"
@@ -578,11 +695,21 @@ export default function LessonView({
                   </div>
                 </div>
               </Link>
+            ) : prevLesson ? (
+              <div className="flex items-center gap-2 px-5 py-3 bg-card text-muted-foreground rounded-xl border border-border font-medium text-sm opacity-70 cursor-not-allowed">
+                <span className="material-symbols-outlined">lock</span>
+                <div className="text-left hidden sm:block">
+                  <div className="text-xs">Bài trước</div>
+                  <div className="text-sm font-bold truncate max-w-[180px]">
+                    {prevLesson.title}
+                  </div>
+                </div>
+              </div>
             ) : (
               <div />
             )}
 
-            {nextLesson ? (
+            {nextLesson && canAccessNextLesson ? (
               <Link
                 href={`/course/${courseId}/lesson/${nextLesson.id}`}
                 className="flex items-center gap-2 px-5 py-3 bg-secondary hover:bg-secondary/80 text-white rounded-xl transition-all font-medium text-sm group shadow-lg shadow-secondary/20"
@@ -595,6 +722,16 @@ export default function LessonView({
                 </div>
                 <span className="material-symbols-outlined">arrow_forward</span>
               </Link>
+            ) : nextLesson ? (
+              <div className="flex items-center gap-2 px-5 py-3 bg-card text-muted-foreground rounded-xl border border-border font-medium text-sm opacity-70 cursor-not-allowed">
+                <div className="text-right hidden sm:block">
+                  <div className="text-xs">Bài tiếp theo</div>
+                  <div className="text-sm font-bold truncate max-w-[180px]">
+                    {nextLesson.title}
+                  </div>
+                </div>
+                <span className="material-symbols-outlined">lock</span>
+              </div>
             ) : (
               <Link
                 href={`/course/${courseId}`}
@@ -638,6 +775,7 @@ export default function LessonView({
                 lesson={l}
                 isActive={l.id === lessonId}
                 courseId={courseId}
+                canAccessCourse={canAccessCourse}
               />
             ))}
             {sortedLessons.length === 0 && (
@@ -688,6 +826,7 @@ export default function LessonView({
                     lesson={l}
                     isActive={l.id === lessonId}
                     courseId={courseId}
+                    canAccessCourse={canAccessCourse}
                   />
                 ))}
               </div>

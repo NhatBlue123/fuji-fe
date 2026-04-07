@@ -7,7 +7,7 @@
 
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║  OTP Payment Test Flow - Quick Start                   ║"
-echo "║  Simulate payment Success & Auto-add Flowers to Wallet ║"
+echo "║  Simulate payment Success & Auto-add Coins to Wallet ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -69,7 +69,7 @@ echo "   ✅ Order ID created"
 echo "   ✅ Signature obtained"
 echo "   ✅ Callback sent to backend"
 echo "   ✅ Wallet balance increased"
-echo "   ✅ Flowers auto-added 🌸"
+echo "   ✅ Coins auto-added xu"
 echo ""
 
 echo "════════════════════════════════════════════════════════"
@@ -88,3 +88,4 @@ echo "   👉 Docs/payment-test-guide.md"
 echo ""
 echo "🚀 Ready to test! Choose your method above."
 echo ""
+

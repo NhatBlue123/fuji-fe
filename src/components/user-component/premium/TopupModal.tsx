@@ -35,7 +35,6 @@ export default function TopupModal({ isOpen, onClose }: TopupModalProps) {
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto p-0 rounded-[2.5rem] border-secondary/10 shadow-2xl bg-card transition-all duration-500">
         <div className="relative p-6 md:p-10">
-          
           {/* Tabs Navigation */}
           <div className="flex flex-col items-center mb-10">
             <div className="inline-flex bg-muted/50 p-1.5 rounded-2xl border border-border/50">
@@ -48,18 +47,27 @@ export default function TopupModal({ isOpen, onClose }: TopupModalProps) {
                     onClick={() => setActiveTab(tab.id as "premium" | "topup")}
                     className={cn(
                       "flex items-center gap-3 px-8 py-3.5 rounded-xl font-bold text-sm tracking-tight transition-all duration-300 relative overflow-hidden",
-                      isActive 
-                        ? "bg-secondary text-white shadow-xl shadow-secondary/20" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      isActive
+                        ? "bg-secondary text-white shadow-xl shadow-secondary/20"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     )}
                   >
-                    <Icon className={cn("size-4", isActive ? "animate-pulse" : "opacity-50")} />
+                    <Icon
+                      className={cn(
+                        "size-4",
+                        isActive ? "animate-pulse" : "opacity-50",
+                      )}
+                    />
                     {tab.name}
                     {isActive && (
-                      <motion.div 
+                      <motion.div
                         layoutId="activeTab"
                         className="absolute inset-0 bg-white/10"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        transition={{
+                          type: "spring",
+                          bounce: 0.2,
+                          duration: 0.6,
+                        }}
                       />
                     )}
                   </button>

@@ -286,14 +286,33 @@ export const courseApi = createApi({
 
     searchCourses: builder.query<
       PageResponse<CourseResponseDTO>,
-      { keyword: string; page?: number; size?: number }
+      {
+        keyword: string;
+        page?: number;
+        size?: number;
+        level?: string;
+        category?: "all" | "free" | "paid" | "mine";
+      }
     >({
-      query: ({ keyword, page = 0, size = 10 }) =>
-        `/courses/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`,
+      query: ({ keyword, page = 0, size = 10, level, category }) =>
+        `/courses/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}${level ? `&level=${encodeURIComponent(level)}` : ""}${category ? `&category=${encodeURIComponent(category)}` : ""}`,
       transformResponse: (
         response: ApiResponse<PageResponse<CourseResponseDTO>>,
       ) => response.data!,
       providesTags: [{ type: "Course", id: "LIST" }],
+    }),
+
+    trackLessonProgress: builder.mutation<
+      ApiResponse<void>,
+      { courseId: number; lessonId: number }
+    >({
+      query: ({ courseId, lessonId }) => ({
+        url: `/courses/${courseId}/lessons/${lessonId}/track`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Course", id: courseId },
+      ],
     }),
 
     getInstructors: builder.query<InstructorDTO[], void>({
@@ -320,5 +339,6 @@ export const {
   useDeleteLessonMutation,
   useUploadAudioMutation,
   useSearchCoursesQuery,
+  useTrackLessonProgressMutation,
   useGetInstructorsQuery,
 } = courseApi;

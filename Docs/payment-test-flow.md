@@ -1,7 +1,7 @@
 # OTP Payment Test Flow Guide
 
 ## Tổng Quan
-Đã implement complete OTP Payment flow test để simulate thanh toán thành công và tự động cộng hoa vào ví.
+Đã implement complete OTP Payment flow test để simulate thanh toán thành công và tự động cộng XU vào ví.
 
 ## Flow Chi Tiết
 
@@ -37,12 +37,12 @@ Body: {
 Response: { status: "SUCCESS", message: "Payment processed" }
 ```
 
-### 📍 Bước 4: Kiểm Tra Ví (Verify Flowers Added)
+### 📍 Bước 4: Kiểm Tra Ví (Verify Coins Added)
 ```
 GET /api/wallet/me
-Response: { 
+Response: {
   balance: 1000000,
-  flowers: 1000
+  Coins: 1000
 }
 ```
 
@@ -73,7 +73,7 @@ console.log(result);
 //   signature: "xxxx...",
 //   callbackStatus: "SUCCESS",
 //   newBalance: 1000000,
-//   flowers: 1000
+//   Coins: 1000
 // }
 ```
 
@@ -120,7 +120,7 @@ function MyComponent() {
 ⏳ Waiting for backend to process payment (1.5 seconds)...
 
 📍 STEP 4: Checking wallet balance...
-✅ Step 4 - Wallet Balance: { balance: 1000000, flowers: 1000 }
+✅ Step 4 - Wallet Balance: { balance: 1000000, Coins: 1000 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ OTP PAYMENT TEST FLOW COMPLETED SUCCESSFULLY!
@@ -131,7 +131,7 @@ function MyComponent() {
    - Signature: sig_abc123...
    - Callback Status: SUCCESS
    - New Balance: 1,000,000đ
-   - Flowers Added: 1000 🌸
+   - Coins Added: 1000 xu
 ```
 
 ## Files Liên Quan
@@ -146,7 +146,7 @@ function MyComponent() {
 ## Features
 
 ✅ Simulate complete payment flow
-✅ Auto-add flowers to wallet on success
+✅ Auto-add Coins to wallet on success
 ✅ Detailed console logging
 ✅ Error handling and recovery
 ✅ Development mode only (visible when NODE_ENV === 'development')
@@ -184,3 +184,4 @@ Kiểm tra backend generate signature đúng
 - Không thể trigger flow từ production
 - Tất cả API calls là **REAL** - không mocked
 - Backend phải cách ly test endpoints hoặc kiểm tra authorization
+

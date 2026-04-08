@@ -16,17 +16,22 @@ export interface TeacherBaseInfo {
 }
 
 export interface TeacherIncomeStatsResponse {
-  totalRevenue: number;
-  totalPlatformFee: number;
-  totalNetIncome: number;
-  totalClasses: number;
+  totalIncome: number;
+  totalBookingIncome: number;
   totalStudents: number;
-  monthlyStats: {
+  totalCourses: number;
+  totalCompletedBookings: number;
+  totalPendingBookings: number;
+  totalCancelledBookings: number;
+  totalWithdrawn: number;
+  pendingWithdraw: number;
+  currentBalance: number;
+  monthlyIncomes: {
     month: string;
-    income: number;
-    expense: number;
+    totalRevenue: number;
+    bookingRevenue: number;
+    courseRevenue: number;
   }[];
-  // the api might return other fields, update as needed
 }
 
 export interface TeacherDashboardData {

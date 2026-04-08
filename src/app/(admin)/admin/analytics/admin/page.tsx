@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useGetRevenueStatsQuery } from "@/store/services/adminRevenueApi";
+import { useGetTeacherIncomeStatsQuery } from "@/store/services/teacherApi";
 import {
   LineChart,
   Line,
@@ -31,7 +31,7 @@ import {
 import { toast } from "sonner";
 
 export default function AdminRevenuePage() {
-  const { data: statsResponse, isLoading, isError, refetch, isFetching } = useGetRevenueStatsQuery();
+  const { data: statsResponse, isLoading, isError, refetch, isFetching } = useGetTeacherIncomeStatsQuery();
   const [viewMode, setViewMode] = useState<"line" | "bar">("bar");
 
   const stats = statsResponse;
@@ -128,7 +128,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.monthlyIncome || 0).toLocaleString()}đ
+              {(stats.totalIncome || 0).toLocaleString()}đ
             </div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
                Biến động gần đây
@@ -138,12 +138,12 @@ export default function AdminRevenuePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Phí nền tảng (Booking)</CardTitle>
+            <CardTitle className="text-sm font-medium">Doanh thu Booking</CardTitle>
             <Wallet className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.bookingIncome || 0).toLocaleString()}đ
+              {(stats.totalBookingIncome || 0).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Phí thu từ các lịch đặt học
@@ -198,13 +198,13 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
             <div className="h-[350px] w-full">
-              {stats.monthlyIncomeBreakdown && stats.monthlyIncomeBreakdown.length > 0 ? (
+              {stats.monthlyIncomes && stats.monthlyIncomes.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   {viewMode === 'line' ? (
-                    <LineChart data={stats.monthlyIncomeBreakdown} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <LineChart data={stats.monthlyIncomes} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" opacity={0.2} />
                       <XAxis 
-                        dataKey="date" 
+                        dataKey="month" 
                         stroke="#888888" 
                         fontSize={12} 
                         tickLine={false} 
@@ -227,10 +227,10 @@ export default function AdminRevenuePage() {
                       <Line type="monotone" dataKey="courseRevenue" name="Khóa học" stroke="#8b5cf6" strokeWidth={2} />
                     </LineChart>
                   ) : (
-                    <BarChart data={stats.monthlyIncomeBreakdown} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={stats.monthlyIncomes} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" opacity={0.2} />
                       <XAxis 
-                        dataKey="date" 
+                        dataKey="month" 
                         stroke="#888888" 
                         fontSize={12} 
                         tickLine={false} 
@@ -276,13 +276,13 @@ export default function AdminRevenuePage() {
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <GraduationCap className="h-4 w-4" /> Tổng số học viên
                   </div>
-                  <span className="font-semibold">{stats.courseStatistics?.totalStudents || 0}</span>
+                  <span className="font-semibold">{stats.totalStudents || 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <BookOpen className="h-4 w-4" /> Tổng khóa học
                   </div>
-                  <span className="font-semibold">{stats.courseStatistics?.totalCourses || 0}</span>
+                  <span className="font-semibold">{stats.totalCourses || 0}</span>
                 </div>
               </div>
 
@@ -291,19 +291,19 @@ export default function AdminRevenuePage() {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-emerald-50 dark:bg-emerald-950/50 p-3 rounded-lg text-center">
                     <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                      {stats.bookingStatistics?.completed || 0}
+                      {stats.totalCompletedBookings || 0}
                     </div>
                     <div className="text-[10px] uppercase text-emerald-600 tracking-wider mt-1 font-semibold">Hoàn thành</div>
                   </div>
                   <div className="bg-orange-50 dark:bg-orange-950/50 p-3 rounded-lg text-center">
                     <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                      {stats.bookingStatistics?.pending || 0}
+                      {stats.totalPendingBookings || 0}
                     </div>
                     <div className="text-[10px] uppercase text-orange-600 tracking-wider mt-1 font-semibold">Chờ học</div>
                   </div>
                   <div className="bg-red-50 dark:bg-red-950/50 p-3 rounded-lg text-center">
                     <div className="text-xl font-bold text-red-600 dark:text-red-400">
-                      {stats.bookingStatistics?.cancelled || 0}
+                      {stats.totalCancelledBookings || 0}
                     </div>
                     <div className="text-[10px] uppercase text-red-600 tracking-wider mt-1 font-semibold">Đã Hủy</div>
                   </div>
@@ -315,11 +315,11 @@ export default function AdminRevenuePage() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Đã rút (Giảng viên)</span>
-                    <span className="font-medium text-destructive">{(stats.withdrawn || 0).toLocaleString()}đ</span>
+                    <span className="font-medium text-destructive">{(stats.totalWithdrawn || 0).toLocaleString()}đ</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Chờ rút tiền</span>
-                    <span className="font-medium text-orange-500">{(stats.pendingWithdrawals || 0).toLocaleString()}đ</span>
+                    <span className="font-medium text-orange-500">{(stats.pendingWithdraw || 0).toLocaleString()}đ</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Số dư hiện tại</span>

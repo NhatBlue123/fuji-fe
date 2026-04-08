@@ -123,7 +123,7 @@ export default function FlashcardStudyPage({
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center h-screen bg-background">
-        <span className="material-symbols-outlined text-5xl text-pink-400 animate-spin">
+        <span className="material-symbols-outlined text-5xl text-primary animate-spin">
           progress_activity
         </span>
       </div>
@@ -189,9 +189,9 @@ export default function FlashcardStudyPage({
             <span>{completedCards.size} thẻ</span>
             <span>{totalCards} thẻ</span>
           </div>
-          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden border border-border/40 relative">
+          <div className="w-full h-1.5 bg-muted/80 rounded-full overflow-hidden border border-border/30 relative">
             <div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-secondary rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)] transition-all duration-500"
+              className="absolute top-0 left-0 h-full rounded-full bg-primary transition-all duration-500"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -215,15 +215,19 @@ export default function FlashcardStudyPage({
             </SelectContent>
           </Select>
           <Button
+            variant="ghost"
+            size="icon"
             onClick={handleShuffle}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full"
+            className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
             title="Trộn thẻ"
           >
             <span className="material-symbols-outlined text-xl">shuffle</span>
           </Button>
           <Button
+            variant="ghost"
+            size="icon"
             onClick={handleFlipAll}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full"
+            className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
             title="Đảo thẻ"
           >
             <span className="material-symbols-outlined text-xl">flip</span>
@@ -233,7 +237,9 @@ export default function FlashcardStudyPage({
           <Dialog>
             <DialogTrigger asChild>
               <Button
-                className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full"
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
                 title="Bài tập"
               >
                 <span className="material-symbols-outlined text-xl">quiz</span>
@@ -294,10 +300,18 @@ export default function FlashcardStudyPage({
             </DialogContent>
           </Dialog>
 
-          <Button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
+          >
             <span className="material-symbols-outlined text-xl">settings</span>
           </Button>
-          <Button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-card/40 rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
+          >
             <span className="material-symbols-outlined text-xl">help</span>
           </Button>
         </div>
@@ -307,8 +321,7 @@ export default function FlashcardStudyPage({
       <div
         className={`flex-1 flex flex-col items-center justify-center relative ${styles.perspectiveContainer} px-6 py-4`}
       >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="absolute top-1/4 left-1/3 w-[300px] h-[300px] bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,520px)] h-[min(90vw,520px)] bg-primary/[0.06] rounded-full blur-[80px] pointer-events-none" />
 
         <div className="relative w-full max-w-sm h-[420px] group cursor-pointer z-10">
           <div
@@ -329,7 +342,11 @@ export default function FlashcardStudyPage({
                 >
                   {isCurrentCardKnown ? "Đã thuộc" : "Mới học"}
                 </span>
-                <Button className="text-muted-foreground hover:text-secondary transition-colors">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground shrink-0"
+                >
                   <span className="material-symbols-outlined text-xl">
                     bookmark
                   </span>
@@ -416,9 +433,11 @@ export default function FlashcardStudyPage({
         {/* Card Navigation */}
         <div className="flex items-center justify-center gap-4 mt-6">
           <Button
+            variant="outline"
+            size="icon"
             onClick={handlePrevCard}
             disabled={currentIndex === 0}
-            className={`flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105 ${
+            className={`size-10 rounded-xl bg-card/50 border-border/40 ${
               currentIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
             title="Thẻ trước"
@@ -431,9 +450,11 @@ export default function FlashcardStudyPage({
             {currentIndex + 1}/{totalCards}
           </div>
           <Button
+            variant="outline"
+            size="icon"
             onClick={handleNextCard}
             disabled={currentIndex === totalCards - 1}
-            className={`flex items-center justify-center size-10 rounded-xl bg-card/60 hover:bg-card/80 text-foreground border border-border/40 transition-all hover:scale-105 ${
+            className={`size-10 rounded-xl bg-card/50 border-border/40 ${
               currentIndex === totalCards - 1
                 ? "opacity-50 cursor-not-allowed"
                 : ""
@@ -447,61 +468,65 @@ export default function FlashcardStudyPage({
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="w-full px-6 py-4 md:pb-6 md:px-10 z-30 relative">
-        <div className="max-w-4xl mx-auto flex items-center justify-center gap-3 md:gap-6">
-          <Button
-            onClick={handleUnknown}
-            className="flex-1 flex flex-col items-center gap-2 group"
-          >
-            <div
-              className={`h-12 w-full md:w-36 rounded-2xl bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive hover:text-destructive flex items-center justify-center transition-all duration-300 ${styles.shadowGlowRed}`}
-            >
-              <span className="material-symbols-outlined text-2xl">close</span>
+      {/* Controls — native buttons avoid default primary (blue) bar from <Button /> */}
+      <footer className="w-full z-30 relative border-t border-border/40 bg-background/60 backdrop-blur-md supports-[backdrop-filter]:bg-background/40">
+        <div className="max-w-3xl mx-auto px-4 py-5 md:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-6 sm:gap-4 md:gap-8 items-center">
+            <div className="flex justify-center sm:justify-end order-2 sm:order-1">
+              <button
+                type="button"
+                onClick={handleUnknown}
+                className={`group flex w-full max-w-[240px] items-center justify-center gap-2.5 rounded-2xl border border-rose-500/25 bg-rose-500/[0.07] px-4 py-3 transition-colors hover:border-rose-500/45 hover:bg-rose-500/12 ${styles.shadowGlowRed}`}
+              >
+                <span className="material-symbols-outlined shrink-0 text-[22px] leading-none text-rose-400 [font-variation-settings:'FILL'0,'wght'500,'GRAD'0,'opsz'24]">
+                  close
+                </span>
+                <span className="text-left text-[11px] font-bold uppercase leading-tight tracking-wide text-rose-200/90">
+                  Chưa thuộc
+                </span>
+              </button>
             </div>
-            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-destructive transition-colors uppercase tracking-wider">
-              Chưa thuộc
-            </span>
-          </Button>
 
-          <Button onClick={handlePlayAudio} className="relative -top-3 group">
-            <div className="size-16 rounded-full bg-gradient-to-br from-muted to-card border border-border/40 flex items-center justify-center shadow-lg shadow-black/40 group-hover:scale-110 transition-transform duration-300 z-10 relative">
-              <span className="material-symbols-outlined text-2xl text-foreground group-hover:text-secondary transition-colors">
-                volume_up
+            <div className="flex flex-col items-center gap-2 order-1 sm:order-2 pb-1">
+              <button
+                type="button"
+                onClick={handlePlayAudio}
+                className="size-14 shrink-0 rounded-2xl border border-border/50 bg-card/90 text-foreground shadow-sm transition-colors hover:bg-muted/60 hover:border-border"
+                aria-label="Phát âm"
+              >
+                <span className="material-symbols-outlined text-2xl leading-none">
+                  volume_up
+                </span>
+              </button>
+              <span className="text-[10px] font-semibold text-muted-foreground">
+                Phát âm
               </span>
+              <button
+                type="button"
+                onClick={handleNextCard}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-4 decoration-border/60 hover:decoration-foreground transition-colors pt-0.5"
+              >
+                Bỏ qua thẻ này
+              </button>
             </div>
-            <div
-              className={`absolute inset-0 bg-secondary/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100`}
-            ></div>
-            <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-[10px] font-bold text-muted-foreground whitespace-nowrap">
-              Phát âm
-            </span>
-          </Button>
 
-          <Button
-            onClick={handleKnown}
-            className="flex-1 flex flex-col items-center gap-2 group"
-          >
-            <div
-              className={`h-12 w-full md:w-36 rounded-2xl bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 hover:text-green-300 flex items-center justify-center transition-all duration-300 ${styles.shadowGlowGreen}`}
-            >
-              <span className="material-symbols-outlined text-2xl">check</span>
+            <div className="flex justify-center sm:justify-start order-3">
+              <button
+                type="button"
+                onClick={handleKnown}
+                className={`group flex w-full max-w-[240px] items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-3 transition-colors hover:border-emerald-500/45 hover:bg-emerald-500/12 ${styles.shadowGlowGreen}`}
+              >
+                <span className="material-symbols-outlined shrink-0 text-[22px] leading-none text-emerald-400 [font-variation-settings:'FILL'0,'wght'500,'GRAD'0,'opsz'24]">
+                  check
+                </span>
+                <span className="text-left text-[11px] font-bold uppercase leading-tight tracking-wide text-emerald-200/90">
+                  Đã thuộc
+                </span>
+              </button>
             </div>
-            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-green-400 transition-colors uppercase tracking-wider">
-              Đã thuộc
-            </span>
-          </Button>
+          </div>
         </div>
-
-        <div className="mt-3 text-center">
-          <Button
-            onClick={handleNextCard}
-            className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-          >
-            Bỏ qua thẻ này
-          </Button>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }

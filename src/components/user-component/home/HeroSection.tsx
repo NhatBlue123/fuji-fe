@@ -78,7 +78,7 @@ export function HeroSection() {
           sizes="100vw"
         />
         {/* Lớp phủ để tuyết nổi bật hơn */}
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/80 to-blue-900/40 mix-blend-multiply dark:from-[#0B1120] dark:via-[#0B1120]/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-600 via-gray-900/80 to-blue-900/10 mix-blend-multiply dark:from-[#0B1120] dark:via-[#0B1120]/80"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent dark:from-[#0f172a]"></div>
       </div>
 

@@ -51,8 +51,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FlashcardSet, Flashcard } from "@/types/flashcard";
-import { exportFlashcardsToExcel } from "@/components/admin/admin-flashcard/flashcardUtils";
+import type { FlashcardSet, Flashcard, FlashCardResponseDTO } from "@/types/flashcard";
+import {
+  exportFlashcardsToExcel,
+  mapCardResponseToFlashcard,
+  parseLessonFromDescription,
+  stripTrailingLessonParagraph,
+} from "@/components/admin/admin-flashcard/flashcardUtils";
 import { cn } from "@/lib/utils";
 
 export default function FlashcardPage() {
@@ -72,30 +77,25 @@ export default function FlashcardPage() {
   const { data: apiFlashcards, isLoading, isError, refetch } = useGetFlashcardsQuery();
   const [deleteSet, { isLoading: isDeletingSet }] = useDeleteFlashcardSetMutation();
 
-  // Group cards into virtual sets by lesson
-  const sets = useMemo(() => {
-    if (!apiFlashcards) return [];
-    const setsMap = new Map<string, FlashcardSet>();
-
-    apiFlashcards.forEach((card, index) => {
-      const lesson = card.lesson || "Chưa phân loại";
-      if (!setsMap.has(lesson)) {
-        setsMap.set(lesson, {
-          id: index + 1,
-          name: lesson,
-          lesson: lesson,
-          description: `Tập hợp các thẻ thuộc bài ${lesson}`,
-          numCards: 0,
-          createdAt: new Date().toISOString(),
-          status: "Active",
-          isPublic: true
-        });
-      }
-      const set = setsMap.get(lesson)!;
-      set.numCards += 1;
+  /** Mỗi bản ghi = một FlashCard (bộ) từ API */
+  const sets = useMemo((): FlashcardSet[] => {
+    if (!apiFlashcards?.length) return [];
+    return (apiFlashcards as FlashCardResponseDTO[]).map((deck) => {
+      const lessonLabel =
+        parseLessonFromDescription(deck.description) ||
+        (deck.level ? String(deck.level) : "—");
+      return {
+        id: deck.id,
+        name: deck.name,
+        lesson: lessonLabel,
+        description:
+          stripTrailingLessonParagraph(deck.description) || deck.description || "",
+        numCards: deck.cardCount ?? deck.cards?.length ?? 0,
+        createdAt: deck.createdAt || new Date().toISOString(),
+        status: "Active",
+        isPublic: deck.isPublic !== false,
+      };
     });
-
-    return Array.from(setsMap.values());
   }, [apiFlashcards]);
 
   const filteredSets = useMemo(() => {
@@ -109,13 +109,22 @@ export default function FlashcardPage() {
 
   // Stats calculation
   const stats = useMemo(() => {
-     if (!apiFlashcards) return { totalSets: 0, totalCards: 0, learned: 0 };
-     return {
-         totalSets: sets.length,
-         totalCards: apiFlashcards.length,
-         learned: apiFlashcards.filter(c => c.studyStatus === 'learned').length
-     };
-  }, [apiFlashcards, sets]);
+    if (!apiFlashcards?.length) return { totalSets: 0, totalCards: 0, learned: 0 };
+    const decks = apiFlashcards as FlashCardResponseDTO[];
+    const totalCards = decks.reduce(
+      (sum, d) => sum + (d.cardCount ?? d.cards?.length ?? 0),
+      0,
+    );
+    const learned = decks.reduce((sum, d) => {
+      const r = d.userProgress?.rememberedCount;
+      return sum + (typeof r === "number" ? r : 0);
+    }, 0);
+    return {
+      totalSets: decks.length,
+      totalCards,
+      learned,
+    };
+  }, [apiFlashcards]);
 
   const handleDeleteSet = async () => {
     if (!deleteSetTarget) return;
@@ -128,6 +137,13 @@ export default function FlashcardPage() {
         toast.error(error.data?.message || "Xóa bộ thẻ thất bại");
     }
   };
+
+  const viewingSetCards = useMemo(() => {
+    const deck = (apiFlashcards as FlashCardResponseDTO[] | undefined)?.find(
+      (d) => d.id === viewingSet?.id,
+    );
+    return deck?.cards?.map(mapCardResponseToFlashcard) ?? [];
+  }, [apiFlashcards, viewingSet?.id]);
 
   return (
     <div className="space-y-6">
@@ -266,9 +282,14 @@ export default function FlashcardPage() {
                                     <DropdownMenuItem 
                                       className="font-medium"
                                       onClick={() => {
+                                        const deck = (
+                                          apiFlashcards as FlashCardResponseDTO[] | undefined
+                                        )?.find((d) => d.id === set.id);
+                                        const rows =
+                                          deck?.cards?.map(mapCardResponseToFlashcard) ?? [];
                                         exportFlashcardsToExcel(
-                                            apiFlashcards?.filter(c => c.lesson === set.lesson) || [],
-                                            `${set.lesson}.xlsx`
+                                          rows,
+                                          `${set.name.replace(/[\\/:*?"<>|]/g, "_")}.xlsx`,
                                         );
                                       }}
                                     >
@@ -321,7 +342,7 @@ export default function FlashcardPage() {
         open={viewingSet !== null}
         onOpenChange={(open) => !open && setViewingSet(null)}
         set={viewingSet}
-        cards={apiFlashcards?.filter(c => c.lesson === viewingSet?.lesson) || []}
+        cards={viewingSetCards}
         onEditCard={(card) => setEditingCard(card)}
         onAddCard={() => setCreateCardModalOpen(true)}
         onRefresh={refetch}

@@ -121,7 +121,7 @@ const Header = () => {
         </Button>
 
         {/* ICON 3: NOTIFICATION  */}
-        {mounted && isAuthenticated && (
+        {canShowAuthUi && (
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -231,7 +231,7 @@ const Header = () => {
         )}
 
         {/* ACCOUNT DROPDOWN (Chỉ hiện khi đã đăng nhập) */}
-        {mounted && isAuthenticated && (
+        {canShowAuthUi && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

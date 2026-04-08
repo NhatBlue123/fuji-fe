@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   ChevronLeft, 
@@ -62,7 +62,7 @@ const Sidebar = () => {
 
   const isActive = (path: string) => pathname === path;
 
-  const menuItems = [
+  const menuItems = useMemo(() => [
     { label: t("common.home"), path: "/", icon: Home },
     { label: t("common.course"), path: "/course", icon: BookOpen },
     { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
@@ -71,7 +71,8 @@ const Sidebar = () => {
     { label: "/video-call", path: "/video-call", icon: Video, customLabel: "Video call" },
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
     { label: "Cài đặt", path: "/settings", icon: Settings },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isMounted, t]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -140,7 +141,7 @@ const Sidebar = () => {
                           active ? "text-white" : "group-hover:text-secondary"
                         )}
                       >
-                        {item.customLabel || item.label}
+                        {isMounted ? (item.customLabel || item.label) : ""}
                       </span>
                     )}
                     
@@ -150,7 +151,7 @@ const Sidebar = () => {
                     <div className="absolute inset-0 bg-white/0 group-active:bg-white/10 transition-colors" />
                   </Link>
                 </TooltipTrigger>
-                {isCollapsed && (
+                {isCollapsed && isMounted && (
                   <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
                     {item.customLabel || item.label}
                   </TooltipContent>
@@ -206,7 +207,7 @@ const Sidebar = () => {
                   </p>
                 </div>
                 <h3 className="font-bold text-[13px] mb-3 leading-snug tracking-tighter uppercase">
-                  {t("sidebar.premiumHeading") || "Nâng cấp gói học"}
+                  {isMounted ? (t("sidebar.premiumHeading") || "Nâng cấp gói học") : "Nâng cấp gói học"}
                 </h3>
                 <Button
                   size="sm"
@@ -214,7 +215,7 @@ const Sidebar = () => {
                   className="h-8 text-[11px] font-black w-full border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary hover:text-white transition-all active:scale-95 rounded-xl uppercase tracking-widest"
                   onClick={() => setIsPremiumModalOpen(true)}
                 >
-                  {t("sidebar.viewDetails") || "Xem chi tiết"}
+                  {isMounted ? (t("sidebar.viewDetails") || "Xem chi tiết") : "Xem chi tiết"}
                 </Button>
               </div>
             )}

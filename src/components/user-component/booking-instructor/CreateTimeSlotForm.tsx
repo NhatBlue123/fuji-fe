@@ -25,7 +25,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-sm text-muted-foreground mb-2 block">{label}</span>
+      <span className="mb-2 block text-sm text-muted-foreground">{label}</span>
       {children}
     </label>
   );
@@ -33,10 +33,12 @@ function Field({
 
 export default function CreateTimeSlotForm() {
   const router = useRouter();
+
   const [mode, setMode] = useState<Mode>("bulk");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [subject, setSubject] = useState("Kaiwa N4");
+  const [level, setLevel] = useState<LevelOption>("N4");
+  const [subjectType, setSubjectType] = useState<SubjectOption>("Kaiwa");
   const [price, setPrice] = useState<number>(50000);
 
   const [notice, setNotice] = useState<{
@@ -52,6 +54,7 @@ export default function CreateTimeSlotForm() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+
   const handleGoBack = () => {
     router.push("/admin/teacher-schedules/teaching-schedule");
   };
@@ -65,13 +68,13 @@ export default function CreateTimeSlotForm() {
   }, [mode, dateFrom, dateTo, daysOfWeek, timeRanges.length]);
 
   const canSubmit = useMemo(() => {
-    if (!dateFrom || !subject.trim() || !price || price <= 0) return false;
+    if (!dateFrom || !subjectType || !level || !price || price <= 0) return false;
     if (!timeRanges.length) return false;
     if (hasInvalidRange(timeRanges)) return false;
     if (mode === "bulk" && (!dateTo || dateTo < dateFrom || !daysOfWeek.length))
       return false;
     return true;
-  }, [mode, dateFrom, dateTo, subject, price, timeRanges, daysOfWeek.length]);
+  }, [mode, dateFrom, dateTo, subjectType, level, price, timeRanges, daysOfWeek.length]);
 
   const toggleDay = (day: Weekday) => {
     setDaysOfWeek((prev) =>
@@ -81,14 +84,14 @@ export default function CreateTimeSlotForm() {
 
   const addRange = () =>
     setTimeRanges((prev) => [...prev, { start: "08:00", end: "09:00" }]);
+
   const removeRange = (idx: number) =>
     setTimeRanges((prev) => prev.filter((_, i) => i !== idx));
+
   const updateRange = (idx: number, patch: Partial<TimeRange>) =>
     setTimeRanges((prev) =>
       prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)),
     );
-
-  const closeNotice = () => setNotice(null);
 
   const submit = async () => {
     setErr("");
@@ -119,9 +122,18 @@ export default function CreateTimeSlotForm() {
     try {
       setLoading(true);
 
-      let payload: any;
+      let payload: {
+        dateFrom: string;
+        dateTo: string;
+        daysOfWeek: Weekday[];
+        timeRanges: TimeRange[];
+        price: number;
+        subject: string;
+      };
+
       if (mode === "single") {
         const weekday = getWeekdayCodeFromDate(dateFrom);
+
         if (!weekday) {
           const message = "Ngày dạy không hợp lệ.";
           setErr(message);
@@ -132,13 +144,14 @@ export default function CreateTimeSlotForm() {
           });
           return;
         }
+
         payload = {
           dateFrom,
           dateTo: dateFrom,
           daysOfWeek: [weekday],
           timeRanges,
           price,
-          subject,
+          subject: composedSubject,
         };
       } else {
         payload = {
@@ -147,7 +160,7 @@ export default function CreateTimeSlotForm() {
           daysOfWeek,
           timeRanges,
           price,
-          subject,
+          subject: composedSubject,
         };
       }
 
@@ -159,7 +172,7 @@ export default function CreateTimeSlotForm() {
       setNotice({
         type: "success",
         title: "Đã lưu lịch rảnh",
-        description,
+        description: data ? "Tạo lịch thành công." : "Tạo lịch thành công.",
       });
 
       setTimeout(() => setNotice(null), 4000);
@@ -177,11 +190,10 @@ export default function CreateTimeSlotForm() {
   };
 
   return (
-    <main className="flex-1 min-h-screen overflow-y-auto bg-background text-foreground relative p-0">
-      <div className="absolute top-0 right-0 -z-10 w-[420px] h-[420px] bg-secondary/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-0 left-0 -z-10 w-[320px] h-[320px] bg-primary/20 rounded-full blur-[100px]" />
+    <main className="relative min-h-screen flex-1 overflow-y-auto bg-background p-0 text-foreground">
+      <div className="absolute right-0 top-0 -z-10 h-[420px] w-[420px] rounded-full bg-secondary/20 blur-[120px]" />
+      <div className="absolute bottom-0 left-0 -z-10 h-[320px] w-[320px] rounded-full bg-primary/20 blur-[100px]" />
 
-      {/* Notice Popup */}
       {notice ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
           <div
@@ -227,10 +239,10 @@ export default function CreateTimeSlotForm() {
             </h1>
           </div>
 
-          <div className="mt-6 inline-flex rounded-xl p-1 bg-card border border-border">
+          <div className="mt-6 inline-flex rounded-xl border border-border bg-card p-1">
             <button
               onClick={() => setMode("single")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                 mode === "single"
                   ? "bg-secondary text-secondary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -240,7 +252,7 @@ export default function CreateTimeSlotForm() {
             </button>
             <button
               onClick={() => setMode("bulk")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                 mode === "bulk"
                   ? "bg-secondary text-secondary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -250,13 +262,13 @@ export default function CreateTimeSlotForm() {
             </button>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label={mode === "single" ? "Ngày dạy" : "Ngày bắt đầu"}>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full h-12 rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
               />
             </Field>
 
@@ -266,16 +278,22 @@ export default function CreateTimeSlotForm() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
                 />
               </Field>
             ) : (
-              <Field label="Môn học">
-                <input
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
-                />
+              <Field label="Cấp độ JLPT">
+                <select
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value as LevelOption)}
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                >
+                  {LEVEL_OPTIONS.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
               </Field>
             )}
           </div>
@@ -286,6 +304,38 @@ export default function CreateTimeSlotForm() {
             </div>
           ) : null}
 
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {mode === "bulk" ? (
+              <Field label="Cấp độ JLPT">
+                <select
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value as LevelOption)}
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                >
+                  {LEVEL_OPTIONS.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
+
+            <Field label="Môn học">
+              <select
+                value={subjectType}
+                onChange={(e) => setSubjectType(e.target.value as SubjectOption)}
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+              >
+                {SUBJECT_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
           <div className="mt-6">
             <TimeRangeList
               ranges={timeRanges}
@@ -295,16 +345,12 @@ export default function CreateTimeSlotForm() {
             />
           </div>
 
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mode === "bulk" ? (
-              <Field label="Môn học">
-                <input
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
-                />
-              </Field>
-            ) : null}
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Field label="Chủ đề">
+              <div className="flex h-12 items-center rounded-xl border border-border bg-card/60 px-4 font-semibold text-foreground">
+                {composedSubject}
+              </div>
+            </Field>
 
             <Field label="Học phí (VND)">
               <input
@@ -313,7 +359,7 @@ export default function CreateTimeSlotForm() {
                 step={1000}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full h-12 rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
               />
             </Field>
 
@@ -333,7 +379,7 @@ export default function CreateTimeSlotForm() {
           <div className="mt-6 flex gap-3">
             <button
               type="button"
-              className="h-12 px-6 rounded-xl border border-border bg-card hover:bg-muted font-semibold"
+              className="h-12 rounded-xl border border-border bg-card px-6 font-semibold hover:bg-muted"
             >
               Hủy
             </button>
@@ -341,7 +387,7 @@ export default function CreateTimeSlotForm() {
               type="button"
               onClick={submit}
               disabled={!canSubmit || loading}
-              className="h-12 px-8 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold disabled:opacity-50"
+              className="h-12 rounded-xl bg-secondary px-8 font-bold text-secondary-foreground disabled:opacity-50 hover:bg-secondary/90"
             >
               {loading ? "Đang lưu..." : "Lưu lịch rảnh"}
             </button>
@@ -350,7 +396,7 @@ export default function CreateTimeSlotForm() {
 
         <PreviewCard
           mode={mode}
-          subject={subject}
+          subject={composedSubject}
           price={price}
           ranges={timeRanges}
           estimatedSlots={estimatedSlots}

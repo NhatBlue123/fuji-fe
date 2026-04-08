@@ -2,21 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Wallet,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft,
-  TrendingUp,
-  History,
-  Download,
-  Info,
-  CreditCard,
-  MoreHorizontal,
+import { 
+  Plus, Wallet, ArrowUpRight, ArrowDownLeft, 
+  Search, ChevronLeft, ChevronRight, ArrowLeft,
+  TrendingUp, History, Info, CreditCard,
+  ArrowDownRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,12 +37,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export default function FujiWallet() {
   const router = useRouter();
@@ -91,13 +75,8 @@ export default function FujiWallet() {
           >
             <ArrowLeft size={14} /> Quay lại
           </button>
-          {/* Badge - Chuyển sang tone hồng mờ */}
-          <Badge
-            variant="secondary"
-            className="px-3 py-1 gap-2 border-pink-500/20 bg-pink-500/5 text-pink-500 dark:text-pink-400 mb-2"
-          >
-            <CreditCard size={12} /> Tài khoản thanh toán
-          </Badge>
+         
+          
           <h1 className="text-4xl font-black tracking-tight uppercase">
             Ví{" "}
             <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">
@@ -108,26 +87,8 @@ export default function FujiWallet() {
             Quản lý số dư và lịch sử giao dịch của bạn.
           </p>
         </div>
+        
 
-        <div className="flex items-center gap-3">
-          {/* Nạp Tiền Button - Chủ đạo Hồng */}
-          <Button
-            onClick={() => router.push("/premium?tab=topup")}
-            size="lg"
-            className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 bg-pink-400 hover:bg-pink-600 dark:bg-pink-600 dark:hover:bg-pink-500 text-white transition-all active:scale-95"
-          >
-            <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp Tiền
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => router.push("/withdraw")}
-            size="lg"
-            className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-xs border-muted-foreground/20 hover:bg-pink-400"
-          >
-            <ArrowUpRight className="mr-2" size={18} strokeWidth={3} /> Rút Tiền
-          </Button>
-        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
@@ -138,10 +99,45 @@ export default function FujiWallet() {
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-            <CardHeader className="relative z-10 pt-10 px-10">
-              <div className="flex items-center gap-3 text-white/60">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-inner">
-                  <Wallet size={20} className="text-pink-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Main Wallet Card - Đổi gradient nền sang tông hồng/purle mờ */}
+        <Card className="lg:col-span-8 overflow-hidden border-none bg-gradient-to-br from-[#0B1120] via-[#111827] to-[#0a0c10] text-white relative shadow-2xl rounded-[2.5rem]">
+          {/* Đổi Glow hồng */}
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          
+          <CardHeader className="relative z-10 pt-6 px-10">
+            <div className="flex items-center gap-2 text-white/60">
+              <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-inner">
+                <Wallet size={18} className="text-pink-400" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">Tổng số dư khả dụng</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger><Info size={12} className="opacity-40 hover:opacity-100 text-pink-400" /></TooltipTrigger>
+                  <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">Số dư dùng để thanh toán dịch vụ Fuji</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="relative z-10 px-10 pb-6 pt-4">
+            <div className="flex items-baseline gap-4">
+              <span className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                {balance.toLocaleString()}
+              </span>
+              <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">đ</span>
+            </div>
+            
+            <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8 justify-between">
+              <div className="flex items-center gap-4 group cursor-help">
+                {/* Gradient Hoa anh đào đổi sang Pink-Purple */}
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-purple-500 flex items-center justify-center font-black text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-500">
+                  🌸
+                </div>
+                <div>
+                  <div className="text-[10px] text-pink-100/50 font-black uppercase tracking-widest">Tương đương</div>
+                  <div className="text-xl font-black text-white">{(balance / 1000).toLocaleString()} <span className="text-[10px] text-pink-100/30 ml-1">HOA</span></div>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">
                   Tổng số dư khả dụng
@@ -160,71 +156,38 @@ export default function FujiWallet() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-            </CardHeader>
-
-            <CardContent className="relative z-10 px-10 pb-12 pt-4">
-              <div className="flex items-baseline gap-4">
-                <span className="text-3xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                  {balance.toLocaleString()}
-                </span>
-                <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">
-                  đ
-                </span>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-4 flex-1 md:flex-none md:w-auto">
+                <Button 
+                  onClick={() => router.push("/premium?tab=topup")}
+                  size="lg"
+                  className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
+                >
+                  <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp Tiền
+                </Button>
+                
+                <Button 
+                  onClick={() => router.push('/withdraw')}
+                  size="lg"
+                  className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
+                >
+                  <ArrowUpRight className="mr-2" size={18} strokeWidth={3} /> Rút Tiền
+                </Button>
               </div>
 
-              <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8">
-                <div className="flex items-center gap-4 group cursor-help">
-                  {/* Gradient Hoa anh đào đổi sang Pink-Purple */}
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-purple-500 flex items-center justify-center font-black text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-500">
-                    🌸
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-pink-100/50 font-black uppercase tracking-widest">
-                      Tương đương
-                    </div>
-                    <div className="text-xl font-black text-white">
-                      {(balance / 1000).toLocaleString()}{" "}
-                      <span className="text-[10px] text-pink-100/30 ml-1">
-                        HOA
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ml-auto flex gap-3">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-12 w-12 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 transition-colors shadow-inner"
-                  >
-                    <Download size={20} />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-12 w-12 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 transition-colors shadow-inner"
-                      >
-                        <MoreHorizontal size={20} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="bg-[#0f1218] border border-pink-500/20 text-slate-200 rounded-xl backdrop-blur-xl min-w-[180px]"
-                    >
-                      <DropdownMenuItem className="hover:bg-pink-500/10 hover:text-pink-300 focus:bg-pink-500/10 focus:text-pink-300 cursor-pointer text-xs font-semibold py-2.5">
-                        Lấy mã QR thanh toán
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="hover:bg-pink-500/10 hover:text-pink-300 focus:bg-pink-500/10 focus:text-pink-300 cursor-pointer text-xs font-semibold py-2.5">
-                        Cài đặt thông báo
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="hover:bg-rose-500/10 hover:text-rose-400 focus:bg-rose-500/10 focus:text-rose-400 text-rose-400 cursor-pointer text-xs font-semibold py-2.5">
-                        Báo cáo sự cố
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+        {/* Side Stats */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Card Thống kê - Chủ đạo Hồng mờ */}
+          <Card className="border-pink-500/20 bg-pink-500/5 dark:bg-pink-500/5 shadow-xl shadow-pink-500/5 group overflow-hidden h-[180px] relative transition-all hover:-translate-y-1 hover:border-pink-500/30 rounded-[2rem]">
+            <TrendingUp className="absolute -right-4 -bottom-4 w-32 h-32 text-pink-500/10 -rotate-12 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+            <CardHeader className="pb-2">
+              <CardDescription className="text-pink-500/70 font-black uppercase tracking-[0.2em] text-[10px]">Giao dịch tháng này</CardDescription>
+              <CardTitle className="text-5xl font-black text-pink-500 dark:text-pink-400 drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">{historyData?.totalElements || 0}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-pink-500 dark:text-pink-400 font-bold text-[10px] uppercase tracking-wider bg-pink-500/10 border border-pink-500/20 px-3 py-1.5 rounded-full shadow-inner animate-pulse">
+                <ArrowUpRight size={14} /> +12.5% vs tháng trước
               </div>
             </CardContent>
           </Card>
@@ -320,21 +283,60 @@ export default function FujiWallet() {
                 />
               </div>
             </div>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-muted/30 dark:bg-black/10 uppercase text-[10px] font-black tracking-widest text-muted-foreground dark:text-slate-500">
-                <TableRow className="dark:border-white/5">
-                  <TableHead className="px-8 h-12">Mã giao dịch</TableHead>
-                  <TableHead className="px-8 h-12">Loại</TableHead>
-                  <TableHead className="px-8 h-12 text-right">
-                    Số tiền
-                  </TableHead>
-                  <TableHead className="px-8 h-12">Số dư còn lại</TableHead>
-                  <TableHead className="px-8 h-12 text-right">
-                    Trạng thái
-                  </TableHead>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-muted/30 dark:bg-black/10 uppercase text-[10px] font-black tracking-widest text-muted-foreground dark:text-slate-500">
+              <TableRow className="dark:border-white/5">
+                <TableHead className="px-8 h-12">Mã giao dịch</TableHead>
+                <TableHead className="px-8 h-12">Loại</TableHead>
+                <TableHead className="px-8 h-12 text-right">Số tiền</TableHead>
+                <TableHead className="px-8 h-12">Số dư còn lại</TableHead>
+                <TableHead className="px-8 h-12 text-right">Trạng thái</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((tx: Transaction) => (
+                <TableRow key={tx.id} className="hover:bg-muted/20 dark:hover:bg-white/[0.02] transition-colors group border-b dark:border-white/5 last:border-0">
+                  <TableCell className="px-8 py-6">
+                    <div className="flex items-center gap-4">
+                      {/* Icon Loại - Nạp đổi sang Cyan cho tương phản, chi tiêu sang Pink */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-transform group-hover:scale-110 shadow-inner md:flex-shrink-0 ${
+                        tx.type === "DEPOSIT" || tx.amount > 0 
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" 
+                        : "bg-pink-50 text-pink-500 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20"
+                      }`}>
+                        {tx.type === "DEPOSIT" || tx.amount > 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-mono text-xs font-bold uppercase tracking-tighter text-foreground dark:text-slate-200">
+                          {tx.referenceId || `TX-${String(tx.id).slice(-6).toUpperCase()}`}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground dark:text-slate-500 font-bold mt-0.5">
+                          {new Date(tx.createdAt).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-8 py-6 font-bold text-[10px] uppercase tracking-wider text-muted-foreground dark:text-slate-500">
+                    {tx.type === "DEPOSIT" ? "Nạp tiền" : "Chi trả dịch vụ"}
+                  </TableCell>
+                  {/* Số tiền - Nạp màu Emerald, chi tiêu màu Trắng/Slate mặc định */}
+                  <TableCell className={`px-8 py-6 text-right font-black text-xl tracking-tighter ${tx.type === "DEPOSIT" || tx.amount > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"}`}>
+                    {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString()} 
+                    <span className="text-[10px] ml-1 opacity-40">đ</span>
+                  </TableCell>
+                  <TableCell className="px-8 py-6 font-semibold text-xs text-muted-foreground dark:text-slate-400 tracking-tight">
+                    {tx.balanceAfter.toLocaleString()} <span className="text-[10px] opacity-40 whitespace-nowrap">đ</span>
+                  </TableCell>
+                  <TableCell className="px-8 py-6 text-right">
+                    {/* Badge thành công - Giữ Emerald */}
+                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[9px] font-black uppercase ring-0 px-3 py-1 shadow-inner">
+                      Thành công
+                    </Badge>
+                  </TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>

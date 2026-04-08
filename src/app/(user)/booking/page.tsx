@@ -1,204 +1,449 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  CalendarDays,
+  ChevronDown,
+  Clock3,
+  Search,
+  Sparkles,
+  Users,
+} from "lucide-react";
+
 import { useGetDiscoverySlotsQuery } from "@/store/services/bookingApi";
 
-function toYmd(d: Date) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+const JLPT_LEVELS = ["N5", "N4", "N3", "N2", "N1"] as const;
+type JlptLevel = (typeof JLPT_LEVELS)[number];
+type LevelFilter = "ALL" | JlptLevel;
+
+type TeacherCard = {
+  teacherId: number;
+  teacherName: string;
+  teacherAvatarUrl: string | null;
+  primarySubjectLabel: string;
+  subjectTypes: string[];
+  levels: JlptLevel[];
+  slotCount: number;
+  firstTimeLabel: string;
+  previewTimes: string[];
+};
+
+type TeacherAccumulator = {
+  teacherId: number;
+  teacherName: string;
+  teacherAvatarUrl: string | null;
+  primarySubjectLabel: string;
+  subjectTypeSet: Set<string>;
+  levelSet: Set<JlptLevel>;
+  slotCount: number;
+  firstTimeLabel: string;
+  previewTimes: string[];
+};
+
+function toYmd(date: Date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function formatTimeRange(startAt: string, endAt: string) {
-  const s = new Date(startAt);
-  const e = new Date(endAt);
-  const hhmm = (d: Date) =>
-    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  return `${hhmm(s)} - ${hhmm(e)}`;
+function parseLocalDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
-export default function SlotListPage() {
+function formatFullDate(value: string) {
+  return parseLocalDate(value).toLocaleDateString("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatShortDate(value: string) {
+  return parseLocalDate(value).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function formatTimeRange(startAt: string, endAt: string) {
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+  const hhmm = (date: Date) =>
+    `${String(date.getHours()).padStart(2, "0")}:${String(
+      date.getMinutes()
+    ).padStart(2, "0")}`;
+
+  return `${hhmm(start)} - ${hhmm(end)}`;
+}
+
+function extractJlptLevel(subject?: string | null): JlptLevel | null {
+  if (!subject) return null;
+  const match = subject.toUpperCase().match(/\bN[1-5]\b/);
+  if (!match) return null;
+  return match[0] as JlptLevel;
+}
+
+function extractSubjectType(subject?: string | null) {
+  if (!subject) return null;
+
+  const cleaned = subject
+    .replace(/\bN[1-5]\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleaned || subject.trim();
+}
+
+export default function BookingPage() {
   const router = useRouter();
+
   const [keyword, setKeyword] = useState("");
-  const [now, setNow] = useState(new Date());
+  const [subjectFilter, setSubjectFilter] = useState("ALL");
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>("ALL");
+  const [selectedDate, setSelectedDate] = useState(() => toYmd(new Date()));
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 60000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => setNow(new Date()), 60000);
+    return () => window.clearInterval(timer);
   }, []);
-
-  const days = useMemo(() => {
-    const base = new Date();
-    return Array.from({ length: 365 }).map((_, i) => {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      return d;
-    });
-  }, []);
-
-  const [selectedDate, setSelectedDate] = useState<string>(toYmd(new Date()));
 
   const { data, isLoading, isFetching, isError } = useGetDiscoverySlotsQuery({
     date: selectedDate,
     keyword: keyword.trim() || undefined,
   });
 
-  const filteredSlots = useMemo(() => {
-    const rawSlots = data?.items ?? [];
-    return rawSlots.filter((slot) => {
-      const slotStart = new Date(slot.startAt);
-      return slotStart > now;
-    });
+  const availableSlots = useMemo(() => {
+    return [...(data?.items ?? [])]
+      .filter((slot) => new Date(slot.startAt).getTime() > now.getTime())
+      .sort(
+        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+      );
   }, [data, now]);
 
+  const subjectOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        availableSlots
+          .map((slot) => extractSubjectType(slot.subject))
+          .filter((subject): subject is string => Boolean(subject))
+      )
+    ).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [availableSlots]);
+
+  const filteredSlots = useMemo(() => {
+    return availableSlots.filter((slot) => {
+      const slotSubjectType = extractSubjectType(slot.subject);
+      const slotLevel = extractJlptLevel(slot.subject);
+
+      const matchedSubject =
+        subjectFilter === "ALL" || slotSubjectType === subjectFilter;
+      const matchedLevel =
+        levelFilter === "ALL" || slotLevel === levelFilter;
+
+      return matchedSubject && matchedLevel;
+    });
+  }, [availableSlots, subjectFilter, levelFilter]);
+
+  useEffect(() => {
+    if (subjectFilter !== "ALL" && !subjectOptions.includes(subjectFilter)) {
+      setSubjectFilter("ALL");
+    }
+  }, [subjectFilter, subjectOptions]);
+
+  const teacherCards = useMemo(() => {
+    const grouped = new Map<number, TeacherAccumulator>();
+
+    filteredSlots.forEach((slot) => {
+      const timeLabel = formatTimeRange(slot.startAt, slot.endAt);
+      const subjectType = extractSubjectType(slot.subject);
+      const level = extractJlptLevel(slot.subject);
+      const current = grouped.get(slot.teacherId);
+
+      if (!current) {
+        grouped.set(slot.teacherId, {
+          teacherId: slot.teacherId,
+          teacherName: slot.teacherName,
+          teacherAvatarUrl: slot.teacherAvatarUrl,
+          primarySubjectLabel: slot.subject || "Chưa cập nhật",
+          subjectTypeSet: new Set(subjectType ? [subjectType] : []),
+          levelSet: new Set(level ? [level] : []),
+          slotCount: 1,
+          firstTimeLabel: timeLabel,
+          previewTimes: [timeLabel],
+        });
+        return;
+      }
+
+      current.slotCount += 1;
+
+      if (subjectType) {
+        current.subjectTypeSet.add(subjectType);
+      }
+
+      if (level) {
+        current.levelSet.add(level);
+      }
+
+      if (
+        !current.previewTimes.includes(timeLabel) &&
+        current.previewTimes.length < 3
+      ) {
+        current.previewTimes.push(timeLabel);
+      }
+    });
+
+    return [...grouped.values()]
+      .map<TeacherCard>((item) => ({
+        teacherId: item.teacherId,
+        teacherName: item.teacherName,
+        teacherAvatarUrl: item.teacherAvatarUrl,
+        primarySubjectLabel: item.primarySubjectLabel,
+        subjectTypes: [...item.subjectTypeSet],
+        levels: [...item.levelSet].sort(
+          (a, b) => JLPT_LEVELS.indexOf(a) - JLPT_LEVELS.indexOf(b)
+        ),
+        slotCount: item.slotCount,
+        firstTimeLabel: item.firstTimeLabel,
+        previewTimes: item.previewTimes,
+      }))
+      .sort((a, b) => a.teacherName.localeCompare(b.teacherName, "vi"));
+  }, [filteredSlots]);
+
+  const goToTeacherSchedule = (teacherId: number) => {
+    router.push(`/booking/teacher-schedule?teacherId=${teacherId}`);
+  };
+
   return (
-    <main className="flex-1 flex flex-col px-6 overflow-hidden relative">
-      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px]" />
+    <main className="relative flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 text-foreground md:px-6 md:py-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[360px] bg-gradient-to-b from-primary/10 via-secondary/5 to-transparent" />
+      <div className="pointer-events-none absolute -left-20 top-24 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-16 top-12 -z-10 h-80 w-80 rounded-full bg-secondary/10 blur-3xl" />
 
-      <header className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-background/50 backdrop-blur-md">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3">
-            Đặt lịch cùng <span className="text-secondary text-glow">Sensei</span>
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
-            Tìm giáo viên phù hợp và chọn khung giờ còn trống.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              search
-            </span>
-            <input
-              className="bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none transition-all w-64"
-              placeholder="Tìm giáo viên..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />
+      {/* ĐỒNG BỘ: Padding x-axis đồng bộ với page.tsx */}
+      <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
+        <section className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
+              Đặt lịch cùng <span className="text-secondary text-glow">Sensei</span>
+            </h1>
+            <p className="mt-3 text-base text-muted-foreground md:text-xl">
+              Tìm giáo viên phù hợp và chọn khung giờ còn trống.
+            </p>
           </div>
 
-          <Link href="/booking/bookingmodal">
-            <button className="bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition">
-              Lịch của tôi
-            </button>
+          {/* ĐỒNG BỘ: Sửa h-12 -> h-10, rounded-2xl -> rounded-lg */}
+          <Link
+            href="/booking/bookingmodal"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-secondary-foreground shadow-sm transition hover:bg-secondary/90 active:scale-95"
+          >
+            Lịch của tôi
           </Link>
-        </div>
-      </header>
+        </section>
 
-      <div className="flex-1 overflow-y-auto p-8 space-y-8">
-        <div className="glass-card rounded-2xl p-4 overflow-hidden relative group">
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x select-none">
-            {days.map((d, idx) => {
-              const ymd = toYmd(d);
-              const active = selectedDate === ymd;
-              const day = d.getDate();
-              const month = d.getMonth() + 1;
-              const weekday = d.toLocaleDateString("vi-VN", { weekday: "short" });
+        <section className="glass-card rounded-[2rem] border border-border/60 p-4 shadow-[0_30px_80px_-50px_rgba(15,23,42,0.45)] md:p-5">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_180px_220px]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+              {/* ĐỒNG BỘ: Giảm h-14 -> h-11 để hài hòa hơn, bo góc rounded-lg */}
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="Tìm giáo viên theo tên..."
+                className="h-11 w-full rounded-lg border border-border bg-background/80 pl-12 pr-4 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
 
-              return (
-                <button
-                  key={ymd}
-                  onClick={() => setSelectedDate(ymd)}
-                  className={`flex flex-col items-center justify-center min-w-[90px] py-4 rounded-xl transition-all snap-start ${
-                    active
-                      ? "bg-secondary text-white shadow-[0_0_15px_rgba(255,92,141,0.3)] scale-105"
-                      : "border border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <span className="text-[10px] uppercase font-bold opacity-80 mb-1">
-                    {idx === 0 ? "Hôm nay" : weekday}
-                  </span>
-                  <span className="text-2xl font-black leading-none">
-                    {String(day).padStart(2, "0")}
-                  </span>
-                  <span className="text-[10px] mt-1 font-medium">Tháng {month}</span>
-                </button>
-              );
-            })}
+            <label className="relative block">
+              <select
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value)}
+                className="h-11 w-full appearance-none rounded-lg border border-border bg-background/80 px-4 pr-11 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="ALL">Tất cả môn học</option>
+                {subjectOptions.map((subject) => (
+                  <option key={subject} value={subject}>
+                    {subject}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+            </label>
+
+            <label className="relative block">
+              <select
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value as LevelFilter)}
+                className="h-11 w-full appearance-none rounded-lg border border-border bg-background/80 px-4 pr-11 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="ALL">Tất cả cấp độ</option>
+                {JLPT_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+            </label>
+
+            <label className="relative block cursor-pointer">
+              <CalendarDays className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="h-11 w-full rounded-lg border border-border bg-background/80 pl-12 pr-4 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 
+                           [color-scheme:dark] 
+                           [&::-webkit-calendar-picker-indicator]:bg-none
+                           [&::-webkit-calendar-picker-indicator]:absolute 
+                           [&::-webkit-calendar-picker-indicator]:inset-0 
+                           [&::-webkit-calendar-picker-indicator]:w-full 
+                           [&::-webkit-calendar-picker-indicator]:h-full 
+                           [&::-webkit-calendar-picker-indicator]:opacity-0 
+                           [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              />
+            </label>
+          </div>
+        </section>
+
+        <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-lg font-medium text-muted-foreground">
+            {teacherCards.length} giáo viên khả dụng
+          </p>
+
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-2 text-sm text-muted-foreground shadow-sm">
+            <CalendarDays className="size-4 text-primary" />
+            <span>{formatFullDate(selectedDate)}</span>
           </div>
         </div>
 
         {(isLoading || isFetching) && (
-          <div className="text-muted-foreground animate-pulse">Đang tải lịch rảnh...</div>
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-[420px] animate-pulse rounded-[2rem] border border-border bg-card/70"
+              />
+            ))}
+          </div>
         )}
 
         {isError && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            Không tải được dữ liệu lịch rảnh.
+          <div className="mt-6 rounded-[2rem] border border-destructive/20 bg-destructive/5 px-6 py-5 text-sm text-destructive">
+            Không tải được danh sách giáo viên khả dụng.
           </div>
         )}
 
-        {!isLoading && !isFetching && !isError && filteredSlots.length === 0 && (
-          <div className="glass-card rounded-2xl p-6 text-muted-foreground">
-            Hiện không có khung giờ nào khả dụng.
+        {!isLoading && !isFetching && !isError && teacherCards.length === 0 && (
+          <div className="mt-6 rounded-[2rem] border border-dashed border-border bg-card/60 px-6 py-10 text-center">
+            <p className="text-xl font-semibold text-foreground">
+              Chưa có giáo viên phù hợp
+            </p>
+            <p className="mt-2 text-muted-foreground">
+              Hãy thử đổi ngày, môn học, cấp độ hoặc từ khóa tìm kiếm.
+            </p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredSlots.map((slot) => (
-            <div
-              key={slot.timeSlotId}
-              className="glass-card p-6 rounded-2xl border border-white/5 hover:border-pink-500/40 transition-all group"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex flex-col">
-                  <span className="text-secondary text-2xl font-black mb-1">
-                    {formatTimeRange(slot.startAt, slot.endAt)}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase border border-emerald-500/20 w-fit">
-                    {slot.status}
-                  </span>
-                </div>
-                <div className="size-14 rounded-full border-2 border-pink-500/30 p-1 group-hover:border-pink-500 transition-all">
-                  <div
-                    className="w-full h-full rounded-full bg-cover bg-center bg-white/10"
-                    style={{
-                      backgroundImage: `url(${slot.teacherAvatarUrl || "/images/avt-default.jpg"})`,
-                    }}
-                  />
-                </div>
-              </div>
+        {!isLoading && !isFetching && !isError && teacherCards.length > 0 && (
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {teacherCards.map((teacher) => (
+              <article
+                key={teacher.teacherId}
+                className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-border bg-card/90 shadow-[0_30px_80px_-50px_rgba(15,23,42,0.4)] backdrop-blur"
+              >
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-5">
+  {/* Left side: Avatar + Name */}
+  <div className="flex min-w-0 flex-1 items-center gap-3">
+    <img
+      src={teacher.teacherAvatarUrl || "/images/avt-default.jpg"}
+      alt={teacher.teacherName}
+      className="h-14 w-14 shrink-0 rounded-full object-cover ring-4 ring-secondary/10"
+    />
 
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-slate-300">
-                  <span className="material-symbols-outlined text-pink-500 text-sm">person</span>
-                  <span className="text-sm font-semibold">Giáo viên: {slot.teacherName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-300">
-                  <span className="material-symbols-outlined text-pink-500 text-sm">book</span>
-                  <span className="text-sm">Môn học: {slot.subject}</span>
-                </div>
-              </div>
+    <div className="min-w-0 flex-1">
+      {/* Giảm size chữ xuống text-lg và dùng truncate để ép cứng trên 1 dòng */}
+      <h2 className="text-lg font-black tracking-tight text-foreground truncate">
+        {teacher.teacherName}
+      </h2>
+    </div>
+  </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() =>
-                    router.push(`/booking/bookappointment?timeSlotId=${slot.timeSlotId}`)
-                  }
-                  className="flex-1 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all shadow-lg shadow-secondary/20"
-                >
-                  Đặt lịch ngay
-                </button>
+  {/* Right side: Topic Tag */}
+  <div className="flex shrink-0 items-center max-w-[40%]">
+    <span className="inline-flex rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary whitespace-nowrap">
+      {teacher.primarySubjectLabel}
+    </span>
+  </div>
+</div>
 
-                <button
-                  onClick={() =>
-                    router.push(`/booking/teacher-schedule?teacherId=${slot.teacherId}`)
-                  }
-                  className="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-slate-200 font-semibold hover:bg-white/10 transition-all"
-                >
-                  Xem lịch GV
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div className="mt-5 space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="size-4 text-secondary" />
+                      <span>{teacher.slotCount} khung giờ trống</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-secondary" />
+                      <span>Sớm nhất: {teacher.firstTimeLabel}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Users className="size-4 text-secondary" />
+                      <span>{teacher.subjectTypes.length || 1} môn đang mở lịch</span>
+                    </div>
+                  </div>
+
+                  <p className="mt-5 text-sm leading-6 text-muted-foreground">
+                    Giáo viên đang mở {teacher.slotCount} khung giờ trong ngày{" "}
+                    {formatShortDate(selectedDate)}.
+                  </p>
+
+                  {teacher.previewTimes.length > 0 && (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {teacher.previewTimes.map((time) => (
+                        <span
+                          key={`${teacher.teacherId}-${time}`}
+                          className="rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground"
+                        >
+                          {time}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border bg-muted/20 px-6 py-5">
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* ĐỒNG BỘ: Sửa h-12 -> h-10, rounded-2xl -> rounded-lg */}
+                    <button
+                      type="button"
+                      onClick={() => goToTeacherSchedule(teacher.teacherId)}
+                      className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background text-sm font-semibold text-foreground transition hover:border-primary/30 hover:bg-primary/5 active:scale-95"
+                    >
+                     Hồ sơ giáo viên
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => goToTeacherSchedule(teacher.teacherId)}
+                      className="inline-flex h-10 items-center justify-center rounded-lg bg-secondary text-sm font-bold text-secondary-foreground shadow-lg shadow-secondary/20 transition hover:bg-secondary/90 active:scale-95"
+                    >
+                      Đặt lịch ngay
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

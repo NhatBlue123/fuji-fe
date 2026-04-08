@@ -359,12 +359,7 @@ export default function TeachingSchedulePage() {
             </p>
           </div>
 
-          <span className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/20 px-3 py-1 text-xs font-bold text-foreground">
-            <span className="material-symbols-outlined filled text-[16px] leading-none text-primary">
-              calendar_month
-            </span>
-            Lịch tuần
-          </span>
+          
         </div>
 
         {isLoading || isFetching ? (

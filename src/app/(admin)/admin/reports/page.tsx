@@ -319,9 +319,12 @@ export default function AdminReportsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[45%]">Tiêu đề</TableHead>
-                  <TableHead>Đối tượng</TableHead>
-                  <TableHead>Phản hồi người dùng</TableHead>
+                  <TableHead className="min-w-[200px]">Tiêu đề</TableHead>
+                  <TableHead className="whitespace-nowrap">Người gửi</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    {tab === "jlpt" ? "ID câu" : "ID đề thi"}
+                  </TableHead>
+                  <TableHead>Nội dung</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Ưu tiên</TableHead>
                   <TableHead>Ngày tạo</TableHead>
@@ -331,19 +334,19 @@ export default function AdminReportsPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={7}>Đang tải…</TableCell>
+                    <TableCell colSpan={8}>Đang tải…</TableCell>
                   </TableRow>
                 )}
                 {!isLoading && isError && (
                   <TableRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={8}>
                       Không tải được dữ liệu. Hãy thử lại.
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && !isError && (!rows || rows.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={7}>Không có báo cáo.</TableCell>
+                    <TableCell colSpan={8}>Không có báo cáo.</TableCell>
                   </TableRow>
                 )}
 
@@ -362,8 +365,28 @@ export default function AdminReportsPage() {
                           </div>
                         ) : null}
                       </TableCell>
-                      <TableCell>
-                        {r.subjectType || "-"} {r.subjectId ? `#${r.subjectId}` : ""}
+                      <TableCell className="text-sm">
+                        {r.createdByUserId != null ? (
+                          <span>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              #{r.createdByUserId}
+                            </span>
+                            {r.createdByName ? (
+                              <span className="block truncate max-w-[140px]">
+                                {r.createdByName}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {r.subjectType === "JLPT_TEST_FEEDBACK" && r.subjectId
+                          ? `#${r.subjectId}`
+                          : [r.subjectType, r.subjectId ? `#${r.subjectId}` : ""]
+                              .filter(Boolean)
+                              .join(" ") || "—"}
                       </TableCell>
                       <TableCell>
                         <div className="line-clamp-2 text-sm text-muted-foreground">
@@ -409,7 +432,19 @@ export default function AdminReportsPage() {
                           {r.questionContent}
                         </div>
                       </TableCell>
-                      <TableCell>Question #{r.questionId}</TableCell>
+                      <TableCell className="text-sm">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          #{r.userId}
+                        </span>
+                        {r.reporterName ? (
+                          <span className="block truncate max-w-[140px]">
+                            {r.reporterName}
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        Câu #{r.questionId}
+                      </TableCell>
                       <TableCell>
                         <div className="line-clamp-2 text-sm text-muted-foreground">
                           {r.reason || "-"}
@@ -479,7 +514,7 @@ export default function AdminReportsPage() {
           }
         }}
       >
-        <SheetContent side="right" className="w-full sm:max-w-xl">
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Chi tiết báo cáo</SheetTitle>
           </SheetHeader>
@@ -539,6 +574,42 @@ export default function AdminReportsPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <div className="text-sm text-muted-foreground">Người gửi</div>
+                  <div className="text-sm font-medium">
+                    {selectedSystemReport.createdByUserId != null ? (
+                      <>
+                        <span className="font-mono text-muted-foreground">
+                          ID #{selectedSystemReport.createdByUserId}
+                        </span>
+                        {selectedSystemReport.createdByName ? (
+                          <span className="block">
+                            {selectedSystemReport.createdByName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">(chưa có tên)</span>
+                        )}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </div>
+                </div>
+                {selectedSystemReport.subjectType === "JLPT_TEST_FEEDBACK" ? (
+                  <div>
+                    <div className="text-sm text-muted-foreground">
+                      ID đề thi được phản hồi
+                    </div>
+                    <div className="font-mono text-sm font-medium">
+                      {selectedSystemReport.subjectId
+                        ? `#${selectedSystemReport.subjectId}`
+                        : "—"}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
               <div>
                 <div className="text-sm text-muted-foreground flex items-center justify-between">
                   <span>Mô tả</span>
@@ -591,7 +662,7 @@ export default function AdminReportsPage() {
               </div>
 
               <div>
-                <div className="text-sm text-muted-foreground">Đối tượng</div>
+                <div className="text-sm text-muted-foreground">Loại / đối tượng</div>
                 <div className="text-sm">
                   {selectedSystemReport.subjectType || "-"}{" "}
                   {selectedSystemReport.subjectId

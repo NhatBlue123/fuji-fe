@@ -16,18 +16,6 @@ import TimeRangeList from "./TimeRangeList";
 import WeekdayPicker from "./WeekdayPicker";
 import PreviewCard from "./PreviewCard";
 
-const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
-
-const SUBJECT_OPTIONS = [
-  { value: "Kaiwa", label: "Kaiwa" },
-  { value: "Từ vựng", label: "Từ vựng" },
-  { value: "Ngữ pháp", label: "Ngữ pháp" },
-  { value: "Nghe", label: "Nghe" },
-] as const;
-
-type LevelOption = (typeof LEVEL_OPTIONS)[number];
-type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
-
 function Field({
   label,
   children,
@@ -71,11 +59,6 @@ export default function CreateTimeSlotForm() {
     router.push("/admin/teacher-schedules/teaching-schedule");
   };
 
-  const composedSubject = useMemo(
-    () => `${subjectType} ${level}`.trim(),
-    [subjectType, level]
-  );
-
   const blossom = useMemo(() => toBlossom(price), [price]);
 
   const estimatedSlots = useMemo(() => {
@@ -88,15 +71,14 @@ export default function CreateTimeSlotForm() {
     if (!dateFrom || !subjectType || !level || !price || price <= 0) return false;
     if (!timeRanges.length) return false;
     if (hasInvalidRange(timeRanges)) return false;
-    if (mode === "bulk" && (!dateTo || dateTo < dateFrom || !daysOfWeek.length)) {
+    if (mode === "bulk" && (!dateTo || dateTo < dateFrom || !daysOfWeek.length))
       return false;
-    }
     return true;
   }, [mode, dateFrom, dateTo, subjectType, level, price, timeRanges, daysOfWeek.length]);
 
   const toggleDay = (day: Weekday) => {
     setDaysOfWeek((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   };
 
@@ -107,7 +89,9 @@ export default function CreateTimeSlotForm() {
     setTimeRanges((prev) => prev.filter((_, i) => i !== idx));
 
   const updateRange = (idx: number, patch: Partial<TimeRange>) =>
-    setTimeRanges((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    setTimeRanges((prev) =>
+      prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)),
+    );
 
   const submit = async () => {
     setErr("");
@@ -183,6 +167,8 @@ export default function CreateTimeSlotForm() {
       const res = await api.post("/time-slots/bulk", payload);
       const data: BulkResponse | undefined = res?.data?.data;
 
+      const description = data ? `Tạo lịch thành công` : "Tạo lịch thành công.";
+
       setNotice({
         type: "success",
         title: "Đã lưu lịch rảnh",
@@ -209,22 +195,26 @@ export default function CreateTimeSlotForm() {
       <div className="absolute bottom-0 left-0 -z-10 h-[320px] w-[320px] rounded-full bg-primary/20 blur-[100px]" />
 
       {notice ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
           <div
             className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
               notice.type === "success"
-                ? "border-chart-4/40 bg-card"
-                : "border-destructive/50 bg-card"
+                ? "bg-card border-chart-4/40"
+                : "bg-card border-destructive/50"
             }`}
           >
-            <h3 className="text-xl font-bold text-foreground">{notice.title}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{notice.description}</p>
+            <h3 className="text-xl font-bold text-foreground">
+              {notice.title}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              {notice.description}
+            </p>
 
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
                 onClick={() => setNotice(null)}
-                className="h-10 rounded-xl bg-secondary px-6 font-semibold text-secondary-foreground hover:bg-secondary/90"
+                className="h-10 px-6 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold"
               >
                 OK
               </button>
@@ -233,8 +223,8 @@ export default function CreateTimeSlotForm() {
         </div>
       ) : null}
 
-      <div className="grid w-full grid-cols-1 gap-0 xl:grid-cols-3 xl:gap-6">
-        <section className="glass-card rounded-none border border-border border-l-0 border-t-0 p-6 xl:col-span-2 xl:rounded-2xl xl:border-l xl:border-t md:p-8">
+      <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-0 xl:gap-6">
+        <section className="xl:col-span-2 glass-card rounded-none xl:rounded-2xl border border-border border-l-0 border-t-0 xl:border-l xl:border-t p-6 md:p-8">
           <div className="flex flex-col items-start gap-4">
             <button
               type="button"
@@ -244,8 +234,9 @@ export default function CreateTimeSlotForm() {
               <ArrowLeft className="h-4 w-4" />
               Quay lại
             </button>
-
-            <h1 className="text-3xl font-black tracking-tight">Tạo lịch giảng dạy</h1>
+            <h1 className="text-3xl font-black tracking-tight">
+              Tạo lịch giảng dạy
+            </h1>
           </div>
 
           <div className="mt-6 inline-flex rounded-xl border border-border bg-card p-1">
@@ -373,8 +364,8 @@ export default function CreateTimeSlotForm() {
             </Field>
 
             <Field label="Quy đổi">
-              <div className="flex h-12 items-center rounded-xl border border-primary/40 bg-primary/10 px-4 font-semibold text-foreground">
-                ≈ {blossom} 🌸
+              <div className="h-12 rounded-xl border border-primary/40 bg-primary/10 px-4 flex items-center text-foreground font-semibold">
+                ≈ {blossom} �
               </div>
             </Field>
           </div>

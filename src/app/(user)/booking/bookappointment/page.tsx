@@ -36,22 +36,21 @@ export default function PaymentPage() {
         .split(",")
         .map((x) => Number(x.trim()))
         .filter((x) => Number.isFinite(x) && x > 0),
-    [timeSlotIdsParam]
+    [timeSlotIdsParam],
   );
 
   const isSingleMode = Number.isFinite(timeSlotId) && timeSlotId > 0;
   const isBulkMode =
-    Number.isFinite(teacherId) &&
-    teacherId > 0 &&
-    bulkIds.length > 0;
+    Number.isFinite(teacherId) && teacherId > 0 && bulkIds.length > 0;
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { data: singleQuote, isLoading, isFetching } = useGetBookingQuoteQuery(
-    { timeSlotId },
-    { skip: !isSingleMode }
-  );
+  const {
+    data: singleQuote,
+    isLoading,
+    isFetching,
+  } = useGetBookingQuoteQuery({ timeSlotId }, { skip: !isSingleMode });
 
   const [getBulkQuote, { data: bulkQuote, isLoading: isBulkQuoteLoading }] =
     useGetBulkBookingQuoteMutation();
@@ -61,8 +60,10 @@ export default function PaymentPage() {
     getBulkQuote({ teacherId, timeSlotIds: bulkIds });
   }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
 
-  const [createBooking, { isLoading: isCreatingSingle }] = useCreateBookingMutation();
-  const [createBulkBooking, { isLoading: isCreatingBulk }] = useCreateBulkBookingMutation();
+  const [createBooking, { isLoading: isCreatingSingle }] =
+    useCreateBookingMutation();
+  const [createBulkBooking, { isLoading: isCreatingBulk }] =
+    useCreateBulkBookingMutation();
 
   const isCreating = isCreatingSingle || isCreatingBulk;
   const quote = isSingleMode ? singleQuote : bulkQuote;
@@ -109,7 +110,9 @@ export default function PaymentPage() {
 
       <div className="max-w-3xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">Xác nhận thanh toán</h1>
+          <h1 className="text-3xl font-bold text-slate-100 mb-2">
+            Xác nhận thanh toán
+          </h1>
           <p className="text-slate-400">
             Kiểm tra thông tin đơn hàng trước khi đặt lịch.
           </p>
@@ -136,7 +139,9 @@ export default function PaymentPage() {
             {"items" in quote ? (
               <div className="space-y-6">
                 <div>
-                  <p className="text-slate-100 font-bold text-lg">GV. {quote.teacherName}</p>
+                  <p className="text-slate-100 font-bold text-lg">
+                    GV. {quote.teacherName}
+                  </p>
                   <p className="text-slate-400 text-sm mt-1">
                     {quote.slotCount} buổi đã chọn
                   </p>
@@ -150,7 +155,8 @@ export default function PaymentPage() {
                     >
                       <p className="text-pink-400 font-bold">{item.subject}</p>
                       <p className="text-slate-300 text-sm mt-1">
-                        {formatDate(item.startAt)} | {formatTimeRange(item.startAt, item.endAt)}
+                        {formatDate(item.startAt)} |{" "}
+                        {formatTimeRange(item.startAt, item.endAt)}
                       </p>
                       <p className="text-slate-400 text-sm mt-1">
                         {item.durationMinutes} phút
@@ -165,11 +171,11 @@ export default function PaymentPage() {
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Học phí</span>
-                    <span>{quote.tuitionBlossom} 🌸</span>
+                    <span>{quote.tuitionBlossom} �</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} 🌸</span>
+                    <span>{quote.serviceFeeBlossom} �</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
@@ -183,13 +189,16 @@ export default function PaymentPage() {
                   <p className="text-pink-500 text-xs font-bold uppercase mb-1">
                     Học phần: {quote.subject}
                   </p>
-                  <p className="text-slate-100 font-bold text-lg">GV. {quote.teacherName}</p>
+                  <p className="text-slate-100 font-bold text-lg">
+                    GV. {quote.teacherName}
+                  </p>
                 </div>
 
                 <div className="space-y-3 text-sm text-slate-400 bg-white/5 p-3 rounded-lg">
                   <p>{formatDate(quote.startAt)}</p>
                   <p>
-                    {formatTimeRange(quote.startAt, quote.endAt)} ({quote.durationMinutes} phút)
+                    {formatTimeRange(quote.startAt, quote.endAt)} (
+                    {quote.durationMinutes} phút)
                   </p>
                 </div>
 
@@ -200,11 +209,13 @@ export default function PaymentPage() {
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} 🌸</span>
+                    <span>{quote.serviceFeeBlossom} �</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
-                    <span className="text-pink-500">{quote.totalBlossom} 🌸</span>
+                    <span className="text-pink-500">
+                      {quote.totalBlossom} �
+                    </span>
                   </div>
                 </div>
               </div>
@@ -243,7 +254,9 @@ function SuccessModal({ router }: any) {
         <div className="size-24 rounded-full border-4 border-pink-500 flex items-center justify-center text-pink-500 mb-6">
           ✓
         </div>
-        <h1 className="text-3xl font-bold text-white mb-4">Thanh toán thành công!</h1>
+        <h1 className="text-3xl font-bold text-white mb-4">
+          Thanh toán thành công!
+        </h1>
         <p className="text-slate-300 mb-6">Bạn đã đặt lịch học thành công.</p>
         <button
           onClick={() => router.push("/booking/bookingmodal")}

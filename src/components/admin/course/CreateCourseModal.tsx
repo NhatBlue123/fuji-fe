@@ -48,6 +48,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [isPublished, setIsPublished] = useState(false);
+  const [selectedJlptLevel, setSelectedJlptLevel] = useState<string>("N5");
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("");
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -57,6 +58,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
     setDescription("");
     setPrice("");
     setIsPublished(false);
+    setSelectedJlptLevel("N5");
     setSelectedInstructorId("");
     setThumbnailFile(null);
     setThumbnailPreview(null);
@@ -106,6 +108,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
       price: parseFloat(price) || 0,
       instructorId,
       isPublished,
+      jlptLevel: selectedJlptLevel,
     };
 
     formData.append(
@@ -262,6 +265,25 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
               onChange={(e) => setPrice(e.target.value)}
               placeholder="0 = Miễn phí"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Trình độ JLPT</Label>
+            <Select
+              value={selectedJlptLevel}
+              onValueChange={setSelectedJlptLevel}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn trình độ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="N5">N5</SelectItem>
+                <SelectItem value="N4">N4</SelectItem>
+                <SelectItem value="N3">N3</SelectItem>
+                <SelectItem value="N2">N2</SelectItem>
+                <SelectItem value="N1">N1</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Published toggle */}

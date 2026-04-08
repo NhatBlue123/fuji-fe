@@ -80,7 +80,13 @@ function AudioPlayer({ src }: { src: string }) {
 
 // ─── Component ─────────────────────────────────────────
 
-export default function ListeningTask({ data }: { data: TaskDataEnvelope }) {
+export default function ListeningTask({
+  data,
+  onTaskSubmitted,
+}: {
+  data: TaskDataEnvelope;
+  onTaskSubmitted?: () => void;
+}) {
   const items = data.items as ListeningItem[];
   const { selected, submitted, select, submit, reset, score, allAnswered } =
     useListeningState(items);
@@ -183,6 +189,7 @@ export default function ListeningTask({ data }: { data: TaskDataEnvelope }) {
         canSubmit={allAnswered}
         onSubmit={submit}
         onReset={reset}
+        onSubmitted={onTaskSubmitted}
         score={score}
         total={items.length}
       />

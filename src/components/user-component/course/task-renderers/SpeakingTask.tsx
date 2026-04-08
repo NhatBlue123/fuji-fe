@@ -10,7 +10,12 @@ import { TaskHeader, EmptyTask } from "./MultipleChoiceTask";
  * No data structure is defined yet on the backend, so this shows
  * the instructions + a practice prompt.
  */
-export default function SpeakingTask({ data }: { data: TaskDataEnvelope }) {
+export default function SpeakingTask({
+  data,
+}: {
+  data: TaskDataEnvelope;
+  onTaskSubmitted?: () => void;
+}) {
   const hasContent = data.instructions || (data.items && data.items.length > 0);
 
   if (!hasContent) {

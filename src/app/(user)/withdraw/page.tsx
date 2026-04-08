@@ -43,10 +43,11 @@ export default function WithdrawPage() {
   const [showNote, setShowNote] = useState(false);
 
   const withdrawAmount = Number(amount) || 0;
+  const payoutAmountVnd = withdrawAmount * 1000;
 
   const validateForm = () => {
-    if (withdrawAmount < 50000) {
-      toast.error("Số tiền rút tối thiểu là 50,000đ");
+    if (withdrawAmount < 50) {
+      toast.error("Số 🌸 rút tối thiểu là 50");
       return false;
     }
     if (withdrawAmount > balance) {
@@ -126,7 +127,7 @@ export default function WithdrawPage() {
                 <div className="flex items-center gap-2 ml-1">
                   <Banknote size={16} className="text-pink-500" />
                   <span className="text-[11px] font-black uppercase tracking-widest opacity-60">
-                    Số tiền rút
+                    Nhập số 🌸 muốn rút
                   </span>
                 </div>
                 <div className="relative group border-b-2 border-slate-200 dark:border-white/10 focus-within:border-pink-500 transition-all pb-2">
@@ -138,9 +139,15 @@ export default function WithdrawPage() {
                     className="w-full bg-transparent text-5xl font-black outline-none placeholder:text-slate-300 dark:placeholder:text-white/5"
                   />
                   <span className="absolute right-0 bottom-4 font-black text-slate-400">
-                    VND
+                    🌸
                   </span>
                 </div>
+                <p className="text-xs text-slate-500">
+                  Số tiền thực nhận dự kiến:{" "}
+                  <span className="font-bold text-pink-500">
+                    {payoutAmountVnd.toLocaleString("vi-VN")}đ
+                  </span>
+                </p>
 
                 <div className="space-y-3">
                   {/* Label nhỏ để hướng dẫn */}
@@ -151,7 +158,7 @@ export default function WithdrawPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {[100000, 200000, 500000].map((val) => (
+                    {[100, 200, 500].map((val) => (
                       <button
                         key={val}
                         type="button"
@@ -178,9 +185,9 @@ export default function WithdrawPage() {
 
                 {showNote && (
                   <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 text-[11px] font-medium leading-relaxed text-slate-500">
-                    • Tối thiểu: <b className="text-pink-500">50,000đ</b> / lần{" "}
-                    <br />• Tối đa: <b className="text-pink-500">3 lần</b> /
-                    ngày
+                    • Tối thiểu: <b className="text-pink-500">50 🌸</b> (≈
+                    50,000đ) / lần <br />• Tối đa:{" "}
+                    <b className="text-pink-500">3 lần</b> / ngày
                   </div>
                 )}
               </div>
@@ -264,18 +271,21 @@ export default function WithdrawPage() {
                       {balance.toLocaleString()}
                     </span>
                     <span className="text-xs font-bold opacity-40 uppercase">
-                      VND
+                      🌸
                     </span>
                   </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    ~ {(balance * 1000).toLocaleString("vi-VN")}đ
+                  </p>
                 </div>
 
                 <div className="pt-8 border-t border-white/10 space-y-4">
                   <div className="flex justify-between items-center text-xs">
                     <span className="opacity-60 font-bold uppercase">
-                      Rút tiền
+                      Số 🌸 quy đổi
                     </span>
                     <span className="font-black">
-                      {withdrawAmount.toLocaleString()} đ
+                      {withdrawAmount.toLocaleString()} 🌸
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
@@ -289,7 +299,7 @@ export default function WithdrawPage() {
                       Thực nhận
                     </span>
                     <span className="text-3xl font-black tracking-tighter">
-                      {withdrawAmount.toLocaleString()} đ
+                      {payoutAmountVnd.toLocaleString("vi-VN")}đ
                     </span>
                   </div>
                 </div>
@@ -318,10 +328,27 @@ export default function WithdrawPage() {
               Kiểm tra lại thông tin
             </DialogTitle>
             <DialogDescription className="text-[11px] font-medium uppercase tracking-tight">
-              Tiền sẽ được chuyển thủ công vào tài khoản này
+              Bạn nhập số 🌸, hệ thống sẽ quy đổi ra tiền và chuyển khoản vào
+              tài khoản này
             </DialogDescription>
           </DialogHeader>
           <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-2xl space-y-4 my-4">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Số 🌸 quy đổi
+              </span>
+              <span className="text-xs font-black">
+                {withdrawAmount.toLocaleString()} 🌸
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Thực nhận
+              </span>
+              <span className="text-xs font-black text-pink-500">
+                {payoutAmountVnd.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
             {[
               { label: "Ngân hàng", value: bankInfo.bankName },
               {
@@ -355,7 +382,7 @@ export default function WithdrawPage() {
               onClick={handleConfirmWithdraw}
               className="flex-1 bg-pink-500 font-black text-xs uppercase"
             >
-              Xác nhận rút
+              Xác nhận rút tiền
             </Button>
           </DialogFooter>
         </DialogContent>

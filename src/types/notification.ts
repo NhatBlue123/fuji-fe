@@ -5,6 +5,7 @@ export enum NotificationType {
   reminder = "reminder",
   security = "security",
   booking = "booking",
+  message = "message",
 }
 
 export interface Notification {

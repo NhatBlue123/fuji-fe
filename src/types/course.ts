@@ -28,6 +28,9 @@ export interface CourseResponseDTO {
   averageRating: number;
   ratingCount: number;
   isPublished: boolean;
+  jlptLevel?: "N5" | "N4" | "N3" | "N2" | "N1" | null;
+  isEnrolled?: boolean;
+  currentLessonId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -89,6 +92,7 @@ export interface LessonResponseDTO {
   content: string | null;
   completionCount: number;
   userCompleted: boolean;
+  isPreview: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,6 +108,7 @@ export interface LessonRequestDTO {
   taskData?: string;
   content?: string;
   lessonOrder?: number;
+  isPreview?: boolean;
 }
 
 export interface LessonUpdateDTO {
@@ -116,6 +121,7 @@ export interface LessonUpdateDTO {
   taskData?: string;
   content?: string;
   lessonOrder?: number;
+  isPreview?: boolean;
 }
 
 // ─── API Response ──────────────────────────────────────
@@ -146,6 +152,8 @@ export interface CourseListParams {
   sortBy?: string;
   sortDir?: string;
   keyword?: string;
+  level?: string;
+  category?: "all" | "free" | "paid" | "mine";
 }
 
 // ─── Legacy (keep for user-facing pages) ───────────────

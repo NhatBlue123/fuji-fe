@@ -186,6 +186,7 @@ export type TeacherScheduleSlot = {
   durationMinutes: number;
   subject: string;
   tuitionVnd: number;
+  tuitionBlossom: number;
   studentId: number | null;
   studentName: string | null;
   bookingStatus: "PENDING" | "CONFIRMED" | null;

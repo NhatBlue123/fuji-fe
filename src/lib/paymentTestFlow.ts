@@ -15,7 +15,7 @@ export interface PaymentTestFlowResult {
   signature: string;
   callbackStatus: string;
   newBalance: number;
-  flowers: number;
+  Kimbap: number;
 }
 
 /**
@@ -24,6 +24,7 @@ export interface PaymentTestFlowResult {
 export async function createPaymentOrder(amount: number): Promise<{
   orderId: string;
   amount: number;
+  transferAmountVnd?: number;
   bankId: string;
   accountNo: string;
   accountName: string;
@@ -44,15 +45,15 @@ export async function createPaymentOrder(amount: number): Promise<{
 export async function getTestSignature(
   orderId: string,
   amount: number,
-  status: string = "SUCCESS"
+  status: string = "SUCCESS",
 ): Promise<{ signature: string }> {
   try {
     const response = await api.get("/payments/test-signature", {
       params: {
         order_id: orderId,
         amount: amount,
-        status: status
-      }
+        status: status,
+      },
     });
     console.log("✅ Step 2 - Test Signature Retrieved:", response.data);
     return response.data;
@@ -70,7 +71,7 @@ export async function sendPaymentCallback(
   orderId: string,
   amount: number,
   signature: string,
-  transactionId: string = "TXN_TEST_" + Date.now()
+  transactionId: string = "TXN_TEST_" + Date.now(),
 ): Promise<{ status: string; message: string }> {
   try {
     const response = await api.post("/payments/callback", {
@@ -78,7 +79,7 @@ export async function sendPaymentCallback(
       transaction_id: transactionId,
       amount: amount,
       status: "SUCCESS",
-      signature: signature
+      signature: signature,
     });
     console.log("✅ Step 3 - Callback Sent Successfully:", response.data);
     return response.data;
@@ -89,18 +90,18 @@ export async function sendPaymentCallback(
 }
 
 /**
- * Step 4: Check wallet balance (verify flowers added)
+ * Step 4: Check wallet balance (verify Kimbap added)
  */
 export async function checkWalletBalance(): Promise<{
   balance: number;
-  flowers: number;
+  Kimbap: number;
 }> {
   try {
     const response = await api.get("/wallet/me");
     console.log("✅ Step 4 - Wallet Balance:", response.data);
     return {
       balance: response.data.balance || 0,
-      flowers: Math.floor((response.data.balance || 0) / 1000)
+      Kimbap: response.data.balance || 0,
     };
   } catch (error) {
     console.error("❌ Step 4 Failed - Check Wallet:", error);
@@ -113,34 +114,39 @@ export async function checkWalletBalance(): Promise<{
  * Executes: Create → GetSignature → SendCallback → CheckBalance
  */
 export async function runPaymentTestFlow(
-  amount: number
+  amount: number,
 ): Promise<PaymentTestFlowResult> {
   console.log("\n🚀 Starting OTP Payment Test Flow...\n");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   try {
     // Step 1: Create payment order
-    console.log(`\n📍 STEP 1: Creating payment order (Amount: ${amount}đ)...`);
+    console.log(
+      `\n📍 STEP 1: Creating payment order (Amount: ${amount} hoa)...`,
+    );
     const orderData = await createPaymentOrder(amount);
+    const transferAmountVnd =
+      orderData.transferAmountVnd ?? orderData.amount * 1000;
 
     // Step 2: Get test signature
     console.log(
-      `\n📍 STEP 2: Getting test signature (OrderID: ${orderData.orderId})...`
+      `\n📍 STEP 2: Getting test signature (OrderID: ${orderData.orderId})...`,
     );
-    const signatureData = await getTestSignature(orderData.orderId, amount);
+    const signatureData = await getTestSignature(
+      orderData.orderId,
+      transferAmountVnd,
+    );
 
     // Step 3: Send callback
     console.log(`\n📍 STEP 3: Sending payment callback...`);
     const callbackResponse = await sendPaymentCallback(
       orderData.orderId,
-      amount,
-      signatureData.signature
+      transferAmountVnd,
+      signatureData.signature,
     );
 
     // Step 4: Wait a moment for backend to process
-    console.log(
-      `\n⏳ Waiting for backend to process payment (1.5 seconds)...`
-    );
+    console.log(`\n⏳ Waiting for backend to process payment (1.5 seconds)...`);
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Step 5: Check wallet balance
@@ -151,11 +157,17 @@ export async function runPaymentTestFlow(
     console.log("✅ OTP PAYMENT TEST FLOW COMPLETED SUCCESSFULLY!\n");
     console.log("📊 Results Summary:");
     console.log(`   - OrderID: ${orderData.orderId}`);
-    console.log(`   - Amount: ${amount.toLocaleString("vi-VN")}đ`);
-    console.log(`   - Signature: ${signatureData.signature.substring(0, 20)}...`);
+    console.log(
+      `   - Amount: ${amount.toLocaleString("vi-VN")} hoa (~${transferAmountVnd.toLocaleString("vi-VN")}đ)`,
+    );
+    console.log(
+      `   - Signature: ${signatureData.signature.substring(0, 20)}...`,
+    );
     console.log(`   - Callback Status: ${callbackResponse.status}`);
-    console.log(`   - New Balance: ${walletData.balance.toLocaleString("vi-VN")}đ`);
-    console.log(`   - Flowers Added: ${walletData.flowers} 🌸\n`);
+    console.log(
+      `   - New Balance: ${walletData.balance.toLocaleString("vi-VN")} hoa`,
+    );
+    console.log(`   - Kimbap Added: ${walletData.Kimbap} 🌸\n`);
 
     return {
       orderId: orderData.orderId,
@@ -163,12 +175,12 @@ export async function runPaymentTestFlow(
       signature: signatureData.signature,
       callbackStatus: callbackResponse.status,
       newBalance: walletData.balance,
-      flowers: walletData.flowers
+      Kimbap: walletData.Kimbap,
     };
   } catch (error) {
     console.error(
       "\n❌ OTP PAYMENT TEST FLOW FAILED!\n",
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
     throw error;
   }

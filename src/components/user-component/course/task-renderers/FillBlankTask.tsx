@@ -63,7 +63,13 @@ function useFillBlankState(items: FillBlankItem[]) {
 
 // ─── Component ─────────────────────────────────────────
 
-export default function FillBlankTask({ data }: { data: TaskDataEnvelope }) {
+export default function FillBlankTask({
+  data,
+  onTaskSubmitted,
+}: {
+  data: TaskDataEnvelope;
+  onTaskSubmitted?: () => void;
+}) {
   const items = data.items as FillBlankItem[];
   const {
     answers,
@@ -168,6 +174,7 @@ export default function FillBlankTask({ data }: { data: TaskDataEnvelope }) {
         canSubmit={allAnswered}
         onSubmit={submit}
         onReset={reset}
+        onSubmitted={onTaskSubmitted}
         score={score}
         total={items.length}
       />

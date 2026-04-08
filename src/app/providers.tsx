@@ -4,7 +4,6 @@ import { Provider } from "react-redux";
 import { store } from "@/store";
 import { AuthInitializer } from "@/hooks/useAuthInit";
 import { NotificationProvider } from "@/providers/NotificationProvider";
-import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 import "@/i18n";
 
 export default function RtkProvider({
@@ -15,9 +14,7 @@ export default function RtkProvider({
   return (
     <Provider store={store}>
       <AuthInitializer>
-        <NotificationProvider>
-          <PaymentSocketProvider>{children}</PaymentSocketProvider>
-        </NotificationProvider>
+        <NotificationProvider>{children}</NotificationProvider>
       </AuthInitializer>
     </Provider>
   );

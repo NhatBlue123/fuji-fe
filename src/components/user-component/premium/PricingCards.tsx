@@ -167,7 +167,7 @@ export default function PricingCards() {
           disabled={isPreviewLoading}
           className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_20px_rgba(236,72,153,0.4)] flex justify-center items-center disabled:opacity-70"
         >
-          {!user ? "Đăng nhập để Nâng cấp" : (isPreviewLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : `Nâng cấp 🚀 PREMIUM (AI Platform)`)}
+          {!user ? "Đăng nhập để Nâng cấp" : (isPreviewLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : `Nâng cấp PREMIUM (AI Platform)`)}
         </button>
       );
     }
@@ -178,7 +178,7 @@ export default function PricingCards() {
         disabled={isPreviewLoading}
         className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-400 hover:to-rose-300 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_20px_rgba(244,63,94,0.4)] flex justify-center items-center disabled:opacity-70"
       >
-        {!user ? "Đăng nhập để Nâng cấp" : (isPreviewLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : `Nâng cấp 🌟 PRO (Phổ biến nhất)`)}
+        {!user ? "Đăng nhập để Nâng cấp" : (isPreviewLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : `Nâng cấp PRO (Phổ biến nhất)`)}
       </button>
     );
   };

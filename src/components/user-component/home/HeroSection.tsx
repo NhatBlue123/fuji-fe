@@ -101,7 +101,7 @@ export function HeroSection() {
         <div className="flex flex-wrap items-center gap-4">
           <Link
             href={isMounted && isAuthenticated ? "/course" : "/login"}
-            className="h-[52px] bg-pink-500 hover:bg-blue-500 text-white px-8 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group"
+            className="h-[52px] bg-pink-500 hover:bg-white/10 text-white px-8 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group"
           >
             {t("home.getStarted")}
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">

@@ -1,0 +1,50 @@
+﻿3bd0de7 Merge pull request #82 from NhatBlue123/test-merge
+ff8fbed Merge branch 'mock-project' into test-merge
+bfcf116 Update code new
+0ffb530 Merge pull request #81 from NhatBlue123/hotfix/gg-login
+13b36a7 Adapt admin flashcards to new API format
+055b1f1 Polish flashcard UI styles and controls
+de9f5ac OAuth2 redirect flow and backend origin util
+4948855 Merge pull request #80 from NhatBlue123/feature/fe-dashboard-admin
+88bcde0 update ui dashboard admin
+1dc0d32 Merge pull request #79 from NhatBlue123/UI/bulkBooking
+7221310 sua giao dien booking
+63b51c2 chuyen sang du lieu that
+2cdf45f hoan thanh premium + fix UI
+8f37238 Merge pull request #78 from NhatBlue123/hotfix/ai-create
+750e338 Update admin reports UI and export booking hooks
+9c32878 luu code
+f2c0c9d Merge pull request #77 from NhatBlue123/feature/Chat-bot-AI
+111aa58 save
+0ab6bc8 Implement feature X to enhance user experience and optimize performance
+997d6c8 Merge branch 'mock-project' of https://github.com/NhatBlue123/fuji-fe into feature/Chat-bot-AI
+7ac37ed feat: add VocabularyEditor and GrammarEditor components for managing vocabulary and grammar items
+01f22c4 Merge branch 'mock-project' of https://github.com/NhatBlue123/fuji-fe into hotfix/ai-create
+9cf7b44 save code 2
+3b63f6d save code
+6d00edd Merge pull request #75 from NhatBlue123/feature/fe-notifications
+8d1193c Complete ui notification
+6be2ea1 Merge pull request #74 from NhatBlue123/UI/bulkBooking
+fbf42f1 Merge branch 'mock-project' into UI/bulkBooking
+df6c49c sua ui booking
+6944ed6 Add video session page and signaling hook
+94f4ffa Merge pull request #73 from NhatBlue123/test-merge
+8c3e8fd Merge branch 'test-merge' of https://github.com/NhatBlue123/fuji-fe into test-merge
+f3c9b4f update UI + premium subcrition
+7a42476 Merge pull request #72 from NhatBlue123/test-merge
+b3f6a2f Merge branch 'mock-project' into test-merge
+39d957c Day code da call api socket payment
+77962d9 Improve JLPT result UI and admin reports display
+37317f8 Merge pull request #71 from NhatBlue123/hotfix/ai-create
+b40530a Merge branch 'mock-project' of https://github.com/NhatBlue123/fuji-fe into hotfix/ai-create
+3bc43f1 Merge pull request #70 from NhatBlue123/test-merge
+cffbaa1 Update code sua giao di├¬n
+8d668d7 feat: enhance voice chat functionality with partial transcript updates
+349c6b7 Da Fix UI profile va call api thong ke teacher
+fe116dd Add chat moderation UI and improve JLPT editor
+7e5618b Merge pull request #69 from NhatBlue123/feature/Chat-bot-AI
+d09bf55 Merge branch 'feature/Chat-bot-AI' of https://github.com/NhatBlue123/fuji-fe into feature/Chat-bot-AI
+ae4ad37 feat: add feedback system for Sensei with scoring, comments, strengths, and improvements
+95310cf Merge pull request #68 from NhatBlue123/UI/bulkBooking
+07bc9d1 sua hien thi so du vi
+4ac3ce3 feat: Implement AI voice chat feature with Sensei avatar, session management, and transcript display.

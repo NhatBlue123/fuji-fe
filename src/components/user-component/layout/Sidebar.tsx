@@ -6,17 +6,17 @@ import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Home, 
-  BookOpen, 
-  FileCheck, 
-  Calendar, 
-  Bot, 
-  Video, 
-  Layers, 
-  Settings, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  BookOpen,
+  FileCheck,
+  Calendar,
+  Bot,
+  Video,
+  Layers,
+  Settings,
   ShieldCheck,
   Zap
 } from "lucide-react";
@@ -71,12 +71,12 @@ const Sidebar = () => {
     { label: "/video-call", path: "/video-call", icon: Video, customLabel: "Video call" },
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
     { label: "Cài đặt", path: "/settings", icon: Settings },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [isMounted, t]);
 
   return (
     <TooltipProvider delayDuration={0}>
-      <aside 
+      <aside
         className={cn(
           "relative hidden flex-col bg-sidebar border-r border-sidebar-border md:flex transition-all duration-300 ease-in-out z-40 shadow-sm font-sans",
           isCollapsed ? "w-16" : "w-58"
@@ -117,16 +117,16 @@ const Sidebar = () => {
           {menuItems.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;
-            
+
             return (
               <Tooltip key={item.path}>
                 <TooltipTrigger asChild>
-                  <Link 
-                    href={item.path} 
+                  <Link
+                    href={item.path}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
-                      active 
-                        ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white" 
+                      active
+                        ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white"
                         : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
                     )}
                   >
@@ -134,17 +134,17 @@ const Sidebar = () => {
                       "h-5 w-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110",
                       active ? "text-white stroke-[3px]" : "group-hover:text-secondary"
                     )} />
-                    
+
                     {!isCollapsed && (
                       <span className={cn(
-                          "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
-                          active ? "text-white" : "group-hover:text-secondary"
-                        )}
+                        "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
+                        active ? "text-white" : "group-hover:text-secondary"
+                      )}
                       >
                         {isMounted ? (item.customLabel || item.label) : ""}
                       </span>
                     )}
-                    
+
                     {active && !isCollapsed && (
                       <div className="absolute right-0 w-1 h-6 bg-white/20 rounded-l-full" />
                     )}
@@ -165,8 +165,8 @@ const Sidebar = () => {
           {isMounted && isAdminOrTeacher && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link 
-                  href="/admin" 
+                <Link
+                  href="/admin"
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group text-foreground font-bold hover:bg-secondary/5 hover:text-secondary border border-transparent hover:border-secondary/20",
                     isActive("/admin") && "bg-secondary/10 text-secondary border-secondary/20"
@@ -222,9 +222,9 @@ const Sidebar = () => {
           </div>
         </div>
 
-        <TopupModal 
-          isOpen={isPremiumModalOpen} 
-          onClose={() => setIsPremiumModalOpen(false)} 
+        <TopupModal
+          isOpen={isPremiumModalOpen}
+          onClose={() => setIsPremiumModalOpen(false)}
         />
       </aside>
     </TooltipProvider>

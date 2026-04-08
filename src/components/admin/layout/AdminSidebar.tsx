@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -198,6 +198,11 @@ export function AdminSidebar() {
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, canAccessRoute } = usePermissions();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const defaultOpenMenu = useMemo(() => {
     const matchedItem = navGroups

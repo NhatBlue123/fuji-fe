@@ -79,6 +79,7 @@ export default function SettingsPage() {
     courseUpdates: true,
     newMessages: true,
     examReminders: true,
+    bookingReminders: true,
     systemAlerts: true,
     emailDigest: false,
   });
@@ -89,6 +90,7 @@ export default function SettingsPage() {
         courseUpdates: prefs.courseUpdates ?? true,
         newMessages: prefs.newMessages ?? true,
         examReminders: prefs.examReminders ?? true,
+        bookingReminders: prefs.bookingReminders ?? true,
         systemAlerts: prefs.systemAlerts ?? true,
         emailDigest: prefs.emailDigest ?? false,
       });
@@ -111,9 +113,9 @@ export default function SettingsPage() {
         <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-cyan-500/5 dark:bg-cyan-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 relative z-10">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 relative z-10">
         {/* Page Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-muted/50 pb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-muted/50 pb-8">
           <div className="flex items-center gap-4">
             <div className="size-14 rounded-[1.25rem] bg-pink-500/10 flex items-center justify-center border border-pink-500/20 shadow-inner">
               <Settings className="size-7 text-pink-500" strokeWidth={2.5} />
@@ -261,6 +263,7 @@ export default function SettingsPage() {
                         { key: "courseUpdates", label: "Cập nhật khóa học", desc: "Nhận thông báo khi khóa học có bài giảng mới", color: "text-blue-500" },
                         { key: "newMessages", label: "Tin nhắn hỗ trợ", desc: "Nhận thông báo khi có phản hồi từ Admin", color: "text-emerald-500" },
                         { key: "examReminders", label: "Nhắc nhở lịch thi", desc: "Cảnh báo tự động trước kỳ thi JLPT", color: "text-amber-500" },
+                        { key: "bookingReminders", label: "Nhắc nhở lịch học", desc: "Thông báo trước các buổi học bạn đã đăng ký", color: "text-orange-500" },
                         { key: "systemAlerts", label: "Cảnh báo hệ thống", desc: "Bảo trì, cập nhật điều khoản hoặc thay đổi lớn", color: "text-rose-500" },
                         { key: "emailDigest", label: "Báo cáo Email tuần", desc: "Tóm tắt tình hình chi tiêu ví và học tập", color: "text-purple-500" },
                       ].map(({ key, label, desc, color }, i, arr) => (

@@ -168,26 +168,18 @@ const Header = () => {
                         className={cn(
                           "flex items-start gap-3 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
                           !n.isRead
-                            ? "bg-secondary/[0.06] dark:bg-secondary/[0.08] border-l-[3px] border-l-secondary"
-                            : "opacity-60 border-l-[3px] border-l-transparent",
+                            ? "bg-secondary/[0.06] dark:bg-secondary/[0.08] border-l-[4px] border-l-secondary"
+                            : "opacity-60 border-l-[4px] border-l-transparent",
                         )}
                       >
-                        <div
-                          className={cn(
-                            "size-2.5 rounded-full mt-2 flex-shrink-0 transition-all",
-                            !n.isRead
-                              ? "bg-secondary shadow-[0_0_6px_rgba(var(--secondary-rgb,59,130,246),0.4)]"
-                              : "bg-muted-foreground/15",
-                          )}
-                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-3">
                             <span
                               className={cn(
-                                "text-[13px] font-bold truncate font-sans",
+                                "text-[13px] font-black truncate font-sans tracking-tight",
                                 !n.isRead
                                   ? "text-secondary"
-                                  : "text-foreground/60",
+                                  : "text-foreground/40",
                               )}
                             >
                               {n.title}
@@ -195,10 +187,10 @@ const Header = () => {
                           </div>
                           <p
                             className={cn(
-                              "line-clamp-2 text-xs leading-relaxed font-sans",
+                              "line-clamp-2 text-xs leading-relaxed font-sans font-bold",
                               !n.isRead
                                 ? "text-muted-foreground"
-                                : "text-muted-foreground/60",
+                                : "text-muted-foreground/50",
                             )}
                           >
                             {n.content}

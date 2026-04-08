@@ -136,7 +136,7 @@ export const bookingApi = baseApi.injectEndpoints({
 
     updateTimeSlot: builder.mutation<
       unknown,
-      { id: number; price?: number; subject?: string }
+      { id: number; price?: number; subject?: string; startAt?: string; endAt?: string }
     >({
       query: ({ id, ...body }) => ({
         url: `/time-slots/${id}`,

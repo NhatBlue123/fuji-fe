@@ -51,6 +51,28 @@ const TYPE_LABELS: Record<string, string> = {
   [NotificationType.security]: "Bảo mật",
 };
 
+function isCourseNotification(n: NotifType) {
+  if (n.type === NotificationType.course) return true;
+  if (n.type !== NotificationType.reminder) return false;
+
+  const related = (n.relatedType || "").toUpperCase();
+  const link = (n.linkUrl || "").toLowerCase();
+  const title = (n.title || "").toLowerCase();
+
+  return (
+    related.includes("BOOKING") ||
+    link.includes("/booking") ||
+    link.includes("/learn/session") ||
+    title.includes("giờ học") ||
+    title.includes("buổi học")
+  );
+}
+
+function getNotificationTypeLabel(n: NotifType) {
+  if (isCourseNotification(n)) return "Khóa học";
+  return TYPE_LABELS[n.type] ?? "Khác";
+}
+
 export default function NotificationsPage() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, setNotifications } = useNotifications();
   const router = useRouter();
@@ -59,9 +81,12 @@ export default function NotificationsPage() {
 
   const filteredNotifications = useMemo(() => {
     if (activeTab === "unread") return notifications.filter(n => !n.isRead);
-    if (activeTab === "course") return notifications.filter(n => n.type === NotificationType.course);
+    if (activeTab === "course") return notifications.filter(isCourseNotification);
     if (activeTab === "system") return notifications.filter(n => n.type === NotificationType.system);
-    if (activeTab === "reminder") return notifications.filter(n => n.type === NotificationType.reminder);
+    if (activeTab === "reminder")
+      return notifications.filter(
+        n => n.type === NotificationType.reminder && !isCourseNotification(n)
+      );
     if (activeTab === "security") return notifications.filter(n => n.type === NotificationType.security);
     return notifications;
   }, [notifications, activeTab]);
@@ -159,7 +184,7 @@ export default function NotificationsPage() {
             <AnimatePresence mode="popLayout" initial={false}>
               {filteredNotifications.length > 0 ? (
                 filteredNotifications.map((n) => {
-                  const typeLabel = TYPE_LABELS[n.type] ?? "Khác";
+                  const typeLabel = getNotificationTypeLabel(n);
                   
                   return (
                     <motion.div

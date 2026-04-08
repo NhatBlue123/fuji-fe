@@ -269,7 +269,7 @@ export default function CreateTimeSlotForm() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               />
             </Field>
 
@@ -279,7 +279,7 @@ export default function CreateTimeSlotForm() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 />
               </Field>
             ) : (
@@ -287,7 +287,7 @@ export default function CreateTimeSlotForm() {
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
-                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
@@ -311,7 +311,7 @@ export default function CreateTimeSlotForm() {
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
-                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
@@ -326,7 +326,7 @@ export default function CreateTimeSlotForm() {
               <select
                 value={subjectType}
                 onChange={(e) => setSubjectType(e.target.value as SubjectOption)}
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
                 {SUBJECT_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -360,7 +360,7 @@ export default function CreateTimeSlotForm() {
                 step={1000}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               />
             </Field>
 

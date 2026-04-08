@@ -129,9 +129,13 @@ function ScheduleEvent({
   const top = (startMinutes / 60) * HOUR_HEIGHT;
   const height = Math.max((slot.durationMinutes / 60) * HOUR_HEIGHT - 6, 58);
   const isBooked = slot.status === "BOOKED";
+  const isCompleted = slot.status === "COMPLETED";
+  const isNoShow = slot.status === "NO_SHOW";
+  const isCancelled = slot.status === "CANCELLED";
+  const isLockedSlot = isBooked || isCompleted || isNoShow || isCancelled;
   const canEdit =
-    !isBooked && onEdit && new Date(slot.startAt) > new Date();
-  const canDelete = !isBooked && onDelete;
+    !isLockedSlot && onEdit && new Date(slot.startAt) > new Date();
+  const canDelete = !isLockedSlot && onDelete;
 
   return (
     <div
@@ -144,6 +148,12 @@ function ScheduleEvent({
         "absolute left-2 right-2 rounded-xl border px-3 py-2 shadow-sm",
         isBooked
           ? "border-primary/30 bg-primary/10"
+          : isCompleted
+          ? "border-slate-400/30 bg-slate-400/10"
+          : isNoShow
+          ? "border-amber-500/30 bg-amber-500/10"
+          : isCancelled
+          ? "border-red-500/30 bg-red-500/10"
           : "border-emerald-500/30 bg-emerald-500/10"
       )}
       style={{ top, height }}
@@ -187,21 +197,46 @@ function ScheduleEvent({
               "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
               isBooked
                 ? "border-primary/30 bg-primary/15 text-primary"
+                : isCompleted
+                ? "border-slate-400/30 bg-slate-400/15 text-slate-600 dark:text-slate-300"
+                : isNoShow
+                ? "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                : isCancelled
+                ? "border-red-500/30 bg-red-500/15 text-red-600 dark:text-red-300"
                 : "border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
             )}
           >
-            {isBooked ? "Booked" : "Trống"}
+            {isBooked
+              ? "Booked"
+              : isCompleted
+              ? "Completed"
+              : isNoShow
+              ? "No-show"
+              : isCancelled
+              ? "Cancelled"
+              : "Trống"}
           </span>
         </div>
 
         <div className="min-h-0 flex-1 space-y-1 overflow-hidden">
           <p className="truncate text-sm font-bold text-foreground">{slot.subject}</p>
 
-          {isBooked ? (
+          {isLockedSlot ? (
             <>
               <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                <User2 className="size-3.5 text-primary" />
-                <span className="truncate">Đã booked</span>
+                <User2 className={cn(
+                  "size-3.5",
+                  isBooked ? "text-primary" : "text-slate-500"
+                )} />
+                <span className="truncate">
+                  {isBooked
+                    ? "Đã booked"
+                    : isCompleted
+                    ? "Đã hoàn thành"
+                    : isNoShow
+                    ? "Vắng mặt"
+                    : "Đã hủy"}
+                </span>
               </div>
               <p className="truncate text-xs text-muted-foreground">
                 Học viên: {slot.studentName ?? "Không rõ tên"}
@@ -228,6 +263,8 @@ export default function TeachingSchedulePage() {
   const [editTarget, setEditTarget] = useState<TeacherScheduleSlot | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [editSubject, setEditSubject] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
 
   const [deleteTimeSlot, { isLoading: deletingSlot }] = useDeleteTimeSlotMutation();
   const [updateTimeSlot, { isLoading: updatingSlot }] = useUpdateTimeSlotMutation();
@@ -317,6 +354,8 @@ export default function TeachingSchedulePage() {
     if (editTarget) {
       setEditPrice(String(editTarget.tuitionVnd));
       setEditSubject(editTarget.subject);
+      setEditStartTime(formatHm(editTarget.startAt));
+      setEditEndTime(formatHm(editTarget.endAt));
     }
   }, [editTarget]);
 
@@ -342,15 +381,36 @@ export default function TeachingSchedulePage() {
       alert("Nhập chủ đề / môn học.");
       return;
     }
+
+    const timeRe = /^\d{2}:\d{2}$/;
+    if (!timeRe.test(editStartTime) || !timeRe.test(editEndTime)) {
+      alert("Giờ không hợp lệ (HH:mm).");
+      return;
+    }
+
+    const slotDate = new Date(editTarget.startAt);
+    const datePrefix = `${slotDate.getFullYear()}-${String(slotDate.getMonth() + 1).padStart(2, "0")}-${String(slotDate.getDate()).padStart(2, "0")}`;
+
+    const origStart = formatHm(editTarget.startAt);
+    const origEnd = formatHm(editTarget.endAt);
+    const timeChanged = editStartTime !== origStart || editEndTime !== origEnd;
+
+    const payload: Parameters<typeof updateTimeSlot>[0] = {
+      id: editTarget.timeSlotId,
+      price,
+      subject,
+    };
+
+    if (timeChanged) {
+      payload.startAt = `${datePrefix}T${editStartTime}:00`;
+      payload.endAt = `${datePrefix}T${editEndTime}:00`;
+    }
+
     try {
-      await updateTimeSlot({
-        id: editTarget.timeSlotId,
-        price,
-        subject,
-      }).unwrap();
+      await updateTimeSlot(payload).unwrap();
       setEditTarget(null);
     } catch {
-      alert("Không cập nhật được. Slot phải còn trống và chưa qua giờ bắt đầu.");
+      alert("Không cập nhật được. Slot phải còn trống, chưa qua giờ và không trùng lịch khác.");
     }
   };
 
@@ -627,6 +687,28 @@ export default function TeachingSchedulePage() {
             <DialogTitle>Sửa lịch rảnh</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="slot-start">Giờ bắt đầu</Label>
+                <Input
+                  id="slot-start"
+                  type="time"
+                  value={editStartTime}
+                  onChange={(e) => setEditStartTime(e.target.value)}
+                  className="dark:[color-scheme:dark]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slot-end">Giờ kết thúc</Label>
+                <Input
+                  id="slot-end"
+                  type="time"
+                  value={editEndTime}
+                  onChange={(e) => setEditEndTime(e.target.value)}
+                  className="dark:[color-scheme:dark]"
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="slot-price">Học phí (VND)</Label>
               <Input
@@ -636,6 +718,7 @@ export default function TeachingSchedulePage() {
                 step={1000}
                 value={editPrice}
                 onChange={(e) => setEditPrice(e.target.value)}
+                className="dark:[color-scheme:dark]"
               />
             </div>
             <div className="space-y-2">

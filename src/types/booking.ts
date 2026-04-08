@@ -152,6 +152,18 @@ export type MyBookingItem = {
   canJoinVideoCall?: boolean;
 };
 
+export type BookingDetail = {
+  bookingId: number;
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
+  subject: string;
+  teacherName: string;
+  studentName: string;
+  startAt: string;
+  endAt: string;
+  durationMinutes: number;
+  canJoinVideoCall: boolean;
+};
+
 export type VideoSessionResponse = {
   sessionId: number;
   bookingId: number;
@@ -168,7 +180,7 @@ export type VideoSessionResponse = {
 };
 export type TeacherScheduleSlot = {
   timeSlotId: number;
-  status: "AVAILABLE" | "BOOKED";
+  status: "AVAILABLE" | "BOOKED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
   startAt: string;
   endAt: string;
   durationMinutes: number;

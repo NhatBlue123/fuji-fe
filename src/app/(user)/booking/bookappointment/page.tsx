@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCreateBookingMutation,
@@ -274,7 +274,7 @@ function SuccessModal({ router }: any) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">
         <div className="size-24 rounded-full border-4 border-pink-500 flex items-center justify-center text-pink-500 mb-6">
-          ✓
+          <Check className="h-12 w-12" strokeWidth={3} />
         </div>
         <h1 className="text-3xl font-bold text-white mb-4">Thanh toán thành công!</h1>
         <p className="text-slate-300 mb-6">Bạn đã đặt lịch học thành công.</p>

@@ -20,12 +20,15 @@ const paymentMethods = [
 
 export default function TopupContent() {
   // API lấy thông tin ví
-  const { data: wallet } = useGetWalletQuery();
+  const { data: wallet } = useGetWalletQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   // API tạo lệnh nạp tiền
   const [createPayment, { isLoading }] = useCreatePaymentMutation();
 
-  const balance = wallet?.balance || 0;
   const availableBalance = wallet?.availableBalance || 0;
   const [selectedPackage, setSelectedPackage] = useState<number>(4);
   const [selectedPayment, setSelectedPayment] = useState<string>("bank");

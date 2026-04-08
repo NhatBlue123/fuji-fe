@@ -13,7 +13,11 @@ import {
 import { useGetWalletQuery } from "@/store/services/walletApi";
 
 export default function PaymentSuccessPage() {
-  const { data: wallet } = useGetWalletQuery();
+  const { data: wallet } = useGetWalletQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
   const [countdown, setCountdown] = useState(10);
 
   // Đếm ngược và tự động chuyển hướng
@@ -131,8 +135,7 @@ export default function PaymentSuccessPage() {
                       Mã giao dịch
                     </p>
                     <p className="text-slate-200 font-mono tracking-tighter">
-                      #TXN-
-                      {Math.random().toString(36).substring(7).toUpperCase()}
+                      #TXN-SYSTEM
                     </p>
                   </div>
                 </div>

@@ -57,7 +57,14 @@ export default function FujiWallet() {
     return () => window.cancelAnimationFrame(rafId);
   }, []);
 
-  const { data: wallet, isLoading: isWalletLoading } = useGetWalletQuery();
+  const { data: wallet, isLoading: isWalletLoading } = useGetWalletQuery(
+    undefined,
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    },
+  );
   const { data: historyData, isLoading: isHistoryLoading } =
     useGetWalletHistoryQuery({ page, size });
 

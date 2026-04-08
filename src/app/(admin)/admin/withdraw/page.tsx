@@ -170,7 +170,7 @@ export default function AdminWithdrawManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {totalPaid.toLocaleString()}đ
+              {totalPaid.toLocaleString()} 🌸
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Các giao dịch thành công
@@ -329,7 +329,7 @@ export default function AdminWithdrawManagement() {
                           </div>
                         </td>
                         <td className="p-4 align-middle font-semibold whitespace-nowrap">
-                          {req.amount.toLocaleString()}đ
+                          {req.amount.toLocaleString()} 🌸
                         </td>
                         <td className="p-4 align-middle">
                           <div className="space-y-1">

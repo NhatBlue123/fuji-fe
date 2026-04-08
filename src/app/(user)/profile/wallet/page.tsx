@@ -142,7 +142,7 @@ export default function FujiWallet() {
                   {balance.toLocaleString()}
                 </span>
                 <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">
-                  đ
+                  🌸
                 </span>
               </div>
 
@@ -154,12 +154,12 @@ export default function FujiWallet() {
                   </div>
                   <div>
                     <div className="text-[10px] text-pink-100/50 font-black uppercase tracking-widest">
-                      Tương đương
+                      Quy đổi VND
                     </div>
                     <div className="text-xl font-black text-white">
-                      {(balance / 1000).toLocaleString()}{" "}
+                      {(balance * 1000).toLocaleString()}{" "}
                       <span className="text-[10px] text-pink-100/30 ml-1">
-                        HOA
+                        VND
                       </span>
                     </div>
                   </div>
@@ -188,7 +188,7 @@ export default function FujiWallet() {
                     size="lg"
                     className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
                   >
-                    <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp Tiền
+                    <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp 🌸
                   </Button>
 
                   <Button
@@ -355,7 +355,7 @@ export default function FujiWallet() {
                       </div>
                     </TableCell>
                     <TableCell className="px-8 py-6 font-bold text-[10px] uppercase tracking-wider text-muted-foreground dark:text-slate-500">
-                      {tx.type === "DEPOSIT" ? "Nạp tiền" : "Chi trả dịch vụ"}
+                      {tx.type === "DEPOSIT" ? "Nạp 🌸" : "Chi trả dịch vụ"}
                     </TableCell>
                     {/* Số tiền - Nạp màu Emerald, chi tiêu màu Trắng/Slate mặc định */}
                     <TableCell
@@ -363,12 +363,12 @@ export default function FujiWallet() {
                     >
                       {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : "-"}
                       {tx.amount.toLocaleString()}
-                      <span className="text-[10px] ml-1 opacity-40">đ</span>
+                      <span className="text-[10px] ml-1 opacity-70">🌸</span>
                     </TableCell>
                     <TableCell className="px-8 py-6 font-semibold text-xs text-muted-foreground dark:text-slate-400 tracking-tight">
                       {tx.balanceAfter.toLocaleString()}{" "}
                       <span className="text-[10px] opacity-40 whitespace-nowrap">
-                        đ
+                        🌸
                       </span>
                     </TableCell>
                     <TableCell className="px-8 py-6 text-right">

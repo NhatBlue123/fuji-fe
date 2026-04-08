@@ -10,11 +10,23 @@ import {
   getWeekdayCodeFromDate,
   hasInvalidRange,
   hasOverlap,
-  toBlossom,
+  toVnd,
 } from "./utils";
 import TimeRangeList from "./TimeRangeList";
 import WeekdayPicker from "./WeekdayPicker";
 import PreviewCard from "./PreviewCard";
+
+const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
+type LevelOption = (typeof LEVEL_OPTIONS)[number];
+
+const SUBJECT_OPTIONS = [
+  { value: "Kaiwa", label: "Kaiwa (Hội thoại)" },
+  { value: "Bunpo", label: "Bunpo (Ngữ pháp)" },
+  { value: "Kanji", label: "Kanji" },
+  { value: "Listening", label: "Listening" },
+  { value: "Reading", label: "Reading" },
+] as const;
+type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
 
 function Field({
   label,
@@ -39,7 +51,7 @@ export default function CreateTimeSlotForm() {
   const [dateTo, setDateTo] = useState("");
   const [level, setLevel] = useState<LevelOption>("N4");
   const [subjectType, setSubjectType] = useState<SubjectOption>("Kaiwa");
-  const [price, setPrice] = useState<number>(50000);
+  const [price, setPrice] = useState<number>(50);
 
   const [notice, setNotice] = useState<{
     type: "success" | "error";
@@ -55,11 +67,13 @@ export default function CreateTimeSlotForm() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
+  const composedSubject = `${subjectType} - ${level}`;
+
   const handleGoBack = () => {
     router.push("/admin/teacher-schedules/teaching-schedule");
   };
 
-  const blossom = useMemo(() => toBlossom(price), [price]);
+  const transferVnd = useMemo(() => toVnd(price), [price]);
 
   const estimatedSlots = useMemo(() => {
     if (!dateFrom) return 0;
@@ -68,13 +82,23 @@ export default function CreateTimeSlotForm() {
   }, [mode, dateFrom, dateTo, daysOfWeek, timeRanges.length]);
 
   const canSubmit = useMemo(() => {
-    if (!dateFrom || !subjectType || !level || !price || price <= 0) return false;
+    if (!dateFrom || !subjectType || !level || !price || price <= 0)
+      return false;
     if (!timeRanges.length) return false;
     if (hasInvalidRange(timeRanges)) return false;
     if (mode === "bulk" && (!dateTo || dateTo < dateFrom || !daysOfWeek.length))
       return false;
     return true;
-  }, [mode, dateFrom, dateTo, subjectType, level, price, timeRanges, daysOfWeek.length]);
+  }, [
+    mode,
+    dateFrom,
+    dateTo,
+    subjectType,
+    level,
+    price,
+    timeRanges,
+    daysOfWeek.length,
+  ]);
 
   const toggleDay = (day: Weekday) => {
     setDaysOfWeek((prev) =>
@@ -166,8 +190,10 @@ export default function CreateTimeSlotForm() {
 
       await api.post("/time-slots/bulk", payload);
       router.push("/admin/teacher-schedules/teaching-schedule");
-    } catch (e: any) {
-      const message = e?.response?.data?.message || "Tạo lịch thất bại.";
+    } catch (e: unknown) {
+      const message =
+        (e as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Tạo lịch thất bại.";
       setErr(message);
       setNotice({
         type: "error",
@@ -314,7 +340,9 @@ export default function CreateTimeSlotForm() {
             <Field label="Môn học">
               <select
                 value={subjectType}
-                onChange={(e) => setSubjectType(e.target.value as SubjectOption)}
+                onChange={(e) =>
+                  setSubjectType(e.target.value as SubjectOption)
+                }
                 className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
                 {SUBJECT_OPTIONS.map((item) => (
@@ -342,11 +370,11 @@ export default function CreateTimeSlotForm() {
               </div>
             </Field>
 
-            <Field label="Học phí (VND)">
+            <Field label="Học phí (Hoa)">
               <input
                 type="number"
-                min={1000}
-                step={1000}
+                min={1}
+                step={1}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
                 className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
@@ -355,7 +383,7 @@ export default function CreateTimeSlotForm() {
 
             <Field label="Quy đổi">
               <div className="h-12 rounded-xl border border-primary/40 bg-primary/10 px-4 flex items-center text-foreground font-semibold">
-                ≈ {blossom} �
+                ≈ {transferVnd.toLocaleString("vi-VN")}đ
               </div>
             </Field>
           </div>

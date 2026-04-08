@@ -24,6 +24,7 @@ export interface PaymentTestFlowResult {
 export async function createPaymentOrder(amount: number): Promise<{
   orderId: string;
   amount: number;
+  transferAmountVnd?: number;
   bankId: string;
   accountNo: string;
   accountName: string;
@@ -100,7 +101,7 @@ export async function checkWalletBalance(): Promise<{
     console.log("✅ Step 4 - Wallet Balance:", response.data);
     return {
       balance: response.data.balance || 0,
-      Kimbap: Math.floor((response.data.balance || 0) / 1000),
+      Kimbap: response.data.balance || 0,
     };
   } catch (error) {
     console.error("❌ Step 4 Failed - Check Wallet:", error);
@@ -120,20 +121,27 @@ export async function runPaymentTestFlow(
 
   try {
     // Step 1: Create payment order
-    console.log(`\n📍 STEP 1: Creating payment order (Amount: ${amount}đ)...`);
+    console.log(
+      `\n📍 STEP 1: Creating payment order (Amount: ${amount} hoa)...`,
+    );
     const orderData = await createPaymentOrder(amount);
+    const transferAmountVnd =
+      orderData.transferAmountVnd ?? orderData.amount * 1000;
 
     // Step 2: Get test signature
     console.log(
       `\n📍 STEP 2: Getting test signature (OrderID: ${orderData.orderId})...`,
     );
-    const signatureData = await getTestSignature(orderData.orderId, amount);
+    const signatureData = await getTestSignature(
+      orderData.orderId,
+      transferAmountVnd,
+    );
 
     // Step 3: Send callback
     console.log(`\n📍 STEP 3: Sending payment callback...`);
     const callbackResponse = await sendPaymentCallback(
       orderData.orderId,
-      amount,
+      transferAmountVnd,
       signatureData.signature,
     );
 
@@ -149,15 +157,17 @@ export async function runPaymentTestFlow(
     console.log("✅ OTP PAYMENT TEST FLOW COMPLETED SUCCESSFULLY!\n");
     console.log("📊 Results Summary:");
     console.log(`   - OrderID: ${orderData.orderId}`);
-    console.log(`   - Amount: ${amount.toLocaleString("vi-VN")}đ`);
+    console.log(
+      `   - Amount: ${amount.toLocaleString("vi-VN")} hoa (~${transferAmountVnd.toLocaleString("vi-VN")}đ)`,
+    );
     console.log(
       `   - Signature: ${signatureData.signature.substring(0, 20)}...`,
     );
     console.log(`   - Callback Status: ${callbackResponse.status}`);
     console.log(
-      `   - New Balance: ${walletData.balance.toLocaleString("vi-VN")}đ`,
+      `   - New Balance: ${walletData.balance.toLocaleString("vi-VN")} hoa`,
     );
-    console.log(`   - Kimbap Added: ${walletData.Kimbap} �\n`);
+    console.log(`   - Kimbap Added: ${walletData.Kimbap} 🌸\n`);
 
     return {
       orderId: orderData.orderId,

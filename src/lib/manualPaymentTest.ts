@@ -5,7 +5,7 @@
  *
  * (async () => {
  *   const { runPaymentTestFlow } = await import('http://localhost:3000/_next/static/chunks/payment-test.js');
- *   await runPaymentTestFlow(1000000);
+ *   await runPaymentTestFlow(100);
  * })();
  *
  * HOẶC sử dụng script này như một reference khi viết test
@@ -27,7 +27,7 @@ export async function manualPaymentTest() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
       },
-      body: JSON.stringify({ amount: 1000000 }),
+      body: JSON.stringify({ amount: 100 }),
     });
 
     if (!createResponse.ok) {
@@ -35,14 +35,18 @@ export async function manualPaymentTest() {
     }
 
     const orderData = await createResponse.json();
+    const transferAmountVnd =
+      orderData.transferAmountVnd ?? orderData.amount * 1000;
     console.log("✅ Payment created:", orderData);
     console.log(`  OrderID: ${orderData.orderId}`);
-    console.log(`  Amount: ${orderData.amount}đ\n`);
+    console.log(
+      `  Amount: ${orderData.amount} hoa (~${transferAmountVnd.toLocaleString("vi-VN")}đ)\n`,
+    );
 
     // Step 2: Get test signature
     console.log("📍 Step 2: Getting test signature...");
     const signatureResponse = await fetch(
-      `${baseURL}/payments/test-signature?order_id=${orderData.orderId}&amount=${orderData.amount}&status=SUCCESS`,
+      `${baseURL}/payments/test-signature?order_id=${orderData.orderId}&amount=${transferAmountVnd}&status=SUCCESS`,
       {
         method: "GET",
         headers: {
@@ -72,7 +76,7 @@ export async function manualPaymentTest() {
       body: JSON.stringify({
         order_id: orderData.orderId,
         transaction_id: `TXN_${Date.now()}`,
-        amount: orderData.amount,
+        amount: transferAmountVnd,
         status: "SUCCESS",
         signature: signatureData.signature,
       }),
@@ -105,8 +109,10 @@ export async function manualPaymentTest() {
 
     const walletData = await walletResponse.json();
     console.log("✅ Wallet updated:", walletData);
-    console.log(`  Balance: ${walletData.balance.toLocaleString("vi-VN")}đ`);
-    console.log(`  Kimbap: ${Math.floor(walletData.balance / 1000)} �\n`);
+    console.log(`  Balance: ${walletData.balance.toLocaleString("vi-VN")} hoa`);
+    console.log(
+      `  Quy đổi: ${(walletData.balance * 1000).toLocaleString("vi-VN")}đ\n`,
+    );
 
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("✅ TEST COMPLETED SUCCESSFULLY!");
@@ -116,7 +122,7 @@ export async function manualPaymentTest() {
       orderId: orderData.orderId,
       amount: orderData.amount,
       finalBalance: walletData.balance,
-      Kimbap: Math.floor(walletData.balance / 1000),
+      Kimbap: walletData.balance,
     };
   } catch (error) {
     console.error("❌ Test failed:", error);

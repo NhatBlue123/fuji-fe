@@ -57,7 +57,10 @@ const Header = () => {
   const { unreadCount, notifications, markAsRead } = useNotifications();
   const [bookingInfo, setBookingInfo] = useState<BookingDetail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const handleNotificationClick = async (n: { id: number; linkUrl?: string }) => {
+  const handleNotificationClick = async (n: {
+    id: number;
+    linkUrl?: string;
+  }) => {
     markAsRead(n.id);
     if (!n.linkUrl?.startsWith("/learn/session/")) {
       if (n.linkUrl) router.push(n.linkUrl);
@@ -71,10 +74,13 @@ const Header = () => {
     }
 
     try {
-      const res = await api.get<ApiEnvelope<BookingDetail>>(`/bookings/${bookingId}`);
+      const res = await api.get<ApiEnvelope<BookingDetail>>(
+        `/bookings/${bookingId}`,
+      );
       const detail = res.data.data;
       const endedStatuses = new Set(["COMPLETED", "NO_SHOW", "CANCELLED"]);
-      const isEnded = endedStatuses.has(detail.status) || new Date(detail.endAt) < new Date();
+      const isEnded =
+        endedStatuses.has(detail.status) || new Date(detail.endAt) < new Date();
       if (isEnded) {
         setBookingInfo(detail);
         setDetailOpen(true);
@@ -107,7 +113,7 @@ const Header = () => {
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
-  const flowerBalance = Math.floor((wallet?.balance ?? 0) / 1000);
+  const flowerBalance = wallet?.balance ?? 0;
 
   const getRoleLabel = () => {
     if (!roles) return "HỌC VIÊN";
@@ -140,11 +146,11 @@ const Header = () => {
           <Link
             href="/profile/wallet"
             className="flex h-10 items-center gap-2 rounded-full border border-secondary/20 bg-secondary/5 px-3 text-secondary transition-colors hover:bg-secondary/10"
-            title="Số hoa hiện tại"
+            title="Số 🌸 hiện tại"
           >
             <Sparkles className="size-4" />
             <span className="text-xs font-bold leading-none">
-              {flowerBalance.toLocaleString("vi-VN")} HOA
+              {flowerBalance.toLocaleString("vi-VN")} 🌸
             </span>
           </Link>
         )}
@@ -402,20 +408,31 @@ const Header = () => {
           {bookingInfo && (
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>
-                <span className="font-semibold text-foreground">Môn:</span> {bookingInfo.subject}
+                <span className="font-semibold text-foreground">Môn:</span>{" "}
+                {bookingInfo.subject}
               </p>
               <p>
-                <span className="font-semibold text-foreground">Giảng viên:</span> {bookingInfo.teacherName}
+                <span className="font-semibold text-foreground">
+                  Giảng viên:
+                </span>{" "}
+                {bookingInfo.teacherName}
               </p>
               <p>
-                <span className="font-semibold text-foreground">Học viên:</span> {bookingInfo.studentName}
+                <span className="font-semibold text-foreground">Học viên:</span>{" "}
+                {bookingInfo.studentName}
               </p>
               <p>
-                <span className="font-semibold text-foreground">Thời gian:</span>{" "}
-                {formatDateTime(bookingInfo.startAt)} - {formatDateTime(bookingInfo.endAt)}
+                <span className="font-semibold text-foreground">
+                  Thời gian:
+                </span>{" "}
+                {formatDateTime(bookingInfo.startAt)} -{" "}
+                {formatDateTime(bookingInfo.endAt)}
               </p>
               <p>
-                <span className="font-semibold text-foreground">Trạng thái:</span> {bookingInfo.status}
+                <span className="font-semibold text-foreground">
+                  Trạng thái:
+                </span>{" "}
+                {bookingInfo.status}
               </p>
             </div>
           )}

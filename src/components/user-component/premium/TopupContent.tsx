@@ -37,18 +37,19 @@ export default function TopupContent() {
   const [paymentQrData, setPaymentQrData] = useState<{
     orderId: string;
     amount: number;
+    transferAmountVnd: number;
     bankId: string;
     accountNo: string;
     accountName: string;
   } | null>(null);
 
   const packages = [
-    { id: 1, price: 10000, flowers: 10 },
-    { id: 2, price: 20000, flowers: 20 },
-    { id: 3, price: 50000, flowers: 50, bonus: 5 },
-    { id: 4, price: 100000, flowers: 100, bonus: 20, isPopular: true },
-    { id: 5, price: 200000, flowers: 200, bonus: 60 },
-    { id: 6, price: 500000, flowers: 500, bonus: 100 },
+    { id: 1, price: 10, flowers: 10 },
+    { id: 2, price: 20, flowers: 20 },
+    { id: 3, price: 50, flowers: 50, bonus: 5 },
+    { id: 4, price: 100, flowers: 100, bonus: 20, isPopular: true },
+    { id: 5, price: 200, flowers: 200, bonus: 60 },
+    { id: 6, price: 500, flowers: 500, bonus: 100 },
   ];
 
   /**
@@ -81,6 +82,8 @@ export default function TopupContent() {
         orderData.accountName ||
         process.env.NEXT_PUBLIC_ACCOUNT_NAME ||
         "NHo huy";
+      const transferAmountVnd =
+        orderData.transferAmountVnd ?? orderData.amount * 1000;
 
       // Kiểm tra backend có trả về đầy đủ dữ liệu không
       if (!accountNo) {
@@ -89,6 +92,7 @@ export default function TopupContent() {
           {
             orderId: orderData.orderId,
             amount: orderData.amount,
+            transferAmountVnd,
             bankId,
             missingAccountNo: !orderData.accountNo,
             missingAccountName: !orderData.accountName,
@@ -104,6 +108,7 @@ export default function TopupContent() {
       setPaymentQrData({
         orderId: orderData.orderId,
         amount: orderData.amount,
+        transferAmountVnd,
         bankId: bankId,
         accountNo: accountNo,
         accountName: accountName,
@@ -124,9 +129,12 @@ export default function TopupContent() {
           <div className="text-sm font-bold text-muted-foreground uppercase">
             SỐ DƯ HIỆN TẠI :
           </div>
-          <div className="flex items-center text-2xl font-bold">
-            <span>{Math.floor(availableBalance / 1000)}</span>
+          <div className="flex items-center text-2xl font-bold gap-2">
+            <span>{availableBalance.toLocaleString("vi-VN")}</span>
             <span className="text-3xl ml-1">🌸</span>
+            <span className="text-xs text-muted-foreground">
+              (~ {(availableBalance * 1000).toLocaleString("vi-VN")}đ)
+            </span>
           </div>
         </div>
       </div>
@@ -184,6 +192,7 @@ export default function TopupContent() {
           <PaymentStatus
             orderId={paymentQrData.orderId}
             amount={paymentQrData.amount}
+            transferAmountVnd={paymentQrData.transferAmountVnd}
             bankId={paymentQrData.bankId}
             accountNo={paymentQrData.accountNo}
             accountName={paymentQrData.accountName}

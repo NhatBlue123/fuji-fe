@@ -37,7 +37,7 @@ export default function PaymentSuccessPage() {
   }, []);
 
   const balance = wallet?.balance || 0;
-  const flowers = Math.floor(balance / 1000);
+  const flowers = balance;
 
   return (
     <div className="min-h-screen bg-[#0a0c10] text-slate-200 flex items-center justify-center p-6 relative overflow-hidden">
@@ -115,7 +115,7 @@ export default function PaymentSuccessPage() {
                   <span className="text-4xl mb-2 animate-bounce">🌸</span>
                 </div>
                 <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2 text-slate-400 font-mono italic">
-                  <span>≈ {balance.toLocaleString("vi-VN")} VND</span>
+                  <span>≈ {(balance * 1000).toLocaleString("vi-VN")} VND</span>
                 </div>
               </div>
 
@@ -164,7 +164,7 @@ export default function PaymentSuccessPage() {
                   href="/premium"
                   className="flex items-center justify-center gap-2 px-6 h-14 bg-white text-slate-900 font-black rounded-2xl hover:bg-emerald-400 transition-all group uppercase text-xs tracking-widest"
                 >
-                  Mua thêm hoa{" "}
+                  Mua thêm 🌸{" "}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link

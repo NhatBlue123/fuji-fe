@@ -22,6 +22,7 @@ import { baseApi } from "@/store/services/baseApi";
 interface PaymentStatusProps {
   orderId: string;
   amount: number;
+  transferAmountVnd?: number;
   bankId: string;
   accountNo: string;
   accountName: string;
@@ -31,6 +32,7 @@ interface PaymentStatusProps {
 export default function PaymentStatus({
   orderId,
   amount,
+  transferAmountVnd,
   bankId,
   accountNo,
   accountName,
@@ -180,7 +182,8 @@ export default function PaymentStatus({
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${orderId}&accountName=${accountName}`;
+  const qrAmountVnd = transferAmountVnd ?? amount * 1000;
+  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${orderId}&accountName=${accountName}`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
@@ -302,10 +305,13 @@ export default function PaymentStatus({
                 <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase text-pink-400 tracking-widest">
-                      Số tiền cần nạp
+                      Số hoa cần nạp
                     </p>
                     <p className="text-2xl font-black text-white">
-                      {amount.toLocaleString("vi-VN")}đ
+                      {amount.toLocaleString("vi-VN")} 🌸
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Chuyển khoản: {qrAmountVnd.toLocaleString("vi-VN")}đ
                     </p>
                   </div>
                   <div className="p-2 bg-pink-500 rounded-xl">

@@ -169,19 +169,23 @@ export default function TeacherSessionPage() {
     booking.on<{ sdp: string }>("offer", async (payload) => {
       // Wait for local media (getUserMedia) to finish before creating answer,
       // otherwise the answer SDP won't include our video/audio tracks.
-      if (!mediaReadyRef.current) {
-        const waitStep = 150;
-        const maxWait = 10_000;
-        let waited = 0;
-        while (!mediaReadyRef.current && waited < maxWait) {
-          await new Promise((r) => setTimeout(r, waitStep));
-          waited += waitStep;
-        }
+      const waitStep = 150;
+      const maxWait = 10_000;
+      let waited = 0;
+      while ((!mediaReadyRef.current || !roomDataRef.current) && waited < maxWait) {
+        await new Promise((r) => setTimeout(r, waitStep));
+        waited += waitStep;
       }
+      console.log("[WebRTC] offer handler: mediaReady=", mediaReadyRef.current, "roomData=", !!roomDataRef.current, "waited=", waited);
       try {
         const answer = await webrtc.createAnswer(JSON.parse(payload.sdp));
         const rd = roomDataRef.current;
-        if (rd) booking.sendAnswer(rd.roomId, JSON.stringify(answer));
+        if (rd) {
+          booking.sendAnswer(rd.roomId, JSON.stringify(answer));
+          console.log("[WebRTC] answer sent to room", rd.roomId);
+        } else {
+          console.error("[WebRTC] No roomData — cannot send answer");
+        }
       } catch (e) { console.error("[WebRTC] createAnswer failed:", e); }
     });
 
@@ -275,6 +279,30 @@ export default function TeacherSessionPage() {
     if (remoteVideoRef.current && webrtc.remoteStream)
       remoteVideoRef.current.srcObject = webrtc.remoteStream;
   }, [webrtc.remoteStream]);
+
+  // Renegotiation fallback: if connected but no remote video after 4s, re-offer
+  useEffect(() => {
+    if (!isConnected) return;
+    const t = setTimeout(() => {
+      const rs = webrtc.remoteStream;
+      const hasVideo = rs && rs.getVideoTracks().some((t) => t.readyState === "live");
+      if (!hasVideo) {
+        console.warn("[WebRTC] Connected but no remote video — triggering renegotiation");
+        offerSentRef.current = false;
+        const rd = roomDataRef.current;
+        if (rd) {
+          (async () => {
+            try {
+              const offer = await webrtc.createOffer();
+              booking.sendOffer(rd.roomId, JSON.stringify(offer));
+            } catch (e) { console.error("[WebRTC] renegotiation offer failed:", e); }
+          })();
+        }
+      }
+    }, 4000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
 
   // Countdown timer
   useEffect(() => {

@@ -117,8 +117,16 @@ export function useWebRTC(): WebRTCHook {
     };
 
     pc.ontrack = (e) => {
-      const stream = e.streams[0] ?? new MediaStream([e.track]);
-      setRemoteStream(stream);
+      console.log("[WebRTC] ontrack fired, kind:", e.track.kind, "readyState:", e.track.readyState);
+      const incomingStream = e.streams[0] ?? new MediaStream([e.track]);
+      setRemoteStream((prev) => {
+        if (prev && prev.id === incomingStream.id) {
+          // Same stream reference — React won't re-render. Clone to force update.
+          const clone = new MediaStream(incomingStream.getTracks());
+          return clone;
+        }
+        return incomingStream;
+      });
     };
 
     pcRef.current = pc;

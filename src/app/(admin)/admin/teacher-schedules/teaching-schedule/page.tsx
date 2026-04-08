@@ -50,6 +50,26 @@ import { Label } from "@/components/ui/label";
 const HOUR_HEIGHT = 72;
 const TIME_COLUMN_WIDTH = 84;
 
+const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
+type LevelOption = (typeof LEVEL_OPTIONS)[number];
+
+const SUBJECT_OPTIONS = [
+  { value: "Kaiwa", label: "Kaiwa (Hội thoại)" },
+  { value: "Bunpo", label: "Bunpo (Ngữ pháp)" },
+  { value: "Kanji", label: "Kanji" },
+  { value: "Listening", label: "Listening" },
+  { value: "Reading", label: "Reading" },
+] as const;
+type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
+
+function parseSubject(subject: string): { subjectType: SubjectOption | ""; level: LevelOption | "" } {
+  const parts = subject.split(" - ");
+  if (parts.length !== 2) return { subjectType: "", level: "" };
+  const subjectType = SUBJECT_OPTIONS.find((s) => s.value === parts[0].trim())?.value ?? "";
+  const level = LEVEL_OPTIONS.find((l) => l === parts[1].trim()) ?? "";
+  return { subjectType, level };
+}
+
 function toYmd(date: Date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -274,7 +294,8 @@ export default function TeachingSchedulePage() {
     null,
   );
   const [editPrice, setEditPrice] = useState("");
-  const [editSubject, setEditSubject] = useState("");
+  const [editLevel, setEditLevel] = useState<LevelOption | "">("");
+  const [editSubjectType, setEditSubjectType] = useState<SubjectOption | "">("");
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
 
@@ -374,7 +395,9 @@ export default function TeachingSchedulePage() {
   useEffect(() => {
     if (editTarget) {
       setEditPrice(String(editTarget.tuitionBlossom ?? editTarget.tuitionVnd));
-      setEditSubject(editTarget.subject);
+      const { subjectType, level } = parseSubject(editTarget.subject);
+      setEditSubjectType(subjectType);
+      setEditLevel(level);
       setEditStartTime(formatHm(editTarget.startAt));
       setEditEndTime(formatHm(editTarget.endAt));
     }
@@ -397,11 +420,11 @@ export default function TeachingSchedulePage() {
       alert("Nhập giá hợp lệ (hoa).");
       return;
     }
-    const subject = editSubject.trim();
-    if (!subject) {
-      alert("Nhập chủ đề / môn học.");
+    if (!editSubjectType || !editLevel) {
+      alert("Vui lòng chọn môn học và cấp độ.");
       return;
     }
+    const subject = `${editSubjectType} - ${editLevel}`;
 
     const timeRe = /^\d{2}:\d{2}$/;
     if (!timeRe.test(editStartTime) || !timeRe.test(editEndTime)) {
@@ -750,13 +773,43 @@ export default function TeachingSchedulePage() {
                 className="dark:[color-scheme:dark]"
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="slot-level">Cấp độ JLPT</Label>
+                <select
+                  id="slot-level"
+                  value={editLevel}
+                  onChange={(e) => setEditLevel(e.target.value as LevelOption)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:[color-scheme:dark]"
+                >
+                  <option value="" disabled>Chọn cấp độ</option>
+                  {LEVEL_OPTIONS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slot-subject-type">Môn học</Label>
+                <select
+                  id="slot-subject-type"
+                  value={editSubjectType}
+                  onChange={(e) => setEditSubjectType(e.target.value as SubjectOption)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:[color-scheme:dark]"
+                >
+                  <option value="" disabled>Chọn môn</option>
+                  {SUBJECT_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="slot-subject">Chủ đề / môn</Label>
-              <Input
-                id="slot-subject"
-                value={editSubject}
-                onChange={(e) => setEditSubject(e.target.value)}
-              />
+              <Label>Chủ đề / môn</Label>
+              <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-medium text-foreground">
+                {editSubjectType && editLevel
+                  ? `${editSubjectType} - ${editLevel}`
+                  : <span className="text-muted-foreground font-normal">Chọn môn học và cấp độ</span>}
+              </div>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">

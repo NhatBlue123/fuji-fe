@@ -5,6 +5,7 @@ import { Banknote } from "lucide-react";
 import { toast } from "sonner";
 import TopupPackageCard from "./TopupPackageCard";
 import PaymentStatus from "./PaymentStatus";
+import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import { useCreatePaymentMutation } from "@/store/services/paymentApi";
@@ -176,14 +177,16 @@ export default function TopupContent() {
 
       {/* Payment Status Modal */}
       {paymentQrData && (
-        <PaymentStatus
-          orderId={paymentQrData.orderId}
-          amount={paymentQrData.amount}
-          bankId={paymentQrData.bankId}
-          accountNo={paymentQrData.accountNo}
-          accountName={paymentQrData.accountName}
-          onClose={() => setPaymentQrData(null)}
-        />
+        <PaymentSocketProvider>
+          <PaymentStatus
+            orderId={paymentQrData.orderId}
+            amount={paymentQrData.amount}
+            bankId={paymentQrData.bankId}
+            accountNo={paymentQrData.accountNo}
+            accountName={paymentQrData.accountName}
+            onClose={() => setPaymentQrData(null)}
+          />
+        </PaymentSocketProvider>
       )}
     </div>
   );

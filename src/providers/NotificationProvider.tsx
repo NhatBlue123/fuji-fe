@@ -12,7 +12,6 @@ import type { Socket } from "socket.io-client";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
 import { useAuth } from "@/store/hooks";
 import api from "@/lib/api";
 import { 
@@ -123,20 +122,27 @@ export function NotificationProvider({
     setSocket(s as Socket);
     setIsConnected(Boolean(s.connected));
 
+    // Xử lý sự kiện kết nối thành công
     const handleConnect = () => setIsConnected(true);
+    // Xử lý sự kiện mất kết nối
     const handleDisconnect = () => setIsConnected(false);
     
+    // Xử lý khi nhận được thông báo mới từ server qua socket
     const handleNewNotification = (notification: Notification) => {
+      // Cập nhật danh sách thông báo hiện tại (thêm vào đầu mảng)
       setNotifications(prev => [notification, ...prev]);
+      // Tăng số lượng thông báo chưa đọc
       setUnreadCount(prev => prev + 1);
       
+      // Hiển thị thông báo dạng Popup (Toast) ngay lập tức
       toast(notification.title, {
         description: notification.content,
+        // Nếu thông báo có đường dẫn liên kết, hiển thị nút "Xem ngay"
         action: notification.linkUrl ? {
           label: "Xem ngay",
           onClick: () => {
-            markAsRead(notification.id);
-            router.push(notification.linkUrl!);
+            markAsRead(notification.id); // Đánh dấu đã đọc khi click
+            router.push(notification.linkUrl!); // Chuyển hướng trang
           }
         } : undefined,
       });

@@ -5,6 +5,7 @@ import { Banknote } from "lucide-react";
 import { toast } from "sonner";
 import TopupPackageCard from "./TopupPackageCard";
 import PaymentStatus from "./PaymentStatus";
+import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import { useCreatePaymentMutation } from "@/store/services/paymentApi";
@@ -19,12 +20,15 @@ const paymentMethods = [
 
 export default function TopupContent() {
   // API lấy thông tin ví
-  const { data: wallet } = useGetWalletQuery();
+  const { data: wallet } = useGetWalletQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   // API tạo lệnh nạp tiền
   const [createPayment, { isLoading }] = useCreatePaymentMutation();
 
-  const balance = wallet?.balance || 0;
   const availableBalance = wallet?.availableBalance || 0;
   const [selectedPackage, setSelectedPackage] = useState<number>(4);
   const [selectedPayment, setSelectedPayment] = useState<string>("bank");
@@ -33,18 +37,19 @@ export default function TopupContent() {
   const [paymentQrData, setPaymentQrData] = useState<{
     orderId: string;
     amount: number;
+    transferAmountVnd: number;
     bankId: string;
     accountNo: string;
     accountName: string;
   } | null>(null);
 
   const packages = [
-    { id: 1, price: 10000, flowers: 10 },
-    { id: 2, price: 20000, flowers: 20 },
-    { id: 3, price: 50000, flowers: 50, bonus: 5 },
-    { id: 4, price: 100000, flowers: 100, bonus: 20, isPopular: true },
-    { id: 5, price: 200000, flowers: 200, bonus: 60 },
-    { id: 6, price: 500000, flowers: 500, bonus: 100 },
+    { id: 1, price: 10, flowers: 10 },
+    { id: 2, price: 20, flowers: 20 },
+    { id: 3, price: 50, flowers: 50, bonus: 5 },
+    { id: 4, price: 100, flowers: 100, bonus: 20, isPopular: true },
+    { id: 5, price: 200, flowers: 200, bonus: 60 },
+    { id: 6, price: 500, flowers: 500, bonus: 100 },
   ];
 
   /**
@@ -77,6 +82,8 @@ export default function TopupContent() {
         orderData.accountName ||
         process.env.NEXT_PUBLIC_ACCOUNT_NAME ||
         "NHo huy";
+      const transferAmountVnd =
+        orderData.transferAmountVnd ?? orderData.amount * 1000;
 
       // Kiểm tra backend có trả về đầy đủ dữ liệu không
       if (!accountNo) {
@@ -85,6 +92,7 @@ export default function TopupContent() {
           {
             orderId: orderData.orderId,
             amount: orderData.amount,
+            transferAmountVnd,
             bankId,
             missingAccountNo: !orderData.accountNo,
             missingAccountName: !orderData.accountName,
@@ -100,6 +108,7 @@ export default function TopupContent() {
       setPaymentQrData({
         orderId: orderData.orderId,
         amount: orderData.amount,
+        transferAmountVnd,
         bankId: bankId,
         accountNo: accountNo,
         accountName: accountName,
@@ -120,9 +129,12 @@ export default function TopupContent() {
           <div className="text-sm font-bold text-muted-foreground uppercase">
             SỐ DƯ HIỆN TẠI :
           </div>
-          <div className="flex items-center text-2xl font-bold">
-            <span>{Math.floor(availableBalance / 1000)}</span>
+          <div className="flex items-center text-2xl font-bold gap-2">
+            <span>{availableBalance.toLocaleString("vi-VN")}</span>
             <span className="text-3xl ml-1">🌸</span>
+            <span className="text-xs text-muted-foreground">
+              (~ {(availableBalance * 1000).toLocaleString("vi-VN")}đ)
+            </span>
           </div>
         </div>
       </div>
@@ -176,14 +188,17 @@ export default function TopupContent() {
 
       {/* Payment Status Modal */}
       {paymentQrData && (
-        <PaymentStatus
-          orderId={paymentQrData.orderId}
-          amount={paymentQrData.amount}
-          bankId={paymentQrData.bankId}
-          accountNo={paymentQrData.accountNo}
-          accountName={paymentQrData.accountName}
-          onClose={() => setPaymentQrData(null)}
-        />
+        <PaymentSocketProvider>
+          <PaymentStatus
+            orderId={paymentQrData.orderId}
+            amount={paymentQrData.amount}
+            transferAmountVnd={paymentQrData.transferAmountVnd}
+            bankId={paymentQrData.bankId}
+            accountNo={paymentQrData.accountNo}
+            accountName={paymentQrData.accountName}
+            onClose={() => setPaymentQrData(null)}
+          />
+        </PaymentSocketProvider>
       )}
     </div>
   );

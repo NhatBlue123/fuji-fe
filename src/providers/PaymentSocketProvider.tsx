@@ -63,10 +63,16 @@ type PaymentSocketContextValue = {
   onPaymentStatusChange: (cb: StatusChangeCallback) => () => void;
 };
 
-const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(null);
+const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(
+  null,
+);
 
 // ─── Provider ───────────────────────────────────────────────
-export function PaymentSocketProvider({ children }: { children: React.ReactNode }) {
+export function PaymentSocketProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { accessToken, isAuthenticated, user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -79,17 +85,23 @@ export function PaymentSocketProvider({ children }: { children: React.ReactNode 
   // ── Subscribe helpers ──────────────────────────────────────
   const onTopupSuccess = useCallback((cb: TopupCallback) => {
     topupCallbacks.current.add(cb);
-    return () => { topupCallbacks.current.delete(cb); };
+    return () => {
+      topupCallbacks.current.delete(cb);
+    };
   }, []);
 
   const onPayoutSuccess = useCallback((cb: PayoutCallback) => {
     payoutCallbacks.current.add(cb);
-    return () => { payoutCallbacks.current.delete(cb); };
+    return () => {
+      payoutCallbacks.current.delete(cb);
+    };
   }, []);
 
   const onPaymentStatusChange = useCallback((cb: StatusChangeCallback) => {
     statusChangeCallbacks.current.add(cb);
-    return () => { statusChangeCallbacks.current.delete(cb); };
+    return () => {
+      statusChangeCallbacks.current.delete(cb);
+    };
   }, []);
 
   // ── Socket lifecycle ───────────────────────────────────────
@@ -114,7 +126,7 @@ export function PaymentSocketProvider({ children }: { children: React.ReactNode 
 
     // ── Global event handlers ────────────────────────────────
     const handleTopupSuccess = (data: TopupSuccessPayload) => {
-      toast.success(data.message || "Nạp tiền thành công!");
+      toast.success(data.message || "Nạp hoa thành công!");
       // Invalidate RTK Query cache → wallet & history tự refresh
       store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
       // Notify all component-level subscribers
@@ -122,7 +134,7 @@ export function PaymentSocketProvider({ children }: { children: React.ReactNode 
     };
 
     const handlePayoutSuccess = (data: PayoutSuccessPayload) => {
-      toast.success(data.message || "Rút tiền thành công!");
+      toast.success(data.message || "Rút hoa thành công!");
       store.dispatch(baseApi.util.invalidateTags(["Wallet", "Withdraw"]));
       payoutCallbacks.current.forEach((cb) => cb(data));
     };
@@ -134,7 +146,9 @@ export function PaymentSocketProvider({ children }: { children: React.ReactNode 
       } else if (data.newStatus === "FAILED") {
         toast.error(data.message || `Giao dịch ${data.orderId} thất bại.`);
       } else {
-        toast.info(data.message || `Giao dịch ${data.orderId}: ${data.newStatus}`);
+        toast.info(
+          data.message || `Giao dịch ${data.orderId}: ${data.newStatus}`,
+        );
       }
       store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
       statusChangeCallbacks.current.forEach((cb) => cb(data));
@@ -164,7 +178,13 @@ export function PaymentSocketProvider({ children }: { children: React.ReactNode 
       onPayoutSuccess,
       onPaymentStatusChange,
     }),
-    [socket, isConnected, onTopupSuccess, onPayoutSuccess, onPaymentStatusChange]
+    [
+      socket,
+      isConnected,
+      onTopupSuccess,
+      onPayoutSuccess,
+      onPaymentStatusChange,
+    ],
   );
 
   return (
@@ -178,7 +198,9 @@ export function PaymentSocketProvider({ children }: { children: React.ReactNode 
 export function usePaymentSocket() {
   const context = useContext(PaymentSocketContext);
   if (!context) {
-    throw new Error("usePaymentSocket must be used inside PaymentSocketProvider");
+    throw new Error(
+      "usePaymentSocket must be used inside PaymentSocketProvider",
+    );
   }
   return context;
 }

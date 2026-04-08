@@ -39,6 +39,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import api from "@/lib/api";
+import type { ApiEnvelope, BookingDetail } from "@/types/booking";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Header = () => {
   const router = useRouter();
@@ -47,6 +55,51 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
   const { unreadCount, notifications, markAsRead } = useNotifications();
+  const [bookingInfo, setBookingInfo] = useState<BookingDetail | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const handleNotificationClick = async (n: {
+    id: number;
+    linkUrl?: string;
+  }) => {
+    markAsRead(n.id);
+    if (!n.linkUrl?.startsWith("/learn/session/")) {
+      if (n.linkUrl) router.push(n.linkUrl);
+      return;
+    }
+
+    const bookingId = Number(n.linkUrl.split("/").pop());
+    if (!Number.isFinite(bookingId) || bookingId <= 0) {
+      router.push("/booking/bookingmodal");
+      return;
+    }
+
+    try {
+      const res = await api.get<ApiEnvelope<BookingDetail>>(
+        `/bookings/${bookingId}`,
+      );
+      const detail = res.data.data;
+      const endedStatuses = new Set(["COMPLETED", "NO_SHOW", "CANCELLED"]);
+      const isEnded =
+        endedStatuses.has(detail.status) || new Date(detail.endAt) < new Date();
+      if (isEnded) {
+        setBookingInfo(detail);
+        setDetailOpen(true);
+        return;
+      }
+      router.push(n.linkUrl);
+    } catch {
+      toast.error("Không mở được lớp học. Vui lòng kiểm tra lại buổi học.");
+    }
+  };
+
+  const formatDateTime = (v: string) =>
+    new Date(v).toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -60,7 +113,7 @@ const Header = () => {
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
-  const flowerBalance = Math.floor((wallet?.balance ?? 0) / 1000);
+  const flowerBalance = wallet?.balance ?? 0;
 
   const getRoleLabel = () => {
     if (!roles) return "HỌC VIÊN";
@@ -93,11 +146,11 @@ const Header = () => {
           <Link
             href="/profile/wallet"
             className="flex h-10 items-center gap-2 rounded-full border border-secondary/20 bg-secondary/5 px-3 text-secondary transition-colors hover:bg-secondary/10"
-            title="Số hoa hiện tại"
+            title="Số 🌸 hiện tại"
           >
             <Sparkles className="size-4" />
             <span className="text-xs font-bold leading-none">
-              {flowerBalance.toLocaleString("vi-VN")} HOA
+              {flowerBalance.toLocaleString("vi-VN")} 🌸
             </span>
           </Link>
         )}
@@ -161,10 +214,7 @@ const Header = () => {
                     {notifications.slice(0, 10).map((n) => (
                       <button
                         key={n.id}
-                        onClick={() => {
-                          markAsRead(n.id);
-                          if (n.linkUrl) router.push(n.linkUrl);
-                        }}
+                        onClick={() => handleNotificationClick(n)}
                         className={cn(
                           "flex items-start gap-3 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
                           !n.isRead
@@ -342,6 +392,44 @@ const Header = () => {
           </Button>
         )}
       </div>
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Buổi học đã kết thúc</DialogTitle>
+          </DialogHeader>
+          {bookingInfo && (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                <span className="font-semibold text-foreground">Môn:</span>{" "}
+                {bookingInfo.subject}
+              </p>
+              <p>
+                <span className="font-semibold text-foreground">
+                  Giảng viên:
+                </span>{" "}
+                {bookingInfo.teacherName}
+              </p>
+              <p>
+                <span className="font-semibold text-foreground">Học viên:</span>{" "}
+                {bookingInfo.studentName}
+              </p>
+              <p>
+                <span className="font-semibold text-foreground">
+                  Thời gian:
+                </span>{" "}
+                {formatDateTime(bookingInfo.startAt)} -{" "}
+                {formatDateTime(bookingInfo.endAt)}
+              </p>
+              <p>
+                <span className="font-semibold text-foreground">
+                  Trạng thái:
+                </span>{" "}
+                {bookingInfo.status}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };

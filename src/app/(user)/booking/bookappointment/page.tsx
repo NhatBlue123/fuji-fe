@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCreateBookingMutation,
@@ -9,6 +9,16 @@ import {
   useGetBookingQuoteQuery,
   useGetBulkBookingQuoteMutation,
 } from "@/store/services/bookingApi";
+
+type ApiErrorWithMessage = {
+  data?: {
+    message?: string;
+  };
+};
+
+function extractApiErrorMessage(error: unknown, fallback: string) {
+  return (error as ApiErrorWithMessage)?.data?.message || fallback;
+}
 
 function formatDate(v: string) {
   return new Date(v).toLocaleDateString("vi-VN");
@@ -50,14 +60,29 @@ export default function PaymentPage() {
     data: singleQuote,
     isLoading,
     isFetching,
+    isError: isSingleQuoteError,
+    error: singleQuoteError,
   } = useGetBookingQuoteQuery({ timeSlotId }, { skip: !isSingleMode });
 
-  const [getBulkQuote, { data: bulkQuote, isLoading: isBulkQuoteLoading }] =
-    useGetBulkBookingQuoteMutation();
+  const [
+    getBulkQuote,
+    {
+      data: bulkQuote,
+      isLoading: isBulkQuoteLoading,
+      isError: isBulkQuoteError,
+      error: bulkQuoteError,
+    },
+  ] = useGetBulkBookingQuoteMutation();
 
   useEffect(() => {
     if (!isBulkMode) return;
-    getBulkQuote({ teacherId, timeSlotIds: bulkIds });
+    getBulkQuote({ teacherId, timeSlotIds: bulkIds })
+      .unwrap()
+      .catch((e: unknown) => {
+        setErrorMsg(
+          extractApiErrorMessage(e, "Không tải được thông tin hóa đơn."),
+        );
+      });
   }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
 
   const [createBooking, { isLoading: isCreatingSingle }] =
@@ -68,6 +93,12 @@ export default function PaymentPage() {
   const isCreating = isCreatingSingle || isCreatingBulk;
   const quote = isSingleMode ? singleQuote : bulkQuote;
   const canConfirm = !!quote && quote.canPay;
+  const isQuoteError = isSingleMode ? isSingleQuoteError : isBulkQuoteError;
+  const quoteErrorMessage =
+    extractApiErrorMessage(
+      isSingleMode ? singleQuoteError : bulkQuoteError,
+      "Không tải được thông tin hóa đơn.",
+    ) || "Không tải được thông tin hóa đơn.";
 
   const onConfirm = async () => {
     setErrorMsg("");
@@ -85,8 +116,8 @@ export default function PaymentPage() {
       }
 
       setShowSuccess(true);
-    } catch (e: any) {
-      setErrorMsg(e?.data?.message || "Không thể xác nhận thanh toán.");
+    } catch (e: unknown) {
+      setErrorMsg(extractApiErrorMessage(e, "Không thể xác nhận thanh toán."));
     }
   };
 
@@ -130,6 +161,22 @@ export default function PaymentPage() {
           </div>
         )}
 
+        {isQuoteError && !quote && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center">
+            {quoteErrorMessage}
+          </div>
+        )}
+
+        {!isLoading &&
+          !isFetching &&
+          !isBulkQuoteLoading &&
+          !isQuoteError &&
+          !quote && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 text-center">
+              Không có dữ liệu hóa đơn cho slot đã chọn. Vui lòng chọn lại lịch.
+            </div>
+          )}
+
         {quote && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-100 mb-6 border-b border-slate-800 pb-4">
@@ -171,15 +218,17 @@ export default function PaymentPage() {
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Học phí</span>
-                    <span>{quote.tuitionBlossom} �</span>
+                    <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} �</span>
+                    <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
-                    <span className="text-500">{quote.totalBlossom} 🌸</span>
+                    <span className="text-pink-500">
+                      {quote.totalBlossom} 🌸
+                    </span>
                   </div>
                 </div>
               </div>
@@ -209,12 +258,12 @@ export default function PaymentPage() {
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
                     <span>Phí dịch vụ</span>
-                    <span>{quote.serviceFeeBlossom} �</span>
+                    <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>Tổng cộng</span>
                     <span className="text-pink-500">
-                      {quote.totalBlossom} �
+                      {quote.totalBlossom} 🌸
                     </span>
                   </div>
                 </div>
@@ -247,12 +296,16 @@ export default function PaymentPage() {
   );
 }
 
-function SuccessModal({ router }: any) {
+function SuccessModal({
+  router,
+}: {
+  router: { push: (path: string) => void };
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">
         <div className="size-24 rounded-full border-4 border-pink-500 flex items-center justify-center text-pink-500 mb-6">
-          ✓
+          <Check className="h-12 w-12" strokeWidth={3} />
         </div>
         <h1 className="text-3xl font-bold text-white mb-4">
           Thanh toán thành công!

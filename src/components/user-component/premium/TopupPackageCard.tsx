@@ -17,7 +17,8 @@ export default function TopupPackageCard({
   isPopular,
   onSelect,
 }: TopupPackageCardProps) {
-  const formattedPrice = price.toLocaleString("vi-VN");
+  const transferAmountVnd = price * 1000;
+  const totalFlowers = flowers + (bonus ?? 0);
 
   return (
     <div
@@ -28,13 +29,16 @@ export default function TopupPackageCard({
           : "border-border hover:border-secondary/50"
       }`}
     >
-      <div className="text-3xl font-bold text-foreground mb-1">
-        {formattedPrice}đ
+      <div className="text-3xl font-bold text-foreground mb-1 flex items-center gap-1">
+        {totalFlowers.toLocaleString("vi-VN")}
+        <span className="text-3xl">🌸</span>
       </div>
 
-      <div className="flex items-center text-xl font-semibold text-foreground mb-3 ml-5">
-        <span className="text-3xl text-secondary">{flowers}</span>
-        <span className="text-3xl ">🌸</span>
+      <div className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+        Nạp {price.toLocaleString("vi-VN")} hoa
+        <div className="text-xs mt-1">
+          Chuyển khoản {transferAmountVnd.toLocaleString("vi-VN")}đ
+        </div>
       </div>
       {bonus && (
         <div className="absolute -top-3 right-4 bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-bold">

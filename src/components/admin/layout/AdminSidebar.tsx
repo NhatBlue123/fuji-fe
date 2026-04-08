@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -39,7 +39,12 @@ import { useAuth, useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ROUTE_PERMISSION_MAP } from "@/lib/permissions";
+
+interface NavChild {
+  title: string;
+  href: string;
+  adminOnly?: boolean;
+}
 
 interface NavItem {
   title: string;
@@ -48,10 +53,7 @@ interface NavItem {
   badge?: string;
   /** If true, only ADMIN can see this item */
   adminOnly?: boolean;
-  children?: Array<{
-    title: string;
-    href: string;
-  }>;
+  children?: NavChild[];
 }
 
 interface NavGroup {
@@ -80,11 +82,11 @@ const navGroups: NavGroup[] = [
         children: [
           {
             title: "Giáo viên",
-            href: '/admin/analytics/teachers',
+            href: "/admin/analytics/teachers",
           },
           {
             title: "Admin",
-            href: '/admin/analytics/admin',
+            href: "/admin/analytics/admin",
           },
         ],
       },
@@ -108,11 +110,26 @@ const navGroups: NavGroup[] = [
         title: "Khóa học",
         href: "/admin/courses",
         icon: BookOpen,
+        children: [
+          {
+            title: "Quản lý khóa học",
+            href: "/admin/courses",
+          },
+          {
+            title: "Tài chính khóa học (Admin)",
+            href: "/admin/courses/finance",
+            adminOnly: true,
+          },
+          {
+            title: "Tài chính khóa học (Giáo viên)",
+            href: "/admin/courses/finance/teacher",
+          },
+        ],
       },
       {
-      title: "Lịch dạy",
-      href: "/admin/teacher-schedules",
-      icon: CalendarDays,
+        title: "Lịch dạy",
+        href: "/admin/teacher-schedules",
+        icon: CalendarDays,
       },
       {
         title: "Flashcard",
@@ -178,13 +195,22 @@ export function AdminSidebar() {
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, canAccessRoute } = usePermissions();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+
+  const defaultOpenMenu = useMemo(() => {
+    const matchedItem = navGroups
+      .flatMap((group) => group.items)
+      .find((item) =>
+        item.children?.some(
+          (child) =>
+            pathname === child.href || pathname.startsWith(`${child.href}/`),
+        ),
+      );
+
+    return matchedItem?.title ?? null;
+  }, [pathname]);
 
   const displayName =
     user?.fullname || user?.fullName || user?.username || "Admin";
@@ -228,11 +254,22 @@ export function AdminSidebar() {
           <nav className="flex flex-col gap-1">
             {navGroups.map((group) => {
               // Filter items based on permissions
-              const visibleItems = group.items.filter((item) => {
-                if (isAdmin) return true;
-                if (item.adminOnly) return false;
-                return item.href ? canAccessRoute(item.href) : false;
-              });
+              const visibleItems = group.items
+                .map((item) => {
+                  if (!item.children || item.children.length === 0) return item;
+                  const visibleChildren = item.children.filter((child) => {
+                    if (isAdmin) return true;
+                    if (child.adminOnly) return false;
+                    return canAccessRoute(child.href);
+                  });
+                  return { ...item, children: visibleChildren };
+                })
+                .filter((item) => {
+                  if (isAdmin) return true;
+                  if (item.adminOnly) return false;
+                  if (item.children && item.children.length > 0) return true;
+                  return item.href ? canAccessRoute(item.href) : false;
+                });
               if (visibleItems.length === 0) return null;
               return (
                 <div key={group.label} className="mb-4">
@@ -249,13 +286,35 @@ export function AdminSidebar() {
                     const hasChildren =
                       item.children && item.children.length > 0;
 
-                    const isOpen = openMenu === item.title;
+                    const activeChildHref =
+                      item.children?.reduce<string | null>(
+                        (bestMatch, child) => {
+                          const isMatch =
+                            pathname === child.href ||
+                            pathname.startsWith(`${child.href}/`);
+
+                          if (!isMatch) return bestMatch;
+                          if (
+                            !bestMatch ||
+                            child.href.length > bestMatch.length
+                          ) {
+                            return child.href;
+                          }
+                          return bestMatch;
+                        },
+                        null,
+                      ) ?? null;
+
+                    const isOpen = (openMenu ?? defaultOpenMenu) === item.title;
+
+                    const hasActiveChild = Boolean(activeChildHref);
 
                     const isActive =
-                      item.href &&
-                      (pathname === item.href ||
-                        (item.href !== "/admin" &&
-                          pathname.startsWith(item.href)));
+                      hasActiveChild ||
+                      (item.href &&
+                        (pathname === item.href ||
+                          (item.href !== "/admin" &&
+                            pathname.startsWith(item.href))));
 
                     if (hasChildren) {
                       return (
@@ -266,7 +325,9 @@ export function AdminSidebar() {
                             }
                             className={cn(
                               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                              "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              isActive
+                                ? "bg-sidebar-accent text-sidebar-primary"
+                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               collapsed && "justify-center px-2",
                             )}
                           >
@@ -289,17 +350,27 @@ export function AdminSidebar() {
 
                           {isOpen && !collapsed && (
                             <div className="ml-6 mt-1 flex flex-col gap-1">
-                              {item.children?.map((child) => (
-                                <Link
-                                  key={child.href}
-                                  href={child.href}
-                                  className={cn(
-                                    "rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent",
-                                  )}
-                                >
-                                  {child.title}
-                                </Link>
-                              ))}
+                              {item.children?.map((child) => {
+                                const isChildActive =
+                                  activeChildHref === child.href;
+                                return (
+                                  <Link
+                                    key={child.href}
+                                    href={child.href}
+                                    title={child.title}
+                                    className={cn(
+                                      "flex items-center rounded-md border-l-2 px-3 py-1.5 text-sm transition-all",
+                                      isChildActive
+                                        ? "border-sidebar-primary bg-sidebar-accent/90 text-sidebar-primary"
+                                        : "border-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                    )}
+                                  >
+                                    <span className="block min-w-0 flex-1 truncate whitespace-nowrap leading-5">
+                                      {child.title}
+                                    </span>
+                                  </Link>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -331,7 +402,6 @@ export function AdminSidebar() {
                       </Link>
                     );
 
-
                     if (collapsed) {
                       return (
                         <Tooltip key={item.href}>
@@ -350,7 +420,6 @@ export function AdminSidebar() {
 
                     return (
                       <React.Fragment key={item.href}>
-
                         {linkContent}
                       </React.Fragment>
                     );
@@ -400,7 +469,7 @@ export function AdminSidebar() {
         {/* User Account block - natural p-3 padding to align perfectly with Footer py-3 */}
         <div className="border-t border-sidebar-border p-3">
           {/* User info + logout */}
-          {mounted && isAuthenticated && user ? (
+          {isAuthenticated && user ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
@@ -458,7 +527,7 @@ export function AdminSidebar() {
                 </TooltipContent>
               )}
             </Tooltip>
-          ) : mounted ? (
+          ) : (
             /* Logout button when not authenticated */
             <Tooltip>
               <TooltipTrigger asChild>
@@ -481,22 +550,6 @@ export function AdminSidebar() {
                 </TooltipContent>
               )}
             </Tooltip>
-          ) : (
-            /* Skeleton */
-            <div
-              className={cn(
-                "flex items-center gap-2 px-2 py-2",
-                collapsed && "justify-center",
-              )}
-            >
-              <div className="h-8 w-8 rounded-full bg-sidebar-accent animate-pulse shrink-0" />
-              {!collapsed && (
-                <div className="flex-1 space-y-1">
-                  <div className="h-2.5 w-24 rounded bg-sidebar-accent animate-pulse" />
-                  <div className="h-2 w-32 rounded bg-sidebar-accent animate-pulse" />
-                </div>
-              )}
-            </div>
           )}
         </div>
 

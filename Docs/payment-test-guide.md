@@ -22,7 +22,7 @@ Guide chi tiết để test OTP Payment flow - simulate thanh toán thành công
 - Signature được lấy
 - Callback được gửi
 - Ví tự động cộng tiền
-- Số hoa được hiển thị
+- Số XU được hiển thị
 
 ---
 
@@ -76,7 +76,7 @@ Amount: 1000000 đ
 📍 Checking wallet balance...
 ✅ Wallet updated!
   - Balance: 1,000,000 đ
-  - Flowers: 1000 🌸
+  - Coins: 1000 xu
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ OTP PAYMENT TEST FLOW COMPLETED SUCCESSFULLY!
@@ -87,7 +87,7 @@ Amount: 1000000 đ
   - Transaction ID: TXN_20260311114530...
   - Amount: 1000000 đ
   - New Balance: 1,000,000 đ
-  - Flowers Added: 1000 🌸
+  - Coins Added: 1000 xu
 ```
 
 ---
@@ -108,10 +108,10 @@ const amount = 1000000;
 // Copy script dưới đây vào console:
 (async () => {
   const baseURL = 'http://localhost:8181/api';
-  
+
   try {
     console.log('🚀 Starting payment test...');
-    
+
     // Step 1: Create payment
     const createRes = await fetch(`${baseURL}/payments/create`, {
       method: 'POST',
@@ -123,7 +123,7 @@ const amount = 1000000;
     });
     const orderData = await createRes.json();
     console.log('✅ Order created:', orderData.orderId);
-    
+
     // Step 2: Get signature
     const sigRes = await fetch(
       `${baseURL}/payments/test-signature?order_id=${orderData.orderId}&amount=${amount}&status=SUCCESS`,
@@ -131,7 +131,7 @@ const amount = 1000000;
     );
     const sigData = await sigRes.json();
     console.log('✅ Signature obtained');
-    
+
     // Step 3: Send callback
     const callRes = await fetch(`${baseURL}/payments/callback`, {
       method: 'POST',
@@ -149,18 +149,18 @@ const amount = 1000000;
     });
     const callData = await callRes.json();
     console.log('✅ Callback sent:', callData.status);
-    
+
     // Wait
     await new Promise(r => setTimeout(r, 1500));
-    
+
     // Step 4: Check wallet
     const walRes = await fetch(`${baseURL}/wallet/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const walData = await walRes.json();
     console.log('✅ Wallet updated:', walData.balance, 'đ');
-    console.log('🌸 Flowers:', Math.floor(walData.balance / 1000));
-    
+    console.log('xu Coins:', Math.floor(walData.balance / 1000));
+
     console.log('✅ TEST COMPLETE!');
   } catch(e) {
     console.error('❌ Error:', e);
@@ -272,7 +272,7 @@ Sau khi chạy test flow hoàn tất, bạn sẽ thấy:
 | Amount | `1,000,000 đ` |
 | Callback Status | `SUCCESS` |
 | Wallet Balance | Tăng lên (cộng thêm 1,000,000 đ) |
-| Flowers 🌸 | `1000` |
+| Coins xu | `1000` |
 
 ---
 
@@ -355,7 +355,7 @@ NEXT_PUBLIC_ACCOUNT_NAME=NHo huy
 
 - [ ] Test flow hoạt động trong development
 - [ ] Wallet balance cập nhật đúng
-- [ ] Flowers được cộng vào
+- [ ] Coins được cộng vào
 - [ ] Backend logs không có error
 - [ ] Database transaction logs đúng
 - [ ] Test UI bị ẩn trong production (NODE_ENV check)
@@ -366,7 +366,7 @@ NEXT_PUBLIC_ACCOUNT_NAME=NHo huy
 ## 🚀 Next Steps
 
 1. **Test ngay**: Dùng một trong 4 phương pháp trên
-2. **Verify kết quả**: Kiểm tra wallet balance và flowers
+2. **Verify kết quả**: Kiểm tra wallet balance và Coins
 3. **Debug nếu cần**: Xem console logs và backend logs
 4. **Document hoạt động**: Ghi lại kết quả
 5. **Deploy**: Đẩy code lên production (test UI sẽ ẩn)
@@ -380,3 +380,4 @@ Nếu gặp vấn đề:
 2. Kiểm tra backend logs
 3. Verify API endpoints
 4. Xem database transactions
+

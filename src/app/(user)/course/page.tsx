@@ -3,15 +3,21 @@ import { useState } from "react";
 import Filter from "@/components/user-component/course/Filter";
 import CourseList from "@/components/user-component/course/CourseList";
 
+type CourseCategoryFilter = "all" | "free" | "paid" | "mine";
+
 export default function CoursePage() {
-  const [searchKeyword, setSearchKeyword] = useState("");
+  const [filters, setFilters] = useState({
+    search: "",
+    level: "all",
+    category: "all" as CourseCategoryFilter,
+  });
 
   const handleFilterChange = (filters: {
     search: string;
     level: string;
-    category: string;
+    category: CourseCategoryFilter;
   }) => {
-    setSearchKeyword(filters.search);
+    setFilters(filters);
   };
 
   return (
@@ -45,7 +51,11 @@ export default function CoursePage() {
       </div>
 
       {/* Course List */}
-      <CourseList searchKeyword={searchKeyword} />
+      <CourseList
+        searchKeyword={filters.search}
+        level={filters.level}
+        category={filters.category}
+      />
     </div>
   );
 }

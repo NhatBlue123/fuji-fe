@@ -10,7 +10,12 @@ import { TaskHeader, EmptyTask } from "./MultipleChoiceTask";
  * No formal data structure yet — renders instructions and any items
  * as reading passages / questions.
  */
-export default function ReadingTask({ data }: { data: TaskDataEnvelope }) {
+export default function ReadingTask({
+  data,
+}: {
+  data: TaskDataEnvelope;
+  onTaskSubmitted?: () => void;
+}) {
   const hasContent = data.instructions || (data.items && data.items.length > 0);
 
   if (!hasContent) {

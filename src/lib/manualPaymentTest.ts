@@ -1,13 +1,13 @@
 /**
  * Browser Console Test Script
- * 
+ *
  * Copy & paste này vào browser DevTools console để test OTP payment flow:
- * 
+ *
  * (async () => {
  *   const { runPaymentTestFlow } = await import('http://localhost:3000/_next/static/chunks/payment-test.js');
  *   await runPaymentTestFlow(1000000);
  * })();
- * 
+ *
  * HOẶC sử dụng script này như một reference khi viết test
  */
 
@@ -15,7 +15,8 @@ export async function manualPaymentTest() {
   console.clear();
   console.log("🚀 Manual Payment Test Started\n");
 
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8181/api";
+  const baseURL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8181/api";
 
   try {
     // Step 1: Create payment
@@ -24,9 +25,9 @@ export async function manualPaymentTest() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("auth_token")}`
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
       },
-      body: JSON.stringify({ amount: 1000000 })
+      body: JSON.stringify({ amount: 1000000 }),
     });
 
     if (!createResponse.ok) {
@@ -45,9 +46,9 @@ export async function manualPaymentTest() {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`
-        }
-      }
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+      },
     );
 
     if (!signatureResponse.ok) {
@@ -55,7 +56,10 @@ export async function manualPaymentTest() {
     }
 
     const signatureData = await signatureResponse.json();
-    console.log("✅ Signature obtained:", signatureData.signature.substring(0, 20) + "...\n");
+    console.log(
+      "✅ Signature obtained:",
+      signatureData.signature.substring(0, 20) + "...\n",
+    );
 
     // Step 3: Send callback
     console.log("📍 Step 3: Sending payment callback...");
@@ -63,15 +67,15 @@ export async function manualPaymentTest() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("auth_token")}`
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
       },
       body: JSON.stringify({
         order_id: orderData.orderId,
         transaction_id: `TXN_${Date.now()}`,
         amount: orderData.amount,
         status: "SUCCESS",
-        signature: signatureData.signature
-      })
+        signature: signatureData.signature,
+      }),
     });
 
     if (!callbackResponse.ok) {
@@ -91,8 +95,8 @@ export async function manualPaymentTest() {
     const walletResponse = await fetch(`${baseURL}/wallet/me`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("auth_token")}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+      },
     });
 
     if (!walletResponse.ok) {
@@ -102,7 +106,7 @@ export async function manualPaymentTest() {
     const walletData = await walletResponse.json();
     console.log("✅ Wallet updated:", walletData);
     console.log(`  Balance: ${walletData.balance.toLocaleString("vi-VN")}đ`);
-    console.log(`  Flowers: ${Math.floor(walletData.balance / 1000)} 🌸\n`);
+    console.log(`  Kimbap: ${Math.floor(walletData.balance / 1000)} �\n`);
 
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("✅ TEST COMPLETED SUCCESSFULLY!");
@@ -112,7 +116,7 @@ export async function manualPaymentTest() {
       orderId: orderData.orderId,
       amount: orderData.amount,
       finalBalance: walletData.balance,
-      flowers: Math.floor(walletData.balance / 1000)
+      Kimbap: Math.floor(walletData.balance / 1000),
     };
   } catch (error) {
     console.error("❌ Test failed:", error);
@@ -123,7 +127,7 @@ export async function manualPaymentTest() {
 /**
  * Quick test - Copy to console:
  * (async () => { await manualPaymentTest(); })();
- * 
+ *
  * Or if you have the module imported:
  * manualPaymentTest().then(result => console.log('Final result:', result));
  */

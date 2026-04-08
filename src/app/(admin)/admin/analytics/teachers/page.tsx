@@ -27,7 +27,14 @@ import {
 import { useGetTeacherDashboardQuery } from "@/store/services/teacherApi";
 
 // Shadcn UI Components
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,7 +72,9 @@ const TeacherDashboard: React.FC = () => {
   }
 
   const isDark = theme === "dark";
-  const gridColor = isDark ? "hsl(var(--muted-foreground) / 0.1)" : "hsl(var(--muted-foreground) / 0.05)";
+  const gridColor = isDark
+    ? "hsl(var(--muted-foreground) / 0.1)"
+    : "hsl(var(--muted-foreground) / 0.05)";
   const textColor = "hsl(var(--muted-foreground))";
 
   const formatCurrency = (val: number) => {
@@ -80,17 +89,19 @@ const TeacherDashboard: React.FC = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Phân tích Giáo viên</h1>
-          <p className="text-muted-foreground">Theo dõi hiệu suất giảng dạy và thu nhập của bạn.</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Phân tích Giáo viên
+          </h1>
+          <p className="text-muted-foreground">
+            Theo dõi hiệu suất giảng dạy và thu nhập của bạn.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Calendar className="mr-2 h-4 w-4" />
             30 ngày qua
           </Button>
-          <Button size="sm">
-            Tải báo cáo
-          </Button>
+          <Button size="sm">Tải báo cáo</Button>
         </div>
       </div>
 
@@ -105,12 +116,26 @@ const TeacherDashboard: React.FC = () => {
         <StatCard
           title="Tăng trưởng tháng"
           value={`${dashboardData?.monthOverMonthGrowth || 0}%`}
-          description={dashboardData?.monthOverMonthGrowth && dashboardData.monthOverMonthGrowth >= 0 ? "+12% so với tháng trước" : "-5% so với tháng trước"}
-          icon={dashboardData?.monthOverMonthGrowth && dashboardData.monthOverMonthGrowth >= 0 ? 
-            <TrendingUp className="h-4 w-4 text-emerald-500" /> : 
-            <TrendingDown className="h-4 w-4 text-rose-500" />
+          description={
+            dashboardData?.monthOverMonthGrowth &&
+            dashboardData.monthOverMonthGrowth >= 0
+              ? "+12% so với tháng trước"
+              : "-5% so với tháng trước"
           }
-          trend={dashboardData?.monthOverMonthGrowth && dashboardData.monthOverMonthGrowth >= 0 ? "up" : "down"}
+          icon={
+            dashboardData?.monthOverMonthGrowth &&
+            dashboardData.monthOverMonthGrowth >= 0 ? (
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+            ) : (
+              <TrendingDown className="h-4 w-4 text-rose-500" />
+            )
+          }
+          trend={
+            dashboardData?.monthOverMonthGrowth &&
+            dashboardData.monthOverMonthGrowth >= 0
+              ? "up"
+              : "down"
+          }
         />
         <StatCard
           title="Tổng giờ dạy"
@@ -141,7 +166,9 @@ const TeacherDashboard: React.FC = () => {
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div className="space-y-1">
                   <CardTitle>Luồng thu nhập</CardTitle>
-                  <CardDescription>Phân tích doanh thu hàng ngày</CardDescription>
+                  <CardDescription>
+                    Phân tích doanh thu hàng ngày
+                  </CardDescription>
                 </div>
                 <Select defaultValue="all">
                   <SelectTrigger className="w-[120px]">
@@ -154,19 +181,42 @@ const TeacherDashboard: React.FC = () => {
                   </SelectContent>
                 </Select>
               </CardHeader>
-              <CardContent className="h-[350px] pl-2 pt-4">
-                <ResponsiveContainer width="100%" height="100%">
+              <CardContent className="h-[350px] pl-2 pt-4 min-h-[350px] min-w-0">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                  minWidth={0}
+                  minHeight={0}
+                >
                   <AreaChart
                     data={dashboardData?.earningsOverTime || []}
                     margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
                   >
                     <defs>
-                      <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <linearGradient
+                        id="primaryGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.2}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke={gridColor}
+                    />
                     <XAxis
                       dataKey="date"
                       axisLine={false}
@@ -208,26 +258,38 @@ const TeacherDashboard: React.FC = () => {
                   <Wallet className="h-5 w-5 text-primary" />
                   Số dư ví
                 </CardTitle>
-                <CardDescription>Rút thu nhập của bạn một cách dễ dàng</CardDescription>
+                <CardDescription>
+                  Rút thu nhập của bạn một cách dễ dàng
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Số dư khả dụng</span>
+                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Số dư khả dụng
+                  </span>
                   <div className="text-4xl font-extrabold tracking-tight">
                     {formatCurrency(dashboardData?.availableBalance || 0)}
                   </div>
                 </div>
-                
+
                 <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground">Đang chờ thanh toán</p>
-                    <p className="text-lg font-bold">{formatCurrency(dashboardData?.pendingPayouts || 0)}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Đang chờ thanh toán
+                    </p>
+                    <p className="text-lg font-bold">
+                      {formatCurrency(dashboardData?.pendingPayouts || 0)}
+                    </p>
                   </div>
-                  <Badge variant="secondary" className="animate-pulse">Đang xử lý</Badge>
+                  <Badge variant="secondary" className="animate-pulse">
+                    Đang xử lý
+                  </Badge>
                 </div>
               </CardContent>
               <CardFooter className="pt-2">
-                <Button className="w-full h-11" size="lg">Yêu cầu rút tiền</Button>
+                <Button className="w-full h-11" size="lg">
+                  Yêu cầu rút tiền
+                </Button>
               </CardFooter>
             </Card>
           </div>
@@ -239,7 +301,9 @@ const TeacherDashboard: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="space-y-1">
                 <CardTitle>Học viên xuất sắc</CardTitle>
-                <CardDescription>Những học viên đã đầu tư nhiều nhất vào các khóa học của bạn.</CardDescription>
+                <CardDescription>
+                  Những học viên đã đầu tư nhiều nhất vào các khóa học của bạn.
+                </CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
@@ -272,26 +336,36 @@ const TeacherDashboard: React.FC = () => {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback>{student.studentName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>
+                              {student.studentName.charAt(0)}
+                            </AvatarFallback>
                           </Avatar>
                           {student.studentName}
                         </div>
                       </TableCell>
                       <TableCell>{student.bookingCount}</TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(student.totalSpent)}</TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(student.totalSpent)}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={idx === 0 ? "default" : "secondary"}>
                           {idx === 0 ? "VIP" : "Thường"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">Chi tiết</Button>
+                        <Button variant="ghost" size="sm">
+                          Chi tiết
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(!dashboardData?.topStudents || dashboardData.topStudents.length === 0) && (
+                  {(!dashboardData?.topStudents ||
+                    dashboardData.topStudents.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center h-24 text-muted-foreground"
+                      >
                         Không có dữ liệu học viên.
                       </TableCell>
                     </TableRow>
@@ -306,19 +380,30 @@ const TeacherDashboard: React.FC = () => {
         <TabsContent value="courses">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {dashboardData?.courseRevenueList.map((course, idx) => (
-              <Card key={idx} className="overflow-hidden group hover:border-primary/50 transition-colors shadow-sm">
+              <Card
+                key={idx}
+                className="overflow-hidden group hover:border-primary/50 transition-colors shadow-sm"
+              >
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-base font-bold line-clamp-1">{course.courseTitle}</CardTitle>
-                    <Badge variant="outline" className="text-[10px]">{course.studentCount} Học viên</Badge>
+                    <CardTitle className="text-base font-bold line-clamp-1">
+                      {course.courseTitle}
+                    </CardTitle>
+                    <Badge variant="outline" className="text-[10px]">
+                      {course.studentCount} Học viên
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex justify-between items-end">
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Doanh thu</p>
-                        <p className="text-xl font-black text-primary">{formatCurrency(course.revenue)}</p>
+                        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+                          Doanh thu
+                        </p>
+                        <p className="text-xl font-black text-primary">
+                          {formatCurrency(course.revenue)}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end">
                         <p className="text-[10px] font-bold text-emerald-500 flex items-center">
@@ -328,20 +413,25 @@ const TeacherDashboard: React.FC = () => {
                     </div>
                     {/* Progress indicator */}
                     <div className="w-full h-2 bg-muted rounded-full relative overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-primary transition-all duration-1000 ease-out"
-                        style={{ width: `${Math.min(100, (course.studentCount / 40) * 100)}%` }}
+                        style={{
+                          width: `${Math.min(100, (course.studentCount / 40) * 100)}%`,
+                        }}
                       />
                     </div>
                     <div className="flex justify-between text-[10px] text-muted-foreground font-medium uppercase">
                       <span>Độ phổ biến</span>
-                      <span>{Math.round((course.studentCount / 40) * 100)}%</span>
+                      <span>
+                        {Math.round((course.studentCount / 40) * 100)}%
+                      </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
-            {(!dashboardData?.courseRevenueList || dashboardData.courseRevenueList.length === 0) && (
+            {(!dashboardData?.courseRevenueList ||
+              dashboardData.courseRevenueList.length === 0) && (
               <div className="col-span-full flex flex-col items-center justify-center py-12 border rounded-xl bg-muted/20 text-muted-foreground italic">
                 Không có dữ liệu khóa học.
               </div>
@@ -363,8 +453,12 @@ const StatCard = ({ title, value, description, icon, trend }: any) => (
     <CardContent>
       <div className="text-2xl font-bold tracking-tight">{value}</div>
       <p className="text-xs text-muted-foreground mt-1 flex items-center">
-        {trend === "up" && <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />}
-        {trend === "down" && <ArrowDownRight className="h-3 w-3 mr-1 text-rose-500" />}
+        {trend === "up" && (
+          <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />
+        )}
+        {trend === "down" && (
+          <ArrowDownRight className="h-3 w-3 mr-1 text-rose-500" />
+        )}
         {description}
       </p>
     </CardContent>

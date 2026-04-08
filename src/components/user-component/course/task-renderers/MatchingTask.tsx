@@ -160,7 +160,13 @@ function ConnectionSVG({
 
 // ─── Component ─────────────────────────────────────────
 
-export default function MatchingTask({ data }: { data: TaskDataEnvelope }) {
+export default function MatchingTask({
+  data,
+  onTaskSubmitted,
+}: {
+  data: TaskDataEnvelope;
+  onTaskSubmitted?: () => void;
+}) {
   const items = data.items as MatchingItem[];
   const {
     pairs,
@@ -391,6 +397,7 @@ export default function MatchingTask({ data }: { data: TaskDataEnvelope }) {
         canSubmit={allMatched}
         onSubmit={submit}
         onReset={reset}
+        onSubmitted={onTaskSubmitted}
         score={score}
         total={items.length}
       />

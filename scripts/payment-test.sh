@@ -2,7 +2,7 @@
 
 # OTP Payment Flow Test Script
 # Test payment API flow using curl from terminal
-# 
+#
 # Usage: bash payment-test.sh [AMOUNT] [TOKEN]
 # Example: bash payment-test.sh 1000000 "your_jwt_token_here"
 #
@@ -134,7 +134,7 @@ WALLET_RESPONSE=$(curl -s -X GET "$API_URL/wallet/me" \
   -H "Content-Type: application/json")
 
 BALANCE=$(echo "$WALLET_RESPONSE" | grep -o '"balance":[0-9]*' | cut -d':' -f2)
-FLOWERS=$((BALANCE / 1000))
+Coins=$((BALANCE / 1000))
 
 if [ -z "$BALANCE" ]; then
     print_error "Failed to get wallet!"
@@ -145,7 +145,7 @@ fi
 print_success "Wallet updated!"
 echo "Response: $WALLET_RESPONSE"
 echo "  - Balance: $BALANCE đ"
-echo "  - Flowers: $FLOWERS 🌸"
+echo "  - Coins: $Coins xu"
 echo ""
 
 # Final Summary
@@ -159,7 +159,8 @@ echo "  - Transaction ID: $TRANSACTION_ID"
 echo "  - Amount: $AMOUNT đ"
 echo "  - Signature: ${SIGNATURE:0:20}..."
 echo "  - New Balance: $BALANCE đ"
-echo "  - Flowers Added: $FLOWERS 🌸"
+echo "  - Coins Added: $Coins xu"
 echo ""
 
 exit 0
+

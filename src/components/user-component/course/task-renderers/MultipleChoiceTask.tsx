@@ -50,8 +50,10 @@ function useMultipleChoiceState(items: MultipleChoiceItem[]) {
 
 export default function MultipleChoiceTask({
   data,
+  onTaskSubmitted,
 }: {
   data: TaskDataEnvelope;
+  onTaskSubmitted?: () => void;
 }) {
   const items = data.items as MultipleChoiceItem[];
   const { selected, submitted, select, submit, reset, score, allAnswered } =
@@ -185,6 +187,7 @@ export default function MultipleChoiceTask({
         canSubmit={allAnswered}
         onSubmit={submit}
         onReset={reset}
+        onSubmitted={onTaskSubmitted}
         score={score}
         total={items.length}
       />
@@ -231,6 +234,7 @@ export function TaskActions({
   canSubmit,
   onSubmit,
   onReset,
+  onSubmitted,
   score,
   total,
 }: {
@@ -238,6 +242,7 @@ export function TaskActions({
   canSubmit: boolean;
   onSubmit: () => void;
   onReset: () => void;
+  onSubmitted?: () => void;
   score: number;
   total: number;
 }) {
@@ -300,7 +305,10 @@ export function TaskActions({
       <button
         type="button"
         disabled={!canSubmit}
-        onClick={onSubmit}
+        onClick={() => {
+          onSubmit();
+          onSubmitted?.();
+        }}
         className="px-6 py-3 bg-secondary hover:bg-secondary/80 disabled:bg-muted disabled:text-muted-foreground text-white rounded-xl font-bold text-sm transition-colors shadow-lg shadow-secondary/20 disabled:shadow-none flex items-center gap-2"
       >
         <span className="material-symbols-outlined text-lg">send</span>

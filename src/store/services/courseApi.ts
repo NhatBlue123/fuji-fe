@@ -167,6 +167,21 @@ export const courseApi = createApi({
       invalidatesTags: [{ type: "Course", id: "LIST" }],
     }),
 
+    purchaseCourse: builder.mutation<
+      ApiResponse<null>,
+      { courseId: number; discountCode?: string }
+    >({
+      query: ({ courseId, discountCode }) => ({
+        url: `/courses/${courseId}/buy`,
+        method: "POST",
+        body: discountCode ? { discountCode } : {},
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Course", id: courseId },
+        { type: "Course", id: "LIST" },
+      ],
+    }),
+
     // ==================== RATING ====================
 
     rateCourse: builder.mutation<
@@ -271,14 +286,48 @@ export const courseApi = createApi({
 
     searchCourses: builder.query<
       PageResponse<CourseResponseDTO>,
-      { keyword: string; page?: number; size?: number }
+      {
+        keyword: string;
+        page?: number;
+        size?: number;
+        level?: string;
+        category?: "all" | "free" | "paid" | "mine";
+      }
     >({
-      query: ({ keyword, page = 0, size = 10 }) =>
-        `/courses/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`,
+      query: ({ keyword, page = 0, size = 10, level, category }) =>
+        `/courses/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}${level ? `&level=${encodeURIComponent(level)}` : ""}${category ? `&category=${encodeURIComponent(category)}` : ""}`,
       transformResponse: (
         response: ApiResponse<PageResponse<CourseResponseDTO>>,
       ) => response.data!,
       providesTags: [{ type: "Course", id: "LIST" }],
+    }),
+
+    trackLessonProgress: builder.mutation<
+      ApiResponse<void>,
+      { courseId: number; lessonId: number }
+    >({
+      query: ({ courseId, lessonId }) => ({
+        url: `/courses/${courseId}/lessons/${lessonId}/track`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Course", id: courseId },
+      ],
+    }),
+
+    completeLesson: builder.mutation<
+      ApiResponse<void>,
+      { courseId: number; lessonId: number }
+    >({
+      query: ({ lessonId }) => ({
+        url: `/lessons/${lessonId}/complete`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { courseId, lessonId }) => [
+        { type: "Course", id: courseId },
+        { type: "Lesson", id: lessonId },
+        { type: "Lesson", id: `COURSE_${courseId}` },
+      ],
     }),
 
     getInstructors: builder.query<InstructorDTO[], void>({
@@ -295,6 +344,7 @@ export const {
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  usePurchaseCourseMutation,
   useRateCourseMutation,
   useGetCourseRatingsQuery,
   useGetLessonsByCourseQuery,
@@ -304,5 +354,7 @@ export const {
   useDeleteLessonMutation,
   useUploadAudioMutation,
   useSearchCoursesQuery,
+  useTrackLessonProgressMutation,
+  useCompleteLessonMutation,
   useGetInstructorsQuery,
 } = courseApi;

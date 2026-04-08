@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -118,6 +119,7 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
   const [lessonType, setLessonType] = useState<LessonType>("video");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isPreview, setIsPreview] = useState(false);
 
   // Video fields
   const [videoUrl, setVideoUrl] = useState("");
@@ -156,6 +158,7 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
     setTitle(lesson.title || "");
     setContent(lesson.content || "");
     setLessonType(lesson.lessonType || "video");
+    setIsPreview(Boolean(lesson.isPreview));
 
     if (lesson.lessonType === "video") {
       setVideoUrl(lesson.videoUrl || "");
@@ -514,6 +517,7 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
         title: title.trim(),
         lessonType,
         content: content.trim(),
+        isPreview,
       };
 
       if (lessonType === "video") {
@@ -695,6 +699,23 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
               {errors.content && (
                 <p className="text-sm text-destructive">{errors.content}</p>
               )}
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4">
+              <div className="space-y-1">
+                <Label htmlFor="is-preview" className="font-medium">
+                  Bài học xem thử
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Nếu bật, học viên chưa đăng ký vẫn xem được bài học này.
+                </p>
+              </div>
+              <Switch
+                id="is-preview"
+                checked={isPreview}
+                onCheckedChange={setIsPreview}
+                disabled={isSubmitting}
+              />
             </div>
           </CardContent>
         </Card>

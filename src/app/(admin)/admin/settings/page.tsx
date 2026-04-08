@@ -1,211 +1,480 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Plus, Edit3, Trash2, Package, TrendingUp, Ticket, X,
-  CheckCircle2, Clock, Infinity, AlertTriangle 
+import {
+  Plus, Edit3, Trash2, Package, TrendingUp, AlertTriangle, Loader2,
+  RefreshCw, Star, GripVertical, CheckCircle2, XCircle, Clock, Infinity, X
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  useGetAdminPlansQuery,
+  useCreatePlanMutation,
+  useUpdatePlanMutation,
+  useDeletePlanMutation,
+  type AdminSubscriptionPlan,
+  type CreatePlanRequest,
+  type UpdatePlanRequest,
+  type SubscriptionTier,
+} from "@/store/services/admin/subscriptionPlanApi";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const TIER_CONFIG: Record<SubscriptionTier, { label: string; variant: "default" | "secondary" | "destructive" | "outline", colorClass: string }> = {
+  BASIC: { label: "Basic", variant: "outline", colorClass: "text-muted-foreground" },
+  PRO: { label: "Pro", variant: "secondary", colorClass: "text-blue-500" },
+  PREMIUM: { label: "Premium", variant: "default", colorClass: "text-amber-500" },
+};
+
+const formatDuration = (days: number) => {
+  if (days >= 36500) return "Vĩnh viễn";
+  if (days >= 365) return `${Math.floor(days / 365)} Năm`;
+  if (days >= 30) return `${Math.floor(days / 30)} Tháng`;
+  return `${days} Ngày`;
+};
 
 export default function PaymentPackages() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<AdminSubscriptionPlan | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  const [formData, setFormData] = useState({
+    tier: "BASIC" as SubscriptionTier,
+    name: "",
+    description: "",
+    price: 0,
+    durationDays: 30,
+    active: true,
+    popular: false,
+    sortOrder: 0,
+    features: [] as string[],
+  });
+  const [newFeature, setNewFeature] = useState("");
+
+  const { data: plans = [], isLoading, isFetching, refetch } = useGetAdminPlansQuery();
+  const [createPlan, { isLoading: isCreating }] = useCreatePlanMutation();
+  const [updatePlan, { isLoading: isUpdating }] = useUpdatePlanMutation();
+  const [deletePlan, { isLoading: isDeleting }] = useDeletePlanMutation();
 
   useEffect(() => setMounted(true), []);
 
-  // Giả lập dữ liệu
-  const [packages, setPackages] = useState([
-    { id: 1, name: "Cơ bản (Monthly)", desc: "Dành cho người mới bắt đầu", oldPrice: 200000, newPrice: 150000, duration: "1 Tháng", status: "Đang bán" },
-    { id: 2, name: "Phổ thông (Standard)", desc: "Mở khóa đầy đủ tính năng", oldPrice: 500000, newPrice: 350000, duration: "3 Tháng", status: "Đang bán" },
-    { id: 3, name: "Chuyên sâu (Infinite)", desc: "Truy cập cao cấp trọn đời", oldPrice: 2000000, newPrice: 1200000, duration: "Vĩnh viễn", status: "Đang bán", isHot: true },
-  ]);
-
   if (!mounted) return null;
 
-  // Xử lý mở Modal Chỉnh sửa
-  const handleEdit = (pkg: any) => {
-    setSelectedPackage(pkg);
+  const handleEdit = (plan: AdminSubscriptionPlan) => {
+    setSelectedPlan(plan);
+    let parsedFeatures: string[] = [];
+    if (Array.isArray(plan.features)) {
+      parsedFeatures = plan.features;
+    } else if (typeof plan.features === "string") {
+      try { parsedFeatures = JSON.parse(plan.features); } catch { parsedFeatures = [plan.features]; }
+    }
+
+    setFormData({
+      tier: plan.tier,
+      name: plan.name,
+      description: plan.description || "",
+      price: plan.price,
+      durationDays: plan.durationDays,
+      active: plan.active,
+      popular: plan.popular,
+      sortOrder: plan.sortOrder,
+      features: parsedFeatures,
+    });
+    setNewFeature("");
     setIsModalOpen(true);
   };
 
-  // Xử lý mở Modal Xóa
-  const handleDeleteClick = (pkg: any) => {
-    setSelectedPackage(pkg);
+  const handleCreate = () => {
+    setSelectedPlan(null);
+    setFormData({
+      tier: "BASIC",
+      name: "",
+      description: "",
+      price: 0,
+      durationDays: 30,
+      active: true,
+      popular: false,
+      sortOrder: plans.length,
+      features: [],
+    });
+    setNewFeature("");
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = (plan: AdminSubscriptionPlan) => {
+    setSelectedPlan(plan);
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
-    setPackages(packages.filter(p => p.id !== selectedPackage.id));
-    setIsDeleteModalOpen(false);
-    // Ở đây bạn có thể thêm hàm gọi API xóa
+  const confirmDelete = async () => {
+    if (!selectedPlan) return;
+    try {
+      await deletePlan(selectedPlan.id).unwrap();
+      toast.success(`Đã xóa gói "${selectedPlan.name}" thành công`);
+      setIsDeleteModalOpen(false);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Không thể xóa gói này");
+    }
   };
 
-  return (
-    <main className=" min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
-      
-      {/* HEADER */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Package className="text-cyan-500" /> Quản lý Gói Thanh Toán
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-medium">
-            Cấu hình hệ thống <span className="text-pink-500">FUJI</span>
-          </p>
-        </div>
-        <button 
-          onClick={() => { setSelectedPackage(null); setIsModalOpen(true); }}
-          className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-6 py-3 rounded-2xl font-bold transition-all flex items-center shadow-lg shadow-cyan-500/25 active:scale-95 hover:brightness-110"
-        >
-          <Plus className="w-5 h-5 mr-2" /> Thêm gói mới
-        </button>
-      </header>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return toast.error("Vui lòng nhập tên gói");
 
-      {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <StatCard label="Tổng gói" value={`${packages.length} Gói`} icon={<Package className="text-cyan-500" />} />
-        <StatCard label="Phổ biến nhất" value="Premium 6 Tháng" icon={<TrendingUp className="text-pink-500" />} highlight />
-        <StatCard label="Voucher" value="05 Mã" icon={<Ticket className="text-purple-500" />} />
+    try {
+      if (selectedPlan) {
+        await updatePlan({
+          id: selectedPlan.id,
+          data: { ...formData, description: formData.description || undefined },
+        }).unwrap();
+        toast.success(`Đã cập nhật gói "${formData.name}"`);
+      } else {
+        await createPlan({ ...formData, description: formData.description || undefined }).unwrap();
+        toast.success(`Đã tạo gói "${formData.name}" thành công`);
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Thao tác thất bại");
+    }
+  };
+
+  const addFeature = () => {
+    const f = newFeature.trim();
+    if (f && !formData.features.includes(f)) {
+      setFormData(prev => ({ ...prev, features: [...prev.features, f] }));
+      setNewFeature("");
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData(prev => ({ ...prev, features: prev.features.filter((_, i) => i !== index) }));
+  };
+
+  const activePlans = plans.filter(p => p.active).length;
+  const popularPlan = plans.find(p => p.popular);
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border bg-card p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          System Admin
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          Quản lý Gói Subscription
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Cấu hình gói đăng ký môn học và truy cập AI. Dữ liệu realtime từ database.
+        </p>
+
+        <div className="mt-4 flex gap-3">
+          <Button onClick={handleCreate} className="rounded-xl font-bold">
+            <Plus className="w-5 h-5 mr-2" /> Thêm gói mới
+          </Button>
+          <Button onClick={() => refetch()} variant="outline" disabled={isFetching} className="rounded-xl font-bold">
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            Làm mới
+          </Button>
+        </div>
       </div>
 
-      {/* TABLE */}
-      <section className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Tên gói</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Giá gốc</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Giá sale</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Thời hạn</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Trạng thái</th>
-                <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {packages.map((pkg) => (
-                <PackageRow 
-                  key={pkg.id} 
-                  pkg={pkg} 
-                  onEdit={() => handleEdit(pkg)} 
-                  onDelete={() => handleDeleteClick(pkg)} 
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-4 flex items-start justify-between">
+            <p className="text-sm font-semibold text-muted-foreground">Tổng gói đăng ký</p>
+            <span className="rounded-lg border border-secondary/30 bg-secondary/20 px-2 py-1">
+              <Package className="text-primary" size={18} />
+            </span>
+          </div>
+          <p className="text-2xl font-black text-foreground">{plans.length}</p>
+        </div>
+        
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm ">
+          <div className="mb-4 flex items-start justify-between">
+            <p className="text-sm font-semibold text-muted-foreground">Gói phổ biến nhất</p>
+            <span className="rounded-lg border border-secondary/30 bg-secondary/20 px-2 py-1">
+              <TrendingUp className="text-primary" size={18} />
+            </span>
+          </div>
+          <p className="text-2xl font-black text-foreground">{popularPlan?.name || "Chưa đặt"}</p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-4 flex items-start justify-between">
+            <p className="text-sm font-semibold text-muted-foreground">Đang hoạt động</p>
+            <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-2 py-1">
+              <CheckCircle2 className="text-emerald-500" size={18} />
+            </span>
+          </div>
+          <p className="text-2xl font-black text-foreground">{activePlans} <span className="text-lg text-muted-foreground font-medium">/ {plans.length}</span></p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground font-medium text-sm">Đang tải dữ liệu...</p>
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-20 h-20 bg-secondary/50 rounded-full flex items-center justify-center">
+              <Package className="text-muted-foreground" size={40} />
+            </div>
+            <p className="text-muted-foreground font-bold">Chưa có gói nào</p>
+            <Button onClick={handleCreate} className="mt-2 rounded-xl">
+              <Plus className="w-5 h-5 mr-2" /> Tạo gói ngay
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="w-[100px]">Tier</TableHead>
+                <TableHead>Tên gói</TableHead>
+                <TableHead>Giá</TableHead>
+                <TableHead>Thời hạn</TableHead>
+                <TableHead>Tính năng</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...plans].sort((a, b) => a.sortOrder - b.sortOrder).map((plan) => {
+                const tierCfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.BASIC;
+                return (
+                  <TableRow key={plan.id}>
+                    <TableCell>
+                      <Badge variant={tierCfg.variant}>{tierCfg.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold">{plan.name}</span>
+                        {plan.popular && <Badge variant="default" className="text-[10px] uppercase">Hot</Badge>}
+                      </div>
+                      {plan.description && <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>}
+                    </TableCell>
+                    <TableCell>
+                      {plan.price === 0 ? (
+                        <span className="font-bold text-emerald-600">Miễn phí</span>
+                      ) : (
+                        <span className="font-bold text-primary">{plan.price.toLocaleString()}đ</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                        {plan.durationDays >= 36500 ? <Infinity size={16} /> : <Clock size={16} />}
+                        {formatDuration(plan.durationDays)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {plan.features?.length || 0} tính năng
+                    </TableCell>
+                    <TableCell>
+                      {plan.active ? (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                          Hoạt động
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-muted-foreground">
+                          Tắt
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
+                        <Edit3 className="w-4 h-4 " />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(plan)}>
+                        <Trash2 className="w-4 h-4 " />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+              {selectedPlan ? "Cập nhật Gói" : "Thiết lập Gói Mới"}
+            </DialogTitle>
+            <DialogDescription>
+              Tùy chỉnh thông tin gói đăng ký, tính năng và giá bán.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+            {!selectedPlan && (
+              <div className="space-y-3">
+                <Label>Tier hệ thống</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {(["BASIC", "PRO", "PREMIUM"] as SubscriptionTier[]).map((tier) => (
+                    <Button
+                      key={tier}
+                      type="button"
+                      variant={formData.tier === tier ? "default" : "outline"}
+                      className="w-full"
+                      onClick={() => setFormData(prev => ({ ...prev, tier }))}
+                    >
+                      {TIER_CONFIG[tier].label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedPlan && (
+              <div className="flex items-center gap-2">
+                <Label>Tier:</Label>
+                <Badge variant={TIER_CONFIG[selectedPlan.tier]?.variant || "outline"}>
+                  {TIER_CONFIG[selectedPlan.tier]?.label || selectedPlan.tier}
+                </Badge>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label>Tên gói *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="VD: PRO (Phổ biến nhất)"
+                  required
                 />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* MODAL: THÊM / SỬA */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl animate-in zoom-in duration-200">
-            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                {selectedPackage ? "Cập nhật Gói" : "Thiết lập Gói Mới"}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-pink-500 transition-colors"><X size={28} /></button>
-            </div>
-            <form className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Tên gói</label>
-                  <input defaultValue={selectedPackage?.name} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 dark:text-white focus:ring-2 focus:ring-cyan-500" type="text" />
-                </div>
-                <div>
-                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Giá gốc</label>
-                  <input defaultValue={selectedPackage?.oldPrice} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 dark:text-white" type="number" />
-                </div>
-                <div>
-                  <label className="text-xs font-black uppercase text-pink-500 mb-2 block">Giá sale</label>
-                  <input defaultValue={selectedPackage?.newPrice} className="w-full bg-pink-50/50 dark:bg-pink-500/5 border border-pink-100 dark:border-pink-500/20 rounded-2xl p-4 text-pink-600 font-bold" type="number" />
-                </div>
               </div>
-              <div className="flex gap-4 justify-end mt-8">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 font-bold text-slate-500">Hủy</button>
-                <button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-lg shadow-cyan-500/20">
-                  {selectedPackage ? "Lưu thay đổi" : "Xuất bản ngay"}
-                </button>
+              <div className="col-span-2 space-y-2">
+                <Label>Mô tả ngắn</Label>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Mô tả sẽ hiển thị ở trang báo giá..."
+                />
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: XÁC NHẬN XÓA */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsDeleteModalOpen(false)} />
-          <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in fade-in zoom-in duration-200">
-            <div className="w-20 h-20 bg-pink-50 dark:bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="text-pink-500" size={40} />
+              <div className="space-y-2">
+                <Label>Giá (VNĐ) *</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formData.price}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price: Number(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Thời hạn (ngày) *</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.durationDays}
+                  onChange={(e) => setFormData(prev => ({ ...prev, durationDays: Number(e.target.value) || 1 }))}
+                />
+              </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Xác nhận xóa?</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium">
-              Bạn đang chuẩn bị xóa gói <span className="text-pink-500 font-bold">"{selectedPackage?.name}"</span>. Hành động này không thể hoàn tác.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-4 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-all">Hủy</button>
-              <button onClick={confirmDelete} className="flex-1 py-4 rounded-2xl font-black bg-pink-500 text-white hover:bg-pink-600 shadow-lg shadow-pink-500/30 transition-all">Xóa ngay</button>
+
+            <div className="flex gap-6 p-4 rounded-xl border bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={formData.active}
+                  onCheckedChange={(c) => setFormData(prev => ({ ...prev, active: c }))}
+                  id="active-mode"
+                />
+                <Label htmlFor="active-mode" className="cursor-pointer">Kích hoạt gói</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={formData.popular}
+                  onCheckedChange={(c) => setFormData(prev => ({ ...prev, popular: c }))}
+                  id="popular-mode"
+                />
+                <Label htmlFor="popular-mode" className="cursor-pointer flex items-center gap-1">
+                  Đánh dấu Nổi Bật <Star size={14} className={formData.popular ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'} />
+                </Label>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </main>
-  );
-}
 
-// COMPONENT CON: DÒNG TRONG BẢNG
-function PackageRow({ pkg, onEdit, onDelete }: any) {
-  return (
-    <tr className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group ${pkg.isHot ? 'border-l-4 border-pink-500' : ''}`}>
-      <td className="px-6 py-5">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-slate-900 dark:text-white">{pkg.name}</span>
-          {pkg.isHot && <span className="px-2 py-0.5 bg-pink-500 text-[9px] rounded-lg text-white font-black uppercase tracking-tighter">Hot</span>}
-        </div>
-        <div className="text-xs text-slate-400 font-medium">{pkg.desc}</div>
-      </td>
-      <td className="px-6 py-5 text-slate-400 line-through text-sm italic">{pkg.oldPrice.toLocaleString()}đ</td>
-      <td className="px-6 py-5 font-black text-cyan-600 dark:text-cyan-400 text-lg">{pkg.newPrice.toLocaleString()}đ</td>
-      <td className="px-6 py-5 text-slate-600 dark:text-slate-400 font-bold">
-        <div className="flex items-center gap-1.5">
-           {pkg.duration === "Vĩnh viễn" ? <Infinity size={16} /> : <Clock size={16} />}
-           {pkg.duration}
-        </div>
-      </td>
-      <td className="px-6 py-5">
-        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
-          <CheckCircle2 size={12} /> {pkg.status}
-        </span>
-      </td>
-      <td className="px-6 py-5 text-right">
-        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-          <button onClick={onEdit} className="p-3 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-600 hover:text-white transition-all shadow-sm">
-            <Edit3 size={18} />
-          </button>
-          <button onClick={onDelete} className="p-3 rounded-xl bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 hover:bg-pink-600 hover:text-white transition-all shadow-sm">
-            <Trash2 size={18} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
+            <div className="space-y-3">
+              <Label>Tính năng ({formData.features.length})</Label>
+              <div className="space-y-2">
+                {formData.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-background border rounded-lg p-2 group">
+                    <GripVertical size={14} className="text-muted-foreground" />
+                    <span className="flex-1 text-sm">{feature}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeFeature(idx)}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newFeature}
+                  onChange={(e) => setNewFeature(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature(); }}}
+                  placeholder="Nhập tính năng mới..."
+                />
+                <Button type="button" onClick={addFeature} variant="secondary">
+                  Thêm
+                </Button>
+              </div>
+            </div>
 
-// COMPONENT CON: THẺ THỐNG KÊ
-function StatCard({ label, value, icon, highlight = false }: any) {
-  return (
-    <div className={`p-6 rounded-[2rem] border ${highlight ? 'border-pink-200 dark:border-pink-500/30 bg-pink-50/30 dark:bg-pink-500/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'}`}>
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shadow-sm">{icon}</div>
-        <div>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{label}</p>
-          <p className={`text-xl font-black mt-0.5 ${highlight ? 'text-pink-600 dark:text-pink-400' : 'text-slate-900 dark:text-white'}`}>{value}</p>
-        </div>
-      </div>
+            <DialogFooter className="border-t pt-4 mt-6">
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+              <Button type="submit" disabled={isCreating || isUpdating}>
+                {(isCreating || isUpdating) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {selectedPlan ? "Lưu thay đổi" : "Xuất bản"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa gói <strong>{selectedPlan?.name}</strong>? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Hủy</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Xóa ngay
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

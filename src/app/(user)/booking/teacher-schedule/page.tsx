@@ -13,7 +13,7 @@ import { vi } from "date-fns/locale";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/UI/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,

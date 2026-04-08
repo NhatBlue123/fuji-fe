@@ -302,7 +302,7 @@ export default function EditProfilePage() {
                   className="flex-[2] h-14 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest text-[11px] shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
-                    <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 bg-secondary hover:bg-secondary/90 rounded-full animate-spin" />
                   ) : (
                     <Save size={20} />
                   )}

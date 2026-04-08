@@ -120,7 +120,7 @@ export default function SubscriptionPage() {
           <Button 
             onClick={() => router.push("/premium")}
             size="lg"
-            className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 bg-pink-400 hover:bg-pink-600 dark:bg-pink-600 dark:hover:bg-pink-500 text-white transition-all active:scale-95"
+            className="rounded-2xl h-12 px-8 bg-secondary hover:bg-secondary/90 text-white font-bold py-2 transition"
           >
             <Star className="mr-2" size={18} strokeWidth={3} /> Nâng cấp Gói
           </Button>
@@ -137,7 +137,7 @@ export default function SubscriptionPage() {
           <CardHeader className="relative z-10 pt-10 px-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${currentDetails.color} flex items-center justify-center shadow-lg ${currentDetails.shadow}`}>
+                <div className={`w-14 h-14 rounded-2xl bg-secondary hover:bg-secondary/90 ${currentDetails.color} flex items-center justify-center shadow-lg ${currentDetails.shadow}`}>
                   {currentDetails.icon}
                 </div>
                 <div>
@@ -199,8 +199,8 @@ export default function SubscriptionPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {mySub?.activeFeatures.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2">
-                      <CheckCircle2 size={16} className={currentDetails.textColor} />
-                      <span className="text-sm text-white/90">{feat}</span>
+                      <CheckCircle2 size={16} className={currentDetails.textColor } />
+                      <span className="text-sm  text-white/90">{feat}</span>
                     </div>
                   ))}
                 </div>
@@ -218,7 +218,7 @@ export default function SubscriptionPage() {
                 {isPremium ? 'Hardcore Learner' : (isPro ? 'Serious Learner' : 'Beginner')}
               </p>
             </div>
-            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${currentDetails.color} rotate-12 flex items-center justify-center shadow-lg text-white transition-transform duration-500 group-hover:rotate-0 relative z-10`}>
+            <div className={`w-14 h-14 rounded-2xl bg-secondary hover:bg-secondary/90 ${currentDetails.color} rotate-12 flex items-center justify-center shadow-lg text-white transition-transform duration-500 group-hover:rotate-0 relative z-10`}>
               <Crown size={24} className="-rotate-12 group-hover:rotate-0" />
             </div>
           </Card>

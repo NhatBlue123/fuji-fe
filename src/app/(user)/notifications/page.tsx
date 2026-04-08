@@ -52,7 +52,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 function isCourseNotification(n: NotifType) {
-  if (n.type === NotificationType.course) return true;
+  if (n.type === NotificationType.course || n.type === NotificationType.booking) return true;
   if (n.type !== NotificationType.reminder) return false;
 
   const related = (n.relatedType || "").toUpperCase();

@@ -49,8 +49,8 @@ export default function CreateTimeSlotForm() {
   const [mode, setMode] = useState<Mode>("bulk");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [level, setLevel] = useState<LevelOption>("N4");
-  const [subjectType, setSubjectType] = useState<SubjectOption>("Kaiwa");
+  const [level, setLevel] = useState<LevelOption | "">("");
+  const [subjectType, setSubjectType] = useState<SubjectOption | "">("");
   const [price, setPrice] = useState<number>(50);
 
   const [notice, setNotice] = useState<{
@@ -67,7 +67,7 @@ export default function CreateTimeSlotForm() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  const composedSubject = `${subjectType} - ${level}`;
+  const composedSubject = subjectType && level ? `${subjectType} - ${level}` : "";
 
   const handleGoBack = () => {
     router.push("/admin/teacher-schedules/teaching-schedule");
@@ -304,6 +304,7 @@ export default function CreateTimeSlotForm() {
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
                   className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
+                  <option value="" disabled>Chọn cấp độ</option>
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -328,6 +329,7 @@ export default function CreateTimeSlotForm() {
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
                   className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
+                  <option value="" disabled>Chọn cấp độ</option>
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -345,6 +347,7 @@ export default function CreateTimeSlotForm() {
                 }
                 className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
+                <option value="" disabled>Chọn môn học</option>
                 {SUBJECT_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
@@ -366,7 +369,7 @@ export default function CreateTimeSlotForm() {
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Chủ đề">
               <div className="flex h-12 items-center rounded-xl border border-border bg-card/60 px-4 font-semibold text-foreground">
-                {composedSubject}
+                {composedSubject || <span className="text-muted-foreground font-normal">Chọn môn học và cấp độ</span>}
               </div>
             </Field>
 

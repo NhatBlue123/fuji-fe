@@ -43,9 +43,10 @@ let lastTimeoutWarnAt = 0;
 if (typeof window !== "undefined") {
   globalSocket = io(getSignalingUrl() + "/video-call", {
     transports: ["websocket", "polling"],
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-    timeout: 8000,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 8000,
+    timeout: 12000,
     autoConnect: false,
     query: {},
   });

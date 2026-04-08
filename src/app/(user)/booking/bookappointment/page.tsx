@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCreateBookingMutation,
@@ -50,14 +50,30 @@ export default function PaymentPage() {
     data: singleQuote,
     isLoading,
     isFetching,
-  } = useGetBookingQuoteQuery({ timeSlotId }, { skip: !isSingleMode });
+    isError: isSingleQuoteError,
+    error: singleQuoteError,
+  } = useGetBookingQuoteQuery(
+    { timeSlotId },
+    { skip: !isSingleMode }
+  );
 
-  const [getBulkQuote, { data: bulkQuote, isLoading: isBulkQuoteLoading }] =
-    useGetBulkBookingQuoteMutation();
+  const [
+    getBulkQuote,
+    {
+      data: bulkQuote,
+      isLoading: isBulkQuoteLoading,
+      isError: isBulkQuoteError,
+      error: bulkQuoteError,
+    },
+  ] = useGetBulkBookingQuoteMutation();
 
   useEffect(() => {
     if (!isBulkMode) return;
-    getBulkQuote({ teacherId, timeSlotIds: bulkIds });
+    getBulkQuote({ teacherId, timeSlotIds: bulkIds })
+      .unwrap()
+      .catch((e: any) => {
+        setErrorMsg(e?.data?.message || "Không tải được thông tin hóa đơn.");
+      });
   }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
 
   const [createBooking, { isLoading: isCreatingSingle }] =
@@ -68,6 +84,10 @@ export default function PaymentPage() {
   const isCreating = isCreatingSingle || isCreatingBulk;
   const quote = isSingleMode ? singleQuote : bulkQuote;
   const canConfirm = !!quote && quote.canPay;
+  const isQuoteError = isSingleMode ? isSingleQuoteError : isBulkQuoteError;
+  const quoteErrorMessage =
+    ((isSingleMode ? singleQuoteError : bulkQuoteError) as any)?.data?.message ||
+    "Không tải được thông tin hóa đơn.";
 
   const onConfirm = async () => {
     setErrorMsg("");
@@ -127,6 +147,18 @@ export default function PaymentPage() {
         {(isLoading || isFetching || isBulkQuoteLoading) && (
           <div className="text-slate-400 text-center animate-pulse">
             Đang tải thông tin đơn hàng...
+          </div>
+        )}
+
+        {isQuoteError && !quote && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center">
+            {quoteErrorMessage}
+          </div>
+        )}
+
+        {!isLoading && !isFetching && !isBulkQuoteLoading && !isQuoteError && !quote && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 text-center">
+            Không có dữ liệu hóa đơn cho slot đã chọn. Vui lòng chọn lại lịch.
           </div>
         )}
 
@@ -252,7 +284,7 @@ function SuccessModal({ router }: any) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">
         <div className="size-24 rounded-full border-4 border-pink-500 flex items-center justify-center text-pink-500 mb-6">
-          ✓
+          <Check className="h-12 w-12" strokeWidth={3} />
         </div>
         <h1 className="text-3xl font-bold text-white mb-4">
           Thanh toán thành công!

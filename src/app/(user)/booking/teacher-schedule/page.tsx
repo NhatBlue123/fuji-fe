@@ -131,21 +131,17 @@ export default function TeacherSchedulePage() {
   const teacherId = Number(searchParams.get("teacherId"));
   const validTeacherId = Number.isFinite(teacherId) && teacherId > 0;
 
-  const leadTimeDate = useMemo(() => {
-    const next = new Date();
-    next.setHours(next.getHours() + 48);
-    return next;
-  }, []);
-  const minBookingDate = useMemo(() => toYmd(leadTimeDate), [leadTimeDate]);
+  /** Ngày tối thiểu chọn khoảng lặp = hôm nay (đặt ngay, không cần trước 48h). */
+  const minBookingDate = useMemo(() => toYmd(new Date()), []);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [timeZone, setTimeZone] = useState<string | undefined>();
 
   const [repeatMode, setRepeatMode] = useState<"NONE" | "RECURRING">("NONE");
-  const [rangeStart, setRangeStart] = useState(minBookingDate);
+  const [rangeStart, setRangeStart] = useState(() => toYmd(new Date()));
   const [rangeEnd, setRangeEnd] = useState(() => {
-    const next = new Date(leadTimeDate);
+    const next = new Date();
     next.setMonth(next.getMonth() + 1);
     return toYmd(next);
   });
@@ -259,10 +255,10 @@ export default function TeacherSchedulePage() {
         if (!isAvailable(slot)) return false;
         const slotDate = slot.startAt.slice(0, 10);
         if (slotDate < rangeStart || slotDate > rangeEnd) return false;
-        return new Date(slot.startAt).getTime() >= leadTimeDate.getTime();
+        return new Date(slot.startAt).getTime() > Date.now();
       })
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-  }, [groups, validRecurringRange, rangeStart, rangeEnd, leadTimeDate]);
+  }, [groups, validRecurringRange, rangeStart, rangeEnd]);
 
   const recurringTimeOptions = useMemo(() => {
     const map = new Map<
@@ -511,7 +507,8 @@ export default function TeacherSchedulePage() {
 
                       <span className="inline-flex items-center gap-2">
                         <Sparkles className="size-4 text-secondary" />
-                        Chỉ lấy các slot đủ điều kiện đặt trước 48 giờ
+                        Có thể đặt các slot trống còn trong tương lai; vào phòng học từ trước
+                        giờ học 5 phút
                       </span>
                     </div>
                   </CardContent>
@@ -672,8 +669,8 @@ export default function TeacherSchedulePage() {
                         </div>
 
                         <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-                          Nếu buổi nào trong lịch lặp không còn slot phù hợp hoặc không đủ
-                          điều kiện 48 giờ thì hệ thống sẽ tự bỏ qua buổi đó.
+                          Nếu buổi nào trong lịch lặp không còn slot trống phù hợp thì hệ thống
+                          sẽ tự bỏ qua buổi đó.
                         </div>
                       </>
                     ) : null}
@@ -937,9 +934,8 @@ export default function TeacherSchedulePage() {
 
                           {skippedOccurrences.length > 0 ? (
                             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ
-                              qua vì không còn slot phù hợp hoặc không đủ điều kiện đặt
-                              trước 48 giờ.
+                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ qua vì
+                              không còn slot trống phù hợp trong lúc đó.
                             </div>
                           ) : null}
                         </>

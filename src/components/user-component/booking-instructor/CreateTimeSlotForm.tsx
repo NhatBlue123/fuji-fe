@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
-import { BulkResponse, Mode, TimeRange, Weekday } from "./types";
+import { Mode, TimeRange, Weekday } from "./types";
 import {
   estimateSlots,
   getWeekdayCodeFromDate,
@@ -164,18 +164,8 @@ export default function CreateTimeSlotForm() {
         };
       }
 
-      const res = await api.post("/time-slots/bulk", payload);
-      const data: BulkResponse | undefined = res?.data?.data;
-
-      const description = data ? `Tạo lịch thành công` : "Tạo lịch thành công.";
-
-      setNotice({
-        type: "success",
-        title: "Đã lưu lịch rảnh",
-        description: data ? "Tạo lịch thành công." : "Tạo lịch thành công.",
-      });
-
-      setTimeout(() => setNotice(null), 4000);
+      await api.post("/time-slots/bulk", payload);
+      router.push("/admin/teacher-schedules/teaching-schedule");
     } catch (e: any) {
       const message = e?.response?.data?.message || "Tạo lịch thất bại.";
       setErr(message);
@@ -268,7 +258,7 @@ export default function CreateTimeSlotForm() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               />
             </Field>
 
@@ -278,7 +268,7 @@ export default function CreateTimeSlotForm() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 />
               </Field>
             ) : (
@@ -286,7 +276,7 @@ export default function CreateTimeSlotForm() {
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
-                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
@@ -310,7 +300,7 @@ export default function CreateTimeSlotForm() {
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
-                  className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                  className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
@@ -325,7 +315,7 @@ export default function CreateTimeSlotForm() {
               <select
                 value={subjectType}
                 onChange={(e) => setSubjectType(e.target.value as SubjectOption)}
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
                 {SUBJECT_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -359,7 +349,7 @@ export default function CreateTimeSlotForm() {
                 step={1000}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               />
             </Field>
 

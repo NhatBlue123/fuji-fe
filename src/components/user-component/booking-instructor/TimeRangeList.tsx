@@ -15,7 +15,7 @@ export default function TimeRangeList({ ranges, onAdd, onRemove, onChange }: Pro
         <button
           type="button"
           onClick={onAdd}
-          className="text-sm font-semibold text-secondary hover:opacity-80"
+          className="text-sm font-semibold text-primary hover:text-primary/80"
         >
           + Thêm khung giờ
         </button>
@@ -31,13 +31,13 @@ export default function TimeRangeList({ ranges, onAdd, onRemove, onChange }: Pro
               type="time"
               value={r.start}
               onChange={(e) => onChange(idx, { start: e.target.value })}
-              className="h-11 rounded-lg border border-border bg-background px-3 outline-none focus:border-ring"
+              className="h-11 rounded-lg border border-border bg-background px-3 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
             />
             <input
               type="time"
               value={r.end}
               onChange={(e) => onChange(idx, { end: e.target.value })}
-              className="h-11 rounded-lg border border-border bg-background px-3 outline-none focus:border-ring"
+              className="h-11 rounded-lg border border-border bg-background px-3 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
             />
             <button
               type="button"

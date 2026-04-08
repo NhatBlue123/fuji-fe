@@ -1,7 +1,11 @@
 import { io, type Socket } from "socket.io-client";
 import { getAccessToken } from "@/lib/token";
+import { getSignalingUrl } from "@/lib/video-call-urls";
 
-const NOTIFICATION_URL = "http://localhost:8081/notifications";
+function getNotificationUrl(): string {
+  const base = getSignalingUrl().replace(/\/$/, "");
+  return `${base}/notifications`;
+}
 
 let notificationSocket: Socket | null = null;
 
@@ -13,7 +17,7 @@ export function connectNotificationSocket(token?: string | null, userId?: number
   const queryPayload = userId ? { userId: userId.toString() } : {};
 
   if (!notificationSocket) {
-    notificationSocket = io(NOTIFICATION_URL, {
+    notificationSocket = io(getNotificationUrl(), {
       transports: ["websocket"],
       auth: authPayload,
       query: queryPayload,

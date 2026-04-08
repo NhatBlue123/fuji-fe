@@ -126,6 +126,26 @@ export const bookingApi = baseApi.injectEndpoints({
       providesTags: [{ type: "Booking", id: "MY_SLOTS" }],
     }),
 
+    deleteTimeSlot: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/time-slots/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "Booking" }],
+    }),
+
+    updateTimeSlot: builder.mutation<
+      unknown,
+      { id: number; price?: number; subject?: string; startAt?: string; endAt?: string }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/time-slots/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: [{ type: "Booking" }],
+    }),
+
     getVideoSession: builder.mutation<VideoSessionResponse, { bookingId: number }>({
       query: ({ bookingId }) => ({
         url: `/bookings/${bookingId}/video-session`,
@@ -158,6 +178,8 @@ export const {
   useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
   useGetMyTimeSlotsQuery,
+  useDeleteTimeSlotMutation,
+  useUpdateTimeSlotMutation,
   useCancelBookingMutation,
   useGetMyTeacherScheduleQuery,
   useGetVideoSessionMutation,

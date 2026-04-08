@@ -1,7 +1,11 @@
 import { io, type Socket } from "socket.io-client";
 import { getAccessToken } from "@/lib/token";
+import { getSignalingUrl } from "@/lib/video-call-urls";
 
-const PAYMENT_URL = "http://localhost:8081/payment";
+function getPaymentUrl(): string {
+  const base = getSignalingUrl().replace(/\/$/, "");
+  return `${base}/payment`;
+}
 
 let paymentSocket: Socket | null = null;
 
@@ -16,7 +20,7 @@ export function connectPaymentSocket(token?: string | null, userId?: number | st
   const queryPayload = userId ? { userId: userId.toString() } : {};
 
   if (!paymentSocket) {
-    paymentSocket = io(PAYMENT_URL, {
+    paymentSocket = io(getPaymentUrl(), {
       transports: ["websocket"],
       auth: authPayload,
       query: queryPayload,

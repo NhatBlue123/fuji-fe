@@ -22,6 +22,7 @@ import {
   Layers,
   AlertTriangle,
   CalendarDays,
+  Bug,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -139,6 +140,12 @@ const navGroups: NavGroup[] = [
         icon: AlertTriangle,
       },
       {
+        title: "Nhật ký lỗi",
+        href: "/admin/system-errors",
+        icon: Bug,
+        adminOnly: true,
+      },
+      {
         title: "Chat Moderation",
         href: "/admin/chat-moderation",
         icon: Shield,
@@ -199,7 +206,7 @@ export function AdminSidebar() {
       <aside
         className={cn(
           "relative flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
-          collapsed ? "w-[68px]" : "w-[260px]",
+          collapsed ? "w-[68px]" : "w-[240px]",
         )}
       >
         {/* Logo / Brand */}
@@ -388,9 +395,10 @@ export function AdminSidebar() {
               )}
             </Tooltip>
           )}
+        </div>
 
-          <Separator className="bg-sidebar-border my-1" />
-
+        {/* User Account block - natural p-3 padding to align perfectly with Footer py-3 */}
+        <div className="border-t border-sidebar-border p-3">
           {/* User info + logout */}
           {mounted && isAuthenticated && user ? (
             <Tooltip>
@@ -496,7 +504,7 @@ export function AdminSidebar() {
         <Button
           variant="outline"
           size="icon"
-          className="absolute -right-3 top-20 z-10 h-6 w-6 rounded-full border-sidebar-border bg-sidebar shadow-md"
+          className="absolute -right-3 top-20 z-10 h-6 w-6 rounded-full border-sidebar-border bg-sidebar shadow-md flex items-center justify-center p-0"
           onClick={() => setCollapsed(!collapsed)}
         >
           {collapsed ? (

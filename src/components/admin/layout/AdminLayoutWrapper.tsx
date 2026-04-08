@@ -15,11 +15,12 @@ export function AdminLayoutWrapper({ children }: AdminLayoutWrapperProps) {
       <AdminSidebar />
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden bg-slate-50/20">
+        {/* Page Header can be placed here if needed */}
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 flex flex-col">
-          <div className="flex-1">{children}</div>
-          {/* Footer at bottom of scrollable area */}
+        <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1 p-6">{children}</div>
+          {/* Footer at bottom of scrollable area spanning full width */}
           <AdminFooter />
         </main>
       </div>

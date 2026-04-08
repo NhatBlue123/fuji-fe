@@ -9,6 +9,7 @@ import {
   useGetLessonsByCourseQuery,
   useGetLessonByIdQuery,
   useTrackLessonProgressMutation,
+  useCompleteLessonMutation,
 } from "@/store/services/courseApi";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import type { LessonResponseDTO, TaskType } from "@/types/course";
@@ -84,35 +85,52 @@ function LessonSkeleton() {
 function LockedLessonNotice({
   courseId,
   lessonTitle,
+  reason,
+  fallbackLessonId,
 }: {
   courseId: number;
   lessonTitle?: string;
+  reason: "course" | "sequence";
+  fallbackLessonId?: number;
 }) {
+  const ctaHref =
+    reason === "sequence" && fallbackLessonId
+      ? `/course/${courseId}/lesson/${fallbackLessonId}`
+      : `/course/${courseId}`;
+
   return (
     <div className="flex flex-col items-center justify-center h-[100dvh] bg-background text-center px-6 -mt-[1px]">
       <span className="material-symbols-outlined text-6xl text-muted-foreground/40 mb-4">
         lock
       </span>
       <h2 className="text-2xl font-bold text-foreground mb-2">
-        Bài học này đã bị khóa
+        {reason === "sequence"
+          ? "Bạn cần hoàn thành bài học trước"
+          : "Bài học này đã bị khóa"}
       </h2>
       <p className="text-muted-foreground mb-8 max-w-md">
-        {lessonTitle
-          ? `Bạn cần đăng ký khóa học để xem "${lessonTitle}".`
-          : "Bạn cần đăng ký khóa học để xem bài học này."}
+        {reason === "sequence"
+          ? lessonTitle
+            ? `Hãy học xong bài trước để mở "${lessonTitle}".`
+            : "Hãy học xong bài trước để mở bài học này."
+          : lessonTitle
+            ? `Bạn cần đăng ký khóa học để xem "${lessonTitle}".`
+            : "Bạn cần đăng ký khóa học để xem bài học này."}
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
-          href={`/course/${courseId}`}
+          href={ctaHref}
           className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground font-bold hover:bg-secondary/90 transition-colors"
         >
-          Về trang khóa học
+          {reason === "sequence" ? "Học bài đang mở" : "Về trang khóa học"}
         </Link>
         <Link
           href={`/course/${courseId}`}
           className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors"
         >
-          Đăng ký để mở khóa
+          {reason === "sequence"
+            ? "Xem lộ trình khóa học"
+            : "Đăng ký để mở khóa"}
         </Link>
       </div>
     </div>
@@ -121,7 +139,44 @@ function LockedLessonNotice({
 
 // ─── Video Player ──────────────────────────────────────
 
-function VideoPlayer({ lesson }: { lesson: LessonResponseDTO }) {
+function VideoPlayer({
+  lesson,
+  onMarkCompleted,
+  isCompleting,
+}: {
+  lesson: LessonResponseDTO;
+  onMarkCompleted: () => void;
+  isCompleting: boolean;
+}) {
+  const renderCompletionAction = () => {
+    if (lesson.userCompleted) {
+      return (
+        <div className="mt-3 flex w-full items-center justify-end gap-2 text-emerald-400 text-sm font-medium">
+          <span className="material-symbols-outlined filled text-base">
+            check_circle
+          </span>
+          Bạn đã hoàn thành bài học này
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-3 flex w-full items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={onMarkCompleted}
+          disabled={isCompleting}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-bold hover:bg-secondary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          <span className="material-symbols-outlined text-[18px] filled">
+            {isCompleting ? "sync" : "check_circle"}
+          </span>
+          {isCompleting ? "Đang cập nhật..." : "Đánh dấu đã học xong"}
+        </button>
+      </div>
+    );
+  };
+
   if (lesson.lessonType !== "video" || !lesson.videoUrl) {
     return (
       <div className="w-full aspect-[16/9] min-h-[400px] max-h-[75vh] bg-black rounded-2xl overflow-hidden border border-border flex items-center justify-center">
@@ -147,29 +202,40 @@ function VideoPlayer({ lesson }: { lesson: LessonResponseDTO }) {
       );
     }
     return (
-      <div className="relative w-full aspect-[16/9] min-h-[400px] max-h-[75vh] bg-black rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-border">
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-          title={lesson.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full"
-        />
+      <div>
+        <div className="relative w-full aspect-[16/9] min-h-[400px] max-h-[75vh] bg-black rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-border">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+            title={lesson.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full"
+          />
+        </div>
+        {renderCompletionAction()}
       </div>
     );
   }
 
   // Uploaded video
   return (
-    <div className="relative w-full aspect-[16/9] min-h-[400px] max-h-[75vh] bg-black rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-border">
-      <video
-        src={lesson.videoUrl}
-        controls
-        className="absolute inset-0 w-full h-full object-contain"
-        poster=""
-      >
-        <track kind="captions" />
-      </video>
+    <div>
+      <div className="relative w-full aspect-[16/9] min-h-[400px] max-h-[75vh] bg-black rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-border">
+        <video
+          src={lesson.videoUrl}
+          controls
+          onEnded={() => {
+            if (!lesson.userCompleted && !isCompleting) {
+              onMarkCompleted();
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-contain"
+          poster=""
+        >
+          <track kind="captions" />
+        </video>
+      </div>
+      {renderCompletionAction()}
     </div>
   );
 }
@@ -178,7 +244,10 @@ function VideoPlayer({ lesson }: { lesson: LessonResponseDTO }) {
 
 const TASK_RENDERERS: Record<
   TaskType,
-  React.ComponentType<{ data: ReturnType<typeof parseTaskData> & object }>
+  React.ComponentType<{
+    data: ReturnType<typeof parseTaskData> & object;
+    onTaskSubmitted?: () => void;
+  }>
 > = {
   multiple_choice: MultipleChoiceTask,
   fill_blank: FillBlankTask,
@@ -188,7 +257,13 @@ const TASK_RENDERERS: Record<
   reading: ReadingTask,
 };
 
-function TaskContent({ lesson }: { lesson: LessonResponseDTO }) {
+function TaskContent({
+  lesson,
+  onMarkCompleted,
+}: {
+  lesson: LessonResponseDTO;
+  onMarkCompleted: () => void;
+}) {
   const taskLabel: Record<string, string> = {
     multiple_choice: "Trắc nghiệm",
     fill_blank: "Điền vào chỗ trống",
@@ -205,7 +280,7 @@ function TaskContent({ lesson }: { lesson: LessonResponseDTO }) {
     <div className="w-full bg-card rounded-2xl border border-border p-6 md:p-8 relative z-0">
       {/* Interactive task renderer */}
       {Renderer && parsed ? (
-        <Renderer data={parsed} />
+        <Renderer data={parsed} onTaskSubmitted={onMarkCompleted} />
       ) : (
         <div className="bg-muted/50 rounded-xl p-6 border border-border text-center">
           <span className="material-symbols-outlined text-4xl text-muted-foreground/50 mb-2 block">
@@ -229,14 +304,18 @@ function SidebarLessonItem({
   isActive,
   courseId,
   canAccessCourse,
+  isSequentiallyUnlocked,
 }: {
   lesson: LessonResponseDTO;
   isActive: boolean;
   courseId: number;
   canAccessCourse: boolean;
+  isSequentiallyUnlocked: boolean;
 }) {
   const isVideo = lesson.lessonType === "video";
-  const canAccessLesson = canAccessCourse || lesson.isPreview;
+  const canAccessByPolicy = canAccessCourse || lesson.isPreview;
+  const canAccessLesson = canAccessByPolicy && isSequentiallyUnlocked;
+  const lockLabel = canAccessByPolicy ? "Học bài trước" : "Đăng ký khóa học";
 
   if (isActive) {
     return (
@@ -257,6 +336,11 @@ function SidebarLessonItem({
               <span className="text-[10px] bg-secondary text-white px-1.5 py-0.5 rounded font-bold shadow-sm">
                 Đang học
               </span>
+              {lesson.userCompleted && (
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold">
+                  Đã học xong
+                </span>
+              )}
               {lesson.isPreview && (
                 <span className="text-[10px] bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">
                   Xem thử
@@ -289,8 +373,8 @@ function SidebarLessonItem({
             {lesson.title}
           </h4>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-amber-500 font-bold">
-              Đã khóa
+            <span className="text-[10px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+              {lockLabel}
             </span>
             {lesson.duration > 0 && (
               <span className="text-[11px] text-muted-foreground/60">
@@ -306,8 +390,10 @@ function SidebarLessonItem({
   return (
     <Link
       href={`/course/${courseId}/lesson/${lesson.id}`}
-      className={`p-4 border-l-[3px] border-transparent hover:bg-muted/30 flex gap-3 cursor-pointer group transition-all ${
-        lesson.userCompleted ? "opacity-70" : ""
+      className={`p-4 border-l-[3px] flex gap-3 cursor-pointer group transition-all ${
+        lesson.userCompleted
+          ? "bg-emerald-500/5 border-emerald-500/40 hover:bg-emerald-500/10"
+          : "border-transparent hover:bg-muted/30"
       }`}
     >
       <div className="mt-1">
@@ -333,7 +419,7 @@ function SidebarLessonItem({
         <h4
           className={`text-sm font-medium mb-1 transition-colors ${
             lesson.userCompleted
-              ? "text-muted-foreground line-through"
+              ? "text-emerald-300"
               : "text-muted-foreground group-hover:text-foreground"
           }`}
         >
@@ -341,8 +427,18 @@ function SidebarLessonItem({
         </h4>
         <div className="flex items-center gap-2">
           {lesson.userCompleted && (
-            <span className="text-[10px] text-green-500 font-bold">
-              Hoàn thành
+            <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+              Đã học xong
+            </span>
+          )}
+          {!lesson.userCompleted && (
+            <span className="text-[10px] text-sky-400 font-bold bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded">
+              Chưa học
+            </span>
+          )}
+          {lesson.isPreview && (
+            <span className="text-[10px] text-blue-500 font-bold bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
+              Xem thử
             </span>
           )}
           {lesson.duration > 0 && (
@@ -384,6 +480,8 @@ export default function LessonView({
     error: lessonError,
   } = useGetLessonByIdQuery(lessonId);
   const [trackLessonProgress] = useTrackLessonProgressMutation();
+  const [completeLesson, { isLoading: isCompletingLesson }] =
+    useCompleteLessonMutation();
 
   // Sorted lessons
   const sortedLessons = useMemo(
@@ -391,9 +489,33 @@ export default function LessonView({
     [lessons],
   );
   const currentLessonMeta = sortedLessons.find((l) => l.id === lessonId);
+  const firstIncompleteIndex = sortedLessons.findIndex((l) => !l.userCompleted);
+  const maxUnlockedIndex =
+    firstIncompleteIndex === -1
+      ? sortedLessons.length - 1
+      : firstIncompleteIndex;
+  const sequentialUnlockedLessonIds = useMemo(() => {
+    const unlockedIds = new Set<number>();
+    sortedLessons.forEach((item, idx) => {
+      if (idx <= maxUnlockedIndex || item.userCompleted) {
+        unlockedIds.add(item.id);
+      }
+    });
+    return unlockedIds;
+  }, [maxUnlockedIndex, sortedLessons]);
+
   const canAccessCourse = isPremium || Boolean(course?.isEnrolled);
-  const canAccessCurrentLesson =
+  const canAccessCurrentLessonByPolicy =
     canAccessCourse || Boolean(currentLessonMeta?.isPreview);
+  const isCurrentLessonSequentiallyUnlocked = currentLessonMeta
+    ? sequentialUnlockedLessonIds.has(currentLessonMeta.id)
+    : false;
+  const canAccessCurrentLesson =
+    canAccessCurrentLessonByPolicy && isCurrentLessonSequentiallyUnlocked;
+  const fallbackLessonId =
+    maxUnlockedIndex >= 0 && maxUnlockedIndex < sortedLessons.length
+      ? sortedLessons[maxUnlockedIndex]?.id
+      : undefined;
 
   useEffect(() => {
     if (!courseId || !lessonId || !canAccessCurrentLesson) return;
@@ -404,6 +526,18 @@ export default function LessonView({
         // Tracking failures should not block lesson consumption.
       });
   }, [canAccessCurrentLesson, courseId, lessonId, trackLessonProgress]);
+
+  const handleMarkCurrentLessonCompleted = async () => {
+    if (!lesson || lesson.userCompleted) {
+      return;
+    }
+
+    try {
+      await completeLesson({ courseId, lessonId: lesson.id }).unwrap();
+    } catch {
+      // Keep lesson page usable even if completion update fails.
+    }
+  };
 
   // Progress calculation
   const completedCount = sortedLessons.filter((l) => l.userCompleted).length;
@@ -419,9 +553,13 @@ export default function LessonView({
       ? sortedLessons[currentIndex + 1]
       : null;
   const canAccessPrevLesson =
-    !!prevLesson && (canAccessCourse || prevLesson.isPreview);
+    !!prevLesson &&
+    (canAccessCourse || prevLesson.isPreview) &&
+    sequentialUnlockedLessonIds.has(prevLesson.id);
   const canAccessNextLesson =
-    !!nextLesson && (canAccessCourse || nextLesson.isPreview);
+    !!nextLesson &&
+    (canAccessCourse || nextLesson.isPreview) &&
+    sequentialUnlockedLessonIds.has(nextLesson.id);
 
   // Loading
   if (courseLoading || lessonLoading || lessonsLoading) {
@@ -438,12 +576,28 @@ export default function LessonView({
   if (
     !lesson &&
     (lessonErrorStatus === 403 ||
-      (Boolean(currentLessonMeta) && !canAccessCurrentLesson))
+      (Boolean(currentLessonMeta) && !canAccessCurrentLessonByPolicy))
   ) {
     return (
       <LockedLessonNotice
         courseId={courseId}
         lessonTitle={currentLessonMeta?.title}
+        reason="course"
+      />
+    );
+  }
+
+  if (
+    currentLessonMeta &&
+    canAccessCurrentLessonByPolicy &&
+    !isCurrentLessonSequentiallyUnlocked
+  ) {
+    return (
+      <LockedLessonNotice
+        courseId={courseId}
+        lessonTitle={currentLessonMeta.title}
+        reason="sequence"
+        fallbackLessonId={fallbackLessonId}
       />
     );
   }
@@ -543,9 +697,16 @@ export default function LessonView({
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {/* Video / Task Area */}
           {lesson.lessonType === "video" ? (
-            <VideoPlayer lesson={lesson} />
+            <VideoPlayer
+              lesson={lesson}
+              onMarkCompleted={handleMarkCurrentLessonCompleted}
+              isCompleting={isCompletingLesson}
+            />
           ) : (
-            <TaskContent lesson={lesson} />
+            <TaskContent
+              lesson={lesson}
+              onMarkCompleted={handleMarkCurrentLessonCompleted}
+            />
           )}
 
           {/* Lesson Title & Info */}
@@ -776,6 +937,7 @@ export default function LessonView({
                 isActive={l.id === lessonId}
                 courseId={courseId}
                 canAccessCourse={canAccessCourse}
+                isSequentiallyUnlocked={sequentialUnlockedLessonIds.has(l.id)}
               />
             ))}
             {sortedLessons.length === 0 && (
@@ -827,6 +989,9 @@ export default function LessonView({
                     isActive={l.id === lessonId}
                     courseId={courseId}
                     canAccessCourse={canAccessCourse}
+                    isSequentiallyUnlocked={sequentialUnlockedLessonIds.has(
+                      l.id,
+                    )}
                   />
                 ))}
               </div>

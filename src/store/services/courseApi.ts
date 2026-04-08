@@ -315,6 +315,21 @@ export const courseApi = createApi({
       ],
     }),
 
+    completeLesson: builder.mutation<
+      ApiResponse<void>,
+      { courseId: number; lessonId: number }
+    >({
+      query: ({ lessonId }) => ({
+        url: `/lessons/${lessonId}/complete`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { courseId, lessonId }) => [
+        { type: "Course", id: courseId },
+        { type: "Lesson", id: lessonId },
+        { type: "Lesson", id: `COURSE_${courseId}` },
+      ],
+    }),
+
     getInstructors: builder.query<InstructorDTO[], void>({
       query: () => "/users/instructors",
       transformResponse: (response: ApiResponse<InstructorDTO[]>) =>
@@ -340,5 +355,6 @@ export const {
   useUploadAudioMutation,
   useSearchCoursesQuery,
   useTrackLessonProgressMutation,
+  useCompleteLessonMutation,
   useGetInstructorsQuery,
 } = courseApi;

@@ -41,33 +41,33 @@ export interface AdminRevenueStatsResponse {
   totalBookingFeeRevenue: number;
   totalCourseRevenue: number;
   totalWithdrawalFeeRevenue: number;
-  
+
   totalPendingWithdrawalAmount: number;
   totalCompletedWithdrawalAmount: number;
 
   // Chart data
   monthlyRevenues: MonthlyRevenue[];
-  
+
   // Recent transactions
   recentTransactions: AdminRevenueStatsResponse.RecentTransaction[];
 }
 
 // Nested namespace for RecentTransaction if needed or just use current
 export namespace AdminRevenueStatsResponse {
-    export interface RecentTransaction {
-        id: number;
-        type: string;
-        amount: number;
-        description: string;
-        referenceId: string;
-        createdAt: string;
-    }
+  export interface RecentTransaction {
+    id: number;
+    type: string;
+    amount: number;
+    description: string;
+    referenceId: string;
+    createdAt: string;
+  }
 }
 
 // Just in case income is separated
 export interface AdminIncomeStatsResponse {
-    totalRevenue: number;
-    thirtyDaysRevenue: number;
-    totalCourseRevenue: number;
-    totalPlatformFee: number;
+  totalRevenue: number;
+  thirtyDaysRevenue: number;
+  totalCourseRevenue: number;
+  totalPlatformFee: number;
 }

@@ -355,7 +355,7 @@ export default function FujiWallet() {
                     <TableCell
                       className={`px-8 py-6 text-right font-black text-xl tracking-tighter ${tx.type === "DEPOSIT" || tx.amount > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"}`}
                     >
-                      {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : "-"}
+                      {tx.type === "DEPOSIT" || tx.amount > 0 }
                       {tx.amount.toLocaleString()}
                       <span className="text-[10px] ml-1 opacity-70">🌸</span>
                     </TableCell>

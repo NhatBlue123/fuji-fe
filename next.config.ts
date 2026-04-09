@@ -48,11 +48,29 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // ===== TURBOPACK CONFIG =====
+  // Fix: multiple lockfiles warning — chỉ scan trong project directory
+  turbopack: {
+    root: __dirname,
+  },
+
   // ===== EXPERIMENTAL FEATURES =====
-  // Tạm tắt experimental để tránh lỗi Turbopack cache (SST file error)
-  // experimental: {
-  //   optimizePackageImports: ["lucide-react"],
-  // },
+  experimental: {
+    // Tree-shake các package nặng — giảm lượng module Turbopack cần xử lý
+    optimizePackageImports: [
+      "lucide-react",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-select",
+      "@radix-ui/react-tabs",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-popover",
+      "recharts",
+      "framer-motion",
+      "date-fns",
+      "react-day-picker",
+    ],
+  },
 
   // ===== COMPILER OPTIONS =====
   compiler: {

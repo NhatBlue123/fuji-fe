@@ -135,7 +135,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
-              {(stats.totalIncome || 0).toLocaleString()}đ
+              {(stats.totalRevenue || 0).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Toàn bộ doanh thu từ trước đến nay
@@ -152,10 +152,10 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.monthlyIncome || 0).toLocaleString()}đ
+              {(stats.totalRevenue || 0).toLocaleString()}đ
             </div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
-              Biến động gần đây
+              Tổng doanh thu hệ thống
             </div>
           </CardContent>
         </Card>
@@ -169,7 +169,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.bookingIncome || 0).toLocaleString()}đ
+              {(stats.totalBookingFeeRevenue || 0).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Phí thu từ các lịch đặt học
@@ -186,7 +186,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.courseIncome || 0).toLocaleString()}đ
+              {(stats.totalCourseRevenue || 0).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Từ bán khóa học nền tảng
@@ -226,8 +226,8 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
             <div className="h-[350px] w-full min-h-[350px] min-w-0">
-              {stats.monthlyIncomeBreakdown &&
-              stats.monthlyIncomeBreakdown.length > 0 ? (
+              {stats.monthlyRevenues &&
+              stats.monthlyRevenues.length > 0 ? (
                 <ResponsiveContainer
                   width="100%"
                   height="100%"
@@ -236,7 +236,7 @@ export default function AdminRevenuePage() {
                 >
                   {viewMode === "line" ? (
                     <LineChart
-                      data={stats.monthlyIncomeBreakdown}
+                      data={stats.monthlyRevenues}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid
@@ -246,11 +246,12 @@ export default function AdminRevenuePage() {
                         opacity={0.2}
                       />
                       <XAxis
-                        dataKey="date"
+                        dataKey="month"
                         stroke="#888888"
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
+                        tickFormatter={(value) => `T${value}`}
                       />
                       <YAxis
                         stroke="#888888"
@@ -296,7 +297,7 @@ export default function AdminRevenuePage() {
                     </LineChart>
                   ) : (
                     <BarChart
-                      data={stats.monthlyIncomeBreakdown}
+                      data={stats.monthlyRevenues}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid
@@ -306,11 +307,12 @@ export default function AdminRevenuePage() {
                         opacity={0.2}
                       />
                       <XAxis
-                        dataKey="date"
+                        dataKey="month"
                         stroke="#888888"
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
+                        tickFormatter={(value) => `T${value}`}
                       />
                       <YAxis
                         stroke="#888888"
@@ -425,21 +427,21 @@ export default function AdminRevenuePage() {
                       Đã rút (Giảng viên)
                     </span>
                     <span className="font-medium text-destructive">
-                      {(stats.withdrawn || 0).toLocaleString()}đ
+                      {(stats.totalCompletedWithdrawalAmount || 0).toLocaleString()}đ
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Chờ rút tiền</span>
                     <span className="font-medium text-orange-500">
-                      {(stats.pendingWithdrawals || 0).toLocaleString()}đ
+                      {(stats.totalPendingWithdrawalAmount || 0).toLocaleString()}đ
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">
-                      Số dư hiện tại
+                      Tổng doanh thu
                     </span>
                     <span className="font-medium text-primary">
-                      {(stats.currentBalance || 0).toLocaleString()}đ
+                      {(stats.totalRevenue || 0).toLocaleString()}đ
                     </span>
                   </div>
                 </div>
@@ -478,20 +480,20 @@ export default function AdminRevenuePage() {
                     >
                       <td className="py-3 font-medium">#{tx.id}</td>
                       <td className="py-3">
-                        {tx.type === "BOOKING_FEE" && (
+                        {tx.type === "PLATFORM_FEE" && (
                           <Badge
                             variant="outline"
                             className="bg-blue-50 text-blue-700 dark:bg-blue-900/30"
                           >
-                            Phí Booking
+                            Phí nền tảng
                           </Badge>
                         )}
-                        {tx.type === "COURSE_SALE" && (
+                        {tx.type === "TOPUP" && (
                           <Badge
                             variant="outline"
-                            className="bg-violet-50 text-violet-700 dark:bg-violet-900/30"
+                            className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30"
                           >
-                            Bán Khóa học
+                            Nạp tiền
                           </Badge>
                         )}
                         {tx.type === "WITHDRAWAL" && (
@@ -513,7 +515,7 @@ export default function AdminRevenuePage() {
                         {(tx.amount || 0).toLocaleString()}đ
                       </td>
                       <td className="py-3 text-right text-muted-foreground">
-                        {new Date(tx.date).toLocaleDateString("vi-VN")}
+                        {new Date(tx.createdAt).toLocaleDateString("vi-VN")}
                       </td>
                     </tr>
                   ))}

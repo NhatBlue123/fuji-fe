@@ -11,8 +11,11 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   MyTimeSlotItem,
+  StudentBookingProfile,
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
+  TeacherPublicProfile,
+  TeacherRatingSummary,
   VideoSessionResponse,
 } from "@/types/booking";
 
@@ -32,6 +35,12 @@ export const bookingApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<DiscoveryResponse>) => res.data,
       providesTags: [{ type: "Booking", id: "DISCOVERY" }],
     }),
+    
+      getStudentProfile: builder.query<StudentBookingProfile, { studentId: number }>({
+    query: ({ studentId }) => `/bookings/student/${studentId}/profile`,
+    transformResponse: (res: ApiEnvelope<StudentBookingProfile>) => res.data,
+    providesTags: (_r, _e, arg) => [{ type: "Booking", id: `STUDENT_PROFILE_${arg.studentId}` }],
+  }),
 
     getTeacherAvailability: builder.query<
       TeacherAvailabilityResponse,
@@ -70,6 +79,18 @@ export const bookingApi = baseApi.injectEndpoints({
       }),
       transformResponse: (res: ApiEnvelope<BulkBookingQuote>) => res.data,
     }),
+    getTeacherProfile: builder.query<TeacherPublicProfile, { teacherId: number }>({
+      query: ({ teacherId }) => `/bookings/teacher/${teacherId}/profile`,
+      transformResponse: (res: ApiEnvelope<TeacherPublicProfile>) => res.data,
+      providesTags: (_r, _e, arg) => [{ type: "Booking", id: `TEACHER_PROFILE_${arg.teacherId}` }],
+    }),
+
+    getTeacherRating: builder.query<TeacherRatingSummary, { teacherId: number }>({
+      query: ({ teacherId }) => `/bookings/teacher/${teacherId}/rating`,
+      transformResponse: (res: ApiEnvelope<TeacherRatingSummary>) => res.data,
+      providesTags: (_r, _e, arg) => [{ type: "Booking", id: `TEACHER_RATING_${arg.teacherId}` }],
+    }),
+
 
     createBooking: builder.mutation<CreateBookingResponse, CreateBookingRequest>({
       query: (body) => ({
@@ -152,6 +173,9 @@ export const bookingApi = baseApi.injectEndpoints({
 export const {
   useGetDiscoverySlotsQuery,
   useGetTeacherAvailabilityQuery,
+  useGetStudentProfileQuery,
+  useGetTeacherProfileQuery,
+  useGetTeacherRatingQuery,
   useGetBookingQuoteQuery,
   useGetBulkBookingQuoteMutation,
   useCreateBookingMutation,

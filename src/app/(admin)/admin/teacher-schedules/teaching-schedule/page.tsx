@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, addWeeks, format, isToday, startOfWeek } from "date-fns";
 import { vi } from "date-fns/locale";
 import Link from "next/link";
+import { StudentProfileDialog } from "@/components/user-component/booking-instructor/StudentProfileDialog";
+
 import {
   CalendarDays,
   ChevronLeft,
@@ -93,9 +95,11 @@ function StatusChip({
 function ScheduleEvent({
   slot,
   startHour,
+  onOpenStudentProfile,
 }: {
   slot: TeacherScheduleSlot;
   startHour: number;
+  onOpenStudentProfile: (slot: TeacherScheduleSlot) => void;
 }) {
   const startMinutes = getMinutesOfDay(slot.startAt) - startHour * 60;
   const top = (startMinutes / 60) * HOUR_HEIGHT;
@@ -103,17 +107,21 @@ function ScheduleEvent({
   const isBooked = slot.status === "BOOKED";
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => {
+        if (isBooked) onOpenStudentProfile(slot);
+      }}
       title={
         isBooked
           ? `Học viên: ${slot.studentName ?? "Không rõ"}`
           : "Chưa có học viên đặt lịch"
       }
       className={cn(
-        "absolute left-2 right-2 rounded-xl border px-3 py-2 shadow-sm",
+        "absolute left-2 right-2 rounded-xl border px-3 py-2 text-left shadow-sm",
         isBooked
-          ? "border-primary/30 bg-primary/10"
-          : "border-emerald-500/30 bg-emerald-500/10"
+          ? "cursor-pointer border-primary/30 bg-primary/10 hover:border-primary/50 hover:bg-primary/15"
+          : "cursor-default border-emerald-500/30 bg-emerald-500/10"
       )}
       style={{ top, height }}
     >
@@ -142,7 +150,7 @@ function ScheduleEvent({
             <>
               <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <User2 className="size-3.5 text-primary" />
-                <span className="truncate">Đã booked</span>
+                <span className="truncate">Bấm để xem học viên</span>
               </div>
               <p className="truncate text-xs text-muted-foreground">
                 Học viên: {slot.studentName ?? "Không rõ tên"}
@@ -156,9 +164,10 @@ function ScheduleEvent({
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
+
 
 export default function TeachingSchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -185,6 +194,15 @@ export default function TeachingSchedulePage() {
       refetchOnReconnect: true,
     }
   );
+  const [selectedBookedSlot, setSelectedBookedSlot] = useState<TeacherScheduleSlot | null>(null);
+  const [showStudentProfile, setShowStudentProfile] = useState(false);
+
+  const openStudentProfile = (slot: TeacherScheduleSlot) => {
+    if (slot.status !== "BOOKED" || !slot.studentId) return;
+    setSelectedBookedSlot(slot);
+    setShowStudentProfile(true);
+  };
+
 
   const groups = data?.items ?? [];
 
@@ -462,8 +480,10 @@ export default function TeachingSchedulePage() {
                           key={slot.timeSlotId}
                           slot={slot}
                           startHour={hourRange.start}
+                          onOpenStudentProfile={openStudentProfile}
                         />
                       ))}
+
                     </div>
                   );
                 })}
@@ -472,6 +492,11 @@ export default function TeachingSchedulePage() {
           </div>
         )}
       </section>
+          <StudentProfileDialog
+      open={showStudentProfile}
+      onOpenChange={setShowStudentProfile}
+      slot={selectedBookedSlot}
+    />
     </div>
   );
 }

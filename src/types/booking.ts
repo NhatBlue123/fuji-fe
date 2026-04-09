@@ -193,3 +193,33 @@ export type TeacherScheduleResponse = {
   toDate: string;
   items: TeacherScheduleGroup[];
 };
+export type TeacherPublicProfile = {
+  id: number;
+  username: string;
+  fullName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  gender: string | null;
+  jlptLevel: "N5" | "N4" | "N3" | "N2" | "N1" | null;
+  active: boolean;
+  createdAt: string;
+};
+
+export type TeacherRatingSummary = {
+  teacherId: number;
+  averageRating: number | null;
+  totalReviews: number;
+};
+export type StudentBookingProfile = {
+  id: number;
+  username: string;
+  fullName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  gender: string | null;
+  jlptLevel: "N5" | "N4" | "N3" | "N2" | "N1" | null;
+  active: boolean;
+  createdAt: string;
+};
+
+

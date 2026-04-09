@@ -23,9 +23,19 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/UI/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useGetTeacherAvailabilityQuery } from "@/store/services/bookingApi";
 import type { DiscoverySlot } from "@/types/booking";
+
 
 const WEEKDAY_OPTIONS = [
   { value: 1, label: "T2", full: "Thứ 2" },
@@ -141,6 +151,7 @@ export default function TeacherSchedulePage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [timeZone, setTimeZone] = useState<string | undefined>();
+  const [showInvalidSlotAlert, setShowInvalidSlotAlert] = useState(false);
 
   const [repeatMode, setRepeatMode] = useState<"NONE" | "RECURRING">("NONE");
   const [rangeStart, setRangeStart] = useState(minBookingDate);
@@ -163,6 +174,7 @@ export default function TeacherSchedulePage() {
     { teacherId, fromDate, toDate },
     { skip: !validTeacherId }
   );
+  
 
   useEffect(() => {
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -394,6 +406,15 @@ export default function TeacherSchedulePage() {
 
   const onGoInvoice = () => {
     if (!validTeacherId || effectiveSelectedIds.length === 0) return;
+
+    const hasInvalidSlot = effectiveSelectedSlots.some(
+      (slot) => new Date(slot.startAt).getTime() < leadTimeDate.getTime()
+    );
+
+    if (hasInvalidSlot) {
+      setShowInvalidSlotAlert(true);
+      return;
+    }
 
     router.push(
       `/booking/bookappointment?teacherId=${teacherId}&timeSlotIds=${effectiveSelectedIds.join(
@@ -1066,6 +1087,22 @@ export default function TeacherSchedulePage() {
           ) : null}
         </div>
       </div>
+
+      <AlertDialog open={showInvalidSlotAlert} onOpenChange={setShowInvalidSlotAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Không thể đặt lịch</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn không thể đặt những lịch học cách hiện tại dưới 48 tiếng. Vui lòng bỏ chọn các lịch này để tiếp tục.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowInvalidSlotAlert(false)}>
+              Đã hiểu
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

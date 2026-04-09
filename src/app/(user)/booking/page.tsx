@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { useGetDiscoverySlotsQuery } from "@/store/services/bookingApi";
-
+import { TeacherProfileDialog } from "@/components/user-component/booking-instructor/TeacherProfileDialog";
 const JLPT_LEVELS = ["N5", "N4", "N3", "N2", "N1"] as const;
 type JlptLevel = (typeof JLPT_LEVELS)[number];
 type LevelFilter = "ALL" | JlptLevel;
@@ -108,6 +108,14 @@ export default function BookingPage() {
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("ALL");
   const [selectedDate, setSelectedDate] = useState(() => toYmd(new Date()));
   const [now, setNow] = useState(() => new Date());
+  const [selectedTeacher, setSelectedTeacher] = useState<TeacherCard | null>(null);
+  const [showTeacherProfile, setShowTeacherProfile] = useState(false);
+
+  const openTeacherProfile = (teacher: TeacherCard) => {
+    setSelectedTeacher(teacher);
+    setShowTeacherProfile(true);
+  };
+
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60000);
@@ -425,7 +433,7 @@ export default function BookingPage() {
                     {/* ĐỒNG BỘ: Sửa h-12 -> h-10, rounded-2xl -> rounded-lg */}
                     <button
                       type="button"
-                      onClick={() => goToTeacherSchedule(teacher.teacherId)}
+                      onClick={() => openTeacherProfile(teacher)}
                       className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background text-sm font-semibold text-foreground transition hover:border-primary/30 hover:bg-primary/5 active:scale-95"
                     >
                      Hồ sơ giáo viên
@@ -445,6 +453,17 @@ export default function BookingPage() {
           </div>
         )}
       </div>
+        <TeacherProfileDialog
+    open={showTeacherProfile}
+    onOpenChange={setShowTeacherProfile}
+    preview={selectedTeacher}
+    onBook={() => {
+      if (!selectedTeacher) return;
+      setShowTeacherProfile(false);
+      goToTeacherSchedule(selectedTeacher.teacherId);
+    }}
+  />
+
     </main>
   );
 }

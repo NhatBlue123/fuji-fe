@@ -36,11 +36,23 @@ interface CreateConversationResponse {
 interface ListMessagesResponse {
   ok: boolean;
   messages?: AiMessage[];
+  pagination?: {
+    limit?: number;
+    beforeId?: number | null;
+    hasMore?: boolean;
+    nextBeforeId?: number | null;
+  };
 }
 
 interface CreateMessageResponse {
   ok: boolean;
   message?: AiMessage | null;
+}
+
+export interface AiMessagesPage {
+  messages: AiMessage[];
+  hasMore: boolean;
+  nextBeforeId: number | null;
 }
 
 export const aiChatHistoryApi = aiBaseApi.injectEndpoints({
@@ -83,14 +95,34 @@ export const aiChatHistoryApi = aiBaseApi.injectEndpoints({
     }),
 
     getAiMessages: builder.query<
-      AiMessage[],
-      { conversationId: number; limit?: number }
+      AiMessagesPage,
+      { conversationId: number; limit?: number; beforeId?: number | null }
     >({
-      query: ({ conversationId, limit = 200 }) =>
-        `/ai/conversations/${conversationId}/messages?limit=${limit}`,
+      query: ({ conversationId, limit = 20, beforeId }) => {
+        const params = new URLSearchParams();
+        params.set("limit", String(limit));
+        if (beforeId != null) {
+          params.set("beforeId", String(beforeId));
+        }
+        return `/ai/conversations/${conversationId}/messages?${params.toString()}`;
+      },
       transformResponse: (response: ListMessagesResponse) => {
         const list = Array.isArray(response?.messages) ? response.messages : [];
-        return [...list].reverse();
+        const limit = Number(response?.pagination?.limit) || 20;
+        const hasMore =
+          typeof response?.pagination?.hasMore === "boolean"
+            ? response.pagination.hasMore
+            : list.length >= limit;
+        const fallbackCursor =
+          list.length > 0 ? Number(list[list.length - 1].id) : null;
+        return {
+          messages: [...list].reverse(),
+          hasMore,
+          nextBeforeId:
+            typeof response?.pagination?.nextBeforeId === "number"
+              ? response.pagination.nextBeforeId
+              : fallbackCursor,
+        };
       },
     }),
 
@@ -120,5 +152,6 @@ export const {
   useCreateAiConversationMutation,
   useDeleteAiConversationMutation,
   useGetAiMessagesQuery,
+  useLazyGetAiMessagesQuery,
   useCreateAiMessageMutation,
 } = aiChatHistoryApi;

@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { skipToken } from "@reduxjs/toolkit/query";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+} from "react";
+import { usePathname, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Loader2, MessageSquare, Plus, Trash2 } from "lucide-react";
@@ -12,8 +18,9 @@ import {
   useCreateAiMessageMutation,
   useDeleteAiConversationMutation,
   useGetAiConversationsQuery,
-  useGetAiMessagesQuery,
+  useLazyGetAiMessagesQuery,
   type AiConversation,
+  type AiMessage,
 } from "@/store/services/aiChatHistoryApi";
 import {
   parseResponse,
@@ -22,6 +29,19 @@ import {
   ThinkBlock,
   type AssistantMessage,
 } from "./shared";
+
+const MESSAGES_PAGE_SIZE = 20;
+
+type AssistantPanelProps = {
+  initialConversationId?: number | null;
+  forceNewDraft?: boolean;
+};
+
+type ConversationSnapshot = {
+  messages: AssistantMessage[];
+  hasMore: boolean;
+  nextBeforeId: number | null;
+};
 
 /* ------------------------------------------------------------------ */
 /* AssistantPanel — chatbot AI học tiếng Nhật (Socket.IO streaming)     */
@@ -53,30 +73,51 @@ function intentToLabel(intent?: string) {
   return intent || "Dang xu ly";
 }
 
-export default function AssistantPanel() {
+function mapMessagesToAssistantMessages(list: AiMessage[]): AssistantMessage[] {
+  return list.map((m) => {
+    if (m.role === "assistant") {
+      return { id: m.id, role: "ai", textVn: m.content };
+    }
+    return { id: m.id, role: "user", textJp: m.content };
+  });
+}
+
+function isForbiddenConversationError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const status = (error as { status?: unknown }).status;
+  return status === 403 || status === 404;
+}
+
+export default function AssistantPanel({
+  initialConversationId = null,
+  forceNewDraft = false,
+}: AssistantPanelProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const { socket, isConnected } = useAIChatSocket();
   const {
     data: conversations = [],
     isFetching: isLoadingConversations,
     refetch: refetchConversations,
   } = useGetAiConversationsQuery({ includeArchived: false, limit: 100 });
+  const [fetchMessages, { isFetching: isFetchingMessages }] =
+    useLazyGetAiMessagesQuery();
   const [activeConversationId, setActiveConversationId] = useState<
     number | null
-  >(null);
-  const {
-    data: loadedMessages = [],
-    isFetching: isLoadingMessages,
-    refetch: refetchMessages,
-  } = useGetAiMessagesQuery(
-    activeConversationId
-      ? { conversationId: activeConversationId, limit: 200 }
-      : skipToken,
+  >(initialConversationId);
+  const [preferDraftMode, setPreferDraftMode] = useState(
+    Boolean(forceNewDraft),
   );
   const [createAiConversation] = useCreateAiConversationMutation();
   const [createAiMessage] = useCreateAiMessageMutation();
   const [deleteAiConversation] = useDeleteAiConversationMutation();
 
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [nextBeforeId, setNextBeforeId] = useState<number | null>(null);
+  const [isLoadingInitialMessages, setIsLoadingInitialMessages] =
+    useState(false);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -84,48 +125,290 @@ export default function AssistantPanel() {
     intent?: string;
     jobId?: string;
   } | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamBufferRef = useRef<string>("");
+  const optimisticConversationRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string>("");
   const activeConversationRef = useRef<number | null>(null);
+  const conversationSnapshotsRef = useRef<Map<number, ConversationSnapshot>>(
+    new Map(),
+  );
+  const initialLoadSeqRef = useRef(0);
+  const pendingScrollRestoreRef = useRef<{
+    prevHeight: number;
+    prevTop: number;
+  } | null>(null);
+  const pendingBottomScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
 
-  // Auto-select latest conversation when available
-  useEffect(() => {
-    if (!activeConversationId && conversations.length > 0) {
-      setActiveConversationId(conversations[0].id);
+  const goToDraftConversation = useCallback(
+    (replaceUrl: boolean) => {
+      initialLoadSeqRef.current += 1;
+      setPreferDraftMode(true);
+      setActiveConversationId(null);
+      activeConversationRef.current = null;
+      setMessages([]);
+      setHasMoreMessages(false);
+      setNextBeforeId(null);
+      setIsLoadingInitialMessages(false);
+      setIsLoadingOlderMessages(false);
+      setIsTyping(false);
+      setQueuedInfo(null);
+      streamBufferRef.current = "";
+      optimisticConversationRef.current = null;
+      sessionIdRef.current = `draft_${Date.now()}`;
+      pendingBottomScrollBehaviorRef.current = null;
+      pendingScrollRestoreRef.current = null;
+
+      if (replaceUrl) {
+        router.replace("/ai-chat?new=1");
+        return;
+      }
+      router.push("/ai-chat?new=1");
+    },
+    [router],
+  );
+
+  const restoreConversationSnapshot = useCallback((conversationId: number) => {
+    const snapshot = conversationSnapshotsRef.current.get(conversationId);
+    if (!snapshot) {
+      return false;
     }
-  }, [conversations, activeConversationId]);
 
-  // Keep refs in sync with selected conversation
-  useEffect(() => {
-    activeConversationRef.current = activeConversationId;
-    if (activeConversationId) {
-      sessionIdRef.current = `conv_${activeConversationId}`;
-      return;
-    }
-    sessionIdRef.current = `draft_${Date.now()}`;
-  }, [activeConversationId]);
+    pendingScrollRestoreRef.current = null;
+    pendingBottomScrollBehaviorRef.current = "auto";
+    setMessages(snapshot.messages);
+    setHasMoreMessages(snapshot.hasMore);
+    setNextBeforeId(snapshot.nextBeforeId);
+    return true;
+  }, []);
 
-  // Sync chat area from server messages when not streaming
+  const loadInitialMessages = useCallback(
+    async (
+      conversationId: number,
+      options?: {
+        preferCacheValue?: boolean;
+        skipLoadingState?: boolean;
+      },
+    ) => {
+      const seq = initialLoadSeqRef.current + 1;
+      initialLoadSeqRef.current = seq;
+      if (!options?.skipLoadingState) {
+        setIsLoadingInitialMessages(true);
+      } else {
+        setIsLoadingInitialMessages(false);
+      }
+
+      try {
+        const page = await fetchMessages(
+          {
+            conversationId,
+            limit: MESSAGES_PAGE_SIZE,
+          },
+          options?.preferCacheValue ?? false,
+        ).unwrap();
+
+        if (
+          seq !== initialLoadSeqRef.current ||
+          activeConversationRef.current !== conversationId
+        ) {
+          return;
+        }
+
+        if (optimisticConversationRef.current === conversationId) {
+          setHasMoreMessages(page.hasMore);
+          setNextBeforeId(page.nextBeforeId);
+          return;
+        }
+
+        pendingScrollRestoreRef.current = null;
+        pendingBottomScrollBehaviorRef.current = "auto";
+        setMessages(mapMessagesToAssistantMessages(page.messages));
+        setHasMoreMessages(page.hasMore);
+        setNextBeforeId(page.nextBeforeId);
+      } catch (error) {
+        if (
+          seq !== initialLoadSeqRef.current ||
+          activeConversationRef.current !== conversationId
+        ) {
+          return;
+        }
+
+        if (isForbiddenConversationError(error)) {
+          goToDraftConversation(true);
+          return;
+        }
+
+        setMessages([]);
+        setHasMoreMessages(false);
+        setNextBeforeId(null);
+      } finally {
+        if (seq === initialLoadSeqRef.current) {
+          setIsLoadingInitialMessages(false);
+        }
+      }
+    },
+    [fetchMessages, goToDraftConversation],
+  );
+
   useEffect(() => {
     if (activeConversationId == null) {
-      if (!isTyping) setMessages([]);
       return;
     }
-    if (isTyping) return;
 
-    const mapped: AssistantMessage[] = loadedMessages.map((m) => {
-      if (m.role === "assistant") {
-        return { id: m.id, role: "ai", textVn: m.content };
-      }
-      return { id: m.id, role: "user", textJp: m.content };
+    conversationSnapshotsRef.current.set(activeConversationId, {
+      messages,
+      hasMore: hasMoreMessages,
+      nextBeforeId,
     });
-    setMessages(mapped);
-  }, [loadedMessages, activeConversationId, isTyping]);
+  }, [activeConversationId, hasMoreMessages, messages, nextBeforeId]);
+
+  const loadOlderMessages = useCallback(async () => {
+    const conversationId = activeConversationRef.current;
+    if (
+      !conversationId ||
+      !hasMoreMessages ||
+      !nextBeforeId ||
+      isLoadingOlderMessages
+    ) {
+      return;
+    }
+
+    setIsLoadingOlderMessages(true);
+
+    const container = messagesContainerRef.current;
+    if (container) {
+      pendingScrollRestoreRef.current = {
+        prevHeight: container.scrollHeight,
+        prevTop: container.scrollTop,
+      };
+    }
+
+    try {
+      const page = await fetchMessages({
+        conversationId,
+        limit: MESSAGES_PAGE_SIZE,
+        beforeId: nextBeforeId,
+      }).unwrap();
+
+      if (activeConversationRef.current !== conversationId) {
+        return;
+      }
+
+      const olderMessages = mapMessagesToAssistantMessages(page.messages);
+      if (olderMessages.length > 0) {
+        setMessages((prev) => [...olderMessages, ...prev]);
+      } else {
+        pendingScrollRestoreRef.current = null;
+      }
+
+      setHasMoreMessages(page.hasMore);
+      setNextBeforeId(page.nextBeforeId);
+    } catch {
+      pendingScrollRestoreRef.current = null;
+    } finally {
+      if (activeConversationRef.current === conversationId) {
+        setIsLoadingOlderMessages(false);
+      }
+    }
+  }, [fetchMessages, hasMoreMessages, isLoadingOlderMessages, nextBeforeId]);
+
+  const handleMessagesScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container || isLoadingInitialMessages || isLoadingOlderMessages) {
+      return;
+    }
+    if (!hasMoreMessages || !nextBeforeId) {
+      return;
+    }
+    if (container.scrollTop > 80) {
+      return;
+    }
+    void loadOlderMessages();
+  }, [
+    hasMoreMessages,
+    isLoadingInitialMessages,
+    isLoadingOlderMessages,
+    loadOlderMessages,
+    nextBeforeId,
+  ]);
+
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    const restore = pendingScrollRestoreRef.current;
+
+    if (container && restore) {
+      const delta = container.scrollHeight - restore.prevHeight;
+      container.scrollTop = restore.prevTop + delta;
+      pendingScrollRestoreRef.current = null;
+      return;
+    }
+
+    const behavior = pendingBottomScrollBehaviorRef.current;
+    if (!behavior) {
+      return;
+    }
+
+    messagesEndRef.current?.scrollIntoView({ behavior });
+    pendingBottomScrollBehaviorRef.current = null;
+  }, [messages, isTyping]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+    setPreferDraftMode(Boolean(forceNewDraft));
+    setActiveConversationId(initialConversationId);
+  }, [forceNewDraft, initialConversationId]);
+
+  // Auto-select latest conversation and sync url when entering /ai-chat.
+  useEffect(() => {
+    if (activeConversationId != null) {
+      return;
+    }
+    if (
+      preferDraftMode ||
+      isLoadingConversations ||
+      conversations.length === 0
+    ) {
+      return;
+    }
+
+    const latestConversationId = conversations[0].id;
+    const nextPath = `/ai-chat/${latestConversationId}`;
+    if (pathname !== nextPath) {
+      router.replace(nextPath);
+    }
+  }, [
+    activeConversationId,
+    conversations,
+    isLoadingConversations,
+    pathname,
+    preferDraftMode,
+    router,
+  ]);
+
+  // Keep refs in sync with selected conversation and load message page.
+  useEffect(() => {
+    activeConversationRef.current = activeConversationId;
+
+    if (activeConversationId != null) {
+      sessionIdRef.current = `conv_${activeConversationId}`;
+      setIsTyping(false);
+      setQueuedInfo(null);
+      streamBufferRef.current = "";
+
+      const hasWarmSnapshot = restoreConversationSnapshot(activeConversationId);
+      void loadInitialMessages(activeConversationId, {
+        preferCacheValue: true,
+        skipLoadingState: hasWarmSnapshot,
+      });
+      return;
+    }
+
+    sessionIdRef.current = `draft_${Date.now()}`;
+    optimisticConversationRef.current = null;
+    setMessages([]);
+    setHasMoreMessages(false);
+    setNextBeforeId(null);
+  }, [activeConversationId, loadInitialMessages, restoreConversationSnapshot]);
 
   // Timer khi typing
   useEffect(() => {
@@ -160,6 +443,7 @@ export default function AssistantPanel() {
 
       if (data.delta) {
         streamBufferRef.current += data.delta;
+        pendingBottomScrollBehaviorRef.current = "smooth";
 
         // Update AI message in-place
         setMessages((prev) => {
@@ -186,6 +470,8 @@ export default function AssistantPanel() {
         const finalRawText = streamBufferRef.current;
         setIsTyping(false);
         setQueuedInfo(null);
+        optimisticConversationRef.current = null;
+        pendingBottomScrollBehaviorRef.current = "smooth";
 
         // Finalize message
         setMessages((prev) => {
@@ -215,7 +501,6 @@ export default function AssistantPanel() {
           })
             .unwrap()
             .then(() => {
-              refetchMessages();
               refetchConversations();
             })
             .catch(() => {});
@@ -232,7 +517,7 @@ export default function AssistantPanel() {
       socket.off("chat:queued", handleQueued);
       socket.off("chat:stream", handleStream);
     };
-  }, [socket, createAiMessage, refetchConversations, refetchMessages]);
+  }, [socket, createAiMessage, refetchConversations]);
 
   const ensureConversationId = useCallback(
     async (firstMessage: string) => {
@@ -245,13 +530,17 @@ export default function AssistantPanel() {
 
       if (!created?.id) return null;
 
-      setActiveConversationId(created.id);
+      setPreferDraftMode(false);
       activeConversationRef.current = created.id;
+      optimisticConversationRef.current = created.id;
       sessionIdRef.current = `conv_${created.id}`;
+      setHasMoreMessages(false);
+      setNextBeforeId(null);
+      router.replace(`/ai-chat/${created.id}`);
       refetchConversations();
       return created.id;
     },
-    [createAiConversation, refetchConversations],
+    [createAiConversation, refetchConversations, router],
   );
 
   const handleSend = useCallback(async () => {
@@ -263,6 +552,7 @@ export default function AssistantPanel() {
 
     activeConversationRef.current = conversationId;
     sessionIdRef.current = `conv_${conversationId}`;
+    optimisticConversationRef.current = conversationId;
 
     await createAiMessage({
       conversationId,
@@ -274,6 +564,7 @@ export default function AssistantPanel() {
 
     // Add local user + placeholder assistant messages for streaming UX
     streamBufferRef.current = "";
+    pendingBottomScrollBehaviorRef.current = "smooth";
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), role: "user", textJp: trimmed },
@@ -292,6 +583,7 @@ export default function AssistantPanel() {
         if (!ack?.ok && !ack?.intent) {
           setIsTyping(false);
           setQueuedInfo(null);
+          optimisticConversationRef.current = null;
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             if (lastIdx >= 0 && prev[lastIdx]._streaming) {
@@ -311,21 +603,23 @@ export default function AssistantPanel() {
   }, [input, socket, isConnected, ensureConversationId, createAiMessage]);
 
   const handleStartNewConversation = useCallback(() => {
-    setActiveConversationId(null);
-    activeConversationRef.current = null;
-    setMessages([]);
-    setIsTyping(false);
-    setQueuedInfo(null);
-    streamBufferRef.current = "";
-    sessionIdRef.current = `draft_${Date.now()}`;
-  }, []);
+    goToDraftConversation(false);
+  }, [goToDraftConversation]);
 
-  const handleSelectConversation = useCallback((conversationId: number) => {
-    setActiveConversationId(conversationId);
-    setIsTyping(false);
-    setQueuedInfo(null);
-    streamBufferRef.current = "";
-  }, []);
+  const handleSelectConversation = useCallback(
+    (conversationId: number) => {
+      if (conversationId === activeConversationRef.current) {
+        return;
+      }
+      setPreferDraftMode(false);
+      optimisticConversationRef.current = null;
+      setIsTyping(false);
+      setQueuedInfo(null);
+      streamBufferRef.current = "";
+      router.push(`/ai-chat/${conversationId}`);
+    },
+    [router],
+  );
 
   const handleDeleteConversation = useCallback(
     async (conversationId: number) => {
@@ -336,13 +630,20 @@ export default function AssistantPanel() {
         .unwrap()
         .catch(() => {});
       if (activeConversationRef.current === conversationId) {
+        setPreferDraftMode(false);
         setActiveConversationId(null);
         setMessages([]);
+        router.replace("/ai-chat");
       }
       refetchConversations();
     },
-    [deleteAiConversation, refetchConversations],
+    [deleteAiConversation, refetchConversations, router],
   );
+
+  const isLoadingMessages =
+    isLoadingInitialMessages || (isFetchingMessages && messages.length === 0);
+  const shouldShowInputChips =
+    messages.length === 0 && !isTyping && !isLoadingMessages;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -353,38 +654,65 @@ export default function AssistantPanel() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 && !isTyping && !isLoadingMessages ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
-              <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20">
-                <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-2xl">
-                    smart_toy
-                  </span>
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleMessagesScroll}
+          className="flex-1 overflow-y-auto p-6 space-y-6"
+        >
+          {messages.length === 0 && !isTyping ? (
+            isLoadingMessages ? (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Dang tai lich su hoi thoai...
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
+                <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20">
+                  <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
+                    <span className="material-symbols-outlined text-primary text-2xl">
+                      smart_toy
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-1">
+                    Trợ giảng AI FUJI
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    Hỏi bất kỳ điều gì về tiếng Nhật — ngữ pháp, từ vựng,
+                    JLPT...
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center max-w-sm">
+                  {ASSISTANT_CHIPS.map((chip) => (
+                    <button
+                      key={chip.text}
+                      onClick={() => setInput(chip.text)}
+                      className="px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
+                    >
+                      {chip.emoji} {chip.text}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">
-                  Trợ giảng AI FUJI
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Hỏi bất kỳ điều gì về tiếng Nhật — ngữ pháp, từ vựng, JLPT...
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center max-w-sm">
-                {ASSISTANT_CHIPS.map((chip) => (
-                  <button
-                    key={chip.text}
-                    onClick={() => setInput(chip.text)}
-                    className="px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
-                  >
-                    {chip.emoji} {chip.text}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )
           ) : (
             <>
+              {(isLoadingOlderMessages || hasMoreMessages) && (
+                <div className="flex justify-center">
+                  {isLoadingOlderMessages ? (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                      <Loader2 className="size-3 animate-spin" />
+                      Dang tai tin nhan cu hon...
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground/80">
+                      Keo len de tai them tin nhan cu hon
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-center">
                 <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
                   {new Date().toLocaleDateString("vi-VN", {
@@ -485,13 +813,6 @@ export default function AssistantPanel() {
                 ),
               )}
 
-              {isLoadingMessages && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                  Dang tai lich su hoi thoai...
-                </div>
-              )}
-
               {isTyping && (
                 <div className="flex items-center gap-2 ml-14 opacity-60">
                   <div className="flex gap-1">
@@ -526,7 +847,7 @@ export default function AssistantPanel() {
           input={input}
           onInputChange={setInput}
           onSend={handleSend}
-          chips={ASSISTANT_CHIPS}
+          chips={shouldShowInputChips ? ASSISTANT_CHIPS : []}
           placeholder="Hỏi bất kỳ điều gì về tiếng Nhật..."
         />
       </div>
@@ -547,7 +868,7 @@ export default function AssistantPanel() {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
           {isLoadingConversations && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground px-2 py-3">
               <Loader2 className="size-3.5 animate-spin" />
@@ -566,38 +887,38 @@ export default function AssistantPanel() {
             return (
               <div
                 key={conversation.id}
-                className={`group rounded-lg border p-3 transition-colors ${
+                className={`group relative rounded-xl border px-3 py-2.5 transition-all ${
                   active
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-card hover:border-primary/40"
+                    ? "border-primary/80 bg-primary/10 shadow-sm"
+                    : "border-border/80 bg-card/80 hover:border-primary/40 hover:bg-card"
                 }`}
               >
                 <button
                   type="button"
-                  className="w-full text-left"
+                  className="w-full pr-8 text-left"
                   onClick={() => handleSelectConversation(conversation.id)}
                 >
-                  <p className="text-sm font-medium text-foreground line-clamp-2">
+                  <p className="text-sm font-semibold text-foreground leading-5 line-clamp-1">
                     {getConversationTitle(conversation)}
                   </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
                     {formatConversationTime(
                       conversation.lastMessageAt || conversation.updatedAt,
                     )}
                   </p>
                 </button>
 
-                <div className="mt-2 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDeleteConversation(conversation.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={`absolute right-2 top-2 h-6 w-6 p-0 text-muted-foreground transition-opacity hover:text-destructive ${
+                    active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}
+                  onClick={() => handleDeleteConversation(conversation.id)}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
               </div>
             );
           })}

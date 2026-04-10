@@ -47,11 +47,18 @@ export default function AdminWithdrawManagement() {
     data: response,
     isLoading,
     refetch,
-  } = useGetAllWithdrawRequestsQuery();
+  } = useGetAllWithdrawRequestsQuery(undefined, {
+    pollingInterval: isTransferModalOpen ? 3000 : 0, // Poll every 3 seconds while modal is open to catch Webhook updates
+  });
   const [approveRequest] = useApproveWithdrawRequestMutation();
   const [rejectRequest] = useRejectWithdrawRequestMutation();
 
   const requests = response?.data || [];
+  
+  // Lấy trạng thái mới nhất của request đang được chọn
+  const activeRequest = selectedRequest 
+    ? requests.find((r) => r.id === selectedRequest.id) || selectedRequest 
+    : null;
 
   const handleOpenTransferModal = (req: any) => {
     setSelectedRequest(req);
@@ -438,7 +445,7 @@ export default function AdminWithdrawManagement() {
               refetch();
             }}
             isConfirming={isApproving}
-            request={selectedRequest}
+            request={activeRequest}
           />
         </PaymentSocketProvider>
       )}

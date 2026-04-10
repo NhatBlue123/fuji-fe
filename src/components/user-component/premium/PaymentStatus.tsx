@@ -54,20 +54,10 @@ export default function PaymentStatus({
     store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
   };
 
-  // ── Socket.IO realtime: topup-success ─────────────────────
-  const { isConnected, onTopupSuccess, onPaymentStatusChange } =
-    usePaymentSocket();
+  // ── Socket.IO realtime: payment-status-change ─────────────────────
+  const { isConnected, onPaymentStatusChange } = usePaymentSocket();
 
   useEffect(() => {
-    const unsubTopup = onTopupSuccess((data) => {
-      if (data.orderId === orderId) {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.success(data.message || "Nạp tiền thành công!");
-        setTimeout(() => router.push("/premium/success"), 1000);
-      }
-    });
-
     const unsubStatus = onPaymentStatusChange((data) => {
       if (data.orderId === orderId) {
         if (data.newStatus === "SUCCESS") {
@@ -83,10 +73,9 @@ export default function PaymentStatus({
     });
 
     return () => {
-      unsubTopup();
       unsubStatus();
     };
-  }, [orderId, onTopupSuccess, onPaymentStatusChange, router, onClose]);
+  }, [orderId, onPaymentStatusChange, router, onClose]);
 
   // 1. Đếm ngược từng giây
   useEffect(() => {
@@ -107,16 +96,13 @@ export default function PaymentStatus({
     return () => clearInterval(timer);
   }, [onClose]);
 
-  // 2. Tự động kiểm tra DUY NHẤT 1 lần khi socket reconnect thành công hoặc mới mount
+  // 2. Fallback Check: Nếu trong vòng 30s không nhận được event từ Socket, fetch thủ công check trạng thái đúng 1 lần
   useEffect(() => {
-    if (socketHandled || !isConnected) return;
+    if (socketHandled) return;
 
-    let isMounted = true;
-    (async () => {
+    const timeoutId = setTimeout(async () => {
       try {
         const result = await refetch();
-        if (!isMounted || socketHandled) return;
-
         if (result.data?.status === "SUCCESS") {
           invalidateWalletAndPayment();
           setSocketHandled(true);
@@ -127,15 +113,17 @@ export default function PaymentStatus({
           setSocketHandled(true);
           toast.error("Thanh toán thất bại.");
           onClose();
+        } else {
+           // Giao dịch có thể thật sự bị delay từ Ngân hàng / XGate
+           toast.info("Hệ thống ngân hàng đang xử lý, sẽ mất thêm chút thời gian...");
         }
       } catch (error) {
-        console.error("Auto check error:", error);
+        console.error("Fallback check error:", error);
       }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [isConnected, refetch, onClose, router, socketHandled]);
+    }, 20000); // Fallback 20s (đủ cho 1 chu kỳ polling 15s + margin)
+
+    return () => clearTimeout(timeoutId);
+  }, [refetch, onClose, router, socketHandled]);
 
   // 3. Xử lý nút Manual Check rate-limited (5s cooldown)
   const handleManualCheck = async () => {

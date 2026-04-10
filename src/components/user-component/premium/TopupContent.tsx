@@ -77,11 +77,11 @@ export default function TopupContent() {
       const accountNo =
         orderData.accountNo ||
         process.env.NEXT_PUBLIC_ACCOUNT_NO ||
-        "0916146446";
+        "9316767481284";
       const accountName =
         orderData.accountName ||
         process.env.NEXT_PUBLIC_ACCOUNT_NAME ||
-        "NHo huy";
+        "Duong Luong";
       const transferAmountVnd =
         orderData.transferAmountVnd ?? orderData.amount * 1000;
 

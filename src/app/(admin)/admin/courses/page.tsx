@@ -13,6 +13,7 @@ import {
   useDeleteCourseMutation,
   useUpdateCourseMutation,
 } from "@/store/services/courseApi";
+import { useIngestCoursesRagMutation } from "@/store/services/admin/aiRagApi";
 import {
   Loader2,
   BookX,
@@ -117,6 +118,8 @@ export default function CoursesPage() {
 
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
   const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation();
+  const [ingestCoursesRag, { isLoading: isResettingRag }] =
+    useIngestCoursesRagMutation();
 
   const filteredCourses = useMemo(() => {
     if (!data?.content) return [];
@@ -269,12 +272,43 @@ export default function CoursesPage() {
     }
   };
 
+  const handleResetRag = async () => {
+    const confirmed = window.confirm(
+      "Reset RAG sẽ xóa vector khóa học/gói cũ và ingest lại dữ liệu hiện tại. Bạn có chắc chắn muốn tiếp tục?",
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await ingestCoursesRag().unwrap();
+      toast.success(res?.message || "Đã reset và ingest lại RAG khóa học");
+    } catch (e: any) {
+      const message =
+        e?.data?.error?.message || e?.data?.message || "Reset RAG thất bại";
+      toast.error(message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <CourseHeader
         onCreateCourse={canCreate ? () => setCreateModalOpen(true) : undefined}
         totalCourses={data?.totalElements}
       />
+
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleResetRag}
+          disabled={isResettingRag}
+        >
+          {isResettingRag && <Loader2 className="mr-2 size-4 animate-spin" />}
+          Reset RAG Khóa học
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          Đẩy lại courses, lessons và subscription plans hiện tại lên RAG.
+        </p>
+      </div>
 
       {/* Overview cards - neutral palette */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

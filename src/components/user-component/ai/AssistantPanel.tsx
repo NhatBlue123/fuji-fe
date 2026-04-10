@@ -1,41 +1,133 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, memo } from "react";
-import { useAuth } from "@/store/hooks";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { skipToken } from "@reduxjs/toolkit/query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Loader2, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import {
-  callSensei,
+  useCreateAiConversationMutation,
+  useCreateAiMessageMutation,
+  useDeleteAiConversationMutation,
+  useGetAiConversationsQuery,
+  useGetAiMessagesQuery,
+  type AiConversation,
+} from "@/store/services/aiChatHistoryApi";
+import {
   parseResponse,
   ASSISTANT_CHIPS,
-  LEVELS,
-  TOPICS,
   ChatInputArea,
-  RightSidebar,
   ThinkBlock,
   type AssistantMessage,
 } from "./shared";
 
 /* ------------------------------------------------------------------ */
-/* AssistantPanel — chatbot AI học tiếng Nhật (text, n8n)               */
+/* AssistantPanel — chatbot AI học tiếng Nhật (Socket.IO streaming)     */
 /* ------------------------------------------------------------------ */
 
+function getConversationTitle(conversation: AiConversation) {
+  const title = conversation.title?.trim();
+  if (title) return title;
+  return `Cuoc tro chuyen #${conversation.id}`;
+}
+
+function formatConversationTime(dateLike?: string | null) {
+  if (!dateLike) return "";
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
+function intentToLabel(intent?: string) {
+  if (intent === "grammar_qa") return "Ngu phap";
+  if (intent === "product_info") return "Khoa hoc";
+  if (intent === "general_chat") return "Hoi dap";
+  if (intent === "out_of_scope") return "Ngoai pham vi";
+  return intent || "Dang xu ly";
+}
+
 export default function AssistantPanel() {
-  const { user } = useAuth();
+  const { socket, isConnected } = useAIChatSocket();
+  const {
+    data: conversations = [],
+    isFetching: isLoadingConversations,
+    refetch: refetchConversations,
+  } = useGetAiConversationsQuery({ includeArchived: false, limit: 100 });
+  const [activeConversationId, setActiveConversationId] = useState<
+    number | null
+  >(null);
+  const {
+    data: loadedMessages = [],
+    isFetching: isLoadingMessages,
+    refetch: refetchMessages,
+  } = useGetAiMessagesQuery(
+    activeConversationId
+      ? { conversationId: activeConversationId, limit: 200 }
+      : skipToken,
+  );
+  const [createAiConversation] = useCreateAiConversationMutation();
+  const [createAiMessage] = useCreateAiMessageMutation();
+  const [deleteAiConversation] = useDeleteAiConversationMutation();
+
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [selectedLevel, setSelectedLevel] = useState("N4");
-  const [selectedTopic, setSelectedTopic] = useState("shopping");
+  const [queuedInfo, setQueuedInfo] = useState<{
+    intent?: string;
+    jobId?: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamBufferRef = useRef<string>("");
+  const sessionIdRef = useRef<string>("");
+  const activeConversationRef = useRef<number | null>(null);
+
+  // Auto-select latest conversation when available
+  useEffect(() => {
+    if (!activeConversationId && conversations.length > 0) {
+      setActiveConversationId(conversations[0].id);
+    }
+  }, [conversations, activeConversationId]);
+
+  // Keep refs in sync with selected conversation
+  useEffect(() => {
+    activeConversationRef.current = activeConversationId;
+    if (activeConversationId) {
+      sessionIdRef.current = `conv_${activeConversationId}`;
+      return;
+    }
+    sessionIdRef.current = `draft_${Date.now()}`;
+  }, [activeConversationId]);
+
+  // Sync chat area from server messages when not streaming
+  useEffect(() => {
+    if (activeConversationId == null) {
+      if (!isTyping) setMessages([]);
+      return;
+    }
+    if (isTyping) return;
+
+    const mapped: AssistantMessage[] = loadedMessages.map((m) => {
+      if (m.role === "assistant") {
+        return { id: m.id, role: "ai", textVn: m.content };
+      }
+      return { id: m.id, role: "user", textJp: m.content };
+    });
+    setMessages(mapped);
+  }, [loadedMessages, activeConversationId, isTyping]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Đếm thời gian chờ khi đang gọi API
+  // Timer khi typing
   useEffect(() => {
     if (!isTyping) {
       setElapsedMs(0);
@@ -46,42 +138,223 @@ export default function AssistantPanel() {
     return () => clearInterval(id);
   }, [isTyping]);
 
+  // Listen socket chat:stream events
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleQueued = (data: {
+      sessionId: string;
+      intent?: string;
+      jobId?: string;
+    }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      setQueuedInfo({ intent: data.intent, jobId: data.jobId });
+    };
+
+    const handleStream = (data: {
+      sessionId: string;
+      delta: string;
+      done: boolean;
+    }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+
+      if (data.delta) {
+        streamBufferRef.current += data.delta;
+
+        // Update AI message in-place
+        setMessages((prev) => {
+          const lastIdx = prev.length - 1;
+          if (
+            lastIdx >= 0 &&
+            prev[lastIdx].role === "ai" &&
+            prev[lastIdx]._streaming
+          ) {
+            const updated = [...prev];
+            const { think, content } = parseResponse(streamBufferRef.current);
+            updated[lastIdx] = {
+              ...updated[lastIdx],
+              textVn: content,
+              think: think || undefined,
+            };
+            return updated;
+          }
+          return prev;
+        });
+      }
+
+      if (data.done) {
+        const finalRawText = streamBufferRef.current;
+        setIsTyping(false);
+        setQueuedInfo(null);
+
+        // Finalize message
+        setMessages((prev) => {
+          const lastIdx = prev.length - 1;
+          if (lastIdx >= 0 && prev[lastIdx]._streaming) {
+            const updated = [...prev];
+            const { think, content } = parseResponse(finalRawText);
+            updated[lastIdx] = {
+              ...updated[lastIdx],
+              textVn: content,
+              think: think || undefined,
+              _streaming: false,
+            };
+            return updated;
+          }
+          return prev;
+        });
+
+        const { content } = parseResponse(finalRawText);
+        const conversationId = activeConversationRef.current;
+        if (conversationId && content.trim()) {
+          createAiMessage({
+            conversationId,
+            role: "assistant",
+            content,
+            modelVersion: "gpt-5.4-mini",
+          })
+            .unwrap()
+            .then(() => {
+              refetchMessages();
+              refetchConversations();
+            })
+            .catch(() => {});
+        }
+
+        streamBufferRef.current = "";
+      }
+    };
+
+    socket.on("chat:queued", handleQueued);
+    socket.on("chat:stream", handleStream);
+
+    return () => {
+      socket.off("chat:queued", handleQueued);
+      socket.off("chat:stream", handleStream);
+    };
+  }, [socket, createAiMessage, refetchConversations, refetchMessages]);
+
+  const ensureConversationId = useCallback(
+    async (firstMessage: string) => {
+      if (activeConversationRef.current) return activeConversationRef.current;
+
+      const created = await createAiConversation({
+        title: firstMessage.slice(0, 80),
+        conversationType: "general",
+      }).unwrap();
+
+      if (!created?.id) return null;
+
+      setActiveConversationId(created.id);
+      activeConversationRef.current = created.id;
+      sessionIdRef.current = `conv_${created.id}`;
+      refetchConversations();
+      return created.id;
+    },
+    [createAiConversation, refetchConversations],
+  );
+
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
-    const sessionId = user?._id ?? user?.id?.toString() ?? "anonymous";
+    if (!trimmed || !socket || !isConnected) return;
+
+    const conversationId = await ensureConversationId(trimmed);
+    if (!conversationId) return;
+
+    activeConversationRef.current = conversationId;
+    sessionIdRef.current = `conv_${conversationId}`;
+
+    await createAiMessage({
+      conversationId,
+      role: "user",
+      content: trimmed,
+    })
+      .unwrap()
+      .catch(() => {});
+
+    // Add local user + placeholder assistant messages for streaming UX
+    streamBufferRef.current = "";
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), role: "user", textJp: trimmed },
+      { id: Date.now() + 1, role: "ai", textVn: "", _streaming: true },
     ]);
+
     setInput("");
     setIsTyping(true);
-    try {
-      const raw = await callSensei(trimmed, sessionId);
-      const { think, content } = parseResponse(raw);
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: "ai", textVn: content, think },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          role: "ai",
-          textVn: "⚠️ Không thể kết nối Sensei. Vui lòng thử lại sau.",
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
-  }, [input, user]);
+    setQueuedInfo(null);
+
+    // Emit to socket
+    socket.emit(
+      "chat:send",
+      { sessionId: sessionIdRef.current, message: trimmed },
+      (ack: { ok: boolean; error?: string; intent?: string }) => {
+        if (!ack?.ok && !ack?.intent) {
+          setIsTyping(false);
+          setQueuedInfo(null);
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1;
+            if (lastIdx >= 0 && prev[lastIdx]._streaming) {
+              const updated = [...prev];
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                textVn: "⚠️ Không thể kết nối. Vui lòng thử lại sau.",
+                _streaming: false,
+              };
+              return updated;
+            }
+            return prev;
+          });
+        }
+      },
+    );
+  }, [input, socket, isConnected, ensureConversationId, createAiMessage]);
+
+  const handleStartNewConversation = useCallback(() => {
+    setActiveConversationId(null);
+    activeConversationRef.current = null;
+    setMessages([]);
+    setIsTyping(false);
+    setQueuedInfo(null);
+    streamBufferRef.current = "";
+    sessionIdRef.current = `draft_${Date.now()}`;
+  }, []);
+
+  const handleSelectConversation = useCallback((conversationId: number) => {
+    setActiveConversationId(conversationId);
+    setIsTyping(false);
+    setQueuedInfo(null);
+    streamBufferRef.current = "";
+  }, []);
+
+  const handleDeleteConversation = useCallback(
+    async (conversationId: number) => {
+      const confirmed = window.confirm("Xoa cuoc tro chuyen nay?");
+      if (!confirmed) return;
+
+      await deleteAiConversation(conversationId)
+        .unwrap()
+        .catch(() => {});
+      if (activeConversationRef.current === conversationId) {
+        setActiveConversationId(null);
+        setMessages([]);
+      }
+      refetchConversations();
+    },
+    [deleteAiConversation, refetchConversations],
+  );
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0">
+        {!isConnected && (
+          <div className="mx-6 mt-4 rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-700">
+            Mat ket noi socket chatbot. Dang thu ket noi lai...
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 && !isTyping ? (
+          {messages.length === 0 && !isTyping && !isLoadingMessages ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
               <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20">
                 <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
@@ -165,18 +438,34 @@ export default function AssistantPanel() {
                             </ReactMarkdown>
                           </div>
                         )}
+                        {msg._streaming && !msg.textVn && (
+                          <div className="flex gap-1">
+                            {[0, 150, 300].map((delay) => (
+                              <span
+                                key={delay}
+                                className="size-1.5 bg-muted-foreground rounded-full animate-bounce"
+                                style={{ animationDelay: `${delay}ms` }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex gap-2 mt-1">
-                        <Button
-                          variant="ghost"
-                          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                          title="Sao chép"
-                        >
-                          <span className="material-symbols-outlined text-lg">
-                            content_copy
-                          </span>
-                        </Button>
-                      </div>
+                      {!msg._streaming && msg.textVn && (
+                        <div className="flex gap-2 mt-1">
+                          <Button
+                            variant="ghost"
+                            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                            title="Sao chép"
+                            onClick={() =>
+                              navigator.clipboard.writeText(msg.textVn || "")
+                            }
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              content_copy
+                            </span>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -196,6 +485,13 @@ export default function AssistantPanel() {
                 ),
               )}
 
+              {isLoadingMessages && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  Dang tai lich su hoi thoai...
+                </div>
+              )}
+
               {isTyping && (
                 <div className="flex items-center gap-2 ml-14 opacity-60">
                   <div className="flex gap-1">
@@ -210,6 +506,12 @@ export default function AssistantPanel() {
                   <span className="text-xs text-muted-foreground">
                     Trợ giảng đang soạn...
                   </span>
+                  {queuedInfo && (
+                    <span className="text-[10px] rounded bg-muted px-2 py-0.5 text-muted-foreground/80">
+                      {intentToLabel(queuedInfo.intent)} ·{" "}
+                      {queuedInfo.jobId || "..."}
+                    </span>
+                  )}
                   <span className="text-[10px] text-muted-foreground/60 tabular-nums">
                     {(elapsedMs / 1000).toFixed(1)}s
                   </span>
@@ -229,17 +531,78 @@ export default function AssistantPanel() {
         />
       </div>
 
-      <RightSidebar
-        settingsTitle="Thiết lập Trợ giảng"
-        feedbackTitle="Phân tích câu hỏi"
-        topics={TOPICS.map((t) => ({ id: t.value, title: t.label }))}
-        selectedTopicId={selectedTopic as any}
-        onTopicChange={setSelectedTopic}
-        scenarios={LEVELS.map((l) => ({ id: l, title: l, level: l, situation: "" }))}
-        selectedScenarioId={selectedLevel as any}
-        onScenarioChange={setSelectedLevel}
-        disabled={isTyping}
-      />
+      <aside className="w-80 border-l border-border bg-card/50 hidden lg:flex shrink-0 flex-col">
+        <div className="p-4 border-b border-border space-y-3">
+          <h3 className="text-sm font-bold text-foreground tracking-wide flex items-center gap-2">
+            <MessageSquare className="size-4" /> Lịch sử hội thoại
+          </h3>
+          <Button
+            type="button"
+            className="w-full"
+            variant="outline"
+            onClick={handleStartNewConversation}
+          >
+            <Plus className="mr-2 size-4" />
+            Cuộc trò chuyện mới
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {isLoadingConversations && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground px-2 py-3">
+              <Loader2 className="size-3.5 animate-spin" />
+              Dang tai danh sach hoi thoai...
+            </div>
+          )}
+
+          {!isLoadingConversations && conversations.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-6">
+              Chưa có cuộc trò chuyện nào.
+            </p>
+          )}
+
+          {conversations.map((conversation) => {
+            const active = conversation.id === activeConversationId;
+            return (
+              <div
+                key={conversation.id}
+                className={`group rounded-lg border p-3 transition-colors ${
+                  active
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <button
+                  type="button"
+                  className="w-full text-left"
+                  onClick={() => handleSelectConversation(conversation.id)}
+                >
+                  <p className="text-sm font-medium text-foreground line-clamp-2">
+                    {getConversationTitle(conversation)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {formatConversationTime(
+                      conversation.lastMessageAt || conversation.updatedAt,
+                    )}
+                  </p>
+                </button>
+
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDeleteConversation(conversation.id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
     </div>
   );
 }

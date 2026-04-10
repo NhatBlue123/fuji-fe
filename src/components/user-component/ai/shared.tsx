@@ -1,8 +1,6 @@
 "use client";
 
 import { memo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,27 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { FuriganaData } from "@/types/voice";
-
-/* ------------------------------------------------------------------ */
-/* n8n Sensei API                                                       */
-/* ------------------------------------------------------------------ */
-
-export async function callSensei(
-  userInput: string,
-  sessionId: string,
-): Promise<string> {
-  const N8N_URL = process.env.NEXT_PUBLIC_N8N_SENSEI_URL!;
-  const response = await fetch(N8N_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chatInput: userInput,
-      sessionId,
-    }),
-  });
-  const data = await response.text();
-  return data;
-}
 
 /** Tách <think>...</think> ra khỏi phần nội dung chính */
 export function parseResponse(raw: string): { think: string; content: string } {
@@ -64,6 +41,7 @@ export type AssistantMessage = {
   textJp?: string;
   textVn?: string;
   think?: string;
+  _streaming?: boolean;
 };
 
 export type PracticeMode = "sensei" | "assistant";

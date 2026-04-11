@@ -110,7 +110,7 @@ export function PaymentSocketProvider({
         toast.info(data.message || `Trạng thái giao dịch thay đổi: ${data.newStatus}`);
       }
       
-      store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw"]));
+      store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw", "Subscription"]));
       statusChangeCallbacks.current.forEach((cb) => cb(data));
     };
 

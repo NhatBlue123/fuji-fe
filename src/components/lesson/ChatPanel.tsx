@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Smile } from "lucide-react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
 
@@ -28,27 +28,35 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [hoveredMsgId, setHoveredMsgId] = useState<number | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasTypingRef = useRef(false);
+  /** Người dùng đang xem gần đáy khung chat — chỉ tự cuộn khi true */
+  const nearBottomRef = useRef(true);
+  /** Vừa bấm gửi — luôn cuộn xuống dù trước đó đã kéo lên đọc */
+  const stickAfterSendRef = useRef(false);
 
-  const scrollToBottom = useCallback((smooth = true) => {
-    setTimeout(() => {
-      chatEndRef.current?.scrollIntoView({
-        behavior: smooth ? "smooth" : "instant",
-      });
-    }, 50);
+  const updateNearBottom = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    nearBottomRef.current = dist < 72;
   }, []);
 
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom < 120) {
-      scrollToBottom();
-    }
-  }, [messages, scrollToBottom]);
+    el.addEventListener("scroll", updateNearBottom, { passive: true });
+    return () => el.removeEventListener("scroll", updateNearBottom);
+  }, [updateNearBottom]);
+
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    if (!nearBottomRef.current && !stickAfterSendRef.current) return;
+    stickAfterSendRef.current = false;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   useEffect(() => {
     onMarkSeen();
@@ -75,13 +83,14 @@ export function ChatPanel({
   const handleSend = useCallback(() => {
     const content = input.trim();
     if (!content) return;
+    nearBottomRef.current = true;
+    stickAfterSendRef.current = true;
     onSendMessage(content);
     setInput("");
     wasTypingRef.current = false;
     onSendTyping(false);
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-    scrollToBottom();
-  }, [input, onSendMessage, onSendTyping, scrollToBottom]);
+  }, [input, onSendMessage, onSendTyping]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -229,7 +238,6 @@ export function ChatPanel({
           </div>
         )}
 
-        <div ref={chatEndRef} />
       </div>
 
       {/* Input area */}

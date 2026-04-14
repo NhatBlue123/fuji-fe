@@ -163,6 +163,13 @@ export default function LessonPage() {
   }, [lessonData, endLesson, leave, router]);
 
   const handleEndCall = useCallback(async () => {
+    const confirmed = window.confirm(
+      role === "TEACHER"
+        ? "Bạn có chắc muốn kết thúc lớp học? Hành động này sẽ đóng phòng và không thể vào lại."
+        : "Bạn có chắc muốn rời lớp học không?"
+    );
+    if (!confirmed) return;
+
     if (role === "TEACHER") {
       setSummaryOpen(true);
       return;
@@ -335,7 +342,7 @@ export default function LessonPage() {
         <div className="flex-[35] p-4 pl-0">
           <SidePanel
             lessonId={lessonData.lessonId}
-            currentUserId={user?.id ?? 0}
+            currentUserId={Number(user?.id ?? 0)}
             token={accessToken ?? null}
             isTeacher={role === "TEACHER"}
             messages={liveMessages}

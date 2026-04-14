@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, addWeeks, format, isToday, startOfWeek } from "date-fns";
 import { vi } from "date-fns/locale";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   CalendarDays,
   ChevronLeft,
@@ -14,7 +15,7 @@ import {
   User2,
 } from "lucide-react";
 
-import { Calendar } from "@/components/UI/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -82,6 +83,27 @@ function formatHm(value: string) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(
     date.getMinutes(),
   ).padStart(2, "0")}`;
+}
+
+/** Parse "HH:mm" to minutes from midnight (local). */
+function hmToMinutes(hm: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function toastApiError(e: unknown, fallback: string) {
+  const msg =
+    typeof e === "object" &&
+    e !== null &&
+    "data" in e &&
+    typeof (e as { data?: { message?: string } }).data?.message === "string"
+      ? (e as { data: { message: string } }).data.message
+      : null;
+  toast.error(msg ?? fallback);
 }
 
 function formatTimeRange(startAt: string, endAt: string) {
@@ -408,8 +430,12 @@ export default function TeachingSchedulePage() {
     try {
       await deleteTimeSlot(deleteTarget.timeSlotId).unwrap();
       setDeleteTarget(null);
-    } catch {
-      alert("Không xóa được slot. Kiểm tra slot còn trống và thử lại.");
+      toast.success("Đã xóa slot khỏi lịch.");
+    } catch (e: unknown) {
+      toastApiError(
+        e,
+        "Không xóa được slot. Kiểm tra slot còn trống và thử lại.",
+      );
     }
   };
 
@@ -417,18 +443,18 @@ export default function TeachingSchedulePage() {
     if (!editTarget) return;
     const price = Number(editPrice);
     if (!Number.isFinite(price) || price <= 0) {
-      alert("Nhập giá hợp lệ (hoa).");
+      toast.error("Nhập giá hợp lệ (hoa).");
       return;
     }
     if (!editSubjectType || !editLevel) {
-      alert("Vui lòng chọn môn học và cấp độ.");
+      toast.error("Vui lòng chọn môn học và cấp độ.");
       return;
     }
     const subject = `${editSubjectType} - ${editLevel}`;
 
     const timeRe = /^\d{2}:\d{2}$/;
     if (!timeRe.test(editStartTime) || !timeRe.test(editEndTime)) {
-      alert("Giờ không hợp lệ (HH:mm).");
+      toast.error("Giờ không hợp lệ (HH:mm).");
       return;
     }
 
@@ -438,6 +464,20 @@ export default function TeachingSchedulePage() {
     const origStart = formatHm(editTarget.startAt);
     const origEnd = formatHm(editTarget.endAt);
     const timeChanged = editStartTime !== origStart || editEndTime !== origEnd;
+
+    const startMin = hmToMinutes(editStartTime);
+    const endMin = hmToMinutes(editEndTime);
+    if (startMin === null || endMin === null) {
+      toast.error("Giờ không hợp lệ (HH:mm, 24h).");
+      return;
+    }
+    if (timeChanged && endMin <= startMin) {
+      toast.error(
+        "Giờ kết thúc phải sau giờ bắt đầu trong cùng một ngày. Ví dụ ca 11:00–13:00 (1 giờ chiều = 13:00, không phải 01:00).",
+        { duration: 6000 },
+      );
+      return;
+    }
 
     const payload: Parameters<typeof updateTimeSlot>[0] = {
       id: editTarget.timeSlotId,
@@ -453,8 +493,10 @@ export default function TeachingSchedulePage() {
     try {
       await updateTimeSlot(payload).unwrap();
       setEditTarget(null);
-    } catch {
-      alert(
+      toast.success("Đã lưu thay đổi lịch rảnh.");
+    } catch (e: unknown) {
+      toastApiError(
+        e,
         "Không cập nhật được. Slot phải còn trống, chưa qua giờ và không trùng lịch khác.",
       );
     }
@@ -745,6 +787,7 @@ export default function TeachingSchedulePage() {
                 <Input
                   id="slot-start"
                   type="time"
+                  step={60}
                   value={editStartTime}
                   onChange={(e) => setEditStartTime(e.target.value)}
                   className="dark:[color-scheme:dark]"
@@ -755,12 +798,16 @@ export default function TeachingSchedulePage() {
                 <Input
                   id="slot-end"
                   type="time"
+                  step={60}
                   value={editEndTime}
                   onChange={(e) => setEditEndTime(e.target.value)}
                   className="dark:[color-scheme:dark]"
                 />
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Giờ dùng định dạng 24 giờ (vd. 13:00 = 1 giờ chiều). Phải cùng ngày và giờ kết thúc sau giờ bắt đầu.
+            </p>
             <div className="space-y-2">
               <Label htmlFor="slot-price">Học phí (Hoa)</Label>
               <Input

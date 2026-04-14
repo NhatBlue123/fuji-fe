@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useCancelBookingMutation, useGetMyBookingsQuery } from "@/store/services/bookingApi";
+import {
+  useCancelBookingMutation,
+  useEndBookingVideoSessionMutation,
+  useGetMyBookingsQuery,
+} from "@/store/services/bookingApi";
 import { useAuth } from "@/store/hooks";
 
 type BookingTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
@@ -33,6 +37,7 @@ export default function MySchedulePage() {
   const [tab, setTab] = useState<BookingTab>("UPCOMING");
 
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [actionType, setActionType] = useState<"CANCEL" | "END_EARLY">("CANCEL");
 
   const { data, isLoading, isFetching, isError } = useGetMyBookingsQuery(
     { status: tab },
@@ -40,18 +45,34 @@ export default function MySchedulePage() {
   );
 
   const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
+  const [endBookingSession, { isLoading: isEndingEarly }] = useEndBookingVideoSessionMutation();
 
   const items = data ?? [];
 
   const handleConfirmCancel = async () => {
     if (deletingId === null) return;
     try {
-      await cancelBooking({ bookingId: deletingId }).unwrap();
+      if (actionType === "END_EARLY") {
+        await endBookingSession({ bookingId: deletingId }).unwrap();
+      } else {
+        await cancelBooking({ bookingId: deletingId }).unwrap();
+      }
       setDeletingId(null);
     } catch (e) {
       console.error("Lỗi khi hủy lịch:", e);
-      alert("Không thể hủy lịch, vui lòng thử lại sau.");
+      alert(actionType === "END_EARLY"
+        ? "Không thể kết thúc sớm, vui lòng thử lại sau."
+        : "Không thể hủy lịch, vui lòng thử lại sau.");
     }
+  };
+
+  const getTeacherAction = (startAt: string, endAt: string) => {
+    const now = new Date().getTime();
+    const start = new Date(startAt).getTime();
+    const end = new Date(endAt).getTime();
+    const canCancel = now < start - 5 * 60 * 1000;
+    const canEndEarly = now >= start && now < end;
+    return { canCancel, canEndEarly };
   };
 
   return (
@@ -144,7 +165,7 @@ export default function MySchedulePage() {
                     {tab === "UPCOMING" && (
                       <>
                         {c.canJoinVideoCall ? (
-                          <Link href={`/learn/session/${c.bookingId}`}>
+                          <Link href={`/learn/lesson/${c.bookingId}`}>
                             <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
                               <span className="material-symbols-outlined text-sm">videocam</span>
                               Vào phòng
@@ -162,12 +183,47 @@ export default function MySchedulePage() {
                         {!isTeacher && (
                           <button
                             disabled={isCancelling}
-                            onClick={() => setDeletingId(c.bookingId)}
+                            onClick={() => {
+                              setActionType("CANCEL");
+                              setDeletingId(c.bookingId);
+                            }}
                             className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
                           >
                             Hủy
                           </button>
                         )}
+                        {isTeacher && (() => {
+                          const action = getTeacherAction(c.startAt, c.endAt);
+                          if (action.canEndEarly) {
+                            return (
+                              <button
+                                disabled={isEndingEarly}
+                                onClick={() => {
+                                  setActionType("END_EARLY");
+                                  setDeletingId(c.bookingId);
+                                }}
+                                className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
+                              >
+                                Kết thúc sớm
+                              </button>
+                            );
+                          }
+                          if (action.canCancel) {
+                            return (
+                              <button
+                                disabled={isCancelling}
+                                onClick={() => {
+                                  setActionType("CANCEL");
+                                  setDeletingId(c.bookingId);
+                                }}
+                                className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                              >
+                                Hủy lịch
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                       </>
                     )}
 
@@ -204,9 +260,13 @@ export default function MySchedulePage() {
                 <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
               
-              <h3 className="text-xl font-bold text-white mb-2">Xác nhận hủy lớp</h3>
+            <h3 className="text-xl font-bold text-white mb-2">
+              {actionType === "END_EARLY" ? "Xác nhận kết thúc sớm" : "Xác nhận hủy lớp"}
+            </h3>
               <p className="text-slate-400 text-sm mb-8">
-                 Bạn sẽ phải chịu 50% phí hủy lớp.Bạn có chắc chắn muốn hủy lịch học này không?
+              {actionType === "END_EARLY"
+                ? "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?"
+                : "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?"}
               </p>
               
               <div className="flex gap-3 w-full">
@@ -220,15 +280,15 @@ export default function MySchedulePage() {
                 
                 <button 
                   onClick={handleConfirmCancel}
-                  disabled={isCancelling}
+                  disabled={isCancelling || isEndingEarly}
                   className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-secondary/20"
                 >
-                  {isCancelling ? (
+                  {(isCancelling || isEndingEarly) ? (
                     <>
                       <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Đang hủy...
+                      {actionType === "END_EARLY" ? "Đang kết thúc..." : "Đang hủy..."}
                     </>
-                  ) : "Đồng ý hủy"}
+                  ) : (actionType === "END_EARLY" ? "Kết thúc sớm" : "Đồng ý hủy")}
                 </button>
               </div>
             </div>

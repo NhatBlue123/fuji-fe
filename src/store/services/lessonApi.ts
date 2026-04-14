@@ -161,6 +161,7 @@ export const lessonApi = baseApi.injectEndpoints({
         url: `/lessons/${lessonId}/end`,
         method: "POST",
       }),
+      invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
     }),
 
     markLessonActive: builder.mutation<void, { lessonId: number }>({

@@ -120,6 +120,17 @@ export const bookingApi = baseApi.injectEndpoints({
       ],
     }),
 
+    endBookingVideoSession: builder.mutation<{ message: string }, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/video-session/end`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<string>) => ({
+        message: res.message || "Buổi học đã kết thúc",
+      }),
+      invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
+    }),
+
     getMyTimeSlots: builder.query<MyTimeSlotItem[], void>({
       query: () => `/time-slots/me`,
       transformResponse: (res: ApiEnvelope<MyTimeSlotItem[]>) => res.data,
@@ -181,6 +192,7 @@ export const {
   useDeleteTimeSlotMutation,
   useUpdateTimeSlotMutation,
   useCancelBookingMutation,
+  useEndBookingVideoSessionMutation,
   useGetMyTeacherScheduleQuery,
   useGetVideoSessionMutation,
   useSubmitSessionReviewMutation,

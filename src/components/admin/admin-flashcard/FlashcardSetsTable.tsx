@@ -66,13 +66,25 @@ export const FlashcardSetsTable = () => {
   const [isCreateCardModalOpen, setIsCreateCardModalOpen] = useState(false);
   const [isCreateSetModalOpen, setIsCreateSetModalOpen] = useState(false);
 
+  const toFlashcard = (raw: any, lessonName: string, fallbackId: number): Flashcard => ({
+    id: Number(raw?.id ?? fallbackId),
+    kanji: String(raw?.kanji ?? raw?.name ?? ""),
+    hiragana: String(raw?.hiragana ?? ""),
+    meaning: String(raw?.meaning ?? raw?.description ?? ""),
+    example: String(raw?.example ?? ""),
+    lesson: lessonName,
+    type: String(raw?.type ?? "Vocabulary"),
+    studyStatus: (raw?.studyStatus ?? "not_learned") as Flashcard["studyStatus"],
+    viewCount: Number(raw?.viewCount ?? 0),
+  });
+
   // Group cards into virtual sets by lesson for management
   const sets = useMemo(() => {
     if (!apiFlashcards) return [];
     const setsMap = new Map<string, FlashcardSet>();
 
     apiFlashcards.forEach((card, index) => {
-      const lesson = card.lesson || "Chưa phân loại";
+      const lesson = card.name || "Chưa phân loại";
       if (!setsMap.has(lesson)) {
         setsMap.set(lesson, {
           id: index + 1, // Visual ID for the set object
@@ -246,8 +258,11 @@ export const FlashcardSetsTable = () => {
                             <DropdownMenuSeparator className="my-1 bg-slate-50" />
                             <DropdownMenuItem 
                               onClick={() => {
+                                const cardsForExport: Flashcard[] = (apiFlashcards ?? [])
+                                  .filter((c) => c.name === set.lesson)
+                                  .map((c, idx) => toFlashcard(c as any, set.lesson, idx + 1));
                                 exportFlashcardsToExcel(
-                                  apiFlashcards?.filter(c => c.lesson === set.lesson) || [],
+                                  cardsForExport,
                                   `${set.lesson}.xlsx`
                                 );
                                 toast.success("Đã chuẩn bị file Excel cho: " + set.lesson);
@@ -294,7 +309,11 @@ export const FlashcardSetsTable = () => {
         open={viewingSet !== null}
         onOpenChange={(open) => !open && setViewingSet(null)}
         set={viewingSet}
-        cards={apiFlashcards?.filter(c => c.lesson === viewingSet?.lesson) || []}
+        cards={
+          (apiFlashcards ?? [])
+            .filter((c) => c.name === viewingSet?.lesson)
+            .map((c, idx) => toFlashcard(c as any, viewingSet?.lesson ?? "Chua phan loai", idx + 1))
+        }
         onEditCard={(card) => setEditingCard(card)}
         onAddCard={() => setIsCreateCardModalOpen(true)}
       />

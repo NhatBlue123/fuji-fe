@@ -39,16 +39,48 @@ interface UseStompChatReturn {
   isConnected: boolean;
 }
 
+function mergeChatMessages(
+  history: ChatMessage[],
+  incoming: ChatMessage[]
+): ChatMessage[] {
+  const map = new Map<number, ChatMessage>();
+  history.forEach((m) => map.set(m.id, m));
+  incoming.forEach((m) => map.set(m.id, m));
+  return Array.from(map.values()).sort(
+    (a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+}
+
 export function useStompChat(
   lessonId: number | null,
   token: string | null,
   initialMessages?: ChatMessage[]
 ): UseStompChatReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages ?? []);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingStatus[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const subsRef = useRef<StompSubscription[]>([]);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const prevLessonIdRef = useRef<number | null>(null);
+
+  /** Khi đổi buổi học: xóa state. Khi history REST tải xong: merge với tin realtime (theo id). */
+  useEffect(() => {
+    if (lessonId !== prevLessonIdRef.current) {
+      prevLessonIdRef.current = lessonId;
+      setMessages([]);
+    }
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (!lessonId) return;
+    if (initialMessages === undefined) return;
+    const hist = initialMessages.filter((m) => m.lessonId === lessonId);
+    setMessages((prev) => {
+      const live = prev.filter((m) => m.lessonId === lessonId);
+      return mergeChatMessages(hist, live);
+    });
+  }, [lessonId, initialMessages]);
 
   useEffect(() => {
     if (!lessonId || !token) return;

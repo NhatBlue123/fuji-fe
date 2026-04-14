@@ -422,7 +422,7 @@ export function UserDetailModal({
       };
     });
 
-    return mapped.filter((log: any) => {
+    const filtered = mapped.filter((log: any) => {
       const searchTerms = [log.description, log.type]
         .filter(Boolean)
         .map((s) => s?.toLowerCase());
@@ -446,7 +446,7 @@ export function UserDetailModal({
       if (
         last &&
         last.description === log.description &&
-        last.testId === log.testId &&
+        last.type === log.type &&
         lastTime - logTime < 3600000
       ) {
         last.count = (last.count || 1) + 1;
@@ -456,7 +456,7 @@ export function UserDetailModal({
     });
 
     return grouped;
-  }, [user?.violationLogs, logSearch, logSeverity]);
+  }, [chatBanInfo, chatViolations, logSearch, logSeverity, logStatus]);
 
   const filteredInstructorLogs = useMemo(() => {
     if (!user?.violationLogs) return [];

@@ -7,6 +7,7 @@ import {
   useCallback,
   useLayoutEffect,
 } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -42,6 +43,40 @@ type ConversationSnapshot = {
   hasMore: boolean;
   nextBeforeId: number | null;
 };
+
+type CoursePreviewItem = {
+  id: number;
+  title: string;
+  price?: string;
+  thumbnail?: string;
+  url: string;
+  meta?: string;
+  enrolled?: boolean;
+};
+
+type CourseCompareColumn = {
+  id: number;
+  title: string;
+  price?: string;
+  thumbnail?: string;
+  url: string;
+};
+
+type CourseCompareRow = {
+  label: string;
+  values: string[];
+};
+
+type CourseComparePayload = {
+  title?: string;
+  columns: CourseCompareColumn[];
+  rows: CourseCompareRow[];
+};
+
+type AssistantContentSegment =
+  | { kind: "markdown"; content: string }
+  | { kind: "course-preview"; items: CoursePreviewItem[] }
+  | { kind: "course-compare"; payload: CourseComparePayload };
 
 /* ------------------------------------------------------------------ */
 /* AssistantPanel — chatbot AI học tiếng Nhật (Socket.IO streaming)     */
@@ -86,6 +121,477 @@ function isForbiddenConversationError(error: unknown) {
   if (!error || typeof error !== "object") return false;
   const status = (error as { status?: unknown }).status;
   return status === 403 || status === 404;
+}
+
+function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const items: CoursePreviewItem[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const record = raw as Record<string, unknown>;
+    const id = Number(record.id);
+    const title = typeof record.title === "string" ? record.title.trim() : "";
+    const urlRaw = typeof record.url === "string" ? record.url.trim() : "";
+    const safeUrl = /^\/course\/\d+$/i.test(urlRaw) ? urlRaw : id > 0 ? `/course/${id}` : "";
+
+    if (!title || !safeUrl || !Number.isFinite(id) || id <= 0) {
+      continue;
+    }
+
+    items.push({
+      id,
+      title,
+      url: safeUrl,
+      price: typeof record.price === "string" ? record.price.trim() : undefined,
+      thumbnail:
+        typeof record.thumbnail === "string" ? record.thumbnail.trim() : undefined,
+      meta: typeof record.meta === "string" ? record.meta.trim() : undefined,
+      enrolled: Boolean(record.enrolled),
+    });
+  }
+
+  return items.slice(0, 6);
+}
+
+function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const rawColumns = Array.isArray(record.columns) ? record.columns : [];
+  const columns: CourseCompareColumn[] = [];
+
+  for (const raw of rawColumns) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const col = raw as Record<string, unknown>;
+    const id = Number(col.id);
+    const title = typeof col.title === "string" ? col.title.trim() : "";
+    const urlRaw = typeof col.url === "string" ? col.url.trim() : "";
+    const safeUrl = /^\/course\/\d+$/i.test(urlRaw)
+      ? urlRaw
+      : id > 0
+        ? `/course/${id}`
+        : "";
+
+    if (!title || !safeUrl || !Number.isFinite(id) || id <= 0) {
+      continue;
+    }
+
+    columns.push({
+      id,
+      title,
+      url: safeUrl,
+      price: typeof col.price === "string" ? col.price.trim() : undefined,
+      thumbnail:
+        typeof col.thumbnail === "string" ? col.thumbnail.trim() : undefined,
+    });
+  }
+
+  if (columns.length === 0) {
+    return null;
+  }
+
+  const limitedColumns = columns.slice(0, 3);
+  const rawRows = Array.isArray(record.rows) ? record.rows : [];
+  const rows: CourseCompareRow[] = [];
+
+  for (const raw of rawRows) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const row = raw as Record<string, unknown>;
+    const label = typeof row.label === "string" ? row.label.trim() : "";
+    const valuesRaw = Array.isArray(row.values) ? row.values : [];
+    if (!label) {
+      continue;
+    }
+
+    const values = limitedColumns.map((_, idx) => {
+      const value = valuesRaw[idx];
+      if (value == null) {
+        return "-";
+      }
+      return String(value).trim() || "-";
+    });
+
+    rows.push({ label, values });
+  }
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const title = typeof record.title === "string" ? record.title.trim() : undefined;
+  return {
+    title,
+    columns: limitedColumns,
+    rows: rows.slice(0, 10),
+  };
+}
+
+function tryParseJsonValue(raw: string): unknown | null {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function findBalancedJsonEnd(source: string, start: number): number {
+  const first = source[start];
+  if (first !== "[" && first !== "{") {
+    return -1;
+  }
+
+  const closers: Record<string, string> = { "[": "]", "{": "}" };
+  const stack: string[] = [closers[first]];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start + 1; i < source.length; i += 1) {
+    const ch = source[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === "[" || ch === "{") {
+      stack.push(closers[ch]);
+      continue;
+    }
+
+    if (ch === "]" || ch === "}") {
+      const expected = stack.pop();
+      if (!expected || expected !== ch) {
+        return -1;
+      }
+      if (stack.length === 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function splitLooseJsonFromMarkdown(markdown: string): AssistantContentSegment[] {
+  const text = String(markdown || "");
+  if (!text.trim()) {
+    return [];
+  }
+
+  const segments: AssistantContentSegment[] = [];
+  let cursor = 0;
+  let searchFrom = 0;
+
+  while (searchFrom < text.length) {
+    const nextArray = text.indexOf("[", searchFrom);
+    const nextObject = text.indexOf("{", searchFrom);
+
+    let start = -1;
+    if (nextArray === -1) {
+      start = nextObject;
+    } else if (nextObject === -1) {
+      start = nextArray;
+    } else {
+      start = Math.min(nextArray, nextObject);
+    }
+
+    if (start === -1) {
+      break;
+    }
+
+    const end = findBalancedJsonEnd(text, start);
+    if (end === -1) {
+      searchFrom = start + 1;
+      continue;
+    }
+
+    const jsonCandidate = text.slice(start, end + 1).trim();
+    const parsed = tryParseJsonValue(jsonCandidate);
+    let structured: AssistantContentSegment | null = null;
+
+    const previewItems = sanitizeCoursePreviewItems(parsed);
+    if (previewItems.length > 0) {
+      structured = { kind: "course-preview", items: previewItems };
+    } else {
+      const comparePayload = sanitizeCourseComparePayload(parsed);
+      if (comparePayload) {
+        structured = { kind: "course-compare", payload: comparePayload };
+      }
+    }
+
+    if (structured) {
+      const before = text.slice(cursor, start).trim();
+      if (before) {
+        segments.push({ kind: "markdown", content: before });
+      }
+      segments.push(structured);
+      cursor = end + 1;
+      searchFrom = end + 1;
+      continue;
+    }
+
+    searchFrom = start + 1;
+  }
+
+  const tail = text.slice(cursor).trim();
+  if (tail) {
+    segments.push({ kind: "markdown", content: tail });
+  }
+
+  return segments;
+}
+
+function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
+  const source = String(rawContent || "");
+  if (!source) {
+    return [];
+  }
+
+  const re = /```(course-preview|course-compare)\s*([\s\S]*?)```/gi;
+  const segments: AssistantContentSegment[] = [];
+  let cursor = 0;
+
+  while (true) {
+    const match = re.exec(source);
+    if (!match) {
+      break;
+    }
+
+    const start = match.index;
+    const end = re.lastIndex;
+    if (start > cursor) {
+      const markdown = source.slice(cursor, start).trim();
+      if (markdown) {
+        segments.push({ kind: "markdown", content: markdown });
+      }
+    }
+
+    const blockType = String(match[1] || "").trim().toLowerCase();
+    const jsonText = (match[2] || "").trim();
+    const parsed = tryParseJsonValue(jsonText);
+
+    if (blockType === "course-preview") {
+      const items = sanitizeCoursePreviewItems(parsed);
+      if (items.length > 0) {
+        segments.push({ kind: "course-preview", items });
+      } else {
+        const rawBlock = source.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else if (blockType === "course-compare") {
+      const payload = sanitizeCourseComparePayload(parsed);
+      if (payload) {
+        segments.push({ kind: "course-compare", payload });
+      } else {
+        const rawBlock = source.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else {
+      const rawBlock = source.slice(start, end).trim();
+      if (rawBlock) {
+        segments.push({ kind: "markdown", content: rawBlock });
+      }
+    }
+
+    cursor = end;
+  }
+
+  if (cursor < source.length) {
+    const markdown = source.slice(cursor).trim();
+    if (markdown) {
+      segments.push({ kind: "markdown", content: markdown });
+    }
+  }
+
+  const normalized: AssistantContentSegment[] = [];
+  for (const segment of segments) {
+    if (segment.kind !== "markdown") {
+      normalized.push(segment);
+      continue;
+    }
+
+    const expanded = splitLooseJsonFromMarkdown(segment.content);
+    if (expanded.length > 0) {
+      normalized.push(...expanded);
+    }
+  }
+
+  if (normalized.length === 0) {
+    return [{ kind: "markdown", content: source }];
+  }
+  return normalized;
+}
+
+function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="my-3 grid gap-3">
+      {items.map((item) => (
+        <Link
+          key={item.id}
+          href={item.url}
+          className="group overflow-hidden rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all"
+        >
+          <div className="flex gap-3 p-3">
+            <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-muted">
+              {item.thumbnail ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={item.thumbnail}
+                  alt={item.title}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground">
+                  No preview
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-sm font-semibold text-foreground group-hover:text-primary">
+                {item.title}
+              </p>
+              {item.price && (
+                <p className="mt-1 text-xs font-semibold text-primary">{item.price}</p>
+              )}
+              {item.meta && (
+                <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+                  {item.meta}
+                </p>
+              )}
+              {item.enrolled && (
+                <span className="mt-2 inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                  Đã đăng ký
+                </span>
+              )}
+              <p className="mt-2 text-[11px] font-semibold text-primary">
+                Xem chi tiết khóa học →
+              </p>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
+  if (payload.columns.length === 0 || payload.rows.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="my-4 rounded-xl border border-border overflow-hidden">
+      {payload.title && (
+        <div className="border-b border-border bg-muted/40 px-3 py-2 text-sm font-semibold text-foreground">
+          {payload.title}
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] border-collapse text-sm">
+          <thead>
+            <tr className="bg-card">
+              <th className="w-40 border-b border-r border-border px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                Thuộc tính
+              </th>
+              {payload.columns.map((column) => (
+                <th
+                  key={column.id}
+                  className="border-b border-border px-3 py-3 align-top"
+                >
+                  <Link
+                    href={column.url}
+                    className="group block overflow-hidden rounded-lg border border-border bg-background hover:border-primary/40"
+                  >
+                    <div className="h-28 w-full overflow-hidden bg-muted">
+                      {column.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={column.thumbnail}
+                          alt={column.title}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                          No preview
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2 text-left">
+                      <p className="line-clamp-2 text-sm font-semibold text-foreground group-hover:text-primary">
+                        {column.title}
+                      </p>
+                      {column.price && (
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          {column.price}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {payload.rows.map((row) => (
+              <tr key={row.label} className="border-b border-border last:border-b-0">
+                <td className="border-r border-border bg-muted/20 px-3 py-2 text-xs font-semibold text-foreground">
+                  {row.label}
+                </td>
+                {row.values.map((value, idx) => (
+                  <td
+                    key={`${row.label}-${idx}`}
+                    className="px-3 py-2 text-center text-sm text-foreground"
+                  >
+                    {value}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 export default function AssistantPanel({
@@ -759,11 +1265,33 @@ export default function AssistantPanel({
                         [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono
                         [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:mb-2
                         [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
-                        [&_hr]:border-border [&_hr]:my-2"
+                        [&_hr]:border-border [&_hr]:my-2
+                        [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:border [&_table]:border-border
+                        [&_thead]:bg-muted/50 [&_th]:border-b [&_th]:border-border [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold
+                        [&_td]:border-b [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:align-top
+                        [&_tr:last-child_td]:border-b-0
+                        [&_img]:my-2 [&_img]:rounded-lg [&_img]:border [&_img]:border-border"
                           >
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.textVn}
-                            </ReactMarkdown>
+                            {parseAssistantContent(msg.textVn).map((segment, idx) =>
+                              segment.kind === "course-preview" ? (
+                                <CoursePreviewList
+                                  key={`preview-${msg.id}-${idx}`}
+                                  items={segment.items}
+                                />
+                              ) : segment.kind === "course-compare" ? (
+                                <CourseCompareTable
+                                  key={`compare-${msg.id}-${idx}`}
+                                  payload={segment.payload}
+                                />
+                              ) : (
+                                <ReactMarkdown
+                                  key={`md-${msg.id}-${idx}`}
+                                  remarkPlugins={[remarkGfm]}
+                                >
+                                  {segment.content}
+                                </ReactMarkdown>
+                              ),
+                            )}
                           </div>
                         )}
                         {msg._streaming && !msg.textVn && (

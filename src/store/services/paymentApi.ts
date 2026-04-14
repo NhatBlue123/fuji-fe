@@ -48,5 +48,8 @@ export const paymentApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useCreatePaymentMutation, useGetPaymentStatusQuery } =
-  paymentApi;
+export const {
+  useCreatePaymentMutation,
+  useGetPaymentStatusQuery,
+  useLazyGetPaymentStatusQuery,
+} = paymentApi;

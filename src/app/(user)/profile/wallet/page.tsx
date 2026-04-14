@@ -162,9 +162,7 @@ export default function FujiWallet() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">
-                    Tổng số dư khả dụng
-                  </span>
+                 
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>

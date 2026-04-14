@@ -3,7 +3,6 @@ import React from "react";
 interface TopupPackageCardProps {
   price: number;
   flowers: number;
-  bonus?: number;
   isSelected?: boolean;
   isPopular?: boolean;
   onSelect: () => void;
@@ -12,13 +11,11 @@ interface TopupPackageCardProps {
 export default function TopupPackageCard({
   price,
   flowers,
-  bonus,
   isSelected,
   isPopular,
   onSelect,
 }: TopupPackageCardProps) {
   const transferAmountVnd = price * 1000;
-  const totalFlowers = flowers + (bonus ?? 0);
 
   return (
     <div
@@ -30,7 +27,7 @@ export default function TopupPackageCard({
       }`}
     >
       <div className="text-3xl font-bold text-foreground mb-1 flex items-center gap-1">
-        {totalFlowers.toLocaleString("vi-VN")}
+        {flowers.toLocaleString("vi-VN")}
         <span className="text-3xl">🌸</span>
       </div>
 
@@ -40,11 +37,6 @@ export default function TopupPackageCard({
           Chuyển khoản {transferAmountVnd.toLocaleString("vi-VN")}đ
         </div>
       </div>
-      {bonus && (
-        <div className="absolute -top-3 right-4 bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-bold">
-          +{bonus} Bonus
-        </div>
-      )}
     </div>
   );
 }

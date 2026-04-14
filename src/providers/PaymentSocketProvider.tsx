@@ -2,54 +2,45 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
-  useState,
-  useCallback,
   useRef,
+  useState,
 } from "react";
 import type { Socket } from "socket.io-client";
 import { toast } from "sonner";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-import { useAuth } from "@/store/hooks";
-import {
-  connectPaymentSocket,
-  disconnectPaymentSocket,
-} from "@/lib/socket/socket-payment";
+import { connectPaymentSocket, disconnectPaymentSocket } from "@/lib/socket/socket-payment";
 import { store } from "@/store";
+import { useAuth } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 
-// ─── Event payload types ────────────────────────────────────
 export interface PaymentStatusChangeEvent {
   userId: number;
   transactionType: "TOPUP" | "PAYOUT";
-  orderId?: string; // Dành cho nạp tiền
-  withdrawRequestId?: number; // Dành cho rút tiền
+  orderId?: string;
+  withdrawRequestId?: number;
   oldStatus: string;
-  newStatus: string; // VD: 'SUCCESS'
+  newStatus: string;
   amount: number;
-  walletBalance: number; // Balance mới nhất ở hiện tại
+  walletBalance: number;
   message: string;
 }
 
-// ─── Callback types for component-level listeners ──────────
 type StatusChangeCallback = (data: PaymentStatusChangeEvent) => void;
 
-// ─── Context ────────────────────────────────────────────────
 type PaymentSocketContextValue = {
   socket: Socket | null;
   isConnected: boolean;
-  /** Subscribe to payment-status-change. Returns unsubscribe function. */
+  joinPaymentRoom: () => void;
   onPaymentStatusChange: (cb: StatusChangeCallback) => () => void;
 };
 
-const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(
-  null,
-);
+const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(null);
 
-// ─── Provider ───────────────────────────────────────────────
 export function PaymentSocketProvider({
   children,
 }: {
@@ -60,57 +51,82 @@ export function PaymentSocketProvider({
   const { accessToken, isAuthenticated, user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-
-  // Refs to hold subscriber Sets (avoids re-renders on subscribe/unsubscribe)
   const statusChangeCallbacks = useRef<Set<StatusChangeCallback>>(new Set());
 
-  // ── Subscribe helpers ──────────────────────────────────────
   const onPaymentStatusChange = useCallback((cb: StatusChangeCallback) => {
     statusChangeCallbacks.current.add(cb);
+
     return () => {
       statusChangeCallbacks.current.delete(cb);
     };
   }, []);
 
-  // ── Socket lifecycle ───────────────────────────────────────
+  const joinPaymentRoom = useCallback(() => {
+    if (!user || !socket?.connected) return;
+
+    socket.emit("join-payment-room", { userId: user.id });
+    console.info("[payment] join-payment-room emitted", {
+      userId: user.id,
+      socketId: socket.id,
+      receivedAt: new Date().toISOString(),
+    });
+  }, [socket, user]);
+
   useEffect(() => {
     if (!isAuthenticated || !user) {
       disconnectPaymentSocket();
-      setSocket(null);
-      setIsConnected(false);
+      queueMicrotask(() => {
+        setSocket(null);
+        setIsConnected(false);
+      });
       return;
     }
 
     const s = connectPaymentSocket(accessToken, user.id);
-    setSocket(s as Socket);
-    setIsConnected(Boolean(s.connected));
 
     const handleConnect = () => {
-      console.log('Socket reconnected, forcing API sync...');
+      setSocket(s);
       setIsConnected(true);
-      // Join room bằng userId (dự phòng)
       s.emit("join-payment-room", { userId: user.id });
-      // Restore state from API when connection is established (or re-established)
-      store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw"]));
+      console.info("[payment] socket connected", {
+        userId: user.id,
+        socketId: s.id,
+        receivedAt: new Date().toISOString(),
+      });
+      store.dispatch(
+        baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw"]),
+      );
     };
-    const handleDisconnect = () => setIsConnected(false);
 
-    // ── Global event handlers ────────────────────────────────
+    const handleDisconnect = (reason: string) => {
+      setIsConnected(false);
+      console.warn("[payment] socket disconnected", {
+        userId: user.id,
+        reason,
+        receivedAt: new Date().toISOString(),
+      });
+    };
+
     const handlePaymentStatusChange = (data: PaymentStatusChangeEvent) => {
-      console.log('Payment update nhận lập tức:', data);
-      // Show toast tùy status
+      console.info("[payment] payment-status-change received", {
+        ...data,
+        receivedAt: new Date().toISOString(),
+      });
+
       if (data.newStatus === "SUCCESS") {
-        toast.success(data.message || `Giao dịch thành công!`);
+        toast.success(data.message || "Giao dịch thành công!");
         if (data.transactionType === "TOPUP" && pathname !== "/premium/success") {
           setTimeout(() => router.push("/premium/success"), 1000);
         }
       } else if (data.newStatus === "FAILED") {
-        toast.error(data.message || `Giao dịch thất bại.`);
+        toast.error(data.message || "Giao dịch thất bại.");
       } else {
         toast.info(data.message || `Trạng thái giao dịch thay đổi: ${data.newStatus}`);
       }
-      
-      store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw", "Subscription"]));
+
+      store.dispatch(
+        baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw", "Subscription"]),
+      );
       statusChangeCallbacks.current.forEach((cb) => cb(data));
     };
 
@@ -118,25 +134,29 @@ export function PaymentSocketProvider({
     s.on("disconnect", handleDisconnect);
     s.on("payment-status-change", handlePaymentStatusChange);
 
+    if (s.connected) {
+      queueMicrotask(handleConnect);
+    }
+
     return () => {
       s.off("connect", handleConnect);
       s.off("disconnect", handleDisconnect);
       s.off("payment-status-change", handlePaymentStatusChange);
+      queueMicrotask(() => {
+        setSocket((current) => (current === s ? null : current));
+      });
       disconnectPaymentSocket();
     };
-  }, [accessToken, isAuthenticated, user]);
+  }, [accessToken, isAuthenticated, pathname, router, user]);
 
   const value = useMemo(
     () => ({
-      socket,
-      isConnected,
+      socket: isAuthenticated ? socket : null,
+      isConnected: isAuthenticated ? isConnected : false,
+      joinPaymentRoom,
       onPaymentStatusChange,
     }),
-    [
-      socket,
-      isConnected,
-      onPaymentStatusChange,
-    ],
+    [isAuthenticated, isConnected, joinPaymentRoom, onPaymentStatusChange, socket],
   );
 
   return (
@@ -146,13 +166,11 @@ export function PaymentSocketProvider({
   );
 }
 
-// ─── Hook ───────────────────────────────────────────────────
 export function usePaymentSocket() {
   const context = useContext(PaymentSocketContext);
   if (!context) {
-    throw new Error(
-      "usePaymentSocket must be used inside PaymentSocketProvider",
-    );
+    throw new Error("usePaymentSocket must be used inside PaymentSocketProvider");
   }
+
   return context;
 }

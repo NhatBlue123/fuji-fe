@@ -12,8 +12,11 @@ export function useLessonRecordingStomp(lessonId: number | null, token: string |
 
     const client = getStompClient(token);
     let sub: StompSubscription | undefined;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const attach = () => {
+      if (cancelled || sub) return;
       sub = client.subscribe(`/topic/room/${lessonId}/recording`, (frame: IMessage) => {
         try {
           const p = JSON.parse(frame.body) as { recording?: boolean };
@@ -26,13 +29,20 @@ export function useLessonRecordingStomp(lessonId: number | null, token: string |
       });
     };
 
-    if (client.connected) {
-      attach();
-    } else {
-      client.onConnect = () => attach();
-    }
+    const waitUntilConnected = () => {
+      if (cancelled) return;
+      if (client.connected) {
+        attach();
+        return;
+      }
+      retryTimer = setTimeout(waitUntilConnected, 150);
+    };
+
+    waitUntilConnected();
 
     return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       sub?.unsubscribe();
     };
   }, [lessonId, token]);

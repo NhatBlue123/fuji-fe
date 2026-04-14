@@ -62,6 +62,7 @@ export function useStompChat(
   const [isConnected, setIsConnected] = useState(false);
   const subsRef = useRef<StompSubscription[]>([]);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const pendingPublishesRef = useRef<Array<{ destination: string; body: string }>>([]);
   const prevLessonIdRef = useRef<number | null>(null);
 
   /** Khi đổi buổi học: xóa state. Khi history REST tải xong: merge với tin realtime (theo id). */
@@ -86,20 +87,13 @@ export function useStompChat(
     if (!lessonId || !token) return;
 
     const client = getStompClient(token);
-
-    const waitForConnect = () => {
-      if (client.connected) {
-        subscribe();
-        return;
-      }
-      client.onConnect = () => {
-        setIsConnected(true);
-        subscribe();
-      };
-      client.onDisconnect = () => setIsConnected(false);
-    };
+    let cancelled = false;
+    let subscribed = false;
+    let connectRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const subscribe = () => {
+      if (subscribed || cancelled) return;
+      subscribed = true;
       setIsConnected(true);
 
       const chatSub = client.subscribe(
@@ -136,11 +130,35 @@ export function useStompChat(
       );
 
       subsRef.current = [chatSub, typingSub, reactionSub, seenSub];
+
+      if (pendingPublishesRef.current.length > 0) {
+        const queue = [...pendingPublishesRef.current];
+        pendingPublishesRef.current = [];
+        queue.forEach((item) => {
+          try {
+            client.publish(item);
+          } catch {
+            pendingPublishesRef.current.push(item);
+          }
+        });
+      }
     };
 
-    waitForConnect();
+    const waitUntilConnected = () => {
+      if (cancelled) return;
+      if (client.connected) {
+        subscribe();
+        return;
+      }
+      connectRetryTimer = setTimeout(waitUntilConnected, 150);
+    };
+
+    waitUntilConnected();
 
     return () => {
+      cancelled = true;
+      if (connectRetryTimer) clearTimeout(connectRetryTimer);
+      setIsConnected(false);
       subsRef.current.forEach((s) => {
         try { s.unsubscribe(); } catch { /* ignore */ }
       });
@@ -179,12 +197,15 @@ export function useStompChat(
     (content: string, type = "TEXT", fileUrl?: string) => {
       if (!lessonId || !token) return;
       const client = getStompClient(token);
-      if (!client.connected) return;
-
-      client.publish({
+      const payload = {
         destination: `/app/chat/${lessonId}/send`,
         body: JSON.stringify({ content, type, fileUrl: fileUrl ?? null }),
-      });
+      };
+      if (client.connected) {
+        client.publish(payload);
+      } else {
+        pendingPublishesRef.current.push(payload);
+      }
     },
     [lessonId, token]
   );

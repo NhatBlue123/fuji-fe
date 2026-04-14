@@ -6,13 +6,13 @@ import { useDailyRoom } from "@/hooks/useDailyRoom";
 import { useStompChat } from "@/hooks/useStompChat";
 import {
   useCreateLessonRoomMutation,
-  useCreateLessonSummaryMutation,
   useEndLessonMutation,
   useMarkLessonActiveMutation,
   useGetChatHistoryQuery,
   useStartLessonRecordingMutation,
   useStopLessonRecordingMutation,
 } from "@/store/services/lessonApi";
+import { useSubmitSessionReviewMutation } from "@/store/services/bookingApi";
 import type { LessonRoomResponse } from "@/store/services/lessonApi";
 import { useAuth } from "@/store/hooks";
 import { VideoGrid } from "@/components/lesson/VideoGrid";
@@ -35,7 +35,7 @@ export default function LessonPage() {
 
   const [createRoom, { isLoading: isCreating, error: createError }] = useCreateLessonRoomMutation();
   const [endLesson] = useEndLessonMutation();
-  const [createLessonSummary] = useCreateLessonSummaryMutation();
+  const [submitSessionReview] = useSubmitSessionReviewMutation();
   const [markActive] = useMarkLessonActiveMutation();
   const [startRecording] = useStartLessonRecordingMutation();
   const [stopRecording] = useStopLessonRecordingMutation();
@@ -47,10 +47,9 @@ export default function LessonPage() {
 
   const [recordingConsentOpen, setRecordingConsentOpen] = useState(false);
   const recordingConsentShownRef = useRef(false);
-  const [summaryOpen, setSummaryOpen] = useState(false);
-  const [summaryNote, setSummaryNote] = useState("");
-  const [summaryHomework, setSummaryHomework] = useState("");
-  const [summaryVocabulary, setSummaryVocabulary] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportRating, setReportRating] = useState(5);
+  const [reportComment, setReportComment] = useState("");
 
   // Load chat history via REST, then subscribe to STOMP for live updates
   const { data: chatHistory } = useGetChatHistoryQuery(
@@ -148,7 +147,13 @@ export default function LessonPage() {
     }
   }, [lessonData, role, remoteRecording, startRecording, stopRecording]);
 
-  const doEndCall = useCallback(async () => {
+  const exitLesson = useCallback(() => {
+    leave();
+    disconnectStomp();
+    router.push("/booking/bookingmodal");
+  }, [leave, router]);
+
+  const endSessionOnly = useCallback(async () => {
     if (lessonData) {
       try {
         await endLesson({ lessonId: lessonData.lessonId }).unwrap();
@@ -157,10 +162,7 @@ export default function LessonPage() {
         toast.error("Lỗi khi kết thúc buổi học");
       }
     }
-    leave();
-    disconnectStomp();
-    router.push("/booking/bookingmodal");
-  }, [lessonData, endLesson, leave, router]);
+  }, [lessonData, endLesson]);
 
   const handleEndCall = useCallback(async () => {
     const confirmed = window.confirm(
@@ -170,12 +172,8 @@ export default function LessonPage() {
     );
     if (!confirmed) return;
 
-    if (role === "TEACHER") {
-      setSummaryOpen(true);
-      return;
-    }
-    await doEndCall();
-  }, [role, doEndCall]);
+    setReportOpen(true);
+  }, [role]);
 
   const handleToggleScreenShare = useCallback(() => {
     if (isScreenSharing) {
@@ -229,33 +227,45 @@ export default function LessonPage() {
 
   return (
     <div className="flex flex-col bg-[#0f1117]" style={{ height: "calc(100vh - 64px)" }}>
-      {summaryOpen && lessonData && (
+      {reportOpen && lessonData && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#1a1d27] p-5">
-            <p className="text-sm font-semibold text-[#F0F0F0]">Tóm tắt buổi học</p>
+            <p className="text-sm font-semibold text-[#F0F0F0]">
+              {role === "TEACHER" ? "Báo cáo học viên" : "Báo cáo giảng viên"}
+            </p>
+            <p className="text-xs text-[#8B8FA8] mt-1">
+              Thông tin này sẽ hiển thị ở mục phản hồi và báo cáo (booking) bên admin.
+            </p>
             <textarea
-              value={summaryNote}
-              onChange={(e) => setSummaryNote(e.target.value)}
-              placeholder="Nhận xét giáo viên"
+              value={reportComment}
+              onChange={(e) => setReportComment(e.target.value)}
+              placeholder={role === "TEACHER" ? "Nhập nội dung báo cáo học viên" : "Nhập nội dung báo cáo giảng viên"}
               className="mt-3 w-full min-h-[80px] rounded-lg bg-[#0f1117] border border-white/10 px-3 py-2 text-xs"
             />
-            <textarea
-              value={summaryHomework}
-              onChange={(e) => setSummaryHomework(e.target.value)}
-              placeholder="Bài tập về nhà"
-              className="mt-2 w-full min-h-[70px] rounded-lg bg-[#0f1117] border border-white/10 px-3 py-2 text-xs"
-            />
-            <input
-              value={summaryVocabulary}
-              onChange={(e) => setSummaryVocabulary(e.target.value)}
-              placeholder="Từ vựng (cách nhau dấu phẩy)"
-              className="mt-2 w-full rounded-lg bg-[#0f1117] border border-white/10 px-3 py-2 text-xs"
-            />
+            <div className="mt-2">
+              <p className="text-[11px] text-[#8B8FA8] mb-1">Mức độ (1-5)</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((score) => (
+                  <button
+                    key={score}
+                    type="button"
+                    onClick={() => setReportRating(score)}
+                    className={`h-8 w-8 rounded-md text-xs font-semibold ${
+                      reportRating === score
+                        ? "bg-[#6C63FF] text-white"
+                        : "bg-[#0f1117] border border-white/10 text-[#8B8FA8]"
+                    }`}
+                  >
+                    {score}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
                 className="px-4 py-2 rounded-lg border border-white/20 text-xs"
-                onClick={() => setSummaryOpen(false)}
+                onClick={() => setReportOpen(false)}
               >
                 Hủy
               </button>
@@ -264,23 +274,22 @@ export default function LessonPage() {
                 className="px-4 py-2 rounded-lg bg-[#6C63FF] text-xs text-white"
                 onClick={async () => {
                   try {
-                    await createLessonSummary({
-                      lessonId: lessonData.lessonId,
-                      teacherNote: summaryNote || undefined,
-                      homework: summaryHomework || undefined,
-                      vocabularyList: summaryVocabulary
-                        .split(",")
-                        .map((x) => x.trim())
-                        .filter(Boolean),
+                    await endSessionOnly();
+                    await submitSessionReview({
+                      bookingId,
+                      rating: reportRating,
+                      comment: reportComment || undefined,
                     }).unwrap();
-                  } catch {
-                    // ignore summary errors and continue ending room
+                    toast.success("Đã gửi báo cáo thành công");
+                  } catch (err: any) {
+                    toast.error(err?.data?.message || "Không thể gửi báo cáo");
+                  } finally {
+                    setReportOpen(false);
+                    exitLesson();
                   }
-                  setSummaryOpen(false);
-                  await doEndCall();
                 }}
               >
-                Lưu & kết thúc
+                Gửi & kết thúc
               </button>
             </div>
           </div>

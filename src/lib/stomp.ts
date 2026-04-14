@@ -6,7 +6,9 @@ let stompClient: Client | null = null;
 const WS_URL = `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "http://localhost:8181"}/ws`;
 
 export function getStompClient(token: string): Client {
-  if (stompClient?.connected) return stompClient;
+  // Reuse existing client in all states (connecting/connected/reconnecting)
+  // to avoid losing subscriptions by recreating the socket repeatedly.
+  if (stompClient) return stompClient;
 
   stompClient = new Client({
     webSocketFactory: () => new SockJS(WS_URL),

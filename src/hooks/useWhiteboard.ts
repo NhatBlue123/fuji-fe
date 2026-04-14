@@ -31,8 +31,13 @@ export function useWhiteboard(
     if (!lessonId || !token) return;
 
     const client = getStompClient(token);
+    let cancelled = false;
+    let subscribed = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const subscribe = () => {
+      if (cancelled || subscribed) return;
+      subscribed = true;
       setIsConnected(true);
 
       const changeSub = client.subscribe(
@@ -53,17 +58,21 @@ export function useWhiteboard(
       subsRef.current = [changeSub, clearSub];
     };
 
-    if (client.connected) {
-      subscribe();
-    } else {
-      const origOnConnect = client.onConnect;
-      client.onConnect = (frame) => {
-        origOnConnect?.(frame);
+    const waitUntilConnected = () => {
+      if (cancelled) return;
+      if (client.connected) {
         subscribe();
-      };
-    }
+        return;
+      }
+      retryTimer = setTimeout(waitUntilConnected, 150);
+    };
+
+    waitUntilConnected();
 
     return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      setIsConnected(false);
       subsRef.current.forEach((s) => {
         try { s.unsubscribe(); } catch { /* ignore */ }
       });

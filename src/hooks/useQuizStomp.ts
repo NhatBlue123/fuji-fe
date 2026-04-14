@@ -57,6 +57,8 @@ export function useQuizStomp({
 
     const client = getStompClient(token);
     clientRef.current = client;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const subscribe = () => {
       subsRef.current.forEach((s) => s.unsubscribe());
@@ -98,13 +100,20 @@ export function useQuizStomp({
       subsRef.current = [subQ, subS, subR, subE];
     };
 
-    if (client.connected) {
-      subscribe();
-    } else {
-      client.onConnect = () => subscribe();
-    }
+    const waitUntilConnected = () => {
+      if (cancelled) return;
+      if (client.connected) {
+        subscribe();
+        return;
+      }
+      retryTimer = setTimeout(waitUntilConnected, 150);
+    };
+
+    waitUntilConnected();
 
     return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       subsRef.current.forEach((s) => s.unsubscribe());
       subsRef.current = [];
     };

@@ -37,6 +37,12 @@ interface UseDailyRoomReturn {
   leave: () => void;
 }
 
+function isMeetingEndedMessage(message?: string | null): boolean {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return lower.includes("meeting has ended") || lower.includes("meeting ended");
+}
+
 function mapParticipant(p: DailySDKParticipant): Participant {
   return {
     sessionId: p.session_id,
@@ -119,6 +125,11 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
     };
 
     const handleError = (evt?: { errorMsg?: string }) => {
+      // Daily emits this when host closes room; treat as expected end-state.
+      if (isMeetingEndedMessage(evt?.errorMsg)) {
+        setError(null);
+        return;
+      }
       setError(evt?.errorMsg ?? "Unknown error");
     };
 
@@ -140,6 +151,10 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
         });
       })
       .catch((err: Error) => {
+        if (isMeetingEndedMessage(err.message)) {
+          setError(null);
+          return;
+        }
         setError(err.message);
       });
 
@@ -179,7 +194,15 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
   }, []);
 
   const leave = useCallback(() => {
-    callRef.current?.leave();
+    callRef.current
+      ?.leave()
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : typeof err === "string" ? err : null;
+        if (!isMeetingEndedMessage(message)) {
+          setError(message ?? "Unknown error");
+        }
+      });
   }, []);
 
   return {

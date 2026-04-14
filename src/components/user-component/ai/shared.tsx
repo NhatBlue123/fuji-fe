@@ -1,8 +1,6 @@
 "use client";
 
 import { memo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,27 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { FuriganaData } from "@/types/voice";
-
-/* ------------------------------------------------------------------ */
-/* n8n Sensei API                                                       */
-/* ------------------------------------------------------------------ */
-
-export async function callSensei(
-  userInput: string,
-  sessionId: string,
-): Promise<string> {
-  const N8N_URL = process.env.NEXT_PUBLIC_N8N_SENSEI_URL!;
-  const response = await fetch(N8N_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chatInput: userInput,
-      sessionId,
-    }),
-  });
-  const data = await response.text();
-  return data;
-}
 
 /** Tách <think>...</think> ra khỏi phần nội dung chính */
 export function parseResponse(raw: string): { think: string; content: string } {
@@ -64,6 +41,7 @@ export type AssistantMessage = {
   textJp?: string;
   textVn?: string;
   think?: string;
+  _streaming?: boolean;
 };
 
 export type PracticeMode = "sensei" | "assistant";
@@ -222,17 +200,19 @@ export const ChatInputArea = memo(function ChatInputArea({
 }) {
   return (
     <div className="p-6 border-t border-border bg-background/80 backdrop-blur-sm shrink-0">
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
-        {chips.map((chip) => (
-          <Button
-            key={chip.text}
-            onClick={() => onInputChange(chip.text)}
-            className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
-          >
-            {chip.emoji} {chip.text}
-          </Button>
-        ))}
-      </div>
+      {chips.length > 0 && (
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+          {chips.map((chip) => (
+            <Button
+              key={chip.text}
+              onClick={() => onInputChange(chip.text)}
+              className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
+            >
+              {chip.emoji} {chip.text}
+            </Button>
+          ))}
+        </div>
+      )}
       <div className="relative flex items-center gap-3">
         <div className="flex-1 relative">
           <Input
@@ -280,6 +260,18 @@ export interface SenseiFeedback {
   improvements?: string[];
 }
 
+interface RightSidebarTopic {
+  id: number;
+  title: string;
+}
+
+interface RightSidebarScenario {
+  id: number;
+  level: string;
+  title: string;
+  situation: string;
+}
+
 export const RightSidebar = memo(function RightSidebar({
   settingsTitle,
   topics,
@@ -292,10 +284,10 @@ export const RightSidebar = memo(function RightSidebar({
   feedback,
 }: {
   settingsTitle: string;
-  topics: any[];
+  topics: RightSidebarTopic[];
   selectedTopicId: number | null;
   onTopicChange: (v: string) => void;
-  scenarios: any[];
+  scenarios: RightSidebarScenario[];
   selectedScenarioId: number | null;
   onScenarioChange: (v: string) => void;
   disabled?: boolean;

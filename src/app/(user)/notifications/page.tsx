@@ -49,7 +49,31 @@ const TYPE_LABELS: Record<string, string> = {
   [NotificationType.system]: "Hệ thống",
   [NotificationType.reminder]: "Nhắc nhở",
   [NotificationType.security]: "Bảo mật",
+  [NotificationType.booking]: "Lịch học",
+  [NotificationType.message]: "Tin nhắn",
 };
+
+function isCourseNotification(n: NotifType) {
+  if (n.type === NotificationType.course || n.type === NotificationType.booking) return true;
+  if (n.type !== NotificationType.reminder) return false;
+
+  const related = (n.relatedType || "").toUpperCase();
+  const link = (n.linkUrl || "").toLowerCase();
+  const title = (n.title || "").toLowerCase();
+
+  return (
+    related.includes("BOOKING") ||
+    link.includes("/booking") ||
+    link.includes("/learn/session") ||
+    title.includes("giờ học") ||
+    title.includes("buổi học")
+  );
+}
+
+function getNotificationTypeLabel(n: NotifType) {
+  if (isCourseNotification(n)) return "Khóa học";
+  return TYPE_LABELS[n.type] ?? "Khác";
+}
 
 export default function NotificationsPage() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, setNotifications } = useNotifications();
@@ -59,10 +83,15 @@ export default function NotificationsPage() {
 
   const filteredNotifications = useMemo(() => {
     if (activeTab === "unread") return notifications.filter(n => !n.isRead);
-    if (activeTab === "course") return notifications.filter(n => n.type === NotificationType.course);
+    if (activeTab === "course") return notifications.filter(isCourseNotification);
     if (activeTab === "system") return notifications.filter(n => n.type === NotificationType.system);
-    if (activeTab === "reminder") return notifications.filter(n => n.type === NotificationType.reminder);
+    if (activeTab === "reminder")
+      return notifications.filter(
+        n => n.type === NotificationType.reminder && !isCourseNotification(n)
+      );
     if (activeTab === "security") return notifications.filter(n => n.type === NotificationType.security);
+    if (activeTab === "booking") return notifications.filter(n => n.type === NotificationType.booking);
+    if (activeTab === "message") return notifications.filter(n => n.type === NotificationType.message);
     return notifications;
   }, [notifications, activeTab]);
 
@@ -149,6 +178,12 @@ export default function NotificationsPage() {
               <TabsTrigger value="security" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
                 Bảo mật
               </TabsTrigger>
+              <TabsTrigger value="booking" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
+                Lịch học
+              </TabsTrigger>
+              <TabsTrigger value="message" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
+                Tin nhắn
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -159,7 +194,7 @@ export default function NotificationsPage() {
             <AnimatePresence mode="popLayout" initial={false}>
               {filteredNotifications.length > 0 ? (
                 filteredNotifications.map((n) => {
-                  const typeLabel = TYPE_LABELS[n.type] ?? "Khác";
+                  const typeLabel = getNotificationTypeLabel(n);
                   
                   return (
                     <motion.div
@@ -171,35 +206,35 @@ export default function NotificationsPage() {
                       className={cn(
                         "group relative flex items-start gap-3.5 py-4 px-5 transition-all border-b border-border/50 last:border-none",
                         !n.isRead
-                          ? "bg-secondary/[0.06] dark:bg-secondary/[0.08] border-l-[3px] border-l-secondary"
-                          : "hover:bg-muted/30 opacity-70 border-l-[3px] border-l-transparent"
+                          ? "bg-secondary/[0.06] dark:bg-secondary/[0.08] border-l-[4px] border-l-secondary"
+                          : "hover:bg-muted/30 opacity-60 border-l-[4px] border-l-transparent"
                       )}
                     >
-                      {/* Chấm chỉ thông báo chưa đọc */}
-                      <div className={cn(
-                        "size-2.5 rounded-full mt-2 flex-shrink-0 transition-all",
-                        !n.isRead 
-                          ? "bg-secondary shadow-[0_0_8px_rgba(var(--secondary-rgb,59,130,246),0.5)]" 
-                          : "bg-muted-foreground/15"
-                      )} />
-
+                      
                       <div className="flex-1 min-w-0 pr-10 cursor-pointer" onClick={() => navigateToDetail(n)}>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1 block">
+                        {/* Nhãn loại thông báo (VD: Khóa học, Hệ thống) */}
+                        <span className={cn(
+                          "text-[9px] font-bold uppercase tracking-widest mb-1 block",
+                          !n.isRead ? "text-secondary/70" : "text-muted-foreground/60"
+                        )}>
                           {typeLabel}
                         </span>
+                        
+                        {/* Nội dung tiêu đề và đoạn trích thông báo */}
                         <h3 className={cn(
-                          "text-[14px] leading-snug break-words mb-1",
-                          !n.isRead ? "font-bold text-foreground" : "font-medium text-foreground/60"
+                          "text-[14px] leading-snug break-words mb-1 transition-colors",
+                          !n.isRead ? "font-bold text-foreground" : "font-medium text-foreground/50"
                         )}>
                           <span className={cn(
                             "font-extrabold mr-1.5",
-                            !n.isRead ? "text-secondary" : "text-muted-foreground"
+                            !n.isRead ? "text-secondary" : "text-foreground/40"
                           )}>{n.title}</span>
-                          {n.content}
+                          <span className={!n.isRead ? "text-foreground" : "text-foreground/40"}>
+                            {n.content}
+                          </span>
                         </h3>
-
+                        
                         <div className="flex items-center gap-2 mt-1.5">
-                           <Clock className="size-3 text-muted-foreground/40" />
                            <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/40">
                              {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: vi })}
                            </span>

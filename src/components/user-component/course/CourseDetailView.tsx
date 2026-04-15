@@ -3,24 +3,45 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useGetCourseByIdQuery,
   useGetLessonsByCourseQuery,
   useGetCourseRatingsQuery,
   useGetAllCoursesQuery,
+  usePurchaseCourseMutation,
 } from "@/store/services/courseApi";
 import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useAuth, useAppDispatch } from "@/store/hooks";
+import { baseApi } from "@/store/services/baseApi";
+import { toast } from "sonner";
 
 // ─── Helpers ───────────────────────────────────────────
 
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1200&auto=format&fit=crop";
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("vi-VN").format(price) + "đ";
+const BLOSSOM_RATE = 1000;
+
+function normalizePrice(price: unknown): number {
+  const value = Number(price ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function isFreePrice(price: unknown): boolean {
+  return normalizePrice(price) <= 0;
+}
+
+function toBlossomAmount(price: unknown): number {
+  return Math.floor(normalizePrice(price) / BLOSSOM_RATE);
+}
+
+function formatPrice(price: unknown): string {
+  if (isFreePrice(price)) return "Miễn phí";
+  return `${toBlossomAmount(price).toLocaleString("vi-VN")} 🌸`;
 }
 
 function formatDuration(minutes: number): string {
@@ -111,28 +132,30 @@ function LessonItem({
   lesson,
   index,
   courseId,
+  canAccessCourse,
 }: {
   lesson: LessonResponseDTO;
   index: number;
   courseId: number;
+  canAccessCourse: boolean;
 }) {
   const isVideo = lesson.lessonType === "video";
+  const canAccessLesson = lesson.isPreview || canAccessCourse;
 
-  return (
-    <Link
-      href={`/course/${courseId}/lesson/${lesson.id}`}
-      className="p-4 pl-6 md:pl-14 hover:bg-accent/30 transition-colors flex items-center justify-between group cursor-pointer block"
-    >
+  const lessonContent = (
+    <>
       <div className="flex items-center gap-4">
         <div
           className={`size-10 rounded-full flex items-center justify-center transition-all ${
             lesson.userCompleted
               ? "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/20"
-              : "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground border border-border group-hover:border-primary"
+              : canAccessLesson
+                ? "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground border border-border group-hover:border-primary"
+                : "bg-muted text-muted-foreground border border-border"
           }`}
         >
           <span className="material-symbols-outlined text-xl">
-            {isVideo ? "play_arrow" : "assignment"}
+            {canAccessLesson ? (isVideo ? "play_arrow" : "assignment") : "lock"}
           </span>
         </div>
         <div>
@@ -161,14 +184,46 @@ function LessonItem({
                 Đã học
               </span>
             )}
+            {lesson.isPreview && (
+              <span className="text-blue-500 text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20">
+                Xem thử
+              </span>
+            )}
+            {!canAccessLesson && (
+              <span className="text-amber-500 text-[10px] font-bold px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">
+                Khóa
+              </span>
+            )}
           </div>
         </div>
       </div>
-      {!lesson.userCompleted && (
+      {canAccessLesson && !lesson.userCompleted && (
         <span className="bg-muted hover:bg-secondary hover:text-secondary-foreground text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-border hover:border-secondary transition-all opacity-0 group-hover:opacity-100">
           {isVideo ? "Xem" : "Làm bài"}
         </span>
       )}
+      {!canAccessLesson && (
+        <span className="bg-muted text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-border">
+          Đăng ký để mở
+        </span>
+      )}
+    </>
+  );
+
+  if (!canAccessLesson) {
+    return (
+      <div className="p-4 pl-6 md:pl-14 transition-colors flex items-center justify-between group cursor-not-allowed opacity-80">
+        {lessonContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/course/${courseId}/lesson/${lesson.id}`}
+      className="p-4 pl-6 md:pl-14 hover:bg-accent/30 transition-colors flex items-center justify-between group cursor-pointer block"
+    >
+      {lessonContent}
     </Link>
   );
 }
@@ -289,10 +344,12 @@ function CurriculumContent({
   lessons,
   isLoading,
   courseId,
+  canAccessCourse,
 }: {
   lessons: LessonResponseDTO[];
   isLoading: boolean;
   courseId: number;
+  canAccessCourse: boolean;
 }) {
   const [expandedAll, setExpandedAll] = useState(true);
 
@@ -398,6 +455,7 @@ function CurriculumContent({
                   lesson={lesson}
                   index={idx}
                   courseId={courseId}
+                  canAccessCourse={canAccessCourse}
                 />
               ))
             )}
@@ -593,7 +651,7 @@ function InstructorContent({
                   />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
                   <div className="absolute top-3 left-3 bg-black/60 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">
-                    {c.price === 0 ? "Miễn phí" : formatPrice(c.price)}
+                    {formatPrice(c.price)}
                   </div>
                 </div>
                 <div className="p-4 flex flex-col flex-1">
@@ -613,7 +671,7 @@ function InstructorContent({
                   </div>
                   <div className="mt-auto flex justify-between items-center pt-3 border-t border-border">
                     <span className="text-secondary font-bold text-sm">
-                      {c.price === 0 ? "Miễn phí" : formatPrice(c.price)}
+                      {formatPrice(c.price)}
                     </span>
                     <span className="size-8 rounded-lg bg-muted hover:bg-secondary text-foreground hover:text-secondary-foreground flex items-center justify-center transition-all">
                       <span className="material-symbols-outlined text-lg">
@@ -777,11 +835,17 @@ function ReviewsContent({
 // ─── Main Component ────────────────────────────────────
 
 export default function CourseDetailView({ courseId }: { courseId: number }) {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("curriculum");
   const [couponCode, setCouponCode] = useState("");
+  const [isPurchased, setIsPurchased] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
   const { isPremium } = useFeatureAccess();
+  const [purchaseCourse, { isLoading: isPurchasing }] =
+    usePurchaseCourseMutation();
 
   const {
     data: course,
@@ -791,6 +855,18 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
   const { data: lessons = [], isLoading: lessonsLoading } =
     useGetLessonsByCourseQuery(courseId);
+
+  const sortedLessons = [...lessons].sort(
+    (a, b) => a.lessonOrder - b.lessonOrder,
+  );
+  const firstLesson = sortedLessons[0];
+  const resumeLessonId = course?.currentLessonId ?? firstLesson?.id;
+  const firstLessonHref = firstLesson
+    ? `/course/${courseId}/lesson/${firstLesson.id}`
+    : "#";
+  const resumeLessonHref = resumeLessonId
+    ? `/course/${courseId}/lesson/${resumeLessonId}`
+    : "#";
 
   // Sticky detection
   useEffect(() => {
@@ -814,6 +890,17 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   }, []);
+
+  const handleApplyCoupon = () => {
+    const normalizedCode = couponCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      toast.info("Vui lòng nhập mã ưu đãi.");
+      return;
+    }
+
+    setCouponCode(normalizedCode);
+    toast.success(`Đã áp dụng mã ${normalizedCode}.`);
+  };
 
   if (courseLoading) return <DetailSkeleton />;
 
@@ -841,6 +928,56 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
   const completedLessons = lessons.filter((l) => l.userCompleted).length;
+  const canAccessCourse =
+    isPremium || isPurchased || Boolean(course.isEnrolled);
+
+  const handlePurchaseCourse = async () => {
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để mua khóa học.");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const discountCode = couponCode.trim();
+      await purchaseCourse({
+        courseId,
+        discountCode: discountCode || undefined,
+      }).unwrap();
+
+      setIsPurchased(true);
+      dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
+      toast.success(
+        isFreePrice(course.price)
+          ? "Đăng ký khóa học thành công."
+          : "Thanh toán khóa học thành công.",
+      );
+
+      if (resumeLessonId) {
+        router.push(resumeLessonHref);
+      }
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string }; error?: string };
+      const message =
+        err?.data?.message ||
+        err?.error ||
+        "Không thể thanh toán khóa học. Vui lòng thử lại.";
+
+      if (
+        typeof message === "string" &&
+        message.toLowerCase().includes("already purchased")
+      ) {
+        setIsPurchased(true);
+        toast.info("Bạn đã mua khóa học này trước đó.");
+        if (resumeLessonId) {
+          router.push(resumeLessonHref);
+        }
+        return;
+      }
+
+      toast.error(message);
+    }
+  };
 
   return (
     <>
@@ -865,7 +1002,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
             {/* Badges */}
             <div className="flex items-center gap-3 mb-4">
               <span className="px-3 py-1 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold rounded-lg border border-white/10 shadow-lg uppercase tracking-wider">
-                {course.price === 0 ? "Miễn phí" : formatPrice(course.price)}
+                {formatPrice(course.price)}
               </span>
               <span className="px-3 py-1 bg-white/10 backdrop-blur text-foreground/80 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">
@@ -915,15 +1052,29 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
           {/* CTA */}
           <div className="flex-shrink-0">
             {lessons.length > 0 ? (
-              <Link
-                href={`/course/${courseId}/lesson/${[...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)[0].id}`}
-                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
-              >
-                <span className="material-symbols-outlined filled">
-                  play_circle
-                </span>
-                Bắt đầu học ngay
-              </Link>
+              canAccessCourse ? (
+                <Link
+                  href={resumeLessonHref}
+                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
+                >
+                  <span className="material-symbols-outlined filled">
+                    play_circle
+                  </span>
+                  {course.currentLessonId ? "Tiếp tục học" : "Bắt đầu học ngay"}
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    document
+                      .getElementById("course-purchase-card")
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
+                >
+                  <span className="material-symbols-outlined filled">sell</span>
+                  Đăng ký để bắt đầu học
+                </button>
+              )
             ) : (
               <button
                 disabled
@@ -979,6 +1130,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 lessons={lessons}
                 isLoading={lessonsLoading}
                 courseId={courseId}
+                canAccessCourse={canAccessCourse}
               />
             )}
             {activeTab === "instructor" && (
@@ -1000,7 +1152,10 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               {/* Preview Card */}
-              <div className="glass-card rounded-2xl p-6 border border-white/10 shadow-xl backdrop-blur-xl">
+              <div
+                id="course-purchase-card"
+                className="glass-card rounded-2xl p-6 border border-white/10 shadow-xl backdrop-blur-xl"
+              >
                 {/* Thumbnail preview */}
                 <div className="w-full aspect-video rounded-lg overflow-hidden mb-6 relative group cursor-pointer border border-border">
                   <Image
@@ -1021,7 +1176,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
                 {/* Price */}
                 <div className="text-3xl font-black text-foreground mb-2">
-                  {course.price === 0 ? (
+                  {isFreePrice(course.price) ? (
                     <span className="text-secondary">Miễn phí</span>
                   ) : (
                     formatPrice(course.price)
@@ -1029,25 +1184,32 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 </div>
 
                 {/* Buttons */}
-                {!isPremium ? (
-                  <Button className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base">
-                    {course.price === 0 ? "Đăng ký miễn phí" : "Mua ngay"}
+                {!canAccessCourse ? (
+                  <Button
+                    onClick={handlePurchaseCourse}
+                    disabled={isPurchasing}
+                    className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base"
+                  >
+                    {isPurchasing
+                      ? "Đang xử lý..."
+                      : isFreePrice(course.price)
+                        ? "Đăng ký miễn phí"
+                        : "Mua ngay"}
                   </Button>
                 ) : (
-                  <Link 
-                    href={lessons.length > 0 ? `/course/${courseId}/lesson/${[...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)[0].id}` : "#"} 
-                    className="block"
-                  >
-                    <Button 
-                      disabled={lessons.length === 0}
+                  <Link href={resumeLessonHref} className="block">
+                    <Button
+                      disabled={!resumeLessonId}
                       className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold transition-all shadow-lg shadow-purple-500/30 mb-3 text-base flex items-center justify-center gap-2"
                     >
-                      <span className="material-symbols-outlined text-xl">play_circle</span>
-                      {lessons.length > 0 ? "Vào học ngay" : "Chưa có bài học"}
+                      <span className="material-symbols-outlined text-xl">
+                        play_circle
+                      </span>
+                      {resumeLessonId ? "Vào học ngay" : "Chưa có bài học"}
                     </Button>
                   </Link>
                 )}
-                
+
                 <Button
                   variant="ghost"
                   className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm"
@@ -1143,7 +1305,11 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                     className="glass-input rounded-lg text-sm text-foreground px-3 py-2 w-full focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
                     placeholder="Nhập mã giảm giá"
                   />
-                  <Button className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors">
+                  <Button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors"
+                  >
                     Áp dụng
                   </Button>
                 </div>

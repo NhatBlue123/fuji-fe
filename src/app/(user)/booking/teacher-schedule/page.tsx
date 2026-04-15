@@ -36,7 +36,6 @@ import { cn } from "@/lib/utils";
 import { useGetTeacherAvailabilityQuery } from "@/store/services/bookingApi";
 import type { DiscoverySlot } from "@/types/booking";
 
-
 const WEEKDAY_OPTIONS = [
   { value: 1, label: "T2", full: "Thứ 2" },
   { value: 2, label: "T3", full: "Thứ 3" },
@@ -46,6 +45,9 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: "T7", full: "Thứ 7" },
   { value: 0, label: "CN", full: "Chủ nhật" },
 ] as const;
+
+const BOOKING_LEAD_TIME_HOURS = 48;
+const BOOKING_LEAD_TIME_MS = BOOKING_LEAD_TIME_HOURS * 60 * 60 * 1000;
 
 function toYmd(date: Date) {
   const yyyy = date.getFullYear();
@@ -94,11 +96,25 @@ function formatTimeRange(startAt: string, endAt: string) {
 }
 
 function toTimeKey(startAt: string, endAt: string) {
-  return `${formatTimeRange(startAt, endAt)}`;
+  return formatTimeRange(startAt, endAt);
 }
 
-function isAvailable(slot: DiscoverySlot) {
+function isAvailableStatus(slot: DiscoverySlot) {
   return slot.status === "AVAILABLE";
+}
+
+function isLeadTimeBlocked(slot: DiscoverySlot, now = Date.now()) {
+  return (
+    isAvailableStatus(slot) &&
+    new Date(slot.startAt).getTime() < now + BOOKING_LEAD_TIME_MS
+  );
+}
+
+function isBookable(slot: DiscoverySlot, now = Date.now()) {
+  return (
+    isAvailableStatus(slot) &&
+    new Date(slot.startAt).getTime() >= now + BOOKING_LEAD_TIME_MS
+  );
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
@@ -114,26 +130,6 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LegendChip({
-  colorClass,
-  label,
-}: {
-  colorClass: string;
-  label: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm",
-        colorClass
-      )}
-    >
-      <span className="size-2 rounded-full bg-current" />
-      <span>{label}</span>
-    </div>
-  );
-}
-
 export default function TeacherSchedulePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -141,12 +137,10 @@ export default function TeacherSchedulePage() {
   const teacherId = Number(searchParams.get("teacherId"));
   const validTeacherId = Number.isFinite(teacherId) && teacherId > 0;
 
-  const leadTimeDate = useMemo(() => {
-    const next = new Date();
-    next.setHours(next.getHours() + 48);
-    return next;
-  }, []);
-  const minBookingDate = useMemo(() => toYmd(leadTimeDate), [leadTimeDate]);
+  const minBookingDate = useMemo(
+    () => toYmd(new Date(Date.now() + BOOKING_LEAD_TIME_MS)),
+    []
+  );
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -154,9 +148,11 @@ export default function TeacherSchedulePage() {
   const [showInvalidSlotAlert, setShowInvalidSlotAlert] = useState(false);
 
   const [repeatMode, setRepeatMode] = useState<"NONE" | "RECURRING">("NONE");
-  const [rangeStart, setRangeStart] = useState(minBookingDate);
+  const [rangeStart, setRangeStart] = useState(() =>
+    toYmd(new Date(Date.now() + BOOKING_LEAD_TIME_MS))
+  );
   const [rangeEnd, setRangeEnd] = useState(() => {
-    const next = new Date(leadTimeDate);
+    const next = new Date(Date.now() + BOOKING_LEAD_TIME_MS);
     next.setMonth(next.getMonth() + 1);
     return toYmd(next);
   });
@@ -174,7 +170,6 @@ export default function TeacherSchedulePage() {
     { teacherId, fromDate, toDate },
     { skip: !validTeacherId }
   );
-  
 
   useEffect(() => {
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -189,10 +184,10 @@ export default function TeacherSchedulePage() {
   useEffect(() => {
     if (selectedDate || groups.length === 0) return;
 
-    const firstDateWithAvailableSlot =
-      groups.find((group) => group.slots.some(isAvailable))?.date ?? groups[0].date;
+    const firstDateWithBookableSlot =
+      groups.find((group) => group.slots.some(isBookable))?.date ?? groups[0].date;
 
-    setSelectedDate(parseLocalDate(firstDateWithAvailableSlot));
+    setSelectedDate(parseLocalDate(firstDateWithBookableSlot));
   }, [groups, selectedDate]);
 
   useEffect(() => {
@@ -201,13 +196,13 @@ export default function TeacherSchedulePage() {
       return;
     }
 
-    const availableIds = new Set(
+    const bookableIds = new Set(
       groups.flatMap((group) =>
-        group.slots.filter(isAvailable).map((slot) => slot.timeSlotId)
+        group.slots.filter(isBookable).map((slot) => slot.timeSlotId)
       )
     );
 
-    const nextIds = selectedIds.filter((id) => availableIds.has(id));
+    const nextIds = selectedIds.filter((id) => bookableIds.has(id));
     if (nextIds.length !== selectedIds.length) {
       setSelectedIds(nextIds);
     }
@@ -225,7 +220,7 @@ export default function TeacherSchedulePage() {
   const availableDates = useMemo(
     () =>
       groups
-        .filter((group) => group.slots.some(isAvailable))
+        .filter((group) => group.slots.some(isBookable))
         .map((group) => parseLocalDate(group.date)),
     [groups]
   );
@@ -235,7 +230,20 @@ export default function TeacherSchedulePage() {
       groups
         .filter(
           (group) =>
-            group.slots.length > 0 && group.slots.every((slot) => !isAvailable(slot))
+            group.slots.length > 0 &&
+            group.slots.every((slot) => !isAvailableStatus(slot))
+        )
+        .map((group) => parseLocalDate(group.date)),
+    [groups]
+  );
+
+  const leadTimeBlockedDates = useMemo(
+    () =>
+      groups
+        .filter(
+          (group) =>
+            group.slots.some(isAvailableStatus) &&
+            group.slots.every((slot) => !isBookable(slot))
         )
         .map((group) => parseLocalDate(group.date)),
     [groups]
@@ -244,7 +252,7 @@ export default function TeacherSchedulePage() {
   const availableSlotCount = useMemo(
     () =>
       groups.reduce(
-        (total, group) => total + group.slots.filter(isAvailable).length,
+        (total, group) => total + group.slots.filter(isBookable).length,
         0
       ),
     [groups]
@@ -268,13 +276,12 @@ export default function TeacherSchedulePage() {
     return groups
       .flatMap((group) => group.slots)
       .filter((slot) => {
-        if (!isAvailable(slot)) return false;
+        if (!isBookable(slot)) return false;
         const slotDate = slot.startAt.slice(0, 10);
-        if (slotDate < rangeStart || slotDate > rangeEnd) return false;
-        return new Date(slot.startAt).getTime() >= leadTimeDate.getTime();
+        return slotDate >= rangeStart && slotDate <= rangeEnd;
       })
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-  }, [groups, validRecurringRange, rangeStart, rangeEnd, leadTimeDate]);
+  }, [groups, validRecurringRange, rangeStart, rangeEnd]);
 
   const recurringTimeOptions = useMemo(() => {
     const map = new Map<
@@ -381,7 +388,12 @@ export default function TeacherSchedulePage() {
   );
 
   const toggleSlot = (slot: DiscoverySlot) => {
-    if (!isAvailable(slot)) return;
+    if (isLeadTimeBlocked(slot)) {
+      setShowInvalidSlotAlert(true);
+      return;
+    }
+
+    if (!isAvailableStatus(slot)) return;
 
     setSelectedIds((prev) =>
       prev.includes(slot.timeSlotId)
@@ -407,9 +419,7 @@ export default function TeacherSchedulePage() {
   const onGoInvoice = () => {
     if (!validTeacherId || effectiveSelectedIds.length === 0) return;
 
-    const hasInvalidSlot = effectiveSelectedSlots.some(
-      (slot) => new Date(slot.startAt).getTime() < leadTimeDate.getTime()
-    );
+    const hasInvalidSlot = effectiveSelectedSlots.some((slot) => !isBookable(slot));
 
     if (hasInvalidSlot) {
       setShowInvalidSlotAlert(true);
@@ -505,7 +515,7 @@ export default function TeacherSchedulePage() {
                               variant="outline"
                               className="rounded-full border-border/70 bg-background/70 px-3 py-1 text-muted-foreground"
                             >
-                              {availableDates.length} ngày có slot trống
+                              {availableDates.length} ngày có slot đặt được
                             </Badge>
                           </div>
 
@@ -519,7 +529,7 @@ export default function TeacherSchedulePage() {
 
                       <div className="grid grid-cols-2 gap-3 sm:min-w-[320px] sm:grid-cols-3">
                         <MiniStat label="Ngày hiển thị" value={`${groups.length}`} />
-                        <MiniStat label="Slot trống" value={`${availableSlotCount}`} />
+                        <MiniStat label="Slot đặt được" value={`${availableSlotCount}`} />
                         <MiniStat label="Đã chọn" value={`${effectiveSelectedIds.length}`} />
                       </div>
                     </div>
@@ -532,7 +542,8 @@ export default function TeacherSchedulePage() {
 
                       <span className="inline-flex items-center gap-2">
                         <Sparkles className="size-4 text-secondary" />
-                        Chỉ lấy các slot đủ điều kiện đặt trước 48 giờ
+                        Chỉ có thể đặt các slot trống cách hiện tại ít nhất 48 giờ; vào
+                        phòng học trước giờ học 5 phút
                       </span>
                     </div>
                   </CardContent>
@@ -595,7 +606,7 @@ export default function TeacherSchedulePage() {
                         </>
                       ) : (
                         <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-muted-foreground">
-                          Chế độ này giữ nguyên cách chọn thủ công từng slot như hiện tại.
+                          Chế độ này chọn thủ công từng slot.
                         </div>
                       )}
                     </div>
@@ -693,8 +704,8 @@ export default function TeacherSchedulePage() {
                         </div>
 
                         <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-                          Nếu buổi nào trong lịch lặp không còn slot phù hợp hoặc không đủ
-                          điều kiện 48 giờ thì hệ thống sẽ tự bỏ qua buổi đó.
+                          Hệ thống chỉ gom các slot còn trống và cách hiện tại ít nhất
+                          48 giờ. Nếu buổi nào không còn slot phù hợp thì sẽ tự bỏ qua.
                         </div>
                       </>
                     ) : null}
@@ -725,12 +736,15 @@ export default function TeacherSchedulePage() {
                             modifiers={{
                               hasAvailability: availableDates,
                               bookedOnly: bookedOnlyDates,
+                              leadTimeBlocked: leadTimeBlockedDates,
                             }}
                             modifiersClassNames={{
                               hasAvailability:
                                 "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-primary [&>button]:font-semibold [&>button]:text-primary",
                               bookedOnly:
                                 "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-destructive/80 [&>button]:text-muted-foreground",
+                              leadTimeBlocked:
+                                "before:absolute before:bottom-2 before:left-1/2 before:size-1.5 before:-translate-x-1/2 before:rounded-full before:bg-amber-500 [&>button]:text-amber-700 dark:[&>button]:text-amber-300",
                             }}
                             className="w-full rounded-3xl [--cell-size:2.8rem] md:[--cell-size:3rem]"
                           />
@@ -738,7 +752,11 @@ export default function TeacherSchedulePage() {
 
                         <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
                           Chấm <span className="font-semibold text-primary">xanh</span> là
-                          ngày còn khung giờ trống.
+                          ngày còn slot đặt được. Chấm{" "}
+                          <span className="font-semibold text-amber-600 dark:text-amber-300">
+                            vàng
+                          </span>{" "}
+                          là còn slot trống nhưng dưới 48 giờ nên chưa thể đặt.
                         </div>
                       </CardContent>
                     </Card>
@@ -783,22 +801,28 @@ export default function TeacherSchedulePage() {
                             <div className="space-y-3">
                               {selectedDaySlots.map((slot) => {
                                 const selected = selectedIds.includes(slot.timeSlotId);
-                                const available = isAvailable(slot);
+                                const availableStatus = isAvailableStatus(slot);
+                                const bookable = isBookable(slot);
+                                const leadTimeBlocked = isLeadTimeBlocked(slot);
+                                const unavailable = !availableStatus;
 
                                 return (
                                   <button
                                     key={slot.timeSlotId}
                                     type="button"
-                                    disabled={!available}
+                                    disabled={unavailable}
                                     onClick={() => toggleSlot(slot)}
                                     className={cn(
                                       "w-full rounded-[24px] border px-4 py-4 text-left transition-all",
                                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                                       selected && "border-secondary/40 bg-secondary/10 shadow-sm",
                                       !selected &&
-                                        available &&
+                                        bookable &&
                                         "border-border/70 bg-background/60 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/5",
-                                      !available &&
+                                      !selected &&
+                                        leadTimeBlocked &&
+                                        "border-amber-500/20 bg-amber-500/5 hover:border-amber-500/35 hover:bg-amber-500/10",
+                                      unavailable &&
                                         "cursor-not-allowed border-destructive/15 bg-destructive/5 opacity-75"
                                     )}
                                   >
@@ -810,9 +834,12 @@ export default function TeacherSchedulePage() {
                                             selected &&
                                               "border-secondary/20 bg-secondary text-secondary-foreground",
                                             !selected &&
-                                              available &&
+                                              bookable &&
                                               "border-primary/15 bg-primary/10 text-primary",
-                                            !available &&
+                                            !selected &&
+                                              leadTimeBlocked &&
+                                              "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                            unavailable &&
                                               "border-destructive/15 bg-destructive/10 text-destructive"
                                           )}
                                         >
@@ -852,16 +879,21 @@ export default function TeacherSchedulePage() {
                                           selected &&
                                             "border-transparent bg-secondary text-secondary-foreground",
                                           !selected &&
-                                            available &&
+                                            bookable &&
                                             "border-primary/15 bg-primary/10 text-primary",
-                                          !available &&
+                                          !selected &&
+                                            leadTimeBlocked &&
+                                            "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                          unavailable &&
                                             "border-destructive/15 bg-destructive/10 text-destructive"
                                         )}
                                       >
                                         {selected
                                           ? "Đã chọn"
-                                          : available
-                                          ? "Available"
+                                          : bookable
+                                          ? "Có thể đặt"
+                                          : leadTimeBlocked
+                                          ? "Không đặt được (< 48h)"
                                           : "Booked"}
                                       </Badge>
                                     </div>
@@ -958,9 +990,8 @@ export default function TeacherSchedulePage() {
 
                           {skippedOccurrences.length > 0 ? (
                             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ
-                              qua vì không còn slot phù hợp hoặc không đủ điều kiện đặt
-                              trước 48 giờ.
+                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ qua vì
+                              không còn slot trống phù hợp trong lúc đó.
                             </div>
                           ) : null}
                         </>
@@ -1003,7 +1034,7 @@ export default function TeacherSchedulePage() {
                       />
                       <MiniStat
                         label={
-                          repeatMode === "RECURRING" ? "Bỏ qua" : "Tổng slot trống"
+                          repeatMode === "RECURRING" ? "Bỏ qua" : "Tổng slot đặt được"
                         }
                         value={`${
                           repeatMode === "RECURRING"
@@ -1035,13 +1066,14 @@ export default function TeacherSchedulePage() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="text-sm font-semibold text-foreground">
-                                      {parseLocalDate(
-                                        new Date(slot.startAt).toISOString().slice(0, 10)
-                                      ).toLocaleDateString("vi-VN", {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                      })}
+                                      {parseLocalDate(slot.startAt.slice(0, 10)).toLocaleDateString(
+                                        "vi-VN",
+                                        {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                        }
+                                      )}
                                     </p>
                                     <p className="mt-1 text-sm text-secondary">
                                       {formatTimeRange(slot.startAt, slot.endAt)}
@@ -1093,7 +1125,8 @@ export default function TeacherSchedulePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Không thể đặt lịch</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn không thể đặt những lịch học cách hiện tại dưới 48 tiếng. Vui lòng bỏ chọn các lịch này để tiếp tục.
+              Bạn không thể đặt những lịch học cách hiện tại dưới 48 tiếng. Vui lòng
+              chọn slot khác để tiếp tục.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

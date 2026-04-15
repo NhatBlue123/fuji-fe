@@ -4,6 +4,8 @@ export enum NotificationType {
   system = "system",
   reminder = "reminder",
   security = "security",
+  booking = "booking",
+  message = "message",
 }
 
 export interface Notification {

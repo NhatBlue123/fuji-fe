@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -41,6 +41,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DeleteCourseDialog } from "@/components/admin/course/DeleteCourseDialog";
 import {
   ArrowLeft,
@@ -105,24 +112,21 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   const [deleteCourseDialog, setDeleteCourseDialog] = useState(false);
   const [editCourseDialog, setEditCourseDialog] = useState(shouldOpenEdit);
 
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editPrice, setEditPrice] = useState("");
-  const [editPublished, setEditPublished] = useState(false);
+  const [editTitle, setEditTitle] = useState<string | null>(null);
+  const [editDescription, setEditDescription] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState<string | null>(null);
+  const [editJlptLevel, setEditJlptLevel] = useState<string | null>(null);
+  const [editPublished, setEditPublished] = useState<boolean | null>(null);
 
-  useEffect(() => {
+  const openEditCourseDialog = () => {
     if (!course) return;
     setEditTitle(course.title || "");
     setEditDescription(course.description || "");
     setEditPrice(String(course.price ?? 0));
+    setEditJlptLevel(course.jlptLevel || "N5");
     setEditPublished(course.isPublished);
-  }, [course]);
-
-  useEffect(() => {
-    if (shouldOpenEdit) {
-      setEditCourseDialog(true);
-    }
-  }, [shouldOpenEdit]);
+    setEditCourseDialog(true);
+  };
 
   const handleDeleteLesson = async (lessonId: number) => {
     try {
@@ -155,11 +159,12 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     try {
       const formData = new FormData();
       const courseData = {
-        title: editTitle.trim(),
-        description: editDescription.trim(),
+        title: (editTitle ?? course.title ?? "").trim(),
+        description: (editDescription ?? course.description ?? "").trim(),
         instructorId: course.instructor.id,
-        price: Number(editPrice) || 0,
-        isPublished: editPublished,
+        price: Number(editPrice ?? course.price ?? 0) || 0,
+        jlptLevel: editJlptLevel ?? course.jlptLevel ?? "N5",
+        isPublished: editPublished ?? course.isPublished,
       };
 
       formData.append(
@@ -225,11 +230,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditCourseDialog(true)}
-          >
+          <Button variant="outline" size="sm" onClick={openEditCourseDialog}>
             <Pencil className="mr-1 size-4" />
             Chỉnh sửa
           </Button>
@@ -410,6 +411,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                   <TableHead className="w-16">#</TableHead>
                   <TableHead>Tiêu đề</TableHead>
                   <TableHead className="w-28">Loại</TableHead>
+                  <TableHead className="w-28">Preview</TableHead>
                   <TableHead className="w-28">Thời lượng</TableHead>
                   <TableHead className="w-32">Ngày tạo</TableHead>
                   <TableHead className="w-[200px] text-right">
@@ -446,6 +448,17 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                       >
                         {lesson.lessonType === "video" ? "Video" : "Bài tập"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {lesson.isPreview ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-100">
+                          Xem thử
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          --
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {lesson.duration > 0
@@ -546,7 +559,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
               <Label htmlFor="edit-title">Tiêu đề</Label>
               <Input
                 id="edit-title"
-                value={editTitle}
+                value={editTitle ?? course.title ?? ""}
                 onChange={(e) => setEditTitle(e.target.value)}
                 required
               />
@@ -556,7 +569,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
               <Label htmlFor="edit-description">Mô tả</Label>
               <Textarea
                 id="edit-description"
-                value={editDescription}
+                value={editDescription ?? course.description ?? ""}
                 onChange={(e) => setEditDescription(e.target.value)}
                 className="min-h-[90px]"
               />
@@ -568,9 +581,28 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                 id="edit-price"
                 type="number"
                 min="0"
-                value={editPrice}
+                value={editPrice ?? String(course.price ?? 0)}
                 onChange={(e) => setEditPrice(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Trình độ JLPT</Label>
+              <Select
+                value={editJlptLevel ?? course.jlptLevel ?? "N5"}
+                onValueChange={setEditJlptLevel}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trình độ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="N5">N5</SelectItem>
+                  <SelectItem value="N4">N4</SelectItem>
+                  <SelectItem value="N3">N3</SelectItem>
+                  <SelectItem value="N2">N2</SelectItem>
+                  <SelectItem value="N1">N1</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center justify-between rounded-md border p-3">
@@ -581,7 +613,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                 </p>
               </div>
               <Switch
-                checked={editPublished}
+                checked={editPublished ?? course.isPublished}
                 onCheckedChange={setEditPublished}
               />
             </div>

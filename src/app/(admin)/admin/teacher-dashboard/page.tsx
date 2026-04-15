@@ -245,8 +245,13 @@ export default function TeacherDashboardPage() {
             </p>
           </div>
 
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-72 min-h-[288px] min-w-0">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={0}
+              minHeight={0}
+            >
               <LineChart data={revenueTrend}>
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -289,8 +294,13 @@ export default function TeacherDashboardPage() {
             </p>
           </div>
 
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-72 min-h-[288px] min-w-0">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={0}
+              minHeight={0}
+            >
               <LineChart data={classTrend}>
                 <CartesianGrid
                   strokeDasharray="3 3"

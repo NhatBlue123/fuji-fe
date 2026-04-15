@@ -16,6 +16,10 @@ export function toBlossom(vnd: number) {
   return Math.floor((vnd || 0) / VND_PER_BLOSSOM);
 }
 
+export function toVnd(blossom: number) {
+  return Math.max(0, blossom || 0) * VND_PER_BLOSSOM;
+}
+
 export function getWeekdayCodeFromDate(dateStr: string): Weekday | null {
   if (!dateStr) return null;
   const d = new Date(`${dateStr}T00:00:00`);
@@ -48,9 +52,10 @@ export function estimateSlots(
   dateFrom: string,
   dateTo: string,
   daysOfWeek: Weekday[],
-  timeRangesCount: number
+  timeRangesCount: number,
 ) {
-  if (!dateFrom || !dateTo || !daysOfWeek.length || timeRangesCount <= 0) return 0;
+  if (!dateFrom || !dateTo || !daysOfWeek.length || timeRangesCount <= 0)
+    return 0;
   const start = new Date(`${dateFrom}T00:00:00`);
   const end = new Date(`${dateTo}T00:00:00`);
   if (end < start) return 0;

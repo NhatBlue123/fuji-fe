@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Landmark,
-  Info,
   ShieldCheck,
   CheckCircle2,
   Wallet,
   Banknote,
-  Sparkles,
   AlertCircle,
-  HelpCircle, // Thêm icon để hiển thị cạnh "Số khác"
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,14 +40,14 @@ export default function WithdrawPage() {
   });
   const [isSuccess, setIsSuccess] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showNote, setShowNote] = useState(false); // Trạng thái hiển thị ghi chú
+  const [showNote, setShowNote] = useState(false);
 
   const withdrawAmount = Number(amount) || 0;
-  const finalAmount = withdrawAmount;
+  const payoutAmountVnd = withdrawAmount * 1000;
 
   const validateForm = () => {
-    if (withdrawAmount < 50000) {
-      toast.error("Số tiền rút tối thiểu là 50,000đ");
+    if (withdrawAmount < 50) {
+      toast.error("Số 🌸 rút tối thiểu là 50");
       return false;
     }
     if (withdrawAmount > balance) {
@@ -80,206 +78,156 @@ export default function WithdrawPage() {
         ...bankInfo,
       }).unwrap();
       setIsSuccess(true);
-      toast.success("Đã gửi yêu cầu rút tiền thành công!");
+      toast.success("Gửi yêu cầu thành công!");
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Giao dịch thất bại, vui lòng thử lại",
-      );
+      toast.error(error?.data?.message || "Giao dịch thất bại");
     }
   };
 
-  if (isSuccess) return <SuccessState onBack={() => router.push("/profile/wallet")} />; // Sửa về đúng path wallet
+  if (isSuccess)
+    return <SuccessState onBack={() => router.push("/profile/wallet")} />;
 
   return (
-    <main className="min-h-screen bg-transparent text-slate-800 dark:text-slate-200 pb-20 selection:bg-pink-500/30">
+    <main className="min-h-screen bg-transparent text-slate-900 dark:text-slate-200 pb-20">
+      {/* Background Decor - Chỉ dùng 1 tông Pink */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[10%] right-[10%] w-[40%] h-[40%] bg-pink-500/10 dark:bg-pink-500/10 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[10%] left-[10%] w-[40%] h-[40%] bg-blue-500/10 dark:bg-blue-500/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-pink-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-8 space-y-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
-          <div className="space-y-1">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 pt-10 space-y-10">
+        <header className="flex items-end justify-between border-b border-slate-200 dark:border-white/5 pb-6">
+          <div className="space-y-4">
             <button
               onClick={() => router.push("/profile/wallet")}
-              className="group flex items-center gap-2 text-muted-foreground dark:text-slate-500 hover:text-pink-500 dark:hover:text-pink-400 transition-all font-bold mb-2"
+              className="flex items-center gap-2 text-slate-500 hover:text-pink-500 transition-colors text-xs font-bold uppercase tracking-widest"
             >
-              <div className="p-2.5 rounded-2xl bg-muted/40 dark:bg-white/5 group-hover:bg-pink-500/10 border border-muted dark:border-white/10 group-hover:border-pink-500/20 transition-all">
-                <ArrowLeft size={18} />
-              </div>
-              <span className="text-[10px] tracking-widest uppercase">
-                Quay lại ví
-              </span>
+              <ArrowLeft size={16} /> Quay lại ví
             </button>
-            <h2 className="text-3xl font-black text-foreground dark:text-white tracking-tighter uppercase drop-shadow-[0_0_15px_rgba(236,72,153,0.1)]">
-              Rút <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">Tiền</span>
+            <h2 className="text-4xl font-black tracking-tighter">
+              RÚT <span className="text-pink-500">TIỀN</span>
             </h2>
           </div>
-
-          <div className="flex items-center gap-3 bg-white/40 dark:bg-[#0B1120]/60 backdrop-blur-xl border border-muted dark:border-white/10 p-3 rounded-xl shadow-inner shadow-black/5 dark:shadow-none">
-            <Info className="text-pink-500 dark:text-pink-400" size={16} />
-            <p className="text-[9px] text-muted-foreground dark:text-slate-400 font-bold uppercase tracking-widest">
-              Duyệt trong <span className="text-foreground dark:text-white">24 giờ làm việc</span>
-            </p>
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-full border border-slate-200 dark:border-white/10">
+            <ShieldCheck size={14} className="text-pink-500" />
+            <span className="text-[10px] font-bold uppercase tracking-tight text-slate-500">
+              Giao dịch an toàn 256-bit
+            </span>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-7 space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 space-y-8">
             <form
               id="withdraw-form"
               onSubmit={handleOpenConfirm}
-              className="space-y-5"
+              className="space-y-8"
             >
-              {/* Form Rút Số Tiền */}
-              <section className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl border border-muted dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-2xl rounded-[2rem] p-6 md:p-8 space-y-6 relative overflow-hidden transition-all">
-                <div className="relative z-10 flex items-center gap-3">
-                  <div className="p-2.5 bg-pink-500/10 rounded-xl text-pink-500 dark:text-pink-400 border border-pink-500/20 shadow-inner">
-                      <Banknote size={18} />
-                  </div>
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground/80 dark:text-white/70">
-                    Số tiền muốn rút
-                  </h3>
+              {/* Nhập số tiền */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <Banknote size={16} className="text-pink-500" />
+                  <span className="text-[11px] font-black uppercase tracking-widest opacity-60">
+                    Nhập số 🌸 muốn rút
+                  </span>
                 </div>
+                <div className="relative group border-b-2 border-slate-200 dark:border-white/10 focus-within:border-pink-500 transition-all pb-2">
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-transparent text-5xl font-black outline-none placeholder:text-slate-300 dark:placeholder:text-white/5"
+                  />
+                  <span className="absolute right-0 bottom-4 font-black text-slate-400">
+                    🌸
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Số tiền thực nhận dự kiến:{" "}
+                  <span className="font-bold text-pink-500">
+                    {payoutAmountVnd.toLocaleString("vi-VN")}đ
+                  </span>
+                </p>
 
-                <div className="relative z-10 space-y-4">
-                  <div className="relative group/input border-b border-muted dark:border-white/10 focus-within:border-pink-500/50 transition-all">
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0"
-                      className="w-full bg-transparent text-4xl font-black text-foreground dark:text-white outline-none pb-4 placeholder:text-muted-foreground/30 dark:placeholder:text-white/5"
-                      required
-                    />
-                    <span className="absolute right-0 bottom-4 text-lg font-black text-muted-foreground dark:text-slate-600 uppercase">
-                      VND
+                <div className="space-y-3">
+                  {/* Label nhỏ để hướng dẫn */}
+                  <div className="flex items-center gap-2 ml-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Chọn nhanh:
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      {[100000, 200000, 500000, 1000000].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => {
-                            setAmount(val.toString());
-                            setShowNote(false);
-                          }}
-                          className="px-4 py-2 rounded-lg bg-muted/40 dark:bg-white/5 border border-muted dark:border-white/10 text-[10px] text-muted-foreground dark:text-slate-400 font-bold hover:bg-pink-500/10 hover:border-pink-500/40 hover:text-pink-500 dark:hover:text-pink-400 transition-all uppercase"
-                        >
-                          +{val.toLocaleString()}
-                        </button>
-                      ))}
-
-                      {/* Nút Số Khác */}
+                  <div className="flex flex-wrap gap-2">
+                    {[100, 200, 500].map((val) => (
                       <button
+                        key={val}
                         type="button"
-                        onClick={() => setShowNote(!showNote)}
-                        className={`px-4 py-2 rounded-lg border text-[10px] font-bold transition-all uppercase flex items-center gap-2 ${
-                          showNote
-                            ? "bg-pink-500/10 border-pink-500/50 text-pink-500 dark:bg-pink-500/20 dark:text-pink-400"
-                            : "bg-muted/40 dark:bg-white/5 border-muted dark:border-white/10 text-muted-foreground dark:text-slate-400 hover:bg-pink-500/10 hover:border-pink-500/40 hover:text-pink-500 dark:hover:text-pink-400"
-                        }`}
+                        onClick={() => setAmount(val.toString())}
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-pink-500 hover:text-white transition-all text-xs font-bold border border-transparent"
                       >
-                        <HelpCircle size={14} />
-                        Lưu ý hạn mức
+                        {val.toLocaleString()}
                       </button>
-                    </div>
+                    ))}
 
-                    {/* Nội dung Note khi click vào Số khác */}
-                    {showNote && (
-                      <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4 animate-in fade-in slide-in-from-top-1 duration-200 mt-2 shadow-inner">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle
-                            size={16}
-                            className="text-pink-500 dark:text-pink-400 mt-0.5 shrink-0"
-                          />
-                          <div className="space-y-1">
-                            <p className="text-[10px] text-foreground/80 dark:text-slate-300 font-bold uppercase tracking-tight">
-                              Hạn mức rút tiền tối thiểu:{" "}
-                              <span className="text-pink-500 dark:text-pink-400">50,000 VND</span>
-                            </p>
-                            <p className="text-[10px] text-foreground/80 dark:text-slate-300 font-bold uppercase tracking-tight">
-                              Số lần rút tối đa trong ngày:{" "}
-                              <span className="text-pink-500 dark:text-pink-400">03 lần</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowNote(!showNote)}
+                      className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 ${
+                        showNote
+                          ? "border-pink-500 text-pink-500"
+                          : "border-slate-200 dark:border-white/10 text-slate-500"
+                      }`}
+                    >
+                      <HelpCircle size={14} /> Hạn mức
+                    </button>
                   </div>
                 </div>
-              </section>
 
-              {/* Form Thông tin Ngân hàng */}
-              <section className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl border border-muted dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-2xl rounded-[2rem] p-6 md:p-8 space-y-6 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-cyan-500/10 rounded-xl text-cyan-500 dark:text-cyan-400 border border-cyan-500/20 shadow-inner">
-                      <Landmark size={18} />
+                {showNote && (
+                  <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 text-[11px] font-medium leading-relaxed text-slate-500">
+                    • Tối thiểu: <b className="text-pink-500">50 🌸</b> (≈
+                    50,000đ) / lần <br />• Tối đa:{" "}
+                    <b className="text-pink-500">3 lần</b> / ngày
                   </div>
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground/80 dark:text-white/70">
-                    Ngân hàng thụ hưởng
-                  </h3>
-                </div>
+                )}
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest ml-1">
+              {/* Ngân hàng */}
+              <div className="space-y-6 pt-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <Landmark size={16} className="text-pink-500" />
+                  <span className="text-[11px] font-black uppercase tracking-widest opacity-60">
+                    Thông tin nhận tiền
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
                       Ngân hàng
-                    </label>
-                    <div className="relative group">
-                      <input
-                        list="bank-list"
-                        type="text"
-                        placeholder="Chọn tên ngân hàng..."
-                        className="w-full h-14 bg-muted/30 dark:bg-white/5 border border-muted dark:border-white/10 rounded-xl px-4 text-xs text-foreground dark:text-white font-bold outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-all shadow-inner"
-                        onChange={(e) =>
-                          setBankInfo({ ...bankInfo, bankName: e.target.value })
-                        }
-                        required
-                      />
-                      <datalist id="bank-list">
-                        <option value="MB Bank" />
-                        <option value="Vietcombank" />
-                        <option value="Techcombank" />
-                        <option value="Agribank" />
-                        <option value="BIDV" />
-                        <option value="VietinBank" />
-                        <option value="ACB" />
-                        <option value="TPBank" />
-                        <option value="VPBank" />
-                        <option value="Sacombank" />
-                      </datalist>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                        <svg
-                          width="12"
-                          height="8"
-                          viewBox="0 0 10 6"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M1 1L5 5L9 1"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                    </div>
+                    </p>
+                    <input
+                      list="bank-list"
+                      placeholder="Chọn ngân hàng"
+                      className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-bold outline-none transition-all"
+                      onChange={(e) =>
+                        setBankInfo({ ...bankInfo, bankName: e.target.value })
+                      }
+                      required
+                    />
+                    <datalist id="bank-list">
+                      <option value="MB Bank" />
+                      <option value="Vietcombank" />
+                      <option value="Techcombank" />
+                    </datalist>
                   </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest ml-1">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
                       Số tài khoản
-                    </label>
+                    </p>
                     <input
                       type="text"
-                      placeholder="0000 0000 0000"
-                      className="w-full h-14 bg-muted/30 dark:bg-white/5 border border-muted dark:border-white/10 rounded-xl px-4 text-xs text-foreground dark:text-white font-mono font-bold outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-all shadow-inner tracking-widest"
+                      placeholder="Nhập số tài khoản"
+                      className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-mono font-bold outline-none transition-all"
                       onChange={(e) =>
                         setBankInfo({
                           ...bankInfo,
@@ -289,15 +237,14 @@ export default function WithdrawPage() {
                       required
                     />
                   </div>
-
-                  <div className="md:col-span-2 space-y-3">
-                    <label className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest ml-1">
-                      Tên chủ tài khoản
-                    </label>
+                  <div className="md:col-span-2 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
+                      Chủ tài khoản
+                    </p>
                     <input
                       type="text"
-                      placeholder="NGUYEN VAN A"
-                      className="w-full h-14 bg-muted/30 dark:bg-white/5 border border-muted dark:border-white/10 rounded-xl px-4 text-xs text-foreground dark:text-white font-bold outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 uppercase transition-all shadow-inner"
+                      placeholder="Tên không dấu (VD: NGUYEN VAN A)"
+                      className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-bold uppercase outline-none transition-all"
                       onChange={(e) =>
                         setBankInfo({
                           ...bankInfo,
@@ -308,117 +255,134 @@ export default function WithdrawPage() {
                     />
                   </div>
                 </div>
-              </section>
+              </div>
             </form>
           </div>
 
-          <aside className="lg:col-span-5 space-y-5 lg:sticky lg:top-8">
-            <div className="bg-white/60 dark:bg-[#0B1120]/80 backdrop-blur-xl border border-muted dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-2xl rounded-[2rem] p-8 space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-cyan-500 dark:text-cyan-400 uppercase tracking-[0.2em]">
-                  Số dư ví Fuji
-                </span>
-                <Wallet size={16} className="text-cyan-500 dark:text-cyan-400" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl md:text-5xl font-black text-foreground dark:text-white tracking-tighter">
-                  {balance.toLocaleString()}
-                </span>
-                <span className="text-[11px] font-bold text-muted-foreground dark:text-slate-500 uppercase">
-                  VND
-                </span>
-              </div>
-              <div className="pt-6 border-t border-muted dark:border-white/5 space-y-4">
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wide px-2">
-                  <span className="text-muted-foreground dark:text-slate-500">Số tiền rút:</span>
-                  <span className="text-foreground dark:text-white font-black">
-                    {withdrawAmount.toLocaleString()} đ
+          <aside className="lg:col-span-5">
+            <div className="sticky top-8 space-y-6">
+              <div className="bg-slate-900 text-white dark:bg-white/5 dark:text-white p-8 rounded-[2.5rem] shadow-2xl space-y-8 relative overflow-hidden">
+                <div className="relative z-10 flex flex-col gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
+                    Số dư hiện tại
                   </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black tracking-tighter">
+                      {balance.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-bold opacity-40 uppercase">
+                      🌸
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    ~ {(balance * 1000).toLocaleString("vi-VN")}đ
+                  </p>
                 </div>
-                <div className="pt-4 border-t border-dashed border-muted dark:border-white/10 flex justify-between items-end bg-pink-500/5 -mx-2 px-4 py-3 rounded-xl border border-pink-500/20">
-                  <span className="text-[10px] font-black text-pink-500 dark:text-pink-400 uppercase tracking-widest">
-                    Thực nhận:
-                  </span>
-                  <span className="text-2xl font-black text-pink-600 dark:text-pink-400 tracking-tighter">
-                    {finalAmount.toLocaleString()} đ
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            <Button
-              form="withdraw-form"
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full h-16 rounded-[1.5rem] bg-pink-500 hover:bg-pink-600 text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-lg shadow-pink-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Sparkles size={16} />
-              {isSubmitting ? "Đang xử lý..." : "Gửi yêu cầu rút tiền"}
-            </Button>
+                <div className="pt-8 border-t border-white/10 space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="opacity-60 font-bold uppercase">
+                      Số 🌸 quy đổi
+                    </span>
+                    <span className="font-black">
+                      {withdrawAmount.toLocaleString()} 🌸
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="opacity-60 font-bold uppercase">
+                      Phí giao dịch
+                    </span>
+                    <span className="font-black text-pink-400">Miễn phí</span>
+                  </div>
+                  <div className="pt-4 flex justify-between items-end border-t border-white/10">
+                    <span className="text-xs font-black uppercase text-pink-500">
+                      Thực nhận
+                    </span>
+                    <span className="text-3xl font-black tracking-tighter">
+                      {payoutAmountVnd.toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                form="withdraw-form"
+                disabled={isSubmitting}
+                className="w-full h-16 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest shadow-xl shadow-pink-500/20 transition-all"
+              >
+                {isSubmitting ? "Đang gửi..." : "Xác nhận yêu cầu"}
+              </Button>
+            </div>
           </aside>
         </div>
       </div>
 
+      {/* Confirmation Dialog - Đã làm gọn màu sắc */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent className="bg-background dark:bg-[#0f1218] border border-muted dark:border-white/10 text-foreground dark:text-slate-200 rounded-[2.5rem] max-w-md p-8 shadow-2xl">
-          <DialogHeader className="space-y-4">
-            <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mx-auto mb-2 border border-amber-500/20 shadow-inner">
-              <AlertCircle size={32} />
+        <DialogContent className="rounded-[2rem] p-8">
+          <DialogHeader className="text-center">
+            <div className="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center text-pink-500 mx-auto mb-4">
+              <AlertCircle size={24} />
             </div>
-            <DialogTitle className="text-center text-2xl font-black uppercase tracking-tight text-foreground dark:text-white">
-              Xác nhận thông tin
+            <DialogTitle className="text-xl font-black uppercase">
+              Kiểm tra lại thông tin
             </DialogTitle>
-            <DialogDescription className="text-center text-[11px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest leading-relaxed">
-              Vui lòng kiểm tra kỹ số tài khoản. Ban quản trị sẽ chuyển tiền thủ công theo thông tin này.
+            <DialogDescription className="text-[11px] font-medium uppercase tracking-tight">
+              Bạn nhập số 🌸, hệ thống sẽ quy đổi ra tiền và chuyển khoản vào
+              tài khoản này
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-muted/30 dark:bg-white/5 rounded-2xl p-6 space-y-5 border border-muted dark:border-white/5 my-6 shadow-inner">
-            <div className="flex justify-between items-center border-b border-muted dark:border-white/5 pb-4">
-              <span className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <Landmark size={14} className="text-cyan-500"/> Ngân hàng
+          <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-2xl space-y-4 my-4">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Số 🌸 quy đổi
               </span>
-              <span className="text-xs font-black text-foreground dark:text-white uppercase">
-                {bankInfo.bankName}
-              </span>
-            </div>
-            <div className="flex justify-between items-center border-b border-muted dark:border-white/5 pb-4">
-              <span className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest flex flex-row items-center gap-2">
-                Số tài khoản
-              </span>
-              <span className="text-sm font-mono font-black text-foreground dark:text-white tracking-widest">
-                {bankInfo.accountNumber}
+              <span className="text-xs font-black">
+                {withdrawAmount.toLocaleString()} 🌸
               </span>
             </div>
-            <div className="flex justify-between items-center border-b border-muted dark:border-white/5 pb-4">
-              <span className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest flex flex-row items-center gap-2">
-                Chủ tài khoản
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Thực nhận
               </span>
-              <span className="text-xs font-black text-foreground dark:text-white uppercase">
-                {bankInfo.accountHolder}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-[10px] font-black text-pink-500 dark:text-pink-400 uppercase tracking-widest flex items-center gap-2">
-                <Banknote size={14} /> Thực nhận
-              </span>
-              <span className="text-xl font-black text-pink-600 dark:text-pink-400">
-                {finalAmount.toLocaleString()} đ
+              <span className="text-xs font-black text-pink-500">
+                {payoutAmountVnd.toLocaleString("vi-VN")}đ
               </span>
             </div>
+            {[
+              { label: "Ngân hàng", value: bankInfo.bankName },
+              {
+                label: "Số tài khoản",
+                value: bankInfo.accountNumber,
+                mono: true,
+              },
+              { label: "Chủ thẻ", value: bankInfo.accountHolder, upper: true },
+            ].map((item, idx) => (
+              <div key={idx} className="flex justify-between items-center">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {item.label}
+                </span>
+                <span
+                  className={`text-xs font-black ${item.mono ? "font-mono tracking-wider" : ""} ${item.upper ? "uppercase" : ""}`}
+                >
+                  {item.value}
+                </span>
+              </div>
+            ))}
           </div>
-          <DialogFooter className="flex flex-row gap-4">
+          <DialogFooter className="gap-3">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowConfirm(false)}
-              className="flex-1 h-12 rounded-xl border border-muted dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white"
+              className="flex-1 font-bold text-xs uppercase"
             >
               Hủy
             </Button>
             <Button
               onClick={handleConfirmWithdraw}
-              className="flex-1 h-12 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-pink-500/20"
+              className="flex-1 bg-pink-500 font-black text-xs uppercase"
             >
-              Xác nhận rút
+              Xác nhận rút tiền
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -427,36 +391,27 @@ export default function WithdrawPage() {
   );
 }
 
+// Success State tinh chỉnh
 function SuccessState({ onBack }: { onBack: () => void }) {
-  const router = useRouter();
-
   return (
-    <div className="min-h-screen bg-background dark:bg-[#0a0c10] flex items-center justify-center p-6 selection:bg-emerald-500/30">
-      <div className="max-w-md w-full bg-white dark:bg-[#0B1120]/80 backdrop-blur-2xl border border-emerald-500/20 rounded-[3rem] p-10 text-center space-y-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500" />
-
-        <div className="relative mx-auto w-24 h-24">
-          <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full animate-pulse" />
-          <div className="relative w-full h-full rounded-[2rem] bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shadow-inner rotate-12 transition-transform duration-500 hover:rotate-0">
-            <CheckCircle2 size={40} strokeWidth={3} className="-rotate-12 hover:rotate-0 transition-transform duration-500"/>
-          </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0c10] flex items-center justify-center p-6">
+      <div className="max-w-sm w-full bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-white/5 rounded-[3rem] p-10 text-center space-y-8 shadow-2xl">
+        <div className="w-20 h-20 bg-pink-500/10 text-pink-500 rounded-3xl flex items-center justify-center mx-auto rotate-12">
+          <CheckCircle2 size={40} />
         </div>
-
-        <div className="space-y-4">
-          <h3 className="text-3xl font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter drop-shadow-sm">
-            Yêu cầu đã gửi!
+        <div className="space-y-2">
+          <h3 className="text-2xl font-black uppercase tracking-tighter">
+            Đã gửi yêu cầu
           </h3>
-          <p className="text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold tracking-widest leading-relaxed">
-            Hệ thống đang xử lý giao dịch. Thời gian duyệt từ 2-24 giờ làm việc.
+          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed">
+            Hệ thống sẽ duyệt trong vòng 24 giờ tới.
           </p>
         </div>
-
         <Button
-          type="button"
           onClick={onBack}
-          className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+          className="w-full h-14 bg-slate-900 dark:bg-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest"
         >
-          <ArrowLeft size={16} /> Quay lại ví Fuji
+          Về ví Fuji
         </Button>
       </div>
     </div>

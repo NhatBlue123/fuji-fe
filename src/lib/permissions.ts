@@ -136,6 +136,8 @@ export const ROUTE_PERMISSION_MAP: Record<string, string> = {
   "/admin/teacher-dashboard": "DASHBOARD_VIEW",
   "/admin/analytics": "ANALYTICS_VIEW",
   "/admin/courses": "COURSE_VIEW",
+  "/admin/courses/finance": "COURSE_VIEW",
+  "/admin/courses/finance/teacher": "COURSE_VIEW",
   "/admin/teacher-schedules": "DASHBOARD_VIEW",
   "/admin/teacher-schedules/teaching-schedule": "DASHBOARD_VIEW",
   "/admin/teacher-schedules/create-slot": "DASHBOARD_VIEW",

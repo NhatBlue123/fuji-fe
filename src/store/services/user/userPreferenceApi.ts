@@ -9,6 +9,7 @@ export interface UserPreference {
   examReminders: boolean;
   systemAlerts: boolean;
   emailDigest: boolean;
+  bookingReminders: boolean;
   language: string;
   theme: 'light' | 'dark' | 'system';
 }

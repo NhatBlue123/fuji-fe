@@ -251,27 +251,23 @@ export default function UserManagementPage() {
         isLoading={isLoading || isStatsLoading} 
       />
 
+      {/* Minimal Overview Cards - Sync with Courses/Dashboard */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Tổng quan", value: stats.total, unit: "Người dùng", sub: `${stats.online} đang trực tuyến`, icon: Server, color: "text-blue-600" },
-          { label: "Học tập", value: stats.students, unit: "Học viên", sub: `${stats.completionRate}% hoàn thành bài`, icon: BookOpen, color: "text-emerald-600" },
-          { label: "Giảng dạy", value: stats.instructors, unit: "Giáo viên", sub: `${stats.openClasses} khóa học đang mở`, icon: GraduationCap, color: "text-amber-600" },
-          { label: "Bảo mật", value: stats.violations, unit: "Cảnh báo", sub: `${stats.locked} tài khoản bị khóa`, icon: ShieldAlert, color: "text-rose-600" }
+          { label: "Tổng người dùng", value: stats.total, sub: `${stats.online} online`, icon: Users },
+          { label: "Học viên", value: stats.students, sub: `${stats.completionRate}% hoàn thành`, icon: BookOpen },
+          { label: "Giảng viên", value: stats.instructors, sub: `${stats.openClasses} khóa học`, icon: GraduationCap },
+          { label: "An ninh", value: stats.violations, sub: `${stats.locked} bị khóa`, icon: ShieldAlert }
         ].map((item, index) => (
-          <Card key={index} className="shadow-sm border-muted-foreground/10 rounded-2xl overflow-hidden bg-card/50">
+          <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{item.label}</span>
-              <div className={item.color}>
-                <item.icon className="h-5 w-5" />
-              </div>
+              <CardDescription className="text-xs font-semibold uppercase">{item.label}</CardDescription>
+              <item.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold tracking-tight">{(item.value || 0).toLocaleString()}</span>
-                <span className="text-[10px] font-medium text-muted-foreground">{item.unit}</span>
-              </div>
-              <p className={`text-[10px] font-bold mt-1 ${item.color}`}>
-                {item.sub}
+              <div className="text-2xl font-bold">{(item.value || 0).toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">
+                <span className="text-foreground">{item.sub}</span> đối tượng
               </p>
             </CardContent>
           </Card>
@@ -292,21 +288,24 @@ export default function UserManagementPage() {
       />
 
       <Card>
-        <CardHeader className="pb-3 px-6 pt-6 flex flex-row items-center justify-between">
+        <CardHeader className="border-b px-6 py-4 flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3">
-            <CardTitle className="text-lg">Danh sách tài khoản</CardTitle>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold text-[10px] px-2.5 py-1 rounded-full">
-              {totalElements} kết quả
+            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Danh sách tài khoản</CardTitle>
+            <Badge variant="secondary" className="bg-muted text-muted-foreground border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full">
+              {totalElements}
             </Badge>
           </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh} className="h-8 text-[10px] font-bold uppercase tracking-tight gap-1 px-3">
+            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} /> Làm mới
+          </Button>
         </CardHeader>
-        <CardContent className="px-6 pb-6 pt-2">
+        <CardContent className="p-0">
           {isLoading && users.length === 0 ? (
             <div className="flex h-[40vh] items-center justify-center">
               <Loader2 className="size-8 animate-spin text-muted-foreground" />
             </div>
           ) : isError ? (
-            <div className="flex h-[40vh] flex-col items-center justify-center gap-3 border-2 border-dashed rounded-lg bg-muted/20">
+            <div className="flex h-[40vh] flex-col items-center justify-center gap-3 p-6 text-center">
               <AlertCircle className="size-10 text-destructive/50" />
               <p className="text-muted-foreground font-medium">Không thể tải dữ liệu</p>
               <Button onClick={() => handleRefresh()} variant="outline" size="sm" className="gap-2">
@@ -314,16 +313,16 @@ export default function UserManagementPage() {
               </Button>
             </div>
           ) : users.length > 0 ? (
-            <>
+            <div className="p-6">
               <UserTable 
                 users={users} 
                 onViewDetail={handleOpenDetail} 
                 isLoading={isLoading} 
               />
               {totalPages > 1 && (
-                <div className="mt-6 border-t pt-6 flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-2 whitespace-nowrap">
-                    {totalElements} kết quả
+                <div className="mt-6 border-t pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-2">
+                    Trang {currentPage + 1} / {totalPages}
                   </span>
                   <Pagination>
                     <PaginationContent>
@@ -331,7 +330,6 @@ export default function UserManagementPage() {
                         <PaginationPrevious 
                           href="#" 
                           onClick={(e) => { e.preventDefault(); if (currentPage > 0) setCurrentPage(p => p - 1); }}
-                          aria-disabled={currentPage === 0}
                           className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
@@ -340,7 +338,6 @@ export default function UserManagementPage() {
                         <PaginationNext 
                           href="#" 
                           onClick={(e) => { e.preventDefault(); if (currentPage < totalPages - 1) setCurrentPage(p => p + 1); }}
-                          aria-disabled={currentPage === totalPages - 1}
                           className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
@@ -348,9 +345,9 @@ export default function UserManagementPage() {
                   </Pagination>
                 </div>
               )}
-            </>
+            </div>
           ) : (
-            <div className="flex h-[40vh] flex-col items-center justify-center text-center border-2 border-dashed rounded-lg bg-muted/20 py-12">
+            <div className="flex h-[40vh] flex-col items-center justify-center text-center p-12">
               <SearchX className="size-12 text-muted-foreground/30 mb-4" />
               <h3 className="text-lg font-semibold text-muted-foreground">Không tìm thấy người dùng</h3>
               <p className="text-sm text-muted-foreground max-w-sm mt-1 px-4">

@@ -2,6 +2,7 @@
 
 import React, { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import PremiumTabs from "@/components/user-component/premium/PremiumTabs";
 import PricingCards from "@/components/user-component/premium/PricingCards";
 import FeatureGrid from "@/components/user-component/premium/FeatureGrid";
@@ -21,6 +22,12 @@ function PremiumPageContent() {
   return (
     <div className="min-h-screen bg-background text-foreground p-8 font-sans">
       <div className="max-w-5xl mx-auto">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-6"
+        >
+          <ArrowLeft size={16} /> Quay lại
+        </button>
         <PremiumTabs activeTab={tab} onChangeTab={handleTabChange} />
 
         <div className="mt-8 flex flex-col items-center">

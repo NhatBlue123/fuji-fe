@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import AssistantPanel from "../../../components/user-component/ai/AssistantPanel";
 import SenseiPanel from "../../../components/user-component/ai/SenseiPanel";

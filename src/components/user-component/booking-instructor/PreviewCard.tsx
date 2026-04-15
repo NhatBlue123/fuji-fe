@@ -1,5 +1,5 @@
 import { Mode, TimeRange } from "./types";
-import { toBlossom } from "./utils";
+import { toVnd } from "./utils";
 
 type Props = {
   mode: Mode;
@@ -9,15 +9,25 @@ type Props = {
   estimatedSlots: number;
 };
 
-export default function PreviewCard({ mode, subject, price, ranges, estimatedSlots }: Props) {
+export default function PreviewCard({
+  mode,
+  subject,
+  price,
+  ranges,
+  estimatedSlots,
+}: Props) {
   return (
     <aside className="glass-card rounded-2xl border border-border p-6">
       <h2 className="text-xl font-bold">Xem trước</h2>
-      <p className="text-muted-foreground text-sm mt-1">Ước tính số buổi sẽ tạo trước khi lưu</p>
+      <p className="text-muted-foreground text-sm mt-1">
+        Ước tính số buổi sẽ tạo trước khi lưu
+      </p>
 
       <div className="mt-4 rounded-2xl border border-border bg-card/70 p-5">
         <p className="text-muted-foreground text-sm">Chế độ</p>
-        <p className="font-bold">{mode === "single" ? "Một buổi" : "Lịch lặp"}</p>
+        <p className="font-bold">
+          {mode === "single" ? "Một buổi" : "Lịch lặp"}
+        </p>
 
         <div className="h-px bg-border my-4" />
 
@@ -37,7 +47,8 @@ export default function PreviewCard({ mode, subject, price, ranges, estimatedSlo
 
         <p className="text-muted-foreground text-sm mt-3">Học phí(1 buổi)</p>
         <p className="font-bold">
-          {(price || 0).toLocaleString("vi-VN")}đ · {toBlossom(price)} 🌸
+          {(price || 0).toLocaleString("vi-VN")} 🌸 · ~
+          {toVnd(price).toLocaleString("vi-VN")}đ
         </p>
 
         <div className="h-px bg-border my-4" />

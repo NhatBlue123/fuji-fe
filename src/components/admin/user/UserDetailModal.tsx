@@ -30,7 +30,7 @@ import {
   Calendar,
   Settings,
   FileDown,
-  Filter
+  Filter,
 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, XAxis, Tooltip } from "recharts";
 import { Label } from "@/components/ui/label";
@@ -44,12 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -65,7 +60,11 @@ import {
 } from "@/components/ui/pagination";
 import { exportViolationLogsToExcel } from "@/lib/excelUtils";
 
-export const renderPaginationItems = (currentPage: number, totalPages: number, setCurrentPage: (page: number) => void) => {
+export const renderPaginationItems = (
+  currentPage: number,
+  totalPages: number,
+  setCurrentPage: (page: number) => void,
+) => {
   const items = [];
   const maxVisible = 5;
 
@@ -76,11 +75,14 @@ export const renderPaginationItems = (currentPage: number, totalPages: number, s
           <PaginationLink
             href="#"
             isActive={currentPage === i}
-            onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage(i);
+            }}
           >
             {i + 1}
           </PaginationLink>
-        </PaginationItem>
+        </PaginationItem>,
       );
     }
   } else {
@@ -88,11 +90,14 @@ export const renderPaginationItems = (currentPage: number, totalPages: number, s
       <PaginationItem key={0}>
         <PaginationLink
           isActive={currentPage === 0}
-          onClick={(e) => { e.preventDefault(); setCurrentPage(0); }}
+          onClick={(e) => {
+            e.preventDefault();
+            setCurrentPage(0);
+          }}
         >
           1
         </PaginationLink>
-      </PaginationItem>
+      </PaginationItem>,
     );
 
     if (currentPage > 2) items.push(<PaginationEllipsis key="left-ellipsis" />);
@@ -105,25 +110,32 @@ export const renderPaginationItems = (currentPage: number, totalPages: number, s
         <PaginationItem key={i}>
           <PaginationLink
             isActive={currentPage === i}
-            onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage(i);
+            }}
           >
             {i + 1}
           </PaginationLink>
-        </PaginationItem>
+        </PaginationItem>,
       );
     }
 
-    if (currentPage < totalPages - 3) items.push(<PaginationEllipsis key="right-ellipsis" />);
+    if (currentPage < totalPages - 3)
+      items.push(<PaginationEllipsis key="right-ellipsis" />);
 
     items.push(
       <PaginationItem key={totalPages - 1}>
         <PaginationLink
           isActive={currentPage === totalPages - 1}
-          onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages - 1); }}
+          onClick={(e) => {
+            e.preventDefault();
+            setCurrentPage(totalPages - 1);
+          }}
         >
           {totalPages}
         </PaginationLink>
-      </PaginationItem>
+      </PaginationItem>,
     );
   }
   return items;
@@ -131,10 +143,14 @@ export const renderPaginationItems = (currentPage: number, totalPages: number, s
 
 const getRoleName = (r: string) => {
   switch (r) {
-    case 'STUDENT': return 'Học viên';
-    case 'INSTRUCTOR': return 'Giảng viên';
-    case 'ADMIN': return 'Quản trị viên';
-    default: return r;
+    case "STUDENT":
+      return "Học viên";
+    case "INSTRUCTOR":
+      return "Giảng viên";
+    case "ADMIN":
+      return "Quản trị viên";
+    default:
+      return r;
   }
 };
 
@@ -149,7 +165,12 @@ interface UserDetailModalProps {
  * Component Modal hiển thị và chỉnh sửa chi tiết người dùng
  * Bao gồm: Thông tin cá nhân, phân quyền truy cập, và nhật ký vi phạm/hoạt động
  */
-export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: UserDetailModalProps) {
+export function UserDetailModal({
+  user,
+  open,
+  onOpenChange,
+  onUserUpdated,
+}: UserDetailModalProps) {
   type ChatBanInfo = {
     userId: string;
     banType: "TEMPORARY" | "PERMANENT";
@@ -171,35 +192,45 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     gradeAccess: true,
     analyticsAccess: true,
   });
-  
+
   const [isEditingBasic, setIsEditingBasic] = useState(false);
   const [basicForm, setBasicForm] = useState({ fullName: "", email: "" });
   const [emailError, setEmailError] = useState("");
   const [isBasicSubmitting, setIsBasicSubmitting] = useState(false);
   const [showConfirmEmailChange, setShowConfirmEmailChange] = useState(false);
-  const [chartRange, setChartRange] = useState<'day' | 'week' | 'month'>('week');
+  const [chartRange, setChartRange] = useState<"day" | "week" | "month">(
+    "week",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmSave, setShowConfirmSave] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [showConfirmLock, setShowConfirmLock] = useState(false);
-  const [roleChangeWarning, setRoleChangeWarning] = useState<string | null>(null);
+  const [roleChangeWarning, setRoleChangeWarning] = useState<string | null>(
+    null,
+  );
   const [logSearch, setLogSearch] = useState("");
   const [logSeverity, setLogSeverity] = useState("all");
   const [logStatus, setLogStatus] = useState("all");
   const [showSendWarning, setShowSendWarning] = useState(false);
   const [warningMessage, setWarningMessage] = useState("");
-  const [showConfirmHandleLog, setShowConfirmHandleLog] = useState<{ id: number, description: string } | null>(null);
+  const [showConfirmHandleLog, setShowConfirmHandleLog] = useState<{
+    id: number;
+    description: string;
+  } | null>(null);
   const [customTemplates, setCustomTemplates] = useState<string[]>([]);
   const [newTemplate, setNewTemplate] = useState("");
   const [showAddTemplate, setShowAddTemplate] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState<number[]>([]);
   const [showConfirmRoleChange, setShowConfirmRoleChange] = useState(false);
   const [pendingRole, setPendingRole] = useState("");
-  const [showConfirmSendWarningDialog, setShowConfirmSendWarningDialog] = useState(false);
+  const [showConfirmSendWarningDialog, setShowConfirmSendWarningDialog] =
+    useState(false);
   const [instructorLogSearch, setInstructorLogSearch] = useState("");
   const [instructorLogSeverity, setInstructorLogSeverity] = useState("all");
   const [instructorLogStatus, setInstructorLogStatus] = useState("all");
-  const [selectedInstructorLogs, setSelectedInstructorLogs] = useState<number[]>([]);
+  const [selectedInstructorLogs, setSelectedInstructorLogs] = useState<
+    number[]
+  >([]);
   const [studentLogPage, setStudentLogPage] = useState(0);
   const [instructorLogPage, setInstructorLogPage] = useState(0);
   const [adminLogPage, setAdminLogPage] = useState(0);
@@ -220,7 +251,11 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
   }, []);
 
   const saveTemplate = () => {
-    if (!warningMessage.trim() || customTemplates.includes(warningMessage.trim())) return;
+    if (
+      !warningMessage.trim() ||
+      customTemplates.includes(warningMessage.trim())
+    )
+      return;
     const updated = [...customTemplates, warningMessage.trim()];
     setCustomTemplates(updated);
     localStorage.setItem("warning_templates", JSON.stringify(updated));
@@ -228,7 +263,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
   };
 
   const removeTemplate = (t: string) => {
-    const updated = customTemplates.filter(item => item !== t);
+    const updated = customTemplates.filter((item) => item !== t);
     setCustomTemplates(updated);
     localStorage.setItem("warning_templates", JSON.stringify(updated));
   };
@@ -249,14 +284,14 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
         gradeAccess: user.gradeAccess ?? true,
         analyticsAccess: user.analyticsAccess ?? true,
       });
-      
+
       setBasicForm({
         fullName: user.fullName || "",
         email: user.email || "",
       });
       setIsEditingBasic(false);
       setEmailError("");
-      
+
       setRoleChangeWarning(null);
       setWarningMessage("");
       setInstructorLogSearch("");
@@ -313,7 +348,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       );
       if (onUserUpdated) onUserUpdated();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Không thể cập nhật cấm chat");
+      toast.error(
+        error?.response?.data?.message || "Không thể cập nhật cấm chat",
+      );
     } finally {
       setIsChatBanLoading(false);
     }
@@ -337,9 +374,26 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
   const riskLevel = useMemo(() => {
     const violationsCount = user?.violationLogs?.length || 0;
 
-    if (violationsCount === 0) return { label: "Thấp", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: <ShieldStatus className="size-4" /> };
-    if (violationsCount <= 2) return { label: "Trung bình", color: "text-amber-500", bg: "bg-amber-500/10", icon: <Activity className="size-4" /> };
-    return { label: "Cao", color: "text-rose-500", bg: "bg-rose-500/10", icon: <AlertTriangle className="size-4" /> };
+    if (violationsCount === 0)
+      return {
+        label: "Thấp",
+        color: "text-emerald-500",
+        bg: "bg-emerald-500/10",
+        icon: <ShieldStatus className="size-4" />,
+      };
+    if (violationsCount <= 2)
+      return {
+        label: "Trung bình",
+        color: "text-amber-500",
+        bg: "bg-amber-500/10",
+        icon: <Activity className="size-4" />,
+      };
+    return {
+      label: "Cao",
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+      icon: <AlertTriangle className="size-4" />,
+    };
   }, [user?.violationLogs]);
 
   const filteredLogs = useMemo(() => {
@@ -347,7 +401,8 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     const hasActiveBan = Boolean(
       chatBanInfo &&
       (chatBanInfo.banType === "PERMANENT" ||
-        (chatBanInfo.banUntil && new Date(chatBanInfo.banUntil).getTime() > now)),
+        (chatBanInfo.banUntil &&
+          new Date(chatBanInfo.banUntil).getTime() > now)),
     );
 
     const mapped = (chatViolations || []).map((v: any) => {
@@ -368,23 +423,32 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     });
 
     return mapped.filter((log: any) => {
-      const searchTerms = [
-        log.description,
-        log.type,
-      ].filter(Boolean).map((s) => s?.toLowerCase());
-      const matchesSearch = logSearch.trim() === "" || searchTerms.some(term => term?.includes(logSearch.toLowerCase()));
-      const matchesSeverity = logSeverity === "all" || log.severity === logSeverity;
-      const matchesStatus = logStatus === "all" || (logStatus === "HANDLED" ? log.isHandled : !log.isHandled);
+      const searchTerms = [log.description, log.type]
+        .filter(Boolean)
+        .map((s) => s?.toLowerCase());
+      const matchesSearch =
+        logSearch.trim() === "" ||
+        searchTerms.some((term) => term?.includes(logSearch.toLowerCase()));
+      const matchesSeverity =
+        logSeverity === "all" || log.severity === logSeverity;
+      const matchesStatus =
+        logStatus === "all" ||
+        (logStatus === "HANDLED" ? log.isHandled : !log.isHandled);
       return matchesSearch && matchesSeverity && matchesStatus;
     });
 
     const grouped: any[] = [];
-    filtered.forEach(log => {
+    filtered.forEach((log) => {
       const last = grouped[grouped.length - 1];
       const logTime = new Date(log.createdAt).getTime();
       const lastTime = last ? new Date(last.createdAt).getTime() : 0;
 
-      if (last && last.description === log.description && last.testId === log.testId && (lastTime - logTime) < 3600000) {
+      if (
+        last &&
+        last.description === log.description &&
+        last.testId === log.testId &&
+        lastTime - logTime < 3600000
+      ) {
         last.count = (last.count || 1) + 1;
       } else {
         grouped.push({ ...log, count: 1 });
@@ -397,8 +461,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
   const filteredInstructorLogs = useMemo(() => {
     if (!user?.violationLogs) return [];
 
-    return (user?.violationLogs || []).filter(log => {
-      const isInstructorLog = log.type?.startsWith('LATE') || log.type?.startsWith('MISSING');
+    return (user?.violationLogs || []).filter((log) => {
+      const isInstructorLog =
+        log.type?.startsWith("LATE") || log.type?.startsWith("MISSING");
       if (!isInstructorLog) return false;
 
       const searchTerms = [
@@ -406,28 +471,47 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
         log.type,
         log.ipAddress,
         log.browser,
-        log.device
-      ].filter(Boolean).map(s => s?.toLowerCase());
+        log.device,
+      ]
+        .filter(Boolean)
+        .map((s) => s?.toLowerCase());
 
-      const matchesSearch = instructorLogSearch.trim() === "" || searchTerms.some(term => term?.includes(instructorLogSearch.toLowerCase()));
-      const matchesSeverity = instructorLogSeverity === "all" || log.severity === instructorLogSeverity;
-      const matchesStatus = instructorLogStatus === "all" || (instructorLogStatus === "HANDLED" ? log.isHandled : !log.isHandled);
+      const matchesSearch =
+        instructorLogSearch.trim() === "" ||
+        searchTerms.some((term) =>
+          term?.includes(instructorLogSearch.toLowerCase()),
+        );
+      const matchesSeverity =
+        instructorLogSeverity === "all" ||
+        log.severity === instructorLogSeverity;
+      const matchesStatus =
+        instructorLogStatus === "all" ||
+        (instructorLogStatus === "HANDLED" ? log.isHandled : !log.isHandled);
       return matchesSearch && matchesSeverity && matchesStatus;
     });
-  }, [user?.violationLogs, instructorLogSearch, instructorLogSeverity, instructorLogStatus]);
+  }, [
+    user?.violationLogs,
+    instructorLogSearch,
+    instructorLogSeverity,
+    instructorLogStatus,
+  ]);
 
   const trendData = useMemo(() => {
     if (!user?.violationLogs) return [];
     const counts: Record<string, number> = {};
-    const rangeInDays = chartRange === 'day' ? 1 : chartRange === 'week' ? 7 : 30;
+    const rangeInDays =
+      chartRange === "day" ? 1 : chartRange === "week" ? 7 : 30;
 
     for (let i = rangeInDays - 1; i >= 0; i--) {
-      const date = format(new Date(Date.now() - i * 24 * 60 * 60 * 1000), 'dd/MM');
+      const date = format(
+        new Date(Date.now() - i * 24 * 60 * 60 * 1000),
+        "dd/MM",
+      );
       counts[date] = 0;
     }
 
-    user.violationLogs.forEach(log => {
-      const date = format(new Date(log.createdAt), 'dd/MM');
+    user.violationLogs.forEach((log) => {
+      const date = format(new Date(log.createdAt), "dd/MM");
       if (counts[date] !== undefined) counts[date]++;
     });
 
@@ -459,15 +543,18 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       }));
 
     return [...audit, ...chatViolations].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }, [user]);
 
   const handleRoleChange = (newRole: string) => {
     if (!user) return;
-    setFormData(prev => ({ ...prev, role: newRole }));
+    setFormData((prev) => ({ ...prev, role: newRole }));
     if (newRole !== user.role) {
-      setRoleChangeWarning(`Bạn đang thay đổi vai trò. Người dùng này sẽ buộc phải đăng nhập lại.`);
+      setRoleChangeWarning(
+        `Bạn đang thay đổi vai trò. Người dùng này sẽ buộc phải đăng nhập lại.`,
+      );
     } else {
       setRoleChangeWarning(null);
     }
@@ -491,7 +578,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     if (selectedLogs.length === 0 || !user) return;
     setIsSubmitting(true);
     try {
-      await Promise.all(selectedLogs.map(id => api.post(`/users/me/violations/${id}/handle`)));
+      await Promise.all(
+        selectedLogs.map((id) => api.post(`/users/me/violations/${id}/handle`)),
+      );
       toast.success(`Đã xử lý thành công ${selectedLogs.length} sự cố`);
       setSelectedLogs([]);
       if (onUserUpdated) onUserUpdated();
@@ -520,7 +609,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     }
   };
 
-  const isBasicDirty = basicForm.fullName !== (user?.fullName || "") || basicForm.email !== (user?.email || "");
+  const isBasicDirty =
+    basicForm.fullName !== (user?.fullName || "") ||
+    basicForm.email !== (user?.email || "");
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -534,7 +625,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
   const handleBasicEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setBasicForm(prev => ({ ...prev, email: val }));
+    setBasicForm((prev) => ({ ...prev, email: val }));
     if (emailError) validateEmail(val);
   };
 
@@ -544,7 +635,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       return;
     }
     if (!validateEmail(basicForm.email)) return;
-    
+
     if (basicForm.email !== user?.email) {
       setShowConfirmEmailChange(true);
     } else {
@@ -563,7 +654,11 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       });
       if (response.data.success) {
         toast.success("Cập nhật thông tin cơ bản thành công");
-        setFormData(prev => ({ ...prev, fullName: basicForm.fullName, email: basicForm.email }));
+        setFormData((prev) => ({
+          ...prev,
+          fullName: basicForm.fullName,
+          email: basicForm.email,
+        }));
         setIsEditingBasic(false);
         if (onUserUpdated) onUserUpdated();
       } else {
@@ -645,7 +740,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
   const handleLockAccount = async () => {
     if (!user) return;
-    if (user.role === 'ADMIN') {
+    if (user.role === "ADMIN") {
       toast.error("Không thể khóa tài khoản QUẢN TRỊ VIÊN.");
       return;
     }
@@ -656,9 +751,15 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     if (!user) return;
     setIsSubmitting(true);
     try {
-      const response = await api.put(`/users/me/${user.id}`, { isActive: !user.isActive });
+      const response = await api.put(`/users/me/${user.id}`, {
+        isActive: !user.isActive,
+      });
       if (response.data.success) {
-        toast.success(user.isActive ? "Đã khóa tài khoản thành công" : "Đã mở khóa tài khoản thành công");
+        toast.success(
+          user.isActive
+            ? "Đã khóa tài khoản thành công"
+            : "Đã mở khóa tài khoản thành công",
+        );
         // Update user list and close
         if (onUserUpdated) onUserUpdated();
         onOpenChange(false);
@@ -666,7 +767,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
         toast.error(response.data.message || "Thao tác thất bại");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi hệ thống khi thay đổi trạng thái");
+      toast.error(
+        error.response?.data?.message || "Lỗi hệ thống khi thay đổi trạng thái",
+      );
     } finally {
       setIsSubmitting(false);
       setShowConfirmLock(false);
@@ -680,7 +783,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
     }
     setIsSubmitting(true);
     try {
-      await api.post(`/users/me/${user.id}/warning`, { message: warningMessage });
+      await api.post(`/users/me/${user.id}/warning`, {
+        message: warningMessage,
+      });
       toast.success("Đã gửi cảnh báo tới người dùng");
       setShowSendWarning(false);
       setWarningMessage("");
@@ -723,11 +828,15 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                   Chi tiết người dùng
                 </DialogTitle>
                 <DialogDescription className="text-xs font-medium text-muted-foreground tracking-tight leading-none">
-                  {user.identificationCode || `UID-${user.id.toString().padStart(6, '0')}`}
+                  {user.identificationCode ||
+                    `UID-${user.id.toString().padStart(6, "0")}`}
                 </DialogDescription>
               </div>
               <div className="flex items-center gap-3">
-                <Badge variant="outline" className={`px-3 py-1 text-[11px] font-semibold ${riskLevel.bg} ${riskLevel.color} border-none`}>
+                <Badge
+                  variant="outline"
+                  className={`px-3 py-1 text-[11px] font-semibold ${riskLevel.bg} ${riskLevel.color} border-none`}
+                >
                   Mức độ rủi ro: {riskLevel.label}
                 </Badge>
               </div>
@@ -743,19 +852,32 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                   <div className="p-8 flex flex-col items-center justify-center text-center">
                     <div className="relative mb-6">
                       <Avatar className="size-28 rounded-full border-2 border-border shadow-sm">
-                        <AvatarImage src={user.avatarUrl || ""} alt={user.username} className="object-cover" />
+                        <AvatarImage
+                          src={user.avatarUrl || ""}
+                          alt={user.username}
+                          className="object-cover"
+                        />
                         <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">
                           {user.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className={`absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full text-[10px] font-bold border-2 border-card shadow-sm ${user.isActive ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                      <div
+                        className={`absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full text-[10px] font-bold border-2 border-card shadow-sm ${user.isActive ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}
+                      >
                         {user.isActive ? "ONLINE" : "LOCKED"}
                       </div>
                     </div>
-                    <h4 className="font-bold text-xl text-foreground mb-1">{user.username}</h4>
-                    <p className="text-sm text-muted-foreground mb-4">{user.email}</p>
+                    <h4 className="font-bold text-xl text-foreground mb-1">
+                      {user.username}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {user.email}
+                    </p>
                     <div className="flex flex-wrap justify-center gap-2">
-                      <Badge variant="secondary" className="rounded-full px-3 py-0.5 text-xs font-medium">
+                      <Badge
+                        variant="secondary"
+                        className="rounded-full px-3 py-0.5 text-xs font-medium"
+                      >
                         {user.role}
                       </Badge>
                     </div>
@@ -767,37 +889,69 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                     <div className="flex items-center justify-between mb-4">
                       <div className="space-y-1">
                         <span className="text-[10px] font-bold text-muted-foreground tracking-widest">
-                          {formData.role === "STUDENT" ? "Tần suất vi phạm" :
-                            formData.role === "INSTRUCTOR" ? "Tỉ lệ chuyên cần" :
-                              "Tác vụ hệ thống"}
+                          {formData.role === "STUDENT"
+                            ? "Tần suất vi phạm"
+                            : formData.role === "INSTRUCTOR"
+                              ? "Tỉ lệ chuyên cần"
+                              : "Tác vụ hệ thống"}
                         </span>
                         <div className="flex gap-1 mt-1">
-                          {['day', 'week', 'month'].map((r) => (
+                          {["day", "week", "month"].map((r) => (
                             <button
                               key={r}
                               onClick={() => setChartRange(r as any)}
-                              className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all ${chartRange === r ? 'bg-primary text-white' : 'bg-muted hover:bg-muted/80 text-muted-foreground'}`}
+                              className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all ${chartRange === r ? "bg-primary text-white" : "bg-muted hover:bg-muted/80 text-muted-foreground"}`}
                             >
-                              {r === 'day' ? '24h' : r === 'week' ? 'Tuần' : 'Tháng'}
+                              {r === "day"
+                                ? "24h"
+                                : r === "week"
+                                  ? "Tuần"
+                                  : "Tháng"}
                             </button>
                           ))}
                         </div>
                       </div>
-                      <div className="h-24 w-full flex-1 ml-4 pt-2">
-                        <ResponsiveContainer width="100%" height="100%">
+                      <div className="h-24 w-full flex-1 ml-4 pt-2 min-h-[96px] min-w-0">
+                        <ResponsiveContainer
+                          width="100%"
+                          height="100%"
+                          minWidth={0}
+                          minHeight={0}
+                        >
                           <LineChart data={trendData}>
-                            <XAxis dataKey="date" fontSize={9} axisLine={false} tickLine={false} tick={{ fill: '#888' }} />
+                            <XAxis
+                              dataKey="date"
+                              fontSize={9}
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: "#888" }}
+                            />
                             <Tooltip
-                              cursor={{ stroke: '#eee', strokeWidth: 1 }}
-                              contentStyle={{ fontSize: '10px', borderRadius: '12px', border: 'none', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: '8px' }}
-                              labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                              cursor={{ stroke: "#eee", strokeWidth: 1 }}
+                              contentStyle={{
+                                fontSize: "10px",
+                                borderRadius: "12px",
+                                border: "none",
+                                boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+                                padding: "8px",
+                              }}
+                              labelStyle={{
+                                fontWeight: "bold",
+                                marginBottom: "4px",
+                              }}
                             />
                             <Line
                               type="monotone"
                               dataKey="value"
-                              stroke={formData.role === "STUDENT" ? (trendData.some(d => d.value > 5) ? "#f43f5e" : "#f59e0b") : "#3b82f6"}
+                              stroke={
+                                formData.role === "STUDENT"
+                                  ? trendData.some((d) => d.value > 5)
+                                    ? "#f43f5e"
+                                    : "#f59e0b"
+                                  : "#3b82f6"
+                              }
                               strokeWidth={3}
-                              dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
+                              dot={{ r: 3, strokeWidth: 2, fill: "#fff" }}
                               activeDot={{ r: 5, strokeWidth: 0 }}
                             />
                           </LineChart>
@@ -808,19 +962,29 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
                   <Card className="shadow-sm border-border rounded-xl bg-card p-4 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold text-muted-foreground">Ngày gia nhập</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        Ngày gia nhập
+                      </span>
                       <Activity className="size-3 text-muted-foreground" />
                     </div>
-                    <div className="text-sm font-bold">{user.createdAt ? format(new Date(user.createdAt), 'dd/MM/yyyy') : "Chưa có dữ liệu"}</div>
+                    <div className="text-sm font-bold">
+                      {user.createdAt
+                        ? format(new Date(user.createdAt), "dd/MM/yyyy")
+                        : "Chưa có dữ liệu"}
+                    </div>
                   </Card>
 
                   <Card className="shadow-sm border-border rounded-xl bg-card p-4 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold text-muted-foreground">Lần cuối truy cập</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        Lần cuối truy cập
+                      </span>
                       <RotateCcw className="size-3 text-muted-foreground" />
                     </div>
                     <div className="text-sm font-medium text-muted-foreground tabular-nums">
-                      {user.lastActiveAt ? format(new Date(user.lastActiveAt), 'HH:mm dd/MM') : "Chưa có dữ liệu"}
+                      {user.lastActiveAt
+                        ? format(new Date(user.lastActiveAt), "HH:mm dd/MM")
+                        : "Chưa có dữ liệu"}
                     </div>
                   </Card>
                 </div>
@@ -838,14 +1002,21 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold text-muted-foreground">Vai trò quản lý</Label>
-                        <Select value={formData.role} onValueChange={handleRoleChangeIntent}>
+                        <Label className="text-[10px] font-bold text-muted-foreground">
+                          Vai trò quản lý
+                        </Label>
+                        <Select
+                          value={formData.role}
+                          onValueChange={handleRoleChangeIntent}
+                        >
                           <SelectTrigger className="h-9 border-border rounded-lg text-xs font-bold bg-muted/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="STUDENT">Học viên</SelectItem>
-                            <SelectItem value="INSTRUCTOR">Giảng viên</SelectItem>
+                            <SelectItem value="INSTRUCTOR">
+                              Giảng viên
+                            </SelectItem>
                             <SelectItem value="ADMIN">Quản trị viên</SelectItem>
                           </SelectContent>
                         </Select>
@@ -863,13 +1034,15 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
 
                     {formData.role === "INSTRUCTOR" && (
                       <div className="py-2 text-center border-t border-border/50 italic text-[10px] text-muted-foreground">
-                        Sử dụng khung hiển thị chi tiết bên dưới để quản lý chuyên cần của giảng viên.
+                        Sử dụng khung hiển thị chi tiết bên dưới để quản lý
+                        chuyên cần của giảng viên.
                       </div>
                     )}
 
                     {formData.role === "STUDENT" && (
                       <div className="py-4 text-center border-t border-border/50 italic text-[11px] text-muted-foreground">
-                        Sử dụng tab Bảo mật & Chống gian lận bên dưới để quản lý các quyền truy cập đặc biệt của học viên.
+                        Sử dụng tab Bảo mật & Chống gian lận bên dưới để quản lý
+                        các quyền truy cập đặc biệt của học viên.
                       </div>
                     )}
                   </CardContent>
@@ -908,7 +1081,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                           disabled={isBasicSubmitting || !isBasicDirty}
                           className="h-8 text-[10px] font-bold"
                         >
-                          {isBasicSubmitting && <Loader2 className="size-3 mr-2 animate-spin" />}
+                          {isBasicSubmitting && (
+                            <Loader2 className="size-3 mr-2 animate-spin" />
+                          )}
                           Lưu thay đổi
                         </Button>
                       </div>
@@ -916,11 +1091,18 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                   </CardHeader>
                   <CardContent className="p-6 space-y-6 transition-all duration-300">
                     <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-muted-foreground">Họ và tên đầy đủ</Label>
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Họ và tên đầy đủ
+                      </Label>
                       {isEditingBasic ? (
                         <Input
                           value={basicForm.fullName}
-                          onChange={(e) => setBasicForm({ ...basicForm, fullName: e.target.value })}
+                          onChange={(e) =>
+                            setBasicForm({
+                              ...basicForm,
+                              fullName: e.target.value,
+                            })
+                          }
                           className="h-10 border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                           placeholder="Nhập họ và tên..."
                           disabled={isBasicSubmitting}
@@ -933,7 +1115,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs font-semibold text-muted-foreground">Địa chỉ Email</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Địa chỉ Email
+                        </Label>
                         {isEditingBasic && (
                           <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                             Email (nhạy cảm)
@@ -945,7 +1129,7 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                           <Input
                             value={basicForm.email}
                             onChange={handleBasicEmailChange}
-                            className={`h-10 rounded-lg text-sm bg-background transition-all focus:ring-2 ${emailError ? 'border-destructive focus:ring-destructive/20' : 'border-border focus:ring-primary/20'}`}
+                            className={`h-10 rounded-lg text-sm bg-background transition-all focus:ring-2 ${emailError ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary/20"}`}
                             placeholder="example@fuji.edu.vn"
                             disabled={isBasicSubmitting}
                           />
@@ -993,7 +1177,12 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => exportViolationLogsToExcel(filteredLogs, user?.username || 'Student')}
+                            onClick={() =>
+                              exportViolationLogsToExcel(
+                                filteredLogs,
+                                user?.username || "Student",
+                              )
+                            }
                             className="h-9 px-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] hover:bg-emerald-500/20 gap-2 shadow-sm"
                           >
                             <FileDown className="size-3.5" />
@@ -1019,25 +1208,72 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               onChange={(e) => setLogSearch(e.target.value)}
                             />
                           </div>
-                          <Select value={logSeverity} onValueChange={(val) => { setLogSeverity(val); setStudentLogPage(0); }}>
+                          <Select
+                            value={logSeverity}
+                            onValueChange={(val) => {
+                              setLogSeverity(val);
+                              setStudentLogPage(0);
+                            }}
+                          >
                             <SelectTrigger className="h-9 w-[130px] bg-background border-border text-[11px] font-bold rounded-full shadow-sm">
                               <SelectValue placeholder="Mức độ" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border shadow-2xl">
-                              <SelectItem value="all" className="text-[11px] font-bold">Tất cả mức độ</SelectItem>
-                              <SelectItem value="LOW" className="text-[11px] font-bold">Mức độ: Thấp</SelectItem>
-                              <SelectItem value="MEDIUM" className="text-[11px] font-bold">Mức độ: T.bình</SelectItem>
-                              <SelectItem value="HIGH" className="text-[11px] font-bold">Mức độ: Cao</SelectItem>
+                              <SelectItem
+                                value="all"
+                                className="text-[11px] font-bold"
+                              >
+                                Tất cả mức độ
+                              </SelectItem>
+                              <SelectItem
+                                value="LOW"
+                                className="text-[11px] font-bold"
+                              >
+                                Mức độ: Thấp
+                              </SelectItem>
+                              <SelectItem
+                                value="MEDIUM"
+                                className="text-[11px] font-bold"
+                              >
+                                Mức độ: T.bình
+                              </SelectItem>
+                              <SelectItem
+                                value="HIGH"
+                                className="text-[11px] font-bold"
+                              >
+                                Mức độ: Cao
+                              </SelectItem>
                             </SelectContent>
                           </Select>
-                          <Select value={logStatus} onValueChange={(val) => { setLogStatus(val); setStudentLogPage(0); }}>
+                          <Select
+                            value={logStatus}
+                            onValueChange={(val) => {
+                              setLogStatus(val);
+                              setStudentLogPage(0);
+                            }}
+                          >
                             <SelectTrigger className="h-9 w-[140px] bg-background border-border text-[11px] font-bold rounded-full shadow-sm">
                               <SelectValue placeholder="Trạng thái" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border shadow-2xl">
-                              <SelectItem value="all" className="text-[11px] font-bold">Tất cả trạng thái</SelectItem>
-                              <SelectItem value="HANDLED" className="text-[11px] font-bold">Đã xử lý</SelectItem>
-                              <SelectItem value="UNHANDLED" className="text-[11px] font-bold">Chưa xử lý</SelectItem>
+                              <SelectItem
+                                value="all"
+                                className="text-[11px] font-bold"
+                              >
+                                Tất cả trạng thái
+                              </SelectItem>
+                              <SelectItem
+                                value="HANDLED"
+                                className="text-[11px] font-bold"
+                              >
+                                Đã xử lý
+                              </SelectItem>
+                              <SelectItem
+                                value="UNHANDLED"
+                                className="text-[11px] font-bold"
+                              >
+                                Chưa xử lý
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1051,96 +1287,169 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                             <tr className="bg-muted/30 border-b border-border">
                               <th className="p-4 w-10">
                                 <Checkbox
-                                  checked={selectedLogs.length === filteredLogs.length && filteredLogs.length > 0}
+                                  checked={
+                                    selectedLogs.length ===
+                                      filteredLogs.length &&
+                                    filteredLogs.length > 0
+                                  }
                                   onCheckedChange={(checked) => {
-                                    if (checked) setSelectedLogs(filteredLogs.map(l => l.id));
+                                    if (checked)
+                                      setSelectedLogs(
+                                        filteredLogs.map((l) => l.id),
+                                      );
                                     else setSelectedLogs([]);
                                   }}
                                 />
                               </th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Thời gian</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Hành động</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">Mức độ</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">Trạng thái</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-right">Thao tác</th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
+                                Thời gian
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
+                                Hành động
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">
+                                Mức độ
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">
+                                Trạng thái
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-right">
+                                Thao tác
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
                             {filteredLogs.length > 0 ? (
-                              filteredLogs.slice(studentLogPage * PAGE_SIZE, (studentLogPage + 1) * PAGE_SIZE).map((log) => (
-                                <tr key={log.id} className={`hover:bg-muted/20 transition-all cursor-default group ${selectedLogs.includes(log.id) ? 'bg-primary/5' : ''}`}>
-                                  <td className="p-4 align-middle">
-                                    <Checkbox
-                                      checked={selectedLogs.includes(log.id)}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) setSelectedLogs([...selectedLogs, log.id]);
-                                        else setSelectedLogs(selectedLogs.filter(id => id !== log.id));
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-4 align-top">
-                                    <div className="text-xs font-bold text-foreground tabular-nums">{format(new Date(log.createdAt), 'dd/MM/yyyy')}</div>
-                                    <div className="text-[10px] text-muted-foreground font-medium">{format(new Date(log.createdAt), 'HH:mm')}</div>
-                                  </td>
-                                  <td className="p-4">
-                                    <div className="text-xs font-bold text-foreground/80 leading-tight flex items-center gap-2">
-                                      {log.description}
-                                      {log.count > 1 && (
-                                        <Badge variant="secondary" className="h-4 px-1.5 text-[8px] font-bold bg-muted/50 text-muted-foreground rounded-full">
-                                          x{log.count}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    {log.testId && (
-                                      <div className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                                        Bài thi: <span className="font-bold">{log.testId}</span>
+                              filteredLogs
+                                .slice(
+                                  studentLogPage * PAGE_SIZE,
+                                  (studentLogPage + 1) * PAGE_SIZE,
+                                )
+                                .map((log) => (
+                                  <tr
+                                    key={log.id}
+                                    className={`hover:bg-muted/20 transition-all cursor-default group ${selectedLogs.includes(log.id) ? "bg-primary/5" : ""}`}
+                                  >
+                                    <td className="p-4 align-middle">
+                                      <Checkbox
+                                        checked={selectedLogs.includes(log.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked)
+                                            setSelectedLogs([
+                                              ...selectedLogs,
+                                              log.id,
+                                            ]);
+                                          else
+                                            setSelectedLogs(
+                                              selectedLogs.filter(
+                                                (id) => id !== log.id,
+                                              ),
+                                            );
+                                        }}
+                                      />
+                                    </td>
+                                    <td className="p-4 align-top">
+                                      <div className="text-xs font-bold text-foreground tabular-nums">
+                                        {format(
+                                          new Date(log.createdAt),
+                                          "dd/MM/yyyy",
+                                        )}
                                       </div>
-                                    )}
-                                  </td>
-                                  <td className="p-4 text-center align-middle">
-                                    <Badge variant="outline" className={`h-5 text-[9px] font-bold border-none shadow-none px-2.5 rounded-full ${log.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500' :
-                                        log.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-600' : 'bg-blue-500/10 text-blue-500'
-                                      }`}>
-                                      {log.severity === 'HIGH' ? "Cao" : log.severity === 'MEDIUM' ? "Trung bình" : "Thấp"}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-4 text-center align-middle">
-                                    <Badge variant="secondary" className={`h-5 text-[9px] font-bold px-2 rounded-full border-none ${log.isHandled ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
-                                      }`}>
-                                      {log.isHandled ? "Đã xử lý" : "Chưa xử lý"}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-4 text-right align-middle">
-                                    <div className="flex justify-end items-center">
-                                      {log.isHandled ? (
-                                        <Button
-                                          onClick={handleUnbanChat}
-                                          disabled={isChatBanLoading}
-                                          className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
-                                        >
-                                          <CheckCircle2 className="size-3" />
-                                          Mở chat
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          onClick={() => handleSetChatBan("TEMPORARY")}
-                                          disabled={isChatBanLoading}
-                                          className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
-                                        >
-                                          <CheckCircle2 className="size-3" />
-                                          Xử lý ngay
-                                        </Button>
+                                      <div className="text-[10px] text-muted-foreground font-medium">
+                                        {format(
+                                          new Date(log.createdAt),
+                                          "HH:mm",
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="p-4">
+                                      <div className="text-xs font-bold text-foreground/80 leading-tight flex items-center gap-2">
+                                        {log.description}
+                                        {log.count > 1 && (
+                                          <Badge
+                                            variant="secondary"
+                                            className="h-4 px-1.5 text-[8px] font-bold bg-muted/50 text-muted-foreground rounded-full"
+                                          >
+                                            x{log.count}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {log.testId && (
+                                        <div className="text-[10px] text-muted-foreground font-medium mt-0.5">
+                                          Bài thi:{" "}
+                                          <span className="font-bold">
+                                            {log.testId}
+                                          </span>
+                                        </div>
                                       )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))
+                                    </td>
+                                    <td className="p-4 text-center align-middle">
+                                      <Badge
+                                        variant="outline"
+                                        className={`h-5 text-[9px] font-bold border-none shadow-none px-2.5 rounded-full ${
+                                          log.severity === "HIGH"
+                                            ? "bg-rose-500/10 text-rose-500"
+                                            : log.severity === "MEDIUM"
+                                              ? "bg-amber-500/10 text-amber-600"
+                                              : "bg-blue-500/10 text-blue-500"
+                                        }`}
+                                      >
+                                        {log.severity === "HIGH"
+                                          ? "Cao"
+                                          : log.severity === "MEDIUM"
+                                            ? "Trung bình"
+                                            : "Thấp"}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-4 text-center align-middle">
+                                      <Badge
+                                        variant="secondary"
+                                        className={`h-5 text-[9px] font-bold px-2 rounded-full border-none ${
+                                          log.isHandled
+                                            ? "bg-emerald-500/10 text-emerald-600"
+                                            : "bg-amber-500/10 text-amber-600"
+                                        }`}
+                                      >
+                                        {log.isHandled
+                                          ? "Đã xử lý"
+                                          : "Chưa xử lý"}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-4 text-right align-middle">
+                                      <div className="flex justify-end items-center">
+                                        {log.isHandled ? (
+                                          <Button
+                                            onClick={handleUnbanChat}
+                                            disabled={isChatBanLoading}
+                                            className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
+                                          >
+                                            <CheckCircle2 className="size-3" />
+                                            Mở chat
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            onClick={() =>
+                                              handleSetChatBan("TEMPORARY")
+                                            }
+                                            disabled={isChatBanLoading}
+                                            className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
+                                          >
+                                            <CheckCircle2 className="size-3" />
+                                            Xử lý ngay
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))
                             ) : (
                               <tr>
                                 <td colSpan={6} className="p-16 text-center">
                                   <div className="flex flex-col items-center gap-3">
                                     <ShieldStatus className="size-10 text-muted/30" />
-                                    <span className="text-xs font-semibold text-muted-foreground tracking-wider">Không tìm thấy dữ liệu vi phạm</span>
+                                    <span className="text-xs font-semibold text-muted-foreground tracking-wider">
+                                      Không tìm thấy dữ liệu vi phạm
+                                    </span>
                                   </div>
                                 </td>
                               </tr>
@@ -1158,18 +1467,51 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               <PaginationItem>
                                 <PaginationPrevious
                                   href="#"
-                                  onClick={(e) => { e.preventDefault(); setStudentLogPage(p => Math.max(0, p - 1)); }}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setStudentLogPage((p) =>
+                                      Math.max(0, p - 1),
+                                    );
+                                  }}
                                   aria-disabled={studentLogPage === 0}
-                                  className={studentLogPage === 0 ? "pointer-events-none opacity-50" : ""}
+                                  className={
+                                    studentLogPage === 0
+                                      ? "pointer-events-none opacity-50"
+                                      : ""
+                                  }
                                 />
                               </PaginationItem>
-                              {renderPaginationItems(studentLogPage, Math.ceil(filteredLogs.length / PAGE_SIZE), setStudentLogPage)}
+                              {renderPaginationItems(
+                                studentLogPage,
+                                Math.ceil(filteredLogs.length / PAGE_SIZE),
+                                setStudentLogPage,
+                              )}
                               <PaginationItem>
                                 <PaginationNext
                                   href="#"
-                                  onClick={(e) => { e.preventDefault(); setStudentLogPage(p => Math.min(Math.ceil(filteredLogs.length / PAGE_SIZE) - 1, p + 1)); }}
-                                  aria-disabled={studentLogPage >= Math.ceil(filteredLogs.length / PAGE_SIZE) - 1}
-                                  className={studentLogPage >= Math.ceil(filteredLogs.length / PAGE_SIZE) - 1 ? "pointer-events-none opacity-50" : ""}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setStudentLogPage((p) =>
+                                      Math.min(
+                                        Math.ceil(
+                                          filteredLogs.length / PAGE_SIZE,
+                                        ) - 1,
+                                        p + 1,
+                                      ),
+                                    );
+                                  }}
+                                  aria-disabled={
+                                    studentLogPage >=
+                                    Math.ceil(filteredLogs.length / PAGE_SIZE) -
+                                      1
+                                  }
+                                  className={
+                                    studentLogPage >=
+                                    Math.ceil(filteredLogs.length / PAGE_SIZE) -
+                                      1
+                                      ? "pointer-events-none opacity-50"
+                                      : ""
+                                  }
                                 />
                               </PaginationItem>
                             </PaginationContent>
@@ -1185,55 +1527,110 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                         <Lock className="size-4 text-rose-500" />
                         Quyền truy cập & Giới hạn
                       </CardTitle>
-                      <Badge variant="outline" className="text-[9px] font-bold bg-rose-50 text-rose-600 border-none h-5">Cấu hình nâng cao</Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] font-bold bg-rose-50 text-rose-600 border-none h-5"
+                      >
+                        Cấu hình nâng cao
+                      </Badge>
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between h-10">
-                            <Label htmlFor="exam-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập bài thi</Label>
+                            <Label
+                              htmlFor="exam-access"
+                              className="text-sm font-medium text-foreground cursor-pointer"
+                            >
+                              Truy cập bài thi
+                            </Label>
                             <Switch
                               id="exam-access"
                               checked={formData.examAccess}
-                              onCheckedChange={(checked) => setFormData({ ...formData, examAccess: checked })}
+                              onCheckedChange={(checked) =>
+                                setFormData({
+                                  ...formData,
+                                  examAccess: checked,
+                                })
+                              }
                             />
                           </div>
                           <div className="flex items-center justify-between h-10">
-                            <Label htmlFor="content-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập nội dung</Label>
+                            <Label
+                              htmlFor="content-access"
+                              className="text-sm font-medium text-foreground cursor-pointer"
+                            >
+                              Truy cập nội dung
+                            </Label>
                             <Switch
                               id="content-access"
                               checked={formData.contentAccess}
-                              onCheckedChange={(checked) => setFormData({ ...formData, contentAccess: checked })}
+                              onCheckedChange={(checked) =>
+                                setFormData({
+                                  ...formData,
+                                  contentAccess: checked,
+                                })
+                              }
                             />
                           </div>
                           <div className="flex items-center justify-between h-10">
-                            <Label htmlFor="chat-access" className="text-sm font-medium text-foreground cursor-pointer">Truy cập trò chuyện</Label>
+                            <Label
+                              htmlFor="chat-access"
+                              className="text-sm font-medium text-foreground cursor-pointer"
+                            >
+                              Truy cập trò chuyện
+                            </Label>
                             <Switch
                               id="chat-access"
                               checked={formData.chatAccess}
-                              onCheckedChange={(checked) => setFormData({ ...formData, chatAccess: checked })}
+                              onCheckedChange={(checked) =>
+                                setFormData({
+                                  ...formData,
+                                  chatAccess: checked,
+                                })
+                              }
                             />
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="device-limit" className="text-sm font-medium text-foreground">Giới hạn thiết bị</Label>
+                            <Label
+                              htmlFor="device-limit"
+                              className="text-sm font-medium text-foreground"
+                            >
+                              Giới hạn thiết bị
+                            </Label>
                             <Input
                               id="device-limit"
                               type="number"
                               min="1"
                               value={formData.deviceLimit}
-                              onChange={(e) => setFormData({ ...formData, deviceLimit: parseInt(e.target.value) || 1 })}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  deviceLimit: parseInt(e.target.value) || 1,
+                                })
+                              }
                               className="h-10 border-border rounded-lg text-sm bg-background"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="expiry-date" className="text-sm font-medium text-foreground">Ngày hết hạn tài khoản</Label>
+                            <Label
+                              htmlFor="expiry-date"
+                              className="text-sm font-medium text-foreground"
+                            >
+                              Ngày hết hạn tài khoản
+                            </Label>
                             <Input
                               id="expiry-date"
                               type="date"
                               value={formData.expiryDate}
-                              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  expiryDate: e.target.value,
+                                })
+                              }
                               className="h-10 border-border rounded-lg text-sm bg-background"
                             />
                           </div>
@@ -1261,7 +1658,10 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                                 : `Đang cấm đến ${chatBanInfo.banUntil ? format(new Date(chatBanInfo.banUntil), "HH:mm dd/MM/yyyy") : "-"}`}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
+                            <Badge
+                              variant="outline"
+                              className="text-emerald-600 border-emerald-200 bg-emerald-50"
+                            >
                               Không bị cấm chat
                             </Badge>
                           )}
@@ -1329,7 +1729,12 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => exportViolationLogsToExcel(filteredInstructorLogs, user?.username || 'Instructor')}
+                            onClick={() =>
+                              exportViolationLogsToExcel(
+                                filteredInstructorLogs,
+                                user?.username || "Instructor",
+                              )
+                            }
                             className="h-9 px-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] hover:bg-emerald-500/20 gap-2 shadow-sm"
                           >
                             <FileDown className="size-3.5" />
@@ -1340,8 +1745,16 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               onClick={async () => {
                                 setIsSubmitting(true);
                                 try {
-                                  await Promise.all(selectedInstructorLogs.map(id => api.post(`/users/me/violations/${id}/handle`)));
-                                  toast.success(`Đã xử lý ${selectedInstructorLogs.length} sự cố`);
+                                  await Promise.all(
+                                    selectedInstructorLogs.map((id) =>
+                                      api.post(
+                                        `/users/me/violations/${id}/handle`,
+                                      ),
+                                    ),
+                                  );
+                                  toast.success(
+                                    `Đã xử lý ${selectedInstructorLogs.length} sự cố`,
+                                  );
                                   setSelectedInstructorLogs([]);
                                   if (onUserUpdated) onUserUpdated();
                                 } catch (e) {
@@ -1364,28 +1777,77 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               placeholder="Tìm theo mô tả, IP, loại..."
                               className="h-9 w-[280px] pl-9 border-border bg-background text-[11px] rounded-full shadow-sm"
                               value={instructorLogSearch}
-                              onChange={(e) => setInstructorLogSearch(e.target.value)}
+                              onChange={(e) =>
+                                setInstructorLogSearch(e.target.value)
+                              }
                             />
                           </div>
-                          <Select value={instructorLogSeverity} onValueChange={(val) => { setInstructorLogSeverity(val); setInstructorLogPage(0); }}>
+                          <Select
+                            value={instructorLogSeverity}
+                            onValueChange={(val) => {
+                              setInstructorLogSeverity(val);
+                              setInstructorLogPage(0);
+                            }}
+                          >
                             <SelectTrigger className="h-9 w-[130px] bg-background border-border text-[11px] font-bold rounded-full shadow-sm">
                               <SelectValue placeholder="Mức độ" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border shadow-2xl">
-                              <SelectItem value="all" className="text-[11px] font-bold">Tất cả mức độ</SelectItem>
-                              <SelectItem value="LOW" className="text-[11px] font-bold">Mức độ: Thấp</SelectItem>
-                              <SelectItem value="MEDIUM" className="text-[11px] font-bold">Mức độ: T.bình</SelectItem>
-                              <SelectItem value="HIGH" className="text-[11px] font-bold">Mức độ: Cao</SelectItem>
+                              <SelectItem
+                                value="all"
+                                className="text-[11px] font-bold"
+                              >
+                                Tất cả mức độ
+                              </SelectItem>
+                              <SelectItem
+                                value="LOW"
+                                className="text-[11px] font-bold"
+                              >
+                                Mức độ: Thấp
+                              </SelectItem>
+                              <SelectItem
+                                value="MEDIUM"
+                                className="text-[11px] font-bold"
+                              >
+                                Mức độ: T.bình
+                              </SelectItem>
+                              <SelectItem
+                                value="HIGH"
+                                className="text-[11px] font-bold"
+                              >
+                                Mức độ: Cao
+                              </SelectItem>
                             </SelectContent>
                           </Select>
-                          <Select value={instructorLogStatus} onValueChange={(val) => { setInstructorLogStatus(val); setInstructorLogPage(0); }}>
+                          <Select
+                            value={instructorLogStatus}
+                            onValueChange={(val) => {
+                              setInstructorLogStatus(val);
+                              setInstructorLogPage(0);
+                            }}
+                          >
                             <SelectTrigger className="h-9 w-[140px] bg-background border-border text-[11px] font-bold rounded-full shadow-sm">
                               <SelectValue placeholder="Trạng thái" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border shadow-2xl">
-                              <SelectItem value="all" className="text-[11px] font-bold">Tất cả trạng thái</SelectItem>
-                              <SelectItem value="HANDLED" className="text-[11px] font-bold">Đã xử lý</SelectItem>
-                              <SelectItem value="UNHANDLED" className="text-[11px] font-bold">Chưa xử lý</SelectItem>
+                              <SelectItem
+                                value="all"
+                                className="text-[11px] font-bold"
+                              >
+                                Tất cả trạng thái
+                              </SelectItem>
+                              <SelectItem
+                                value="HANDLED"
+                                className="text-[11px] font-bold"
+                              >
+                                Đã xử lý
+                              </SelectItem>
+                              <SelectItem
+                                value="UNHANDLED"
+                                className="text-[11px] font-bold"
+                              >
+                                Chưa xử lý
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1399,81 +1861,155 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                             <tr className="bg-muted/30 border-b border-border">
                               <th className="p-4 w-10">
                                 <Checkbox
-                                  checked={selectedInstructorLogs.length === filteredInstructorLogs.length && filteredInstructorLogs.length > 0}
+                                  checked={
+                                    selectedInstructorLogs.length ===
+                                      filteredInstructorLogs.length &&
+                                    filteredInstructorLogs.length > 0
+                                  }
                                   onCheckedChange={(checked) => {
-                                    if (checked) setSelectedInstructorLogs(filteredInstructorLogs.map(l => l.id));
+                                    if (checked)
+                                      setSelectedInstructorLogs(
+                                        filteredInstructorLogs.map((l) => l.id),
+                                      );
                                     else setSelectedInstructorLogs([]);
                                   }}
                                 />
                               </th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Thời gian</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">Hành động</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">Mức độ</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">Trạng thái</th>
-                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-right">Thao tác</th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
+                                Thời gian
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
+                                Hành động
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">
+                                Mức độ
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">
+                                Trạng thái
+                              </th>
+                              <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-right">
+                                Thao tác
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
                             {filteredInstructorLogs.length > 0 ? (
-                              filteredInstructorLogs.slice(instructorLogPage * PAGE_SIZE, (instructorLogPage + 1) * PAGE_SIZE).map((log) => (
-                                <tr key={log.id} className={`hover:bg-muted/20 transition-all cursor-default group ${selectedInstructorLogs.includes(log.id) ? 'bg-primary/5' : ''}`}>
-                                  <td className="p-4 align-middle">
-                                    <Checkbox
-                                      checked={selectedInstructorLogs.includes(log.id)}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) setSelectedInstructorLogs([...selectedInstructorLogs, log.id]);
-                                        else setSelectedInstructorLogs(selectedInstructorLogs.filter(id => id !== log.id));
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-4 align-top">
-                                    <div className="text-xs font-bold text-foreground tabular-nums">{format(new Date(log.createdAt), 'dd/MM/yyyy')}</div>
-                                    <div className="text-[10px] text-muted-foreground font-medium">{format(new Date(log.createdAt), 'HH:mm')}</div>
-                                  </td>
-                                  <td className="p-4">
-                                    <div className="text-xs font-bold text-foreground/80 leading-tight flex items-center gap-2">
-                                      {log.description}
-                                    </div>
-                                  </td>
-                                  <td className="p-4 text-center align-middle">
-                                    <Badge variant="outline" className={`h-5 text-[9px] font-bold border-none shadow-none px-2.5 rounded-full ${log.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500' :
-                                        log.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-600' : 'bg-blue-500/10 text-blue-500'
-                                      }`}>
-                                      {log.severity === 'HIGH' ? "Cao" : log.severity === 'MEDIUM' ? "Trung bình" : "Thấp"}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-4 text-center align-middle">
-                                    <Badge variant="secondary" className={`h-5 text-[9px] font-bold px-2 rounded-full border-none ${log.isHandled ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
-                                      }`}>
-                                      {log.isHandled ? "Đã xử lý" : "Chưa xử lý"}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-4 text-right align-middle">
-                                    <div className="flex justify-end items-center">
-                                      {log.isHandled ? (
-                                        <div className="h-8 w-[110px] flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full shadow-sm select-none">
-                                          <CheckCircle2 className="size-3" />
-                                          <span className="text-[9px] font-bold">Đã giải quyết</span>
-                                        </div>
-                                      ) : (
-                                        <Button
-                                          onClick={() => setShowConfirmHandleLog({ id: log.id, description: log.description })}
-                                          className="h-8 w-[110px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
-                                        >
-                                          <CheckCircle2 className="size-3" />
-                                          Xử lý ngay
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))
+                              filteredInstructorLogs
+                                .slice(
+                                  instructorLogPage * PAGE_SIZE,
+                                  (instructorLogPage + 1) * PAGE_SIZE,
+                                )
+                                .map((log) => (
+                                  <tr
+                                    key={log.id}
+                                    className={`hover:bg-muted/20 transition-all cursor-default group ${selectedInstructorLogs.includes(log.id) ? "bg-primary/5" : ""}`}
+                                  >
+                                    <td className="p-4 align-middle">
+                                      <Checkbox
+                                        checked={selectedInstructorLogs.includes(
+                                          log.id,
+                                        )}
+                                        onCheckedChange={(checked) => {
+                                          if (checked)
+                                            setSelectedInstructorLogs([
+                                              ...selectedInstructorLogs,
+                                              log.id,
+                                            ]);
+                                          else
+                                            setSelectedInstructorLogs(
+                                              selectedInstructorLogs.filter(
+                                                (id) => id !== log.id,
+                                              ),
+                                            );
+                                        }}
+                                      />
+                                    </td>
+                                    <td className="p-4 align-top">
+                                      <div className="text-xs font-bold text-foreground tabular-nums">
+                                        {format(
+                                          new Date(log.createdAt),
+                                          "dd/MM/yyyy",
+                                        )}
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground font-medium">
+                                        {format(
+                                          new Date(log.createdAt),
+                                          "HH:mm",
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="p-4">
+                                      <div className="text-xs font-bold text-foreground/80 leading-tight flex items-center gap-2">
+                                        {log.description}
+                                      </div>
+                                    </td>
+                                    <td className="p-4 text-center align-middle">
+                                      <Badge
+                                        variant="outline"
+                                        className={`h-5 text-[9px] font-bold border-none shadow-none px-2.5 rounded-full ${
+                                          log.severity === "HIGH"
+                                            ? "bg-rose-500/10 text-rose-500"
+                                            : log.severity === "MEDIUM"
+                                              ? "bg-amber-500/10 text-amber-600"
+                                              : "bg-blue-500/10 text-blue-500"
+                                        }`}
+                                      >
+                                        {log.severity === "HIGH"
+                                          ? "Cao"
+                                          : log.severity === "MEDIUM"
+                                            ? "Trung bình"
+                                            : "Thấp"}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-4 text-center align-middle">
+                                      <Badge
+                                        variant="secondary"
+                                        className={`h-5 text-[9px] font-bold px-2 rounded-full border-none ${
+                                          log.isHandled
+                                            ? "bg-emerald-500/10 text-emerald-600"
+                                            : "bg-amber-500/10 text-amber-600"
+                                        }`}
+                                      >
+                                        {log.isHandled
+                                          ? "Đã xử lý"
+                                          : "Chưa xử lý"}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-4 text-right align-middle">
+                                      <div className="flex justify-end items-center">
+                                        {log.isHandled ? (
+                                          <div className="h-8 w-[110px] flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full shadow-sm select-none">
+                                            <CheckCircle2 className="size-3" />
+                                            <span className="text-[9px] font-bold">
+                                              Đã giải quyết
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <Button
+                                            onClick={() =>
+                                              setShowConfirmHandleLog({
+                                                id: log.id,
+                                                description: log.description,
+                                              })
+                                            }
+                                            className="h-8 w-[110px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
+                                          >
+                                            <CheckCircle2 className="size-3" />
+                                            Xử lý ngay
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))
                             ) : (
                               <tr>
                                 <td colSpan={6} className="p-16 text-center">
                                   <div className="flex flex-col items-center gap-3">
                                     <ShieldStatus className="size-10 text-muted/30" />
-                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Không tìm thấy dữ liệu vi phạm</span>
+                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                      Không tìm thấy dữ liệu vi phạm
+                                    </span>
                                   </div>
                                 </td>
                               </tr>
@@ -1481,7 +2017,8 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                           </tbody>
                         </table>
                       </div>
-                      {Math.ceil(filteredInstructorLogs.length / PAGE_SIZE) > 1 && (
+                      {Math.ceil(filteredInstructorLogs.length / PAGE_SIZE) >
+                        1 && (
                         <div className="p-4 border-t border-border flex justify-between items-center bg-muted/5">
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-2 whitespace-nowrap">
                             {filteredInstructorLogs.length} kết quả
@@ -1491,18 +2028,58 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               <PaginationItem>
                                 <PaginationPrevious
                                   href="#"
-                                  onClick={(e) => { e.preventDefault(); setInstructorLogPage(p => Math.max(0, p - 1)); }}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setInstructorLogPage((p) =>
+                                      Math.max(0, p - 1),
+                                    );
+                                  }}
                                   aria-disabled={instructorLogPage === 0}
-                                  className={instructorLogPage === 0 ? "pointer-events-none opacity-50" : ""}
+                                  className={
+                                    instructorLogPage === 0
+                                      ? "pointer-events-none opacity-50"
+                                      : ""
+                                  }
                                 />
                               </PaginationItem>
-                              {renderPaginationItems(instructorLogPage, Math.ceil(filteredInstructorLogs.length / PAGE_SIZE), setInstructorLogPage)}
+                              {renderPaginationItems(
+                                instructorLogPage,
+                                Math.ceil(
+                                  filteredInstructorLogs.length / PAGE_SIZE,
+                                ),
+                                setInstructorLogPage,
+                              )}
                               <PaginationItem>
                                 <PaginationNext
                                   href="#"
-                                  onClick={(e) => { e.preventDefault(); setInstructorLogPage(p => Math.min(Math.ceil(filteredInstructorLogs.length / PAGE_SIZE) - 1, p + 1)); }}
-                                  aria-disabled={instructorLogPage >= Math.ceil(filteredInstructorLogs.length / PAGE_SIZE) - 1}
-                                  className={instructorLogPage >= Math.ceil(filteredInstructorLogs.length / PAGE_SIZE) - 1 ? "pointer-events-none opacity-50" : ""}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setInstructorLogPage((p) =>
+                                      Math.min(
+                                        Math.ceil(
+                                          filteredInstructorLogs.length /
+                                            PAGE_SIZE,
+                                        ) - 1,
+                                        p + 1,
+                                      ),
+                                    );
+                                  }}
+                                  aria-disabled={
+                                    instructorLogPage >=
+                                    Math.ceil(
+                                      filteredInstructorLogs.length / PAGE_SIZE,
+                                    ) -
+                                      1
+                                  }
+                                  className={
+                                    instructorLogPage >=
+                                    Math.ceil(
+                                      filteredInstructorLogs.length / PAGE_SIZE,
+                                    ) -
+                                      1
+                                      ? "pointer-events-none opacity-50"
+                                      : ""
+                                  }
                                 />
                               </PaginationItem>
                             </PaginationContent>
@@ -1518,7 +2095,12 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                         <TrendingUp className="size-4 text-emerald-500" />
                         Chỉ số chuyên cần & Hiệu suất giảng dạy
                       </CardTitle>
-                      <Badge variant="outline" className="text-[9px] font-bold bg-emerald-50 text-emerald-600 border-none h-5">Dữ liệu thời gian thực</Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] font-bold bg-emerald-50 text-emerald-600 border-none h-5"
+                      >
+                        Dữ liệu thời gian thực
+                      </Badge>
                     </CardHeader>
                     <CardContent className="p-8">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
@@ -1528,49 +2110,95 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                               <Calendar className="size-6" />
                             </div>
                             <div className="space-y-1">
-                              <p className="text-sm font-bold text-orange-900">Thống kê tự động</p>
+                              <p className="text-sm font-bold text-orange-900">
+                                Thống kê tự động
+                              </p>
                               <p className="text-[11px] text-orange-800/70 leading-relaxed font-medium">
-                                Các chỉ số như <b>Vào lớp muộn, Thiếu giáo án, Sai lộ trình</b> được hệ thống đào tạo cập nhật tự động hàng giờ.
+                                Các chỉ số như{" "}
+                                <b>Vào lớp muộn, Thiếu giáo án, Sai lộ trình</b>{" "}
+                                được hệ thống đào tạo cập nhật tự động hàng giờ.
                               </p>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-6">
                             <div className="p-6 rounded-3xl bg-muted/30 border border-border flex flex-col items-center justify-center gap-2 hover:bg-muted/40 transition-all cursor-default group">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">Số buổi muộn / Nghỉ</span>
-                              <span className="text-3xl font-black text-rose-500 tabular-nums">
-                                {(user?.violationLogs?.filter(l => l.type?.startsWith('LATE') || l.type?.startsWith('MISSING')).length ?? 0).toString().padStart(2, '0')}
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">
+                                Số buổi muộn / Nghỉ
                               </span>
-                              <div className="text-[9px] font-bold py-0.5 px-2 bg-rose-500/10 text-rose-600 rounded-full">Dữ liệu từ hệ thống đào tạo</div>
+                              <span className="text-3xl font-black text-rose-500 tabular-nums">
+                                {(
+                                  user?.violationLogs?.filter(
+                                    (l) =>
+                                      l.type?.startsWith("LATE") ||
+                                      l.type?.startsWith("MISSING"),
+                                  ).length ?? 0
+                                )
+                                  .toString()
+                                  .padStart(2, "0")}
+                              </span>
+                              <div className="text-[9px] font-bold py-0.5 px-2 bg-rose-500/10 text-rose-600 rounded-full">
+                                Dữ liệu từ hệ thống đào tạo
+                              </div>
                             </div>
                             <div className="p-6 rounded-3xl bg-muted/30 border border-border flex flex-col items-center justify-center gap-2 hover:bg-muted/40 transition-all cursor-default group">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">Tỉ lệ chuyên cần</span>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">
+                                Tỉ lệ chuyên cần
+                              </span>
                               <span className="text-3xl font-black text-emerald-500 tabular-nums">
                                 {(() => {
-                                  const lateCount = user?.violationLogs?.filter(l => l.type?.startsWith('LATE') || l.type?.startsWith('MISSING')).length ?? 0;
+                                  const lateCount =
+                                    user?.violationLogs?.filter(
+                                      (l) =>
+                                        l.type?.startsWith("LATE") ||
+                                        l.type?.startsWith("MISSING"),
+                                    ).length ?? 0;
                                   if (lateCount === 0) return "100%";
                                   if (lateCount < 3) return "98%";
                                   if (lateCount < 5) return "95%";
                                   return "90%";
                                 })()}
                               </span>
-                              <div className="text-[9px] font-bold py-0.5 px-2 bg-emerald-500/10 text-emerald-600 rounded-full">Dự kiến dựa trên nhật ký</div>
+                              <div className="text-[9px] font-bold py-0.5 px-2 bg-emerald-500/10 text-emerald-600 rounded-full">
+                                Dự kiến dựa trên nhật ký
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         <div className="w-full flex flex-col justify-center items-center py-10 px-6 rounded-3xl bg-primary/5 border border-primary/10 shadow-inner">
-                          <div className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-6">Đánh giá chung</div>
+                          <div className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-6">
+                            Đánh giá chung
+                          </div>
                           <div className="relative size-40 flex items-center justify-center">
                             <svg className="size-full -rotate-90">
-                              <circle cx="80" cy="80" r="70" className="stroke-primary/10 stroke-[12] fill-none" />
-                              <circle cx="80" cy="80" r="70" className="stroke-primary stroke-[12] fill-none" strokeDasharray="440" strokeDashoffset="66" strokeLinecap="round" />
+                              <circle
+                                cx="80"
+                                cy="80"
+                                r="70"
+                                className="stroke-primary/10 stroke-[12] fill-none"
+                              />
+                              <circle
+                                cx="80"
+                                cy="80"
+                                r="70"
+                                className="stroke-primary stroke-[12] fill-none"
+                                strokeDasharray="440"
+                                strokeDashoffset="66"
+                                strokeLinecap="round"
+                              />
                             </svg>
                             <div className="absolute flex flex-col items-center">
-                              <span className="text-4xl font-black text-primary tracking-tighter">8.5</span>
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase">Điểm KPI</span>
+                              <span className="text-4xl font-black text-primary tracking-tighter">
+                                8.5
+                              </span>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                Điểm KPI
+                              </span>
                             </div>
                           </div>
-                          <div className="mt-8 text-[11px] font-bold text-muted-foreground bg-white/50 px-4 py-1.5 rounded-full border border-primary/5">Giảng viên tiêu biểu</div>
+                          <div className="mt-8 text-[11px] font-bold text-muted-foreground bg-white/50 px-4 py-1.5 rounded-full border border-primary/5">
+                            Giảng viên tiêu biểu
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -1582,7 +2210,10 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                         <Lock className="size-4 text-rose-500" />
                         Quản lý cấm chat (giảng viên)
                       </CardTitle>
-                      <Badge variant="outline" className="text-[9px] font-bold bg-rose-50 text-rose-600 border-none h-5">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] font-bold bg-rose-50 text-rose-600 border-none h-5"
+                      >
                         Kiểm duyệt chat
                       </Badge>
                     </CardHeader>
@@ -1608,7 +2239,10 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                                 : `Đang cấm đến ${chatBanInfo.banUntil ? format(new Date(chatBanInfo.banUntil), "HH:mm dd/MM/yyyy") : "-"}`}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
+                            <Badge
+                              variant="outline"
+                              className="text-emerald-600 border-emerald-200 bg-emerald-50"
+                            >
                               Không bị cấm chat
                             </Badge>
                           )}
@@ -1659,49 +2293,78 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                       <History className="size-4 text-blue-500" />
                       LỊCH SỬ TÁC VỤ & QUẢN TRỊ HỆ THỐNG
                     </CardTitle>
-                    <Badge variant="outline" className="text-[9px] font-bold bg-blue-50 text-blue-600 border-blue-100 uppercase scroll-px-3 h-5">Nhật ký hoạt động</Badge>
+                    <Badge
+                      variant="outline"
+                      className="text-[9px] font-bold bg-blue-50 text-blue-600 border-blue-100 uppercase scroll-px-3 h-5"
+                    >
+                      Nhật ký hoạt động
+                    </Badge>
                   </CardHeader>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-muted/30 border-b border-border">
-                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Thời gian</th>
-                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Hành động</th>
-                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Đối tượng</th>
-                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Chi tiết</th>
+                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                            Thời gian
+                          </th>
+                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                            Hành động
+                          </th>
+                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                            Đối tượng
+                          </th>
+                          <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">
+                            Chi tiết
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {adminActivityLogs.length > 0 ? (
-                          adminActivityLogs.slice(adminLogPage * PAGE_SIZE, (adminLogPage + 1) * PAGE_SIZE).map((log: any) => (
-                            <tr key={log.id} className="hover:bg-muted/20 transition-all cursor-default group">
-                              <td className="p-4 text-[11px] font-medium tabular-nums text-muted-foreground">
-                                {format(new Date(log.createdAt), 'HH:mm dd/MM/yyyy')}
-                              </td>
-                              <td className="p-4">
-                                <Badge variant="secondary" className="text-[9px] font-bold bg-muted border-none px-2 h-5 group-hover:bg-primary/10 transition-colors">
-                                  {log.action}
-                                </Badge>
-                              </td>
-                              <td className="p-4 text-[11px] font-bold text-foreground/80">
-                                {log.entityType || "-"}{" "}
-                                <span className="text-muted-foreground font-medium">
-                                  {log.entityId ? `#${log.entityId}` : ""}
-                                </span>
-                              </td>
-                              <td className="p-4 text-right">
-                                <div className="text-[10px] text-muted-foreground max-w-[240px] truncate ml-auto">
-                                  {log.detail || "-"}
-                                </div>
-                              </td>
-                            </tr>
-                          ))
+                          adminActivityLogs
+                            .slice(
+                              adminLogPage * PAGE_SIZE,
+                              (adminLogPage + 1) * PAGE_SIZE,
+                            )
+                            .map((log: any) => (
+                              <tr
+                                key={log.id}
+                                className="hover:bg-muted/20 transition-all cursor-default group"
+                              >
+                                <td className="p-4 text-[11px] font-medium tabular-nums text-muted-foreground">
+                                  {format(
+                                    new Date(log.createdAt),
+                                    "HH:mm dd/MM/yyyy",
+                                  )}
+                                </td>
+                                <td className="p-4">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[9px] font-bold bg-muted border-none px-2 h-5 group-hover:bg-primary/10 transition-colors"
+                                  >
+                                    {log.action}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-[11px] font-bold text-foreground/80">
+                                  {log.entityType || "-"}{" "}
+                                  <span className="text-muted-foreground font-medium">
+                                    {log.entityId ? `#${log.entityId}` : ""}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right">
+                                  <div className="text-[10px] text-muted-foreground max-w-[240px] truncate ml-auto">
+                                    {log.detail || "-"}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
                         ) : (
                           <tr>
                             <td colSpan={4} className="p-16 text-center">
                               <div className="flex flex-col items-center gap-3">
                                 <Settings className="size-10 text-muted-foreground/30" />
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Không có lịch sử hành động nào</span>
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Không có lịch sử hành động nào
+                                </span>
                               </div>
                             </td>
                           </tr>
@@ -1719,18 +2382,53 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                           <PaginationItem>
                             <PaginationPrevious
                               href="#"
-                              onClick={(e) => { e.preventDefault(); setAdminLogPage(p => Math.max(0, p - 1)); }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setAdminLogPage((p) => Math.max(0, p - 1));
+                              }}
                               aria-disabled={adminLogPage === 0}
-                              className={adminLogPage === 0 ? "pointer-events-none opacity-50" : ""}
+                              className={
+                                adminLogPage === 0
+                                  ? "pointer-events-none opacity-50"
+                                  : ""
+                              }
                             />
                           </PaginationItem>
-                          {renderPaginationItems(adminLogPage, Math.ceil(adminActivityLogs.length / PAGE_SIZE), setAdminLogPage)}
+                          {renderPaginationItems(
+                            adminLogPage,
+                            Math.ceil(adminActivityLogs.length / PAGE_SIZE),
+                            setAdminLogPage,
+                          )}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
-                              onClick={(e) => { e.preventDefault(); setAdminLogPage(p => Math.min(Math.ceil(adminActivityLogs.length / PAGE_SIZE) - 1, p + 1)); }}
-                              aria-disabled={adminLogPage >= Math.ceil(adminActivityLogs.length / PAGE_SIZE) - 1}
-                              className={adminLogPage >= Math.ceil(adminActivityLogs.length / PAGE_SIZE) - 1 ? "pointer-events-none opacity-50" : ""}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setAdminLogPage((p) =>
+                                  Math.min(
+                                    Math.ceil(
+                                      adminActivityLogs.length / PAGE_SIZE,
+                                    ) - 1,
+                                    p + 1,
+                                  ),
+                                );
+                              }}
+                              aria-disabled={
+                                adminLogPage >=
+                                Math.ceil(
+                                  adminActivityLogs.length / PAGE_SIZE,
+                                ) -
+                                  1
+                              }
+                              className={
+                                adminLogPage >=
+                                Math.ceil(
+                                  adminActivityLogs.length / PAGE_SIZE,
+                                ) -
+                                  1
+                                  ? "pointer-events-none opacity-50"
+                                  : ""
+                              }
                             />
                           </PaginationItem>
                         </PaginationContent>
@@ -1756,7 +2454,11 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
               disabled={!isFormDirty || isSubmitting}
               className="h-10 px-8 bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 rounded-xl shadow-sm transition-all"
             >
-              {isSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : "Lưu thay đổi"}
+              {isSubmitting ? (
+                <Loader2 className="size-4 animate-spin mr-2" />
+              ) : (
+                "Lưu thay đổi"
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -1768,35 +2470,62 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
           <DialogHeader>
             <DialogTitle>Xác nhận thay đổi</DialogTitle>
             <DialogDescription>
-              Hành động này sẽ cập nhật các thông tin bảo mật và phân quyền cho người dùng <strong>{user?.username}</strong>.
+              Hành động này sẽ cập nhật các thông tin bảo mật và phân quyền cho
+              người dùng <strong>{user?.username}</strong>.
               {formData.role !== user?.role && (
                 <span className="block mt-2 text-rose-500 font-medium">
-                  Mọi phiên đăng nhập hiện tại sẽ bị vô hiệu hóa để áp dụng quyền mới.
+                  Mọi phiên đăng nhập hiện tại sẽ bị vô hiệu hóa để áp dụng
+                  quyền mới.
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmSave(false)}>Hủy</Button>
+            <Button variant="outline" onClick={() => setShowConfirmSave(false)}>
+              Hủy
+            </Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Xác nhận cập nhật"}
+              {isSubmitting ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                "Xác nhận cập nhật"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showConfirmEmailChange} onOpenChange={setShowConfirmEmailChange}>
+      <Dialog
+        open={showConfirmEmailChange}
+        onOpenChange={setShowConfirmEmailChange}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Xác nhận thay đổi Email</DialogTitle>
             <DialogDescription>
-              Bạn đang thay đổi địa chỉ email hệ thống của người dùng này từ <strong>{user?.email}</strong> thành <strong>{basicForm.email}</strong>. Hành động này có thể ảnh hưởng đến việc đăng nhập và thông báo của họ.
+              Bạn đang thay đổi địa chỉ email hệ thống của người dùng này từ{" "}
+              <strong>{user?.email}</strong> thành{" "}
+              <strong>{basicForm.email}</strong>. Hành động này có thể ảnh hưởng
+              đến việc đăng nhập và thông báo của họ.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmEmailChange(false)}>Hủy</Button>
-            <Button onClick={executeBasicSave} disabled={isBasicSubmitting} className="bg-amber-600 hover:bg-amber-700 text-white">
-              {isBasicSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Xác nhận đổi"}
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmEmailChange(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={executeBasicSave}
+              disabled={isBasicSubmitting}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isBasicSubmitting ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                "Xác nhận đổi"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1807,14 +2536,28 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
           <DialogHeader>
             <DialogTitle>Làm mới lịch sử vi phạm</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa vĩnh viễn toàn bộ nhật ký bảo mật của người dùng này?
+              Bạn có chắc chắn muốn xóa vĩnh viễn toàn bộ nhật ký bảo mật của
+              người dùng này?
               <strong> Hành động này không thể hoàn tác.</strong>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmReset(false)}>Hủy</Button>
-            <Button variant="destructive" onClick={handleResetViolations} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Đồng ý xóa sạch"}
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmReset(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleResetViolations}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                "Đồng ý xóa sạch"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1823,7 +2566,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       <Dialog open={showConfirmLock} onOpenChange={setShowConfirmLock}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{user?.isActive ? "Xác nhận khóa tài khoản" : "Xác nhận mở khóa"}</DialogTitle>
+            <DialogTitle>
+              {user?.isActive ? "Xác nhận khóa tài khoản" : "Xác nhận mở khóa"}
+            </DialogTitle>
             <DialogDescription>
               {user?.isActive
                 ? `Hành động này sẽ ngăn chặn người dùng ${user?.username} truy cập vào hệ thống ngay lập tức.`
@@ -1831,14 +2576,26 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmLock(false)}>Hủy</Button>
+            <Button variant="outline" onClick={() => setShowConfirmLock(false)}>
+              Hủy
+            </Button>
             <Button
               variant={user?.isActive ? "destructive" : "default"}
-              className={user?.isActive ? "" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+              className={
+                user?.isActive
+                  ? ""
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }
               onClick={handleLockAccountConfirm}
               disabled={isSubmitting}
             >
-              {isSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : (user?.isActive ? "Khóa tài khoản" : "Mở khóa ngay")}
+              {isSubmitting ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : user?.isActive ? (
+                "Khóa tài khoản"
+              ) : (
+                "Mở khóa ngay"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1852,7 +2609,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                 <MessageSquareWarning className="size-6" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold tracking-tight">Gửi cảnh báo cho người dùng</DialogTitle>
+                <DialogTitle className="text-xl font-bold tracking-tight">
+                  Gửi cảnh báo cho người dùng
+                </DialogTitle>
                 <DialogDescription className="text-xs font-medium text-muted-foreground">
                   Gửi thông báo nhắc nhở tới <strong>{user?.username}</strong>
                 </DialogDescription>
@@ -1888,8 +2647,17 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                     className="h-8 px-3 text-[10px] font-bold rounded-lg"
                     onClick={() => {
                       if (newTemplate.trim()) {
-                        setCustomTemplates([...customTemplates, newTemplate.trim()]);
-                        localStorage.setItem("warning_templates", JSON.stringify([...customTemplates, newTemplate.trim()]));
+                        setCustomTemplates([
+                          ...customTemplates,
+                          newTemplate.trim(),
+                        ]);
+                        localStorage.setItem(
+                          "warning_templates",
+                          JSON.stringify([
+                            ...customTemplates,
+                            newTemplate.trim(),
+                          ]),
+                        );
                         setNewTemplate("");
                         setShowAddTemplate(false);
                         toast.success("Đã thêm mẫu mới");
@@ -1902,28 +2670,57 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
               )}
               <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
                 {[
-                  { text: "Chào {{name}}, Hệ thống phát hiện gian lận trong bài thi.", icon: "⚠️" },
-                  { text: "Vui lòng sử dụng ngôn từ phù hợp trên hệ thống.", icon: "🚫" },
-                  { text: "Tài khoản của bạn có dấu hiệu đăng nhập bất thường.", icon: "🔐" },
-                  { text: "Cần chú ý tuân thủ quy trình thi cử hệ thống.", icon: "📝" },
-                  ...customTemplates.map(t => ({ text: t, icon: "💬" }))
+                  {
+                    text: "Chào {{name}}, Hệ thống phát hiện gian lận trong bài thi.",
+                    icon: "⚠️",
+                  },
+                  {
+                    text: "Vui lòng sử dụng ngôn từ phù hợp trên hệ thống.",
+                    icon: "🚫",
+                  },
+                  {
+                    text: "Tài khoản của bạn có dấu hiệu đăng nhập bất thường.",
+                    icon: "🔐",
+                  },
+                  {
+                    text: "Cần chú ý tuân thủ quy trình thi cử hệ thống.",
+                    icon: "📝",
+                  },
+                  ...customTemplates.map((t) => ({ text: t, icon: "💬" })),
                 ].map((preset, idx) => {
-                  const processedText = preset.text.replace("{{name}}", user?.username || "Bạn");
+                  const processedText = preset.text.replace(
+                    "{{name}}",
+                    user?.username || "Bạn",
+                  );
                   const isActive = warningMessage === processedText;
                   return (
                     <div key={idx} className="w-full">
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`text-[10px] h-auto py-2.5 px-4 w-full rounded-2xl border-border/60 transition-all hover:border-amber-500/50 hover:bg-amber-50/50 justify-start text-left whitespace-normal ${isActive ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600 shadow-md' : 'bg-background'
-                          }`}
+                        className={`text-[10px] h-auto py-2.5 px-4 w-full rounded-2xl border-border/60 transition-all hover:border-amber-500/50 hover:bg-amber-50/50 justify-start text-left whitespace-normal ${
+                          isActive
+                            ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600 shadow-md"
+                            : "bg-background"
+                        }`}
                         onClick={() => {
-                          const separator = warningMessage && !warningMessage.endsWith(".") ? ". " : "";
-                          setWarningMessage(prev => prev ? `${prev}${separator}${processedText}` : processedText);
+                          const separator =
+                            warningMessage && !warningMessage.endsWith(".")
+                              ? ". "
+                              : "";
+                          setWarningMessage((prev) =>
+                            prev
+                              ? `${prev}${separator}${processedText}`
+                              : processedText,
+                          );
                         }}
                       >
-                        <span className="mr-2 opacity-80 shrink-0">{preset.icon}</span>
-                        <span className="flex-1 leading-relaxed">{preset.text}</span>
+                        <span className="mr-2 opacity-80 shrink-0">
+                          {preset.icon}
+                        </span>
+                        <span className="flex-1 leading-relaxed">
+                          {preset.text}
+                        </span>
                         {idx >= 4 && (
                           <button
                             type="button"
@@ -1949,14 +2746,18 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                 <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
                   Nội dung thông báo
                 </Label>
-                <span className={`text-[10px] font-bold ${warningMessage.length >= 450 ? 'text-rose-500' : 'text-muted-foreground'}`}>
+                <span
+                  className={`text-[10px] font-bold ${warningMessage.length >= 450 ? "text-rose-500" : "text-muted-foreground"}`}
+                >
                   {warningMessage.length}/500
                 </span>
               </div>
               <div className="relative group">
                 <textarea
                   value={warningMessage}
-                  onChange={(e) => setWarningMessage(e.target.value.substring(0, 500))}
+                  onChange={(e) =>
+                    setWarningMessage(e.target.value.substring(0, 500))
+                  }
                   className="w-full min-h-[140px] rounded-2xl border-2 border-border/80 bg-muted/5 p-5 text-sm focus:border-amber-500 focus:ring-4 focus:ring-amber-500/5 outline-none transition-all resize-none font-medium placeholder:text-muted-foreground/50 shadow-inner"
                   placeholder="Chọn mẫu nhanh phía trên hoặc tự nhập nội dung..."
                 />
@@ -1970,7 +2771,10 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
           <DialogFooter className="p-6 bg-muted/20 border-t flex items-center justify-between gap-3">
             <Button
               variant="ghost"
-              onClick={() => { setShowSendWarning(false); setWarningMessage(""); }}
+              onClick={() => {
+                setShowSendWarning(false);
+                setWarningMessage("");
+              }}
               className="text-muted-foreground font-bold hover:bg-transparent hover:text-foreground"
             >
               Hủy bỏ
@@ -1980,14 +2784,21 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
               onClick={() => setShowConfirmSendWarningDialog(true)}
               disabled={isSubmitting || !warningMessage.trim()}
             >
-              {isSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Gửi thông báo"}
+              {isSubmitting ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                "Gửi thông báo"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Roles change confirmation */}
-      <Dialog open={showConfirmRoleChange} onOpenChange={setShowConfirmRoleChange}>
+      <Dialog
+        open={showConfirmRoleChange}
+        onOpenChange={setShowConfirmRoleChange}
+      >
         <DialogContent className="max-w-md p-0 overflow-hidden rounded-3xl border-none shadow-2xl">
           <div className="p-8 pb-4 bg-gradient-to-br from-primary/10 to-transparent">
             <div className="flex items-center gap-4 mb-3">
@@ -1995,8 +2806,12 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                 <ShieldStatus className="size-7" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold tracking-tight">Xác nhận đổi vai trò</DialogTitle>
-                <DialogDescription className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Quyền hạn hệ thống</DialogDescription>
+                <DialogTitle className="text-xl font-bold tracking-tight">
+                  Xác nhận đổi vai trò
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                  Quyền hạn hệ thống
+                </DialogDescription>
               </div>
             </div>
           </div>
@@ -2004,10 +2819,15 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
           <div className="px-8 py-2 space-y-4">
             <div className="p-6 rounded-2xl bg-muted/20 border border-border flex items-center justify-center gap-6">
               <div className="flex flex-col items-center gap-1.5">
-                <Badge variant="outline" className="h-7 px-4 rounded-full border-2 border-primary/20 text-xs font-bold text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="h-7 px-4 rounded-full border-2 border-primary/20 text-xs font-bold text-muted-foreground"
+                >
                   {getRoleName(user?.role || "")}
                 </Badge>
-                <span className="text-[9px] font-bold text-muted-foreground/50 uppercase">Hiện tại</span>
+                <span className="text-[9px] font-bold text-muted-foreground/50 uppercase">
+                  Hiện tại
+                </span>
               </div>
 
               <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -2018,7 +2838,9 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                 <Badge className="h-7 px-4 rounded-full bg-primary text-white text-xs font-bold shadow-md shadow-primary/20">
                   {getRoleName(pendingRole)}
                 </Badge>
-                <span className="text-[9px] font-bold text-primary uppercase">Cấp mới</span>
+                <span className="text-[9px] font-bold text-primary uppercase">
+                  Cấp mới
+                </span>
               </div>
             </div>
 
@@ -2027,8 +2849,14 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
                 <Lock className="size-4" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-bold text-orange-900">Lưu ý quan trọng</p>
-                <p className="text-[11px] text-orange-800/70 leading-relaxed font-medium">Để cập nhật phân vùng quyền hạn mới, hệ thống sẽ <b>tự động vô hiệu hóa</b> mọi phiên đăng nhập của <strong>{user?.username}</strong> ngay sau khi xác nhận.</p>
+                <p className="text-xs font-bold text-orange-900">
+                  Lưu ý quan trọng
+                </p>
+                <p className="text-[11px] text-orange-800/70 leading-relaxed font-medium">
+                  Để cập nhật phân vùng quyền hạn mới, hệ thống sẽ{" "}
+                  <b>tự động vô hiệu hóa</b> mọi phiên đăng nhập của{" "}
+                  <strong>{user?.username}</strong> ngay sau khi xác nhận.
+                </p>
               </div>
             </div>
           </div>
@@ -2052,24 +2880,42 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
       </Dialog>
 
       {/* Send warning final confirmation */}
-      <Dialog open={showConfirmSendWarningDialog} onOpenChange={setShowConfirmSendWarningDialog}>
+      <Dialog
+        open={showConfirmSendWarningDialog}
+        onOpenChange={setShowConfirmSendWarningDialog}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Xác nhận gửi thông báo?</DialogTitle>
             <DialogDescription>
-              Hệ thống sẽ gửi cảnh báo này tới trung tâm thông báo của học viên <strong>{user?.username}</strong>.
+              Hệ thống sẽ gửi cảnh báo này tới trung tâm thông báo của học viên{" "}
+              <strong>{user?.username}</strong>.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmSendWarningDialog(false)}>Xem lại</Button>
-            <Button onClick={() => { setShowConfirmSendWarningDialog(false); handleSendWarning(); }} className="bg-slate-900 text-white font-bold">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmSendWarningDialog(false)}
+            >
+              Xem lại
+            </Button>
+            <Button
+              onClick={() => {
+                setShowConfirmSendWarningDialog(false);
+                handleSendWarning();
+              }}
+              className="bg-slate-900 text-white font-bold"
+            >
               Xác nhận gửi ngay
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!showConfirmHandleLog} onOpenChange={(open) => !open && setShowConfirmHandleLog(null)}>
+      <Dialog
+        open={!!showConfirmHandleLog}
+        onOpenChange={(open) => !open && setShowConfirmHandleLog(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Xác nhận đã xử lý</DialogTitle>
@@ -2079,9 +2925,25 @@ export function UserDetailModal({ user, open, onOpenChange, onUserUpdated }: Use
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmHandleLog(null)}>Hủy</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => showConfirmHandleLog && handleMarkAsHandled(showConfirmHandleLog.id)} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="size-4 mr-2 animate-spin" /> : "Xác nhận đã xử lý"}
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmHandleLog(null)}
+            >
+              Hủy
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() =>
+                showConfirmHandleLog &&
+                handleMarkAsHandled(showConfirmHandleLog.id)
+              }
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                "Xác nhận đã xử lý"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

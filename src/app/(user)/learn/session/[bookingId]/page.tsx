@@ -43,6 +43,7 @@ export default function TeacherSessionPage() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
+  const [isJoinTimeout, setIsJoinTimeout] = useState(false);
   const [submitReview, { isLoading: isSubmittingReview }] = useSubmitSessionReviewMutation();
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -54,22 +55,35 @@ export default function TeacherSessionPage() {
   const roomDataRef = useRef<BookingRoomJoined | null>(null);
   const isInitiatorRef = useRef(false);
   const mediaReadyRef = useRef(false);
+  const joinRequestedAtRef = useRef<number>(0);
 
-  const myName = authUser?.fullName || authUser?.username || "Toi";
+  const myName = authUser?.fullName || authUser?.username || "Tôi";
   const myUserId = String(authUser?.id ?? "guest");
 
   useEffect(() => { roomDataRef.current = roomData; }, [roomData]);
 
+  const requestJoinRoom = useCallback(
+    (force = false) => {
+      if (!bookingId) return;
+      if (roomDataRef.current) return;
+      if (!force && joinedRef.current) return;
+
+      joinedRef.current = true;
+      joinRequestedAtRef.current = Date.now();
+      setIsJoinTimeout(false);
+      booking.joinBookingRoom(bookingId, myName);
+    },
+    [booking, bookingId, myName]
+  );
+
   // Join booking room once socket is connected
   useEffect(() => {
-    if (joinedRef.current || !bookingId) return;
+    if (!bookingId) return;
     const sock = booking.socket;
     if (!sock) return;
 
     const doJoin = () => {
-      if (joinedRef.current) return;
-      joinedRef.current = true;
-      booking.joinBookingRoom(bookingId, myName);
+      requestJoinRoom();
     };
 
     if (sock.connected) {
@@ -79,7 +93,34 @@ export default function TeacherSessionPage() {
       return () => { sock.off("connect", doJoin); };
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingId, booking.socket?.connected]);
+  }, [bookingId, booking.socket?.connected, requestJoinRoom]);
+
+  // Retry join periodically while waiting (handles lost event / flaky socket)
+  useEffect(() => {
+    if (roomData) return;
+    const t = setInterval(() => {
+      const sock = booking.socket;
+      if (!sock) return;
+      if (sock.connected) {
+        requestJoinRoom(true);
+      } else {
+        try { sock.connect(); } catch { /* ignore */ }
+      }
+    }, 6000);
+    return () => clearInterval(t);
+  }, [roomData, booking.socket, requestJoinRoom]);
+
+  // Detect long waiting state to show better UX + manual retry
+  useEffect(() => {
+    if (roomData) {
+      setIsJoinTimeout(false);
+      return;
+    }
+    const t = setTimeout(() => {
+      if (!roomDataRef.current) setIsJoinTimeout(true);
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [roomData, joinRequestedAtRef.current]);
 
   // All signaling event handlers — registered once on mount, use refs for latest state
   useEffect(() => {
@@ -89,6 +130,7 @@ export default function TeacherSessionPage() {
       roomDataRef.current = data;
       isInitiatorRef.current = data.isInitiator;
       setRemainingSeconds(data.remainingSeconds);
+      setIsJoinTimeout(false);
       if (data.peerOnline && data.isInitiator && mediaReadyRef.current) {
         startCallAsInitiator(data.roomId);
       }
@@ -96,7 +138,7 @@ export default function TeacherSessionPage() {
 
     booking.on<BookingRoomJoined>("booking-peer-joined", (data) => {
       setRoomData((prev) => prev ? { ...prev, peerOnline: true } : data);
-      toast.success(`${data.peerName} da vao phong`);
+      toast.success(`${data.peerName} đã vào phòng`);
       if (isInitiatorRef.current && mediaReadyRef.current) {
         const rd = roomDataRef.current;
         if (rd) startCallAsInitiator(rd.roomId);
@@ -104,12 +146,12 @@ export default function TeacherSessionPage() {
     });
 
     booking.on<BookingRoomExpired>("booking-room-expired", () => {
-      toast.info("Da het thoi gian buoi hoc");
+      toast.info("Đã hết thời gian buổi học");
       handleLeave();
     });
 
     booking.on<BookingRoomExpired>("booking-session-ended", () => {
-      toast.info("Buoi hoc da ket thuc");
+      toast.info("Buổi học đã kết thúc");
       handleLeave();
     });
 
@@ -119,16 +161,31 @@ export default function TeacherSessionPage() {
     });
 
     booking.on("peer-left", () => {
-      toast.info("Doi tac da roi phong");
+      toast.info("Đối tác đã rời phòng");
       handleLeave();
     });
 
     // ── WebRTC signaling events ──
     booking.on<{ sdp: string }>("offer", async (payload) => {
+      // Wait for local media (getUserMedia) to finish before creating answer,
+      // otherwise the answer SDP won't include our video/audio tracks.
+      const waitStep = 150;
+      const maxWait = 10_000;
+      let waited = 0;
+      while ((!mediaReadyRef.current || !roomDataRef.current) && waited < maxWait) {
+        await new Promise((r) => setTimeout(r, waitStep));
+        waited += waitStep;
+      }
+      console.log("[WebRTC] offer handler: mediaReady=", mediaReadyRef.current, "roomData=", !!roomDataRef.current, "waited=", waited);
       try {
         const answer = await webrtc.createAnswer(JSON.parse(payload.sdp));
         const rd = roomDataRef.current;
-        if (rd) booking.sendAnswer(rd.roomId, JSON.stringify(answer));
+        if (rd) {
+          booking.sendAnswer(rd.roomId, JSON.stringify(answer));
+          console.log("[WebRTC] answer sent to room", rd.roomId);
+        } else {
+          console.error("[WebRTC] No roomData — cannot send answer");
+        }
       } catch (e) { console.error("[WebRTC] createAnswer failed:", e); }
     });
 
@@ -223,6 +280,30 @@ export default function TeacherSessionPage() {
       remoteVideoRef.current.srcObject = webrtc.remoteStream;
   }, [webrtc.remoteStream]);
 
+  // Renegotiation fallback: if connected but no remote video after 4s, re-offer
+  useEffect(() => {
+    if (!isConnected) return;
+    const t = setTimeout(() => {
+      const rs = webrtc.remoteStream;
+      const hasVideo = rs && rs.getVideoTracks().some((t) => t.readyState === "live");
+      if (!hasVideo) {
+        console.warn("[WebRTC] Connected but no remote video — triggering renegotiation");
+        offerSentRef.current = false;
+        const rd = roomDataRef.current;
+        if (rd) {
+          (async () => {
+            try {
+              const offer = await webrtc.createOffer();
+              booking.sendOffer(rd.roomId, JSON.stringify(offer));
+            } catch (e) { console.error("[WebRTC] renegotiation offer failed:", e); }
+          })();
+        }
+      }
+    }, 4000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
+
   // Countdown timer
   useEffect(() => {
     if (remainingSeconds <= 0) return;
@@ -237,8 +318,8 @@ export default function TeacherSessionPage() {
 
   // Warning before end
   useEffect(() => {
-    if (remainingSeconds === 300) toast.warning("Con 5 phut nua la het gio");
-    if (remainingSeconds === 60) toast.warning("Con 1 phut nua la het gio!");
+    if (remainingSeconds === 300) toast.warning("Còn 5 phút nữa là hết giờ");
+    if (remainingSeconds === 60) toast.warning("Còn 1 phút nữa là hết giờ!");
   }, [remainingSeconds]);
 
   const handleLeave = useCallback(() => {
@@ -260,9 +341,9 @@ export default function TeacherSessionPage() {
   const handleSubmitReview = useCallback(async () => {
     try {
       await submitReview({ bookingId, rating: reviewRating, comment: reviewComment || undefined }).unwrap();
-      toast.success("Cam on ban da danh gia!");
+      toast.success("Cảm ơn bạn đã đánh giá!");
     } catch {
-      toast.error("Khong the gui danh gia.");
+      toast.error("Không thể gửi đánh giá.");
     }
     router.push("/booking/bookingmodal");
   }, [submitReview, bookingId, reviewRating, reviewComment, router]);
@@ -292,9 +373,35 @@ export default function TeacherSessionPage() {
   if (!roomData) {
     return (
       <div className="flex items-center justify-center bg-slate-950" style={{ height: "calc(100vh - 64px)" }}>
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="h-8 w-8 text-slate-500 animate-spin" />
-          <p className="text-slate-400 text-sm">Dang ket noi vao phong hoc...</p>
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-slate-900/60 px-8 py-7 shadow-xl">
+          <div className="relative flex items-center justify-center">
+            <div className="h-14 w-14 rounded-full border-2 border-sky-500/30" />
+            <RefreshCw className="absolute h-6 w-6 text-sky-400 animate-spin" />
+          </div>
+          <div className="text-center">
+            <p className="text-slate-100 font-semibold text-sm">Đang kết nối chờ chút nhé</p>
+            <p className="text-slate-400 text-xs mt-1 animate-pulse">
+              Hệ thống đang thiết lập phòng học an toàn...
+            </p>
+          </div>
+          {isJoinTimeout && (
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-amber-300 text-xs">Kết nối lâu hơn bình thường.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const sock = booking.socket;
+                  if (sock && !sock.connected) {
+                    try { sock.connect(); } catch { /* ignore */ }
+                  }
+                  requestJoinRoom(true);
+                }}
+                className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-xs font-semibold text-sky-300 hover:bg-sky-500/20"
+              >
+                Thử kết nối lại
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -307,11 +414,11 @@ export default function TeacherSessionPage() {
       {/* Top bar */}
       <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-slate-900/80 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <span className="text-slate-50 font-semibold text-sm">{roomData.subject || "Buoi hoc"}</span>
-          <span className="text-slate-400 text-xs">voi {roomData.peerName}</span>
+          <span className="text-slate-50 font-semibold text-sm">{roomData.subject || "Buổi học"}</span>
+          <span className="text-slate-400 text-xs">với {roomData.peerName}</span>
           {isConnected && (
             <span className="text-[10px] bg-emerald-400/90 text-emerald-950 font-semibold px-2 py-0.5 rounded-full">
-              Da ket noi
+              Đã kết nối
             </span>
           )}
         </div>
@@ -339,14 +446,14 @@ export default function TeacherSessionPage() {
               {reconnect.reconnectState === "reconnecting" ? (
                 <>
                   <WifiOff className="h-10 w-10 text-amber-300 mb-3" />
-                  <p className="text-slate-50 font-semibold">Dang ket noi lai...</p>
-                  <p className="text-slate-400 text-xs mt-1">{reconnect.countdown}s con lai</p>
+                  <p className="text-slate-50 font-semibold">Đang kết nối lại...</p>
+                  <p className="text-slate-400 text-xs mt-1">{reconnect.countdown}s còn lại</p>
                 </>
               ) : (
                 <>
                   <RefreshCw className="h-8 w-8 text-slate-500 animate-spin mb-3" />
                   <p className="text-slate-300 text-sm">
-                    {roomData.peerOnline ? "Dang thiet lap ket noi P2P..." : "Dang cho doi tac vao phong..."}
+                    {roomData.peerOnline ? "Đang thiết lập kết nối P2P..." : "Đang chờ đối tác vào phòng..."}
                   </p>
                 </>
               )}
@@ -359,7 +466,7 @@ export default function TeacherSessionPage() {
               {roomData.peerName}
             </span>
             <span className="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full font-semibold">
-              {roomData.role === "TEACHER" ? "Hoc vien" : "Giao vien"}
+              {roomData.role === "TEACHER" ? "Học viên" : "Giáo viên"}
             </span>
           </div>
 
@@ -397,14 +504,14 @@ export default function TeacherSessionPage() {
         {showChat && (
           <div className="flex-[3] flex flex-col rounded-[24px] overflow-hidden bg-slate-900/80 border border-white/10 shadow-xl min-h-0">
             <div className="px-4 py-3 bg-slate-900/80 border-b border-white/10 shrink-0">
-              <h2 className="text-slate-50 font-semibold text-sm">Nhan tin</h2>
+              <h2 className="text-slate-50 font-semibold text-sm">Nhắn tin</h2>
               <p className="text-slate-400 text-xs mt-0.5">{roomData.peerName}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
               {messages.length === 0 && (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-slate-500 text-xs text-center">Gui tin nhan de bat dau tro chuyen.</p>
+                  <p className="text-slate-500 text-xs text-center">Gửi tin nhắn để bắt đầu trò chuyện.</p>
                 </div>
               )}
               {messages.map((msg) => (
@@ -425,7 +532,7 @@ export default function TeacherSessionPage() {
                   value={chatMsg}
                   onChange={(e) => setChatMsg(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMsg(); } }}
-                  placeholder="Nhan tin..."
+                  placeholder="Nhắn tin..."
                   className="flex-1 bg-slate-900/70 border border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
                 <button onClick={handleSendMsg}
@@ -443,18 +550,18 @@ export default function TeacherSessionPage() {
         <button onClick={() => setShowChat((v) => !v)}
           className="h-11 px-5 rounded-full border border-slate-600 text-slate-100 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md flex items-center text-sm">
           <MessageSquare className="h-4 w-4" />
-          {showChat ? "An chat" : "Chat"}
+          {showChat ? "Ẩn chat" : "Chat"}
         </button>
 
         <button onClick={handleEndSession}
           className="h-12 px-8 rounded-full bg-red-500 hover:bg-red-400 text-white font-semibold tracking-wide gap-2 shadow-lg flex items-center">
           <PhoneOff className="h-4 w-4" />
-          Ket thuc buoi hoc
+          Kết thúc buổi học
         </button>
 
         <button onClick={handleLeave}
           className="h-11 px-5 rounded-full border border-slate-600 text-slate-100 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md flex items-center text-sm">
-          Roi phong
+          Rời phòng
         </button>
       </div>
 
@@ -462,9 +569,9 @@ export default function TeacherSessionPage() {
       {showReviewModal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-50 mb-1">Danh gia buoi hoc</h3>
+            <h3 className="text-lg font-semibold text-slate-50 mb-1">Đánh giá buổi học</h3>
             <p className="text-slate-400 text-sm mb-5">
-              Buoi hoc voi {roomData?.peerName} da ket thuc.
+              Buổi học với {roomData?.peerName} đã kết thúc.
             </p>
 
             {/* Star rating */}
@@ -482,18 +589,18 @@ export default function TeacherSessionPage() {
             <textarea
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
-              placeholder="Nhan xet (khong bat buoc)..."
+              placeholder="Nhận xét (không bắt buộc)..."
               className="w-full min-h-[80px] resize-none bg-slate-950/70 border border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 mb-4"
             />
 
             <div className="flex justify-end gap-3">
               <button onClick={handleSkipReview}
                 className="px-5 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm font-medium hover:bg-slate-800">
-                Bo qua
+                Bỏ qua
               </button>
               <button onClick={handleSubmitReview} disabled={isSubmittingReview}
                 className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold disabled:opacity-50">
-                {isSubmittingReview ? "Dang gui..." : "Gui danh gia"}
+                {isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}
               </button>
             </div>
           </div>

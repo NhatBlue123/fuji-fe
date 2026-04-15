@@ -1,13 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   useGetAllCoursesQuery,
   useSearchCoursesQuery,
+  usePurchaseCourseMutation,
 } from "@/store/services/courseApi";
 import type { CourseResponseDTO } from "@/types/course";
+import { useAuth } from "@/store/hooks";
+import { toast } from "sonner";
 
 // ─── Constants ─────────────────────────────────────────
 
@@ -15,13 +19,25 @@ const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
 
 const PAGE_SIZE = 9;
+const BLOSSOM_RATE = 1000;
 
-function formatPrice(price: number): string {
-  if (price === 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
+function normalizePrice(price: unknown): number {
+  const value = Number(price ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function isFreePrice(price: unknown): boolean {
+  return normalizePrice(price) <= 0;
+}
+
+function toBlossomAmount(price: unknown): number {
+  return Math.floor(normalizePrice(price) / BLOSSOM_RATE);
+}
+
+function formatPrice(price: unknown): string {
+  const value = normalizePrice(price);
+  if (isFreePrice(value)) return "Miễn phí";
+  return `${toBlossomAmount(value).toLocaleString("vi-VN")} �`;
 }
 
 // ─── Skeleton ──────────────────────────────────────────
@@ -49,8 +65,24 @@ function CourseCardSkeleton() {
 
 // ─── Course Card ───────────────────────────────────────
 
-function UserCourseCard({ course }: { course: CourseResponseDTO }) {
+function UserCourseCard({
+  course,
+  onRegister,
+  registeringCourseId,
+}: {
+  course: CourseResponseDTO;
+  onRegister: (course: CourseResponseDTO) => void;
+  registeringCourseId: number | null;
+}) {
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
+  const isEnrolled = Boolean(course.isEnrolled);
+  const isRegistering = registeringCourseId === course.id;
+  const freeCourse = isFreePrice(course.price);
+  const actionLabel = isEnrolled
+    ? "Tiếp tục học"
+    : freeCourse
+      ? "Đăng ký miễn phí"
+      : "Đăng ký";
 
   return (
     <div className="bg-card rounded-2xl overflow-hidden border border-border card-hover-effect group flex flex-col h-full hover:shadow-xl transition-all duration-300">
@@ -113,8 +145,12 @@ function UserCourseCard({ course }: { course: CourseResponseDTO }) {
           >
             Chi tiết
           </Link>
-          <Button className="flex-1 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 text-sm hover:shadow-secondary/40">
-            Đăng ký
+          <Button
+            onClick={() => onRegister(course)}
+            disabled={isRegistering}
+            className="flex-1 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 text-sm hover:shadow-secondary/40"
+          >
+            {isRegistering ? "Đang xử lý..." : actionLabel}
           </Button>
         </div>
       </div>
@@ -219,13 +255,29 @@ function Pagination({
 
 interface CourseListProps {
   searchKeyword?: string;
+  level?: string;
+  category?: "all" | "free" | "paid" | "mine";
 }
 
-export default function CourseList({ searchKeyword }: CourseListProps) {
+export default function CourseList({
+  searchKeyword,
+  level = "all",
+  category = "all",
+}: CourseListProps) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [registeringCourseId, setRegisteringCourseId] = useState<number | null>(
+    null,
+  );
+  const [purchaseCourse] = usePurchaseCourseMutation();
 
   const isSearching = !!(searchKeyword && searchKeyword.trim());
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchKeyword, level, category]);
 
   // Use search endpoint when keyword is provided, otherwise get all
   const allCoursesQuery = useGetAllCoursesQuery(
@@ -234,12 +286,20 @@ export default function CourseList({ searchKeyword }: CourseListProps) {
       size: PAGE_SIZE,
       sortBy: "createdAt",
       sortDir: "desc",
+      level,
+      category: category as "all" | "free" | "paid" | "mine",
     },
     { skip: isSearching },
   );
 
   const searchQuery = useSearchCoursesQuery(
-    { keyword: searchKeyword || "", page: currentPage - 1, size: PAGE_SIZE },
+    {
+      keyword: searchKeyword || "",
+      page: currentPage - 1,
+      size: PAGE_SIZE,
+      level,
+      category: category as "all" | "free" | "paid" | "mine",
+    },
     { skip: !isSearching },
   );
 
@@ -253,6 +313,50 @@ export default function CourseList({ searchKeyword }: CourseListProps) {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 400, behavior: "smooth" });
+  };
+
+  const handleRegister = async (course: CourseResponseDTO) => {
+    const isEnrolled = Boolean(course.isEnrolled);
+
+    if (isEnrolled) {
+      if (course.currentLessonId) {
+        router.push(`/course/${course.id}/lesson/${course.currentLessonId}`);
+      } else {
+        router.push(`/course/${course.id}`);
+      }
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để đăng ký khóa học.");
+      router.push("/login");
+      return;
+    }
+
+    if (!isFreePrice(course.price)) {
+      router.push(`/course/${course.id}`);
+      return;
+    }
+
+    try {
+      setRegisteringCourseId(course.id);
+      await purchaseCourse({ courseId: course.id }).unwrap();
+      toast.success("Đăng ký khóa học miễn phí thành công.");
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string }; error?: string };
+      const message =
+        err?.data?.message || err?.error || "Không thể đăng ký khóa học.";
+      if (
+        typeof message === "string" &&
+        message.toLowerCase().includes("already purchased")
+      ) {
+        toast.info("Bạn đã đăng ký khóa học này trước đó.");
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setRegisteringCourseId(null);
+    }
   };
 
   return (
@@ -313,7 +417,12 @@ export default function CourseList({ searchKeyword }: CourseListProps) {
           <EmptyState />
         ) : (
           courses.map((course) => (
-            <UserCourseCard key={course.id} course={course} />
+            <UserCourseCard
+              key={course.id}
+              course={course}
+              onRegister={handleRegister}
+              registeringCourseId={registeringCourseId}
+            />
           ))
         )}
       </div>

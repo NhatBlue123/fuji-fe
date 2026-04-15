@@ -388,7 +388,9 @@ export default function CourseList({
         hasNext={currentPage < safeTotalPages}
         onPrevious={() => handlePageChange(Math.max(currentPage - 1, 1))}
         onNext={() =>
-          handlePageChange(currentPage < safeTotalPages ? currentPage + 1 : currentPage)
+          handlePageChange(
+            currentPage < safeTotalPages ? currentPage + 1 : currentPage,
+          )
         }
       />
     </div>

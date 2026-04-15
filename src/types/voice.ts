@@ -45,6 +45,26 @@ export interface VoiceChatResponse {
   createdAt: string;
 }
 
+export interface VoiceSessionFeedback {
+  scoreGrammar: number | null;
+  scoreVocabulary: number | null;
+  totalScore: number | null;
+  feedbackText: string | null;
+  strengths: string[];
+  improvements: string[];
+}
+
+export interface VoiceEvaluationState {
+  status: "waiting" | "completed" | "failed";
+}
+
+export interface VoiceEndSessionResponse {
+  success: boolean;
+  session: string;
+  feedback?: VoiceSessionFeedback | null;
+  evaluation?: VoiceEvaluationState | null;
+}
+
 /** Lịch sử session */
 export interface VoiceSessionHistory {
   id: number;
@@ -57,6 +77,9 @@ export interface VoiceSessionHistory {
   voice: string;
   createdAt: string;
   endedAt: string | null;
+  feedbackGeneratedAt?: string | null;
+  feedback?: VoiceSessionFeedback | null;
+  evaluation?: VoiceEvaluationState | null;
   transcripts?: VoiceTranscriptItem[];
 }
 

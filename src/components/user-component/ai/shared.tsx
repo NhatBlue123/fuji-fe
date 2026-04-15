@@ -256,9 +256,15 @@ export const ChatInputArea = memo(function ChatInputArea({
 export interface SenseiFeedback {
   score?: number;
   comment?: string;
+  scoreGrammar?: number | null;
+  scoreVocabulary?: number | null;
+  totalScore?: number | null;
+  feedbackText?: string | null;
   strengths?: string[];
   improvements?: string[];
 }
+
+export type SenseiEvaluationStatus = "idle" | "waiting" | "failed";
 
 interface RightSidebarTopic {
   id: number;
@@ -282,6 +288,8 @@ export const RightSidebar = memo(function RightSidebar({
   onScenarioChange,
   disabled = false,
   feedback,
+  evaluationStatus = "idle",
+  evaluationMessage,
 }: {
   settingsTitle: string;
   topics: RightSidebarTopic[];
@@ -292,6 +300,8 @@ export const RightSidebar = memo(function RightSidebar({
   onScenarioChange: (v: string) => void;
   disabled?: boolean;
   feedback?: SenseiFeedback | null;
+  evaluationStatus?: SenseiEvaluationStatus;
+  evaluationMessage?: string | null;
 }) {
   return (
     <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
@@ -404,7 +414,7 @@ export const RightSidebar = memo(function RightSidebar({
               )}
 
               {/* Nhận xét chính */}
-              {feedback.comment && (
+              {(feedback.comment || feedback.feedbackText) && (
                 <div className="bg-card border border-border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="material-symbols-outlined text-secondary text-base">
@@ -415,7 +425,7 @@ export const RightSidebar = memo(function RightSidebar({
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    {feedback.comment}
+                    {feedback.comment || feedback.feedbackText}
                   </p>
                 </div>
               )}
@@ -470,6 +480,34 @@ export const RightSidebar = memo(function RightSidebar({
                 </div>
               )}
             </>
+          ) : evaluationStatus === "waiting" ? (
+            <div className="bg-muted/50 border border-border rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-primary text-xl animate-spin">
+                  progress_activity
+                </span>
+              </div>
+              <p className="text-xs text-foreground font-medium mb-1">
+                Đang chấm điểm phiên hội thoại
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Vui lòng chờ trong giây lát...
+              </p>
+            </div>
+          ) : evaluationStatus === "failed" ? (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-destructive text-xl">
+                  error
+                </span>
+              </div>
+              <p className="text-xs text-destructive font-medium mb-1">
+                Chấm điểm chưa thành công
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {evaluationMessage || "Vui lòng thử kết thúc phiên lại."}
+              </p>
+            </div>
           ) : (
             <div className="bg-muted/50 border border-border rounded-xl p-6 text-center">
               <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">

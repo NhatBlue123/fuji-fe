@@ -357,7 +357,7 @@ export default function LessonPage() {
       {/* Main content area */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Video Area — 65% width */}
-        <div className="flex-[65] p-4">
+        <div className="flex-[65] min-w-0 p-4">
           <div className="w-full h-full rounded-[24px] overflow-hidden border border-white/[0.08] shadow-2xl bg-[#1a1d27]">
             {isJoined ? (
               <VideoGrid
@@ -376,7 +376,7 @@ export default function LessonPage() {
         </div>
 
         {/* Side Panel — 35% width */}
-        <div className="flex-[35] p-4 pl-0">
+        <div className="flex-[35] min-w-0 p-4 pl-0">
           <SidePanel
             lessonId={lessonData.lessonId}
             currentUserId={Number(user?.id ?? 0)}

@@ -20,6 +20,8 @@ import {
   Link2,
   Loader2,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -30,6 +32,27 @@ interface MaterialsPanelProps {
   lessonId: number;
   token: string | null;
   isTeacher: boolean;
+}
+
+function getBackendOrigin(): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8181/api";
+  return apiUrl.replace(/\/api\/?$/, "");
+}
+
+function resolveMaterialUrl(rawUrl: string): string {
+  if (!rawUrl) return rawUrl;
+  if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+  const backendOrigin = getBackendOrigin();
+  if (rawUrl.startsWith("/api/files/")) return `${backendOrigin}${rawUrl}`;
+  // Legacy records sometimes store only filename from /upload/reports.
+  if (!rawUrl.includes("/")) return `${backendOrigin}/api/files/${encodeURIComponent(rawUrl)}`;
+  return rawUrl;
+}
+
+function detectFileType(file: File): "IMAGE" | "PDF" | "LINK" {
+  if (file.type.startsWith("image/")) return "IMAGE";
+  if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return "PDF";
+  return "LINK";
 }
 
 export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelProps) {
@@ -49,6 +72,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
   const [showUrlForm, setShowUrlForm] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [nameInput, setNameInput] = useState("");
+  const [zoom, setZoom] = useState(1.25);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Apply synced page from peer
@@ -83,8 +107,8 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
           throw new Error("Upload failed");
         }
 
-        const fileUrl = json.data[0];
-        const fileType = file.type.startsWith("image/") ? "IMAGE" : "PDF";
+        const fileUrl = resolveMaterialUrl(String(json.data[0]));
+        const fileType = detectFileType(file);
 
         await saveMaterial({
           lessonId,
@@ -147,9 +171,18 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
     [isTeacher, viewingMaterial, sendPageSync]
   );
 
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => Math.min(2.5, Number((z + 0.15).toFixed(2))));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))));
+  }, []);
+
   // PDF viewer mode
   if (viewingMaterial) {
-    const isPdf = viewingMaterial.type === "PDF" || viewingMaterial.url.match(/\.pdf$/i);
+      const resolvedViewingUrl = resolveMaterialUrl(viewingMaterial.url);
+      const isPdf = viewingMaterial.type === "PDF" || resolvedViewingUrl.match(/\.pdf($|\?)/i);
 
     return (
       <div className="flex flex-col h-full">
@@ -176,18 +209,41 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
           </button>
         </div>
 
+        <div className="shrink-0 flex items-center justify-center gap-2 py-1.5 border-b border-white/[0.08] bg-white/[0.01]">
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06]"
+            title="Thu nhỏ"
+          >
+            <ZoomOut className="h-3.5 w-3.5" />
+          </button>
+          <span className="text-[11px] text-[#F0F0F0] font-mono min-w-[52px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06]"
+            title="Phóng to"
+          >
+            <ZoomIn className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-auto bg-[#252838] flex items-start justify-center p-2">
           {isPdf ? (
             <Document
-              file={viewingMaterial.url}
+              file={resolvedViewingUrl}
               onLoadSuccess={({ numPages: n }) => setNumPages(n)}
               loading={<Loader2 className="h-6 w-6 text-[#8B8FA8] animate-spin mt-10" />}
               error={<p className="text-[#FF6B6B] text-xs mt-10">Không thể tải PDF</p>}
             >
               <Page
                 pageNumber={currentPage}
-                width={350}
+                width={520}
+                scale={zoom}
                 renderTextLayer
                 renderAnnotationLayer
               />
@@ -195,9 +251,10 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={viewingMaterial.url}
+              src={resolvedViewingUrl}
               alt={viewingMaterial.name}
-              className="max-w-full max-h-full object-contain rounded"
+              className="max-w-full max-h-full object-contain rounded origin-top"
+              style={{ transform: `scale(${zoom})` }}
             />
           )}
         </div>
@@ -299,8 +356,9 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
         )}
 
         {materials?.map((m) => {
-          const isImage = m.type === "IMAGE" || m.url.match(/\.(png|jpg|jpeg|gif|webp)$/i);
-          const isPdf = m.type === "PDF" || m.url.match(/\.pdf$/i);
+          const resolvedUrl = resolveMaterialUrl(m.url);
+          const isImage = m.type === "IMAGE" || resolvedUrl.match(/\.(png|jpg|jpeg|gif|webp)($|\?)/i);
+          const isPdf = m.type === "PDF" || resolvedUrl.match(/\.pdf($|\?)/i);
           const Icon = isPdf ? FileText : isImage ? ImageIcon : Link2;
 
           return (
@@ -308,9 +366,10 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
               key={m.id}
               className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] transition-colors group cursor-pointer"
               onClick={() => {
-                setViewingMaterial({ id: m.id, url: m.url, name: m.name, type: m.type });
+                setViewingMaterial({ id: m.id, url: resolvedUrl, name: m.name, type: m.type });
                 setCurrentPage(1);
                 setNumPages(0);
+                setZoom(1.25);
               }}
             >
               <div className="w-8 h-8 rounded-lg bg-[#6C63FF]/10 flex items-center justify-center shrink-0">

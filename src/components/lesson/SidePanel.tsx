@@ -77,7 +77,7 @@ export function SidePanel({
   }, []);
 
   return (
-    <div className="w-full h-full rounded-[24px] overflow-hidden border border-white/[0.08] bg-[#1e2130] flex flex-col">
+    <div className="w-full h-full min-w-0 rounded-[24px] overflow-hidden border border-white/[0.08] bg-[#1e2130] flex flex-col">
       {/* Tab bar */}
       <div className="flex items-center gap-0.5 px-3 py-2.5 border-b border-white/[0.08] shrink-0">
         {TABS.map((tab) => (

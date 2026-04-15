@@ -22,14 +22,9 @@ interface TransferModalProps {
   onClose: () => void;
   onConfirm: () => void;
   onSuccess: () => void;
+  onPayoutCreated?: () => void;
   isConfirming: boolean;
-  request: {
-    id: number;
-    amount: number;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  } | null;
+  request: Pick<WithdrawRequestData, "id" | "amount" | "bankName" | "accountNumber" | "accountHolder"> | null;
 }
 
 export function TransferModal({
@@ -37,6 +32,7 @@ export function TransferModal({
   onClose,
   onConfirm,
   onSuccess,
+  onPayoutCreated,
   isConfirming,
   request,
 }: TransferModalProps) {
@@ -45,7 +41,7 @@ export function TransferModal({
 
   const [createPayout, { isLoading: isCreatingPayout }] =
     useCreatePayoutMutation();
-  const { data: payoutStatus, refetch: refetchPayoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
+  const { refetch: refetchPayoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
     skip: !payoutOrderId || socketHandled,
   });
 
@@ -100,27 +96,21 @@ export function TransferModal({
     return () => clearTimeout(timeoutId);
   }, [payoutOrderId, socketHandled, refetchPayoutStatus, onSuccess]);
 
-  // Handle global status changes from parent polling
-  useEffect(() => {
-    if (request && request.status === "COMPLETED") {
-      toast.success("Hệ thống đã nhận được tiền và chuyển trạng thái thành công!");
-      onSuccess();
-    }
-  }, [request?.status, onSuccess]);
-
   const handleAutoPayout = async () => {
     try {
       const res = await createPayout(request!.id).unwrap();
       if (res.data?.orderId) {
         setPayoutOrderId(res.data.orderId);
+        onPayoutCreated?.();
         toast.info("Đang xử lý chuyển tiền tự động, vui lòng chờ...");
       } else {
         toast.success("Đã ghi nhận yêu cầu chuyển tiền tự động!");
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
+      const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
       toast.error(
-        error?.data?.message || "Lỗi khi gọi API chuyển tiền tự động",
+        message || "L???i khi g???i API chuy???n ti???n t??? ?????ng",
       );
     }
   };

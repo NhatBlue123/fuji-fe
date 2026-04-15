@@ -14,6 +14,7 @@ const TldrawEditor = dynamic(
         <Tldraw
           onMount={onMount}
           autoFocus
+          hideUi={false}
         />
       );
     };
@@ -32,12 +33,30 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [hasShapes, setHasShapes] = useState(false);
   const isRemoteUpdateRef = useRef(false);
+
+  const syncHasShapes = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      setHasShapes(false);
+      return;
+    }
+    const shapeIds = editor.getCurrentPageShapeIds();
+    setHasShapes(shapeIds.size > 0);
+  }, []);
 
   const handleMount = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (editor: any) => {
       editorRef.current = editor;
+      // Bật grid mode để người dùng dễ canh nét vẽ ngay từ đầu.
+      try {
+        editor.updateInstanceState?.({ isGridMode: true });
+      } catch {
+        // ignore: fallback nếu version tldraw không hỗ trợ API này
+      }
+      syncHasShapes();
 
       const store = editor.store;
       store.listen(
@@ -50,11 +69,12 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
           if (!changes) return;
 
           sendChanges(changes);
+          syncHasShapes();
         },
         { source: "user", scope: "document" }
       );
     },
-    [sendChanges]
+    [sendChanges, syncHasShapes]
   );
 
   useEffect(() => {
@@ -91,6 +111,7 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
         console.warn("[Whiteboard] Failed to apply remote changes:", e);
       } finally {
         isRemoteUpdateRef.current = false;
+        syncHasShapes();
       }
     });
 
@@ -104,9 +125,12 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
           editor.deleteShapes([...allShapeIds]);
         }
       } catch { /* ignore */ }
-      finally { isRemoteUpdateRef.current = false; }
+      finally {
+        isRemoteUpdateRef.current = false;
+        syncHasShapes();
+      }
     });
-  }, [onRemoteChange, onRemoteClear, currentUserId]);
+  }, [onRemoteChange, onRemoteClear, currentUserId, syncHasShapes]);
 
   const handleClear = useCallback(() => {
     const editor = editorRef.current;
@@ -117,6 +141,7 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
       editor.deleteShapes([...allShapeIds]);
     }
     clearBoard();
+    setHasShapes(false);
     setShowClearConfirm(false);
   }, [clearBoard]);
 
@@ -166,8 +191,21 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
       </div>
 
       {/* Tldraw canvas */}
-      <div className="flex-1 min-h-0 relative bg-white rounded-b-lg overflow-hidden">
+      <div
+        className={cn(
+          "flex-1 min-h-0 relative rounded-b-lg overflow-hidden",
+          // Grid nền để bảng đỡ "trắng trơn" khi chưa vẽ gì.
+          "bg-[linear-gradient(rgba(108,99,255,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(108,99,255,0.10)_1px,transparent_1px)] bg-[size:24px_24px]"
+        )}
+      >
         <TldrawEditor onMount={handleMount} />
+        {!hasShapes && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <div className="rounded-full bg-white/85 px-4 py-1.5 text-xs font-medium text-[#5d5f7a] shadow-sm">
+              Bắt đầu vẽ tại đây
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Clear confirm dialog */}

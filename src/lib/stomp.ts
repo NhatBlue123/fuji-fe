@@ -1,6 +1,9 @@
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
+/** Spring MappingJackson2MessageConverter binds @Payload JSON when this header is set. */
+export const STOMP_JSON_HEADERS = { "content-type": "application/json" } as const;
+
 let stompClient: Client | null = null;
 
 const WS_URL = `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "http://localhost:8181"}/ws`;

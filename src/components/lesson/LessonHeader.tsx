@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,8 @@ interface LessonHeaderProps {
   role: "TEACHER" | "STUDENT";
   /** Đang ghi hình (cloud recording) */
   isRecording?: boolean;
+  /** Callback khi đồng hồ về 0 */
+  onTimeUp?: () => void;
 }
 
 export function LessonHeader({
@@ -23,11 +25,14 @@ export function LessonHeader({
   isConnected,
   role,
   isRecording = false,
+  onTimeUp,
 }: LessonHeaderProps) {
   const [remaining, setRemaining] = useState(initialSeconds);
+  const hasNotifiedTimeUp = useRef(false);
 
   useEffect(() => {
     setRemaining(initialSeconds);
+    hasNotifiedTimeUp.current = false;
   }, [initialSeconds]);
 
   useEffect(() => {
@@ -43,6 +48,12 @@ export function LessonHeader({
     }, 1000);
     return () => clearInterval(timer);
   }, [remaining > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (remaining > 0 || hasNotifiedTimeUp.current) return;
+    hasNotifiedTimeUp.current = true;
+    onTimeUp?.();
+  }, [remaining, onTimeUp]);
 
   const formatTime = useCallback((s: number) => {
     const h = Math.floor(s / 3600);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { getStompClient } from "@/lib/stomp";
+import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
 import type { StompSubscription, IMessage } from "@stomp/stompjs";
 
 export interface PageSyncEvent {
@@ -72,6 +72,7 @@ export function useMaterialSync(
       client.publish({
         destination: `/app/materials/${lessonId}/page`,
         body: JSON.stringify({ materialId, pageNumber }),
+        headers: STOMP_JSON_HEADERS,
       });
     },
     [lessonId, token]

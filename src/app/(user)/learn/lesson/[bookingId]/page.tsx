@@ -47,9 +47,15 @@ export default function LessonPage() {
 
   const [recordingConsentOpen, setRecordingConsentOpen] = useState(false);
   const recordingConsentShownRef = useRef(false);
+  const autoEndedRef = useRef(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportRating, setReportRating] = useState(5);
   const [reportComment, setReportComment] = useState("");
+
+  const role: "TEACHER" | "STUDENT" = useMemo(() => {
+    if (!lessonData || !user) return "STUDENT";
+    return lessonData.teacherName === user.fullName ? "TEACHER" : "STUDENT";
+  }, [lessonData, user]);
 
   // Load chat history via REST, then subscribe to STOMP for live updates
   const { data: chatHistory } = useGetChatHistoryQuery(
@@ -67,7 +73,12 @@ export default function LessonPage() {
   } = useStompChat(
     lessonData?.lessonId ?? null,
     accessToken ?? null,
-    chatHistory
+    chatHistory,
+    {
+      senderId: Number(user?.id ?? 0),
+      senderName: user?.fullName ?? "Unknown",
+      senderRole: role,
+    }
   );
 
   // Daily.co room connection
@@ -86,12 +97,6 @@ export default function LessonPage() {
     stopScreenShare,
     leave,
   } = useDailyRoom(lessonData?.roomUrl ?? null, lessonData?.token ?? null);
-
-  // Determine user role
-  const role: "TEACHER" | "STUDENT" = useMemo(() => {
-    if (!lessonData || !user) return "STUDENT";
-    return lessonData.teacherName === user.fullName ? "TEACHER" : "STUDENT";
-  }, [lessonData, user]);
 
   // Screen share participant
   const screenShareParticipant = useMemo(
@@ -153,6 +158,22 @@ export default function LessonPage() {
     router.push("/booking/bookingmodal");
   }, [leave, router]);
 
+  const handleLessonTimeUp = useCallback(async () => {
+    if (autoEndedRef.current) return;
+    autoEndedRef.current = true;
+    toast.info("Đã hết thời lượng buổi học. Hệ thống tự động rời phòng.");
+
+    if (lessonData && role === "TEACHER") {
+      try {
+        await endLesson({ lessonId: lessonData.lessonId }).unwrap();
+      } catch (err) {
+        console.error("[Lesson] Failed to auto end session:", err);
+      }
+    }
+
+    exitLesson();
+  }, [lessonData, role, endLesson, exitLesson]);
+
   const endSessionOnly = useCallback(async () => {
     if (lessonData) {
       try {
@@ -165,15 +186,21 @@ export default function LessonPage() {
   }, [lessonData, endLesson]);
 
   const handleEndCall = useCallback(async () => {
-    const confirmed = window.confirm(
-      role === "TEACHER"
-        ? "Bạn có chắc muốn kết thúc lớp học? Hành động này sẽ đóng phòng và không thể vào lại."
-        : "Bạn có chắc muốn rời lớp học không?"
-    );
-    if (!confirmed) return;
+    if (role === "TEACHER") {
+      const confirmed = window.confirm(
+        "Bạn có chắc muốn kết thúc lớp học? Hành động này sẽ đóng phòng và không thể vào lại."
+      );
+      if (!confirmed) return;
+      setReportOpen(true);
+      return;
+    }
 
-    setReportOpen(true);
-  }, [role]);
+    const confirmedLeave = window.confirm(
+      "Bạn có chắc muốn rời lớp học? Bạn vẫn có thể vào lại nếu buổi học chưa kết thúc."
+    );
+    if (!confirmedLeave) return;
+    exitLesson();
+  }, [role, exitLesson]);
 
   const handleToggleScreenShare = useCallback(() => {
     if (isScreenSharing) {
@@ -324,6 +351,7 @@ export default function LessonPage() {
         isConnected={isJoined && participants.filter((p) => !p.local).length > 0}
         role={role}
         isRecording={remoteRecording}
+        onTimeUp={handleLessonTimeUp}
       />
 
       {/* Main content area */}

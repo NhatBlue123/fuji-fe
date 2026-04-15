@@ -1,13 +1,26 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { MessageSquare, PenTool, FileText, HelpCircle, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatPanel } from "./ChatPanel";
 import { NotesPanel } from "./NotesPanel";
 import { WhiteboardPanel } from "./WhiteboardPanel";
-import { MaterialsPanel } from "./MaterialsPanel";
 import { QuizPanel } from "./QuizPanel";
+
+/** react-pdf / pdf.js dùng DOMMatrix — chỉ load trên browser, không SSR. */
+const MaterialsPanel = dynamic(
+  () => import("./MaterialsPanel").then((m) => ({ default: m.MaterialsPanel })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full min-h-[120px] items-center justify-center text-xs text-[#8B8FA8]">
+        Đang tải trình xem tài liệu...
+      </div>
+    ),
+  }
+);
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
 
 type TabId = "chat" | "whiteboard" | "materials" | "quiz" | "notes";

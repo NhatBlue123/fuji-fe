@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { getStompClient } from "@/lib/stomp";
+import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
 import type { StompSubscription, IMessage } from "@stomp/stompjs";
 
 export interface WhiteboardBroadcast {
@@ -89,6 +89,7 @@ export function useWhiteboard(
       client.publish({
         destination: `/app/whiteboard/${lessonId}/change`,
         body: JSON.stringify({ changes }),
+        headers: STOMP_JSON_HEADERS,
       });
     },
     [lessonId, token]
@@ -102,6 +103,7 @@ export function useWhiteboard(
     client.publish({
       destination: `/app/whiteboard/${lessonId}/clear`,
       body: "{}",
+      headers: STOMP_JSON_HEADERS,
     });
   }, [lessonId, token]);
 

@@ -106,7 +106,7 @@ export function ControlBar({
         className="h-12 px-8 rounded-full bg-[#FF6B6B] hover:bg-[#ff5252] text-white font-semibold flex items-center gap-2 transition-all shadow-[0_4px_20px_rgba(255,107,107,0.3)]"
       >
         <PhoneOff className="h-5 w-5" />
-        Kết thúc
+        {isTeacher ? "Kết thúc" : "Rời lớp"}
       </button>
     </div>
   );

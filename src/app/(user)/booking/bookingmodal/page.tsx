@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { AlertTriangle, Ban, Clock3 } from "lucide-react";
 import {
   useCancelBookingMutation,
   useEndBookingVideoSessionMutation,
@@ -108,6 +109,27 @@ export default function MySchedulePage() {
               {isMounted && isTeacher ? "Quản lý lịch dạy" : "Đặt lịch mới"}
             </button>
           </Link>
+        </div>
+
+        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-center gap-2 text-amber-200">
+            <AlertTriangle className="size-4" />
+            <p className="text-sm font-bold">Quy định booking</p>
+          </div>
+          <ul className="mt-2 space-y-1.5 text-xs text-amber-100/90">
+            <li className="flex items-start gap-2">
+              <Clock3 className="mt-0.5 size-3.5 shrink-0" />
+              Hủy sát giờ học (trong 2 giờ trước giờ bắt đầu) bị trừ 100% phí.
+            </li>
+            <li className="flex items-start gap-2">
+              <Ban className="mt-0.5 size-3.5 shrink-0" />
+              Có thể bị khóa đặt lịch 24 giờ nếu hủy sát giờ.
+            </li>
+            <li className="flex items-start gap-2">
+              <Ban className="mt-0.5 size-3.5 shrink-0" />
+              Slot đã hủy sẽ không đặt lại được bởi cùng tài khoản.
+            </li>
+          </ul>
         </div>
 
         {(isLoading || isFetching) && (

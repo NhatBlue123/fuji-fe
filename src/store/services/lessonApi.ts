@@ -182,6 +182,18 @@ export const lessonApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<ChatMessageResponse[]>) => res.data,
     }),
 
+    sendChatMessage: builder.mutation<
+      ChatMessageResponse,
+      { lessonId: number; content: string; type?: string; fileUrl?: string | null; senderName?: string }
+    >({
+      query: ({ lessonId, content, type = "TEXT", fileUrl, senderName }) => ({
+        url: `/lessons/${lessonId}/chat/send`,
+        method: "POST",
+        body: { content, type, fileUrl: fileUrl ?? null, senderName },
+      }),
+      transformResponse: (res: ApiEnvelope<ChatMessageResponse>) => res.data,
+    }),
+
     getMyNote: builder.query<NoteResponse, { lessonId: number }>({
       query: ({ lessonId }) => `/lessons/${lessonId}/notes/me`,
       transformResponse: (res: ApiEnvelope<NoteResponse>) => res.data,
@@ -304,6 +316,7 @@ export const {
   useMarkLessonActiveMutation,
   useGetLessonByBookingQuery,
   useGetChatHistoryQuery,
+  useSendChatMessageMutation,
   useGetMyNoteQuery,
   useSaveMyNoteMutation,
   useGetMaterialsQuery,

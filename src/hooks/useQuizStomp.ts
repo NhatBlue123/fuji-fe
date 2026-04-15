@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { getStompClient } from "@/lib/stomp";
+import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
 import type { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 
 export interface QuizQuestionPublic {
@@ -125,6 +125,7 @@ export function useQuizStomp({
       clientRef.current.publish({
         destination: `/app${dest}`,
         body: JSON.stringify(body),
+        headers: STOMP_JSON_HEADERS,
       });
     },
     [lessonId]

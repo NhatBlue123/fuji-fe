@@ -26,7 +26,6 @@ export interface TeacherIncomeStatsResponse {
     income: number;
     expense: number;
   }[];
-  // the api might return other fields, update as needed
 }
 
 export interface TeacherDashboardData {
@@ -39,16 +38,25 @@ export interface TeacherDashboardData {
   averageRating: number;
   availableBalance: number;
   pendingPayouts: number;
+  totalWithdrawn: number;
   earningsOverTime: { date: string; income: number }[];
-  topStudents: { studentName: string; totalSpent: number; bookingCount: number }[];
-  courseRevenueList: { courseTitle: string; revenue: number; studentCount: number }[];
+  topStudents: { 
+    studentName: string; 
+    spentAmount: number; // Matches the refined plan
+    bookingCount: number; 
+  }[];
+  courseRevenueList: { 
+    courseTitle: string; 
+    revenue: number; 
+    studentCount: number; 
+  }[];
 }
 
 export const teacherApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getTeacherIncomeStats: builder.query<any, void>({
+    getTeacherIncomeStats: builder.query<TeacherIncomeStatsResponse, void>({
       query: () => `/teacher/income/stats`,
-      transformResponse: (res: ApiResponse<any>) => res.data,
+      transformResponse: (res: ApiResponse<TeacherIncomeStatsResponse>) => res.data,
     }),
     getTeacherDashboard: builder.query<TeacherDashboardData, { startDate?: string; endDate?: string } | void>({
       query: (params) => ({
@@ -56,8 +64,10 @@ export const teacherApi = baseApi.injectEndpoints({
         params: params || {},
       }),
       transformResponse: (res: ApiResponse<TeacherDashboardData>) => res.data,
+      providesTags: ["CourseFinance"], // Reuse or add a new tag if needed
     }),
   }),
+  overrideExisting: true,
 });
 
 export const { useGetTeacherIncomeStatsQuery, useGetTeacherDashboardQuery } = teacherApi;

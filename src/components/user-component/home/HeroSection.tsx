@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-// Thêm các import mới
-import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
+
+// Lazy load Particles component — tránh load ~200KB tsparticles khi khởi động
+const Particles = dynamic(() => import("@tsparticles/react").then(m => m.default), {
+  ssr: false,
+});
 
 export function HeroSection() {
   const { t } = useTranslation();
@@ -35,19 +40,19 @@ export function HeroSection() {
           className="absolute inset-0 z-[1]"
           options={{
             background: { opacity: 0 },
-            fpsLimit: 60,
+            fpsLimit: 30,
             particles: {
               color: { value: "#ffffff" },
               move: {
                 direction: "bottom",
                 enable: true,
                 random: false,
-                speed: 1.5, // Tốc độ rơi
+                speed: 1.2, // Tốc độ rơi
                 straight: false,
               },
               number: {
                 density: { enable: true },
-                value: 350, // Số lượng hạt tuyết
+                value: 60, // Giảm từ 350 → 60 để giảm lag
               },
               opacity: {
                 value: { min: 0.3, max: 0.8 },

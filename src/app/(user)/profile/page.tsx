@@ -198,7 +198,7 @@ export default function ProfilePage() {
   </div>
 
   {/* Right Column - Actions (Chiếm 1 phần) */}
-  <div className="lg:col-span-1 space-y-6">
+  <div className="lg:col-span-1 space-y-6 grid gap-2">
     <ActionCard 
       href="/profile/change-password"
       icon={<Key size={24} />}

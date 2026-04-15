@@ -1,17 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  CheckCircle,
   XCircle,
   Eye,
   Search,
-  Filter,
   Download,
   Banknote,
   Clock,
-  MoreVertical,
-  ExternalLink,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,12 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
+import { PaymentSocketProvider, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 
 import {
   useGetAllWithdrawRequestsQuery,
@@ -35,14 +30,14 @@ import {
 
 import { TransferModal } from "./TransferModal";
 
-export default function AdminWithdrawManagement() {
+function AdminWithdrawManagementInner() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<WithdrawRequestData | null>(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-
+  const { onPaymentStatusChange } = usePaymentSocket();
   const {
     data: response,
     isLoading,
@@ -52,8 +47,30 @@ export default function AdminWithdrawManagement() {
   const [rejectRequest] = useRejectWithdrawRequestMutation();
 
   const requests = response?.data || [];
+  
+  // Lấy trạng thái mới nhất của request đang được chọn
+  const activeRequest = selectedRequest 
+    ? requests.find((r) => r.id === selectedRequest.id) || selectedRequest 
+    : null;
 
-  const handleOpenTransferModal = (req: any) => {
+  useEffect(() => {
+    const unsub = onPaymentStatusChange((data) => {
+      if (data.transactionType !== "PAYOUT") return;
+
+      void refetch();
+
+      if (!selectedRequest || data.withdrawRequestId !== selectedRequest.id) return;
+
+      if (data.newStatus === "SUCCESS") {
+        setIsTransferModalOpen(false);
+        setSelectedRequest(null);
+      }
+    });
+
+    return () => unsub();
+  }, [onPaymentStatusChange, refetch, selectedRequest]);
+
+  const handleOpenTransferModal = (req: WithdrawRequestData) => {
     setSelectedRequest(req);
     setIsTransferModalOpen(true);
   };
@@ -69,9 +86,10 @@ export default function AdminWithdrawManagement() {
       setIsTransferModalOpen(false);
       setSelectedRequest(null);
       refetch();
-    } catch (error: any) {
+    } catch (error) {
+      const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
       toast.error(
-        error?.data?.message || `Lỗi khi duyệt yêu cầu #${selectedRequest.id}`,
+        message || `L???i khi duy???t y??u c???u #${selectedRequest.id}`,
       );
     } finally {
       setIsApproving(false);
@@ -85,8 +103,9 @@ export default function AdminWithdrawManagement() {
         await rejectRequest(id).unwrap();
         toast.error(`Đã từ chối yêu cầu #${id}. Lý do: ${reason}`);
         refetch();
-      } catch (error: any) {
-        toast.error(error?.data?.message || `Lỗi khi từ chối yêu cầu #${id}`);
+      } catch (error) {
+        const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
+        toast.error(message || `L???i khi t??? ch???i y??u c???u #${id}`);
       }
     }
   };
@@ -427,21 +446,30 @@ export default function AdminWithdrawManagement() {
       </Card>
 
       {isTransferModalOpen && (
-        <PaymentSocketProvider>
-          <TransferModal
+        <TransferModal
             isOpen={isTransferModalOpen}
             onClose={() => setIsTransferModalOpen(false)}
             onConfirm={handleApprove}
+            onPayoutCreated={() => {
+              refetch();
+            }}
             onSuccess={() => {
               setIsTransferModalOpen(false);
               setSelectedRequest(null);
               refetch();
             }}
             isConfirming={isApproving}
-            request={selectedRequest}
+            request={activeRequest}
           />
-        </PaymentSocketProvider>
-      )}
+              )}
     </div>
+  );
+}
+
+export default function AdminWithdrawManagement() {
+  return (
+    <PaymentSocketProvider>
+      <AdminWithdrawManagementInner />
+    </PaymentSocketProvider>
   );
 }

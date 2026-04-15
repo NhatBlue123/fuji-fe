@@ -1,5 +1,6 @@
 import { baseApi } from "./baseApi";
 import { SubscriptionPlan, SubscriptionMyStatus, SubscriptionHistory, SubscriptionPreview } from "@/types/subscription";
+import { FeatureAccessData, QuotaRemainingData } from "@/types/feature-access";
 
 export const subscriptionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -76,6 +77,21 @@ export const subscriptionApi = baseApi.injectEndpoints({
       query: (tier) => `/subscription/preview?tier=${tier}`,
       transformResponse: (res: any) => res?.data || res,
     }),
+    getFeatureAccess: builder.query<FeatureAccessData, void>({
+      query: () => "/me/feature-access",
+      transformResponse: (res: any) => res?.data || res,
+      providesTags: ["Subscription"],
+    }),
+    getJlptRemainingAttempts: builder.query<QuotaRemainingData, void>({
+      query: () => "/jlpt/remaining-attempts",
+      transformResponse: (res: any) => res?.data || res,
+      providesTags: ["Subscription"],
+    }),
+    getAiSenseiRemaining: builder.query<QuotaRemainingData, void>({
+      query: () => "/ai-sensei/remaining",
+      transformResponse: (res: any) => res?.data || res,
+      providesTags: ["Subscription"],
+    }),
   }),
 });
 
@@ -86,4 +102,7 @@ export const {
   useToggleAutoRenewMutation,
   useGetSubscriptionHistoryQuery,
   useLazyGetSubscriptionPreviewQuery,
+  useGetFeatureAccessQuery,
+  useGetJlptRemainingAttemptsQuery,
+  useGetAiSenseiRemainingQuery,
 } = subscriptionApi;

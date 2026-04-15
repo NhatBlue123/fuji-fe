@@ -14,7 +14,7 @@ export default function JlptPracticePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const pageSize = 9;
-  const { hasAccess } = useFeatureAccess();
+  const { hasAccess, jlptRemaining, jlptUnlimited } = useFeatureAccess();
 
   // Use debounce for search query
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -128,7 +128,8 @@ export default function JlptPracticePage() {
               const attempt = attemptsMap[test.id];
               let status: "new" | "doing" | "done" | "locked" = attempt ? "done" : "new";
               
-              if (!hasAccess("PRO") && ["N3", "N2", "N1"].includes(test.level)) {
+              // Changed from hardcoded PRO check to dynamic quota check
+              if (status === "new" && jlptRemaining === 0 && !jlptUnlimited) {
                 status = "locked";
               }
 

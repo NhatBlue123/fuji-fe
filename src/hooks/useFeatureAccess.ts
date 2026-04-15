@@ -1,8 +1,7 @@
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useGetMySubscriptionQuery } from "@/store/services/subscriptionApi";
-
-export type SubscriptionTier = "BASIC" | "PRO" | "PREMIUM";
+import { useGetFeatureAccessQuery } from "@/store/services/subscriptionApi";
+import { SubscriptionTier } from "@/types/feature-access";
 
 const tierLevels: Record<SubscriptionTier, number> = {
   BASIC: 0,
@@ -13,33 +12,45 @@ const tierLevels: Record<SubscriptionTier, number> = {
 export const useFeatureAccess = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   
-  // Fetch real-time subscription status if user is logged in
-  const { data: mySub, isLoading } = useGetMySubscriptionQuery(undefined, {
-    skip: !user, 
+  const { data: featureAccess, isLoading } = useGetFeatureAccessQuery(undefined, {
+    skip: !user,
   });
 
-  const getTier = (): SubscriptionTier => {
-    if (mySub) return mySub.tier;
-    // Fallback to user auth data 
-    if (user?.subscriptionTier) return user.subscriptionTier;
-    return "BASIC"; // Default tier
-  };
+  const planCode = featureAccess?.planCode || (user?.subscriptionTier as SubscriptionTier) || "BASIC";
+  const features = featureAccess?.features;
 
-  const currentTier = getTier();
-
-  const isPro = tierLevels[currentTier] >= tierLevels.PRO;
-  const isPremium = tierLevels[currentTier] >= tierLevels.PREMIUM;
+  const isPro = tierLevels[planCode] >= tierLevels.PRO;
+  const isPremium = tierLevels[planCode] >= tierLevels.PREMIUM;
 
   const hasAccess = (requiredTier: SubscriptionTier) => {
-    return tierLevels[currentTier] >= tierLevels[requiredTier];
+    return tierLevels[planCode] >= tierLevels[requiredTier];
   };
 
   return {
-    currentTier,
+    // Plan info
+    planCode,
     isPro,
     isPremium,
+    isLoading,
     hasAccess,
-    isLoadingSub: isLoading,
     user,
+
+    // Feature booleans
+    canUseVideoCall: features?.videoCallEnabled ?? false,
+    canUseAiSensei: (features?.aiSenseiDailyLimit ?? 0) !== 0,
+    hasPrioritySupport: features?.prioritySupportEnabled ?? false,
+    flashcardMode: features?.flashcardMode ?? "basic",
+
+    // Quota
+    jlptRemaining: features?.jlptRemaining ?? 0,
+    jlptLimit: features?.jlptExamLimit ?? 5,
+    jlptUnlimited: features?.jlptExamLimit === -1,
+
+    aiSenseiRemaining: features?.aiSenseiRemainingToday ?? 0,
+    aiSenseiDailyLimit: features?.aiSenseiDailyLimit ?? 0,
+    aiSenseiUnlimited: features?.aiSenseiDailyLimit === -1,
+
+    // Raw data
+    features,
   };
 };

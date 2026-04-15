@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Banknote } from "lucide-react";
 import { toast } from "sonner";
-import TopupPackageCard from "./TopupPackageCard";
-import PaymentStatus from "./PaymentStatus";
-import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 
-import { useGetWalletQuery } from "@/store/services/walletApi";
+import PaymentStatus from "./PaymentStatus";
+import TopupPackageCard from "./TopupPackageCard";
+import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 import { useCreatePaymentMutation } from "@/store/services/paymentApi";
+import { useGetWalletQuery } from "@/store/services/walletApi";
 
 const paymentMethods = [
   {
@@ -18,30 +18,28 @@ const paymentMethods = [
   },
 ];
 
-export default function TopupContent() {
-  // API lấy thông tin ví
+type PaymentQrData = {
+  orderId: string;
+  amount: number;
+  transferAmountVnd: number;
+  bankId: string;
+  accountNo: string;
+  accountName: string;
+  createdAt: number;
+};
+
+function TopupContentInner() {
   const { data: wallet } = useGetWalletQuery(undefined, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
-
-  // API tạo lệnh nạp tiền
   const [createPayment, { isLoading }] = useCreatePaymentMutation();
 
   const availableBalance = wallet?.availableBalance || 0;
   const [selectedPackage, setSelectedPackage] = useState<number>(4);
   const [selectedPayment, setSelectedPayment] = useState<string>("bank");
-
-  // Payment Status modal state
-  const [paymentQrData, setPaymentQrData] = useState<{
-    orderId: string;
-    amount: number;
-    transferAmountVnd: number;
-    bankId: string;
-    accountNo: string;
-    accountName: string;
-  } | null>(null);
+  const [paymentQrData, setPaymentQrData] = useState<PaymentQrData | null>(null);
 
   const packages = [
     { id: 1, price: 10, flowers: 10 },
@@ -52,10 +50,6 @@ export default function TopupContent() {
     { id: 6, price: 500, flowers: 500, bonus: 100 },
   ];
 
-  /**
-   * BƯỚC 1: GỌI API TẠO ĐƠN HÀNG
-   * Backend trả về thông tin tài khoản từ XGate
-   */
   const handleTopupClick = async () => {
     const selectedPkg = packages.find((pkg) => pkg.id === selectedPackage);
     if (!selectedPkg) {
@@ -63,67 +57,68 @@ export default function TopupContent() {
       return;
     }
 
+    const createStartedAt = Date.now();
+    console.info("[payment] createPayment requested", {
+      amount: selectedPkg.price,
+      requestedAt: new Date(createStartedAt).toISOString(),
+    });
+
     try {
-      // Gọi API tạo đơn nạp - Backend trả về bankId, accountNo, accountName
       const orderData = await createPayment({
         amount: selectedPkg.price,
       }).unwrap();
 
-      console.log("Order data from backend:", orderData);
+      console.info("[payment] createPayment succeeded", {
+        orderId: orderData.orderId,
+        requestedAt: new Date(createStartedAt).toISOString(),
+        respondedAt: new Date().toISOString(),
+      });
 
-      // Provide fallback values from environment variables or use defaults
       const bankId =
         orderData.bankId || process.env.NEXT_PUBLIC_BANK_ID || "MB";
       const accountNo =
         orderData.accountNo ||
         process.env.NEXT_PUBLIC_ACCOUNT_NO ||
-        "0916146446";
+        "9316767481284";
       const accountName =
         orderData.accountName ||
         process.env.NEXT_PUBLIC_ACCOUNT_NAME ||
-        "NHo huy";
+        "Duong Luong";
       const transferAmountVnd =
         orderData.transferAmountVnd ?? orderData.amount * 1000;
 
-      // Kiểm tra backend có trả về đầy đủ dữ liệu không
       if (!accountNo) {
-        console.error(
-          "Backend trả về dữ liệu không đầy đủ. Cần account number:",
-          {
-            orderId: orderData.orderId,
-            amount: orderData.amount,
-            transferAmountVnd,
-            bankId,
-            missingAccountNo: !orderData.accountNo,
-            missingAccountName: !orderData.accountName,
-          },
-        );
-        toast.error(
-          "❌ Backend chưa cấu hình tài khoản XGate. Hãy thiết lập biến môi trường hoặc liên hệ admin!",
-        );
+        console.error("[payment] createPayment missing account data", {
+          orderId: orderData.orderId,
+          amount: orderData.amount,
+          transferAmountVnd,
+          bankId,
+          missingAccountNo: !orderData.accountNo,
+          missingAccountName: !orderData.accountName,
+        });
+        toast.error("Backend chưa cấu hình tài khoản nhận tiền");
         return;
       }
 
-      // Show PaymentStatus component
       setPaymentQrData({
         orderId: orderData.orderId,
         amount: orderData.amount,
         transferAmountVnd,
-        bankId: bankId,
-        accountNo: accountNo,
-        accountName: accountName,
+        bankId,
+        accountNo,
+        accountName,
+        createdAt: createStartedAt,
       });
 
       toast.info("Vui lòng quét mã QR để thanh toán");
     } catch (err) {
-      console.error("Error creating payment:", err);
+      console.error("[payment] createPayment failed", err);
       toast.error("Không thể tạo đơn thanh toán");
     }
   };
 
   return (
     <div className="space-y-12">
-      {/* Hiển thị số dư hiện tại */}
       <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between">
         <div className="flex items-center gap-x-2">
           <div className="text-sm font-bold text-muted-foreground uppercase">
@@ -139,7 +134,6 @@ export default function TopupContent() {
         </div>
       </div>
 
-      {/* Grid danh sách gói nạp */}
       <div>
         <h3 className="text-xl font-bold mb-6">Chọn gói nạp</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -154,7 +148,6 @@ export default function TopupContent() {
         </div>
       </div>
 
-      {/* Phương thức thanh toán */}
       <div>
         <h3 className="text-xl font-bold mb-6">Phương thức thanh toán</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -175,7 +168,6 @@ export default function TopupContent() {
         </div>
       </div>
 
-      {/* Nút kích hoạt tạo đơn */}
       <div className="text-center">
         <button
           onClick={handleTopupClick}
@@ -186,20 +178,26 @@ export default function TopupContent() {
         </button>
       </div>
 
-      {/* Payment Status Modal */}
       {paymentQrData && (
-        <PaymentSocketProvider>
-          <PaymentStatus
-            orderId={paymentQrData.orderId}
-            amount={paymentQrData.amount}
-            transferAmountVnd={paymentQrData.transferAmountVnd}
-            bankId={paymentQrData.bankId}
-            accountNo={paymentQrData.accountNo}
-            accountName={paymentQrData.accountName}
-            onClose={() => setPaymentQrData(null)}
-          />
-        </PaymentSocketProvider>
+        <PaymentStatus
+          orderId={paymentQrData.orderId}
+          amount={paymentQrData.amount}
+          transferAmountVnd={paymentQrData.transferAmountVnd}
+          bankId={paymentQrData.bankId}
+          accountNo={paymentQrData.accountNo}
+          accountName={paymentQrData.accountName}
+          createdAt={paymentQrData.createdAt}
+          onClose={() => setPaymentQrData(null)}
+        />
       )}
     </div>
+  );
+}
+
+export default function TopupContent() {
+  return (
+    <PaymentSocketProvider>
+      <TopupContentInner />
+    </PaymentSocketProvider>
   );
 }

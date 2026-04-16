@@ -24,6 +24,13 @@ export interface RagOverviewResponse {
       vectorsCount: number;
       status: string;
     };
+    guideCollection?: {
+      name: string;
+      pointsCount: number;
+      indexedVectorsCount: number;
+      vectorsCount: number;
+      status: string;
+    };
     product?: {
       courses?: {
         total: number;
@@ -133,9 +140,15 @@ export interface RagProductStatusResponse {
 }
 
 export interface RagGuideStatusItem {
+  docId?: string;
   sourceId: string;
   rowNumber: number;
   title: string;
+  content?: string;
+  link?: string;
+  tags?: string;
+  feature?: string;
+  routePath?: string;
   category?: string;
   language?: string;
   sourceUpdatedAt?: string | null;
@@ -167,6 +180,14 @@ export interface RagGuideStatusResponse {
       };
       filtered: number;
     };
+    pagination: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+      hasPrev: boolean;
+      hasNext: boolean;
+    };
     estimate: {
       ingestSeconds: number;
     };
@@ -190,6 +211,8 @@ export interface RagStatusQuery {
   changed?: RagChangedFilter;
   stale?: RagStaleFilter;
   staleDays?: number;
+  page?: number;
+  limit?: number;
 }
 
 function makeStatusQuery(params?: RagStatusQuery) {
@@ -200,6 +223,8 @@ function makeStatusQuery(params?: RagStatusQuery) {
   if (params.changed) q.set("changed", params.changed);
   if (params.stale) q.set("stale", params.stale);
   if (params.staleDays) q.set("staleDays", String(params.staleDays));
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
   const str = q.toString();
   return str ? `?${str}` : "";
 }

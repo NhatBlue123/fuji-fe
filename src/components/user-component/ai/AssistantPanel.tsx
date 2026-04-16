@@ -73,10 +73,23 @@ type CourseComparePayload = {
   rows: CourseCompareRow[];
 };
 
+type PaymentActionPayload = {
+  label: string;
+  url: string;
+  note?: string;
+};
+
+type StructuredBlockType =
+  | "course-preview"
+  | "course-compare"
+  | "payment-action";
+
 type AssistantContentSegment =
   | { kind: "markdown"; content: string }
   | { kind: "course-preview"; items: CoursePreviewItem[] }
-  | { kind: "course-compare"; payload: CourseComparePayload };
+  | { kind: "course-compare"; payload: CourseComparePayload }
+  | { kind: "payment-action"; payload: PaymentActionPayload }
+  | { kind: "structured-loading"; blockType: StructuredBlockType };
 
 /* ------------------------------------------------------------------ */
 /* AssistantPanel — chatbot AI học tiếng Nhật (Socket.IO streaming)     */
@@ -138,7 +151,11 @@ function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
     const id = Number(record.id);
     const title = typeof record.title === "string" ? record.title.trim() : "";
     const urlRaw = typeof record.url === "string" ? record.url.trim() : "";
-    const safeUrl = /^\/course\/\d+$/i.test(urlRaw) ? urlRaw : id > 0 ? `/course/${id}` : "";
+    const safeUrl = /^\/course\/\d+$/i.test(urlRaw)
+      ? urlRaw
+      : id > 0
+        ? `/course/${id}`
+        : "";
 
     if (!title || !safeUrl || !Number.isFinite(id) || id <= 0) {
       continue;
@@ -150,7 +167,9 @@ function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
       url: safeUrl,
       price: typeof record.price === "string" ? record.price.trim() : undefined,
       thumbnail:
-        typeof record.thumbnail === "string" ? record.thumbnail.trim() : undefined,
+        typeof record.thumbnail === "string"
+          ? record.thumbnail.trim()
+          : undefined,
       meta: typeof record.meta === "string" ? record.meta.trim() : undefined,
       enrolled: Boolean(record.enrolled),
     });
@@ -159,7 +178,9 @@ function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
   return items.slice(0, 6);
 }
 
-function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | null {
+function sanitizeCourseComparePayload(
+  value: unknown,
+): CourseComparePayload | null {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -232,11 +253,46 @@ function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | nu
     return null;
   }
 
-  const title = typeof record.title === "string" ? record.title.trim() : undefined;
+  const title =
+    typeof record.title === "string" ? record.title.trim() : undefined;
   return {
     title,
     columns: limitedColumns,
     rows: rows.slice(0, 10),
+  };
+}
+
+function sanitizePaymentActionPayload(
+  value: unknown,
+): PaymentActionPayload | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const label =
+    typeof record.label === "string" && record.label.trim()
+      ? record.label.trim()
+      : "Nạp tiền để mua khóa học";
+
+  const urlRaw =
+    typeof record.url === "string" && record.url.trim()
+      ? record.url.trim()
+      : "/premium?tab=topup";
+
+  const safeUrl = /^\/[a-z0-9/_-]+(?:\?[a-z0-9=&%._-]+)?$/i.test(urlRaw)
+    ? urlRaw
+    : "/premium?tab=topup";
+
+  const note =
+    typeof record.note === "string" && record.note.trim()
+      ? record.note.trim()
+      : undefined;
+
+  return {
+    label,
+    url: safeUrl,
+    note,
   };
 }
 
@@ -301,7 +357,9 @@ function findBalancedJsonEnd(source: string, start: number): number {
   return -1;
 }
 
-function splitLooseJsonFromMarkdown(markdown: string): AssistantContentSegment[] {
+function splitLooseJsonFromMarkdown(
+  markdown: string,
+): AssistantContentSegment[] {
   const text = String(markdown || "");
   if (!text.trim()) {
     return [];
@@ -345,6 +403,11 @@ function splitLooseJsonFromMarkdown(markdown: string): AssistantContentSegment[]
       const comparePayload = sanitizeCourseComparePayload(parsed);
       if (comparePayload) {
         structured = { kind: "course-compare", payload: comparePayload };
+      } else {
+        const paymentPayload = sanitizePaymentActionPayload(parsed);
+        if (paymentPayload) {
+          structured = { kind: "payment-action", payload: paymentPayload };
+        }
       }
     }
 
@@ -370,18 +433,57 @@ function splitLooseJsonFromMarkdown(markdown: string): AssistantContentSegment[]
   return segments;
 }
 
-function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
+function stripIncompleteStructuredBlock(source: string): {
+  visibleSource: string;
+  pendingBlockType: StructuredBlockType | null;
+} {
+  const openBlockRegex =
+    /```(course-preview|course-compare|payment-action)\s*/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = openBlockRegex.exec(source))) {
+    const blockType = String(
+      match[1] || "",
+    ).toLowerCase() as StructuredBlockType;
+    const blockBodyStart = openBlockRegex.lastIndex;
+    const closeIndex = source.indexOf("```", blockBodyStart);
+
+    if (closeIndex === -1) {
+      return {
+        visibleSource: source.slice(0, match.index),
+        pendingBlockType: blockType,
+      };
+    }
+
+    openBlockRegex.lastIndex = closeIndex + 3;
+  }
+
+  return {
+    visibleSource: source,
+    pendingBlockType: null,
+  };
+}
+
+function parseAssistantContent(
+  rawContent: string,
+  options?: { streaming?: boolean },
+): AssistantContentSegment[] {
   const source = String(rawContent || "");
   if (!source) {
     return [];
   }
 
-  const re = /```(course-preview|course-compare)\s*([\s\S]*?)```/gi;
+  const { visibleSource, pendingBlockType } = options?.streaming
+    ? stripIncompleteStructuredBlock(source)
+    : { visibleSource: source, pendingBlockType: null };
+
+  const re =
+    /```(course-preview|course-compare|payment-action)\s*([\s\S]*?)```/gi;
   const segments: AssistantContentSegment[] = [];
   let cursor = 0;
 
   while (true) {
-    const match = re.exec(source);
+    const match = re.exec(visibleSource);
     if (!match) {
       break;
     }
@@ -389,13 +491,15 @@ function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
     const start = match.index;
     const end = re.lastIndex;
     if (start > cursor) {
-      const markdown = source.slice(cursor, start).trim();
+      const markdown = visibleSource.slice(cursor, start).trim();
       if (markdown) {
         segments.push({ kind: "markdown", content: markdown });
       }
     }
 
-    const blockType = String(match[1] || "").trim().toLowerCase();
+    const blockType = String(match[1] || "")
+      .trim()
+      .toLowerCase();
     const jsonText = (match[2] || "").trim();
     const parsed = tryParseJsonValue(jsonText);
 
@@ -404,7 +508,7 @@ function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
       if (items.length > 0) {
         segments.push({ kind: "course-preview", items });
       } else {
-        const rawBlock = source.slice(start, end).trim();
+        const rawBlock = visibleSource.slice(start, end).trim();
         if (rawBlock) {
           segments.push({ kind: "markdown", content: rawBlock });
         }
@@ -414,13 +518,23 @@ function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
       if (payload) {
         segments.push({ kind: "course-compare", payload });
       } else {
-        const rawBlock = source.slice(start, end).trim();
+        const rawBlock = visibleSource.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else if (blockType === "payment-action") {
+      const payload = sanitizePaymentActionPayload(parsed);
+      if (payload) {
+        segments.push({ kind: "payment-action", payload });
+      } else {
+        const rawBlock = visibleSource.slice(start, end).trim();
         if (rawBlock) {
           segments.push({ kind: "markdown", content: rawBlock });
         }
       }
     } else {
-      const rawBlock = source.slice(start, end).trim();
+      const rawBlock = visibleSource.slice(start, end).trim();
       if (rawBlock) {
         segments.push({ kind: "markdown", content: rawBlock });
       }
@@ -429,8 +543,8 @@ function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
     cursor = end;
   }
 
-  if (cursor < source.length) {
-    const markdown = source.slice(cursor).trim();
+  if (cursor < visibleSource.length) {
+    const markdown = visibleSource.slice(cursor).trim();
     if (markdown) {
       segments.push({ kind: "markdown", content: markdown });
     }
@@ -450,8 +564,19 @@ function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
   }
 
   if (normalized.length === 0) {
-    return [{ kind: "markdown", content: source }];
+    if (pendingBlockType) {
+      return [{ kind: "structured-loading", blockType: pendingBlockType }];
+    }
+    return [{ kind: "markdown", content: visibleSource }];
   }
+
+  if (pendingBlockType) {
+    normalized.push({
+      kind: "structured-loading",
+      blockType: pendingBlockType,
+    });
+  }
+
   return normalized;
 }
 
@@ -489,7 +614,9 @@ function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
                 {item.title}
               </p>
               {item.price && (
-                <p className="mt-1 text-xs font-semibold text-primary">{item.price}</p>
+                <p className="mt-1 text-xs font-semibold text-primary">
+                  {item.price}
+                </p>
               )}
               {item.meta && (
                 <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
@@ -573,7 +700,10 @@ function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
           </thead>
           <tbody>
             {payload.rows.map((row) => (
-              <tr key={row.label} className="border-b border-border last:border-b-0">
+              <tr
+                key={row.label}
+                className="border-b border-border last:border-b-0"
+              >
                 <td className="border-r border-border bg-muted/20 px-3 py-2 text-xs font-semibold text-foreground">
                   {row.label}
                 </td>
@@ -589,6 +719,49 @@ function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function StructuredLoadingCard({
+  blockType,
+}: {
+  blockType: StructuredBlockType;
+}) {
+  const label =
+    blockType === "course-preview"
+      ? "Đang chuẩn bị danh sách khóa học..."
+      : blockType === "course-compare"
+        ? "Đang chuẩn bị bảng so sánh khóa học..."
+        : "Đang chuẩn bị nút thanh toán...";
+
+  return (
+    <div className="my-3 inline-flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+      <Loader2 className="size-3 animate-spin" />
+      {label}
+    </div>
+  );
+}
+
+function PaymentActionCard({ payload }: { payload: PaymentActionPayload }) {
+  return (
+    <div className="my-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            {payload.label}
+          </p>
+          {payload.note && (
+            <p className="mt-1 text-xs text-muted-foreground">{payload.note}</p>
+          )}
+        </div>
+        <Link
+          href={payload.url}
+          className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Đi đến thanh toán
+        </Link>
       </div>
     </div>
   );
@@ -1272,7 +1445,9 @@ export default function AssistantPanel({
                         [&_tr:last-child_td]:border-b-0
                         [&_img]:my-2 [&_img]:rounded-lg [&_img]:border [&_img]:border-border"
                           >
-                            {parseAssistantContent(msg.textVn).map((segment, idx) =>
+                            {parseAssistantContent(msg.textVn, {
+                              streaming: Boolean(msg._streaming),
+                            }).map((segment, idx) =>
                               segment.kind === "course-preview" ? (
                                 <CoursePreviewList
                                   key={`preview-${msg.id}-${idx}`}
@@ -1282,6 +1457,16 @@ export default function AssistantPanel({
                                 <CourseCompareTable
                                   key={`compare-${msg.id}-${idx}`}
                                   payload={segment.payload}
+                                />
+                              ) : segment.kind === "payment-action" ? (
+                                <PaymentActionCard
+                                  key={`payment-${msg.id}-${idx}`}
+                                  payload={segment.payload}
+                                />
+                              ) : segment.kind === "structured-loading" ? (
+                                <StructuredLoadingCard
+                                  key={`loading-${msg.id}-${idx}`}
+                                  blockType={segment.blockType}
                                 />
                               ) : (
                                 <ReactMarkdown

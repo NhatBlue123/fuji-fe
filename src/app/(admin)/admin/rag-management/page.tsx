@@ -57,6 +57,7 @@ const DEFAULT_GUIDE_EMBED_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRJCpUYZ4rW5fITJ3OePBBvFthwYyHDpE0-LgCfrAglWZrgbRcEQ8Ic7Jb4LkebTOvjTzqSY91E0py4/pubhtml?widget=true&headers=false";
 
 type ProductTab = "courses" | "plans";
+const GUIDE_PAGE_SIZE = 12;
 
 function formatDateTime(v?: string | null) {
   if (!v) return "-";
@@ -170,17 +171,19 @@ export default function AdminRagManagementPage() {
   const [changedFilter, setChangedFilter] = useState<RagChangedFilter>("all");
   const [staleFilter, setStaleFilter] = useState<RagStaleFilter>("all");
   const [staleDays, setStaleDays] = useState(30);
+  const [guidePage, setGuidePage] = useState(1);
 
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
   const [selectedPlanIds, setSelectedPlanIds] = useState<number[]>([]);
 
-  const guideEmbedUrl = normalizeGuideEmbedUrl(
-    process.env.NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_EMBED_URL?.trim() ||
-      DEFAULT_GUIDE_EMBED_URL,
-  );
   const guideEditUrl = (
     process.env.NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_URL || ""
   ).trim();
+  const guideIframeUrl = normalizeGuideEmbedUrl(
+    guideEditUrl ||
+      process.env.NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_EMBED_URL?.trim() ||
+      DEFAULT_GUIDE_EMBED_URL,
+  );
 
   const productParams = useMemo(
     () => ({
@@ -200,8 +203,17 @@ export default function AdminRagManagementPage() {
       changed: changedFilter,
       stale: staleFilter,
       staleDays,
+      page: guidePage,
+      limit: GUIDE_PAGE_SIZE,
     }),
-    [guideKeyword, indexedFilter, changedFilter, staleFilter, staleDays],
+    [
+      guideKeyword,
+      indexedFilter,
+      changedFilter,
+      staleFilter,
+      staleDays,
+      guidePage,
+    ],
   );
 
   const overviewQuery = useGetRagOverviewQuery({ staleDays });
@@ -215,6 +227,7 @@ export default function AdminRagManagementPage() {
 
   const productData = productsQuery.data?.data;
   const guideData = guideQuery.data?.data;
+  const guidePagination = guideData?.pagination;
 
   const courses = useMemo(() => productData?.courses ?? [], [productData]);
   const plans = useMemo(() => productData?.plans ?? [], [productData]);
@@ -415,8 +428,13 @@ export default function AdminRagManagementPage() {
               {overview?.collection?.name || "product_knowledge"}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Điểm vector: {overview?.collection?.pointsCount ?? 0} • Đã lập chỉ
-              mục: {overview?.collection?.indexedVectorsCount ?? 0}
+              Product: {overview?.collection?.pointsCount ?? 0} điểm • Guide:{" "}
+              {overview?.guideCollection?.pointsCount ?? 0} điểm
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Product indexed: {overview?.collection?.indexedVectorsCount ?? 0}{" "}
+              • Guide indexed:{" "}
+              {overview?.guideCollection?.indexedVectorsCount ?? 0}
             </p>
           </div>
 
@@ -452,7 +470,10 @@ export default function AdminRagManagementPage() {
             <div className="w-full md:w-[260px]">
               <Select
                 value={indexedFilter}
-                onValueChange={(v) => setIndexedFilter(v as RagIndexedFilter)}
+                onValueChange={(v) => {
+                  setIndexedFilter(v as RagIndexedFilter);
+                  setGuidePage(1);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Lọc theo trạng thái chỉ mục" />
@@ -468,7 +489,10 @@ export default function AdminRagManagementPage() {
             <div className="w-full md:w-[260px]">
               <Select
                 value={changedFilter}
-                onValueChange={(v) => setChangedFilter(v as RagChangedFilter)}
+                onValueChange={(v) => {
+                  setChangedFilter(v as RagChangedFilter);
+                  setGuidePage(1);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Lọc theo thay đổi" />
@@ -486,7 +510,10 @@ export default function AdminRagManagementPage() {
             <div className="w-full md:w-[220px]">
               <Select
                 value={staleFilter}
-                onValueChange={(v) => setStaleFilter(v as RagStaleFilter)}
+                onValueChange={(v) => {
+                  setStaleFilter(v as RagStaleFilter);
+                  setGuidePage(1);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Lọc theo độ cũ" />
@@ -502,7 +529,10 @@ export default function AdminRagManagementPage() {
             <div className="w-full md:w-[180px]">
               <Select
                 value={String(staleDays)}
-                onValueChange={(v) => setStaleDays(Number(v))}
+                onValueChange={(v) => {
+                  setStaleDays(Number(v));
+                  setGuidePage(1);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Ngưỡng ngày cũ" />
@@ -836,8 +866,11 @@ export default function AdminRagManagementPage() {
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={guideKeyword}
-                    onChange={(e) => setGuideKeyword(e.target.value)}
-                    placeholder="Tìm mã nguồn hoặc tiêu đề..."
+                    onChange={(e) => {
+                      setGuideKeyword(e.target.value);
+                      setGuidePage(1);
+                    }}
+                    placeholder="Tìm doc id, tiêu đề, link, tags hoặc nội dung..."
                     className="pl-9"
                   />
                 </div>
@@ -878,10 +911,11 @@ export default function AdminRagManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Mã nguồn</TableHead>
+                      <TableHead>Doc ID</TableHead>
                       <TableHead>Tiêu đề</TableHead>
-                      <TableHead>Danh mục</TableHead>
-                      <TableHead>Ngôn ngữ</TableHead>
+                      <TableHead>Link</TableHead>
+                      <TableHead>Tags</TableHead>
+                      <TableHead>Cập nhật nguồn</TableHead>
                       <TableHead>Chỉ mục</TableHead>
                       <TableHead>Thay đổi</TableHead>
                       <TableHead>Độ cũ</TableHead>
@@ -891,7 +925,7 @@ export default function AdminRagManagementPage() {
                   <TableBody>
                     {guideQuery.isLoading && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center">
+                        <TableCell colSpan={9} className="text-center">
                           <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                         </TableCell>
                       </TableRow>
@@ -900,7 +934,7 @@ export default function AdminRagManagementPage() {
                     {!guideQuery.isLoading && guideItems.length === 0 && (
                       <TableRow>
                         <TableCell
-                          colSpan={8}
+                          colSpan={9}
                           className="text-center text-muted-foreground"
                         >
                           Không có dòng hướng dẫn phù hợp bộ lọc hiện tại.
@@ -909,13 +943,31 @@ export default function AdminRagManagementPage() {
                     )}
 
                     {guideItems.map((item) => (
-                      <TableRow key={item.sourceId}>
+                      <TableRow key={item.docId || item.sourceId}>
                         <TableCell className="font-medium">
-                          {item.sourceId}
+                          <div>{item.docId || item.sourceId}</div>
+                          {item.sourceId && item.docId !== item.sourceId && (
+                            <div className="text-xs text-muted-foreground">
+                              source: {item.sourceId}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>{item.title || "-"}</TableCell>
-                        <TableCell>{item.category || "-"}</TableCell>
-                        <TableCell>{item.language || "-"}</TableCell>
+                        <TableCell
+                          className="max-w-[260px] truncate"
+                          title={item.link || item.routePath || ""}
+                        >
+                          {item.link || item.routePath || "-"}
+                        </TableCell>
+                        <TableCell
+                          className="max-w-[220px] truncate"
+                          title={item.tags || ""}
+                        >
+                          {item.tags || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {formatDateTime(item.sourceUpdatedAt)}
+                        </TableCell>
                         <TableCell>
                           <StatusBadge indexed={item.indexed} />
                         </TableCell>
@@ -944,13 +996,56 @@ export default function AdminRagManagementPage() {
                 </Table>
               </div>
 
+              <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Hiển thị {guideItems.length} /{" "}
+                  {guideData?.summary?.filtered ?? 0} dòng phù hợp bộ lọc
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setGuidePage((p) => Math.max(1, p - 1))}
+                    disabled={
+                      guideQuery.isFetching || !guidePagination?.hasPrev
+                    }
+                    className="rounded-lg"
+                  >
+                    Trang trước
+                  </Button>
+
+                  <span className="min-w-[140px] text-center text-sm font-medium text-muted-foreground">
+                    Trang {guidePagination?.page ?? guidePage} /{" "}
+                    {guidePagination?.totalPages ?? 1}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setGuidePage((p) =>
+                        Math.min(guidePagination?.totalPages ?? p + 1, p + 1),
+                      )
+                    }
+                    disabled={
+                      guideQuery.isFetching || !guidePagination?.hasNext
+                    }
+                    className="rounded-lg"
+                  >
+                    Trang sau
+                  </Button>
+                </div>
+              </div>
+
               <div className="rounded-2xl border overflow-hidden">
                 <div className="flex items-center justify-between border-b px-4 py-3">
                   <div>
                     <p className="font-semibold">Bảng Hướng dẫn (nhúng)</p>
                     <p className="text-xs text-muted-foreground">
-                      Xem nhanh nội dung bảng hướng dẫn. Để chỉnh sửa trực tiếp,
-                      dùng nút mở bản chỉnh sửa.
+                      Bạn có thể chỉnh sửa trực tiếp trong khung này (cần đăng
+                      nhập và có quyền sửa). Nếu bị lỗi quyền, dùng nút mở bản
+                      chỉnh sửa.
                     </p>
                   </div>
                   <ActionTooltip content="Mở Google Sheet ở chế độ chỉnh sửa đầy đủ">
@@ -962,7 +1057,7 @@ export default function AdminRagManagementPage() {
                 </div>
 
                 <iframe
-                  src={guideEmbedUrl}
+                  src={guideIframeUrl}
                   title="Bảng hướng dẫn RAG"
                   className="h-[640px] w-full bg-white"
                   referrerPolicy="no-referrer-when-downgrade"

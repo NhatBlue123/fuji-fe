@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
+import LiquidGlass from "@/components/ui/liquid-glass-safe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,6 +43,7 @@ export type AssistantMessage = {
   textJp?: string;
   textVn?: string;
   think?: string;
+  responseTimeMs?: number;
   _streaming?: boolean;
 };
 
@@ -158,23 +160,47 @@ export const TypingIndicator = memo(function TypingIndicator({
 /** Khối think — có thể mở/đóng */
 export const ThinkBlock = memo(function ThinkBlock({
   content,
+  isStreaming = false,
 }: {
   content: string;
+  isStreaming?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isStreaming);
+  useEffect(() => {
+    setOpen(isStreaming);
+  }, [isStreaming]);
+
+  const lines = content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const latestLine = lines[lines.length - 1] || "Dang phan tich...";
+
   return (
-    <div className="mb-2">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span className="material-symbols-outlined text-sm">
-          {open ? "expand_less" : "expand_more"}
-        </span>
-        💭 Đã suy nghĩ xong
-      </button>
-      {open && (
-        <div className="mt-1 text-xs text-muted-foreground bg-muted/40 border border-border/50 rounded-lg p-3 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+    <div className="mb-3">
+      {isStreaming ? (
+        <div className="flex items-center gap-2 rounded-lg border border-border/55 bg-muted/45 px-2.5 py-1.5 text-xs text-muted-foreground">
+          <div className="relative flex size-3 items-center justify-center">
+            <span className="size-1.5 rounded-full bg-muted-foreground/80 animate-pulse" />
+          </div>
+          <span className="font-medium text-foreground/80">Dang suy nghi:</span>
+          <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground animate-pulse">
+            {latestLine}
+          </span>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen((p) => !p)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <span className="material-symbols-outlined text-sm group-hover:text-primary/70 transition-colors">
+            {open ? "unfold_less" : "unfold_more"}
+          </span>
+          <span className="flex items-center gap-1">💭 Quá trình suy nghĩ</span>
+        </button>
+      )}
+      {open && !isStreaming && (
+        <div className="mt-2 text-xs text-muted-foreground bg-gradient-to-b from-muted/50 to-muted/30 border border-border/50 rounded-lg p-3 max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
           {content}
         </div>
       )}
@@ -201,55 +227,65 @@ export const ChatInputArea = memo(function ChatInputArea({
   showMic?: boolean;
 }) {
   return (
-    <div className="p-6 border-t border-border bg-background/80 backdrop-blur-sm shrink-0">
+    <div className="shrink-0 border-t border-border/60 bg-gradient-to-b from-white/28 to-white/8 p-6 backdrop-blur-md dark:from-slate-900/24 dark:to-slate-900/6">
       {chips.length > 0 && (
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
           {chips.map((chip) => (
             <Button
               key={chip.text}
               onClick={() => onInputChange(chip.text)}
-              className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
+              className="whitespace-nowrap rounded-full border border-white/55 bg-white/72 px-4 py-2 text-xs font-medium text-foreground transition-all hover:border-primary/40 hover:bg-white/90 hover:text-primary dark:border-white/15 dark:bg-slate-900/55 dark:hover:bg-slate-900/65"
             >
               {chip.emoji} {chip.text}
             </Button>
           ))}
         </div>
       )}
-      <div className="relative flex items-center gap-3">
-        <div className="flex-1 relative">
-          <Input
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSend()}
-            className="w-full bg-card border border-border text-foreground rounded-xl py-3.5 pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-muted-foreground shadow-sm transition-all"
-            placeholder={placeholder}
-            type="text"
-          />
-          {showEmoji && (
-            <Button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-              <span className="material-symbols-outlined">
-                sentiment_satisfied
+      <LiquidGlass
+        displacementScale={72}
+        blurAmount={0.074}
+        saturation={152}
+        elasticity={0.16}
+        mode="prominent"
+        cornerRadius={18}
+        className="rounded-2xl"
+      >
+        <div className="relative flex items-center gap-2 rounded-2xl border border-border/70 bg-background/65 p-1.5 shadow-[0_24px_56px_-36px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+          <div className="relative flex-1">
+            <Input
+              value={input}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onSend()}
+              className="h-8 w-full rounded-xl border-input bg-background/90 py-1.5 pl-4 pr-12 text-sm text-foreground shadow-none transition-colors placeholder:text-muted-foreground/90 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-0"
+              placeholder={placeholder}
+              type="text"
+            />
+            {showEmoji && (
+              <Button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground">
+                <span className="material-symbols-outlined">
+                  sentiment_satisfied
+                </span>
+              </Button>
+            )}
+          </div>
+          {showMic && (
+            <Button className="group flex items-center justify-center rounded-lg border border-white/55 bg-white/70 p-2 text-foreground shadow-sm transition-all hover:bg-white/90 dark:border-white/15 dark:bg-slate-900/58 dark:hover:bg-slate-900/65">
+              <span className="material-symbols-outlined text-[20px] transition-transform group-hover:scale-110">
+                mic
               </span>
             </Button>
           )}
-        </div>
-        {showMic && (
-          <Button className="p-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-card transition-all flex items-center justify-center group shadow-sm">
-            <span className="material-symbols-outlined group-hover:scale-110 transition-transform">
-              mic
+          <Button
+            onClick={onSend}
+            disabled={!input.trim()}
+            className="group flex items-center justify-center rounded-lg border border-white/60 bg-gradient-to-r from-primary to-blue-500 p-2 text-primary-foreground shadow-[0_18px_30px_-20px_rgba(37,99,235,0.75)] transition-all hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-0.5">
+              send
             </span>
           </Button>
-        )}
-        <Button
-          onClick={onSend}
-          disabled={!input.trim()}
-          className="p-3.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center shadow-lg shadow-primary/20 group disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined group-hover:translate-x-0.5 transition-transform">
-            send
-          </span>
-        </Button>
-      </div>
+        </div>
+      </LiquidGlass>
     </div>
   );
 });

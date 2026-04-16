@@ -22,6 +22,7 @@ import {
   Layers,
   AlertTriangle,
   CalendarDays,
+  Brain,
   Bug,
   Wallet,
   MessageSquare,
@@ -176,6 +177,12 @@ export function AdminSidebar() {
           title: "Chat Moderation",
           href: "/admin/chat-moderation",
           icon: MessageSquare,
+        },
+        {
+          title: "AI RAG",
+          href: "/admin/rag-management",
+          icon: Brain,
+          adminOnly: true,
         },
         {
           title: t("admin.sidebar.items.notifications"),

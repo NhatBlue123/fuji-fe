@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+﻿import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getAccessToken } from "@/lib/token";
 
 export const baseApi = createApi({
@@ -32,7 +32,8 @@ export const baseApi = createApi({
     "Subscription",
     "User",
     "CourseFinance",
-    "AdminPlan"
+    "AdminPlan",
+    "TopupPackage",
   ],
   endpoints: () => ({}),
 });

@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -17,6 +17,7 @@ import {
   Bell,
   Shield,
   BookOpenCheck,
+  Package,
   Sun,
   Moon,
   Layers,
@@ -50,7 +51,6 @@ interface NavItem {
   href?: string;
   icon: React.ElementType;
   badge?: string;
-  /** If true, only ADMIN can see this item */
   adminOnly?: boolean;
   children?: NavChild[];
 }
@@ -103,6 +103,12 @@ const navGroups: NavGroup[] = [
         title: "Rút tiền",
         href: "/admin/withdraw",
         icon: Users,
+        adminOnly: true,
+      },
+      {
+        title: "Gói nạp",
+        href: "/admin/topup-packages",
+        icon: Package,
         adminOnly: true,
       },
       {
@@ -191,11 +197,6 @@ export function AdminSidebar() {
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, canAccessRoute } = usePermissions();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const defaultOpenMenu = useMemo(() => {
     const matchedItem = navGroups
@@ -233,13 +234,12 @@ export function AdminSidebar() {
           collapsed ? "w-[68px]" : "w-[260px]",
         )}
       >
-        {/* Logo / Brand */}
         <div className="flex h-16 items-center gap-2 px-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold text-sm">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-sm font-bold">
             F
           </div>
           {!collapsed && (
-            <span className="text-lg font-bold text-sidebar-foreground tracking-tight">
+            <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
               FUJI Admin
             </span>
           )}
@@ -247,11 +247,9 @@ export function AdminSidebar() {
 
         <Separator className="bg-sidebar-border" />
 
-        {/* Navigation */}
         <ScrollArea className="flex-1 px-3 py-4">
           <nav className="flex flex-col gap-1">
             {navGroups.map((group) => {
-              // Filter items based on permissions
               const visibleItems = group.items
                 .map((item) => {
                   if (!item.children || item.children.length === 0) return item;
@@ -268,7 +266,9 @@ export function AdminSidebar() {
                   if (item.children && item.children.length > 0) return true;
                   return item.href ? canAccessRoute(item.href) : false;
                 });
+
               if (visibleItems.length === 0) return null;
+
               return (
                 <div key={group.label} className="mb-4">
                   {!collapsed && (
@@ -279,48 +279,39 @@ export function AdminSidebar() {
                   {collapsed && (
                     <Separator className="mb-2 bg-sidebar-border" />
                   )}
+
                   {visibleItems.map((item) => {
                     const Icon = item.icon;
                     const hasChildren =
                       item.children && item.children.length > 0;
 
                     const activeChildHref =
-                      item.children?.reduce<string | null>(
-                        (bestMatch, child) => {
-                          const isMatch =
-                            pathname === child.href ||
-                            pathname.startsWith(`${child.href}/`);
+                      item.children?.reduce<string | null>((bestMatch, child) => {
+                        const isMatch =
+                          pathname === child.href ||
+                          pathname.startsWith(`${child.href}/`);
 
-                          if (!isMatch) return bestMatch;
-                          if (
-                            !bestMatch ||
-                            child.href.length > bestMatch.length
-                          ) {
-                            return child.href;
-                          }
-                          return bestMatch;
-                        },
-                        null,
-                      ) ?? null;
+                        if (!isMatch) return bestMatch;
+                        if (!bestMatch || child.href.length > bestMatch.length) {
+                          return child.href;
+                        }
+                        return bestMatch;
+                      }, null) ?? null;
 
                     const isOpen = (openMenu ?? defaultOpenMenu) === item.title;
-
                     const hasActiveChild = Boolean(activeChildHref);
 
                     const isActive =
                       hasActiveChild ||
                       (item.href &&
                         (pathname === item.href ||
-                          (item.href !== "/admin" &&
-                            pathname.startsWith(item.href))));
+                          (item.href !== "/admin" && pathname.startsWith(item.href))));
 
                     if (hasChildren) {
                       return (
                         <div key={item.title}>
                           <button
-                            onClick={() =>
-                              setOpenMenu(isOpen ? null : item.title)
-                            }
+                            onClick={() => setOpenMenu(isOpen ? null : item.title)}
                             className={cn(
                               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                               isActive
@@ -333,9 +324,7 @@ export function AdminSidebar() {
 
                             {!collapsed && (
                               <>
-                                <span className="flex-1 text-left">
-                                  {item.title}
-                                </span>
+                                <span className="flex-1 text-left">{item.title}</span>
                                 <ChevronRight
                                   className={cn(
                                     "h-4 w-4 transition-transform",
@@ -349,8 +338,7 @@ export function AdminSidebar() {
                           {isOpen && !collapsed && (
                             <div className="ml-6 mt-1 flex flex-col gap-1">
                               {item.children?.map((child) => {
-                                const isChildActive =
-                                  activeChildHref === child.href;
+                                const isChildActive = activeChildHref === child.href;
                                 return (
                                   <Link
                                     key={child.href}
@@ -416,11 +404,7 @@ export function AdminSidebar() {
                       );
                     }
 
-                    return (
-                      <React.Fragment key={item.href}>
-                        {linkContent}
-                      </React.Fragment>
-                    );
+                    return <React.Fragment key={item.href}>{linkContent}</React.Fragment>;
                   })}
                 </div>
               );
@@ -430,9 +414,7 @@ export function AdminSidebar() {
 
         <Separator className="bg-sidebar-border" />
 
-        {/* Bottom Actions */}
-        <div className="p-3 flex flex-col gap-1">
-          {/* Theme toggle */}
+        <div className="flex flex-col gap-1 p-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -461,19 +443,18 @@ export function AdminSidebar() {
             )}
           </Tooltip>
 
-          <Separator className="bg-sidebar-border my-1" />
+          <Separator className="my-1 bg-sidebar-border" />
 
-          {/* User info + logout */}
           {isAuthenticated && user ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors cursor-default",
+                    "cursor-default rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent",
+                    "flex items-center gap-2",
                     collapsed && "justify-center px-1",
                   )}
                 >
-                  {/* Avatar */}
                   <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-sidebar-border bg-sidebar-accent">
                     <Image
                       src={avatarSrc}
@@ -481,29 +462,28 @@ export function AdminSidebar() {
                       fill
                       className="object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "/images/avt-default.jpg";
+                        (e.target as HTMLImageElement).src = "/images/avt-default.jpg";
                       }}
                     />
                   </div>
-                  {/* Name + email */}
+
                   {!collapsed && (
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-sidebar-foreground truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-sidebar-foreground">
                         {displayName}
                       </p>
                       {user.email && (
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="truncate text-[10px] text-muted-foreground">
                           {user.email}
                         </p>
                       )}
                     </div>
                   )}
-                  {/* Logout icon */}
+
                   {!collapsed && (
                     <button
                       onClick={handleLogout}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      className="text-muted-foreground transition-colors hover:text-destructive"
                       title="Đăng xuất"
                     >
                       <LogOut className="h-3.5 w-3.5" />
@@ -515,15 +495,12 @@ export function AdminSidebar() {
                 <TooltipContent side="right" sideOffset={8}>
                   <p className="font-semibold">{displayName}</p>
                   {user.email && (
-                    <p className="text-xs text-muted-foreground">
-                      {user.email}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                   )}
                 </TooltipContent>
               )}
             </Tooltip>
           ) : (
-            /* Logout button when not authenticated */
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -548,7 +525,6 @@ export function AdminSidebar() {
           )}
         </div>
 
-        {/* Collapse Toggle */}
         <Button
           variant="outline"
           size="icon"

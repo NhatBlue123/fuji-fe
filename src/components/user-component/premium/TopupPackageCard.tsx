@@ -21,7 +21,7 @@ export default function TopupPackageCard({
   return (
     <div
       onClick={onSelect}
-      className={`relative flex cursor-pointer flex-col items-center rounded-2xl border bg-white p-6 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition dark:bg-card dark:shadow-none ${
+      className={`relative flex cursor-pointer flex-col items-center rounded-2xl border bg-white p-6 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition dark:bg-[#12284a] dark:shadow-none ${
         isSelected
           ? "border-pink-500 border-2 shadow-lg shadow-pink-500/20 dark:border-secondary dark:shadow-secondary/20"
           : "border-slate-200 hover:border-secondary/50 dark:border-border"

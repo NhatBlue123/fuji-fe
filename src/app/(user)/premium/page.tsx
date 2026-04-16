@@ -20,7 +20,7 @@ function PremiumPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-[#fff8fc] to-[#f4f8ff] text-slate-900 p-8 font-sans dark:bg-[#122241] dark:text-white">
+    <div className="min-h-screen bg-gradient-to-b from-white via-[#fff8fc] to-[#f4f8ff] p-8 font-sans text-slate-900 dark:bg-none dark:bg-[#122241] dark:text-white">
       <div className="max-w-5xl mx-auto">
         <button
           onClick={() => router.back()}

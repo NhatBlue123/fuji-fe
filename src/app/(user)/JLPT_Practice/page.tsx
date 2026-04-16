@@ -1,35 +1,63 @@
 "use client";
+
+import { useEffect, useMemo, useState } from "react";
 import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import ExamCard from "./ExamCard";
-import { useState, useMemo, useEffect } from "react";
-import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
-import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 import { Button } from "@/components/ui/button";
+import PaywallPopup from "@/components/common/PaywallPopup";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { getJlptTopupPath } from "@/lib/jlpt-topup";
+import { useGetMyAttemptsQuery, useGetPublishedTestsQuery } from "@/store/services/jlptApi";
+import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  full_test: "De full",
+  vocabulary_grammar: "Tu vung va Ngu phap",
+  reading: "Doc hieu",
+  listening: "Nghe hieu",
+};
+
+const DEFAULT_IMAGE =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuCDxFdbUtg2jEo2f1rVJJRTWZBFyHB44-mlAfp-GKLrUnc3cvcH-cYZkH9ydP1YZODRfyQc0x6eBpLw_08krUI8ntpUCInksY4rGhIQ81URRQSBldgEks8NzAQfdI8muIWwfH4RaeSIOQCcSC46f2ShFOMCOQekPfNuYnJdTzqcgOFbRdGgflkzcH3f6CnWfeMZ-BeBwcAsHM_QHKpoJWgS8OFizAnRfRkQ-wkuB1LIA4y2pGlwyGgNB5FumbYYiB57B4jKGJC2xEI";
 
 export default function JlptPracticePage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const pageSize = 9;
-  const { hasAccess, jlptRemaining, jlptUnlimited } = useFeatureAccess();
-
-  // Use debounce for search query
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const pageSize = 9;
+
+  const {
+    jlptTopupRequired,
+    jlptTopupTitle,
+    jlptTopupMessage,
+    jlptTopupType,
+    jlptRecommendedPlan,
+  } = useFeatureAccess();
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(0);
+  };
+
+  const handleLevelChange = (value: string) => {
+    setSelectedLevel(value);
+    setCurrentPage(0);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setCurrentPage(0);
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // Reset to page 0 when filters change
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [selectedLevel, selectedCategory, debouncedSearch]);
-
-  // Fetch published tests from backend
   const { data, isLoading, error } = useGetPublishedTestsQuery({
     level: selectedLevel === "all" ? undefined : (selectedLevel as JLPTLevel),
     testType: selectedCategory === "all" ? undefined : selectedCategory,
@@ -38,102 +66,110 @@ export default function JlptPracticePage() {
     search: debouncedSearch,
   });
 
-  // Fetch user attempts
   const { data: attempts } = useGetMyAttemptsQuery();
 
   const attemptsMap = useMemo(() => {
     if (!attempts) return {};
     const map: Record<number, TestAttemptResult> = {};
-    attempts.forEach((a) => {
-      // Since backend orders by date desc, the first one encountered is the latest
-      if (!map[a.testId]) {
-        map[a.testId] = a;
+
+    attempts.forEach((attempt) => {
+      if (!map[attempt.testId]) {
+        map[attempt.testId] = attempt;
       }
     });
+
     return map;
   }, [attempts]);
 
   const tests = data?.content || [];
   const totalPages = data?.totalPages || 1;
-
-  // Default placeholder image for tests without cover
-  const defaultImage =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCDxFdbUtg2jEo2f1rVJJRTWZBFyHB44-mlAfp-GKLrUnc3cvcH-cYZkH9ydP1YZODRfyQc0x6eBpLw_08krUI8ntpUCInksY4rGhIQ81URRQSBldgEks8NzAQfdI8muIWwfH4RaeSIOQCcSC46f2ShFOMCOQekPfNuYnJdTzqcgOFbRdGgflkzcH3f6CnWfeMZ-BeBwcAsHM_QHKpoJWgS8OFizAnRfRkQ-wkuB1LIA4y2pGlwyGgNB5FumbYYiB57B4jKGJC2xEI";
-
-  // Human-readable category label for ExamCard tag
-  const CATEGORY_LABELS: Record<string, string> = {
-    full_test: "Đề full",
-    vocabulary_grammar: "Từ vựng & Ngữ pháp",
-    reading: "Đọc hiểu",
-    listening: "Nghe hiểu",
-  };
+  const upgradePath = getJlptTopupPath(jlptTopupType, jlptRecommendedPlan);
+  const topupTitle = jlptTopupTitle || "Bạn đã dùng hết lượt thi JLPT";
+  const topupMessage =
+    jlptTopupMessage ||
+    "Hãy nâng cấp gói hoặc mua thêm để tiếp tục làm bài thi JLPT.";
+  const actionLabel = jlptRecommendedPlan
+    ? `Nâng cấp ${jlptRecommendedPlan}`
+    : "Xem gói phù hợp";
 
   return (
-    <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background min-h-screen">
-      {/* Hero */}
+    <div className="relative min-h-screen flex-1 overflow-y-auto scroll-smooth bg-background">
       <CourseHeader />
 
-      {/* Filter card — overlap lên hero, giống trang Khóa học */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 -mt-16 relative z-30 mb-8">
+      <div className="relative z-30 mx-auto -mt-16 mb-8 max-w-7xl px-6 md:px-12 lg:px-20">
         <CourseFilters
           search={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           activeLevel={selectedLevel}
-          onLevelChange={setSelectedLevel}
+          onLevelChange={handleLevelChange}
           activeCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
+          onCategoryChange={handleCategoryChange}
         />
       </div>
 
-      {/* Nội dung chính */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pb-16">
-        {/* Loading state */}
+      <div className="mx-auto max-w-7xl px-6 pb-16 md:px-12 lg:px-20">
+        {jlptTopupRequired && (
+          <div className="mb-8 overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-pink-500/10 p-6 shadow-lg shadow-amber-500/10">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-pink-500">
+                  JLPT topup required
+                </p>
+                <h2 className="text-2xl font-black tracking-tight text-foreground">
+                  {topupTitle}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  {topupMessage}
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => setUpgradeOpen(true)}
+                className="h-12 rounded-2xl bg-gradient-to-r from-pink-500 to-pink-500 px-6 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-pink-500/20 hover:from-pink-600 hover:to-orange-600"
+              >
+                {actionLabel}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {isLoading && (
-          <div className="text-center text-muted-foreground py-20">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-400"></div>
+          <div className="py-20 text-center text-muted-foreground">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-pink-400"></div>
             <p className="mt-4">Đang tải đề thi...</p>
           </div>
         )}
 
-        {/* Error state */}
         {!!error && (
-          <div className="text-center text-red-500 py-20">
-            <span className="material-symbols-outlined text-6xl mb-4">
-              error
-            </span>
-            <p className="text-lg font-semibold">
-              Không thể tải danh sách đề thi
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Vui lòng thử lại sau
-            </p>
+          <div className="py-20 text-center text-pink-500">
+            <span className="material-symbols-outlined mb-4 text-6xl">error</span>
+            <p className="text-lg font-semibold">Không thể tải danh sách</p>
+            <p className="mt-2 text-sm text-muted-foreground">Vui lòng thử lại sau</p>
           </div>
         )}
 
-        {/* Empty state */}
         {!isLoading && !error && tests.length === 0 && (
-          <div className="text-center text-muted-foreground py-20">
-            <span className="material-symbols-outlined text-6xl mb-4">
-              inbox
-            </span>
+          <div className="py-20 text-center text-muted-foreground">
+            <span className="material-symbols-outlined mb-4 text-6xl">inbox</span>
             <p className="text-lg font-semibold">Chưa có đề thi nào</p>
-            <p className="text-sm mt-2">Hệ thống đang cập nhật đề thi mới</p>
+            <p className="mt-2 text-sm">Hệ thống đang cập nhật đề thi mới</p>
           </div>
         )}
 
-        {/* Exam cards grid */}
         {!isLoading && !error && tests.length > 0 && (
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {tests.map((test) => {
               const attempt = attemptsMap[test.id];
               let status: "new" | "doing" | "done" | "locked" = attempt ? "done" : "new";
-              
-              // Changed from hardcoded PRO check to dynamic quota check
-              if (status === "new" && jlptRemaining === 0 && !jlptUnlimited) {
+
+              if (status === "new" && jlptTopupRequired) {
                 status = "locked";
               }
 
-              const categoryLabel = CATEGORY_LABELS[test.testType ?? "full_test"] ?? test.testType;
+              const categoryLabel =
+                CATEGORY_LABELS[test.testType ?? "full_test"] ?? test.testType;
+
               return (
                 <ExamCard
                   key={test.id}
@@ -141,47 +177,50 @@ export default function JlptPracticePage() {
                   status={status}
                   attemptId={attempt?.id}
                   title={test.title}
-                  image={defaultImage}
+                  image={DEFAULT_IMAGE}
                   tag={`${test.level} · ${categoryLabel}`}
-                  info={`${test.totalQuestions} câu hỏi • ${test.duration} phút`}
+                  info={`${test.totalQuestions} cau hoi • ${test.duration} phut`}
                   colorTheme="pink-400"
+                  lockedTitle={topupTitle}
+                  lockedButtonLabel={actionLabel}
+                  onLockedClick={() => setUpgradeOpen(true)}
                 />
               );
             })}
           </section>
         )}
 
-        {/* Pagination */}
         {!isLoading && !error && totalPages > 1 && (
-          <div className="flex justify-center mt-12 gap-2">
+          <div className="mt-12 flex justify-center gap-2">
             <Button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
               disabled={currentPage === 0}
-              className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="material-symbols-outlined">chevron_left</span>
             </Button>
 
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              const pg = i;
-              const isActive = currentPage === pg;
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const page = index;
+              const isActive = currentPage === page;
+
               return (
                 <Button
-                  key={pg}
-                  onClick={() => setCurrentPage(pg)}
-                  className={`size-10 rounded-lg flex items-center justify-center font-bold transition-all ${
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`flex size-10 items-center justify-center rounded-lg font-bold transition-all ${
                     isActive
                       ? "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30"
                       : "border border-border text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
-                  {pg + 1}
+                  {page + 1}
                 </Button>
               );
             })}
 
             {totalPages > 5 && (
-              <span className="size-10 flex items-center justify-center text-muted-foreground">
+              <span className="flex size-10 items-center justify-center text-muted-foreground">
                 ...
               </span>
             )}
@@ -191,13 +230,23 @@ export default function JlptPracticePage() {
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
               }
               disabled={currentPage >= totalPages - 1}
-              className="size-10 rounded-lg border border-border text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="material-symbols-outlined">chevron_right</span>
             </Button>
           </div>
         )}
       </div>
+
+      <PaywallPopup
+        isOpen={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        title={topupTitle}
+        description={topupMessage}
+        requiredTier={jlptRecommendedPlan === "PREMIUM" ? "PREMIUM" : "PRO"}
+        actionLabel={actionLabel}
+        upgradePath={upgradePath}
+      />
     </div>
   );
 }

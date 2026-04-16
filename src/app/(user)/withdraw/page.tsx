@@ -261,27 +261,27 @@ export default function WithdrawPage() {
 
           <aside className="lg:col-span-5">
             <div className="sticky top-8 space-y-6">
-              <div className="bg-slate-900 text-white dark:bg-white/5 dark:text-white p-8 rounded-[2.5rem] shadow-2xl space-y-8 relative overflow-hidden">
+              <div className="bg-white text-slate-900 dark:bg-white/5 dark:text-white p-8 rounded-[2.5rem] border border-slate-200/80 dark:border-white/10 shadow-2xl space-y-8 relative overflow-hidden">
                 <div className="relative z-10 flex flex-col gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
                     Số dư hiện tại
                   </span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-black tracking-tighter">
                       {balance.toLocaleString()}
                     </span>
-                    <span className="text-xs font-bold opacity-40 uppercase">
+                    <span className="text-xs font-bold text-slate-400 dark:text-white/40 uppercase">
                       🌸
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     ~ {(balance * 1000).toLocaleString("vi-VN")}đ
                   </p>
                 </div>
 
-                <div className="pt-8 border-t border-white/10 space-y-4">
+                <div className="pt-8 border-t border-slate-200 dark:border-white/10 space-y-4">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="opacity-60 font-bold uppercase">
+                    <span className="font-bold uppercase text-slate-500 dark:text-white/60">
                       Số 🌸 quy đổi
                     </span>
                     <span className="font-black">
@@ -289,12 +289,12 @@ export default function WithdrawPage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="opacity-60 font-bold uppercase">
+                    <span className="font-bold uppercase text-slate-500 dark:text-white/60">
                       Phí giao dịch
                     </span>
                     <span className="font-black text-pink-400">Miễn phí</span>
                   </div>
-                  <div className="pt-4 flex justify-between items-end border-t border-white/10">
+                  <div className="pt-4 flex justify-between items-end border-t border-slate-200 dark:border-white/10">
                     <span className="text-xs font-black uppercase text-pink-500">
                       Thực nhận
                     </span>

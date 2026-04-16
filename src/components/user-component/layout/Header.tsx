@@ -148,7 +148,6 @@ const Header = () => {
             className="flex h-10 items-center gap-2 rounded-full border border-secondary/20 bg-secondary/5 px-3 text-secondary transition-colors hover:bg-secondary/10"
             title="Số 🌸 hiện tại"
           >
-            <Sparkles className="size-4" />
             <span className="text-xs font-bold leading-none">
               {flowerBalance.toLocaleString("vi-VN")} 🌸
             </span>

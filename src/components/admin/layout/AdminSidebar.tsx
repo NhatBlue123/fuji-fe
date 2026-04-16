@@ -22,6 +22,9 @@ import {
   Layers,
   AlertTriangle,
   CalendarDays,
+  Bug,
+  Wallet,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -102,7 +105,7 @@ const navGroups: NavGroup[] = [
       {
         title: "Rút tiền",
         href: "/admin/withdraw",
-        icon: Users,
+        icon: Wallet,
         adminOnly: true,
       },
       {
@@ -156,9 +159,15 @@ const navGroups: NavGroup[] = [
         icon: AlertTriangle,
       },
       {
+        title: "Lỗi hệ thống",
+        href: "/admin/system-errors",
+        icon: Bug,
+        adminOnly: true,
+      },
+      {
         title: "Chat Moderation",
         href: "/admin/chat-moderation",
-        icon: Shield,
+        icon: MessageSquare,
       },
       {
         title: "Thông báo",

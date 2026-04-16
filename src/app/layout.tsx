@@ -20,16 +20,16 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "FUJI - Há»c Tiáº¿ng Nháº­t Online",
-  description: "Chinh phá»¥c tiáº¿ng Nháº­t cÃ¹ng FUJI",
+  title: "FUJI - Học Tiếng Nhật Online",
+  description: "Chinh phục tiếng Nhật cùng FUJI",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
     apple: "/favicon.ico",
   },
   openGraph: {
-    title: "FUJI - Há»c Tiáº¿ng Nháº­t Online",
-    description: "Chinh phá»¥c tiáº¿ng Nháº­t cÃ¹ng FUJI",
+    title: "FUJI - Học Tiếng Nhật Online",
+    description: "Chinh phục tiếng Nhật cùng FUJI",
     url: "https://fuji.vercel.app/",
     siteName: "FUJI",
     locale: "vi_VN",
@@ -37,8 +37,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FUJI - Há»c Tiáº¿ng Nháº­t Online",
-    description: "Chinh phá»¥c tiáº¿ng Nháº­t cÃ¹ng FUJI",
+    title: "FUJI - Học Tiếng Nhật Online",
+    description: "Chinh phục tiếng Nhật cùng FUJI",
   },
 };
 
@@ -57,6 +57,23 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
+      <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('theme');
+                  var theme = stored;
+                  if (!theme || theme === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  document.documentElement.classList.remove('light', 'dark');
+                  document.documentElement.classList.add(theme);
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         <ExtensionCleanup />

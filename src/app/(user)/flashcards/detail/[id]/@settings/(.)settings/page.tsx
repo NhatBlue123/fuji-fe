@@ -19,9 +19,7 @@ export default function FlashcardSettingsPage({
   return (
     <Dialog open={true} onOpenChange={() => router.back()}>
       <DialogContent className="max-w-6xl w-full h-[85vh] p-0 flex flex-col overflow-hidden bg-[#0B1120] border-white/10 [&>button]:hidden">
-        <DialogTitle className="sr-only">
-          {t("auto.___settings_page_1")}
-        </DialogTitle>
+        <DialogTitle className="sr-only">{t('auto.___settings_page_1')}</DialogTitle>
         <FlashcardSettings
           id={id}
           isModal={true}

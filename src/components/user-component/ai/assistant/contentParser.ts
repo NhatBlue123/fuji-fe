@@ -251,6 +251,141 @@ function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
   return out.slice(0, 6);
 }
 
+function inferActionLabelFromUrl(url: string) {
+  if (/^\/booking\/booked-schedule$/i.test(url)) {
+    return "Lịch đã đặt của tôi";
+  }
+  if (/^\/booking$/i.test(url)) {
+    return "Đặt lịch với giáo viên";
+  }
+  if (/^\/premium\?tab=topup$/i.test(url)) {
+    return "Nạp tiền";
+  }
+  if (/^\/premium\?tab=premium$/i.test(url)) {
+    return "Xem bảng gói thành viên";
+  }
+  if (/^\/profile\/subscription$/i.test(url)) {
+    return "Quản lý gói của tôi";
+  }
+  if (/^\/course\/\d+$/i.test(url)) {
+    return "Xem chi tiết khóa học";
+  }
+  if (/^\/course$/i.test(url)) {
+    return "Xem tất cả khóa học";
+  }
+  return "Mở trang";
+}
+
+function inferActionNoteFromUrl(url: string) {
+  if (/^\/booking\/booked-schedule$/i.test(url)) {
+    return "Mở danh sách buổi học đã đặt";
+  }
+  if (/^\/booking$/i.test(url)) {
+    return "Chọn giáo viên và khung giờ phù hợp";
+  }
+  if (/^\/premium\?tab=topup$/i.test(url)) {
+    return "Nạp tiền trước khi thanh toán";
+  }
+  if (/^\/premium\?tab=premium$/i.test(url)) {
+    return "Xem quyền lợi và bảng giá gói thành viên";
+  }
+  if (/^\/profile\/subscription$/i.test(url)) {
+    return "Kiểm tra gói hiện tại và lịch sử đăng ký";
+  }
+  if (/^\/course\/\d+$/i.test(url)) {
+    return "Mở lại khóa học vừa được nhắc tới";
+  }
+  if (/^\/course$/i.test(url)) {
+    return "Duyệt danh sách khóa học hiện có";
+  }
+  return "Mở nhanh đúng mục trên FUJI";
+}
+
+function extractActionLinksFromMarkdown(markdown: string): {
+  markdown: string;
+  links: ActionLinkItem[];
+} {
+  let source = String(markdown || "");
+  if (!source.trim()) {
+    return { markdown: "", links: [] };
+  }
+
+  const links: ActionLinkItem[] = [];
+  const seen = new Set<string>();
+
+  source = source.replace(
+    /`(\/[a-z0-9/_\-]+(?:\?[a-z0-9=&%._-]+)?)`/gi,
+    (_match, rawUrl: string) => {
+      const url = String(rawUrl || "").trim();
+      if (!INTERNAL_URL_RE.test(url)) {
+        return `\`${url}\``;
+      }
+
+      if (!seen.has(url)) {
+        seen.add(url);
+        links.push({
+          label: inferActionLabelFromUrl(url),
+          url,
+          note: inferActionNoteFromUrl(url),
+        });
+      }
+
+      return inferActionLabelFromUrl(url);
+    },
+  );
+
+  source = source.replace(
+    /\[([^\]]+)\]\((\/[a-z0-9/_\-]+(?:\?[a-z0-9=&%._-]+)?)\)/gi,
+    (_match, rawLabel: string, rawUrl: string) => {
+      const label = String(rawLabel || "").trim();
+      const url = String(rawUrl || "").trim();
+
+      if (INTERNAL_URL_RE.test(url) && !seen.has(url)) {
+        seen.add(url);
+        links.push({
+          label: label || inferActionLabelFromUrl(url),
+          url,
+          note: inferActionNoteFromUrl(url),
+        });
+      }
+
+      return label;
+    },
+  );
+
+  source = source.replace(
+    /(^|[\s:(])((\/[a-z0-9/_\-]+(?:\?[a-z0-9=&%._-]+)?))/gim,
+    (_match, prefix: string, _all: string, rawUrl: string) => {
+      const url = String(rawUrl || "").trim();
+      if (!INTERNAL_URL_RE.test(url)) {
+        return `${prefix}${url}`;
+      }
+
+      if (!seen.has(url)) {
+        seen.add(url);
+        links.push({
+          label: inferActionLabelFromUrl(url),
+          url,
+          note: inferActionNoteFromUrl(url),
+        });
+      }
+
+      return `${prefix}${inferActionLabelFromUrl(url)}`;
+    },
+  );
+
+  source = source
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return {
+    markdown: source,
+    links: sanitizeActionLinksPayload(links),
+  };
+}
+
 function sanitizeQuickFactsPayload(value: unknown): QuickFactItem[] {
   const wrapped = value as { facts?: unknown };
   const rawList = Array.isArray(value)
@@ -785,7 +920,25 @@ export function parseAssistantContent(
     }
   }
 
-  if (normalized.length === 0) {
+  const transformed: AssistantContentSegment[] = [];
+  for (const segment of normalized) {
+    if (segment.kind !== "markdown") {
+      transformed.push(segment);
+      continue;
+    }
+
+    const extracted = extractActionLinksFromMarkdown(segment.content);
+    if (extracted.markdown) {
+      transformed.push({ kind: "markdown", content: extracted.markdown });
+    }
+    if (extracted.links.length > 0) {
+      transformed.push({ kind: "action-links", links: extracted.links });
+    }
+  }
+
+  const finalSegments = transformed.length > 0 ? transformed : normalized;
+
+  if (finalSegments.length === 0) {
     if (pendingBlockType) {
       return [{ kind: "structured-loading", blockType: pendingBlockType }];
     }
@@ -793,11 +946,11 @@ export function parseAssistantContent(
   }
 
   if (pendingBlockType) {
-    normalized.push({
+    finalSegments.push({
       kind: "structured-loading",
       blockType: pendingBlockType,
     });
   }
 
-  return normalized;
+  return finalSegments;
 }

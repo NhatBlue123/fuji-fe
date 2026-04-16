@@ -643,8 +643,8 @@ export function ActionLinksCard({ links }: { links: ActionLinkItem[] }) {
                       )}
 
                       <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="truncate text-[11px] font-medium text-primary/85">
-                          {item.url}
+                        <span className="truncate text-[11px] font-medium text-muted-foreground/85">
+                          Mở nhanh trong FUJI
                         </span>
                         <span
                           className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone.chip}`}

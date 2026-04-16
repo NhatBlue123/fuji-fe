@@ -26,10 +26,7 @@ interface TransferModalProps {
   onSuccess: () => void;
   onPayoutCreated?: () => void;
   isConfirming: boolean;
-  request: Pick<
-    WithdrawRequestData,
-    "id" | "amount" | "bankName" | "accountNumber" | "accountHolder"
-  > | null;
+  request: Pick<WithdrawRequestData, "id" | "amount" | "bankName" | "accountNumber" | "accountHolder"> | null;
 }
 
 export function TransferModal({
@@ -47,12 +44,9 @@ export function TransferModal({
 
   const [createPayout, { isLoading: isCreatingPayout }] =
     useCreatePayoutMutation();
-  const { refetch: refetchPayoutStatus } = useGetPayoutStatusQuery(
-    payoutOrderId || "",
-    {
-      skip: !payoutOrderId || socketHandled,
-    },
-  );
+  const { refetch: refetchPayoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
+    skip: !payoutOrderId || socketHandled,
+  });
 
   // ── Socket.IO realtime: payment-status-change ─────────────────────
   const { onPaymentStatusChange } = usePaymentSocket();
@@ -64,9 +58,7 @@ export function TransferModal({
         if (data.newStatus === "SUCCESS") {
           setSocketHandled(true);
           setPayoutOrderId(null);
-          toast.success(
-            data.message || t("admin.withdraw.modal.payoutSuccess"),
-          );
+          toast.success(data.message || t("admin.withdraw.modal.payoutSuccess"));
           onSuccess();
         } else if (data.newStatus === "FAILED") {
           setSocketHandled(true);
@@ -94,10 +86,7 @@ export function TransferModal({
         } else if (status === "FAILED") {
           setSocketHandled(true);
           setPayoutOrderId(null);
-          toast.error(
-            result.data?.data?.message ||
-              t("admin.withdraw.modal.payoutFailed"),
-          );
+          toast.error(result.data?.data?.message || t("admin.withdraw.modal.payoutFailed"));
         } else {
           // Giao dịch có thể thật sự bị delay từ Ngân hàng / XGate
           toast.info(t("admin.withdraw.modal.payoutPending"));
@@ -122,8 +111,7 @@ export function TransferModal({
         onSuccess();
       }
     } catch (error) {
-      const message = (error as { data?: { message?: string } } | undefined)
-        ?.data?.message;
+      const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
       toast.error(
         message || t("common.errorProcessing") || "Error processing payout API",
       );
@@ -203,21 +191,13 @@ export function TransferModal({
             <InfoRow
               label={t("admin.withdraw.label.bankName")}
               value={request.bankName}
-              onCopy={() =>
-                copyToClipboard(
-                  request.bankName,
-                  t("admin.withdraw.label.bankName"),
-                )
-              }
+              onCopy={() => copyToClipboard(request.bankName, t("admin.withdraw.label.bankName"))}
             />
             <InfoRow
               label={t("admin.withdraw.label.accountNumber")}
               value={request.accountNumber}
               onCopy={() =>
-                copyToClipboard(
-                  request.accountNumber,
-                  t("admin.withdraw.label.accountNumber"),
-                )
+                copyToClipboard(request.accountNumber, t("admin.withdraw.label.accountNumber"))
               }
               isBold
             />
@@ -225,20 +205,14 @@ export function TransferModal({
               label={t("admin.withdraw.label.accountHolder")}
               value={request.accountHolder}
               onCopy={() =>
-                copyToClipboard(
-                  request.accountHolder,
-                  t("admin.withdraw.label.accountHolder"),
-                )
+                copyToClipboard(request.accountHolder, t("admin.withdraw.label.accountHolder"))
               }
             />
             <InfoRow
               label={t("admin.withdraw.label.amountBlossom")}
               value={`${transferAmountBlossom.toLocaleString(i18n.language)} 🌸`}
               onCopy={() =>
-                copyToClipboard(
-                  transferAmountBlossom.toString(),
-                  t("admin.withdraw.label.amountBlossom"),
-                )
+                copyToClipboard(transferAmountBlossom.toString(), t("admin.withdraw.label.amountBlossom"))
               }
               isBold
               textClass="text-emerald-600"
@@ -247,19 +221,14 @@ export function TransferModal({
               label={t("admin.withdraw.label.amountVnd")}
               value={`${transferAmountVnd.toLocaleString(i18n.language)}đ`}
               onCopy={() =>
-                copyToClipboard(
-                  transferAmountVnd.toString(),
-                  t("admin.withdraw.label.amountVnd"),
-                )
+                copyToClipboard(transferAmountVnd.toString(), t("admin.withdraw.label.amountVnd"))
               }
               isBold
             />
             <InfoRow
               label={t("admin.withdraw.label.info")}
               value={orderId}
-              onCopy={() =>
-                copyToClipboard(orderId, t("admin.withdraw.label.info"))
-              }
+              onCopy={() => copyToClipboard(orderId, t("admin.withdraw.label.info"))}
             />
           </div>
         </div>

@@ -40,7 +40,7 @@ export const baseApi = createApi({
     "AdminPlan",
     "AdminRevenue",
     "SystemError",
-    "SystemErrorSummary",
+    "SystemErrorSummary"
   ],
   endpoints: () => ({}),
 });

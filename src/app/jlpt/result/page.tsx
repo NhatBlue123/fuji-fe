@@ -162,9 +162,7 @@ function JLPTResultPageInner() {
               className="bg-pink-600 hover:bg-pink-700"
               onClick={handleSubmitFeedback}
             >
-              {createExamFeedbackState.isLoading
-                ? "Đang gửi..."
-                : "Gửi phản hồi"}
+              {createExamFeedbackState.isLoading ? "Đang gửi..." : "Gửi phản hồi"}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -253,9 +251,7 @@ function JLPTResultPageInner() {
               </div>
               <Badge
                 variant={
-                  attempt.languageKnowledgeScore >= 19
-                    ? "default"
-                    : "destructive"
+                  attempt.languageKnowledgeScore >= 19 ? "default" : "destructive"
                 }
                 className="text-lg px-4 py-1"
               >

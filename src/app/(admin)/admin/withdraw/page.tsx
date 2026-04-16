@@ -21,12 +21,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 import {
-  PaymentSocketProvider,
-  usePaymentSocket,
-} from "@/providers/PaymentSocketProvider";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { toast } from "sonner";
+import { PaymentSocketProvider, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -43,8 +45,7 @@ function AdminWithdrawManagementInner() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const [selectedRequest, setSelectedRequest] =
-    useState<WithdrawRequestData | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<WithdrawRequestData | null>(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const { onPaymentStatusChange } = usePaymentSocket();
@@ -69,8 +70,7 @@ function AdminWithdrawManagementInner() {
 
       void refetch();
 
-      if (!selectedRequest || data.withdrawRequestId !== selectedRequest.id)
-        return;
+      if (!selectedRequest || data.withdrawRequestId !== selectedRequest.id) return;
 
       if (data.newStatus === "SUCCESS") {
         setIsTransferModalOpen(false);
@@ -98,11 +98,9 @@ function AdminWithdrawManagementInner() {
       setSelectedRequest(null);
       refetch();
     } catch (error) {
-      const message = (error as { data?: { message?: string } } | undefined)
-        ?.data?.message;
+      const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
       toast.error(
-        message ||
-          t("admin.withdraw.toast.approveError", { id: selectedRequest.id }),
+        message || t("admin.withdraw.toast.approveError", { id: selectedRequest.id }),
       );
     } finally {
       setIsApproving(false);
@@ -117,8 +115,7 @@ function AdminWithdrawManagementInner() {
         toast.error(t("admin.withdraw.toast.rejectSuccess", { id, reason }));
         refetch();
       } catch (error) {
-        const message = (error as { data?: { message?: string } } | undefined)
-          ?.data?.message;
+        const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
         toast.error(message || t("admin.withdraw.toast.rejectError", { id }));
       }
     }
@@ -160,10 +157,10 @@ function AdminWithdrawManagementInner() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("admin.withdraw.title")}
-          </h1>
-          <p className="text-muted-foreground">{t("admin.withdraw.desc")}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("admin.withdraw.title")}</h1>
+          <p className="text-muted-foreground">
+            {t("admin.withdraw.desc")}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -288,8 +285,7 @@ function AdminWithdrawManagementInner() {
           <div className="mb-6 flex items-start gap-3 p-4 bg-muted/50 rounded-lg text-sm border">
             <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
             <p className="text-muted-foreground">
-              <strong>{t("admin.withdraw.alert.note")}</strong>{" "}
-              {t("admin.withdraw.alert.desc")}
+              <strong>{t("admin.withdraw.alert.note")}</strong> {t("admin.withdraw.alert.desc")}
             </p>
           </div>
 
@@ -348,9 +344,7 @@ function AdminWithdrawManagementInner() {
                             #{req.id}
                           </div>
                           <div className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(req.createdAt).toLocaleString(
-                              i18n.language === "vi" ? "vi-VN" : i18n.language,
-                            )}
+                            {new Date(req.createdAt).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language)}
                           </div>
                         </td>
                         <td className="p-4 align-middle">
@@ -403,9 +397,7 @@ function AdminWithdrawManagementInner() {
                               {t("admin.withdraw.status.completed")}
                             </Badge>
                           ) : (
-                            <Badge variant="destructive">
-                              {t("admin.withdraw.status.rejected")}
-                            </Badge>
+                            <Badge variant="destructive">{t("admin.withdraw.status.rejected")}</Badge>
                           )}
                         </td>
                         <td className="p-4 align-middle text-right">
@@ -419,8 +411,7 @@ function AdminWithdrawManagementInner() {
                                   title={t("admin.withdraw.btn.transfer")}
                                   onClick={() => handleOpenTransferModal(req)}
                                 >
-                                  <Banknote className="h-4 w-4 mr-1" />{" "}
-                                  {t("admin.withdraw.btn.transfer")}
+                                  <Banknote className="h-4 w-4 mr-1" /> {t("admin.withdraw.btn.transfer")}
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -438,8 +429,7 @@ function AdminWithdrawManagementInner() {
                                 variant="outline"
                                 className="text-blue-600 border-blue-300 animate-pulse"
                               >
-                                <Clock className="h-3 w-3 mr-1" />{" "}
-                                {t("admin.withdraw.status.transferring")}
+                                <Clock className="h-3 w-3 mr-1" /> {t("admin.withdraw.status.transferring")}
                               </Badge>
                             )}
                             <Button
@@ -463,21 +453,21 @@ function AdminWithdrawManagementInner() {
 
       {isTransferModalOpen && (
         <TransferModal
-          isOpen={isTransferModalOpen}
-          onClose={() => setIsTransferModalOpen(false)}
-          onConfirm={handleApprove}
-          onPayoutCreated={() => {
-            refetch();
-          }}
-          onSuccess={() => {
-            setIsTransferModalOpen(false);
-            setSelectedRequest(null);
-            refetch();
-          }}
-          isConfirming={isApproving}
-          request={activeRequest}
-        />
-      )}
+            isOpen={isTransferModalOpen}
+            onClose={() => setIsTransferModalOpen(false)}
+            onConfirm={handleApprove}
+            onPayoutCreated={() => {
+              refetch();
+            }}
+            onSuccess={() => {
+              setIsTransferModalOpen(false);
+              setSelectedRequest(null);
+              refetch();
+            }}
+            isConfirming={isApproving}
+            request={activeRequest}
+          />
+              )}
     </div>
   );
 }

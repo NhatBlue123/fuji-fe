@@ -16,13 +16,7 @@ import {
   type JlptQuestionAdmin,
 } from "@/store/services/adminJlptApi";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,8 +63,7 @@ function resolveSectionKeyForMondai(
 
   const title = mondai.title || "";
   if (keys.includes("GRAMMAR") && keys.includes("READING")) {
-    if (mondai.requires_passage || /読解|情報検索|統合/.test(title))
-      return "READING";
+    if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
     return "GRAMMAR";
   }
   if (
@@ -78,17 +71,14 @@ function resolveSectionKeyForMondai(
     keys.includes("GRAMMAR") &&
     keys.includes("READING")
   ) {
-    if (mondai.requires_passage || /読解|情報検索|統合/.test(title))
-      return "READING";
+    if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
     if (/文法/.test(title)) return "GRAMMAR";
     return "VOCABULARY";
   }
 
   if (testTypeInput === "reading" && keys.includes("READING")) return "READING";
-  if (testTypeInput === "listening" && keys.includes("LISTENING"))
-    return "LISTENING";
-  if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR"))
-    return "GRAMMAR";
+  if (testTypeInput === "listening" && keys.includes("LISTENING")) return "LISTENING";
+  if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
   return keys[0] as SectionKey;
 }
 
@@ -96,8 +86,7 @@ function CreateJLPTTestPageContent() {
   const router = useRouter();
   const [createTest, { isLoading }] = useCreateTestMutation();
   const [addQuestion] = useAddQuestionMutation();
-  const [attachQuestionBankItemToTest] =
-    useAttachQuestionBankItemToTestMutation();
+  const [attachQuestionBankItemToTest] = useAttachQuestionBankItemToTestMutation();
   const [updateQuestion, updateQuestionState] = useUpdateQuestionMutation();
   const [deleteQuestion, deleteQuestionState] = useDeleteQuestionMutation();
 
@@ -121,24 +110,19 @@ function CreateJLPTTestPageContent() {
   const searchParams = useSearchParams();
   const previewTestIdParam = searchParams.get("previewTestId");
   const previewTestId = previewTestIdParam ? Number(previewTestIdParam) : null;
-  const isPreviewOnly =
-    previewTestIdParam != null &&
-    previewTestId != null &&
-    !Number.isNaN(previewTestId);
+  const isPreviewOnly = previewTestIdParam != null && previewTestId != null && !Number.isNaN(previewTestId);
 
   const [createdTestId, setCreatedTestId] = useState<number | null>(null);
-  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(
-    null,
-  );
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
   const [creationMode, setCreationMode] = useState<"bank" | "ai" | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const shouldRequireReviewConfirm = creationMode !== null || isPreviewOnly;
 
   const [draftContentText, setDraftContentText] = useState("");
   const [draftOptions, setDraftOptions] = useState("");
-  const [draftCorrectOption, setDraftCorrectOption] = useState<
-    number | undefined
-  >(undefined);
+  const [draftCorrectOption, setDraftCorrectOption] = useState<number | undefined>(
+    undefined,
+  );
   const [draftExplanation, setDraftExplanation] = useState("");
 
   const {
@@ -164,8 +148,7 @@ function CreateJLPTTestPageContent() {
   function buildQuestionsMap(questions: JlptQuestionAdmin[]): QuestionsMap {
     const map: QuestionsMap = {};
     for (const q of questions) {
-      if (!map[q.mondaiNumber])
-        map[q.mondaiNumber] = { parent: null, children: {} };
+      if (!map[q.mondaiNumber]) map[q.mondaiNumber] = { parent: null, children: {} };
 
       if (q.parentId == null) {
         if (q.children && q.children.length > 0) {
@@ -275,11 +258,7 @@ function CreateJLPTTestPageContent() {
     for (const section of structure) {
       for (const mondai of section.mondai) {
         if (!shouldIncludeMondai(mondai)) continue;
-        const sectionKey = resolveSectionKeyForMondai(
-          section as SectionConfig,
-          mondai,
-          testType,
-        );
+        const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
 
         const nums = getQuestionNumbers(mondai);
         const count = nums.length;
@@ -318,8 +297,7 @@ function CreateJLPTTestPageContent() {
 
         if (mondai.requires_passage) {
           const parentItem =
-            sorted.find((i) => (i.passageText ?? "").trim().length > 0) ??
-            sorted[0];
+            sorted.find((i) => (i.passageText ?? "").trim().length > 0) ?? sorted[0];
           if (!parentItem) continue;
 
           const parentCreated = await attachQuestionBankItemToTest({
@@ -332,9 +310,7 @@ function CreateJLPTTestPageContent() {
             parentQuestionId: null,
           }).unwrap();
 
-          const childrenCandidates = sorted.filter(
-            (i) => i.id !== parentItem.id,
-          );
+          const childrenCandidates = sorted.filter((i) => i.id !== parentItem.id);
           if (childrenCandidates.length < count) {
             console.warn(
               `Mondai ${mondai.number}: thiếu câu hỏi từ ngân hàng (cần ${count}, có ${childrenCandidates.length}).`,
@@ -385,9 +361,7 @@ function CreateJLPTTestPageContent() {
         setReviewConfirmed(false);
         try {
           await generateQuestionsFromBank(result.id);
-          toast.success(
-            "Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.",
-          );
+          toast.success("Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
           return;
         } finally {
           setCreatingQuestions(false);
@@ -418,11 +392,7 @@ function CreateJLPTTestPageContent() {
             // Skip listening mondai — user will create those manually
             if (mondai.requires_audio) continue;
 
-            const sectionKey = resolveSectionKeyForMondai(
-              section as SectionConfig,
-              mondai,
-              testType,
-            );
+            const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
             const nums = getQuestionNumbers(mondai);
             const count = nums.length;
 
@@ -462,19 +432,14 @@ function CreateJLPTTestPageContent() {
                 section: sectionKey as any,
                 contentText: first.passageText,
               };
-              const createdParent = await addQuestion({
-                testId: result.id,
-                data: parentPayload,
-              }).unwrap();
+              const createdParent = await addQuestion({ testId: result.id, data: parentPayload }).unwrap();
               parentId = createdParent.id;
             }
 
             // Create children / standalone
             for (let i = 0; i < questions.length && i < nums.length; i++) {
               const q = questions[i];
-              const normalizedOptions = Array.isArray(q.options)
-                ? q.options
-                : [];
+              const normalizedOptions = Array.isArray(q.options) ? q.options : [];
               const normalizedCorrectOption =
                 typeof q.correctOption === "number" && q.correctOption >= 1
                   ? q.correctOption
@@ -496,12 +461,8 @@ function CreateJLPTTestPageContent() {
           }
         }
 
-        toast.success(
-          "Tạo đề thi + sinh sẵn câu hỏi bằng AI thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.",
-        );
-        toast.warning(
-          "⚠️ Phần Nghe (Listening) chưa được tạo — vui lòng tạo thủ công trong trang câu hỏi.",
-        );
+        toast.success("Tạo đề thi + sinh sẵn câu hỏi bằng AI thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
+        toast.warning("⚠️ Phần Nghe (Listening) chưa được tạo — vui lòng tạo thủ công trong trang câu hỏi.");
       } finally {
         setCreatingQuestions(false);
       }
@@ -513,7 +474,7 @@ function CreateJLPTTestPageContent() {
   };
 
   const updateField = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleNumberChange = (field: string, value: string) => {
@@ -532,248 +493,213 @@ function CreateJLPTTestPageContent() {
       >
         {!isPreviewOnly && (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Tạo đề thi JLPT mới
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Điền thông tin cơ bản của đề thi
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Tạo đề thi JLPT mới</h1>
+            <p className="text-muted-foreground mt-2">
+              Điền thông tin cơ bản của đề thi
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Thông tin đề thi</CardTitle>
+                <CardDescription>
+                  Các thông tin cơ bản về cấu trúc và cấu hình điểm của đề thi
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Tiêu đề *</Label>
+                  <Input
+                    id="title"
+                    placeholder="VD: JLPT N3 Tháng 7/2024"
+                    value={formData.title}
+                    onChange={(e) => updateField("title", e.target.value)}
+                    required
+                  />
+                </div>
+
+            {/* Level & Test Type */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="level">Cấp độ *</Label>
+                <Select
+                  value={formData.level}
+                  onValueChange={(value) => updateField("level", value)}
+                >
+                  <SelectTrigger id="level">
+                    <SelectValue placeholder="Chọn cấp độ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="N5">N5</SelectItem>
+                    <SelectItem value="N4">N4</SelectItem>
+                    <SelectItem value="N3">N3</SelectItem>
+                    <SelectItem value="N2">N2</SelectItem>
+                    <SelectItem value="N1">N1</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="testType">Loại đề thi *</Label>
+                <Select
+                  value={formData.testType}
+                  onValueChange={(value) => updateField("testType", value)}
+                >
+                  <SelectTrigger id="testType">
+                    <SelectValue placeholder="Chọn loại đề thi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full_test">Full Test</SelectItem>
+                    <SelectItem value="vocabulary_grammar">Vocabulary & Grammar</SelectItem>
+                    <SelectItem value="reading">Reading</SelectItem>
+                    <SelectItem value="listening">Listening</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Mô tả</Label>
+              <Textarea
+                id="description"
+                placeholder="Mô tả ngắn về đề thi này..."
+                rows={3}
+                value={formData.description}
+                onChange={(e) => updateField("description", e.target.value)}
+              />
+            </div>
+
+            {/* Duration & Total Questions */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration">Thời gian (phút) *</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  value={formData.duration || ""}
+                  onChange={(e) => handleNumberChange("duration", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="totalQuestions">Tổng số câu hỏi *</Label>
+                <Input
+                  id="totalQuestions"
+                  type="number"
+                  min="1"
+                  value={formData.totalQuestions || ""}
+                  onChange={(e) => handleNumberChange("totalQuestions", e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Có thể để 0 và cập nhật sau khi thêm câu hỏi
+                </p>
+              </div>
+            </div>
+
+            {/* Pass Scores */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="passScore">Điểm đỗ tổng *</Label>
+                <Input
+                  id="passScore"
+                  type="number"
+                  min="1"
+                  max="180"
+                  value={formData.passScore || ""}
+                  onChange={(e) => handleNumberChange("passScore", e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Điểm tối thiểu để đỗ (thường là 90-100)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="langPass">Điểm liệt ngôn ngữ</Label>
+                  <Input
+                    id="langPass"
+                    type="number"
+                    min="0"
+                    value={formData.languageKnowledgePassScore || ""}
+                    onChange={(e) => handleNumberChange("languageKnowledgePassScore", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="readPass">Điểm liệt đọc</Label>
+                  <Input
+                    id="readPass"
+                    type="number"
+                    min="0"
+                    value={formData.readingPassScore || ""}
+                    onChange={(e) => handleNumberChange("readingPassScore", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="listenPass">Điểm liệt nghe</Label>
+                  <Input
+                    id="listenPass"
+                    type="number"
+                    min="0"
+                    value={formData.listeningPassScore || ""}
+                    onChange={(e) => handleNumberChange("listeningPassScore", e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ trượt dù tổng điểm cao.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Thông tin đề thi</CardTitle>
-                  <CardDescription>
-                    Các thông tin cơ bản về cấu trúc và cấu hình điểm của đề thi
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Title */}
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Tiêu đề *</Label>
-                    <Input
-                      id="title"
-                      placeholder="VD: JLPT N3 Tháng 7/2024"
-                      value={formData.title}
-                      onChange={(e) => updateField("title", e.target.value)}
-                      required
+                {/* Actions */}
+                <div className="flex gap-3 pt-4">
+                  <Button type="submit" disabled={isLoading || creatingQuestions}>
+                    {isLoading || creatingQuestions ? "Đang tạo..." : "Tạo đề thi"}
+                  </Button>
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={autoGenerateWithAI}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setAutoGenerateWithAI(next);
+                        if (next) setAutoGenerateWithBank(false);
+                      }}
                     />
-                  </div>
-
-                  {/* Level & Test Type */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="level">Cấp độ *</Label>
-                      <Select
-                        value={formData.level}
-                        onValueChange={(value) => updateField("level", value)}
-                      >
-                        <SelectTrigger id="level">
-                          <SelectValue placeholder="Chọn cấp độ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="N5">N5</SelectItem>
-                          <SelectItem value="N4">N4</SelectItem>
-                          <SelectItem value="N3">N3</SelectItem>
-                          <SelectItem value="N2">N2</SelectItem>
-                          <SelectItem value="N1">N1</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="testType">Loại đề thi *</Label>
-                      <Select
-                        value={formData.testType}
-                        onValueChange={(value) =>
-                          updateField("testType", value)
-                        }
-                      >
-                        <SelectTrigger id="testType">
-                          <SelectValue placeholder="Chọn loại đề thi" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="full_test">Full Test</SelectItem>
-                          <SelectItem value="vocabulary_grammar">
-                            Vocabulary & Grammar
-                          </SelectItem>
-                          <SelectItem value="reading">Reading</SelectItem>
-                          <SelectItem value="listening">Listening</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Mô tả</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Mô tả ngắn về đề thi này..."
-                      rows={3}
-                      value={formData.description}
-                      onChange={(e) =>
-                        updateField("description", e.target.value)
-                      }
+                    Sinh sẵn câu hỏi bằng AI (1 bước)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={autoGenerateWithBank}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setAutoGenerateWithBank(next);
+                        if (next) setAutoGenerateWithAI(false);
+                      }}
                     />
-                  </div>
-
-                  {/* Duration & Total Questions */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Thời gian (phút) *</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        min="1"
-                        value={formData.duration || ""}
-                        onChange={(e) =>
-                          handleNumberChange("duration", e.target.value)
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="totalQuestions">Tổng số câu hỏi *</Label>
-                      <Input
-                        id="totalQuestions"
-                        type="number"
-                        min="1"
-                        value={formData.totalQuestions || ""}
-                        onChange={(e) =>
-                          handleNumberChange("totalQuestions", e.target.value)
-                        }
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Có thể để 0 và cập nhật sau khi thêm câu hỏi
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Pass Scores */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="passScore">Điểm đỗ tổng *</Label>
-                      <Input
-                        id="passScore"
-                        type="number"
-                        min="1"
-                        max="180"
-                        value={formData.passScore || ""}
-                        onChange={(e) =>
-                          handleNumberChange("passScore", e.target.value)
-                        }
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Điểm tối thiểu để đỗ (thường là 90-100)
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="langPass">Điểm liệt ngôn ngữ</Label>
-                        <Input
-                          id="langPass"
-                          type="number"
-                          min="0"
-                          value={formData.languageKnowledgePassScore || ""}
-                          onChange={(e) =>
-                            handleNumberChange(
-                              "languageKnowledgePassScore",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="readPass">Điểm liệt đọc</Label>
-                        <Input
-                          id="readPass"
-                          type="number"
-                          min="0"
-                          value={formData.readingPassScore || ""}
-                          onChange={(e) =>
-                            handleNumberChange(
-                              "readingPassScore",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="listenPass">Điểm liệt nghe</Label>
-                        <Input
-                          id="listenPass"
-                          type="number"
-                          min="0"
-                          value={formData.listeningPassScore || ""}
-                          onChange={(e) =>
-                            handleNumberChange(
-                              "listeningPassScore",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Điểm tối thiểu mỗi phần (thường là 19). Nếu thấp hơn sẽ
-                      trượt dù tổng điểm cao.
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="submit"
-                      disabled={isLoading || creatingQuestions}
-                    >
-                      {isLoading || creatingQuestions
-                        ? "Đang tạo..."
-                        : "Tạo đề thi"}
-                    </Button>
-                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={autoGenerateWithAI}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setAutoGenerateWithAI(next);
-                          if (next) setAutoGenerateWithBank(false);
-                        }}
-                      />
-                      Sinh sẵn câu hỏi bằng AI (1 bước)
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={autoGenerateWithBank}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setAutoGenerateWithBank(next);
-                          if (next) setAutoGenerateWithAI(false);
-                        }}
-                      />
-                      Tạo sẵn câu hỏi từ ngân hàng (1 bước)
-                    </label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => router.back()}
-                    >
-                      Hủy
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </form>
+                    Tạo sẵn câu hỏi từ ngân hàng (1 bước)
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                  >
+                    Hủy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </form>
           </div>
         )}
 
@@ -781,9 +707,7 @@ function CreateJLPTTestPageContent() {
           <div className="space-y-3 lg:sticky lg:top-4">
             <Card className="overflow-hidden">
               <CardHeader>
-                <CardTitle className="text-base">
-                  Review câu hỏi đã tạo
-                </CardTitle>
+                <CardTitle className="text-base">Review câu hỏi đã tạo</CardTitle>
                 <CardDescription>
                   {isCreatedTestLoading
                     ? "Đang tải..."
@@ -799,8 +723,7 @@ function CreateJLPTTestPageContent() {
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Đang tải cây Mondai...
                         </div>
-                      ) : flatQuestions.length === 0 ||
-                        mondaiConfigs.length === 0 ? (
+                      ) : flatQuestions.length === 0 || mondaiConfigs.length === 0 ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
                           Chưa có câu hỏi nào.
                         </div>
@@ -811,26 +734,19 @@ function CreateJLPTTestPageContent() {
 
                           const open = selectedMondaiNumber === mondai.number;
                           const expected = getQuestionNumbers(mondai).length;
-                          const filled = Object.keys(
-                            node.children ?? {},
-                          ).length;
+                          const filled = Object.keys(node.children ?? {}).length;
 
                           return (
                             <details
                               key={mondai.number}
                               open={open}
                               className={`rounded-md border p-2 ${
-                                open
-                                  ? "border-primary/40 bg-muted/30"
-                                  : "border-border"
+                                open ? "border-primary/40 bg-muted/30" : "border-border"
                               }`}
                             >
                               <summary className="list-none cursor-pointer select-none">
                                 <div className="flex items-center gap-2">
-                                  <Badge
-                                    variant="default"
-                                    className="text-[10px]"
-                                  >
+                                  <Badge variant="default" className="text-[10px]">
                                     問{mondai.number}
                                   </Badge>
                                   <div className="min-w-0">
@@ -843,18 +759,12 @@ function CreateJLPTTestPageContent() {
                                   </div>
                                   <div className="ml-auto flex items-center gap-1">
                                     {mondai.requires_passage && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[10px]"
-                                      >
+                                      <Badge variant="outline" className="text-[10px]">
                                         Passage
                                       </Badge>
                                     )}
                                     {mondai.requires_audio && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[10px]"
-                                      >
+                                      <Badge variant="outline" className="text-[10px]">
                                         Audio
                                       </Badge>
                                     )}
@@ -877,9 +787,7 @@ function CreateJLPTTestPageContent() {
                                     }}
                                   >
                                     <div className="flex items-center gap-2 justify-between">
-                                      <span className="font-medium">
-                                        PASSAGE
-                                      </span>
+                                      <span className="font-medium">PASSAGE</span>
                                       <span className="text-[10px] text-muted-foreground">
                                         Order {node.parent.questionOrder}
                                       </span>
@@ -893,8 +801,7 @@ function CreateJLPTTestPageContent() {
                                 <div className="space-y-1">
                                   {getQuestionNumbers(mondai).map((qNum) => {
                                     const child = node.children?.[qNum];
-                                    const isSelected =
-                                      child?.id === selectedQuestionId;
+                                    const isSelected = child?.id === selectedQuestionId;
                                     if (!child) {
                                       return (
                                         <div
@@ -920,21 +827,16 @@ function CreateJLPTTestPageContent() {
                                         }}
                                       >
                                         <div className="flex items-center gap-2 justify-between">
-                                          <span className="font-medium">
-                                            Câu {qNum}
-                                          </span>
+                                          <span className="font-medium">Câu {qNum}</span>
                                           <span className="text-[10px] text-muted-foreground">
                                             #{child.id}
                                           </span>
                                         </div>
                                         <div className="mt-1 text-[10px] line-clamp-2 text-muted-foreground">
-                                          {child.contentText ? (
-                                            child.contentText
-                                          ) : (
-                                            <span className="text-red-500 font-medium">
-                                              ⚠ không có nội dung câu hỏi
-                                            </span>
-                                          )}
+                                          {child.contentText
+                                            ? child.contentText
+                                            : <span className="text-red-500 font-medium">⚠ không có nội dung câu hỏi</span>
+                                          }
                                         </div>
                                       </button>
                                     );
@@ -959,8 +861,7 @@ function CreateJLPTTestPageContent() {
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Mondai {selectedQuestion.mondaiNumber} • Order{" "}
-                            {selectedQuestion.questionOrder} •{" "}
-                            {selectedQuestion.section}
+                            {selectedQuestion.questionOrder} • {selectedQuestion.section}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -973,24 +874,17 @@ function CreateJLPTTestPageContent() {
                                 `/admin/jlpt-tests/${createdTestId}/questions`,
                               )
                             }
-                            disabled={
-                              shouldRequireReviewConfirm && !reviewConfirmed
-                            }
+                            disabled={shouldRequireReviewConfirm && !reviewConfirmed}
                           >
-                            Mở trang chỉnh sửa đầy đủ{" "}
-                            <ArrowRight className="h-4 w-4 ml-1" />
+                            Mở trang chỉnh sửa đầy đủ <ArrowRight className="h-4 w-4 ml-1" />
                           </Button>
                           <Button
                             type="button"
                             size="sm"
                             onClick={() =>
-                              router.push(
-                                `/admin/jlpt-tests/${createdTestId}/questions`,
-                              )
+                              router.push(`/admin/jlpt-tests/${createdTestId}/questions`)
                             }
-                            disabled={
-                              shouldRequireReviewConfirm && !reviewConfirmed
-                            }
+                            disabled={shouldRequireReviewConfirm && !reviewConfirmed}
                           >
                             Đồng ý & chuyển sang trang câu hỏi
                           </Button>
@@ -1003,12 +897,9 @@ function CreateJLPTTestPageContent() {
                             <input
                               type="checkbox"
                               checked={reviewConfirmed}
-                              onChange={(e) =>
-                                setReviewConfirmed(e.target.checked)
-                              }
+                              onChange={(e) => setReviewConfirmed(e.target.checked)}
                             />
-                            Đã review xong, cho phép chuyển sang chỉnh sửa đầy
-                            đủ
+                            Đã review xong, cho phép chuyển sang chỉnh sửa đầy đủ
                           </label>
                         </div>
                       )}
@@ -1023,8 +914,7 @@ function CreateJLPTTestPageContent() {
                       </div>
 
                       {/* Leaf question editor (options / correctOption / explanation) */}
-                      {selectedQuestion.options != null ||
-                      selectedQuestion.correctOption != null ? (
+                      {selectedQuestion.options != null || selectedQuestion.correctOption != null ? (
                         <>
                           <div className="space-y-2">
                             <Label>Options (JSON string)</Label>
@@ -1046,8 +936,7 @@ function CreateJLPTTestPageContent() {
                                 value={draftCorrectOption ?? ""}
                                 onChange={(e) => {
                                   const v = e.target.value;
-                                  if (v === "")
-                                    setDraftCorrectOption(undefined);
+                                  if (v === "") setDraftCorrectOption(undefined);
                                   else setDraftCorrectOption(Number(v));
                                 }}
                               />
@@ -1056,9 +945,7 @@ function CreateJLPTTestPageContent() {
                               <Label>Explanation</Label>
                               <Input
                                 value={draftExplanation}
-                                onChange={(e) =>
-                                  setDraftExplanation(e.target.value)
-                                }
+                                onChange={(e) => setDraftExplanation(e.target.value)}
                                 placeholder="(tuỳ chọn)"
                               />
                             </div>
@@ -1104,9 +991,7 @@ function CreateJLPTTestPageContent() {
                             if (!selectedQuestion) return;
                             if (!confirm("Xóa câu hỏi này khỏi đề?")) return;
                             try {
-                              await deleteQuestion(
-                                selectedQuestion.id,
-                              ).unwrap();
+                              await deleteQuestion(selectedQuestion.id).unwrap();
                               setSelectedQuestionId(null);
                               toast.success("Đã xóa câu hỏi!");
                             } catch (err: any) {
@@ -1130,8 +1015,7 @@ function CreateJLPTTestPageContent() {
             </Card>
             {creatingQuestions ? (
               <div className="text-xs text-muted-foreground">
-                Đang tạo câu hỏi... (có thể mất vài phút tùy lượng câu trong
-                ngân hàng)
+                Đang tạo câu hỏi... (có thể mất vài phút tùy lượng câu trong ngân hàng)
               </div>
             ) : null}
           </div>

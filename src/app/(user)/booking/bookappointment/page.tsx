@@ -139,9 +139,7 @@ function PaymentPageContent() {
               <ArrowLeft size={18} />
             </div>
           </button>
-          <h2 className="text-2xl font-bold text-slate-100">
-            {t("auto.booking_appointment_1")}
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-100">{t('auto.booking_appointment_1')}</h2>
         </div>
       </header>
 
@@ -223,15 +221,15 @@ function PaymentPageContent() {
 
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>{t("auto.booking_appointment_2")}</span>
+                    <span>{t('auto.booking_appointment_2')}</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>{t("auto.booking_appointment_3")}</span>
+                    <span>{t('auto.booking_appointment_3')}</span>
                     <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
-                    <span>{t("auto.booking_appointment_4")}</span>
+                    <span>{t('auto.booking_appointment_4')}</span>
                     <span className="text-pink-500">
                       {quote.totalBlossom} 🌸
                     </span>
@@ -259,15 +257,15 @@ function PaymentPageContent() {
 
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>{t("auto.booking_appointment_5")}</span>
+                    <span>{t('auto.booking_appointment_5')}</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>{t("auto.booking_appointment_6")}</span>
+                    <span>{t('auto.booking_appointment_6')}</span>
                     <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
-                    <span>{t("auto.booking_appointment_7")}</span>
+                    <span>{t('auto.booking_appointment_7')}</span>
                     <span className="text-pink-500">
                       {quote.totalBlossom} 🌸
                     </span>
@@ -332,7 +330,7 @@ function SuccessModal({
         <h1 className="text-3xl font-bold text-white mb-4">
           Thanh toán thành công!
         </h1>
-        <p className="text-slate-300 mb-6">{t("auto.booking_appointment_8")}</p>
+        <p className="text-slate-300 mb-6">{t('auto.booking_appointment_8')}</p>
         <button
           onClick={() => router.push("/booking/bookingmodal")}
           className="w-full h-12 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl"

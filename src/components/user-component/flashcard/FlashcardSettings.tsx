@@ -520,11 +520,7 @@ export default function FlashcardSettings({
               {[
                 { id: "info", label: "Thông tin", icon: "info" },
                 { id: "cards", label: `Thẻ (${cards.length})`, icon: "style" },
-                {
-                  id: "add",
-                  label: t("flashcard.settings.addCard"),
-                  icon: "add_circle",
-                },
+                { id: "add", label: t("flashcard.settings.addCard"), icon: "add_circle" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -563,7 +559,7 @@ export default function FlashcardSettings({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
-                    placeholder={t("auto.flashcardsettings_14")}
+                    placeholder={t('auto.flashcardsettings_14')}
                   />
                 </div>
 
@@ -576,12 +572,12 @@ export default function FlashcardSettings({
                     onChange={(e) => setLevel(e.target.value)}
                     className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary focus:outline-none transition-colors"
                   >
-                    <option value="">{t("auto.flashcardsettings_1")}</option>
-                    <option value="N5">{t("auto.flashcardsettings_2")}</option>
-                    <option value="N4">{t("auto.flashcardsettings_3")}</option>
-                    <option value="N3">{t("auto.flashcardsettings_4")}</option>
-                    <option value="N2">{t("auto.flashcardsettings_5")}</option>
-                    <option value="N1">{t("auto.flashcardsettings_6")}</option>
+                    <option value="">{t('auto.flashcardsettings_1')}</option>
+                    <option value="N5">{t('auto.flashcardsettings_2')}</option>
+                    <option value="N4">{t('auto.flashcardsettings_3')}</option>
+                    <option value="N3">{t('auto.flashcardsettings_4')}</option>
+                    <option value="N2">{t('auto.flashcardsettings_5')}</option>
+                    <option value="N1">{t('auto.flashcardsettings_6')}</option>
                   </select>
                 </div>
               </div>
@@ -596,7 +592,7 @@ export default function FlashcardSettings({
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                   className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors resize-none"
-                  placeholder={t("auto.flashcardsettings_15")}
+                  placeholder={t('auto.flashcardsettings_15')}
                 />
               </div>
 
@@ -608,25 +604,19 @@ export default function FlashcardSettings({
                     <p className="text-2xl font-bold text-foreground">
                       {cards.length}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("auto.flashcardsettings_7")}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('auto.flashcardsettings_7')}</p>
                   </div>
                   <div className="text-center border-x border-border">
                     <p className="text-2xl font-bold text-primary">
                       {studyTimeMinutes}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("auto.flashcardsettings_8")}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('auto.flashcardsettings_8')}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-400">
                       {cards.filter((c) => c.previewUrl).length}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("auto.flashcardsettings_9")}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('auto.flashcardsettings_9')}</p>
                   </div>
                 </div>
 
@@ -749,7 +739,7 @@ export default function FlashcardSettings({
                   <span className="material-symbols-outlined text-6xl mb-4 block">
                     style
                   </span>
-                  <p>{t("auto.flashcardsettings_10")}</p>
+                  <p>{t('auto.flashcardsettings_10')}</p>
                   <button
                     onClick={() => setActiveTab("add")}
                     className="mt-4 text-primary hover:underline"
@@ -776,9 +766,7 @@ export default function FlashcardSettings({
                       >
                         <span className="material-symbols-outlined text-sm">
                           delete
-                        </span>
-                        {t("common.delete")}
-                      </button>
+                        </span>{t("common.delete")}</button>
                       <button
                         onClick={() => setEditingCardIndex(null)}
                         className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted border border-border transition-colors"
@@ -841,7 +829,7 @@ export default function FlashcardSettings({
                           )
                         }
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                        placeholder={t("auto.flashcardsettings_16")}
+                        placeholder={t('auto.flashcardsettings_16')}
                       />
                     </div>
                     <div className="space-y-2">
@@ -859,7 +847,7 @@ export default function FlashcardSettings({
                           )
                         }
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                        placeholder={t("auto.flashcardsettings_17")}
+                        placeholder={t('auto.flashcardsettings_17')}
                       />
                     </div>
                   </div>
@@ -879,7 +867,7 @@ export default function FlashcardSettings({
                         )
                       }
                       className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                      placeholder={t("auto.flashcardsettings_18")}
+                      placeholder={t('auto.flashcardsettings_18')}
                     />
                   </div>
                 </div>
@@ -948,7 +936,7 @@ export default function FlashcardSettings({
                         value={singleMeaning}
                         onChange={(e) => setSingleMeaning(e.target.value)}
                         className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                        placeholder={t("auto.flashcardsettings_19")}
+                        placeholder={t('auto.flashcardsettings_19')}
                       />
                     </div>
                   </div>
@@ -1111,9 +1099,7 @@ export default function FlashcardSettings({
                           <span className="font-mono">:/.../:{"  "}</span>
                         </p>
                         <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5">
-                          <p className="text-muted-foreground/70">
-                            {t("auto.flashcardsettings_13")}
-                          </p>
+                          <p className="text-muted-foreground/70">{t('auto.flashcardsettings_13')}</p>
                           <p className="font-mono text-[11px]">
                             日本語 - tiếng Nhật {"<"}日本語を学ぶ{">"}{" "}
                             :/にほんご/:
@@ -1230,9 +1216,7 @@ export default function FlashcardSettings({
                               }
                             }}
                             className="w-full mt-2 py-1 text-xs text-red-400 hover:bg-red-500/10 rounded"
-                          >
-                            {t("common.delete")}
-                          </button>
+                          >{t("common.delete")}</button>
                         </div>
                       ))}
                   </div>

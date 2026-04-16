@@ -365,7 +365,7 @@ export const RightSidebar = memo(function RightSidebar({
               onValueChange={onTopicChange}
             >
               <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-60">
-                <SelectValue placeholder={t("auto.shared_1")} />
+                <SelectValue placeholder={t('auto.shared_1')} />
               </SelectTrigger>
               <SelectContent>
                 {topics.map((topic) => (

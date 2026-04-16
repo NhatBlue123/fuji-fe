@@ -32,7 +32,7 @@ export default function FlashListDetailPage({
         <span className="material-symbols-outlined text-6xl text-red-400">
           error
         </span>
-        <p className="text-muted-foreground">{t("auto._id__page_1")}</p>
+        <p className="text-muted-foreground">{t('auto._id__page_1')}</p>
         <Link
           href="/flashcards"
           className="text-secondary hover:underline flex items-center gap-1"
@@ -241,7 +241,7 @@ export default function FlashListDetailPage({
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   collections
                 </span>
-                <p>{t("auto._id__page_2")}</p>
+                <p>{t('auto._id__page_2')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

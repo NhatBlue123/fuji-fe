@@ -42,9 +42,7 @@ function OAuth2RedirectContent() {
         router.replace("/");
       })
       .catch(() => {
-        toast.error(
-          "Không tải được thông tin tài khoản. Vui lòng đăng nhập lại.",
-        );
+        toast.error("Không tải được thông tin tài khoản. Vui lòng đăng nhập lại.");
         router.replace("/login");
       });
   }, [router, searchParams, getCurrentUser]);

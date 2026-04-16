@@ -1,22 +1,8 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import {
-  useState,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useCallback,
-} from "react";
-import {
-  Send,
-  Paperclip,
-  Image as ImageIcon,
-  FileText,
-  X,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { Send, Paperclip, Image as ImageIcon, FileText, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
 import api from "@/lib/api";
@@ -38,7 +24,7 @@ const QUICK_REACTIONS = ["👍", "❤️", "😂", "🎉", "👏", "🤔"];
 function ImageModal({
   src,
   alt,
-  onClose,
+  onClose
 }: {
   src: string;
   alt: string;
@@ -98,15 +84,10 @@ function ImageModal({
       {/* Header */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-black/50">
         <div className="flex items-center gap-2">
-          <span className="text-white text-sm truncate max-w-[300px]">
-            {alt}
-          </span>
+          <span className="text-white text-sm truncate max-w-[300px]">{alt}</span>
         </div>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
           className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
         >
           <X className="h-5 w-5" />
@@ -133,12 +114,9 @@ function ImageModal({
       {/* Controls */}
       <div className="shrink-0 flex items-center justify-center gap-4 py-4 bg-black/50">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleZoomOut();
-          }}
+          onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
           className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-          title={t("auto.lesson_chat_3")}
+          title={t('auto.lesson_chat_3')}
         >
           <ZoomOut className="h-5 w-5" />
         </button>
@@ -146,20 +124,14 @@ function ImageModal({
           {Math.round(scale * 100)}%
         </span>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleZoomIn();
-          }}
+          onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
           className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-          title={t("auto.lesson_chat_4")}
+          title={t('auto.lesson_chat_4')}
         >
           <ZoomIn className="h-5 w-5" />
         </button>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleReset();
-          }}
+          onClick={(e) => { e.stopPropagation(); handleReset(); }}
           className="px-3 py-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors text-sm"
         >
           Reset
@@ -184,10 +156,7 @@ export function ChatPanel({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [viewingImage, setViewingImage] = useState<{
-    url: string;
-    alt: string;
-  } | null>(null);
+  const [viewingImage, setViewingImage] = useState<{ url: string; alt: string } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasTypingRef = useRef(false);
@@ -236,36 +205,33 @@ export function ChatPanel({
         onSendTyping(false);
       }, 2000);
     },
-    [onSendTyping],
+    [onSendTyping]
   );
 
   // Xử lý chọn file
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      // Kiểm tra kích thước file (giới hạn 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("File quá lớn. Vui lòng chọn file nhỏ hơn 10MB");
-        return;
-      }
+    // Kiểm tra kích thước file (giới hạn 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File quá lớn. Vui lòng chọn file nhỏ hơn 10MB");
+      return;
+    }
 
-      setSelectedFile(file);
+    setSelectedFile(file);
 
-      // Tạo preview cho ảnh
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setFilePreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setFilePreview(null);
-      }
-    },
-    [],
-  );
+    // Tạo preview cho ảnh
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFilePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+  }, []);
 
   // Xóa file đã chọn
   const handleRemoveFile = useCallback(() => {
@@ -285,15 +251,11 @@ export function ChatPanel({
       const formData = new FormData();
       formData.append("files", selectedFile);
 
-      const response = await api.post<{ data: string[] }>(
-        "/files/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+      const response = await api.post<{ data: string[] }>("/files/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
       const fileUrl = response.data.data?.[0];
       if (!fileUrl) {
@@ -324,13 +286,7 @@ export function ChatPanel({
 
     handleRemoveFile();
     setInput("");
-  }, [
-    selectedFile,
-    isUploading,
-    handleUploadFile,
-    handleRemoveFile,
-    onSendMessage,
-  ]);
+  }, [selectedFile, isUploading, handleUploadFile, handleRemoveFile, onSendMessage]);
 
   // Gửi tin nhắn text
   const handleSend = useCallback(() => {
@@ -352,7 +308,7 @@ export function ChatPanel({
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   const formatTime = (dateStr: string) => {
@@ -372,25 +328,21 @@ export function ChatPanel({
             src={msg.fileUrl!}
             alt={fileName}
             className="max-w-[300px] max-h-[300px] rounded-lg cursor-pointer hover:opacity-95 transition-opacity object-contain bg-black/20"
-            onClick={() =>
-              setViewingImage({ url: msg.fileUrl!, alt: fileName })
-            }
+            onClick={() => setViewingImage({ url: msg.fileUrl!, alt: fileName })}
           />
-          <span className="text-[10px] text-[#8B8FA8] truncate">
-            {fileName}
-          </span>
+          <span className="text-[10px] text-[#8B8FA8] truncate">{fileName}</span>
         </div>
       );
     }
 
     // File khác (PDF, doc, etc)
     const getFileIcon = () => {
-      const ext = fileName.split(".").pop()?.toLowerCase();
-      if (ext === "pdf") return "📄";
-      if (ext === "doc" || ext === "docx") return "📝";
-      if (ext === "xls" || ext === "xlsx") return "📊";
-      if (ext === "ppt" || ext === "pptx") return "📽️";
-      return "📎";
+      const ext = fileName.split('.').pop()?.toLowerCase();
+      if (ext === 'pdf') return '📄';
+      if (ext === 'doc' || ext === 'docx') return '📝';
+      if (ext === 'xls' || ext === 'xlsx') return '📊';
+      if (ext === 'ppt' || ext === 'pptx') return '📽️';
+      return '📎';
     };
 
     return (
@@ -403,9 +355,7 @@ export function ChatPanel({
         <span className="text-lg">{getFileIcon()}</span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate">{fileName}</div>
-          <div className="text-[10px] text-[#8B8FA8]">
-            {t("auto.lesson_chat_1")}
-          </div>
+          <div className="text-[10px] text-[#8B8FA8]">{t('auto.lesson_chat_1')}</div>
         </div>
       </a>
     );
@@ -444,10 +394,7 @@ export function ChatPanel({
           return (
             <div
               key={msg.id}
-              className={cn(
-                "flex flex-col gap-0.5 group",
-                isMine ? "items-end" : "items-start",
-              )}
+              className={cn("flex flex-col gap-0.5 group", isMine ? "items-end" : "items-start")}
               onMouseEnter={() => setHoveredMsgId(msg.id)}
               onMouseLeave={() => setHoveredMsgId(null)}
             >
@@ -467,9 +414,8 @@ export function ChatPanel({
                     isMine
                       ? "bg-[#6C63FF] text-white rounded-br-sm"
                       : "bg-[#252838] text-[#F0F0F0] rounded-bl-sm",
-                    msg.type === "VOCABULARY" &&
-                      "border border-[#4ECDC4]/30 bg-[#4ECDC4]/10",
-                    msg.type === "FILE" && "p-2",
+                    msg.type === "VOCABULARY" && "border border-[#4ECDC4]/30 bg-[#4ECDC4]/10",
+                    msg.type === "FILE" && "p-2"
                   )}
                 >
                   {msg.type === "VOCABULARY" ? (
@@ -484,7 +430,7 @@ export function ChatPanel({
                     <div
                       className={cn(
                         "mt-1 text-[10px] text-right",
-                        isMine ? "text-white/50" : "text-[#8B8FA8]/60",
+                        isMine ? "text-white/50" : "text-[#8B8FA8]/60"
                       )}
                     >
                       {formatTime(msg.createdAt)}
@@ -497,7 +443,7 @@ export function ChatPanel({
                   <div
                     className={cn(
                       "absolute -top-8 z-10 flex items-center gap-0.5 bg-[#1a1d27] border border-white/10 rounded-full px-1.5 py-0.5 shadow-lg",
-                      isMine ? "right-0" : "left-0",
+                      isMine ? "right-0" : "left-0"
                     )}
                   >
                     {QUICK_REACTIONS.map((emoji) => (
@@ -524,7 +470,7 @@ export function ChatPanel({
                         "flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full border transition-colors",
                         (users as number[]).includes(currentUserId)
                           ? "bg-[#6C63FF]/20 border-[#6C63FF]/40 text-[#6C63FF]"
-                          : "bg-white/5 border-white/10 text-[#8B8FA8] hover:bg-white/10",
+                          : "bg-white/5 border-white/10 text-[#8B8FA8] hover:bg-white/10"
                       )}
                     >
                       <span>{emoji}</span>
@@ -569,7 +515,7 @@ export function ChatPanel({
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
               className="shrink-0 w-10 h-10 rounded-xl bg-[#252838] hover:bg-[#2d3142] text-[#8B8FA8] hover:text-[#F0F0F0] disabled:opacity-50 flex items-center justify-center transition-colors border border-white/5"
-              title={t("auto.lesson_chat_5")}
+              title={t('auto.lesson_chat_5')}
             >
               <Paperclip className="h-4 w-4" />
             </button>
@@ -580,7 +526,7 @@ export function ChatPanel({
             value={input}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={t("auto.lesson_chat_2")}
+            placeholder={t('auto.lesson_chat_2')}
             rows={1}
             className="flex-1 min-h-[40px] max-h-[100px] resize-none bg-[#252838] border border-white/10 text-sm text-[#F0F0F0] placeholder:text-[#8B8FA8]/60 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#6C63FF] transition-colors"
           />
@@ -614,9 +560,7 @@ export function ChatPanel({
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate">
-                {selectedFile.name}
-              </div>
+              <div className="text-xs font-medium truncate">{selectedFile.name}</div>
               <div className="text-[10px] text-[#8B8FA8]">
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </div>

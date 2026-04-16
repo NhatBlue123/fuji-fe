@@ -25,17 +25,12 @@ import {
   Layers,
   Settings,
   ShieldCheck,
-  Zap,
+  Zap
 } from "lucide-react";
 import TopupModal from "@/components/user-component/premium/TopupModal";
 import { useNotifications } from "@/providers/NotificationProvider";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
  * Sidebar Component - Cập nhật sửa lỗi:
@@ -83,31 +78,24 @@ const Sidebar = () => {
 
   const isActive = (path: string) => pathname === path;
 
-  const menuItems = useMemo(
-    () => [
-      { label: t("common.home"), path: "/", icon: Home },
-      { label: t("common.course"), path: "/course", icon: BookOpen },
-      {
-        label: t("common.jlptPractice"),
-        path: "/JLPT_Practice",
-        icon: FileCheck,
-      },
-      { label: t("common.booking"), path: "/booking", icon: Calendar },
-      { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
-      { label: t("sidebar.videoCall"), path: "/video-call", icon: Video },
-      { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
-      { label: t("common.settings"), path: "/settings", icon: Settings },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    ],
-    [isMounted, t, i18n.language],
-  );
+  const menuItems = useMemo(() => [
+    { label: t("common.home"), path: "/", icon: Home },
+    { label: t("common.course"), path: "/course", icon: BookOpen },
+    { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
+    { label: t("common.booking"), path: "/booking", icon: Calendar },
+    { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
+    { label: t("sidebar.videoCall"), path: "/video-call", icon: Video },
+    { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
+    { label: t("common.settings"), path: "/settings", icon: Settings },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isMounted, t, i18n.language]);
 
   return (
     <TooltipProvider delayDuration={300}>
       <aside
         className={cn(
           "relative hidden flex-col bg-sidebar border-r border-sidebar-border md:flex transition-all duration-300 ease-in-out z-40 shadow-sm font-sans",
-          isCollapsed ? "w-16" : "w-58",
+          isCollapsed ? "w-16" : "w-58"
         )}
       >
         <Button
@@ -116,31 +104,23 @@ const Sidebar = () => {
           onClick={toggleSidebar}
           className="absolute -right-3 top-20 z-50 h-6 w-6 rounded-full border bg-background shadow-md hover:text-secondary hover:border-secondary transition-all active:scale-95 active:translate-y-[1px]"
         >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
 
         <Link
           href="/"
           className={cn(
             "flex h-16 items-center px-4 hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
-            isCollapsed ? "justify-center" : "gap-3 px-6",
+            isCollapsed ? "justify-center" : "gap-3 px-6"
           )}
         >
           <div className="flex-shrink-0 size-9 rounded-xl bg-secondary text-white flex items-center justify-center shadow-lg shadow-secondary/20">
-            <span className="material-symbols-outlined text-2xl font-bold">
-              landscape
-            </span>
+            <span className="material-symbols-outlined text-2xl font-bold">landscape</span>
           </div>
 
           {!isCollapsed && (
             <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-              <h1 className="text-xl font-black text-sidebar-foreground leading-none tracking-tight">
-                FUJI
-              </h1>
+              <h1 className="text-xl font-black text-sidebar-foreground leading-none tracking-tight">FUJI</h1>
               <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
                 {isMounted ? t("sidebar.subtitle") : "Học Tiếng Nhật"}
               </p>
@@ -161,23 +141,18 @@ const Sidebar = () => {
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
                   active
                     ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white"
-                    : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary",
+                    : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
                 )}
               >
-                <Icon
-                  className={cn(
-                    "h-5 w-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110",
-                    active
-                      ? "text-white stroke-[3px]"
-                      : "group-hover:text-secondary",
-                  )}
-                />
+                <Icon className={cn(
+                  "h-5 w-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110",
+                  active ? "text-white stroke-[3px]" : "group-hover:text-secondary"
+                )} />
 
                 {!isCollapsed && (
-                  <span
-                    className={cn(
+                  <span className={cn(
                       "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
-                      active ? "text-white" : "group-hover:text-secondary",
+                      active ? "text-white" : "group-hover:text-secondary"
                     )}
                   >
                     {isMounted ? item.label : ""}
@@ -191,17 +166,15 @@ const Sidebar = () => {
               </Link>
             );
 
-            if (!isCollapsed || !isMounted)
-              return <div key={item.path}>{linkContent}</div>;
+            if (!isCollapsed || !isMounted) return <div key={item.path}>{linkContent}</div>;
 
             return (
               <Tooltip key={item.path}>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipTrigger asChild>
+                  {linkContent}
+                </TooltipTrigger>
                 {tooltipReady && (
-                  <TooltipContent
-                    side="right"
-                    className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md"
-                  >
+                  <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
                     {item.label}
                   </TooltipContent>
                 )}
@@ -211,24 +184,18 @@ const Sidebar = () => {
 
           <div className="my-6 border-t border-sidebar-border mx-2 opacity-50" />
 
-          {isMounted &&
-            isAdminOrTeacher &&
+          {isMounted && isAdminOrTeacher && (
             (() => {
               const linkContent = (
                 <Link
                   href="/admin"
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group text-foreground font-bold hover:bg-secondary/5 hover:text-secondary border border-transparent hover:border-secondary/20",
-                    isActive("/admin") &&
-                      "bg-secondary/10 text-secondary border-secondary/20",
+                    isActive("/admin") && "bg-secondary/10 text-secondary border-secondary/20"
                   )}
                 >
                   <ShieldCheck className="h-5 w-5 flex-shrink-0 group-hover:rotate-3 transition-transform text-secondary/70" />
-                  {!isCollapsed && (
-                    <span className="text-[11px] font-bold tracking-widest uppercase">
-                      Admin Workspace
-                    </span>
-                  )}
+                  {!isCollapsed && <span className="text-[11px] font-bold tracking-widest uppercase">Admin Workspace</span>}
                 </Link>
               );
 
@@ -236,29 +203,24 @@ const Sidebar = () => {
 
               return (
                 <Tooltip>
-                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                  <TooltipTrigger asChild>
+                    {linkContent}
+                  </TooltipTrigger>
                   {tooltipReady && (
-                    <TooltipContent
-                      side="right"
-                      className="bg-secondary text-white font-bold"
-                    >
-                      Admin Workspace
-                    </TooltipContent>
+                    <TooltipContent side="right" className="bg-secondary text-white font-bold">Admin Workspace</TooltipContent>
                   )}
                 </Tooltip>
               );
-            })()}
+            })()
+          )}
         </nav>
 
         {/* PREMIUM CARD */}
         <div className="p-4 border-t border-sidebar-border">
-          <div
-            className={cn(
-              "bg-secondary/5 border border-secondary/20 rounded-[1.25rem] p-4 transition-all overflow-hidden relative group shadow-inner",
-              isCollapsed &&
-                "p-2 items-center flex justify-center aspect-square",
-            )}
-          >
+          <div className={cn(
+            "bg-secondary/5 border border-secondary/20 rounded-[1.25rem] p-4 transition-all overflow-hidden relative group shadow-inner",
+            isCollapsed && "p-2 items-center flex justify-center aspect-square"
+          )}>
             {isCollapsed ? (
               <Button
                 variant="ghost"
@@ -277,9 +239,7 @@ const Sidebar = () => {
                   </p>
                 </div>
                 <h3 className="font-bold text-[13px] mb-3 leading-snug tracking-tighter uppercase">
-                  {isMounted
-                    ? t("sidebar.premiumHeading") || "Nâng cấp gói học"
-                    : "Nâng cấp gói học"}
+                  {isMounted ? (t("sidebar.premiumHeading") || "Nâng cấp gói học") : "Nâng cấp gói học"}
                 </h3>
                 <Button
                   size="sm"
@@ -287,9 +247,7 @@ const Sidebar = () => {
                   className="h-8 text-[11px] font-black w-full border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary hover:text-white transition-all active:scale-95 rounded-xl uppercase tracking-widest"
                   onClick={() => setIsPremiumModalOpen(true)}
                 >
-                  {isMounted
-                    ? t("sidebar.viewDetails") || "Xem chi tiết"
-                    : "Xem chi tiết"}
+                  {isMounted ? (t("sidebar.viewDetails") || "Xem chi tiết") : "Xem chi tiết"}
                 </Button>
               </div>
             )}

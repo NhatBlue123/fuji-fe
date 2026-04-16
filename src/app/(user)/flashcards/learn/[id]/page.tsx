@@ -208,13 +208,13 @@ export default function FlashcardStudyPage({
             }
           >
             <SelectTrigger className="w-[140px] h-8 text-xs border-border/40 bg-card/40">
-              <SelectValue placeholder={t("auto._id__page_6")} />
+              <SelectValue placeholder={t('auto._id__page_6')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="front">{t("auto._id__page_1")}</SelectItem>
-              <SelectItem value="back">{t("auto._id__page_2")}</SelectItem>
-              <SelectItem value="both">{t("auto._id__page_3")}</SelectItem>
-              <SelectItem value="none">{t("auto._id__page_4")}</SelectItem>
+              <SelectItem value="front">{t('auto._id__page_1')}</SelectItem>
+              <SelectItem value="back">{t('auto._id__page_2')}</SelectItem>
+              <SelectItem value="both">{t('auto._id__page_3')}</SelectItem>
+              <SelectItem value="none">{t('auto._id__page_4')}</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -222,7 +222,7 @@ export default function FlashcardStudyPage({
             size="icon"
             onClick={handleShuffle}
             className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-            title={t("auto._id__page_7")}
+            title={t('auto._id__page_7')}
           >
             <span className="material-symbols-outlined text-xl">shuffle</span>
           </Button>
@@ -231,7 +231,7 @@ export default function FlashcardStudyPage({
             size="icon"
             onClick={handleFlipAll}
             className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-            title={t("auto._id__page_8")}
+            title={t('auto._id__page_8')}
           >
             <span className="material-symbols-outlined text-xl">flip</span>
           </Button>
@@ -243,14 +243,14 @@ export default function FlashcardStudyPage({
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-                title={t("auto._id__page_9")}
+                title={t('auto._id__page_9')}
               >
                 <span className="material-symbols-outlined text-xl">quiz</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>{t("auto._id__page_5")}</DialogTitle>
+                <DialogTitle>{t('auto._id__page_5')}</DialogTitle>
                 <DialogDescription>
                   Lựa chọn bài tập phù hợp để ôn luyện từ vựng
                 </DialogDescription>
@@ -443,7 +443,7 @@ export default function FlashcardStudyPage({
             className={`size-10 rounded-xl bg-card/50 border-border/40 ${
               currentIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            title={t("auto._id__page_10")}
+            title={t('auto._id__page_10')}
           >
             <span className="material-symbols-outlined text-xl">
               arrow_back
@@ -462,7 +462,7 @@ export default function FlashcardStudyPage({
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
-            title={t("auto._id__page_11")}
+            title={t('auto._id__page_11')}
           >
             <span className="material-symbols-outlined text-xl">
               arrow_forward

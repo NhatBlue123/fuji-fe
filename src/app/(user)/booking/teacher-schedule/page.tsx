@@ -10,7 +10,7 @@ import {
   CheckCheck,
   Clock3,
   Sparkles,
-} from "lucide-react";
+ } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
@@ -28,10 +28,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  useGetTeacherAvailabilityQuery,
-  useGetMyBusySlotsQuery,
-} from "@/store/services/bookingApi";
+import { useGetTeacherAvailabilityQuery, useGetMyBusySlotsQuery } from "@/store/services/bookingApi";
 import type { DiscoverySlot } from "@/types/booking";
 
 const WEEKDAY_OPTIONS = [
@@ -64,7 +61,7 @@ function addDaysLocal(date: Date, days: number) {
 
 function formatDateRange(fromDate: string, toDate: string) {
   return `${parseLocalDate(fromDate).toLocaleDateString("vi-VN")} - ${parseLocalDate(
-    toDate,
+    toDate
   ).toLocaleDateString("vi-VN")}`;
 }
 
@@ -82,9 +79,10 @@ function formatTimeRange(startAt: string, endAt: string) {
   const start = new Date(startAt);
   const end = new Date(endAt);
   const hhmm = (date: Date) =>
-    `${String(date.getHours()).padStart(2, "0")}:${String(
-      date.getMinutes(),
-    ).padStart(2, "0")}`;
+    `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(
+      2,
+      "0"
+    )}`;
 
   return `${hhmm(start)} - ${hhmm(end)}`;
 }
@@ -121,7 +119,7 @@ function LegendChip({
     <div
       className={cn(
         "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm",
-        colorClass,
+        colorClass
       )}
     >
       <span className="size-2 rounded-full bg-current" />
@@ -164,14 +162,14 @@ function TeacherSchedulePageContent() {
 
   const { data, isLoading, isError } = useGetTeacherAvailabilityQuery(
     { teacherId, fromDate, toDate },
-    { skip: !validTeacherId },
+    { skip: !validTeacherId }
   );
 
   // Fetch busy slots của học viên theo ngày được chọn
   const selectedDateKey = selectedDate ? toYmd(selectedDate) : "";
   const { data: busySlotsData } = useGetMyBusySlotsQuery(
     { date: selectedDateKey },
-    { skip: !selectedDateKey },
+    { skip: !selectedDateKey }
   );
 
   // Kiểm tra 1 slot có trùng giờ với busy slots không
@@ -197,14 +195,8 @@ function TeacherSchedulePageContent() {
       return slotStart < busyEnd && slotEnd > busyStart;
     });
     if (!overlapping) return null;
-    const busyStartTime = new Date(overlapping.startAt).toLocaleTimeString(
-      "vi-VN",
-      { hour: "2-digit", minute: "2-digit" },
-    );
-    const busyEndTime = new Date(overlapping.endAt).toLocaleTimeString(
-      "vi-VN",
-      { hour: "2-digit", minute: "2-digit" },
-    );
+    const busyStartTime = new Date(overlapping.startAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const busyEndTime = new Date(overlapping.endAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     return `Trùng với lịch đã đặt với ${overlapping.teacherName} (${busyStartTime} - ${busyEndTime})`;
   };
 
@@ -222,8 +214,7 @@ function TeacherSchedulePageContent() {
     if (selectedDate || groups.length === 0) return;
 
     const firstDateWithAvailableSlot =
-      groups.find((group) => group.slots.some(isAvailable))?.date ??
-      groups[0].date;
+      groups.find((group) => group.slots.some(isAvailable))?.date ?? groups[0].date;
 
     setSelectedDate(parseLocalDate(firstDateWithAvailableSlot));
   }, [groups, selectedDate]);
@@ -236,8 +227,8 @@ function TeacherSchedulePageContent() {
 
     const availableIds = new Set(
       groups.flatMap((group) =>
-        group.slots.filter(isAvailable).map((slot) => slot.timeSlotId),
-      ),
+        group.slots.filter(isAvailable).map((slot) => slot.timeSlotId)
+      )
     );
 
     const nextIds = selectedIds.filter((id) => availableIds.has(id));
@@ -249,7 +240,7 @@ function TeacherSchedulePageContent() {
   const selectedDaySlots = useMemo(() => {
     const slots = slotsByDate.get(selectedDateKey) ?? [];
     return [...slots].sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
     );
   }, [selectedDateKey, slotsByDate]);
 
@@ -258,7 +249,7 @@ function TeacherSchedulePageContent() {
       groups
         .filter((group) => group.slots.some(isAvailable))
         .map((group) => parseLocalDate(group.date)),
-    [groups],
+    [groups]
   );
 
   const bookedOnlyDates = useMemo(
@@ -266,20 +257,19 @@ function TeacherSchedulePageContent() {
       groups
         .filter(
           (group) =>
-            group.slots.length > 0 &&
-            group.slots.every((slot) => !isAvailable(slot)),
+            group.slots.length > 0 && group.slots.every((slot) => !isAvailable(slot))
         )
         .map((group) => parseLocalDate(group.date)),
-    [groups],
+    [groups]
   );
 
   const availableSlotCount = useMemo(
     () =>
       groups.reduce(
         (total, group) => total + group.slots.filter(isAvailable).length,
-        0,
+        0
       ),
-    [groups],
+    [groups]
   );
 
   const manualSelectedSlots = useMemo(() => {
@@ -288,16 +278,11 @@ function TeacherSchedulePageContent() {
     return groups
       .flatMap((group) => group.slots)
       .filter((slot) => selectedSet.has(slot.timeSlotId))
-      .sort(
-        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
-      );
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [groups, selectedIds]);
 
   const validRecurringRange =
-    !!rangeStart &&
-    !!rangeEnd &&
-    rangeStart >= minBookingDate &&
-    rangeStart <= rangeEnd;
+    !!rangeStart && !!rangeEnd && rangeStart >= minBookingDate && rangeStart <= rangeEnd;
 
   const recurringPool = useMemo(() => {
     if (!validRecurringRange) return [];
@@ -310,9 +295,7 @@ function TeacherSchedulePageContent() {
         if (slotDate < rangeStart || slotDate > rangeEnd) return false;
         return new Date(slot.startAt).getTime() > Date.now();
       })
-      .sort(
-        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
-      );
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [groups, validRecurringRange, rangeStart, rangeEnd]);
 
   const recurringTimeOptions = useMemo(() => {
@@ -346,8 +329,7 @@ function TeacherSchedulePageContent() {
   const recurringMatchedSlots = useMemo(() => {
     if (repeatMode !== "RECURRING") return [];
     if (!validRecurringRange) return [];
-    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0)
-      return [];
+    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0) return [];
 
     const weekdaySet = new Set(selectedWeekdays);
     const timeKeySet = new Set(selectedTimeKeys);
@@ -368,8 +350,7 @@ function TeacherSchedulePageContent() {
   const recurringExpectedOccurrences = useMemo(() => {
     if (repeatMode !== "RECURRING") return [];
     if (!validRecurringRange) return [];
-    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0)
-      return [];
+    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0) return [];
 
     const weekdaySet = new Set(selectedWeekdays);
     const result: Array<{ date: string; timeKey: string }> = [];
@@ -402,15 +383,14 @@ function TeacherSchedulePageContent() {
   const recurringMatchedKeys = useMemo(() => {
     return new Set(
       recurringMatchedSlots.map(
-        (slot) =>
-          `${slot.startAt.slice(0, 10)}__${toTimeKey(slot.startAt, slot.endAt)}`,
-      ),
+        (slot) => `${slot.startAt.slice(0, 10)}__${toTimeKey(slot.startAt, slot.endAt)}`
+      )
     );
   }, [recurringMatchedSlots]);
 
   const skippedOccurrences = useMemo(() => {
     return recurringExpectedOccurrences.filter(
-      (item) => !recurringMatchedKeys.has(`${item.date}__${item.timeKey}`),
+      (item) => !recurringMatchedKeys.has(`${item.date}__${item.timeKey}`)
     );
   }, [recurringExpectedOccurrences, recurringMatchedKeys]);
 
@@ -419,7 +399,7 @@ function TeacherSchedulePageContent() {
 
   const effectiveSelectedIds = useMemo(
     () => effectiveSelectedSlots.map((slot) => slot.timeSlotId),
-    [effectiveSelectedSlots],
+    [effectiveSelectedSlots]
   );
 
   const toggleSlot = (slot: DiscoverySlot) => {
@@ -437,13 +417,13 @@ function TeacherSchedulePageContent() {
     setSelectedIds((prev) =>
       prev.includes(slot.timeSlotId)
         ? prev.filter((id) => id !== slot.timeSlotId)
-        : [...prev, slot.timeSlotId].sort((a, b) => a - b),
+        : [...prev, slot.timeSlotId].sort((a, b) => a - b)
     );
   };
 
   const toggleWeekday = (day: number) => {
     setSelectedWeekdays((prev) =>
-      prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day],
+      prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day]
     );
   };
 
@@ -451,7 +431,7 @@ function TeacherSchedulePageContent() {
     setSelectedTimeKeys((prev) =>
       prev.includes(timeKey)
         ? prev.filter((item) => item !== timeKey)
-        : [...prev, timeKey],
+        : [...prev, timeKey]
     );
   };
 
@@ -460,8 +440,8 @@ function TeacherSchedulePageContent() {
 
     router.push(
       `/booking/bookappointment?teacherId=${teacherId}&timeSlotIds=${effectiveSelectedIds.join(
-        ",",
-      )}`,
+        ","
+      )}`
     );
   };
 
@@ -469,9 +449,7 @@ function TeacherSchedulePageContent() {
     return (
       <main className="min-h-screen bg-background px-4 py-8 text-foreground md:px-6">
         <Card className="mx-auto max-w-3xl border-destructive/20 bg-destructive/5">
-          <CardContent className="p-6 text-destructive">
-            {t("auto.teacherSchedule_1")}
-          </CardContent>
+          <CardContent className="p-6 text-destructive">{t('auto.teacherSchedule_1')}</CardContent>
         </Card>
       </main>
     );
@@ -496,9 +474,7 @@ function TeacherSchedulePageContent() {
 
             <div>
               <p className="text-sm text-muted-foreground">Booking</p>
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                {t("auto.teacherSchedule_2")}
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t('auto.teacherSchedule_2')}</h1>
             </div>
           </div>
 
@@ -517,9 +493,7 @@ function TeacherSchedulePageContent() {
             </div>
           ) : isError ? (
             <Card className="border-destructive/20 bg-destructive/5">
-              <CardContent className="p-6 text-destructive">
-                {t("auto.teacherSchedule_3")}
-              </CardContent>
+              <CardContent className="p-6 text-destructive">{t('auto.teacherSchedule_3')}</CardContent>
             </Card>
           ) : data ? (
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -532,9 +506,7 @@ function TeacherSchedulePageContent() {
                       <div className="flex items-start gap-4">
                         <div className="rounded-[28px] border border-border/70 bg-muted/30 p-1.5 shadow-sm">
                           <img
-                            src={
-                              data.teacherAvatarUrl || "/images/avt-default.jpg"
-                            }
+                            src={data.teacherAvatarUrl || "/images/avt-default.jpg"}
                             alt={data.teacherName}
                             className="h-16 w-16 rounded-[22px] object-cover"
                           />
@@ -542,12 +514,7 @@ function TeacherSchedulePageContent() {
 
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
-                            <Badge
-                              variant="secondary"
-                              className="rounded-full px-3 py-1"
-                            >
-                              {t("auto.teacherSchedule_4")}
-                            </Badge>
+                            <Badge variant="secondary" className="rounded-full px-3 py-1">{t('auto.teacherSchedule_4')}</Badge>
                             <Badge
                               variant="outline"
                               className="rounded-full border-border/70 bg-background/70 px-3 py-1 text-muted-foreground"
@@ -565,18 +532,9 @@ function TeacherSchedulePageContent() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 sm:min-w-[320px] sm:grid-cols-3">
-                        <MiniStat
-                          label="Ngày hiển thị"
-                          value={`${groups.length}`}
-                        />
-                        <MiniStat
-                          label="Slot trống"
-                          value={`${availableSlotCount}`}
-                        />
-                        <MiniStat
-                          label="Đã chọn"
-                          value={`${effectiveSelectedIds.length}`}
-                        />
+                        <MiniStat label="Ngày hiển thị" value={`${groups.length}`} />
+                        <MiniStat label="Slot trống" value={`${availableSlotCount}`} />
+                        <MiniStat label="Đã chọn" value={`${effectiveSelectedIds.length}`} />
                       </div>
                     </div>
 
@@ -587,44 +545,30 @@ function TeacherSchedulePageContent() {
                       </span>
 
                       <span className="inline-flex items-center gap-2">
-                        <Sparkles className="size-4 text-secondary" />
-                        {t("auto.teacherSchedule_5")}
-                      </span>
+                        <Sparkles className="size-4 text-secondary" />{t('auto.teacherSchedule_5')}</span>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
                   <CardHeader>
-                    <CardTitle className="text-xl">
-                      {t("auto.teacherSchedule_6")}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("auto.teacherSchedule_7")}
-                    </CardDescription>
+                    <CardTitle className="text-xl">{t('auto.teacherSchedule_6')}</CardTitle>
+                    <CardDescription>{t('auto.teacherSchedule_7')}</CardDescription>
                   </CardHeader>
 
                   <CardContent className="space-y-5">
                     <div className="grid gap-4 md:grid-cols-3">
                       <label className="block">
-                        <span className="mb-2 block text-sm text-muted-foreground">
-                          {t("auto.teacherSchedule_8")}
-                        </span>
+                        <span className="mb-2 block text-sm text-muted-foreground">{t('auto.teacherSchedule_8')}</span>
                         <select
                           value={repeatMode}
                           onChange={(e) =>
-                            setRepeatMode(
-                              e.target.value as "NONE" | "RECURRING",
-                            )
+                            setRepeatMode(e.target.value as "NONE" | "RECURRING")
                           }
                           className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
                         >
-                          <option value="NONE">
-                            {t("auto.teacherSchedule_9")}
-                          </option>
-                          <option value="RECURRING">
-                            {t("auto.teacherSchedule_10")}
-                          </option>
+                          <option value="NONE">{t('auto.teacherSchedule_9')}</option>
+                          <option value="RECURRING">{t('auto.teacherSchedule_10')}</option>
                         </select>
                       </label>
 
@@ -657,24 +601,18 @@ function TeacherSchedulePageContent() {
                           </label>
                         </>
                       ) : (
-                        <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-muted-foreground">
-                          {t("auto.teacherSchedule_11")}
-                        </div>
+                        <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-muted-foreground">{t('auto.teacherSchedule_11')}</div>
                       )}
                     </div>
 
                     {repeatMode === "RECURRING" ? (
                       <>
                         <div className="space-y-3">
-                          <div className="text-sm font-medium text-foreground">
-                            {t("auto.teacherSchedule_12")}
-                          </div>
+                          <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_12')}</div>
 
                           <div className="flex flex-wrap gap-2">
                             {WEEKDAY_OPTIONS.map((day) => {
-                              const active = selectedWeekdays.includes(
-                                day.value,
-                              );
+                              const active = selectedWeekdays.includes(day.value);
 
                               return (
                                 <button
@@ -685,7 +623,7 @@ function TeacherSchedulePageContent() {
                                     "rounded-xl border px-4 py-2 text-sm font-semibold transition",
                                     active
                                       ? "border-secondary/30 bg-secondary text-secondary-foreground"
-                                      : "border-border bg-background hover:border-primary/30 hover:bg-primary/5",
+                                      : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                                   )}
                                 >
                                   {day.label}
@@ -696,24 +634,16 @@ function TeacherSchedulePageContent() {
                         </div>
 
                         <div className="space-y-3">
-                          <div className="text-sm font-medium text-foreground">
-                            {t("auto.teacherSchedule_13")}
-                          </div>
+                          <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_13')}</div>
 
                           {!validRecurringRange ? (
-                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
-                              {t("auto.teacherSchedule_14")}
-                            </div>
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">{t('auto.teacherSchedule_14')}</div>
                           ) : recurringTimeOptions.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
-                              {t("auto.teacherSchedule_15")}
-                            </div>
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">{t('auto.teacherSchedule_15')}</div>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {recurringTimeOptions.map((option) => {
-                                const active = selectedTimeKeys.includes(
-                                  option.key,
-                                );
+                                const active = selectedTimeKeys.includes(option.key);
 
                                 return (
                                   <button
@@ -724,7 +654,7 @@ function TeacherSchedulePageContent() {
                                       "rounded-xl border px-4 py-2 text-left transition",
                                       active
                                         ? "border-secondary/30 bg-secondary/10"
-                                        : "border-border bg-background hover:border-primary/30 hover:bg-primary/5",
+                                        : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                                     )}
                                   >
                                     <div className="text-sm font-semibold text-foreground">
@@ -759,9 +689,7 @@ function TeacherSchedulePageContent() {
                           />
                         </div>
 
-                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-                          {t("auto.teacherSchedule_16")}
-                        </div>
+                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">{t('auto.teacherSchedule_16')}</div>
                       </>
                     ) : null}
                   </CardContent>
@@ -772,9 +700,7 @@ function TeacherSchedulePageContent() {
                     <Card className="flex flex-col border-border/60 bg-card/80 shadow-xl backdrop-blur lg:h-[540px]">
                       <CardHeader className="pb-4">
                         <CardTitle className="flex items-center gap-2 text-xl">
-                          <CalendarDays className="size-5 text-primary" />
-                          {t("auto.teacherSchedule_17")}
-                        </CardTitle>
+                          <CalendarDays className="size-5 text-primary" />{t('auto.teacherSchedule_17')}</CardTitle>
                       </CardHeader>
 
                       <CardContent className="flex min-h-0 flex-1 flex-col space-y-4">
@@ -787,9 +713,7 @@ function TeacherSchedulePageContent() {
                             timeZone={timeZone}
                             fromDate={parseLocalDate(fromDate)}
                             toDate={parseLocalDate(toDate)}
-                            defaultMonth={
-                              selectedDate ?? parseLocalDate(fromDate)
-                            }
+                            defaultMonth={selectedDate ?? parseLocalDate(fromDate)}
                             modifiers={{
                               hasAvailability: availableDates,
                               bookedOnly: bookedOnlyDates,
@@ -804,13 +728,7 @@ function TeacherSchedulePageContent() {
                           />
                         </div>
 
-                        <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-                          {t("auto.teacherSchedule_18")}
-                          <span className="font-semibold text-primary">
-                            xanh
-                          </span>
-                          {t("auto.teacherSchedule_19")}
-                        </div>
+                        <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">{t('auto.teacherSchedule_18')}<span className="font-semibold text-primary">xanh</span>{t('auto.teacherSchedule_19')}</div>
                       </CardContent>
                     </Card>
 
@@ -819,9 +737,7 @@ function TeacherSchedulePageContent() {
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                           <div>
                             <CardTitle className="flex items-center gap-2 text-xl">
-                              <Clock3 className="size-5 text-primary" />
-                              {t("auto.teacherSchedule_20")}
-                            </CardTitle>
+                              <Clock3 className="size-5 text-primary" />{t('auto.teacherSchedule_20')}</CardTitle>
                             <CardDescription className="mt-2">
                               {formatFullDate(selectedDate)}
                             </CardDescription>
@@ -840,21 +756,15 @@ function TeacherSchedulePageContent() {
                         {selectedDaySlots.length === 0 ? (
                           <div className="flex h-full items-center justify-center rounded-[28px] border border-dashed border-border bg-muted/25 px-6 py-12 text-center">
                             <div>
-                              <p className="text-lg font-medium text-foreground">
-                                {t("auto.teacherSchedule_21")}
-                              </p>
-                              <p className="mt-2 text-sm text-muted-foreground">
-                                {t("auto.teacherSchedule_22")}
-                              </p>
+                              <p className="text-lg font-medium text-foreground">{t('auto.teacherSchedule_21')}</p>
+                              <p className="mt-2 text-sm text-muted-foreground">{t('auto.teacherSchedule_22')}</p>
                             </div>
                           </div>
                         ) : (
                           <ScrollArea className="min-h-0 flex-1 pr-4">
                             <div className="space-y-3">
                               {selectedDaySlots.map((slot) => {
-                                const selected = selectedIds.includes(
-                                  slot.timeSlotId,
-                                );
+                                const selected = selectedIds.includes(slot.timeSlotId);
                                 const available = isAvailable(slot);
                                 const overlapping = isSlotOverlapping(slot);
                                 const warning = getOverlapWarning(slot);
@@ -868,8 +778,7 @@ function TeacherSchedulePageContent() {
                                     className={cn(
                                       "w-full rounded-[24px] border px-4 py-4 text-left transition-all",
                                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                                      selected &&
-                                        "border-secondary/40 bg-secondary/10 shadow-sm",
+                                      selected && "border-secondary/40 bg-secondary/10 shadow-sm",
                                       !selected &&
                                         available &&
                                         !overlapping &&
@@ -878,7 +787,7 @@ function TeacherSchedulePageContent() {
                                         "cursor-not-allowed border-destructive/15 bg-destructive/5 opacity-75",
                                       overlapping &&
                                         !selected &&
-                                        "border-amber-500/30 bg-amber-500/5 cursor-not-allowed",
+                                        "border-amber-500/30 bg-amber-500/5 cursor-not-allowed"
                                     )}
                                   >
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -896,7 +805,7 @@ function TeacherSchedulePageContent() {
                                               "border-destructive/15 bg-destructive/10 text-destructive",
                                             overlapping &&
                                               !selected &&
-                                              "border-amber-500/30 bg-amber-500/10 text-amber-600",
+                                              "border-amber-500/30 bg-amber-500/10 text-amber-600"
                                           )}
                                         >
                                           {selected ? (
@@ -909,10 +818,7 @@ function TeacherSchedulePageContent() {
                                         <div>
                                           <div className="flex flex-wrap items-center gap-2">
                                             <p className="text-base font-semibold text-foreground">
-                                              {formatTimeRange(
-                                                slot.startAt,
-                                                slot.endAt,
-                                              )}
+                                              {formatTimeRange(slot.startAt, slot.endAt)}
                                             </p>
 
                                             {slot.subject ? (
@@ -951,16 +857,16 @@ function TeacherSchedulePageContent() {
                                             "border-destructive/15 bg-destructive/10 text-destructive",
                                           overlapping &&
                                             !selected &&
-                                            "border-amber-500/30 bg-amber-500/10 text-amber-600",
+                                            "border-amber-500/30 bg-amber-500/10 text-amber-600"
                                         )}
                                       >
                                         {selected
                                           ? "Đã chọn"
                                           : overlapping
-                                            ? "Trùng lịch"
-                                            : available
-                                              ? "Available"
-                                              : "Booked"}
+                                          ? "Trùng lịch"
+                                          : available
+                                          ? "Available"
+                                          : "Booked"}
                                       </Badge>
                                     </div>
                                   </button>
@@ -976,40 +882,27 @@ function TeacherSchedulePageContent() {
                   <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl">
-                        <Sparkles className="size-5 text-primary" />
-                        {t("auto.teacherSchedule_23")}
-                      </CardTitle>
-                      <CardDescription>
-                        {t("auto.teacherSchedule_24")}
-                      </CardDescription>
+                        <Sparkles className="size-5 text-primary" />{t('auto.teacherSchedule_23')}</CardTitle>
+                      <CardDescription>{t('auto.teacherSchedule_24')}</CardDescription>
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-                      {selectedWeekdays.length === 0 ||
-                      selectedTimeKeys.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">
-                          {t("auto.teacherSchedule_25")}
-                        </div>
+                      {selectedWeekdays.length === 0 || selectedTimeKeys.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">{t('auto.teacherSchedule_25')}</div>
                       ) : recurringMatchedSlots.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">
-                          {t("auto.teacherSchedule_26")}
-                        </div>
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">{t('auto.teacherSchedule_26')}</div>
                       ) : (
                         <>
                           <div className="grid gap-3 md:grid-cols-2">
                             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                              <div className="text-sm text-muted-foreground">
-                                {t("auto.teacherSchedule_27")}
-                              </div>
+                              <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_27')}</div>
                               <div className="mt-1 text-3xl font-black text-foreground">
                                 {recurringMatchedSlots.length}
                               </div>
                             </div>
 
                             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                              <div className="text-sm text-muted-foreground">
-                                {t("auto.teacherSchedule_28")}
-                              </div>
+                              <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_28')}</div>
                               <div className="mt-1 text-3xl font-black text-foreground">
                                 {skippedOccurrences.length}
                               </div>
@@ -1026,20 +919,18 @@ function TeacherSchedulePageContent() {
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
                                       <p className="text-sm font-semibold text-foreground">
-                                        {parseLocalDate(
-                                          slot.startAt.slice(0, 10),
-                                        ).toLocaleDateString("vi-VN", {
-                                          weekday: "long",
-                                          day: "2-digit",
-                                          month: "2-digit",
-                                          year: "numeric",
-                                        })}
+                                        {parseLocalDate(slot.startAt.slice(0, 10)).toLocaleDateString(
+                                          "vi-VN",
+                                          {
+                                            weekday: "long",
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                          }
+                                        )}
                                       </p>
                                       <p className="mt-1 text-sm text-secondary">
-                                        {formatTimeRange(
-                                          slot.startAt,
-                                          slot.endAt,
-                                        )}
+                                        {formatTimeRange(slot.startAt, slot.endAt)}
                                       </p>
                                     </div>
 
@@ -1057,9 +948,8 @@ function TeacherSchedulePageContent() {
 
                           {skippedOccurrences.length > 0 ? (
                             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                              Có {skippedOccurrences.length} buổi trong lịch lặp
-                              bị bỏ qua vì không còn slot trống phù hợp trong
-                              lúc đó.
+                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ qua vì
+                              không còn slot trống phù hợp trong lúc đó.
                             </div>
                           ) : null}
                         </>
@@ -1072,19 +962,13 @@ function TeacherSchedulePageContent() {
               <aside className="h-fit xl:sticky xl:top-6">
                 <Card className="overflow-hidden rounded-3xl border-border/60 bg-card/80 shadow-xl backdrop-blur">
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl font-semibold">
-                      {t("auto.teacherSchedule_29")}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("auto.teacherSchedule_30")}
-                    </CardDescription>
+                    <CardTitle className="text-xl font-semibold">{t('auto.teacherSchedule_29')}</CardTitle>
+                    <CardDescription>{t('auto.teacherSchedule_30')}</CardDescription>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                      <div className="text-sm text-muted-foreground">
-                        {t("auto.teacherSchedule_31")}
-                      </div>
+                      <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_31')}</div>
                       <div className="mt-1 text-3xl font-black text-foreground">
                         {effectiveSelectedIds.length}
                       </div>
@@ -1092,24 +976,18 @@ function TeacherSchedulePageContent() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <MiniStat
-                        label={
-                          repeatMode === "RECURRING"
-                            ? "Khớp lịch"
-                            : "Trong ngày"
-                        }
+                        label={repeatMode === "RECURRING" ? "Khớp lịch" : "Trong ngày"}
                         value={`${
                           repeatMode === "RECURRING"
                             ? recurringMatchedSlots.length
                             : selectedDaySlots.filter((slot) =>
-                                selectedIds.includes(slot.timeSlotId),
+                                selectedIds.includes(slot.timeSlotId)
                               ).length
                         }`}
                       />
                       <MiniStat
                         label={
-                          repeatMode === "RECURRING"
-                            ? "Bỏ qua"
-                            : "Tổng slot trống"
+                          repeatMode === "RECURRING" ? "Bỏ qua" : "Tổng slot trống"
                         }
                         value={`${
                           repeatMode === "RECURRING"
@@ -1122,14 +1000,10 @@ function TeacherSchedulePageContent() {
                     <Separator />
 
                     <div className="space-y-3">
-                      <div className="text-sm font-medium text-foreground">
-                        {t("auto.teacherSchedule_32")}
-                      </div>
+                      <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_32')}</div>
 
                       {effectiveSelectedSlots.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">
-                          {t("auto.teacherSchedule_33")}
-                        </div>
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">{t('auto.teacherSchedule_33')}</div>
                       ) : (
                         <ScrollArea className="h-[280px] pr-3">
                           <div className="space-y-3">
@@ -1142,9 +1016,7 @@ function TeacherSchedulePageContent() {
                                   <div>
                                     <p className="text-sm font-semibold text-foreground">
                                       {parseLocalDate(
-                                        new Date(slot.startAt)
-                                          .toISOString()
-                                          .slice(0, 10),
+                                        new Date(slot.startAt).toISOString().slice(0, 10)
                                       ).toLocaleDateString("vi-VN", {
                                         day: "2-digit",
                                         month: "2-digit",
@@ -1152,10 +1024,7 @@ function TeacherSchedulePageContent() {
                                       })}
                                     </p>
                                     <p className="mt-1 text-sm text-secondary">
-                                      {formatTimeRange(
-                                        slot.startAt,
-                                        slot.endAt,
-                                      )}
+                                      {formatTimeRange(slot.startAt, slot.endAt)}
                                     </p>
                                   </div>
 
@@ -1165,16 +1034,12 @@ function TeacherSchedulePageContent() {
                                       size="sm"
                                       className="h-8 rounded-xl text-muted-foreground hover:text-foreground"
                                       onClick={() => toggleSlot(slot)}
-                                    >
-                                      {t("auto.teacherSchedule_34")}
-                                    </Button>
+                                    >{t('auto.teacherSchedule_34')}</Button>
                                   ) : (
                                     <Badge
                                       variant="outline"
                                       className="rounded-full border-border/70 bg-background/70"
-                                    >
-                                      {t("auto.teacherSchedule_35")}
-                                    </Badge>
+                                    >{t('auto.teacherSchedule_35')}</Badge>
                                   )}
                                 </div>
                               </div>
@@ -1188,9 +1053,7 @@ function TeacherSchedulePageContent() {
                       onClick={onGoInvoice}
                       disabled={effectiveSelectedIds.length === 0}
                       className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
-                    >
-                      {t("auto.teacherSchedule_36")}
-                    </Button>
+                    >{t('auto.teacherSchedule_36')}</Button>
                   </CardContent>
                 </Card>
               </aside>

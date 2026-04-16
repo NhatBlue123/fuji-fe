@@ -18,14 +18,14 @@ import {
   Bug,
   Info,
   ChevronRight,
-  ChevronLeft,
+  ChevronLeft
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
+  DialogClose
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -52,12 +52,7 @@ interface FeedbackDialogProps {
   initialType?: "bug" | "suggest" | "other";
 }
 
-export function FeedbackDialog({
-  isOpen,
-  onClose,
-  onSuccess,
-  initialType = "bug",
-}: FeedbackDialogProps) {
+export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug" }: FeedbackDialogProps) {
   const { t } = useTranslation();
   const [content, setContent] = useState("");
   const [isAbandonAlertOpen, setIsAbandonAlertOpen] = useState(false);
@@ -67,12 +62,12 @@ export function FeedbackDialog({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
   };
 
   const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleClose = () => {
@@ -102,10 +97,10 @@ export function FeedbackDialog({
       // 1. Tải lên các tệp trước nếu có
       if (files.length > 0) {
         const formData = new FormData();
-        files.forEach((file) => formData.append("files", file));
+        files.forEach(file => formData.append("files", file));
 
         const uploadRes = await api.post("/files/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { "Content-Type": "multipart/form-data" }
         });
 
         if (uploadRes.data?.data) {
@@ -119,7 +114,7 @@ export function FeedbackDialog({
         title: t("feedback.defaultReportTitle"),
         description: content.trim(),
         priority: "MEDIUM",
-        attachmentUrls: attachmentUrls,
+        attachmentUrls: attachmentUrls
       });
 
       toast.success(t("feedback.toast.success"));
@@ -142,25 +137,16 @@ export function FeedbackDialog({
           {/* Header */}
           <div className="flex items-center justify-between relative px-6 py-4 border-b border-muted/50 bg-muted/5">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full hover:bg-secondary/10 hover:text-secondary group transition-all"
-                onClick={handleClose}
-              >
+              <Button variant="ghost" size="icon" className="size-8 rounded-full hover:bg-secondary/10 hover:text-secondary group transition-all" onClick={handleClose}>
                 <ChevronLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
               </Button>
-              <DialogTitle className="text-base font-black uppercase tracking-tight">
-                {t("feedback.title")}
-              </DialogTitle>
+              <DialogTitle className="text-base font-black uppercase tracking-tight">{t("feedback.title")}</DialogTitle>
             </div>
           </div>
 
           <div className="p-5 space-y-5">
             <div className="space-y-3.5">
-              <h3 className="text-lg font-black tracking-tight text-foreground">
-                {t("feedback.improveTitle")}
-              </h3>
+              <h3 className="text-lg font-black tracking-tight text-foreground">{t("feedback.improveTitle")}</h3>
 
               <div className="relative group/textarea">
                 <div className="absolute top-2.5 left-4 text-[9px] font-black text-secondary uppercase tracking-widest z-10 opacity-70 group-focus-within/textarea:opacity-100 transition-opacity">
@@ -189,35 +175,26 @@ export function FeedbackDialog({
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Paperclip className="size-3.5 text-muted-foreground group-hover/btn:text-secondary" />
-                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/btn:text-secondary">
-                    {t("feedback.uploadBtn")}
-                  </span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/btn:text-secondary">{t("feedback.uploadBtn")}</span>
                 </Button>
 
                 {files.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {files.map((file, i) => (
-                      <div
-                        key={i}
-                        className="group relative size-14 rounded-lg border border-muted bg-muted/20 overflow-hidden animate-in zoom-in-50"
-                      >
-                        {file.type.startsWith("image/") ? (
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt="preview"
-                            className="size-full object-cover"
-                          />
-                        ) : (
-                          <div className="size-full flex items-center justify-center text-muted-foreground bg-muted/10">
-                            <Paperclip className="size-5" />
-                          </div>
-                        )}
-                        <button
-                          onClick={() => removeFile(i)}
-                          className="absolute top-0.5 right-0.5 size-4 bg-destructive text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="size-2.5" />
-                        </button>
+                      <div key={i} className="group relative size-14 rounded-lg border border-muted bg-muted/20 overflow-hidden animate-in zoom-in-50">
+                         {file.type.startsWith('image/') ? (
+                           <img src={URL.createObjectURL(file)} alt="preview" className="size-full object-cover" />
+                         ) : (
+                           <div className="size-full flex items-center justify-center text-muted-foreground bg-muted/10">
+                             <Paperclip className="size-5" />
+                           </div>
+                         )}
+                         <button
+                           onClick={() => removeFile(i)}
+                           className="absolute top-0.5 right-0.5 size-4 bg-destructive text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                         >
+                           <X className="size-2.5" />
+                         </button>
                       </div>
                     ))}
                   </div>
@@ -229,13 +206,7 @@ export function FeedbackDialog({
             <div className="p-3.5 rounded-xl bg-muted/10 border border-muted/20 space-y-1.5">
               <p className="text-[11px] font-bold leading-relaxed text-muted-foreground">
                 {t("feedback.disclaimer")}
-                <Link
-                  href="/help"
-                  className="text-secondary font-black hover:underline uppercase tracking-tight"
-                >
-                  {t("feedback.helpCenter")}
-                </Link>
-                .
+                <Link href="/help" className="text-secondary font-black hover:underline uppercase tracking-tight">{t("feedback.helpCenter")}</Link>.
               </p>
             </div>
 
@@ -253,7 +224,7 @@ export function FeedbackDialog({
                   "px-10 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg active:scale-95 h-10",
                   content.trim().length > 0
                     ? "bg-secondary hover:bg-secondary/90 hover:shadow-secondary/20"
-                    : "bg-muted text-muted-foreground pointer-events-none opacity-50",
+                    : "bg-muted text-muted-foreground pointer-events-none opacity-50"
                 )}
                 disabled={isSubmitting || content.trim().length === 0}
                 onClick={handleSubmit}
@@ -266,15 +237,10 @@ export function FeedbackDialog({
       </Dialog>
 
       {/* Abandon Confirmation Alert */}
-      <AlertDialog
-        open={isAbandonAlertOpen}
-        onOpenChange={setIsAbandonAlertOpen}
-      >
+      <AlertDialog open={isAbandonAlertOpen} onOpenChange={setIsAbandonAlertOpen}>
         <AlertDialogContent className="rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden max-w-[400px]">
           <div className="relative flex items-center justify-center py-4 border-b border-muted/50 bg-muted/10">
-            <AlertDialogTitle className="text-base font-black uppercase tracking-tight">
-              {t("feedback.abandonTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle className="text-base font-black uppercase tracking-tight">{t("feedback.abandonTitle")}</AlertDialogTitle>
             <Button
               variant="ghost"
               size="icon"

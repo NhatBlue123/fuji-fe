@@ -45,7 +45,7 @@ export const SystemErrorFilter = ({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Tìm theo lỗi, URL hoặc Request ID..." 
-            className="pl-9 h-9 bg-background text-xs"
+            className="pl-9 h-9 text-xs"
             value={filters.keyword}
             onChange={(e) => setFilters({...filters, keyword: e.target.value})}
           />
@@ -54,7 +54,7 @@ export const SystemErrorFilter = ({
         {/* Action Filters Line */}
         <div className="flex items-center gap-2 w-full xl:w-auto overflow-x-auto">
           <Select value={filters.level} onValueChange={(v) => { setFilters({...filters, level: v}); }}>
-            <SelectTrigger className="h-9 bg-background w-[140px] shrink-0 text-xs font-semibold">
+            <SelectTrigger className="h-9 w-[140px] shrink-0 text-xs font-semibold">
               <SelectValue placeholder="Mức độ" />
             </SelectTrigger>
             <SelectContent>
@@ -65,7 +65,7 @@ export const SystemErrorFilter = ({
           </Select>
           
           <Select value={filters.service} onValueChange={(v) => { setFilters({...filters, service: v}); }}>
-            <SelectTrigger className="h-9 bg-background w-[140px] shrink-0 text-xs font-semibold">
+            <SelectTrigger className="h-9 w-[140px] shrink-0 text-xs font-semibold">
               <SelectValue placeholder="Dịch vụ" />
             </SelectTrigger>
             <SelectContent>
@@ -76,7 +76,7 @@ export const SystemErrorFilter = ({
           </Select>
 
           <Select value={filters.resolved} onValueChange={(v) => { setFilters({...filters, resolved: v}); }}>
-            <SelectTrigger className="h-9 bg-background w-[140px] shrink-0 text-xs font-semibold">
+            <SelectTrigger className="h-9 w-[140px] shrink-0 text-xs font-semibold">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
@@ -86,7 +86,7 @@ export const SystemErrorFilter = ({
             </SelectContent>
           </Select>
 
-          <div className="flex items-center space-x-2 bg-background border px-3 h-9 rounded-md shrink-0">
+          <div className="flex items-center space-x-2 bg-muted/20 border px-3 h-9 rounded-md shrink-0">
             <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
             <Label htmlFor="auto-refresh" className="text-[10px] font-bold uppercase cursor-pointer text-muted-foreground shrink-0">Auto</Label>
           </div>
@@ -94,7 +94,7 @@ export const SystemErrorFilter = ({
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={handleResetFilters} className="h-9 w-9 shrink-0 bg-background text-muted-foreground">
+                <Button variant="outline" size="icon" onClick={handleResetFilters} className="h-9 w-9 shrink-0 text-muted-foreground">
                   <RefreshCcw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>

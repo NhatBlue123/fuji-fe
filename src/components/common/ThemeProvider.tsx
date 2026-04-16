@@ -63,6 +63,7 @@ export function ThemeProvider({
     } else {
       root.classList.add(theme);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, enableSystem, disableTransitionOnChange]);
 
   const setTheme = React.useCallback((newTheme: Theme) => {

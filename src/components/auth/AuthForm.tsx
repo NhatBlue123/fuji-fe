@@ -1034,7 +1034,7 @@ export default function AuthForm({
                           {forgotCountdown === 0 ? (
                             <button
                               type="button"
-                              onClick={handleForgotEmail}
+                              onClick={(e) => handleForgotEmail(e as any)}
                               className="text-sm text-pink-400 hover:text-pink-300 font-semibold transition-colors"
                               disabled={isSendingForgotOtp}
                             >

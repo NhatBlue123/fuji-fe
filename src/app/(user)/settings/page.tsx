@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Settings,
@@ -44,7 +46,7 @@ import { toast } from "sonner";
 import { FeedbackDialog } from "@/components/common/FeedbackDialog";
 import { useGetMePreferencesQuery, useUpdateMePreferencesMutation } from "@/store/services/user/userPreferenceApi";
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const searchParams = useSearchParams();
@@ -482,5 +484,19 @@ export default function SettingsPage() {
       </div>
       <FeedbackDialog isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">
+          Đang tải cài đặt...
+        </div>
+      }
+    >
+      <SettingsPageContent />
+    </Suspense>
   );
 }

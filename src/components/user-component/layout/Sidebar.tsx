@@ -155,7 +155,7 @@ const Sidebar = () => {
                       active ? "text-white" : "group-hover:text-secondary"
                     )}
                   >
-                    {isMounted ? (item.customLabel || item.label) : ""}
+                    {isMounted ? item.label : ""}
                   </span>
                 )}
                 
@@ -175,7 +175,7 @@ const Sidebar = () => {
                 </TooltipTrigger>
                 {tooltipReady && (
                   <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
-                    {item.customLabel || item.label}
+                    {item.label}
                   </TooltipContent>
                 )}
               </Tooltip>

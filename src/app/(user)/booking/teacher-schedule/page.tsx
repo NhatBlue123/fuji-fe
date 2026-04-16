@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft,
@@ -40,7 +42,6 @@ const WEEKDAY_OPTIONS = [
 ] as const;
 
 function toYmd(date: Date) {
-  const { t } = useTranslation();
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -127,7 +128,8 @@ function LegendChip({
   );
 }
 
-export default function TeacherSchedulePage() {
+function TeacherSchedulePageContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1060,5 +1062,23 @@ export default function TeacherSchedulePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function TeacherSchedulePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background px-4 py-8 text-foreground md:px-6">
+          <Card className="mx-auto max-w-3xl border-border/60 bg-card/70">
+            <CardContent className="p-6 text-muted-foreground">
+              Đang tải lịch giáo viên...
+            </CardContent>
+          </Card>
+        </main>
+      }
+    >
+      <TeacherSchedulePageContent />
+    </Suspense>
   );
 }

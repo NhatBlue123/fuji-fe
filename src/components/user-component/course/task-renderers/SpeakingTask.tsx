@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
 "use client";
+
+import { useTranslation } from "react-i18next";
 
 import type { TaskDataEnvelope } from "./types";
 import { TaskHeader, EmptyTask } from "./MultipleChoiceTask";
@@ -17,6 +18,7 @@ export default function SpeakingTask({
   data: TaskDataEnvelope;
   onTaskSubmitted?: () => void;
 }) {
+  const { t } = useTranslation();
   const hasContent = data.instructions || (data.items && data.items.length > 0);
 
   if (!hasContent) {

@@ -56,6 +56,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Pagination,
@@ -2834,7 +2835,7 @@ export function UserDetailModal({
                   variant="outline"
                   className="h-7 px-4 rounded-full border-2 border-primary/20 text-xs font-bold text-muted-foreground"
                 >
-                  {getRoleName(user?.role || "")}
+                  {getRoleName(user?.role || "", t)}
                 </Badge>
                 <span className="text-[9px] font-bold text-muted-foreground/50 uppercase">
                   Hiện tại
@@ -2847,7 +2848,7 @@ export function UserDetailModal({
 
               <div className="flex flex-col items-center gap-1.5">
                 <Badge className="h-7 px-4 rounded-full bg-primary text-white text-xs font-bold shadow-md shadow-primary/20">
-                  {getRoleName(pendingRole)}
+                  {getRoleName(pendingRole, t)}
                 </Badge>
                 <span className="text-[9px] font-bold text-primary uppercase">
                   Cấp mới

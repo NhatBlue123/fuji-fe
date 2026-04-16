@@ -114,7 +114,7 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
       refreshParticipants();
     };
 
-    const handleParticipantLeft = (_evt?: DailyEventObjectParticipant) => {
+    const handleParticipantLeft = (_evt?: unknown) => {
       refreshParticipants();
     };
 

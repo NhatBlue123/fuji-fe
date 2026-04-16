@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
 "use client";
+
+import { useTranslation } from "react-i18next";
 
 import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";

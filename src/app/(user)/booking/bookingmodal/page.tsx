@@ -14,7 +14,6 @@ import { useAuth } from "@/store/hooks";
 type BookingTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
 function formatDate(v: string) {
-  const { t } = useTranslation();
   return new Date(v).toLocaleDateString("vi-VN", {
     weekday: "short",
     day: "2-digit",
@@ -30,6 +29,7 @@ function formatTimeRange(startAt: string, endAt: string) {
 }
 
 export default function MySchedulePage() {
+  const { t } = useTranslation();
   const { isTeacher, isInitialized } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 

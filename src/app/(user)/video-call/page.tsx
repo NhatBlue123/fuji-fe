@@ -22,14 +22,6 @@ import { cn } from "@/lib/utils";
 
 type JLPTLevel = "N1" | "N2" | "N3" | "N4" | "N5";
 
-  const LEVEL_LABELS: Record<JLPTLevel, string> = {
-    N1: t("jlpt.levels.n1_desc"),
-    N2: t("jlpt.levels.n2_desc"),
-    N3: t("jlpt.levels.n3_desc"),
-    N4: t("jlpt.levels.n4_desc"),
-    N5: t("jlpt.levels.n5_desc"),
-  };
-
 // Sakura petal falling animation
 function SakuraFall({ density = 18 }: { density?: number }) {
   return (
@@ -85,6 +77,14 @@ function SearchingDots() {
 
 export default function VideoCallMatchingPage() {
   const { t } = useTranslation();
+  const LEVEL_LABELS: Record<JLPTLevel, string> = {
+    N1: t("jlpt.levels.n1_desc"),
+    N2: t("jlpt.levels.n2_desc"),
+    N3: t("jlpt.levels.n3_desc"),
+    N4: t("jlpt.levels.n4_desc"),
+    N5: t("jlpt.levels.n5_desc"),
+  };
+
   const router = useRouter();
   const signaling = useSignaling();
   const webrtc = useWebRTC();

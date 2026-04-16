@@ -43,13 +43,6 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
-
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import Link from "next/link";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import api from "@/lib/api";
 import { useTranslation } from "react-i18next";
 
 interface FeedbackDialogProps {

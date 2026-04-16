@@ -1,7 +1,9 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useTranslation } from "react-i18next";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -33,7 +35,7 @@ function formatTimeRange(startAt: string, endAt: string) {
   return `${hhmm(s)} - ${hhmm(e)}`;
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -298,11 +300,27 @@ export default function PaymentPage() {
   );
 }
 
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
+          Đang tải trang thanh toán...
+        </main>
+      }
+    >
+      <PaymentPageContent />
+    </Suspense>
+  );
+}
+
 function SuccessModal({
   router,
 }: {
   router: { push: (path: string) => void };
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">

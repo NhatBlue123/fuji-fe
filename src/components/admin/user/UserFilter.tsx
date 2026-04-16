@@ -25,6 +25,15 @@ interface UserFilterProps {
   onSortChange: (value: string) => void;
 }
 
+export const UserFilter: React.FC<UserFilterProps> = ({
+  search,
+  role,
+  status,
+  securityFilter,
+  sortBy,
+  onSearchChange,
+  onRoleChange,
+  onStatusChange,
   onSecurityFilterChange,
   onSortChange,
 }) => {

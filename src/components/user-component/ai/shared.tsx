@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
 "use client";
+
+import { useTranslation } from "react-i18next";
 
 import { memo, useEffect, useState } from "react";
 import LiquidGlass from "@/components/ui/liquid-glass-safe";
@@ -341,6 +342,8 @@ export const RightSidebar = memo(function RightSidebar({
   evaluationStatus?: SenseiEvaluationStatus;
   evaluationMessage?: string | null;
 }) {
+  const { t } = useTranslation();
+
   return (
     <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
       {/* Settings */}
@@ -365,9 +368,9 @@ export const RightSidebar = memo(function RightSidebar({
                 <SelectValue placeholder={t('auto.shared_1')} />
               </SelectTrigger>
               <SelectContent>
-                {topics.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.title}
+                {topics.map((topic) => (
+                  <SelectItem key={topic.id} value={topic.id.toString()}>
+                    {topic.title}
                   </SelectItem>
                 ))}
               </SelectContent>

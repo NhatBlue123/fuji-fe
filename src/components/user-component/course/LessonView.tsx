@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
 "use client";
+
+import { useTranslation } from "react-i18next";
 
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
@@ -96,6 +97,7 @@ function LockedLessonNotice({
   reason: "course" | "sequence";
   fallbackLessonId?: number;
 }) {
+  const { t } = useTranslation();
   const ctaHref =
     reason === "sequence" && fallbackLessonId
       ? `/course/${courseId}/lesson/${fallbackLessonId}`
@@ -150,8 +152,9 @@ function VideoPlayer({
   lesson: LessonResponseDTO;
   onMarkCompleted: () => void;
   isCompleting: boolean;
-  t: any;
 }) {
+  const { t } = useTranslation();
+
   const renderCompletionAction = () => {
     if (lesson.userCompleted) {
       return (
@@ -268,6 +271,8 @@ function TaskContent({
   lesson: LessonResponseDTO;
   onMarkCompleted: () => void;
 }) {
+  const { t } = useTranslation();
+
   const taskLabel: Record<string, string> = {
     multiple_choice: t("course.task.type.multipleChoice"),
     fill_blank: t("course.task.type.fillBlank"),
@@ -316,6 +321,8 @@ function SidebarLessonItem({
   canAccessCourse: boolean;
   isSequentiallyUnlocked: boolean;
 }) {
+  const { t } = useTranslation();
+
   const isVideo = lesson.lessonType === "video";
   const canAccessByPolicy = canAccessCourse || lesson.isPreview;
   const canAccessLesson = canAccessByPolicy && isSequentiallyUnlocked;
@@ -706,7 +713,6 @@ export default function LessonView({
               lesson={lesson}
               onMarkCompleted={handleMarkCurrentLessonCompleted}
               isCompleting={isCompletingLesson}
-              t={t}
             />
           ) : (
             <TaskContent

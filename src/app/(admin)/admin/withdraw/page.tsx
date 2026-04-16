@@ -35,6 +35,7 @@ import {
   useGetAllWithdrawRequestsQuery,
   useApproveWithdrawRequestMutation,
   useRejectWithdrawRequestMutation,
+  type WithdrawRequestData,
 } from "@/store/services/withdrawApi";
 
 import { TransferModal } from "./TransferModal";
@@ -97,7 +98,7 @@ function AdminWithdrawManagementInner() {
       setSelectedRequest(null);
       refetch();
     } catch (error) {
-      const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
+      const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
       toast.error(
         message || t("admin.withdraw.toast.approveError", { id: selectedRequest.id }),
       );
@@ -114,7 +115,7 @@ function AdminWithdrawManagementInner() {
         toast.error(t("admin.withdraw.toast.rejectSuccess", { id, reason }));
         refetch();
       } catch (error) {
-        const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
+        const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
         toast.error(message || t("admin.withdraw.toast.rejectError", { id }));
       }
     }

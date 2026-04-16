@@ -215,7 +215,7 @@ export interface RagStatusQuery {
   limit?: number;
 }
 
-function makeStatusQuery(params?: RagStatusQuery) {
+function makeStatusQuery(params?: RagStatusQuery | void) {
   const q = new URLSearchParams();
   if (!params) return "";
   if (params.keyword) q.set("keyword", params.keyword);

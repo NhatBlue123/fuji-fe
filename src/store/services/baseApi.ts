@@ -37,7 +37,10 @@ export const baseApi = createApi({
     "Subscription",
     "User",
     "CourseFinance",
-    "AdminPlan"
+    "AdminPlan",
+    "AdminRevenue",
+    "SystemError",
+    "SystemErrorSummary"
   ],
   endpoints: () => ({}),
 });

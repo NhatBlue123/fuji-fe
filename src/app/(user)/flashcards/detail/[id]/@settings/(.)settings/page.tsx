@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
 "use client";
+
+import { useTranslation } from "react-i18next";
 
 import { use } from "react";
 import { useRouter } from "next/navigation";

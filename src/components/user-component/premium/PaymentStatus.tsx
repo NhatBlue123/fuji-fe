@@ -123,7 +123,7 @@ export default function PaymentStatus({
 
       try {
         const result = await getPaymentStatus(orderId, true);
-        handleStatusResult(result.data?.status, source, result.data?.messageKey);
+        handleStatusResult(result.data?.status, source, result.data?.message);
       } catch (error) {
         console.error("[payment] status poll failed", { orderId, error });
       }
@@ -205,7 +205,7 @@ export default function PaymentStatus({
 
     try {
       const result = await getPaymentStatus(orderId, true);
-      handleStatusResult(result.data?.status, "poll", result.data?.messageKey);
+      handleStatusResult(result.data?.status, "poll", result.data?.message);
     } catch {
       toast.error(tMsg("api.error"));
     } finally {

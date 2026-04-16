@@ -27,7 +27,7 @@ const SUBJECT_OPTIONS = (t: any) => [
   { value: "Listening", label: t("booking.subject.listening") },
   { value: "Reading", label: t("booking.subject.reading") },
 ] as const;
-type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
+type SubjectOption = ReturnType<typeof SUBJECT_OPTIONS>[number]["value"];
 
 function Field({
   label,

@@ -12,6 +12,8 @@ interface UserHeaderProps {
 }
 
 export const UserHeader: React.FC<UserHeaderProps> = ({
+  onRefresh,
+  totalUsers,
   isLoading,
 }) => {
   const { t } = useTranslation();

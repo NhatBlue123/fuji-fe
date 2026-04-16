@@ -32,6 +32,8 @@ import {
 } from "./shared";
 
 const MESSAGES_PAGE_SIZE = 20;
+const STREAM_STALL_TIMEOUT_MS = 70000;
+const ROUTER_THINKING_MAX_ITEMS = 5;
 
 type AssistantPanelProps = {
   initialConversationId?: number | null;
@@ -79,17 +81,30 @@ type PaymentActionPayload = {
   note?: string;
 };
 
+type ActionLinkItem = {
+  label: string;
+  url: string;
+  note?: string;
+};
+
 type StructuredBlockType =
   | "course-preview"
   | "course-compare"
-  | "payment-action";
+  | "payment-action"
+  | "action-links";
 
 type AssistantContentSegment =
   | { kind: "markdown"; content: string }
   | { kind: "course-preview"; items: CoursePreviewItem[] }
   | { kind: "course-compare"; payload: CourseComparePayload }
   | { kind: "payment-action"; payload: PaymentActionPayload }
+  | { kind: "action-links"; links: ActionLinkItem[] }
   | { kind: "structured-loading"; blockType: StructuredBlockType };
+
+type RouterThinkingItem = {
+  phase?: string;
+  text: string;
+};
 
 /* ------------------------------------------------------------------ */
 /* AssistantPanel — chatbot AI học tiếng Nhật (Socket.IO streaming)     */
@@ -114,6 +129,10 @@ function formatConversationTime(dateLike?: string | null) {
 }
 
 function intentToLabel(intent?: string) {
+  if (intent === "grammar") return "Ngu phap";
+  if (intent === "product") return "Khoa hoc";
+  if (intent === "guide") return "Huong dan";
+  if (intent === "general_reject") return "Tu choi";
   if (intent === "grammar_qa") return "Ngu phap";
   if (intent === "product_info") return "Khoa hoc";
   if (intent === "general_chat") return "Hoi dap";
@@ -296,6 +315,46 @@ function sanitizePaymentActionPayload(
   };
 }
 
+function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
+  const wrapped = value as { links?: unknown };
+  const rawList = Array.isArray(value)
+    ? value
+    : value && typeof value === "object" && Array.isArray(wrapped.links)
+      ? wrapped.links
+      : [];
+
+  const out: ActionLinkItem[] = [];
+  for (const raw of rawList) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const record = raw as Record<string, unknown>;
+    const label =
+      typeof record.label === "string" && record.label.trim()
+        ? record.label.trim()
+        : "Mở liên kết";
+
+    const urlRaw =
+      typeof record.url === "string" && record.url.trim()
+        ? record.url.trim()
+        : "";
+
+    if (!/^\/[a-z0-9/_-]+(?:\?[a-z0-9=&%._-]+)?$/i.test(urlRaw)) {
+      continue;
+    }
+
+    const note =
+      typeof record.note === "string" && record.note.trim()
+        ? record.note.trim()
+        : undefined;
+
+    out.push({ label, url: urlRaw, note });
+  }
+
+  return out.slice(0, 6);
+}
+
 function tryParseJsonValue(raw: string): unknown | null {
   try {
     return JSON.parse(raw);
@@ -407,6 +466,11 @@ function splitLooseJsonFromMarkdown(
         const paymentPayload = sanitizePaymentActionPayload(parsed);
         if (paymentPayload) {
           structured = { kind: "payment-action", payload: paymentPayload };
+        } else {
+          const actionLinks = sanitizeActionLinksPayload(parsed);
+          if (actionLinks.length > 0) {
+            structured = { kind: "action-links", links: actionLinks };
+          }
         }
       }
     }
@@ -438,7 +502,7 @@ function stripIncompleteStructuredBlock(source: string): {
   pendingBlockType: StructuredBlockType | null;
 } {
   const openBlockRegex =
-    /```(course-preview|course-compare|payment-action)\s*/gi;
+    /```(course-preview|course-compare|payment-action|action-links)\s*/gi;
   let match: RegExpExecArray | null;
 
   while ((match = openBlockRegex.exec(source))) {
@@ -478,7 +542,7 @@ function parseAssistantContent(
     : { visibleSource: source, pendingBlockType: null };
 
   const re =
-    /```(course-preview|course-compare|payment-action)\s*([\s\S]*?)```/gi;
+    /```(course-preview|course-compare|payment-action|action-links)\s*([\s\S]*?)```/gi;
   const segments: AssistantContentSegment[] = [];
   let cursor = 0;
 
@@ -527,6 +591,16 @@ function parseAssistantContent(
       const payload = sanitizePaymentActionPayload(parsed);
       if (payload) {
         segments.push({ kind: "payment-action", payload });
+      } else {
+        const rawBlock = visibleSource.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else if (blockType === "action-links") {
+      const links = sanitizeActionLinksPayload(parsed);
+      if (links.length > 0) {
+        segments.push({ kind: "action-links", links });
       } else {
         const rawBlock = visibleSource.slice(start, end).trim();
         if (rawBlock) {
@@ -734,7 +808,9 @@ function StructuredLoadingCard({
       ? "Đang chuẩn bị danh sách khóa học..."
       : blockType === "course-compare"
         ? "Đang chuẩn bị bảng so sánh khóa học..."
-        : "Đang chuẩn bị nút thanh toán...";
+        : blockType === "payment-action"
+          ? "Đang chuẩn bị nút thanh toán..."
+          : "Đang chuẩn bị các nút điều hướng...";
 
   return (
     <div className="my-3 inline-flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
@@ -762,6 +838,38 @@ function PaymentActionCard({ payload }: { payload: PaymentActionPayload }) {
         >
           Đi đến thanh toán
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function ActionLinksCard({ links }: { links: ActionLinkItem[] }) {
+  if (links.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="my-3 rounded-xl border border-border bg-card/70 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Thao tác nhanh
+      </p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {links.map((item, idx) => (
+          <Link
+            key={`${item.url}-${idx}`}
+            href={item.url}
+            className="rounded-lg border border-border bg-background px-3 py-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+          >
+            <p className="text-sm font-semibold text-foreground">
+              {item.label}
+            </p>
+            {item.note && (
+              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                {item.note}
+              </p>
+            )}
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -804,6 +912,9 @@ export default function AssistantPanel({
     intent?: string;
     jobId?: string;
   } | null>(null);
+  const [routerThinking, setRouterThinking] = useState<RouterThinkingItem[]>(
+    [],
+  );
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamBufferRef = useRef<string>("");
@@ -819,6 +930,56 @@ export default function AssistantPanel({
     prevTop: number;
   } | null>(null);
   const pendingBottomScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
+  const streamWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearStreamWatchdog = useCallback(() => {
+    if (!streamWatchdogRef.current) {
+      return;
+    }
+    clearTimeout(streamWatchdogRef.current);
+    streamWatchdogRef.current = null;
+  }, []);
+
+  const forceFinishStreaming = useCallback(
+    (fallbackMessage: string) => {
+      clearStreamWatchdog();
+      setIsTyping(false);
+      setQueuedInfo(null);
+      setRouterThinking([]);
+      optimisticConversationRef.current = null;
+      pendingBottomScrollBehaviorRef.current = "smooth";
+
+      setMessages((prev) => {
+        const lastIdx = prev.length - 1;
+        if (
+          lastIdx >= 0 &&
+          prev[lastIdx].role === "ai" &&
+          prev[lastIdx]._streaming
+        ) {
+          const updated = [...prev];
+          updated[lastIdx] = {
+            ...updated[lastIdx],
+            textVn: fallbackMessage,
+            _streaming: false,
+          };
+          return updated;
+        }
+        return prev;
+      });
+
+      streamBufferRef.current = "";
+    },
+    [clearStreamWatchdog],
+  );
+
+  const armStreamWatchdog = useCallback(() => {
+    clearStreamWatchdog();
+    streamWatchdogRef.current = setTimeout(() => {
+      forceFinishStreaming(
+        "⚠️ Kết nối phản hồi bị gián đoạn. Vui lòng gửi lại tin nhắn.",
+      );
+    }, STREAM_STALL_TIMEOUT_MS);
+  }, [clearStreamWatchdog, forceFinishStreaming]);
 
   const goToDraftConversation = useCallback(
     (replaceUrl: boolean) => {
@@ -833,7 +994,9 @@ export default function AssistantPanel({
       setIsLoadingOlderMessages(false);
       setIsTyping(false);
       setQueuedInfo(null);
+      setRouterThinking([]);
       streamBufferRef.current = "";
+      clearStreamWatchdog();
       optimisticConversationRef.current = null;
       sessionIdRef.current = `draft_${Date.now()}`;
       pendingBottomScrollBehaviorRef.current = null;
@@ -845,7 +1008,7 @@ export default function AssistantPanel({
       }
       router.push("/ai-chat?new=1");
     },
-    [router],
+    [router, clearStreamWatchdog],
   );
 
   const restoreConversationSnapshot = useCallback((conversationId: number) => {
@@ -1067,11 +1230,13 @@ export default function AssistantPanel({
   // Keep refs in sync with selected conversation and load message page.
   useEffect(() => {
     activeConversationRef.current = activeConversationId;
+    clearStreamWatchdog();
 
     if (activeConversationId != null) {
       sessionIdRef.current = `conv_${activeConversationId}`;
       setIsTyping(false);
       setQueuedInfo(null);
+      setRouterThinking([]);
       streamBufferRef.current = "";
 
       const hasWarmSnapshot = restoreConversationSnapshot(activeConversationId);
@@ -1087,7 +1252,13 @@ export default function AssistantPanel({
     setMessages([]);
     setHasMoreMessages(false);
     setNextBeforeId(null);
-  }, [activeConversationId, loadInitialMessages, restoreConversationSnapshot]);
+    setRouterThinking([]);
+  }, [
+    activeConversationId,
+    loadInitialMessages,
+    restoreConversationSnapshot,
+    clearStreamWatchdog,
+  ]);
 
   // Timer khi typing
   useEffect(() => {
@@ -1100,6 +1271,12 @@ export default function AssistantPanel({
     return () => clearInterval(id);
   }, [isTyping]);
 
+  useEffect(() => {
+    return () => {
+      clearStreamWatchdog();
+    };
+  }, [clearStreamWatchdog]);
+
   // Listen socket chat:stream events
   useEffect(() => {
     if (!socket) return;
@@ -1111,6 +1288,38 @@ export default function AssistantPanel({
     }) => {
       if (data.sessionId !== sessionIdRef.current) return;
       setQueuedInfo({ intent: data.intent, jobId: data.jobId });
+      armStreamWatchdog();
+    };
+
+    const handleRouterThinking = (data: {
+      sessionId: string;
+      phase?: string;
+      text?: string;
+      done?: boolean;
+      route?: string | null;
+    }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+
+      const text = String(data.text || "").trim();
+      if (text) {
+        setRouterThinking((prev) => {
+          if (prev[prev.length - 1]?.text === text) {
+            return prev;
+          }
+
+          const next = [
+            ...prev,
+            {
+              phase: data.phase,
+              text,
+            },
+          ];
+
+          return next.slice(-ROUTER_THINKING_MAX_ITEMS);
+        });
+      }
+
+      armStreamWatchdog();
     };
 
     const handleStream = (data: {
@@ -1121,6 +1330,7 @@ export default function AssistantPanel({
       if (data.sessionId !== sessionIdRef.current) return;
 
       if (data.delta) {
+        armStreamWatchdog();
         streamBufferRef.current += data.delta;
         pendingBottomScrollBehaviorRef.current = "smooth";
 
@@ -1146,9 +1356,11 @@ export default function AssistantPanel({
       }
 
       if (data.done) {
+        clearStreamWatchdog();
         const finalRawText = streamBufferRef.current;
         setIsTyping(false);
         setQueuedInfo(null);
+        setRouterThinking([]);
         optimisticConversationRef.current = null;
         pendingBottomScrollBehaviorRef.current = "smooth";
 
@@ -1189,14 +1401,23 @@ export default function AssistantPanel({
       }
     };
 
+    socket.on("chat:router:thinking", handleRouterThinking);
     socket.on("chat:queued", handleQueued);
     socket.on("chat:stream", handleStream);
 
     return () => {
+      clearStreamWatchdog();
+      socket.off("chat:router:thinking", handleRouterThinking);
       socket.off("chat:queued", handleQueued);
       socket.off("chat:stream", handleStream);
     };
-  }, [socket, createAiMessage, refetchConversations]);
+  }, [
+    socket,
+    createAiMessage,
+    refetchConversations,
+    armStreamWatchdog,
+    clearStreamWatchdog,
+  ]);
 
   const ensureConversationId = useCallback(
     async (firstMessage: string) => {
@@ -1253,6 +1474,8 @@ export default function AssistantPanel({
     setInput("");
     setIsTyping(true);
     setQueuedInfo(null);
+    setRouterThinking([]);
+    armStreamWatchdog();
 
     // Emit to socket
     socket.emit(
@@ -1260,26 +1483,19 @@ export default function AssistantPanel({
       { sessionId: sessionIdRef.current, message: trimmed },
       (ack: { ok: boolean; error?: string; intent?: string }) => {
         if (!ack?.ok && !ack?.intent) {
-          setIsTyping(false);
-          setQueuedInfo(null);
-          optimisticConversationRef.current = null;
-          setMessages((prev) => {
-            const lastIdx = prev.length - 1;
-            if (lastIdx >= 0 && prev[lastIdx]._streaming) {
-              const updated = [...prev];
-              updated[lastIdx] = {
-                ...updated[lastIdx],
-                textVn: "⚠️ Không thể kết nối. Vui lòng thử lại sau.",
-                _streaming: false,
-              };
-              return updated;
-            }
-            return prev;
-          });
+          forceFinishStreaming("⚠️ Không thể kết nối. Vui lòng thử lại sau.");
         }
       },
     );
-  }, [input, socket, isConnected, ensureConversationId, createAiMessage]);
+  }, [
+    input,
+    socket,
+    isConnected,
+    ensureConversationId,
+    createAiMessage,
+    armStreamWatchdog,
+    forceFinishStreaming,
+  ]);
 
   const handleStartNewConversation = useCallback(() => {
     goToDraftConversation(false);
@@ -1294,10 +1510,12 @@ export default function AssistantPanel({
       optimisticConversationRef.current = null;
       setIsTyping(false);
       setQueuedInfo(null);
+      setRouterThinking([]);
+      clearStreamWatchdog();
       streamBufferRef.current = "";
       router.push(`/ai-chat/${conversationId}`);
     },
-    [router],
+    [router, clearStreamWatchdog],
   );
 
   const handleDeleteConversation = useCallback(
@@ -1463,6 +1681,11 @@ export default function AssistantPanel({
                                   key={`payment-${msg.id}-${idx}`}
                                   payload={segment.payload}
                                 />
+                              ) : segment.kind === "action-links" ? (
+                                <ActionLinksCard
+                                  key={`links-${msg.id}-${idx}`}
+                                  links={segment.links}
+                                />
                               ) : segment.kind === "structured-loading" ? (
                                 <StructuredLoadingCard
                                   key={`loading-${msg.id}-${idx}`}
@@ -1527,29 +1750,49 @@ export default function AssistantPanel({
               )}
 
               {isTyping && (
-                <div className="flex items-center gap-2 ml-14 opacity-60">
-                  <div className="flex gap-1">
-                    {[0, 150, 300].map((delay) => (
-                      <span
-                        key={delay}
-                        className="size-1.5 bg-muted-foreground rounded-full animate-bounce"
-                        style={{ animationDelay: `${delay}ms` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    Trợ giảng đang soạn...
-                  </span>
-                  {queuedInfo && (
-                    <span className="text-[10px] rounded bg-muted px-2 py-0.5 text-muted-foreground/80">
-                      {intentToLabel(queuedInfo.intent)} ·{" "}
-                      {queuedInfo.jobId || "..."}
+                <>
+                  <div className="flex items-center gap-2 ml-14 opacity-60">
+                    <div className="flex gap-1">
+                      {[0, 150, 300].map((delay) => (
+                        <span
+                          key={delay}
+                          className="size-1.5 bg-muted-foreground rounded-full animate-bounce"
+                          style={{ animationDelay: `${delay}ms` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Trợ giảng đang soạn...
                     </span>
+                    {queuedInfo && (
+                      <span className="text-[10px] rounded bg-muted px-2 py-0.5 text-muted-foreground/80">
+                        {intentToLabel(queuedInfo.intent)} ·{" "}
+                        {queuedInfo.jobId || "..."}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                      {(elapsedMs / 1000).toFixed(1)}s
+                    </span>
+                  </div>
+
+                  {routerThinking.length > 0 && (
+                    <div className="ml-14 mt-2 max-w-3xl rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/90">
+                        Router đang suy nghĩ
+                      </p>
+                      <div className="mt-1 space-y-1">
+                        {routerThinking.map((item, idx) => (
+                          <p
+                            key={`${item.phase || "step"}-${idx}`}
+                            className="text-xs leading-5 text-muted-foreground"
+                          >
+                            {idx + 1}. {item.text}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                    {(elapsedMs / 1000).toFixed(1)}s
-                  </span>
-                </div>
+                </>
               )}
               <div ref={messagesEndRef} />
             </>

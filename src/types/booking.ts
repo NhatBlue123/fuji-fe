@@ -206,3 +206,17 @@ export type TeacherScheduleResponse = {
   toDate: string;
   items: TeacherScheduleGroup[];
 };
+
+export type StudentBusySlot = {
+  timeSlotId: number;
+  teacherId: number;
+  teacherName: string;
+  startAt: string;
+  endAt: string;
+  subject: string;
+};
+
+export type StudentBusySlotsResponse = {
+  date: string;
+  busySlots: StudentBusySlot[];
+};

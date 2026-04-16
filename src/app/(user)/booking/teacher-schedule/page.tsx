@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { vi } from "date-fns/locale";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useGetTeacherAvailabilityQuery } from "@/store/services/bookingApi";
+import { useGetTeacherAvailabilityQuery, useGetMyBusySlotsQuery } from "@/store/services/bookingApi";
 import type { DiscoverySlot } from "@/types/booking";
 
 const WEEKDAY_OPTIONS = [
@@ -160,6 +161,41 @@ export default function TeacherSchedulePage() {
     { skip: !validTeacherId }
   );
 
+  // Fetch busy slots của học viên theo ngày được chọn
+  const selectedDateKey = selectedDate ? toYmd(selectedDate) : "";
+  const { data: busySlotsData } = useGetMyBusySlotsQuery(
+    { date: selectedDateKey },
+    { skip: !selectedDateKey }
+  );
+
+  // Kiểm tra 1 slot có trùng giờ với busy slots không
+  const isSlotOverlapping = (slot: DiscoverySlot): boolean => {
+    if (!busySlotsData?.busySlots?.length) return false;
+    const slotStart = new Date(slot.startAt).getTime();
+    const slotEnd = new Date(slot.endAt).getTime();
+    return busySlotsData.busySlots.some((busy) => {
+      const busyStart = new Date(busy.startAt).getTime();
+      const busyEnd = new Date(busy.endAt).getTime();
+      return slotStart < busyEnd && slotEnd > busyStart;
+    });
+  };
+
+  // Lấy thông tin busy slot để hiển thị cảnh báo
+  const getOverlapWarning = (slot: DiscoverySlot): string | null => {
+    if (!busySlotsData?.busySlots?.length) return null;
+    const slotStart = new Date(slot.startAt).getTime();
+    const slotEnd = new Date(slot.endAt).getTime();
+    const overlapping = busySlotsData.busySlots.find((busy) => {
+      const busyStart = new Date(busy.startAt).getTime();
+      const busyEnd = new Date(busy.endAt).getTime();
+      return slotStart < busyEnd && slotEnd > busyStart;
+    });
+    if (!overlapping) return null;
+    const busyStartTime = new Date(overlapping.startAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const busyEndTime = new Date(overlapping.endAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    return `Trùng với lịch đã đặt với ${overlapping.teacherName} (${busyStartTime} - ${busyEndTime})`;
+  };
+
   useEffect(() => {
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
@@ -196,8 +232,6 @@ export default function TeacherSchedulePage() {
       setSelectedIds(nextIds);
     }
   }, [groups, selectedIds]);
-
-  const selectedDateKey = selectedDate ? toYmd(selectedDate) : "";
 
   const selectedDaySlots = useMemo(() => {
     const slots = slotsByDate.get(selectedDateKey) ?? [];
@@ -366,6 +400,15 @@ export default function TeacherSchedulePage() {
 
   const toggleSlot = (slot: DiscoverySlot) => {
     if (!isAvailable(slot)) return;
+
+    // Kiểm tra trùng giờ với lịch đã đặt
+    if (isSlotOverlapping(slot)) {
+      const warning = getOverlapWarning(slot);
+      toast.warning("Không thể chọn slot này", {
+        description: warning || "Bạn đã có lịch học khác trùng giờ trong ngày.",
+      });
+      return;
+    }
 
     setSelectedIds((prev) =>
       prev.includes(slot.timeSlotId)
@@ -760,6 +803,8 @@ export default function TeacherSchedulePage() {
                               {selectedDaySlots.map((slot) => {
                                 const selected = selectedIds.includes(slot.timeSlotId);
                                 const available = isAvailable(slot);
+                                const overlapping = isSlotOverlapping(slot);
+                                const warning = getOverlapWarning(slot);
 
                                 return (
                                   <button
@@ -773,9 +818,13 @@ export default function TeacherSchedulePage() {
                                       selected && "border-secondary/40 bg-secondary/10 shadow-sm",
                                       !selected &&
                                         available &&
+                                        !overlapping &&
                                         "border-border/70 bg-background/60 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/5",
                                       !available &&
-                                        "cursor-not-allowed border-destructive/15 bg-destructive/5 opacity-75"
+                                        "cursor-not-allowed border-destructive/15 bg-destructive/5 opacity-75",
+                                      overlapping &&
+                                        !selected &&
+                                        "border-amber-500/30 bg-amber-500/5 cursor-not-allowed"
                                     )}
                                   >
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -787,9 +836,13 @@ export default function TeacherSchedulePage() {
                                               "border-secondary/20 bg-secondary text-secondary-foreground",
                                             !selected &&
                                               available &&
+                                              !overlapping &&
                                               "border-primary/15 bg-primary/10 text-primary",
                                             !available &&
-                                              "border-destructive/15 bg-destructive/10 text-destructive"
+                                              "border-destructive/15 bg-destructive/10 text-destructive",
+                                            overlapping &&
+                                              !selected &&
+                                              "border-amber-500/30 bg-amber-500/10 text-amber-600"
                                           )}
                                         >
                                           {selected ? (
@@ -818,6 +871,12 @@ export default function TeacherSchedulePage() {
                                           <p className="mt-1 text-sm text-muted-foreground">
                                             {slot.durationMinutes} phút
                                           </p>
+
+                                          {overlapping && (
+                                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                              {warning}
+                                            </p>
+                                          )}
                                         </div>
                                       </div>
 
@@ -829,13 +888,19 @@ export default function TeacherSchedulePage() {
                                             "border-transparent bg-secondary text-secondary-foreground",
                                           !selected &&
                                             available &&
+                                            !overlapping &&
                                             "border-primary/15 bg-primary/10 text-primary",
                                           !available &&
-                                            "border-destructive/15 bg-destructive/10 text-destructive"
+                                            "border-destructive/15 bg-destructive/10 text-destructive",
+                                          overlapping &&
+                                            !selected &&
+                                            "border-amber-500/30 bg-amber-500/10 text-amber-600"
                                         )}
                                       >
                                         {selected
                                           ? "Đã chọn"
+                                          : overlapping
+                                          ? "Trùng lịch"
                                           : available
                                           ? "Available"
                                           : "Booked"}

@@ -13,6 +13,8 @@ import {
   Plus,
   Trash2,
   User2,
+  BookOpen,
+  CalendarX,
 } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
@@ -47,6 +49,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+type ScheduleView = "teaching" | "available";
 
 const HOUR_HEIGHT = 72;
 const TIME_COLUMN_WIDTH = 84;
@@ -307,6 +311,7 @@ function ScheduleEvent({
 export default function TeachingSchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [scheduleView, setScheduleView] = useState<ScheduleView>("teaching");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<TeacherScheduleSlot | null>(
@@ -361,22 +366,55 @@ export default function TeachingSchedulePage() {
     [groups],
   );
 
-  const bookedCount = useMemo(
-    () => allSlots.filter((slot) => slot.status === "BOOKED").length,
+  const teachingSlots = useMemo(
+    () => allSlots.filter((slot) => slot.status === "BOOKED"),
     [allSlots],
   );
 
-  const availableCount = allSlots.length - bookedCount;
+  const availableSlots = useMemo(
+    () => allSlots.filter((slot) => slot.status === "AVAILABLE"),
+    [allSlots],
+  );
+
+  const filteredSlots = useMemo(() => {
+    return scheduleView === "teaching" ? teachingSlots : availableSlots;
+  }, [scheduleView, teachingSlots, availableSlots]);
+
+  const filteredGroups = useMemo(() => {
+    if (scheduleView === "teaching") {
+      return groups
+        .map((group) => ({
+          ...group,
+          slots: group.slots.filter((slot) => slot.status === "BOOKED"),
+        }))
+        .filter((group) => group.slots.length > 0);
+    } else {
+      return groups
+        .map((group) => ({
+          ...group,
+          slots: group.slots.filter((slot) => slot.status === "AVAILABLE"),
+        }))
+        .filter((group) => group.slots.length > 0);
+    }
+  }, [scheduleView, groups]);
+
+  const filteredSlotsByDate = useMemo(() => {
+    return new Map(filteredGroups.map((group) => [group.date, group.slots]));
+  }, [filteredGroups]);
+
+  const bookedCount = teachingSlots.length;
+
+  const availableCount = availableSlots.length;
 
   const hourRange = useMemo(() => {
-    if (allSlots.length === 0) {
+    if (filteredSlots.length === 0) {
       return { start: 6, end: 22 };
     }
 
     let minHour = 23;
     let maxHour = 0;
 
-    allSlots.forEach((slot) => {
+    filteredSlots.forEach((slot) => {
       const start = new Date(slot.startAt);
       const end = new Date(slot.endAt);
       const slotStartHour = start.getHours();
@@ -391,7 +429,7 @@ export default function TeachingSchedulePage() {
       start: Math.max(0, minHour - 1),
       end: Math.min(24, maxHour + 1),
     };
-  }, [allSlots]);
+  }, [filteredSlots]);
 
   const hours = useMemo(
     () =>
@@ -405,14 +443,14 @@ export default function TeachingSchedulePage() {
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
   useEffect(() => {
-    if (!scrollRef.current || allSlots.length === 0) return;
+    if (!scrollRef.current || filteredSlots.length === 0) return;
 
-    const firstSlot = allSlots[0];
+    const firstSlot = filteredSlots[0];
     const startMinutes =
       getMinutesOfDay(firstSlot.startAt) - hourRange.start * 60;
     const top = (startMinutes / 60) * HOUR_HEIGHT;
     scrollRef.current.scrollTop = Math.max(top - HOUR_HEIGHT, 0);
-  }, [allSlots, hourRange.start]);
+  }, [filteredSlots, hourRange.start]);
 
   useEffect(() => {
     if (editTarget) {
@@ -618,6 +656,45 @@ export default function TeachingSchedulePage() {
               Hiển thị theo từng giờ trong 7 ngày.
             </p>
           </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-1">
+            <button
+              type="button"
+              onClick={() => setScheduleView("teaching")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
+                scheduleView === "teaching"
+                  ? "bg-background text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <BookOpen className="size-4" />
+              Lịch dạy
+              {bookedCount > 0 && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {bookedCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleView("available")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
+                scheduleView === "available"
+                  ? "bg-background text-emerald-600 dark:text-emerald-300 shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <CalendarX className="size-4" />
+              Lịch rảnh
+              {availableCount > 0 && (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
+                  {availableCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {isLoading || isFetching ? (
@@ -627,6 +704,35 @@ export default function TeachingSchedulePage() {
         ) : isError ? (
           <div className="flex h-[320px] items-center justify-center px-6 text-center text-sm text-destructive">
             Không tải được lịch dạy của giáo viên.
+          </div>
+        ) : filteredSlots.length === 0 ? (
+          <div className="flex h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
+            <div
+              className={cn(
+                "flex size-16 items-center justify-center rounded-full",
+                scheduleView === "teaching"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-emerald-500/10 text-emerald-500",
+              )}
+            >
+              {scheduleView === "teaching" ? (
+                <BookOpen className="size-8" />
+              ) : (
+                <CalendarX className="size-8" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">
+                {scheduleView === "teaching"
+                  ? "Chưa có lịch dạy"
+                  : "Chưa có lịch rảnh"}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {scheduleView === "teaching"
+                  ? "Tuần này chưa có slot nào được học viên đặt."
+                  : "Tuần này chưa có slot trống nào cho học viên đặt."}
+              </p>
+            </div>
           </div>
         ) : (
           <div
@@ -701,7 +807,7 @@ export default function TeachingSchedulePage() {
 
                 {weekDays.map((day) => {
                   const dayKey = toYmd(day);
-                  const daySlots = slotsByDate.get(dayKey) ?? [];
+                  const daySlots = filteredSlotsByDate.get(dayKey) ?? [];
 
                   return (
                     <div

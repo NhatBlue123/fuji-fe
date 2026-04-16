@@ -11,6 +11,7 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   MyTimeSlotItem,
+  StudentBusySlotsResponse,
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
   VideoSessionResponse,
@@ -177,6 +178,11 @@ export const bookingApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<{ reviewId: number; rating: number; comment: string }>) => res.data,
       invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
     }),
+
+    getMyBusySlots: builder.query<StudentBusySlotsResponse, { date: string }>({
+      query: ({ date }) => `/bookings/me/busy-slots?date=${date}`,
+      transformResponse: (res: ApiEnvelope<StudentBusySlotsResponse>) => res.data,
+    }),
   }),
 });
 
@@ -196,4 +202,5 @@ export const {
   useGetMyTeacherScheduleQuery,
   useGetVideoSessionMutation,
   useSubmitSessionReviewMutation,
+  useGetMyBusySlotsQuery,
 } = bookingApi;

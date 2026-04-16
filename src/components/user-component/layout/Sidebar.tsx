@@ -39,18 +39,27 @@ const Sidebar = () => {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [tooltipReady, setTooltipReady] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved === "true") setIsCollapsed(true);
+    if (saved === "true") {
+      setIsCollapsed(true);
+      setTooltipReady(true);
+    }
   }, []);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
+    setTooltipReady(false); // tắt tooltip ngay khi bắt đầu transition
     localStorage.setItem("sidebar-collapsed", String(newState));
+    if (newState) {
+      // Chỉ bật tooltip sau khi animation collapse xong (300ms)
+      setTimeout(() => setTooltipReady(true), 320);
+    }
   };
 
   const isAdminOrTeacher =
@@ -75,7 +84,7 @@ const Sidebar = () => {
   ], [isMounted, t]);
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={300}>
       <aside 
         className={cn(
           "relative hidden flex-col bg-sidebar border-r border-sidebar-border md:flex transition-all duration-300 ease-in-out z-40 shadow-sm font-sans",
@@ -118,40 +127,46 @@ const Sidebar = () => {
             const active = isActive(item.path);
             const Icon = item.icon;
             
+            const linkContent = (
+              <Link 
+                href={item.path} 
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                  active 
+                    ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white" 
+                    : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
+                )}
+              >
+                <Icon className={cn(
+                  "h-5 w-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110",
+                  active ? "text-white stroke-[3px]" : "group-hover:text-secondary"
+                )} />
+                
+                {!isCollapsed && (
+                  <span className={cn(
+                      "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
+                      active ? "text-white" : "group-hover:text-secondary"
+                    )}
+                  >
+                    {isMounted ? (item.customLabel || item.label) : ""}
+                  </span>
+                )}
+                
+                {active && !isCollapsed && (
+                  <div className="absolute right-0 w-1 h-6 bg-white/20 rounded-l-full" />
+                )}
+                <div className="absolute inset-0 bg-white/0 group-active:bg-white/10 transition-colors" />
+              </Link>
+            );
+
+            if (!isCollapsed || !isMounted) return <div key={item.path}>{linkContent}</div>;
+
             return (
               <Tooltip key={item.path}>
                 <TooltipTrigger asChild>
-                  <Link 
-                    href={item.path} 
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
-                      active 
-                        ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white" 
-                        : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
-                    )}
-                  >
-                    <Icon className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110",
-                      active ? "text-white stroke-[3px]" : "group-hover:text-secondary"
-                    )} />
-                    
-                    {!isCollapsed && (
-                      <span className={cn(
-                          "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
-                          active ? "text-white" : "group-hover:text-secondary"
-                        )}
-                      >
-                        {isMounted ? (item.customLabel || item.label) : ""}
-                      </span>
-                    )}
-                    
-                    {active && !isCollapsed && (
-                      <div className="absolute right-0 w-1 h-6 bg-white/20 rounded-l-full" />
-                    )}
-                    <div className="absolute inset-0 bg-white/0 group-active:bg-white/10 transition-colors" />
-                  </Link>
+                  {linkContent}
                 </TooltipTrigger>
-                {isCollapsed && isMounted && (
+                {tooltipReady && (
                   <TooltipContent side="right" className="bg-secondary text-white font-bold border-none shadow-xl scale-100 animate-in zoom-in-95 backdrop-blur-md">
                     {item.customLabel || item.label}
                   </TooltipContent>
@@ -163,8 +178,8 @@ const Sidebar = () => {
           <div className="my-6 border-t border-sidebar-border mx-2 opacity-50" />
 
           {isMounted && isAdminOrTeacher && (
-            <Tooltip>
-              <TooltipTrigger asChild>
+            (() => {
+              const linkContent = (
                 <Link 
                   href="/admin" 
                   className={cn(
@@ -175,11 +190,21 @@ const Sidebar = () => {
                   <ShieldCheck className="h-5 w-5 flex-shrink-0 group-hover:rotate-3 transition-transform text-secondary/70" />
                   {!isCollapsed && <span className="text-[11px] font-bold tracking-widest uppercase">Admin Workspace</span>}
                 </Link>
-              </TooltipTrigger>
-              {isCollapsed && (
-                <TooltipContent side="right" className="bg-secondary text-white font-bold">Admin Workspace</TooltipContent>
-              )}
-            </Tooltip>
+              );
+
+              if (!isCollapsed) return linkContent;
+
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {linkContent}
+                  </TooltipTrigger>
+                  {tooltipReady && (
+                    <TooltipContent side="right" className="bg-secondary text-white font-bold">Admin Workspace</TooltipContent>
+                  )}
+                </Tooltip>
+              );
+            })()
           )}
         </nav>
 

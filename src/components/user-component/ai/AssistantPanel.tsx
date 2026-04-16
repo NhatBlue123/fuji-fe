@@ -355,6 +355,89 @@ function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
   return out.slice(0, 6);
 }
 
+function parseActionLinksMarkerBody(body: string): ActionLinkItem[] {
+  const lines = String(body || "").split(/\r?\n/);
+  const parsed: ActionLinkItem[] = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const match = line.match(
+      /^[-*]\s*\[([^\]]+)\]\((\/[a-z0-9/_\-?=&%.]+)\)\s*(?:::\s*(.+))?$/i,
+    );
+    if (!match) continue;
+
+    const label = String(match[1] || "").trim();
+    const url = String(match[2] || "").trim();
+    const note = String(match[3] || "").trim();
+
+    if (!label || !url) continue;
+    parsed.push({
+      label,
+      url,
+      note: note || undefined,
+    });
+  }
+
+  return sanitizeActionLinksPayload(parsed);
+}
+
+function splitActionLinksMarkerFromMarkdown(
+  markdown: string,
+): AssistantContentSegment[] {
+  const source = String(markdown || "");
+  if (!source.trim()) {
+    return [];
+  }
+
+  const markerRegex = /@@@action-links\s*([\s\S]*?)@@@/gi;
+  const segments: AssistantContentSegment[] = [];
+  let cursor = 0;
+  let found = false;
+
+  while (true) {
+    const match = markerRegex.exec(source);
+    if (!match) break;
+
+    found = true;
+    const start = match.index;
+    const end = markerRegex.lastIndex;
+
+    if (start > cursor) {
+      const before = source.slice(cursor, start).trim();
+      if (before) {
+        segments.push({ kind: "markdown", content: before });
+      }
+    }
+
+    const links = parseActionLinksMarkerBody(match[1] || "");
+    if (links.length > 0) {
+      segments.push({ kind: "action-links", links });
+    } else {
+      const rawBlock = source.slice(start, end).trim();
+      if (rawBlock) {
+        segments.push({ kind: "markdown", content: rawBlock });
+      }
+    }
+
+    cursor = end;
+  }
+
+  if (!found) {
+    return [{ kind: "markdown", content: source.trim() }];
+  }
+
+  if (cursor < source.length) {
+    const tail = source.slice(cursor).trim();
+    if (tail) {
+      segments.push({ kind: "markdown", content: tail });
+    }
+  }
+
+  return segments;
+}
+
 function tryParseJsonValue(raw: string): unknown | null {
   try {
     return JSON.parse(raw);
@@ -419,82 +502,101 @@ function findBalancedJsonEnd(source: string, start: number): number {
 function splitLooseJsonFromMarkdown(
   markdown: string,
 ): AssistantContentSegment[] {
-  const text = String(markdown || "");
-  if (!text.trim()) {
+  const source = String(markdown || "");
+  if (!source.trim()) {
     return [];
   }
 
-  const segments: AssistantContentSegment[] = [];
-  let cursor = 0;
-  let searchFrom = 0;
+  const markerExpanded = splitActionLinksMarkerFromMarkdown(source);
+  const finalSegments: AssistantContentSegment[] = [];
 
-  while (searchFrom < text.length) {
-    const nextArray = text.indexOf("[", searchFrom);
-    const nextObject = text.indexOf("{", searchFrom);
-
-    let start = -1;
-    if (nextArray === -1) {
-      start = nextObject;
-    } else if (nextObject === -1) {
-      start = nextArray;
-    } else {
-      start = Math.min(nextArray, nextObject);
-    }
-
-    if (start === -1) {
-      break;
-    }
-
-    const end = findBalancedJsonEnd(text, start);
-    if (end === -1) {
-      searchFrom = start + 1;
+  for (const markerSegment of markerExpanded) {
+    if (markerSegment.kind !== "markdown") {
+      finalSegments.push(markerSegment);
       continue;
     }
 
-    const jsonCandidate = text.slice(start, end + 1).trim();
-    const parsed = tryParseJsonValue(jsonCandidate);
-    let structured: AssistantContentSegment | null = null;
+    const text = String(markerSegment.content || "");
+    if (!text.trim()) continue;
 
-    const previewItems = sanitizeCoursePreviewItems(parsed);
-    if (previewItems.length > 0) {
-      structured = { kind: "course-preview", items: previewItems };
-    } else {
-      const comparePayload = sanitizeCourseComparePayload(parsed);
-      if (comparePayload) {
-        structured = { kind: "course-compare", payload: comparePayload };
+    const segments: AssistantContentSegment[] = [];
+    let cursor = 0;
+    let searchFrom = 0;
+
+    while (searchFrom < text.length) {
+      const nextArray = text.indexOf("[", searchFrom);
+      const nextObject = text.indexOf("{", searchFrom);
+
+      let start = -1;
+      if (nextArray === -1) {
+        start = nextObject;
+      } else if (nextObject === -1) {
+        start = nextArray;
       } else {
-        const paymentPayload = sanitizePaymentActionPayload(parsed);
-        if (paymentPayload) {
-          structured = { kind: "payment-action", payload: paymentPayload };
+        start = Math.min(nextArray, nextObject);
+      }
+
+      if (start === -1) {
+        break;
+      }
+
+      const end = findBalancedJsonEnd(text, start);
+      if (end === -1) {
+        searchFrom = start + 1;
+        continue;
+      }
+
+      const jsonCandidate = text.slice(start, end + 1).trim();
+      const parsed = tryParseJsonValue(jsonCandidate);
+      let structured: AssistantContentSegment | null = null;
+
+      const previewItems = sanitizeCoursePreviewItems(parsed);
+      if (previewItems.length > 0) {
+        structured = { kind: "course-preview", items: previewItems };
+      } else {
+        const comparePayload = sanitizeCourseComparePayload(parsed);
+        if (comparePayload) {
+          structured = { kind: "course-compare", payload: comparePayload };
         } else {
-          const actionLinks = sanitizeActionLinksPayload(parsed);
-          if (actionLinks.length > 0) {
-            structured = { kind: "action-links", links: actionLinks };
+          const paymentPayload = sanitizePaymentActionPayload(parsed);
+          if (paymentPayload) {
+            structured = { kind: "payment-action", payload: paymentPayload };
+          } else {
+            const actionLinks = sanitizeActionLinksPayload(parsed);
+            if (actionLinks.length > 0) {
+              structured = { kind: "action-links", links: actionLinks };
+            }
           }
         }
       }
-    }
 
-    if (structured) {
-      const before = text.slice(cursor, start).trim();
-      if (before) {
-        segments.push({ kind: "markdown", content: before });
+      if (structured) {
+        const before = text.slice(cursor, start).trim();
+        if (before) {
+          segments.push({ kind: "markdown", content: before });
+        }
+        segments.push(structured);
+        cursor = end + 1;
+        searchFrom = end + 1;
+        continue;
       }
-      segments.push(structured);
-      cursor = end + 1;
-      searchFrom = end + 1;
-      continue;
+
+      searchFrom = start + 1;
     }
 
-    searchFrom = start + 1;
+    const tail = text.slice(cursor).trim();
+    if (tail) {
+      segments.push({ kind: "markdown", content: tail });
+    }
+
+    if (segments.length === 0) {
+      finalSegments.push({ kind: "markdown", content: text });
+    } else {
+      finalSegments.push(...segments);
+    }
   }
 
-  const tail = text.slice(cursor).trim();
-  if (tail) {
-    segments.push({ kind: "markdown", content: tail });
-  }
-
-  return segments;
+  return finalSegments;
 }
 
 function stripIncompleteStructuredBlock(source: string): {
@@ -520,6 +622,23 @@ function stripIncompleteStructuredBlock(source: string): {
     }
 
     openBlockRegex.lastIndex = closeIndex + 3;
+  }
+
+  const markerRegex = /@@@action-links\s*/gi;
+  let markerMatch: RegExpExecArray | null;
+
+  while ((markerMatch = markerRegex.exec(source))) {
+    const bodyStart = markerRegex.lastIndex;
+    const closeIndex = source.indexOf("@@@", bodyStart);
+
+    if (closeIndex === -1) {
+      return {
+        visibleSource: source.slice(0, markerMatch.index),
+        pendingBlockType: "action-links",
+      };
+    }
+
+    markerRegex.lastIndex = closeIndex + 3;
   }
 
   return {
@@ -849,28 +968,56 @@ function ActionLinksCard({ links }: { links: ActionLinkItem[] }) {
   }
 
   return (
-    <div className="my-3 rounded-xl border border-border bg-card/70 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Thao tác nhanh
+    <div className="my-4 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-sky-500/10 p-4 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-primary/80">
+        Fuji Smart Links
       </p>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {links.map((item, idx) => (
           <Link
             key={`${item.url}-${idx}`}
             href={item.url}
-            className="rounded-lg border border-border bg-background px-3 py-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+            className="group relative overflow-hidden rounded-xl border border-primary/20 bg-background/90 px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md hover:shadow-primary/10"
+            style={{
+              animation: "fadeIn 320ms ease-out forwards",
+              animationDelay: `${idx * 70}ms`,
+            }}
           >
-            <p className="text-sm font-semibold text-foreground">
-              {item.label}
-            </p>
-            {item.note && (
-              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                {item.note}
-              </p>
-            )}
+            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/10 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+            <div className="relative z-10 flex items-start gap-2">
+              <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] text-primary">
+                →
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground group-hover:text-primary">
+                  {item.label}
+                </p>
+                <p className="mt-0.5 text-[11px] font-medium text-primary/80">
+                  {item.url}
+                </p>
+                {item.note && (
+                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                    {item.note}
+                  </p>
+                )}
+              </div>
+            </div>
           </Link>
         ))}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1600,11 +1747,11 @@ export default function AssistantPanel({
                   {isLoadingOlderMessages ? (
                     <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
                       <Loader2 className="size-3 animate-spin" />
-                      Dang tai tin nhan cu hon...
+                      Đang tải tin nhắn cũ hơn...
                     </span>
                   ) : (
                     <span className="text-[11px] text-muted-foreground/80">
-                      Keo len de tai them tin nhan cu hon
+                      Cuộn lên để xem tin nhắn cũ hơn
                     </span>
                   )}
                 </div>

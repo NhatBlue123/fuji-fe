@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { Socket } from "socket.io-client";
 import axios from "axios";
@@ -14,6 +15,8 @@ import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import api from "@/lib/api";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 import {
   connectNotificationSocket,
   disconnectNotificationSocket,
@@ -31,6 +34,8 @@ type NotificationContextValue = {
   markAsRead: (id: number) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: number) => Promise<void>;
+  bellRingCount: number;
+  playBellSound: () => void;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(
@@ -43,6 +48,7 @@ export function NotificationProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { accessToken, isAuthenticated, user, isInitialized } = useAuth();
   const { socket: aiSocket } = useAIChatSocket();
@@ -50,6 +56,10 @@ export function NotificationProvider({
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bellRingCount, setBellRingCount] = useState(0);
+  
+  const isMountedRef = useRef(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const resetNotificationSocketState = useCallback(() => {
     setSocket(null);
@@ -62,19 +72,79 @@ export function NotificationProvider({
   }, []);
 
   /**
-   * Lấy danh sách thông báo từ Backend API
+   * Phát tiếng chuông khi có thông báo mới
+   */
+  const playBellSound = useCallback(() => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      const ctx = audioContextRef.current;
+
+      // Resume AudioContext nếu nó bị suspended (Chrome autoplay policy)
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {
+          // Ignore errors - audio might still not be allowed
+        });
+      }
+
+      // Trì hoãn phát tiếng chuông một chút để đợi AudioContext resume
+      const playChime = () => {
+        const frequencies = [2093, 2637, 3136];
+        const durations = [0.15, 0.15, 0.3];
+        const delays = [0, 0.15, 0.3];
+
+        frequencies.forEach((freq, i) => {
+          const startTime = ctx.currentTime + delays[i];
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
+
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(freq, startTime);
+
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + durations[i]);
+
+          oscillator.start(startTime);
+          oscillator.stop(startTime + durations[i]);
+        });
+      };
+
+      if (ctx.state === "running") {
+        playChime();
+      } else {
+        // Đợi một chút rồi thử lại
+        setTimeout(() => {
+          if (ctx.state === "running") {
+            playChime();
+          }
+        }, 100);
+      }
+
+      console.log("[NotificationProvider] Bell sound played!");
+    } catch (error) {
+      console.error("Failed to play bell sound:", error);
+    }
+  }, []);
+
+  /**
+   * Lấy danh sách thông báo từ Backend API (kèm unreadCount từ API)
    */
   const fetchNotifications = useCallback(async () => {
-    // Chờ useAuthInit xác thực / refresh JWT — tránh gọi API khi token cookie còn hết hạn
-    // nhưng Redux đã hydrate isAuthenticated từ localStorage (401 lần đầu load).
     if (!isInitialized || !isAuthenticated || !accessToken) return;
     try {
       const res = await api.get("/notifications");
+      console.log("[NotificationProvider] fetchNotifications response:", res.data);
       setNotifications(res.data.content);
-      const count = res.data.content.filter(
-        (n: Notification) => !n.isRead,
-      ).length;
-      setUnreadCount(count);
+      // Lấy unreadCount trực tiếp từ response của API (count từ DB, chính xác)
+      if (res.data.unreadCount !== undefined) {
+        console.log("[NotificationProvider] Setting unreadCount from API:", res.data.unreadCount);
+        setUnreadCount(res.data.unreadCount);
+      }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         return;
@@ -84,7 +154,7 @@ export function NotificationProvider({
   }, [isInitialized, isAuthenticated, accessToken]);
 
   /**
-   * Đánh dấu 1 thông báo là đã đọc
+   * Đánh dấu 1 thông báo là đã đọc
    */
   const markAsRead = async (id: number) => {
     try {
@@ -99,7 +169,7 @@ export function NotificationProvider({
   };
 
   /**
-   * Đánh dấu tất cả là đã đọc
+   * Đánh dấu tất cả là đã đọc
    */
   const markAllAsRead = async () => {
     try {
@@ -112,7 +182,7 @@ export function NotificationProvider({
   };
 
   /**
-   * Xóa 1 thông báo
+   * Xóa 1 thông báo
    */
   const deleteNotification = async (id: number) => {
     try {
@@ -129,6 +199,8 @@ export function NotificationProvider({
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!isInitialized || !isAuthenticated || !user) {
       disconnectNotificationSocket();
       queueMicrotask(resetNotificationSocketState);
@@ -151,12 +223,12 @@ export function NotificationProvider({
       setUnreadCount((prev) => prev + 1);
 
       // Hiển thị thông báo dạng Popup (Toast) ngay lập tức
-      toast(notification.title, {
-        description: notification.content,
+      toast(tMsg(notification.title), {
+        description: tMsg(notification.content),
         // Nếu thông báo có đường dẫn liên kết, hiển thị nút "Xem ngay"
         action: notification.linkUrl
           ? {
-              label: "Xem ngay",
+              label: tMsg("common.viewNow") || "Xem ngay",
               onClick: () => {
                 markAsRead(notification.id); // Đánh dấu đã đọc khi click
                 router.push(notification.linkUrl!); // Chuyển hướng trang
@@ -164,7 +236,13 @@ export function NotificationProvider({
             }
           : undefined,
       });
+      
+      // Rung chuông + phát tiếng chuông
+      setBellRingCount(c => c + 1);
+      playBellSound();
     };
+
+    console.log("[NotificationProvider] Connecting socket with userId:", user.id);
 
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
@@ -177,6 +255,7 @@ export function NotificationProvider({
       s.off("disconnect", handleDisconnect);
       s.off("new-notification", handleNewNotification);
       disconnectNotificationSocket();
+      isMountedRef.current = false;
     };
   }, [
     accessToken,
@@ -185,8 +264,8 @@ export function NotificationProvider({
     isInitialized,
     isAuthenticated,
     user,
-    router,
     fetchNotifications,
+    playBellSound,
   ]);
 
   useEffect(() => {
@@ -200,14 +279,14 @@ export function NotificationProvider({
     }) => {
       if (isAiChatPage) return;
 
-      toast.success("Sensei đã chấm điểm xong", {
+      toast.success(tMsg("ai.evaluationCompleted") || "Sensei đã chấm điểm xong", {
         description:
-          payload?.feedback?.feedbackText ||
+          tMsg(payload?.feedback?.feedbackText) ||
           (payload?.sessionCode
-            ? `Phiên ${payload.sessionCode} đã có nhận xét mới.`
-            : "Bạn đã có nhận xét mới từ Sensei."),
+            ? tMsg("ai.sessionHasNewFeedback", { code: payload.sessionCode }) || `Phiên ${payload.sessionCode} đã có nhận xét mới.`
+            : tMsg("ai.genericFeedbackReceived") || "Bạn đã có nhận xét mới từ Sensei."),
         action: {
-          label: "Mở AI Chat",
+          label: tMsg("ai.openChat") || "Mở AI Chat",
           onClick: () => router.push("/ai-chat"),
         },
       });
@@ -250,6 +329,8 @@ export function NotificationProvider({
       markAsRead,
       markAllAsRead,
       deleteNotification,
+      bellRingCount,
+      playBellSound,
     }),
     [socket, isConnected, unreadCount, notifications, fetchNotifications],
   );

@@ -7,8 +7,10 @@ import PremiumTabs from "@/components/user-component/premium/PremiumTabs";
 import PricingCards from "@/components/user-component/premium/PricingCards";
 import FeatureGrid from "@/components/user-component/premium/FeatureGrid";
 import TopupContent from "@/components/user-component/premium/TopupContent";
+import { useTranslation } from "react-i18next";
 
 function PremiumPageContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -26,7 +28,7 @@ function PremiumPageContent() {
           onClick={() => router.back()}
           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-6"
         >
-          <ArrowLeft size={16} /> Quay lại
+          <ArrowLeft size={16} /> {t("common.back")}
         </button>
         <PremiumTabs activeTab={tab} onChangeTab={handleTabChange} />
 
@@ -37,7 +39,7 @@ function PremiumPageContent() {
 
               <div className="mt-16 w-full">
                 <h2 className="text-2xl font-bold text-center mb-8">
-                  Tại sao nên chọn Premium?
+                  {t("premium.whyPremium")}
                 </h2>
                 <FeatureGrid />
               </div>
@@ -52,8 +54,9 @@ function PremiumPageContent() {
 }
 
 export default function PremiumPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">Đang tải...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">{t("common.loading")}</div>}>
       <PremiumPageContent />
     </Suspense>
   );

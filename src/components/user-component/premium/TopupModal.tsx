@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Sparkles, Zap, ShieldCheck, CreditCard } from "lucide-react";
+import { X, Sparkles, Zap } from "lucide-react";
+import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogOverlay,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 import PremiumPricingContent from "./PremiumPricingContent";
 import TopupContent from "./TopupContent";
 import { cn } from "@/lib/utils";
@@ -24,16 +26,23 @@ interface TopupModalProps {
  * - Đồng bộ giao diện với UserSide (Pink/Secondary).
  */
 export default function TopupModal({ isOpen, onClose }: TopupModalProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"premium" | "topup">("premium");
 
   const tabs = [
-    { id: "premium", name: "Nâng cấp Premium", icon: Sparkles },
-    { id: "topup", name: "Nạp Hoa Anh Đào", icon: Zap },
+    { id: "premium", nameKey: "premium.modal.tabPremium", icon: Sparkles },
+    { id: "topup", nameKey: "premium.modal.tabTopup", icon: Zap },
   ];
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto p-0 rounded-[2.5rem] border-secondary/10 shadow-2xl bg-card transition-all duration-500">
+        {/* Hidden but required for accessibility */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>{t("premium.modal.title")}</DialogTitle>
+          <DialogDescription>{t("premium.modal.description")}</DialogDescription>
+        </DialogHeader>
+
         <div className="relative p-6 md:p-10">
           {/* Tabs Navigation */}
           <div className="flex flex-col items-center mb-10">
@@ -58,7 +67,7 @@ export default function TopupModal({ isOpen, onClose }: TopupModalProps) {
                         isActive ? "animate-pulse" : "opacity-50",
                       )}
                     />
-                    {tab.name}
+                    {t(tab.nameKey)}
                     {isActive && (
                       <motion.div
                         layoutId="activeTab"
@@ -86,6 +95,3 @@ export default function TopupModal({ isOpen, onClose }: TopupModalProps) {
     </Dialog>
   );
 }
-
-// Giả sử motion từ framer-motion có sẵn
-import { motion } from "framer-motion";

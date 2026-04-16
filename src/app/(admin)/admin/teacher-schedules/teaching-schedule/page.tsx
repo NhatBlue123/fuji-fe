@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, addWeeks, format, isToday, startOfWeek } from "date-fns";
 import { vi } from "date-fns/locale";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   CalendarDays,
   ChevronLeft,
@@ -12,9 +13,11 @@ import {
   Plus,
   Trash2,
   User2,
+  BookOpen,
+  CalendarX,
 } from "lucide-react";
 
-import { Calendar } from "@/components/UI/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -47,8 +50,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type ScheduleView = "teaching" | "available";
+
 const HOUR_HEIGHT = 72;
 const TIME_COLUMN_WIDTH = 84;
+
+const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
+type LevelOption = (typeof LEVEL_OPTIONS)[number];
+
+const SUBJECT_OPTIONS = [
+  { value: "Kaiwa", label: "Kaiwa (Hội thoại)" },
+  { value: "Bunpo", label: "Bunpo (Ngữ pháp)" },
+  { value: "Kanji", label: "Kanji" },
+  { value: "Listening", label: "Listening" },
+  { value: "Reading", label: "Reading" },
+] as const;
+type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
+
+function parseSubject(subject: string): { subjectType: SubjectOption | ""; level: LevelOption | "" } {
+  const parts = subject.split(" - ");
+  if (parts.length !== 2) return { subjectType: "", level: "" };
+  const subjectType = SUBJECT_OPTIONS.find((s) => s.value === parts[0].trim())?.value ?? "";
+  const level = LEVEL_OPTIONS.find((l) => l === parts[1].trim()) ?? "";
+  return { subjectType, level };
+}
 
 function toYmd(date: Date) {
   const yyyy = date.getFullYear();
@@ -62,6 +87,27 @@ function formatHm(value: string) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(
     date.getMinutes(),
   ).padStart(2, "0")}`;
+}
+
+/** Parse "HH:mm" to minutes from midnight (local). */
+function hmToMinutes(hm: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function toastApiError(e: unknown, fallback: string) {
+  const msg =
+    typeof e === "object" &&
+    e !== null &&
+    "data" in e &&
+    typeof (e as { data?: { message?: string } }).data?.message === "string"
+      ? (e as { data: { message: string } }).data.message
+      : null;
+  toast.error(msg ?? fallback);
 }
 
 function formatTimeRange(startAt: string, endAt: string) {
@@ -265,6 +311,7 @@ function ScheduleEvent({
 export default function TeachingSchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [scheduleView, setScheduleView] = useState<ScheduleView>("teaching");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<TeacherScheduleSlot | null>(
@@ -274,7 +321,8 @@ export default function TeachingSchedulePage() {
     null,
   );
   const [editPrice, setEditPrice] = useState("");
-  const [editSubject, setEditSubject] = useState("");
+  const [editLevel, setEditLevel] = useState<LevelOption | "">("");
+  const [editSubjectType, setEditSubjectType] = useState<SubjectOption | "">("");
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
 
@@ -318,22 +366,55 @@ export default function TeachingSchedulePage() {
     [groups],
   );
 
-  const bookedCount = useMemo(
-    () => allSlots.filter((slot) => slot.status === "BOOKED").length,
+  const teachingSlots = useMemo(
+    () => allSlots.filter((slot) => slot.status === "BOOKED"),
     [allSlots],
   );
 
-  const availableCount = allSlots.length - bookedCount;
+  const availableSlots = useMemo(
+    () => allSlots.filter((slot) => slot.status === "AVAILABLE"),
+    [allSlots],
+  );
+
+  const filteredSlots = useMemo(() => {
+    return scheduleView === "teaching" ? teachingSlots : availableSlots;
+  }, [scheduleView, teachingSlots, availableSlots]);
+
+  const filteredGroups = useMemo(() => {
+    if (scheduleView === "teaching") {
+      return groups
+        .map((group) => ({
+          ...group,
+          slots: group.slots.filter((slot) => slot.status === "BOOKED"),
+        }))
+        .filter((group) => group.slots.length > 0);
+    } else {
+      return groups
+        .map((group) => ({
+          ...group,
+          slots: group.slots.filter((slot) => slot.status === "AVAILABLE"),
+        }))
+        .filter((group) => group.slots.length > 0);
+    }
+  }, [scheduleView, groups]);
+
+  const filteredSlotsByDate = useMemo(() => {
+    return new Map(filteredGroups.map((group) => [group.date, group.slots]));
+  }, [filteredGroups]);
+
+  const bookedCount = teachingSlots.length;
+
+  const availableCount = availableSlots.length;
 
   const hourRange = useMemo(() => {
-    if (allSlots.length === 0) {
+    if (filteredSlots.length === 0) {
       return { start: 6, end: 22 };
     }
 
     let minHour = 23;
     let maxHour = 0;
 
-    allSlots.forEach((slot) => {
+    filteredSlots.forEach((slot) => {
       const start = new Date(slot.startAt);
       const end = new Date(slot.endAt);
       const slotStartHour = start.getHours();
@@ -348,7 +429,7 @@ export default function TeachingSchedulePage() {
       start: Math.max(0, minHour - 1),
       end: Math.min(24, maxHour + 1),
     };
-  }, [allSlots]);
+  }, [filteredSlots]);
 
   const hours = useMemo(
     () =>
@@ -362,19 +443,21 @@ export default function TeachingSchedulePage() {
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
   useEffect(() => {
-    if (!scrollRef.current || allSlots.length === 0) return;
+    if (!scrollRef.current || filteredSlots.length === 0) return;
 
-    const firstSlot = allSlots[0];
+    const firstSlot = filteredSlots[0];
     const startMinutes =
       getMinutesOfDay(firstSlot.startAt) - hourRange.start * 60;
     const top = (startMinutes / 60) * HOUR_HEIGHT;
     scrollRef.current.scrollTop = Math.max(top - HOUR_HEIGHT, 0);
-  }, [allSlots, hourRange.start]);
+  }, [filteredSlots, hourRange.start]);
 
   useEffect(() => {
     if (editTarget) {
       setEditPrice(String(editTarget.tuitionBlossom ?? editTarget.tuitionVnd));
-      setEditSubject(editTarget.subject);
+      const { subjectType, level } = parseSubject(editTarget.subject);
+      setEditSubjectType(subjectType);
+      setEditLevel(level);
       setEditStartTime(formatHm(editTarget.startAt));
       setEditEndTime(formatHm(editTarget.endAt));
     }
@@ -385,8 +468,12 @@ export default function TeachingSchedulePage() {
     try {
       await deleteTimeSlot(deleteTarget.timeSlotId).unwrap();
       setDeleteTarget(null);
-    } catch {
-      alert("Không xóa được slot. Kiểm tra slot còn trống và thử lại.");
+      toast.success("Đã xóa slot khỏi lịch.");
+    } catch (e: unknown) {
+      toastApiError(
+        e,
+        "Không xóa được slot. Kiểm tra slot còn trống và thử lại.",
+      );
     }
   };
 
@@ -394,18 +481,18 @@ export default function TeachingSchedulePage() {
     if (!editTarget) return;
     const price = Number(editPrice);
     if (!Number.isFinite(price) || price <= 0) {
-      alert("Nhập giá hợp lệ (hoa).");
+      toast.error("Nhập giá hợp lệ (hoa).");
       return;
     }
-    const subject = editSubject.trim();
-    if (!subject) {
-      alert("Nhập chủ đề / môn học.");
+    if (!editSubjectType || !editLevel) {
+      toast.error("Vui lòng chọn môn học và cấp độ.");
       return;
     }
+    const subject = `${editSubjectType} - ${editLevel}`;
 
     const timeRe = /^\d{2}:\d{2}$/;
     if (!timeRe.test(editStartTime) || !timeRe.test(editEndTime)) {
-      alert("Giờ không hợp lệ (HH:mm).");
+      toast.error("Giờ không hợp lệ (HH:mm).");
       return;
     }
 
@@ -415,6 +502,20 @@ export default function TeachingSchedulePage() {
     const origStart = formatHm(editTarget.startAt);
     const origEnd = formatHm(editTarget.endAt);
     const timeChanged = editStartTime !== origStart || editEndTime !== origEnd;
+
+    const startMin = hmToMinutes(editStartTime);
+    const endMin = hmToMinutes(editEndTime);
+    if (startMin === null || endMin === null) {
+      toast.error("Giờ không hợp lệ (HH:mm, 24h).");
+      return;
+    }
+    if (timeChanged && endMin <= startMin) {
+      toast.error(
+        "Giờ kết thúc phải sau giờ bắt đầu trong cùng một ngày. Ví dụ ca 11:00–13:00 (1 giờ chiều = 13:00, không phải 01:00).",
+        { duration: 6000 },
+      );
+      return;
+    }
 
     const payload: Parameters<typeof updateTimeSlot>[0] = {
       id: editTarget.timeSlotId,
@@ -430,8 +531,10 @@ export default function TeachingSchedulePage() {
     try {
       await updateTimeSlot(payload).unwrap();
       setEditTarget(null);
-    } catch {
-      alert(
+      toast.success("Đã lưu thay đổi lịch rảnh.");
+    } catch (e: unknown) {
+      toastApiError(
+        e,
         "Không cập nhật được. Slot phải còn trống, chưa qua giờ và không trùng lịch khác.",
       );
     }
@@ -553,6 +656,45 @@ export default function TeachingSchedulePage() {
               Hiển thị theo từng giờ trong 7 ngày.
             </p>
           </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-1">
+            <button
+              type="button"
+              onClick={() => setScheduleView("teaching")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
+                scheduleView === "teaching"
+                  ? "bg-background text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <BookOpen className="size-4" />
+              Lịch dạy
+              {bookedCount > 0 && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {bookedCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleView("available")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
+                scheduleView === "available"
+                  ? "bg-background text-emerald-600 dark:text-emerald-300 shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <CalendarX className="size-4" />
+              Lịch rảnh
+              {availableCount > 0 && (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
+                  {availableCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {isLoading || isFetching ? (
@@ -562,6 +704,35 @@ export default function TeachingSchedulePage() {
         ) : isError ? (
           <div className="flex h-[320px] items-center justify-center px-6 text-center text-sm text-destructive">
             Không tải được lịch dạy của giáo viên.
+          </div>
+        ) : filteredSlots.length === 0 ? (
+          <div className="flex h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
+            <div
+              className={cn(
+                "flex size-16 items-center justify-center rounded-full",
+                scheduleView === "teaching"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-emerald-500/10 text-emerald-500",
+              )}
+            >
+              {scheduleView === "teaching" ? (
+                <BookOpen className="size-8" />
+              ) : (
+                <CalendarX className="size-8" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">
+                {scheduleView === "teaching"
+                  ? "Chưa có lịch dạy"
+                  : "Chưa có lịch rảnh"}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {scheduleView === "teaching"
+                  ? "Tuần này chưa có slot nào được học viên đặt."
+                  : "Tuần này chưa có slot trống nào cho học viên đặt."}
+              </p>
+            </div>
           </div>
         ) : (
           <div
@@ -636,7 +807,7 @@ export default function TeachingSchedulePage() {
 
                 {weekDays.map((day) => {
                   const dayKey = toYmd(day);
-                  const daySlots = slotsByDate.get(dayKey) ?? [];
+                  const daySlots = filteredSlotsByDate.get(dayKey) ?? [];
 
                   return (
                     <div
@@ -722,6 +893,7 @@ export default function TeachingSchedulePage() {
                 <Input
                   id="slot-start"
                   type="time"
+                  step={60}
                   value={editStartTime}
                   onChange={(e) => setEditStartTime(e.target.value)}
                   className="dark:[color-scheme:dark]"
@@ -732,12 +904,16 @@ export default function TeachingSchedulePage() {
                 <Input
                   id="slot-end"
                   type="time"
+                  step={60}
                   value={editEndTime}
                   onChange={(e) => setEditEndTime(e.target.value)}
                   className="dark:[color-scheme:dark]"
                 />
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Giờ dùng định dạng 24 giờ (vd. 13:00 = 1 giờ chiều). Phải cùng ngày và giờ kết thúc sau giờ bắt đầu.
+            </p>
             <div className="space-y-2">
               <Label htmlFor="slot-price">Học phí (Hoa)</Label>
               <Input
@@ -750,13 +926,43 @@ export default function TeachingSchedulePage() {
                 className="dark:[color-scheme:dark]"
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="slot-level">Cấp độ JLPT</Label>
+                <select
+                  id="slot-level"
+                  value={editLevel}
+                  onChange={(e) => setEditLevel(e.target.value as LevelOption)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:[color-scheme:dark]"
+                >
+                  <option value="" disabled>Chọn cấp độ</option>
+                  {LEVEL_OPTIONS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slot-subject-type">Môn học</Label>
+                <select
+                  id="slot-subject-type"
+                  value={editSubjectType}
+                  onChange={(e) => setEditSubjectType(e.target.value as SubjectOption)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:[color-scheme:dark]"
+                >
+                  <option value="" disabled>Chọn môn</option>
+                  {SUBJECT_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="slot-subject">Chủ đề / môn</Label>
-              <Input
-                id="slot-subject"
-                value={editSubject}
-                onChange={(e) => setEditSubject(e.target.value)}
-              />
+              <Label>Chủ đề / môn</Label>
+              <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-medium text-foreground">
+                {editSubjectType && editLevel
+                  ? `${editSubjectType} - ${editLevel}`
+                  : <span className="text-muted-foreground font-normal">Chọn môn học và cấp độ</span>}
+              </div>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">

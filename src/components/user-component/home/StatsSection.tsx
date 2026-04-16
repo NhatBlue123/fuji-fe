@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -23,20 +24,35 @@ interface Stat {
 
 export function StatsSection() {
   const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const STATS: Stat[] = [
-    { icon: "groups", value: "10K+", label: t("home.stats.students"), color: "blue" },
-    { icon: "school", value: "500+", label: t("home.stats.courses"), color: "pink" },
+    { 
+      icon: "groups", 
+      value: "10K+", 
+      label: isMounted ? t("home.stats.students") : t("home.stats.students", { lng: 'vi' }), 
+      color: "blue" 
+    },
+    { 
+      icon: "school", 
+      value: "500+", 
+      label: isMounted ? t("home.stats.courses") : t("home.stats.courses", { lng: 'vi' }), 
+      color: "pink" 
+    },
     {
       icon: "verified",
       value: "95%",
-      label: t("home.stats.jlptPassRate"),
+      label: isMounted ? t("home.stats.jlptPassRate") : t("home.stats.jlptPassRate", { lng: 'vi' }),
       color: "emerald",
     },
     {
       icon: "cast_for_education",
       value: "50+",
-      label: t("home.stats.teachers"),
+      label: isMounted ? t("home.stats.teachers") : t("home.stats.teachers", { lng: 'vi' }),
       color: "purple",
     },
   ];

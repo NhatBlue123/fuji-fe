@@ -1,7 +1,9 @@
 import type React from "react";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import "material-symbols/outlined.css";
+import "tldraw/tldraw.css";
 import "@/app/globals.css";
 import { ThemeProvider, ExtensionCleanup, I18nProvider } from "@/components/common";
 import { Toaster } from "@/components/ui/sonner";
@@ -57,12 +59,21 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
-        {/* Chống flash theme - chạy đồng bộ trước React hydration (pattern của next-themes) */}
-        {/* suppressHydrationWarning ở <head> ngăn React complain về script tag này */}
-        <script
-          // eslint-disable-next-line react/no-danger
+      <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme'),r=document.documentElement;r.classList.remove('light','dark');if(t==='dark'||t==='light'){r.classList.add(t);}else{r.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}['bis_skin_checked','data-new-gr-c-s-check-loaded','data-gr-ext-installed'].forEach(function(a){document.querySelectorAll('['+a+']').forEach(function(el){el.removeAttribute(a);});});}catch(e){document.documentElement.classList.add('light');}})();`,
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('theme');
+                  var theme = stored;
+                  if (!theme || theme === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  document.documentElement.classList.remove('light', 'dark');
+                  document.documentElement.classList.add(theme);
+                } catch(e) {}
+              })();
+            `,
           }}
         />
       </head>
@@ -83,7 +94,6 @@ export default function RootLayout({
           </RtkProvider>
         </I18nProvider>
       </body>
-
     </html>
   );
 }

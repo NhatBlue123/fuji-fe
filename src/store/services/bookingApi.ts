@@ -11,6 +11,7 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   MyTimeSlotItem,
+  StudentBusySlotsResponse,
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
   VideoSessionResponse,
@@ -120,6 +121,17 @@ export const bookingApi = baseApi.injectEndpoints({
       ],
     }),
 
+    endBookingVideoSession: builder.mutation<{ message: string }, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/video-session/end`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<string>) => ({
+        message: res.message || "Buổi học đã kết thúc",
+      }),
+      invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
+    }),
+
     getMyTimeSlots: builder.query<MyTimeSlotItem[], void>({
       query: () => `/time-slots/me`,
       transformResponse: (res: ApiEnvelope<MyTimeSlotItem[]>) => res.data,
@@ -166,6 +178,11 @@ export const bookingApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<{ reviewId: number; rating: number; comment: string }>) => res.data,
       invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
     }),
+
+    getMyBusySlots: builder.query<StudentBusySlotsResponse, { date: string }>({
+      query: ({ date }) => `/bookings/me/busy-slots?date=${date}`,
+      transformResponse: (res: ApiEnvelope<StudentBusySlotsResponse>) => res.data,
+    }),
   }),
 });
 
@@ -181,7 +198,9 @@ export const {
   useDeleteTimeSlotMutation,
   useUpdateTimeSlotMutation,
   useCancelBookingMutation,
+  useEndBookingVideoSessionMutation,
   useGetMyTeacherScheduleQuery,
   useGetVideoSessionMutation,
   useSubmitSessionReviewMutation,
+  useGetMyBusySlotsQuery,
 } = bookingApi;

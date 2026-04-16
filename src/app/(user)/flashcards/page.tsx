@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -65,6 +66,7 @@ function PaginationControls({
 }
 
 export default function FlashcardsPage() {
+  const { t } = useTranslation();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"cards" | "lists">("cards");
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,7 +146,7 @@ export default function FlashcardsPage() {
 
   return (
     <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background dark:bg-[#0f172a]">
-      <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20">
+      <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 py-8">
         <section className="relative w-full rounded-3xl overflow-hidden mb-12 bg-[#0B1120] border border-white/5 shadow-2xl group">
           <div className="absolute inset-0 bg-slate-900"></div>
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-pink-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
@@ -182,12 +184,11 @@ export default function FlashcardsPage() {
             <div className="max-w-4xl">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-pink-200 to-white drop-shadow-sm leading-tight">
-                  Luyện tập từ vựng với Flashcard
+                  {t("flashcards.page.title")}
                 </span>
               </h1>
               <p className="text-blue-100/70 text-lg font-medium max-w-2xl leading-relaxed hidden sm:block">
-                Nâng cao trình độ tiếng Nhật mỗi ngày với hệ thống thẻ ghi nhớ
-                thông minh và kho bài học phong phú.
+                {t("flashcards.page.subtitle")}
               </p>
             </div>
             <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full pt-4 border-t border-white/5">
@@ -205,7 +206,7 @@ export default function FlashcardsPage() {
                     setListsPage(0);
                   }}
                   className="block w-full pl-11 pr-4 py-3.5 border border-white/10 rounded-2xl leading-5 bg-white/5 backdrop-blur-md text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500/50 focus:bg-white/10 transition-all shadow-lg shadow-black/20"
-                  placeholder="Tìm kiếm bộ thẻ..."
+                  placeholder={t("flashcards.page.searchPlaceholder")}
                   type="search"
                 />
               </div>
@@ -220,10 +221,10 @@ export default function FlashcardsPage() {
                     }}
                   >
                     <SelectTrigger className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-blue-100 py-3.5 pl-5 pr-12 rounded-2xl text-sm font-bold hover:bg-white/10 transition-colors focus:ring-pink-500/30 focus:border-pink-500/50">
-                      <SelectValue placeholder="Cấp độ" />
+                      <SelectValue placeholder={t("flashcards.page.level")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả cấp độ</SelectItem>
+                      <SelectItem value="all">{t("flashcards.page.allLevels")}</SelectItem>
                       <SelectItem value="n5">N5</SelectItem>
                       <SelectItem value="n4">N4</SelectItem>
                       <SelectItem value="n3">N3</SelectItem>
@@ -242,12 +243,12 @@ export default function FlashcardsPage() {
                     }}
                   >
                     <SelectTrigger className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-blue-100 py-3.5 pl-5 pr-12 rounded-2xl text-sm font-bold hover:bg-white/10 transition-colors focus:ring-pink-500/30 focus:border-pink-500/50">
-                      <SelectValue placeholder="Chủ sở hữu" />
+                      <SelectValue placeholder={t("flashcards.page.owner")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
-                      <SelectItem value="mine">Của tôi</SelectItem>
-                      <SelectItem value="community">Cộng đồng</SelectItem>
+                      <SelectItem value="all">{t("common.all")}</SelectItem>
+                      <SelectItem value="mine">{t("flashcards.page.mine")}</SelectItem>
+                      <SelectItem value="community">{t("flashcards.page.community")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -262,7 +263,7 @@ export default function FlashcardsPage() {
                     <span className="material-symbols-outlined text-pink-400 group-hover:text-pink-200 transition-colors">
                       add_circle
                     </span>
-                    <span className="font-bold tracking-wide">Tạo mới</span>
+                    <span className="font-bold tracking-wide">{t("common.create")}</span>
                   </div>
                 </Button>
               </div>
@@ -286,7 +287,7 @@ export default function FlashcardsPage() {
               error
             </span>
             <p className="text-muted-foreground">
-              Không thể tải dữ liệu. Vui lòng thử lại sau.
+              {t("flashcards.page.fetchError")}
             </p>
           </div>
         )}
@@ -296,7 +297,7 @@ export default function FlashcardsPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
               <span className="w-1 h-8 bg-secondary rounded-full"></span>
-              Flash Cards
+              {t("flashcards.page.cards")}
               <span className="text-sm font-normal text-muted-foreground">
                 ({cardsTotal})
               </span>
@@ -306,7 +307,7 @@ export default function FlashcardsPage() {
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   style
                 </span>
-                <p>Chưa có flashcard nào. Hãy tạo mới!</p>
+                <p>{t("flashcards.page.noCards")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -321,7 +322,7 @@ export default function FlashcardsPage() {
                           }}
                         ></div>
                         <div className="absolute top-3 left-3 bg-background/80 backdrop-blur text-secondary border border-secondary/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
-                          {fc.user?.username || "Của tôi"}
+                          {fc.user?.username || t("flashcards.page.mine")}
                         </div>
                         {fc.level && (
                           <div className="absolute top-3 right-3 bg-background/80 backdrop-blur text-foreground border border-border text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
@@ -334,7 +335,7 @@ export default function FlashcardsPage() {
                           {fc.name}
                         </h3>
                         <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
-                          {fc.description || "Không có mô tả"}
+                          {fc.description || t("flashcards.page.noDesc")}
                         </p>
                         <div className="mt-auto pt-4 border-t border-border">
                           <div className="flex items-center justify-between mb-4 text-xs text-muted-foreground font-medium">
@@ -342,14 +343,14 @@ export default function FlashcardsPage() {
                               <span className="material-symbols-outlined text-sm">
                                 content_copy
                               </span>
-                              <span>{fc.cardCount} cards</span>
+                              <span>{t("flashcards.page.cardSetCount", { count: fc.cardCount })}</span>
                             </div>
                           </div>
                           <div className="w-full py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-secondary/20 group-hover:shadow-secondary/40">
                             <span className="material-symbols-outlined text-lg">
                               play_arrow
                             </span>
-                            Học ngay
+                            {t("flashcards.page.studyNow")}
                           </div>
                         </div>
                       </div>
@@ -376,7 +377,7 @@ export default function FlashcardsPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
               <span className="w-1 h-8 bg-blue-500 rounded-full"></span>
-              Flash Lists
+              {t("flashcards.page.lists")}
               <span className="text-sm font-normal text-muted-foreground">
                 ({listsTotal})
               </span>
@@ -386,7 +387,7 @@ export default function FlashcardsPage() {
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   list
                 </span>
-                <p>Chưa có flash list nào. Hãy tạo mới!</p>
+                <p>{t("flashcards.page.noLists")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -401,7 +402,7 @@ export default function FlashcardsPage() {
                           }}
                         ></div>
                         <div className="absolute top-3 left-3 bg-background/80 backdrop-blur text-primary border border-primary/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
-                          {fl.user?.username || "Của tôi"}
+                          {fl.user?.username || t("flashcards.page.mine")}
                         </div>
                         {fl.level && (
                           <div className="absolute top-3 right-3 bg-background/80 backdrop-blur text-foreground border border-border text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
@@ -414,7 +415,7 @@ export default function FlashcardsPage() {
                           {fl.title}
                         </h3>
                         <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
-                          {fl.description || "Không có mô tả"}
+                          {fl.description || t("flashcards.page.noDesc")}
                         </p>
                         <div className="mt-auto pt-4 border-t border-border">
                           <div className="flex items-center justify-between mb-4 text-xs text-muted-foreground font-medium">
@@ -422,7 +423,7 @@ export default function FlashcardsPage() {
                               <span className="material-symbols-outlined text-sm">
                                 style
                               </span>
-                              <span>{fl.flashcards?.length || 0} bộ thẻ</span>
+                              <span>{t("flashcards.page.setCount", { count: fl.flashcards?.length || 0 })}</span>
                             </div>
                             {(fl.averageRating || 0) > 0 && (
                               <div className="flex items-center gap-1">
@@ -439,7 +440,7 @@ export default function FlashcardsPage() {
                             <span className="material-symbols-outlined text-lg">
                               collections
                             </span>
-                            Xem bộ sưu tập
+                            {t("flashcards.page.viewCollection")}
                           </div>
                         </div>
                       </div>

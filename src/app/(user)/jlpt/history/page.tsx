@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,6 +68,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function JlptHistoryPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: attempts = [], isLoading, error } = useGetMyAttemptsQuery();
 
@@ -170,7 +172,7 @@ export default function JlptHistoryPage() {
       <div className="flex items-center justify-center py-32 bg-[#0B1120]">
         <div className="text-center text-white">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-400 mb-4" />
-          <p>Đang tải lịch sử...</p>
+          <p>{t('auto.jlpt_history_page_1')}</p>
         </div>
       </div>
     );
@@ -182,7 +184,7 @@ export default function JlptHistoryPage() {
           <span className="material-symbols-outlined text-5xl text-red-400 mb-3 block">
             error
           </span>
-          <p className="text-lg font-semibold">Không thể tải dữ liệu</p>
+          <p className="text-lg font-semibold">{t('auto.jlpt_history_page_2')}</p>
           <Button
             onClick={() => router.back()}
             className="mt-4 px-5 py-2 bg-pink-500 rounded-lg"
@@ -407,7 +409,7 @@ export default function JlptHistoryPage() {
             <span className="material-symbols-outlined text-pink-400">
               history_edu
             </span>
-            <h2 className="font-bold text-white">Danh sách lần thi</h2>
+            <h2 className="font-bold text-white">{t('auto.jlpt_history_page_3')}</h2>
             <span className="text-sm font-normal text-slate-400">
               ({filtered.length} kết quả)
             </span>
@@ -418,7 +420,7 @@ export default function JlptHistoryPage() {
               <span className="material-symbols-outlined text-5xl mb-3 block">
                 inbox
               </span>
-              <p>Không có kết quả nào phù hợp</p>
+              <p>{t('auto.jlpt_history_page_4')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

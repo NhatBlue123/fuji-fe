@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { 
   Search, 
   ChevronRight, 
@@ -65,6 +66,7 @@ const HELP_CATEGORIES = [
 ];
 
 export default function HelpCenterPage() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-background font-sans pb-20">
       {/* Header / Search Hero */}
@@ -89,14 +91,14 @@ export default function HelpCenterPage() {
             <div className="relative flex items-center">
               <Search className="absolute left-5 size-5 text-muted-foreground" />
               <Input 
-                placeholder="Nhập từ khóa tìm kiếm (ví dụ: cách nạp tiền, reset mật khẩu...)"
+                placeholder={t('auto.help_page_7')}
                 className="h-16 pl-14 pr-6 rounded-2xl border-2 border-muted bg-white dark:bg-slate-950/60 shadow-xl focus:border-secondary focus:ring-0 text-lg font-black transition-all placeholder:font-bold"
               />
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 pt-4">
-            <span className="text-sm font-bold text-muted-foreground mr-2">Tìm kiếm phổ biến:</span>
+            <span className="text-sm font-bold text-muted-foreground mr-2">{t('auto.help_page_1')}</span>
             {["Nạp xu", "Quên mật khẩu", "Hủy gói cước", "Lịch học"].map(tag => (
               <Button key={tag} variant="secondary" className="rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-secondary/10 hover:text-secondary dark:hover:text-secondary text-xs h-8 font-black uppercase tracking-wider transition-all border-none text-slate-600 dark:text-slate-300">
                 {tag}
@@ -109,8 +111,8 @@ export default function HelpCenterPage() {
       {/* Categories Grid */}
       <div className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-16 space-y-2">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-secondary font-black">Trung tâm giúp đỡ</h2>
-            <h3 className="text-2xl font-black tracking-tight text-foreground">Khám phá các chủ đề được quan tâm nhiều nhất</h3>
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-secondary font-black">{t('auto.help_page_2')}</h2>
+            <h3 className="text-2xl font-black tracking-tight text-foreground">{t('auto.help_page_3')}</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -147,7 +149,7 @@ export default function HelpCenterPage() {
                <div className="absolute top-[-50px] right-[-50px] size-64 bg-white/10 rounded-full blur-3xl" />
                
                <div className="space-y-4">
-                  <h3 className="text-3xl font-black tracking-tight">Vẫn chưa tìm thấy câu trả lời?</h3>
+                  <h3 className="text-3xl font-black tracking-tight">{t('auto.help_page_4')}</h3>
                   <p className="text-white/80 font-bold max-w-xl mx-auto leading-relaxed">
                     Đừng lo lắng, đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng 24/7 để giúp bạn giải quyết mọi khó khăn.
                   </p>
@@ -165,11 +167,11 @@ export default function HelpCenterPage() {
                <div className="flex items-center justify-center gap-8 pt-4 opacity-70">
                   <div className="flex items-center gap-2">
                     <HelpCircle className="size-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Hỗ trợ 24/7</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t('auto.help_page_5')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="size-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Phản hồi dưới 30p</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t('auto.help_page_6')}</span>
                   </div>
                </div>
             </CardContent>

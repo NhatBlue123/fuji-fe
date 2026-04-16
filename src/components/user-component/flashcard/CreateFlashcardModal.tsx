@@ -39,10 +39,10 @@ export default function CreateFlashcardModal({
   open,
   onOpenChange,
 }: CreateFlashcardModalProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>("list");
   const [isPublic, setIsPublic] = useState(false);
   const [level, setLevel] = useState("N5");
-  const { t } = useTranslation();
 
   // Form states for Flash List
   const [listTitle, setListTitle] = useState("");
@@ -296,7 +296,7 @@ export default function CreateFlashcardModal({
       if (apiErr?.data?.messageKey) {
         setError(t(apiErr.data.messageKey));
       } else {
-        setError(t("api.createFailed"));
+        setError(t("api.createFailed") || "Failed to create.");
       }
     }
   };
@@ -305,7 +305,7 @@ export default function CreateFlashcardModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-border text-foreground">
         <DialogHeader>
-          <DialogTitle className="sr-only">Tạo mới FlashCard</DialogTitle>
+          <DialogTitle className="sr-only">{t("flashcards.create.modalTitle")}</DialogTitle>
         </DialogHeader>
 
         {/* Tabs */}
@@ -318,7 +318,7 @@ export default function CreateFlashcardModal({
                 : "bg-card text-muted-foreground hover:bg-muted"
             }`}
           >
-            Flash List
+            {t("flashcards.create.listTab")}
           </button>
           <button
             onClick={() => setActiveTab("card")}
@@ -328,7 +328,7 @@ export default function CreateFlashcardModal({
                 : "bg-card text-muted-foreground hover:bg-muted"
             }`}
           >
-            Flash Card
+            {t("flashcards.create.cardTab")}
           </button>
         </div>
 
@@ -340,27 +340,27 @@ export default function CreateFlashcardModal({
                 {/* Flash List Form */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Tiêu đề FlashList...
+                    {t("flashlist.titleLabel")}
                   </label>
                   <input
                     type="text"
                     value={listTitle}
                     onChange={(e) => setListTitle(e.target.value)}
                     className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-                    placeholder="Nhập tiêu đề..."
+                    placeholder={t("flashlist.titlePlaceholder")}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Mô tả...
+                    {t("flashlist.descLabel")}
                   </label>
                   <textarea
                     value={listDescription}
                     onChange={(e) => setListDescription(e.target.value)}
                     rows={4}
                     className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
-                    placeholder="Nhập mô tả..."
+                    placeholder={t("flashlist.descPlaceholder")}
                   />
                 </div>
 
@@ -383,7 +383,9 @@ export default function CreateFlashcardModal({
                 </div>
 
                 <div className="flex items-center justify-between py-2">
-                  <label className="text-sm font-medium">Công khai</label>
+                  <label className="text-sm font-medium">
+                    {isPublic ? t("flashcards.create.public") : t("flashcards.create.private") || "Công khai"}
+                  </label>
                   <button
                     onClick={() => setIsPublic(!isPublic)}
                     className={`relative inline-flex shrink-0 w-12 h-6 rounded-full transition-colors ${
@@ -400,7 +402,7 @@ export default function CreateFlashcardModal({
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Tìm flashcard để thêm...
+                    {t("flashlist.searchFlashcard")}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -413,7 +415,7 @@ export default function CreateFlashcardModal({
                       value={searchFlashcard}
                       onChange={(e) => setSearchFlashcard(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-                      placeholder="Tìm kiếm flashcard..."
+                      placeholder={t("flashcards.page.searchPlaceholder")}
                     />
                   </div>
 
@@ -424,13 +426,13 @@ export default function CreateFlashcardModal({
                         check_circle
                       </span>
                       <span>
-                        Đã chọn {selectedFlashcardIds.length} flashcard
+                        {t("flashlist.selectedCount", { count: selectedFlashcardIds.length })}
                       </span>
                       <button
                         onClick={() => setSelectedFlashcardIds([])}
                         className="ml-auto text-muted-foreground hover:text-red-400 transition-colors"
                       >
-                        Bỏ chọn tất cả
+                        {t("flashlist.deselectAll")}
                       </button>
                     </div>
                   )}
@@ -439,7 +441,7 @@ export default function CreateFlashcardModal({
                   <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5 custom-scrollbar">
                     {searchResults.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-2 text-center">
-                        Không tìm thấy flashcard nào
+                        {t("flashlist.noCardsFound")}
                       </p>
                     ) : (
                       searchResults.map((fc) => {
@@ -473,14 +475,14 @@ export default function CreateFlashcardModal({
                                 {fc.name}
                               </p>
                               <p className="text-[10px] text-muted-foreground flex items-center gap-2">
-                                <span>{fc.cardCount} thẻ</span>
+                                <span>{t("flashcards.page.cardSetCount", { count: fc.cardCount })}</span>
                                 {fc.level && (
                                   <span className="text-muted-foreground">
                                     {fc.level}
                                   </span>
                                 )}
                                 <span>
-                                  {fc.isPublic ? "Công khai" : "Riêng tư"}
+                                  {fc.isPublic ? t("flashcards.create.public") : t("flashcards.create.private")}
                                 </span>
                                 <span className="text-muted-foreground/70">
                                   {fc.user?.username}
@@ -512,27 +514,27 @@ export default function CreateFlashcardModal({
                 {/* Flash Card Form */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Tên bộ FlashCard...
+                    {t("flashcard.nameLabel")}
                   </label>
                   <input
                     type="text"
                     value={cardName}
                     onChange={(e) => setCardName(e.target.value)}
                     className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-                    placeholder="Nhập tên bộ FlashCard..."
+                    placeholder={t("flashcard.namePlaceholder")}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Mô tả...
+                    {t("flashcard.descLabel")}
                   </label>
                   <textarea
                     value={cardDescription}
                     onChange={(e) => setCardDescription(e.target.value)}
                     rows={3}
                     className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
-                    placeholder="Nhập mô tả..."
+                    placeholder={t("flashcard.descPlaceholder")}
                   />
                 </div>
 
@@ -555,7 +557,9 @@ export default function CreateFlashcardModal({
                 </div>
 
                 <div className="flex items-center justify-between py-2">
-                  <label className="text-sm font-medium">Công khai</label>
+                  <label className="text-sm font-medium">
+                    {isPublic ? t("flashcards.create.public") : t("flashcards.create.private") || "Công khai"}
+                  </label>
                   <button
                     onClick={() => setIsPublic(!isPublic)}
                     className={`relative inline-flex shrink-0 w-12 h-6 rounded-full transition-colors ${
@@ -572,23 +576,23 @@ export default function CreateFlashcardModal({
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Nội dung thẻ (mỗi dòng một thẻ)
+                    {t("flashcard.contentLabel")}
                   </label>
                   <textarea
                     value={cardContent}
                     onChange={(e) => setCardContent(e.target.value)}
                     rows={6}
                     className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none font-mono text-sm"
-                    placeholder="mặt trước - mặt sau"
+                    placeholder={t("flashcard.contentPlaceholder")}
                   />
                   <p className="text-xs text-muted-foreground mt-2">
-                    <span className="font-semibold">Hướng dẫn nhập liệu:</span>
+                    <span className="font-semibold">{t("flashcard.guideTitle")}</span>
                     <br />
-                    Mỗi dòng là một thẻ học tập
+                    {t("flashcard.guideLine1")}
                     <br />
-                    Dùng dấu &quot;-&quot; để phân tách từ vựng và nghĩa
+                    {t("flashcard.guideLine2")}
                     <br />
-                    <span className="text-muted-foreground/80">Ví dụ:</span>
+                    <span className="text-muted-foreground/80">{t("flashcard.guideExample")}</span>
                     <br />• hello - xin chào
                     <br />• goodbye - tạm biệt
                     <br />• thanks - cảm ơn
@@ -603,7 +607,7 @@ export default function CreateFlashcardModal({
             {/* Thumbnail upload */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                Ảnh Thumbnail
+                {t("flashcard.thumbnailLabel")}
               </label>
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
                 {(activeTab === "list" ? listThumbnail : cardThumbnail) ? (
@@ -635,7 +639,7 @@ export default function CreateFlashcardModal({
                       <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">
                         image
                       </span>
-                      <p className="text-muted-foreground mb-2">Chọn ảnh</p>
+                      <p className="text-muted-foreground mb-2">{t("flashcard.selectImage")}</p>
                       <p className="text-xs text-muted-foreground/60">
                         PNG, JPG, GIF
                       </p>
@@ -655,7 +659,7 @@ export default function CreateFlashcardModal({
             {activeTab === "card" && pipelineTerms.length > 0 && (
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Xem trước từ vựng
+                  {t("flashcard.previewTitle")}
                 </label>
                 <TermPreviewList
                   terms={pipelineTerms}

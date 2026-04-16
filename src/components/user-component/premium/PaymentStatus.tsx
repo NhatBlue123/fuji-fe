@@ -1,23 +1,29 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { tMsg } from "@/i18n";
 import {
   AlertCircle,
+  Banknote,
   Clock,
   Copy,
   RefreshCw,
-  X,
   ShieldCheck,
-  Banknote,
+  X,
 } from "lucide-react";
-import { useGetPaymentStatusQuery } from "@/store/services/paymentApi";
+
 import { Button } from "@/components/ui/button";
-import { usePaymentSocket } from "@/providers/PaymentSocketProvider";
+import {
+  type PaymentStatusResponse,
+  useLazyGetPaymentStatusQuery,
+} from "@/store/services/paymentApi";
+import { type PaymentStatusChangeEvent, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
+import { useTranslation } from "react-i18next";
 
 interface PaymentStatusProps {
   orderId: string;
@@ -26,8 +32,13 @@ interface PaymentStatusProps {
   bankId: string;
   accountNo: string;
   accountName: string;
+  createdAt: number;
   onClose: () => void;
 }
+
+const MAX_WAIT_TIME_MS = 300000;
+const FALLBACK_POLL_INTERVAL_MS = 3000;
+const FALLBACK_POLL_WINDOW_MS = 18000;
 
 export default function PaymentStatus({
   orderId,
@@ -36,135 +47,167 @@ export default function PaymentStatus({
   bankId,
   accountNo,
   accountName,
+  createdAt,
   onClose,
 }: PaymentStatusProps) {
   const router = useRouter();
-  const MAX_POLL_TIME = 300000; // 5 phút
+  const { t, i18n } = useTranslation();
   const [elapsedTime, setElapsedTime] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
-  const [socketHandled, setSocketHandled] = useState(false);
-
-  const { refetch, isLoading: isStatusLoading } =
-    useGetPaymentStatusQuery(orderId);
-
   const [isConfirming, setIsConfirming] = useState(false);
+  const [resolvedBy, setResolvedBy] = useState<"socket" | "poll" | null>(null);
+  const [pollingUntil, setPollingUntil] = useState<number | null>(null);
+  const handledRef = useRef(false);
 
-  const invalidateWalletAndPayment = () => {
+  const [getPaymentStatus, { isFetching: isStatusLoading }] =
+    useLazyGetPaymentStatusQuery();
+
+  const { isConnected, onPaymentStatusChange } = usePaymentSocket();
+
+  const invalidateWalletAndPayment = useCallback(() => {
     store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
-  };
+  }, []);
 
-  // ── Socket.IO realtime: topup-success ─────────────────────
-  const { isConnected, onTopupSuccess, onPaymentStatusChange } =
-    usePaymentSocket();
-
-  useEffect(() => {
-    const unsubTopup = onTopupSuccess((data) => {
-      if (data.orderId === orderId) {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.success(data.message || "Nạp tiền thành công!");
-        setTimeout(() => router.push("/premium/success"), 1000);
+  const finalizeSuccess = useCallback(
+    (source: "socket" | "poll") => {
+      handledRef.current = true;
+      setResolvedBy(source);
+      setPollingUntil(null);
+      invalidateWalletAndPayment();
+      if (source === "poll") {
+        toast.success(tMsg("payment.status.success"));
       }
-    });
+      setTimeout(() => router.push("/premium/success"), 1000);
+    },
+    [invalidateWalletAndPayment, router],
+  );
 
-    const unsubStatus = onPaymentStatusChange((data) => {
-      if (data.orderId === orderId) {
-        if (data.newStatus === "SUCCESS") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          setTimeout(() => router.push("/premium/success"), 1000);
-        } else if (data.newStatus === "FAILED") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          onClose();
-        }
+  const finalizeFailure = useCallback(
+    (source: "socket" | "poll", messageKey?: string) => {
+      handledRef.current = true;
+      setResolvedBy(source);
+      setPollingUntil(null);
+      invalidateWalletAndPayment();
+      if (source === "poll") {
+        toast.error(tMsg(messageKey) || tMsg("payment.status.failed"));
       }
-    });
+      onClose();
+    },
+    [invalidateWalletAndPayment, onClose],
+  );
 
-    return () => {
-      unsubTopup();
-      unsubStatus();
-    };
-  }, [orderId, onTopupSuccess, onPaymentStatusChange, router, onClose]);
+  const handleStatusResult = useCallback(
+    (
+      status: PaymentStatusResponse["status"] | string | undefined,
+      source: "socket" | "poll",
+      messageKey?: string,
+    ) => {
+      if (!status || handledRef.current) return;
 
-  // 1. Đếm ngược từng giây
+      if (status === "SUCCESS") {
+        finalizeSuccess(source);
+        return;
+      }
+
+      if (status === "FAILED") {
+        finalizeFailure(source, messageKey);
+      }
+    },
+    [finalizeFailure, finalizeSuccess],
+  );
+
+  const pollStatus = useCallback(
+    async (source: "poll") => {
+      if (handledRef.current) return;
+
+      try {
+        const result = await getPaymentStatus(orderId, true);
+        handleStatusResult(result.data?.status, source, result.data?.messageKey);
+      } catch (error) {
+        console.error("[payment] status poll failed", { orderId, error });
+      }
+    },
+    [getPaymentStatus, handleStatusResult, orderId],
+  );
+
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime((prev) => {
         const nextValue = prev + 1000;
-        if (nextValue >= MAX_POLL_TIME) {
+        if (nextValue >= MAX_WAIT_TIME_MS) {
           clearInterval(timer);
-          toast.error(
-            "Giao dịch timeout. Nếu bạn đã chuyển khoản, hệ thống sẽ tự đối soát.",
-            { duration: 5000 },
-          );
+          toast.error(tMsg("payment.timeoutError"), { duration: 5000 });
           onClose();
         }
         return nextValue;
       });
     }, 1000);
+
     return () => clearInterval(timer);
   }, [onClose]);
 
-  // 2. Tự động kiểm tra DUY NHẤT 1 lần khi socket reconnect thành công hoặc mới mount
   useEffect(() => {
-    if (socketHandled || !isConnected) return;
+    const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
+      if (handledRef.current) return;
+      if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const result = await refetch();
-        if (!isMounted || socketHandled) return;
+      handleStatusResult(data.newStatus, "socket", data.message);
+    });
 
-        if (result.data?.status === "SUCCESS") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          toast.success("Thanh toán thành công!");
-          setTimeout(() => router.push("/premium/success"), 1000);
-        } else if (result.data?.status === "FAILED") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          toast.error("Thanh toán thất bại.");
-          onClose();
-        }
-      } catch (error) {
-        console.error("Auto check error:", error);
+    return () => unsubStatus();
+  }, [handleStatusResult, onPaymentStatusChange, orderId]);
+
+  useEffect(() => {
+    if (handledRef.current) return;
+
+    if (!isConnected) {
+      const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
+      setPollingUntil(deadline);
+      void pollStatus("poll");
+      return;
+    }
+
+    setPollingUntil(null);
+  }, [isConnected, orderId, pollStatus]);
+
+  useEffect(() => {
+    if (handledRef.current || !pollingUntil) return;
+
+    if (Date.now() >= pollingUntil) {
+      setPollingUntil(null);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      if (handledRef.current || Date.now() >= (pollingUntil || 0)) {
+        clearInterval(intervalId);
+        setPollingUntil(null);
+        return;
       }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [isConnected, refetch, onClose, router, socketHandled]);
+      void pollStatus("poll");
+    }, FALLBACK_POLL_INTERVAL_MS);
 
-  // 3. Xử lý nút Manual Check rate-limited (5s cooldown)
+    return () => clearInterval(intervalId);
+  }, [pollStatus, pollingUntil]);
+
   const handleManualCheck = async () => {
-    if (socketHandled || isManualChecking) return;
+    if (handledRef.current || isManualChecking) return;
+
     const now = Date.now();
     if (now - lastCheckTime < 5000) {
-      toast.info("Vui lòng đợi 5 giây giữa các lần kiểm tra.");
+      toast.info(t("payment.waitFiveSeconds"));
       return;
     }
 
     setIsManualChecking(true);
     setLastCheckTime(now);
+
     try {
-      const result = await refetch();
-      if (result.data?.status === "SUCCESS") {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.success("Thanh toán thành công!");
-        setTimeout(() => router.push("/premium/success"), 1000);
-      } else if (result.data?.status === "FAILED") {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.error("Thanh toán thất bại.");
-        onClose();
-      } else {
-        toast.info("Giao dịch đang chờ xác nhận...", { duration: 2000 });
-      }
+      const result = await getPaymentStatus(orderId, true);
+      handleStatusResult(result.data?.status, "poll", result.data?.messageKey);
     } catch {
-      toast.error("Lỗi khi tải lại trạng thái!");
+      toast.error(tMsg("api.error"));
     } finally {
       setIsManualChecking(false);
     }
@@ -172,7 +215,7 @@ export default function PaymentStatus({
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`Đã sao chép ${label}`);
+    toast.success(`${tMsg("common.copied")} ${label}`);
   };
 
   const formatTimeLeft = (ms: number) => {
@@ -188,7 +231,6 @@ export default function PaymentStatus({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
       <div className="bg-[#12141c] border border-white/10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] max-w-4xl w-full overflow-hidden relative">
-        {/* --- OVERLAY XÁC NHẬN HỦY: NẰM Ở ĐÂY ĐỂ RA GIỮA TOÀN BỘ MODAL --- */}
         {isConfirming && (
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#0a0c10]/80 backdrop-blur-md animate-in fade-in zoom-in duration-200">
             <div className="bg-[#1a1d29] border border-white/10 p-10 rounded-[2.5rem] max-w-sm w-full mx-4 shadow-2xl text-center space-y-6">
@@ -197,10 +239,10 @@ export default function PaymentStatus({
               </div>
               <div className="space-y-2">
                 <h4 className="text-2xl font-black text-white uppercase tracking-tight">
-                  Xác nhận hủy?
+                  {t("payment.confirmCancelTitle")}
                 </h4>
                 <p className="text-slate-400 text-sm font-medium px-4">
-                  Giao dịch sẽ bị dừng lại và mã QR này sẽ không còn hiệu lực.
+                  {t("payment.confirmCancelDesc")}
                 </p>
               </div>
               <div className="flex flex-col gap-3 pt-2">
@@ -208,13 +250,13 @@ export default function PaymentStatus({
                   onClick={onClose}
                   className="h-14 rounded-2xl bg-pink-400 hover:bg-blue-600 text-white font-black uppercase text-xs tracking-widest shadow-lg shadow-red-500/20"
                 >
-                  Đồng ý hủy
+                  {t("payment.agreeCancel")}
                 </Button>
                 <button
                   onClick={() => setIsConfirming(false)}
                   className="h-12 text-slate-500 hover:text-white font-bold text-xs uppercase transition-colors"
                 >
-                  Quay lại thanh toán
+                  {t("payment.backToPayment")}
                 </button>
               </div>
             </div>
@@ -229,10 +271,9 @@ export default function PaymentStatus({
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* LEFT: QR Code Visual */}
           <div className="p-10 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5">
             <div className="relative group">
-              <div className="absolute -inset-4 border-2 border-indigo-500/20 rounded-[2rem] dashed-path animate-pulse" />
+              <div className="absolute -inset-4 border-2 border-indigo-500/20 rounded-[2rem] animate-pulse" />
               <div className="relative bg-white p-4 rounded-3xl shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
                 <Image
                   src={qrUrl}
@@ -249,16 +290,15 @@ export default function PaymentStatus({
               <div className="flex -space-x-2">
                 <div className="w-6 h-6 rounded-full bg-blue-600 border-2 border-[#12141c] flex items-center justify-center text-[10px] font-bold">
                   V
-                </div>
+                 </div>
                 <div className="w-6 h-6 rounded-full bg-red-600 border-2 border-[#12141c] flex items-center justify-center text-[10px] font-bold">
                   N
                 </div>
               </div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Hỗ trợ mọi ngân hàng & Napas247
+                {t("payment.allBanksSupport")}
               </p>
             </div>
-            {/* Manual Check Link */}
             <div className="mt-5 text-center">
               <button
                 onClick={handleManualCheck}
@@ -272,46 +312,45 @@ export default function PaymentStatus({
                 {(isManualChecking || isStatusLoading) && (
                   <RefreshCw size={12} className="animate-spin-slow" />
                 )}
-                Không tự động cập nhật? Kiểm tra trực tiếp
+                {t("payment.manualCheck")}
               </button>
             </div>
           </div>
 
-          {/* RIGHT: Payment Info & Status */}
           <div className="p-10 flex flex-col justify-between">
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                  <Banknote className="text-indigo-400" /> Thanh toán
+                  <Banknote className="text-indigo-400" /> {t("payment.paymentTitle")}
                 </h3>
                 <p className="text-slate-500 text-sm mt-1">
-                  Thực hiện chuyển khoản theo thông tin bên dưới
+                  {t("payment.payoutDesc")}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <InfoRow
-                  label="Ngân hàng"
+                  label={t("payment.bank")}
                   value={bankId}
-                  onCopy={() => copyToClipboard(bankId, "ngân hàng")}
+                  onCopy={() => copyToClipboard(bankId, t("payment.bank"))}
                 />
                 <InfoRow
-                  label="Số tài khoản"
+                  label={t("wallet.table.id")}
                   value={accountNo}
-                  onCopy={() => copyToClipboard(accountNo, "số tài khoản")}
+                  onCopy={() => copyToClipboard(accountNo, t("wallet.table.id"))}
                   isBold
                 />
-                <InfoRow label="Chủ tài khoản" value={accountName} />
+                <InfoRow label={t("wallet.withdraw.accountHolder")} value={accountName} />
                 <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase text-pink-400 tracking-widest">
-                      Số hoa cần nạp
+                      {t("payment.amountNeeded")}
                     </p>
                     <p className="text-2xl font-black text-white">
-                      {amount.toLocaleString("vi-VN")} 🌸
+                      {amount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Chuyển khoản: {qrAmountVnd.toLocaleString("vi-VN")}đ
+                      {t("wallet.withdraw.actualReceived")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
                     </p>
                   </div>
                   <div className="p-2 bg-pink-500 rounded-xl">
@@ -323,14 +362,14 @@ export default function PaymentStatus({
               <div className="p-5 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl relative overflow-hidden group">
                 <div className="relative z-10">
                   <p className="text-[10px] font-black uppercase text-pink-500 tracking-[0.2em] mb-2">
-                    Nội dung bắt buộc
+                    {t("payment.requiredContent")}
                   </p>
                   <div className="flex items-center justify-between font-mono">
                     <span className="text-2xl font-black text-white tracking-widest">
                       {orderId}
                     </span>
                     <button
-                      onClick={() => copyToClipboard(orderId, "nội dung")}
+                      onClick={() => copyToClipboard(orderId, t("payment.requiredContent"))}
                       className="p-2 hover:bg-yellow-500/20 rounded-lg text-pink-500 transition-colors"
                     >
                       <Copy size={18} />
@@ -347,13 +386,17 @@ export default function PaymentStatus({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-pink-400">
                   <RefreshCw size={16} className="animate-spin-slow" />
-                  <span className="text-xs font-bold uppercase tracking-widest">
-                    Đang chờ...
+                  <span className="text-xs font-bold uppercase tracking-widest whitespace-nowrap">
+                    {resolvedBy
+                      ? t("payment.confirmedVia", { source: resolvedBy })
+                      : isConnected
+                        ? t("payment.waitingSocket")
+                        : t("payment.socketFallback")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-400 font-mono text-sm">
                   <Clock size={14} />
-                  {formatTimeLeft(MAX_POLL_TIME - elapsedTime)}
+                  {formatTimeLeft(MAX_WAIT_TIME_MS - elapsedTime)}
                 </div>
               </div>
 
@@ -363,7 +406,7 @@ export default function PaymentStatus({
                   variant="ghost"
                   className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-500/10 hover:border-pink-500/30 font-bold text-xs uppercase text-slate-400 hover:text-pink-400 transition-all"
                 >
-                  Hủy giao dịch
+                  {t("payment.cancelTransaction")}
                 </Button>
               </div>
             </div>

@@ -6,7 +6,9 @@ import {
   useUpdateSystemReportMutation,
   useGetSystemReportNotesQuery,
   useAddSystemReportNoteMutation,
+  useGetSessionReviewsQuery,
 } from "@/store/services/adminReportApi";
+import type { SessionReviewItem } from "@/store/services/adminReportApi";
 import {
   useGetJlptQuestionReportsQuery,
   useUpdateJlptQuestionReportMutation,
@@ -54,7 +56,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-type ReportTab = "jlpt" | "jlpt_feedback" | "payment" | "course" | "other";
+type ReportTab = "teaching" | "jlpt" | "jlpt_feedback" | "payment" | "course" | "other";
 
 const STATUS_OPTIONS: { value: SystemReportStatus; label: string }[] = [
   { value: "OPEN", label: "Mở" },
@@ -108,8 +110,24 @@ function priorityBadgeVariant(priority: string) {
   }
 }
 
+const RATING_OPTIONS = [1, 2, 3, 4, 5] as const;
+
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < rating ? "text-yellow-400" : "text-muted-foreground/30"}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function TabLabel({ tab }: { tab: ReportTab }) {
   switch (tab) {
+    case "teaching":
+      return "Giảng dạy";
     case "jlpt":
       return "JLPT (câu hỏi sai)";
     case "jlpt_feedback":
@@ -124,7 +142,7 @@ function TabLabel({ tab }: { tab: ReportTab }) {
 }
 
 export default function AdminReportsPage() {
-  const [tab, setTab] = useState<ReportTab>("jlpt");
+  const [tab, setTab] = useState<ReportTab>("teaching");
 
   // filters
   const [search, setSearch] = useState("");
@@ -138,6 +156,8 @@ export default function AdminReportsPage() {
     useState<SystemReport | null>(null);
   const [selectedJlptReport, setSelectedJlptReport] =
     useState<QuestionReport | null>(null);
+  const [selectedReview, setSelectedReview] = useState<SessionReviewItem | null>(null);
+  const [ratingFilter, setRatingFilter] = useState<number | undefined>();
 
   const systemCategory: ReportCategory | undefined = useMemo(() => {
     if (tab === "jlpt_feedback") return "NOTIFICATION";
@@ -148,7 +168,8 @@ export default function AdminReportsPage() {
   }, [tab]);
   const systemSubjectType = undefined;
 
-  const shouldLoadSystem = tab !== "jlpt";
+  const shouldLoadTeaching = tab === "teaching";
+  const shouldLoadSystem = tab !== "jlpt" && tab !== "teaching";
   const shouldLoadJlpt = tab === "jlpt";
 
   const systemQuery = useGetSystemReportsQuery(
@@ -164,6 +185,18 @@ export default function AdminReportsPage() {
       sortDir: "desc",
     },
     { skip: !shouldLoadSystem },
+  );
+
+  const teachingQuery = useGetSessionReviewsQuery(
+    {
+      rating: ratingFilter,
+      search: search.trim() || undefined,
+      page,
+      size: 20,
+      sortBy: "createdAt",
+      sortDir: "desc",
+    },
+    { skip: !shouldLoadTeaching },
   );
 
   const jlptStatus = useMemo(() => {
@@ -190,11 +223,19 @@ export default function AdminReportsPage() {
   const [addNote, addNoteState] = useAddSystemReportNoteMutation();
   const [noteDraft, setNoteDraft] = useState("");
 
-  const isLoading = systemQuery.isLoading || jlptQuery.isLoading;
-  const isError = systemQuery.isError || jlptQuery.isError;
+  const isLoading = systemQuery.isLoading || jlptQuery.isLoading || teachingQuery.isLoading;
+  const isError = systemQuery.isError || jlptQuery.isError || teachingQuery.isError;
 
-  const pageInfo = shouldLoadSystem ? systemQuery.data : jlptQuery.data;
-  const rows = shouldLoadSystem ? systemQuery.data?.content : jlptQuery.data?.content;
+  const pageInfo = shouldLoadTeaching
+    ? teachingQuery.data
+    : shouldLoadSystem
+      ? systemQuery.data
+      : jlptQuery.data;
+  const rows = shouldLoadTeaching
+    ? teachingQuery.data?.content
+    : shouldLoadSystem
+      ? systemQuery.data?.content
+      : jlptQuery.data?.content;
 
   const resetForTab = (nextTab: ReportTab) => {
     setTab(nextTab);
@@ -202,9 +243,11 @@ export default function AdminReportsPage() {
     setSearch("");
     setStatus(undefined);
     setPriority(undefined);
+    setRatingFilter(undefined);
     setOpen(false);
     setSelectedJlptReport(null);
     setSelectedSystemReport(null);
+    setSelectedReview(null);
     setNoteDraft("");
   };
 
@@ -231,6 +274,9 @@ export default function AdminReportsPage() {
       <Tabs value={tab} onValueChange={(v) => resetForTab(v as ReportTab)}>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <TabsList className="w-full md:w-auto">
+            <TabsTrigger value="teaching">
+              <TabLabel tab="teaching" />
+            </TabsTrigger>
             <TabsTrigger value="jlpt">
               <TabLabel tab="jlpt" />
             </TabsTrigger>
@@ -259,53 +305,79 @@ export default function AdminReportsPage() {
               className="md:w-[340px]"
             />
 
-            <Select
-              value={status ?? "ALL"}
-              onValueChange={(v) => {
-                setPage(0);
-                if (v === "ALL") setStatus(undefined);
-                else setStatus(v as SystemReportStatus);
-              }}
-            >
-              <SelectTrigger className="md:w-[180px]">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                {STATUS_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {tab === "teaching" ? (
+              <Select
+                value={ratingFilter != null ? String(ratingFilter) : "ALL"}
+                onValueChange={(v) => {
+                  setPage(0);
+                  if (v === "ALL") setRatingFilter(undefined);
+                  else setRatingFilter(Number(v));
+                }}
+              >
+                <SelectTrigger className="md:w-[180px]">
+                  <SelectValue placeholder="Số sao" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả đánh giá</SelectItem>
+                  {RATING_OPTIONS.map((r) => (
+                    <SelectItem key={r} value={String(r)}>
+                      {r} sao
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <>
+                <Select
+                  value={status ?? "ALL"}
+                  onValueChange={(v) => {
+                    setPage(0);
+                    if (v === "ALL") setStatus(undefined);
+                    else setStatus(v as SystemReportStatus);
+                  }}
+                >
+                  <SelectTrigger className="md:w-[180px]">
+                    <SelectValue placeholder="Trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                    {STATUS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={priority ?? "ALL"}
-              onValueChange={(v) => {
-                setPage(0);
-                if (v === "ALL") setPriority(undefined);
-                else setPriority(v as ReportPriority);
-              }}
-              disabled={tab === "jlpt"}
-            >
-              <SelectTrigger className="md:w-[180px]">
-                <SelectValue placeholder="Ưu tiên" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tất cả ưu tiên</SelectItem>
-                {PRIORITY_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select
+                  value={priority ?? "ALL"}
+                  onValueChange={(v) => {
+                    setPage(0);
+                    if (v === "ALL") setPriority(undefined);
+                    else setPriority(v as ReportPriority);
+                  }}
+                  disabled={tab === "jlpt"}
+                >
+                  <SelectTrigger className="md:w-[180px]">
+                    <SelectValue placeholder="Ưu tiên" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả ưu tiên</SelectItem>
+                    {PRIORITY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
 
             <Button
               variant="outline"
               onClick={() => {
-                if (shouldLoadSystem) systemQuery.refetch();
+                if (shouldLoadTeaching) teachingQuery.refetch();
+                else if (shouldLoadSystem) systemQuery.refetch();
                 else jlptQuery.refetch();
               }}
             >
@@ -319,16 +391,31 @@ export default function AdminReportsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[200px]">Tiêu đề</TableHead>
-                  <TableHead className="whitespace-nowrap">Người gửi</TableHead>
-                  <TableHead className="whitespace-nowrap">
-                    {tab === "jlpt" ? "ID câu" : "ID đề thi"}
-                  </TableHead>
-                  <TableHead>Nội dung</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ưu tiên</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                  <TableHead className="text-right">Hành động</TableHead>
+                  {shouldLoadTeaching ? (
+                    <>
+                      <TableHead className="min-w-[140px]">Học viên</TableHead>
+                      <TableHead className="min-w-[140px]">Giáo viên</TableHead>
+                      <TableHead>Môn</TableHead>
+                      <TableHead>Đánh giá</TableHead>
+                      <TableHead className="min-w-[200px]">Nhận xét</TableHead>
+                      <TableHead>Ngày học</TableHead>
+                      <TableHead>Ngày đánh giá</TableHead>
+                      <TableHead className="text-right">Chi tiết</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="min-w-[200px]">Tiêu đề</TableHead>
+                      <TableHead className="whitespace-nowrap">Người gửi</TableHead>
+                      <TableHead className="whitespace-nowrap">
+                        {tab === "jlpt" ? "ID câu" : "ID đề thi"}
+                      </TableHead>
+                      <TableHead>Nội dung</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Ưu tiên</TableHead>
+                      <TableHead>Ngày tạo</TableHead>
+                      <TableHead className="text-right">Hành động</TableHead>
+                    </>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -349,6 +436,37 @@ export default function AdminReportsPage() {
                     <TableCell colSpan={8}>Không có báo cáo.</TableCell>
                   </TableRow>
                 )}
+
+                {shouldLoadTeaching &&
+                  (rows as SessionReviewItem[] | undefined)?.map((r) => (
+                    <TableRow
+                      key={`rev-${r.reviewId}`}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setSelectedReview(r);
+                        setSelectedSystemReport(null);
+                        setSelectedJlptReport(null);
+                        setOpen(true);
+                      }}
+                    >
+                      <TableCell className="font-medium">{r.reviewerName}</TableCell>
+                      <TableCell className="font-medium">{r.reviewedUserName}</TableCell>
+                      <TableCell className="text-sm">{r.subject || "—"}</TableCell>
+                      <TableCell>
+                        <StarDisplay rating={r.rating} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="line-clamp-2 text-sm text-muted-foreground">
+                          {r.comment || "Không có nhận xét"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{r.sessionDate ? fmtDate(r.sessionDate) : "—"}</TableCell>
+                      <TableCell className="text-sm">{fmtDate(r.createdAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline">Xem</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
 
                 {shouldLoadSystem &&
                   (rows as SystemReport[] | undefined)?.map((r) => (
@@ -510,6 +628,7 @@ export default function AdminReportsPage() {
           if (!v) {
             setSelectedSystemReport(null);
             setSelectedJlptReport(null);
+            setSelectedReview(null);
             setNoteDraft("");
           }
         }}
@@ -518,6 +637,62 @@ export default function AdminReportsPage() {
           <SheetHeader>
             <SheetTitle>Chi tiết báo cáo</SheetTitle>
           </SheetHeader>
+
+          {selectedReview ? (
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">Học viên (người đánh giá)</div>
+                  <div className="font-semibold">{selectedReview.reviewerName}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Giáo viên (được đánh giá)</div>
+                  <div className="font-semibold">{selectedReview.reviewedUserName}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">Môn học</div>
+                  <div className="font-medium">{selectedReview.subject || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Booking ID</div>
+                  <div className="font-mono text-sm">#{selectedReview.bookingId}</div>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm text-muted-foreground">Đánh giá</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <StarDisplay rating={selectedReview.rating} />
+                  <span className="text-lg font-bold">{selectedReview.rating}/5</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm text-muted-foreground">Nhận xét</div>
+                <div className="whitespace-pre-wrap text-sm border bg-muted/10 p-3 rounded-lg mt-1">
+                  {selectedReview.comment || "Không có nhận xét"}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">Ngày học</div>
+                  <div className="text-sm">{selectedReview.sessionDate ? fmtDate(selectedReview.sessionDate) : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Ngày đánh giá</div>
+                  <div className="text-sm">{fmtDate(selectedReview.createdAt)}</div>
+                </div>
+              </div>
+
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Đóng
+              </Button>
+            </div>
+          ) : null}
 
           {selectedSystemReport ? (
             <div className="mt-4 space-y-4">

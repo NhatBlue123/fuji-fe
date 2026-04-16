@@ -54,6 +54,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 import { skipToken } from "@reduxjs/toolkit/query";
 import {
   CartesianGrid,
@@ -95,10 +97,10 @@ function getSalesTier(value: number, min: number, max: number): SalesTier {
   return "medium";
 }
 
-function getSalesTierLabel(tier: SalesTier): string {
-  if (tier === "hot") return "Bán chạy";
-  if (tier === "low") return "Bán chậm";
-  return "Bán vừa";
+function getSalesTierLabel(tier: SalesTier, t: any): string {
+  if (tier === "hot") return t("admin.finance.tier.hot");
+  if (tier === "low") return t("admin.finance.tier.low");
+  return t("admin.finance.tier.medium");
 }
 
 function getSalesTierBadgeClass(tier: SalesTier): string {
@@ -108,26 +110,31 @@ function getSalesTierBadgeClass(tier: SalesTier): string {
   return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
 }
 
-function formatCompactCurrency(value: number): string {
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ`;
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}tr`;
-  if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
-  return `${value}`;
+function formatCompactCurrency(value: number, lang: string): string {
+  if (lang === "vi") {
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ`;
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}tr`;
+    if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
+  }
+  return new Intl.NumberFormat(lang, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("vi-VN", {
+function formatCurrency(value: number, lang: string): string {
+  return new Intl.NumberFormat(lang === "vi" ? "vi-VN" : lang, {
     style: "currency",
-    currency: "VND",
+    currency: lang === "vi" ? "VND" : lang === "ja" ? "JPY" : "USD",
     maximumFractionDigits: 0,
   }).format(value || 0);
 }
 
-function formatDateTime(value?: string | null): string {
+function formatDateTime(value?: string | null, lang?: string): string {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("vi-VN");
+  return date.toLocaleString(lang === "vi" ? "vi-VN" : lang);
 }
 
 function toDateTimeLocalValue(value?: string | null): string {
@@ -137,6 +144,8 @@ function toDateTimeLocalValue(value?: string | null): string {
 
 export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
   const { isAdmin, hasPermission } = usePermissions();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const canView = isAdmin || hasPermission("COURSE_VIEW");
   const canEdit = isAdmin || hasPermission("COURSE_EDIT");
 
@@ -263,11 +272,11 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
   }, [chartSourceData]);
 
   const pageTitle = isAdminPage
-    ? "Tài chính khóa học (Admin)"
-    : "Tài chính khóa học (Giáo viên)";
+    ? t("admin.finance.title.admin")
+    : t("admin.finance.title.teacher");
   const pageDescription = isAdminPage
-    ? "Quản trị giá khóa học, mã giảm giá và doanh thu theo từng khóa học trong toàn hệ thống."
-    : "Quản lý giá, mã giảm giá và doanh thu các khóa học bạn sở hữu.";
+    ? t("admin.finance.desc.admin")
+    : t("admin.finance.desc.teacher");
 
   const submitDiscountLoading = creatingDiscount || updatingDiscount;
 
@@ -315,9 +324,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
   const handleRefresh = async () => {
     try {
       await Promise.all([refetchSummary(), refetchCourses()]);
-      toast.success("Đã cập nhật dữ liệu tài chính khóa học");
+      toast.success(tMsg("api.success") || t("admin.finance.toast.refreshSuccess"));
     } catch {
-      toast.error("Không thể cập nhật dữ liệu");
+      toast.error(tMsg("api.error") || t("admin.finance.toast.refreshError"));
     }
   };
 
@@ -326,7 +335,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
     const parsedPrice = Number(priceValue);
     if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-      toast.error("Giá khóa học phải là số lớn hơn hoặc bằng 0");
+      toast.error(t("admin.finance.toast.invalidPrice"));
       return;
     }
 
@@ -335,18 +344,17 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
         courseId: selectedCourse.courseId,
         price: parsedPrice,
       }).unwrap();
-      toast.success("Cập nhật giá khóa học thành công");
+      toast.success(tMsg("api.success") || "Cập nhật giá khóa học thành công");
       setPriceDialogOpen(false);
-    } catch (error) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Cập nhật giá thất bại");
+    } catch (error: any) {
+      toast.error(tMsg(error?.data?.messageKey) || tMsg("api.error") || "Cập nhật giá thất bại");
     }
   };
 
   const handleSubmitDiscount = async () => {
     if (!selectedCourse) return;
     if (!discountCode.trim()) {
-      toast.error("Vui lòng nhập mã giảm giá");
+      toast.error(t("admin.finance.toast.emptyDiscountCode"));
       return;
     }
     const parsedPercent = Number(discountPercent);
@@ -355,7 +363,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
       parsedPercent < 1 ||
       parsedPercent > 100
     ) {
-      toast.error("Phần trăm giảm giá phải nằm trong khoảng 1 - 100");
+      toast.error(t("admin.finance.toast.invalidDiscountPercent"));
       return;
     }
 
@@ -370,7 +378,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           endAt: discountEndAt || undefined,
           isActive: discountActive,
         }).unwrap();
-        toast.success("Cập nhật mã giảm giá thành công");
+        toast.success(tMsg("api.success") || "Cập nhật mã giảm giá thành công");
       } else {
         await createDiscount({
           courseId: selectedCourse.courseId,
@@ -380,14 +388,13 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           endAt: discountEndAt || undefined,
           isActive: discountActive,
         }).unwrap();
-        toast.success("Tạo mã giảm giá thành công");
+        toast.success(tMsg("api.success") || "Tạo mã giảm giá thành công");
       }
 
       resetDiscountForm();
       await refetchDiscounts();
-    } catch (error) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Lưu mã giảm giá thất bại");
+    } catch (error: any) {
+      toast.error(tMsg(error?.data?.messageKey) || tMsg("api.error") || "Lưu mã giảm giá thất bại");
     }
   };
 
@@ -400,11 +407,10 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
         courseId: selectedCourse.courseId,
         discountId: discount.id,
       }).unwrap();
-      toast.success("Xóa mã giảm giá thành công");
+      toast.success(tMsg("api.success") || "Xóa mã giảm giá thành công");
       await refetchDiscounts();
-    } catch (error) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Xóa mã giảm giá thất bại");
+    } catch (error: any) {
+      toast.error(tMsg(error?.data?.messageKey) || tMsg("api.error") || "Xóa mã giảm giá thất bại");
     }
   };
 
@@ -412,9 +418,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Không có quyền truy cập</CardTitle>
+          <CardTitle>{t("common.noAccess")}</CardTitle>
           <CardDescription>
-            Bạn chưa có quyền COURSE_VIEW để xem tài chính khóa học.
+            {t("admin.finance.error.noPermission")}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -425,10 +431,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Chỉ dành cho quản trị viên</CardTitle>
+          <CardTitle>{t("admin.finance.error.adminOnly")}</CardTitle>
           <CardDescription>
-            Trang này hiển thị toàn bộ doanh thu khóa học hệ thống và chỉ dành
-            cho ADMIN.
+            {t("admin.finance.error.adminOnlyDesc")}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -450,14 +455,14 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           <RefreshCw
             className={`mr-2 h-4 w-4 ${fetchingCourses ? "animate-spin" : ""}`}
           />
-          Làm mới
+          {t("admin.finance.btn.refresh")}
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tổng khóa học</CardDescription>
+            <CardDescription>{t("admin.finance.stat.totalCourses")}</CardDescription>
             <CardTitle className="text-3xl">
               {loadingSummary ? "..." : (summary?.totalCourses ?? 0)}
             </CardTitle>
@@ -469,7 +474,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tổng học viên</CardDescription>
+            <CardDescription>{t("admin.finance.stat.totalStudents")}</CardDescription>
             <CardTitle className="text-3xl">
               {loadingSummary
                 ? "..."
@@ -483,11 +488,11 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Doanh thu thực thu</CardDescription>
+            <CardDescription>{t("admin.finance.stat.totalRevenue")}</CardDescription>
             <CardTitle className="text-2xl">
               {loadingSummary
                 ? "..."
-                : formatCurrency(summary?.totalRevenue ?? 0)}
+                : formatCurrency(summary?.totalRevenue ?? 0, lang)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -497,7 +502,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Mã giảm giá đang hiệu lực</CardDescription>
+            <CardDescription>{t("admin.finance.stat.activeDiscounts")}</CardDescription>
             <CardTitle className="text-3xl">
               {loadingSummary ? "..." : (summary?.activeDiscounts ?? 0)}
             </CardTitle>
@@ -512,24 +517,20 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Biểu đồ đường doanh thu khóa học</CardTitle>
+              <CardTitle>{t("admin.finance.chart.title")}</CardTitle>
               <CardDescription>
-                Top {CHART_LIMIT} khóa học theo doanh thu, phân hạng bán chạy,
-                bán vừa, bán chậm bằng màu riêng.
+                {t("admin.finance.chart.desc", { limit: CHART_LIMIT })}
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Bán
-                chạy
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t("admin.finance.tier.hot")}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> Bán
-                vừa
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> {t("admin.finance.tier.medium")}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Bán
-                chậm
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> {t("admin.finance.tier.low")}
               </span>
             </div>
           </div>
@@ -565,16 +566,16 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                     width={66}
                     tick={{ fontSize: 12 }}
                     tickFormatter={(value) =>
-                      formatCompactCurrency(Number(value ?? 0))
+                      formatCompactCurrency(Number(value ?? 0), lang)
                     }
                   />
                   <Tooltip
                     formatter={(
-                      value: number | string,
-                      name: string | number,
-                    ) => [formatCurrency(Number(value ?? 0)), String(name)]}
+                      value: number | string | undefined,
+                      name: string | number | undefined,
+                    ) => [formatCurrency(Number(value ?? 0), lang), String(name)]}
                     labelFormatter={(_label, payload) =>
-                      payload?.[0]?.payload?.courseTitle || "Khóa học"
+                      payload?.[0]?.payload?.courseTitle || t("admin.finance.table.course")
                     }
                     contentStyle={{
                       borderRadius: 10,
@@ -586,7 +587,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                   <Line
                     type="monotone"
                     dataKey="hotRevenue"
-                    name="Bán chạy"
+                    name={t("admin.finance.tier.hot")}
                     stroke="#22c55e"
                     strokeWidth={3}
                     dot={{ r: 4 }}
@@ -596,7 +597,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                   <Line
                     type="monotone"
                     dataKey="mediumRevenue"
-                    name="Bán vừa"
+                    name={t("admin.finance.tier.medium")}
                     stroke="#f59e0b"
                     strokeWidth={3}
                     dot={{ r: 4 }}
@@ -606,7 +607,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                   <Line
                     type="monotone"
                     dataKey="lowRevenue"
-                    name="Bán chậm"
+                    name={t("admin.finance.tier.low")}
                     stroke="#f43f5e"
                     strokeWidth={3}
                     dot={{ r: 4 }}
@@ -618,8 +619,8 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
             ) : (
               <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
                 {fetchingChartData
-                  ? "Đang tải dữ liệu biểu đồ..."
-                  : "Chưa có dữ liệu để hiển thị biểu đồ"}
+                  ? t("admin.finance.chart.loading")
+                  : t("admin.finance.chart.noData")}
               </div>
             )}
           </div>
@@ -629,9 +630,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
       <Card>
         <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Danh sách tài chính theo khóa học</CardTitle>
+            <CardTitle>{t("admin.finance.list.title")}</CardTitle>
             <CardDescription>
-              Doanh thu được tính từ các giao dịch COURSE_PAYMENT đã phát sinh.
+              {t("admin.finance.list.desc")}
             </CardDescription>
           </div>
           <div className="relative w-full sm:w-80">
@@ -642,7 +643,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                 setKeyword(e.target.value);
                 setPage(1);
               }}
-              placeholder="Tìm theo tên khóa học"
+              placeholder={t("admin.finance.placeholder.search")}
               className="pl-9"
             />
           </div>
@@ -652,14 +653,14 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Khóa học</TableHead>
-                  <TableHead>Giảng viên</TableHead>
-                  <TableHead className="text-right">Giá</TableHead>
-                  <TableHead className="text-right">Học viên</TableHead>
-                  <TableHead className="text-right">Doanh thu</TableHead>
-                  <TableHead className="text-right">Giao dịch</TableHead>
-                  <TableHead className="text-right">Mã hiệu lực</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
+                  <TableHead>{t("admin.finance.table.course")}</TableHead>
+                  <TableHead>{t("admin.finance.table.instructor")}</TableHead>
+                  <TableHead className="text-right">{t("admin.finance.table.price")}</TableHead>
+                  <TableHead className="text-right">{t("admin.finance.table.students")}</TableHead>
+                  <TableHead className="text-right">{t("admin.finance.table.revenue")}</TableHead>
+                  <TableHead className="text-right">{t("admin.finance.table.transactions")}</TableHead>
+                  <TableHead className="text-right">{t("admin.finance.table.activeCodes")}</TableHead>
+                  <TableHead className="text-right">{t("admin.finance.table.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -669,7 +670,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                       colSpan={8}
                       className="py-12 text-center text-muted-foreground"
                     >
-                      Đang tải dữ liệu...
+                      {t("common.loading") || "Đang tải dữ liệu..."}
                     </TableCell>
                   </TableRow>
                 ) : pageData?.content?.length ? (
@@ -683,7 +684,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                               course.isPublished ? "default" : "secondary"
                             }
                           >
-                            {course.isPublished ? "Đã xuất bản" : "Bản nháp"}
+                            {course.isPublished ? t("admin.finance.status.published") : t("admin.finance.status.draft")}
                           </Badge>
                         </div>
                       </TableCell>
@@ -693,7 +694,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                           "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(course.price)}
+                        {formatCurrency(course.price, lang)}
                       </TableCell>
                       <TableCell className="text-right">
                         {course.studentCount?.toLocaleString() || 0}
@@ -701,7 +702,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <span className="font-medium">
-                            {formatCurrency(course.totalRevenue)}
+                            {formatCurrency(course.totalRevenue, lang)}
                           </span>
                           <Badge
                             className={cn(
@@ -714,7 +715,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                           >
                             {getSalesTierLabel(
                               revenueTierByCourseId.get(course.courseId) ??
-                                "medium",
+                                "medium", t
                             )}
                           </Badge>
                         </div>
@@ -733,7 +734,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                             disabled={!canOpenActions}
                             onClick={() => openPriceDialog(course)}
                           >
-                            Sửa giá
+                            {t("admin.finance.btn.editPrice")}
                           </Button>
                           <Button
                             size="sm"
@@ -741,7 +742,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                             disabled={!canOpenActions}
                             onClick={() => openDiscountDialog(course)}
                           >
-                            Mã giảm giá
+                            {t("admin.finance.btn.discountCodes")}
                           </Button>
                         </div>
                       </TableCell>
@@ -753,7 +754,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                       colSpan={8}
                       className="py-12 text-center text-muted-foreground"
                     >
-                      Không có khóa học phù hợp
+                      {t("common.noMatchingData") || "Không có khóa học phù hợp"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -763,7 +764,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Trang {page} / {Math.max(totalPages, 1)}
+              {t("common.pageInfo", { current: page, total: Math.max(totalPages, 1) })}
             </span>
             <div className="flex gap-2">
               <Button
@@ -772,7 +773,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={page <= 1 || loadingCourses}
               >
-                Trước
+                {t("common.prev")}
               </Button>
               <Button
                 variant="outline"
@@ -782,7 +783,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                 }
                 disabled={page >= totalPages || loadingCourses}
               >
-                Sau
+                {t("common.next")}
               </Button>
             </div>
           </div>
@@ -792,12 +793,12 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
       <Dialog open={priceDialogOpen} onOpenChange={setPriceDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cập nhật giá khóa học</DialogTitle>
+            <DialogTitle>{t("admin.finance.dialog.editPrice")}</DialogTitle>
             <DialogDescription>{selectedCourse?.title}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            <Label htmlFor="course-price">Giá mới (VND)</Label>
+            <Label htmlFor="course-price">{t("admin.finance.label.newPrice")}</Label>
             <Input
               id="course-price"
               type="number"

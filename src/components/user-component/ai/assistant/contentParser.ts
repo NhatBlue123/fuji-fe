@@ -51,7 +51,9 @@ function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
   return items.slice(0, 6);
 }
 
-function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | null {
+function sanitizeCourseComparePayload(
+  value: unknown,
+): CourseComparePayload | null {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -84,7 +86,8 @@ function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | nu
       title,
       url: safeUrl,
       price: typeof col.price === "string" ? col.price.trim() : undefined,
-      thumbnail: typeof col.thumbnail === "string" ? col.thumbnail.trim() : undefined,
+      thumbnail:
+        typeof col.thumbnail === "string" ? col.thumbnail.trim() : undefined,
     });
   }
 
@@ -123,7 +126,8 @@ function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | nu
     return null;
   }
 
-  const title = typeof record.title === "string" ? record.title.trim() : undefined;
+  const title =
+    typeof record.title === "string" ? record.title.trim() : undefined;
   return {
     title,
     columns: limitedColumns,
@@ -131,7 +135,9 @@ function sanitizeCourseComparePayload(value: unknown): CourseComparePayload | nu
   };
 }
 
-function sanitizePaymentActionPayload(value: unknown): PaymentActionPayload | null {
+function sanitizePaymentActionPayload(
+  value: unknown,
+): PaymentActionPayload | null {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -231,7 +237,9 @@ function parseActionLinksMarkerBody(body: string): ActionLinkItem[] {
   return sanitizeActionLinksPayload(parsed);
 }
 
-function splitActionLinksMarkerFromMarkdown(markdown: string): AssistantContentSegment[] {
+function splitActionLinksMarkerFromMarkdown(
+  markdown: string,
+): AssistantContentSegment[] {
   const source = String(markdown || "");
   if (!source.trim()) {
     return [];
@@ -345,7 +353,9 @@ function findBalancedJsonEnd(source: string, start: number): number {
   return -1;
 }
 
-function splitLooseJsonFromMarkdown(markdown: string): AssistantContentSegment[] {
+function splitLooseJsonFromMarkdown(
+  markdown: string,
+): AssistantContentSegment[] {
   const source = String(markdown || "");
   if (!source.trim()) {
     return [];
@@ -452,7 +462,9 @@ function stripIncompleteStructuredBlock(source: string): {
   let match: RegExpExecArray | null;
 
   while ((match = openBlockRegex.exec(source))) {
-    const blockType = String(match[1] || "").toLowerCase() as StructuredBlockType;
+    const blockType = String(
+      match[1] || "",
+    ).toLowerCase() as StructuredBlockType;
     const blockBodyStart = openBlockRegex.lastIndex;
     const closeIndex = source.indexOf("```", blockBodyStart);
 
@@ -522,7 +534,9 @@ export function parseAssistantContent(
       }
     }
 
-    const blockType = String(match[1] || "").trim().toLowerCase();
+    const blockType = String(match[1] || "")
+      .trim()
+      .toLowerCase();
     const jsonText = (match[2] || "").trim();
     const parsed = tryParseJsonValue(jsonText);
 

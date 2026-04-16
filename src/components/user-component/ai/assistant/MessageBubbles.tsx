@@ -4,10 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import LiquidGlass from "@/components/ui/liquid-glass-safe";
 import { Button } from "@/components/ui/button";
-import {
-  ThinkBlock,
-  type AssistantMessage,
-} from "../shared";
+import { ThinkBlock, type AssistantMessage } from "../shared";
 import {
   ActionLinksCard,
   CourseCompareTable,
@@ -85,7 +82,9 @@ export function AiMessageBubble({
               {msg.think && <ThinkBlock content={msg.think} />}
 
               {msg.textJp && (
-                <p className="mb-1 text-lg font-bold text-foreground">{msg.textJp}</p>
+                <p className="mb-1 text-lg font-bold text-foreground">
+                  {msg.textJp}
+                </p>
               )}
 
               {msg.textVn && (
@@ -138,7 +137,10 @@ export function AiMessageBubble({
                         blockType={segment.blockType}
                       />
                     ) : (
-                      <ReactMarkdown key={`md-${msg.id}-${idx}`} remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown
+                        key={`md-${msg.id}-${idx}`}
+                        remarkPlugins={[remarkGfm]}
+                      >
                         {segment.content}
                       </ReactMarkdown>
                     ),
@@ -169,7 +171,9 @@ export function AiMessageBubble({
               title="Sao chép"
               onClick={() => onCopy(msg.textVn || "")}
             >
-              <span className="material-symbols-outlined text-lg">content_copy</span>
+              <span className="material-symbols-outlined text-lg">
+                content_copy
+              </span>
             </Button>
           </div>
         )}
@@ -191,7 +195,9 @@ export function UserMessageBubble({ msg }: UserMessageBubbleProps) {
         className="size-10 shrink-0 rounded-full"
       >
         <div className="flex size-10 items-center justify-center rounded-full border border-white/60 bg-white/75 dark:border-white/15 dark:bg-slate-900/58">
-          <span className="material-symbols-outlined text-muted-foreground">person</span>
+          <span className="material-symbols-outlined text-muted-foreground">
+            person
+          </span>
         </div>
       </LiquidGlass>
 
@@ -235,7 +241,9 @@ export function AssistantTypingStatus({
             />
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">Trợ giảng đang soạn...</span>
+        <span className="text-xs text-muted-foreground">
+          Trợ giảng đang soạn...
+        </span>
         {queuedInfo && (
           <span className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground/80">
             {intentToLabel(queuedInfo.intent)} · {queuedInfo.jobId || "..."}

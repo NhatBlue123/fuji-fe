@@ -40,7 +40,9 @@ export default function AIChatShell({
                   : "border-white/55 bg-white/68 text-muted-foreground hover:border-primary/30 hover:text-foreground dark:border-white/15 dark:bg-slate-900/55"
               }`}
             >
-              <span className="material-symbols-outlined text-lg">smart_toy</span>
+              <span className="material-symbols-outlined text-lg">
+                smart_toy
+              </span>
               Chatbot AI
             </Button>
           </LiquidGlass>

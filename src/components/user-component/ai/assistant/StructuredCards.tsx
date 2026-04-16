@@ -37,7 +37,8 @@ export function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
             href={item.url}
             className="group relative block overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-white/82 via-white/54 to-sky-100/45 p-3 shadow-[0_20px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-500 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_24px_52px_-26px_rgba(59,130,246,0.45)] dark:border-white/15 dark:from-slate-900/72 dark:via-slate-900/56 dark:to-slate-800/45"
             style={{
-              animation: "glassRise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards",
+              animation:
+                "glassRise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards",
               animationDelay: `${idx * 55}ms`,
             }}
           >
@@ -107,13 +108,21 @@ export function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
   );
 }
 
-export function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
+export function CourseCompareTable({
+  payload,
+}: {
+  payload: CourseComparePayload;
+}) {
   if (payload.columns.length === 0 || payload.rows.length === 0) {
     return null;
   }
 
   return (
-    <LiquidGlass {...glassCardProps} cornerRadius={18} className="my-4 rounded-2xl">
+    <LiquidGlass
+      {...glassCardProps}
+      cornerRadius={18}
+      className="my-4 rounded-2xl"
+    >
       <div className="overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-white/82 via-white/56 to-sky-100/45 dark:border-white/15 dark:from-slate-900/72 dark:via-slate-900/56 dark:to-slate-800/45">
         {payload.title && (
           <div className="border-b border-white/45 bg-white/45 px-3 py-2 text-sm font-semibold text-foreground backdrop-blur-md dark:border-white/10 dark:bg-white/5">
@@ -226,16 +235,28 @@ export function StructuredLoadingCard({
   );
 }
 
-export function PaymentActionCard({ payload }: { payload: PaymentActionPayload }) {
+export function PaymentActionCard({
+  payload,
+}: {
+  payload: PaymentActionPayload;
+}) {
   return (
-    <LiquidGlass {...glassCardProps} cornerRadius={18} className="my-3 rounded-2xl">
+    <LiquidGlass
+      {...glassCardProps}
+      cornerRadius={18}
+      className="my-3 rounded-2xl"
+    >
       <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-white/85 via-primary/10 to-sky-100/45 p-3.5 shadow-[0_18px_42px_-30px_rgba(37,99,235,0.45)] dark:border-white/15 dark:from-slate-900/70 dark:via-slate-900/58 dark:to-slate-800/45">
         <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_90%_0%,rgba(191,219,254,0.45),transparent_52%)]" />
         <div className="relative z-10 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">{payload.label}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {payload.label}
+            </p>
             {payload.note && (
-              <p className="mt-1 text-xs text-muted-foreground">{payload.note}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {payload.note}
+              </p>
             )}
           </div>
           <Link
@@ -256,7 +277,11 @@ export function ActionLinksCard({ links }: { links: ActionLinkItem[] }) {
   }
 
   return (
-    <LiquidGlass {...glassCardProps} cornerRadius={22} className="my-4 rounded-[1.35rem]">
+    <LiquidGlass
+      {...glassCardProps}
+      cornerRadius={22}
+      className="my-4 rounded-[1.35rem]"
+    >
       <div className="relative overflow-hidden rounded-[1.35rem] border border-white/60 bg-gradient-to-br from-white/85 via-sky-50/55 to-blue-100/40 p-4 shadow-[0_24px_56px_-34px_rgba(37,99,235,0.45)] dark:border-white/15 dark:from-slate-900/72 dark:via-slate-900/58 dark:to-slate-800/45">
         <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_8%,rgba(147,197,253,0.45),transparent_52%)]" />
         <span className="pointer-events-none absolute -left-12 top-0 h-16 w-72 -translate-y-1/2 rotate-[6deg] bg-gradient-to-r from-transparent via-white/70 to-transparent blur-xl" />

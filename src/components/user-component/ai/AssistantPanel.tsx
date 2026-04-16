@@ -141,9 +141,9 @@ export default function AssistantPanel({
   const optimisticConversationRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string>("");
   const activeConversationRef = useRef<number | null>(null);
-  const conversationSnapshotsRef = useRef<Map<number, AssistantConversationSnapshot>>(
-    new Map(),
-  );
+  const conversationSnapshotsRef = useRef<
+    Map<number, AssistantConversationSnapshot>
+  >(new Map());
   const initialLoadSeqRef = useRef(0);
   const pendingScrollRestoreRef = useRef<{
     prevHeight: number;

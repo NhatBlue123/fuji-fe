@@ -55,31 +55,51 @@ export const UserFilter: React.FC<UserFilterProps> = ({
             <SelectValue placeholder={t("admin.user.filter.rolePlaceholder")} />
           </SelectTrigger>
           <SelectContent className="rounded-xl border-none shadow-xl">
-            <SelectItem value="all">{t("admin.user.filter.allRoles")}</SelectItem>
-            <SelectItem value="STUDENT">{t("admin.user.role.student")}</SelectItem>
-            <SelectItem value="INSTRUCTOR">{t("admin.user.role.instructor")}</SelectItem>
+            <SelectItem value="all">
+              {t("admin.user.filter.allRoles")}
+            </SelectItem>
+            <SelectItem value="STUDENT">
+              {t("admin.user.role.student")}
+            </SelectItem>
+            <SelectItem value="INSTRUCTOR">
+              {t("admin.user.role.instructor")}
+            </SelectItem>
             <SelectItem value="ADMIN">{t("admin.user.role.admin")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={status} onValueChange={onStatusChange}>
           <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-none bg-white dark:bg-card/50 h-10 shadow-sm font-medium text-xs">
-            <SelectValue placeholder={t("admin.user.filter.statusPlaceholder")} />
+            <SelectValue
+              placeholder={t("admin.user.filter.statusPlaceholder")}
+            />
           </SelectTrigger>
           <SelectContent className="rounded-xl border-none shadow-xl">
-            <SelectItem value="all">{t("admin.user.filter.allStatus")}</SelectItem>
-            <SelectItem value="ACTIVE">{t("admin.user.status.active")}</SelectItem>
-            <SelectItem value="INACTIVE">{t("admin.user.status.lockedLabel")}</SelectItem>
+            <SelectItem value="all">
+              {t("admin.user.filter.allStatus")}
+            </SelectItem>
+            <SelectItem value="ACTIVE">
+              {t("admin.user.status.active")}
+            </SelectItem>
+            <SelectItem value="INACTIVE">
+              {t("admin.user.status.lockedLabel")}
+            </SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={securityFilter} onValueChange={onSecurityFilterChange}>
           <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-none bg-white dark:bg-card/50 h-10 shadow-sm font-medium text-xs">
-            <SelectValue placeholder={t("admin.user.filter.securityPlaceholder")} />
+            <SelectValue
+              placeholder={t("admin.user.filter.securityPlaceholder")}
+            />
           </SelectTrigger>
           <SelectContent className="rounded-xl border-none shadow-xl">
-            <SelectItem value="all">{t("admin.user.filter.allProfiles")}</SelectItem>
-            <SelectItem value="VIOLATIONS">{t("admin.user.filter.violations")}</SelectItem>
+            <SelectItem value="all">
+              {t("admin.user.filter.allProfiles")}
+            </SelectItem>
+            <SelectItem value="VIOLATIONS">
+              {t("admin.user.filter.violations")}
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -88,8 +108,12 @@ export const UserFilter: React.FC<UserFilterProps> = ({
             <SelectValue placeholder={t("admin.user.filter.sortPlaceholder")} />
           </SelectTrigger>
           <SelectContent className="rounded-xl border-none shadow-xl">
-            <SelectItem value="createdAt,desc">{t("admin.user.filter.newest")}</SelectItem>
-            <SelectItem value="createdAt,asc">{t("admin.user.filter.oldest")}</SelectItem>
+            <SelectItem value="createdAt,desc">
+              {t("admin.user.filter.newest")}
+            </SelectItem>
+            <SelectItem value="createdAt,asc">
+              {t("admin.user.filter.oldest")}
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

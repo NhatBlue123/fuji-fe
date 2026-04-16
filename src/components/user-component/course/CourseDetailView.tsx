@@ -184,13 +184,19 @@ function LessonItem({
               </span>
             )}
             {lesson.userCompleted && (
-              <span className="text-green-500 text-[10px] font-bold px-1.5 py-0.5 bg-green-500/10 rounded border border-green-500/20">{t('auto.courseDetail_1')}</span>
+              <span className="text-green-500 text-[10px] font-bold px-1.5 py-0.5 bg-green-500/10 rounded border border-green-500/20">
+                {t("auto.courseDetail_1")}
+              </span>
             )}
             {lesson.isPreview && (
-              <span className="text-blue-500 text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20">{t('auto.courseDetail_2')}</span>
+              <span className="text-blue-500 text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20">
+                {t("auto.courseDetail_2")}
+              </span>
             )}
             {!canAccessLesson && (
-              <span className="text-amber-500 text-[10px] font-bold px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">{t('auto.courseDetail_3')}</span>
+              <span className="text-amber-500 text-[10px] font-bold px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">
+                {t("auto.courseDetail_3")}
+              </span>
             )}
           </div>
         </div>
@@ -201,7 +207,9 @@ function LessonItem({
         </span>
       )}
       {!canAccessLesson && (
-        <span className="bg-muted text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-border">{t('auto.courseDetail_4')}</span>
+        <span className="bg-muted text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-border">
+          {t("auto.courseDetail_4")}
+        </span>
       )}
     </>
   );
@@ -270,7 +278,9 @@ function ReviewCard({ review }: { review: RatingResponseDTO }) {
               <h4 className="font-bold text-foreground text-sm">
                 {review.user.fullName}
               </h4>
-              <span className="text-xs text-secondary bg-secondary/10 px-2 py-0.5 rounded-full mt-1 inline-block border border-secondary/20">{t('auto.courseDetail_5')}</span>
+              <span className="text-xs text-secondary bg-secondary/10 px-2 py-0.5 rounded-full mt-1 inline-block border border-secondary/20">
+                {t("auto.courseDetail_5")}
+              </span>
             </div>
             <span className="text-xs text-muted-foreground flex-shrink-0">
               {timeAgo(review.createdAt)}
@@ -301,7 +311,9 @@ function OverviewContent({ description }: { description: string }) {
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-3 mb-6">
           <span className="p-2 rounded-lg bg-secondary/10 text-secondary">
             <span className="material-symbols-outlined">info</span>
-          </span>{t('auto.courseDetail_6')}</h2>
+          </span>
+          {t("auto.courseDetail_6")}
+        </h2>
         <div className="prose prose-invert max-w-none">
           <p className="text-muted-foreground leading-relaxed text-base whitespace-pre-line">
             {description}
@@ -310,7 +322,9 @@ function OverviewContent({ description }: { description: string }) {
       </div>
 
       <div>
-        <h3 className="text-lg font-bold text-foreground mb-4">{t('auto.courseDetail_7')}</h3>
+        <h3 className="text-lg font-bold text-foreground mb-4">
+          {t("auto.courseDetail_7")}
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
             "Nắm vững kiến thức nền tảng",
@@ -366,7 +380,9 @@ function CurriculumContent({
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
           <span className="p-2 rounded-lg bg-secondary/10 text-secondary">
             <span className="material-symbols-outlined">menu_book</span>
-          </span>{t('auto.courseDetail_8')}</h2>
+          </span>
+          {t("auto.courseDetail_8")}
+        </h2>
         <div className="hidden sm:block text-muted-foreground text-sm font-medium">
           <span className="text-foreground font-bold">{lessons.length}</span>{" "}
           bài giảng •{" "}
@@ -414,7 +430,9 @@ function CurriculumContent({
               expand_more
             </span>
             <div className="text-left">
-              <h3 className="font-bold text-foreground text-lg">{t('auto.courseDetail_9')}</h3>
+              <h3 className="font-bold text-foreground text-lg">
+                {t("auto.courseDetail_9")}
+              </h3>
               <p className="text-muted-foreground text-xs mt-1 font-medium">
                 {completed}/{lessons.length} hoàn thành •{" "}
                 {formatDuration(totalDuration)}
@@ -435,7 +453,9 @@ function CurriculumContent({
               <div className="p-8 text-center text-muted-foreground">
                 <span className="material-symbols-outlined text-4xl mb-2 block">
                   inbox
-                </span>{t('auto.courseDetail_10')}</div>
+                </span>
+                {t("auto.courseDetail_10")}
+              </div>
             ) : (
               lessons.map((lesson, idx) => (
                 <LessonItem
@@ -540,7 +560,9 @@ function InstructorContent({
                 <h2 className="text-3xl font-black text-foreground mb-1">
                   {instructor.fullName}
                 </h2>
-                <p className="text-secondary font-medium tracking-wide text-sm uppercase">{t('auto.courseDetail_11')}</p>
+                <p className="text-secondary font-medium tracking-wide text-sm uppercase">
+                  {t("auto.courseDetail_11")}
+                </p>
               </div>
 
               {/* Tags */}
@@ -566,7 +588,9 @@ function InstructorContent({
               </div>
 
               {/* Bio */}
-              <p className="text-muted-foreground leading-relaxed text-sm md:text-base">{t('auto.courseDetail_12')}</p>
+              <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
+                {t("auto.courseDetail_12")}
+              </p>
 
               {/* Stats */}
               <div className="flex justify-center md:justify-start gap-8 pt-4 border-t border-border mt-4">
@@ -574,7 +598,9 @@ function InstructorContent({
                   <div className="text-foreground font-black text-xl">
                     {instructorCourses.length}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">{t('auto.courseDetail_13')}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">
+                    {t("auto.courseDetail_13")}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-foreground font-black text-xl">
@@ -582,7 +608,9 @@ function InstructorContent({
                       ? `${(totalStudents / 1000).toFixed(1)}k`
                       : totalStudents}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">{t('auto.courseDetail_14')}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">
+                    {t("auto.courseDetail_14")}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-foreground font-black text-xl flex items-center gap-1">
@@ -593,7 +621,9 @@ function InstructorContent({
                       </span>
                     )}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">{t('auto.courseDetail_15')}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">
+                    {t("auto.courseDetail_15")}
+                  </div>
                 </div>
               </div>
             </div>
@@ -607,7 +637,9 @@ function InstructorContent({
           <h3 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
             <span className="material-symbols-outlined text-secondary">
               collections_bookmark
-            </span>{t('auto.courseDetail_16')}</h3>
+            </span>
+            {t("auto.courseDetail_16")}
+          </h3>
           <div className="flex gap-5 overflow-x-auto pb-4 -mx-2 px-2 snap-x scrollbar-none">
             {otherCourses.map((c) => (
               <Link
@@ -708,7 +740,9 @@ function ReviewsContent({
         <h2 className="text-xl md:text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
           <span className="material-symbols-outlined text-secondary">
             star_rate
-          </span>{t('auto.courseDetail_17')}</h2>
+          </span>
+          {t("auto.courseDetail_17")}
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
           {/* Left — big score */}
@@ -759,15 +793,17 @@ function ReviewsContent({
       {/* ── Comment list ── */}
       <section className="space-y-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-foreground">{t('auto.courseDetail_18')}</h3>
+          <h3 className="text-lg font-bold text-foreground">
+            {t("auto.courseDetail_18")}
+          </h3>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="bg-card border border-border rounded-lg text-sm text-muted-foreground px-3 py-2 focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
           >
-            <option value="newest">{t('auto.courseDetail_19')}</option>
-            <option value="highest">{t('auto.courseDetail_20')}</option>
-            <option value="lowest">{t('auto.courseDetail_21')}</option>
+            <option value="newest">{t("auto.courseDetail_19")}</option>
+            <option value="highest">{t("auto.courseDetail_20")}</option>
+            <option value="lowest">{t("auto.courseDetail_21")}</option>
           </select>
         </div>
 
@@ -781,7 +817,9 @@ function ReviewsContent({
           <div className="text-center py-12 text-muted-foreground">
             <span className="material-symbols-outlined text-4xl mb-2 block">
               rate_review
-            </span>{t('auto.courseDetail_22')}</div>
+            </span>
+            {t("auto.courseDetail_22")}
+          </div>
         ) : (
           <div className="space-y-4">
             {sortedReviews.map((review) => (
@@ -792,7 +830,9 @@ function ReviewsContent({
 
         {/* Load more button */}
         {sortedReviews.length > 0 && (
-          <Button className="w-full py-3 rounded-xl border border-border bg-card/50 text-muted-foreground font-bold hover:bg-card hover:text-foreground transition-all text-sm">{t('auto.courseDetail_23')}</Button>
+          <Button className="w-full py-3 rounded-xl border border-border bg-card/50 text-muted-foreground font-bold hover:bg-card hover:text-foreground transition-all text-sm">
+            {t("auto.courseDetail_23")}
+          </Button>
         )}
       </section>
     </div>
@@ -878,12 +918,18 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
         <span className="material-symbols-outlined text-6xl text-muted-foreground/40 mb-4">
           error
         </span>
-        <h2 className="text-xl font-bold text-foreground mb-2">{t('auto.courseDetail_24')}</h2>
-        <p className="text-muted-foreground mb-6">{t('auto.courseDetail_25')}</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">
+          {t("auto.courseDetail_24")}
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          {t("auto.courseDetail_25")}
+        </p>
         <Link
           href="/course"
           className="px-6 py-2.5 bg-secondary text-secondary-foreground rounded-xl font-bold hover:bg-secondary/90 transition-colors"
-        >{t('auto.courseDetail_26')}</Link>
+        >
+          {t("auto.courseDetail_26")}
+        </Link>
       </div>
     );
   }
@@ -1006,7 +1052,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 <span className="material-symbols-outlined text-lg">
                   language
                 </span>
-                <span>{t('auto.courseDetail_27')}</span>
+                <span>{t("auto.courseDetail_27")}</span>
               </div>
             </div>
           </div>
@@ -1033,7 +1079,9 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                   }}
                   className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
                 >
-                  <span className="material-symbols-outlined filled">sell</span>{t('auto.courseDetail_28')}</button>
+                  <span className="material-symbols-outlined filled">sell</span>
+                  {t("auto.courseDetail_28")}
+                </button>
               )
             ) : (
               <button
@@ -1042,7 +1090,9 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
               >
                 <span className="material-symbols-outlined filled">
                   play_circle
-                </span>{t('auto.courseDetail_29')}</button>
+                </span>
+                {t("auto.courseDetail_29")}
+              </button>
             )}
           </div>
         </div>
@@ -1135,7 +1185,9 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 {/* Price */}
                 <div className="text-3xl font-black text-foreground mb-2">
                   {isFreePrice(course.price) ? (
-                    <span className="text-secondary">{t('auto.courseDetail_30')}</span>
+                    <span className="text-secondary">
+                      {t("auto.courseDetail_30")}
+                    </span>
                   ) : (
                     formatPrice(course.price)
                   )}
@@ -1163,7 +1215,9 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                       <span className="material-symbols-outlined text-xl">
                         play_circle
                       </span>
-                      {resumeLessonId ? t("course.detail.startNow") : t("course.detail.noLessons")}
+                      {resumeLessonId
+                        ? t("course.detail.startNow")
+                        : t("course.detail.noLessons")}
                     </Button>
                   </Link>
                 )}
@@ -1171,11 +1225,15 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 <Button
                   variant="ghost"
                   className="w-full py-3.5 rounded-xl border border-border text-muted-foreground font-bold hover:bg-muted hover:text-foreground hover:border-muted transition-colors text-sm"
-                >{t('auto.courseDetail_31')}</Button>
+                >
+                  {t("auto.courseDetail_31")}
+                </Button>
 
                 {/* Course Info */}
                 <div className="mt-8 space-y-4">
-                  <h3 className="text-foreground font-bold text-sm uppercase tracking-wider mb-4 border-b border-border pb-2">{t('auto.courseDetail_32')}</h3>
+                  <h3 className="text-foreground font-bold text-sm uppercase tracking-wider mb-4 border-b border-border pb-2">
+                    {t("auto.courseDetail_32")}
+                  </h3>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground flex items-center gap-2">
                       <span className="material-symbols-outlined text-lg">
@@ -1230,7 +1288,9 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                       </span>{" "}
                       Chứng chỉ
                     </span>
-                    <span className="text-foreground font-medium">{t('auto.courseDetail_33')}</span>
+                    <span className="text-foreground font-medium">
+                      {t("auto.courseDetail_33")}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground flex items-center gap-2">
@@ -1239,33 +1299,41 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                       </span>{" "}
                       Quyền truy cập
                     </span>
-                    <span className="text-foreground font-medium">{t('auto.courseDetail_34')}</span>
+                    <span className="text-foreground font-medium">
+                      {t("auto.courseDetail_34")}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Coupon */}
               <div className="bg-card rounded-2xl p-6 border border-border">
-                <h3 className="text-foreground font-bold text-sm mb-4">{t('auto.courseDetail_35')}</h3>
+                <h3 className="text-foreground font-bold text-sm mb-4">
+                  {t("auto.courseDetail_35")}
+                </h3>
                 <div className="flex gap-2 mb-2">
                   <Input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     className="glass-input rounded-lg text-sm text-foreground px-3 py-2 w-full focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
-                    placeholder={t('auto.courseDetail_38')}
+                    placeholder={t("auto.courseDetail_38")}
                   />
                   <Button
                     type="button"
                     onClick={handleApplyCoupon}
                     className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors"
-                  >{t('auto.courseDetail_36')}</Button>
+                  >
+                    {t("auto.courseDetail_36")}
+                  </Button>
                 </div>
               </div>
 
               {/* Instructor mini */}
               <div className="bg-card rounded-2xl p-6 border border-border">
-                <h3 className="text-foreground font-bold text-sm uppercase tracking-wider mb-4">{t('auto.courseDetail_37')}</h3>
+                <h3 className="text-foreground font-bold text-sm uppercase tracking-wider mb-4">
+                  {t("auto.courseDetail_37")}
+                </h3>
                 <div className="flex items-center gap-3">
                   <div className="size-12 rounded-full bg-muted border border-border overflow-hidden flex-shrink-0">
                     {course.instructor.avatarUrl ? (

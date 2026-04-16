@@ -77,7 +77,9 @@ export default function SpeakingTask({
           <span className="material-symbols-outlined text-3xl filled">mic</span>
         </div>
         <div>
-          <p className="font-semibold text-foreground">{t('auto.speakingtask_1')}</p>
+          <p className="font-semibold text-foreground">
+            {t("auto.speakingtask_1")}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
             Đọc to các câu ở trên để luyện phát âm. Tính năng ghi âm sẽ được cập
             nhật sớm.

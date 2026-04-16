@@ -12,7 +12,11 @@ import {
   type QuizResponse,
   type QuestionType,
 } from "@/store/services/lessonApi";
-import { useQuizStomp, type QuizQuestionPublic, type QuizSubmissionEvent } from "@/hooks/useQuizStomp";
+import {
+  useQuizStomp,
+  type QuizQuestionPublic,
+  type QuizSubmissionEvent,
+} from "@/hooks/useQuizStomp";
 import { cn } from "@/lib/utils";
 
 interface QuizPanelProps {
@@ -25,7 +29,8 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
   const { t } = useTranslation();
   const { data: quizzes = [], refetch } = useListQuizzesQuery({ lessonId });
   const [createQuiz, { isLoading: creating }] = useCreateQuizMutation();
-  const [submitAnswer, { isLoading: submitting }] = useSubmitQuizAnswerMutation();
+  const [submitAnswer, { isLoading: submitting }] =
+    useSubmitQuizAnswerMutation();
 
   const [title, setTitle] = useState("");
   const [mcQuestion, setMcQuestion] = useState("");
@@ -34,9 +39,14 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
   const [activeQuizId, setActiveQuizId] = useState<number | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [liveQuestion, setLiveQuestion] = useState<QuizQuestionPublic | null>(null);
+  const [liveQuestion, setLiveQuestion] = useState<QuizQuestionPublic | null>(
+    null,
+  );
   const [studentAnswer, setStudentAnswer] = useState("");
-  const [reveal, setReveal] = useState<{ questionId: number; correctAnswer: string } | null>(null);
+  const [reveal, setReveal] = useState<{
+    questionId: number;
+    correctAnswer: string;
+  } | null>(null);
   const [feed, setFeed] = useState<QuizSubmissionEvent[]>([]);
 
   const onQuestion = useCallback((q: QuizQuestionPublic) => {
@@ -49,21 +59,25 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
     setFeed((prev) => [...prev.slice(-20), s]);
   }, []);
 
-  const onReveal = useCallback((r: { questionId: number; correctAnswer: string }) => {
-    setReveal({ questionId: r.questionId, correctAnswer: r.correctAnswer });
-  }, []);
+  const onReveal = useCallback(
+    (r: { questionId: number; correctAnswer: string }) => {
+      setReveal({ questionId: r.questionId, correctAnswer: r.correctAnswer });
+    },
+    [],
+  );
 
-  const { startQuiz, nextQuestion, submitLive, sendReveal, endQuiz } = useQuizStomp({
-    lessonId,
-    token,
-    onQuestion,
-    onSubmission,
-    onReveal,
-  });
+  const { startQuiz, nextQuestion, submitLive, sendReveal, endQuiz } =
+    useQuizStomp({
+      lessonId,
+      token,
+      onQuestion,
+      onSubmission,
+      onReveal,
+    });
 
   const { data: results } = useGetQuizResultsQuery(
     { lessonId, quizId: activeQuizId ?? 0 },
-    { skip: !isTeacher || !activeQuizId }
+    { skip: !isTeacher || !activeQuizId },
   );
 
   useEffect(() => {
@@ -81,7 +95,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
     try {
       JSON.parse(optionsJson);
     } catch {
-      toast.error("Options JSON không hợp lệ (ví dụ [\"A\",\"B\"])");
+      toast.error('Options JSON không hợp lệ (ví dụ ["A","B"])');
       return;
     }
     try {
@@ -127,16 +141,16 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
         {isTeacher && (
           <div className="rounded-xl border border-white/[0.08] bg-[#252838]/50 p-3 space-y-2">
-            <p className="text-xs text-[#8B8FA8]">{t('auto.lesson_quiz_1')}</p>
+            <p className="text-xs text-[#8B8FA8]">{t("auto.lesson_quiz_1")}</p>
             <input
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs"
-              placeholder={t('auto.lesson_quiz_6')}
+              placeholder={t("auto.lesson_quiz_6")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
             <textarea
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs min-h-[52px]"
-              placeholder={t('auto.lesson_quiz_7')}
+              placeholder={t("auto.lesson_quiz_7")}
               value={mcQuestion}
               onChange={(e) => setMcQuestion(e.target.value)}
             />
@@ -148,7 +162,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
             />
             <input
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs"
-              placeholder={t('auto.lesson_quiz_9')}
+              placeholder={t("auto.lesson_quiz_9")}
               value={mcCorrect}
               onChange={(e) => setMcCorrect(e.target.value)}
             />
@@ -165,9 +179,11 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
         )}
 
         <div className="space-y-2">
-          <p className="text-xs text-[#8B8FA8]">{t('auto.lesson_quiz_2')}</p>
+          <p className="text-xs text-[#8B8FA8]">{t("auto.lesson_quiz_2")}</p>
           {quizzes.length === 0 ? (
-            <p className="text-xs text-[#8B8FA8]/70">{t('auto.lesson_quiz_3')}</p>
+            <p className="text-xs text-[#8B8FA8]/70">
+              {t("auto.lesson_quiz_3")}
+            </p>
           ) : (
             quizzes.map((q: QuizResponse) => (
               <div
@@ -176,12 +192,16 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                   "rounded-lg border px-2 py-2 flex items-center justify-between gap-2",
                   activeQuizId === q.id
                     ? "border-[#6C63FF]/50 bg-[#6C63FF]/10"
-                    : "border-white/[0.08] bg-[#1a1d27]/80"
+                    : "border-white/[0.08] bg-[#1a1d27]/80",
                 )}
               >
                 <div className="min-w-0">
-                  <p className="text-[#F0F0F0] text-xs font-medium truncate">{q.title}</p>
-                  <p className="text-[10px] text-[#8B8FA8]">{q.questionCount} câu</p>
+                  <p className="text-[#F0F0F0] text-xs font-medium truncate">
+                    {q.title}
+                  </p>
+                  <p className="text-[10px] text-[#8B8FA8]">
+                    {q.questionCount} câu
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-1 shrink-0">
                   <button
@@ -201,7 +221,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                         type="button"
                         className="rounded-md bg-[#6C63FF]/30 px-2 py-1 text-[10px] text-[#F0F0F0]"
                         onClick={() => startQuiz(q.id, 0)}
-                        title={t('auto.lesson_quiz_11')}
+                        title={t("auto.lesson_quiz_11")}
                       >
                         <Play className="inline h-3 w-3 mr-0.5" />
                         Start
@@ -221,7 +241,9 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                       <button
                         type="button"
                         className="rounded-md bg-white/[0.08] px-2 py-1 text-[10px]"
-                        onClick={() => liveQuestion && sendReveal(liveQuestion.id)}
+                        onClick={() =>
+                          liveQuestion && sendReveal(liveQuestion.id)
+                        }
                       >
                         <Eye className="inline h-3 w-3 mr-0.5" />
                         Reveal
@@ -244,8 +266,12 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {liveQuestion && (
           <div className="rounded-xl border border-[#6C63FF]/30 bg-[#1a1d27] p-3 space-y-2">
-            <p className="text-[10px] uppercase tracking-wide text-[#6C63FF]">{t('auto.lesson_quiz_4')}</p>
-            <p className="text-sm text-[#F0F0F0] whitespace-pre-wrap">{liveQuestion.questionText}</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#6C63FF]">
+              {t("auto.lesson_quiz_4")}
+            </p>
+            <p className="text-sm text-[#F0F0F0] whitespace-pre-wrap">
+              {liveQuestion.questionText}
+            </p>
             {liveQuestion.questionType === "MULTIPLE_CHOICE" && (
               <div className="space-y-1">
                 {parseOptions(liveQuestion.optionsJson).map((opt, i) => (
@@ -268,14 +294,15 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
             {liveQuestion.questionType !== "MULTIPLE_CHOICE" && (
               <input
                 className="w-full rounded-lg bg-[#252838] border border-white/10 px-2 py-1.5 text-xs"
-                placeholder={t('auto.lesson_quiz_10')}
+                placeholder={t("auto.lesson_quiz_10")}
                 value={studentAnswer}
                 onChange={(e) => setStudentAnswer(e.target.value)}
               />
             )}
             {reveal && reveal.questionId === liveQuestion.id && (
               <p className="text-xs text-emerald-400">
-                Đáp án: <span className="font-mono">{reveal.correctAnswer}</span>
+                Đáp án:{" "}
+                <span className="font-mono">{reveal.correctAnswer}</span>
               </p>
             )}
             {!isTeacher && liveQuestion && activeQuizId && (
@@ -310,10 +337,15 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
           <div className="rounded-xl border border-white/[0.08] p-2 space-y-1">
             <p className="text-[10px] text-[#8B8FA8]">Realtime</p>
             {feed.map((f, i) => (
-              <div key={`${f.userId}-${f.questionId}-${i}`} className="text-[11px] text-[#c9cad4]">
+              <div
+                key={`${f.userId}-${f.questionId}-${i}`}
+                className="text-[11px] text-[#c9cad4]"
+              >
                 <span className="text-[#6C63FF]">{f.userName}</span> —{" "}
                 {f.correct ? (
-                  <span className="text-emerald-400">đúng (+{f.scorePoints})</span>
+                  <span className="text-emerald-400">
+                    đúng (+{f.scorePoints})
+                  </span>
                 ) : (
                   <span className="text-[#FF6B6B]">sai</span>
                 )}
@@ -324,7 +356,9 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {isTeacher && results && activeQuizId && (
           <div className="rounded-xl border border-white/[0.08] p-2 text-[11px] text-[#8B8FA8]">
-            <p className="text-[#F0F0F0] text-xs mb-1">{t('auto.lesson_quiz_5')}</p>
+            <p className="text-[#F0F0F0] text-xs mb-1">
+              {t("auto.lesson_quiz_5")}
+            </p>
             <pre className="whitespace-pre-wrap font-mono text-[10px] overflow-x-auto">
               {JSON.stringify(results.scoresByUser, null, 2)}
             </pre>

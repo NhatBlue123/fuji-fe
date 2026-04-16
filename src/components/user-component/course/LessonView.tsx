@@ -40,8 +40,8 @@ function formatDurationReadable(minutes: number, t: any): string {
   if (minutes < 60) return `${minutes} ${t("common.time.minute") || "phút"}`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m > 0 
-    ? `${h} ${t("common.time.hour") || "giờ"} ${m} ${t("common.time.minute") || "phút"}` 
+  return m > 0
+    ? `${h} ${t("common.time.hour") || "giờ"} ${m} ${t("common.time.minute") || "phút"}`
     : `${h} ${t("common.time.hour") || "giờ"}`;
 }
 
@@ -116,10 +116,14 @@ function LockedLessonNotice({
       <p className="text-muted-foreground mb-8 max-w-md">
         {reason === "sequence"
           ? lessonTitle
-            ? t("course.lesson.lockedDescSequenceDetailed", { title: lessonTitle })
+            ? t("course.lesson.lockedDescSequenceDetailed", {
+                title: lessonTitle,
+              })
             : t("course.lesson.lockedDescSequence")
           : lessonTitle
-            ? t("course.lesson.lockedDescEnrollDetailed", { title: lessonTitle })
+            ? t("course.lesson.lockedDescEnrollDetailed", {
+                title: lessonTitle,
+              })
             : t("course.lesson.lockedDescEnroll")}
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
@@ -127,7 +131,9 @@ function LockedLessonNotice({
           href={ctaHref}
           className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground font-bold hover:bg-secondary/90 transition-colors"
         >
-          {reason === "sequence" ? t("course.lesson.actionSequence") : t("course.lesson.actionEnroll")}
+          {reason === "sequence"
+            ? t("course.lesson.actionSequence")
+            : t("course.lesson.actionEnroll")}
         </Link>
         <Link
           href={`/course/${courseId}`}
@@ -191,7 +197,7 @@ function VideoPlayer({
           <span className="material-symbols-outlined text-5xl mb-2 block">
             videocam_off
           </span>
-          <p className="text-sm">{t('auto.lessonview_1')}</p>
+          <p className="text-sm">{t("auto.lessonview_1")}</p>
         </div>
       </div>
     );
@@ -326,7 +332,9 @@ function SidebarLessonItem({
   const isVideo = lesson.lessonType === "video";
   const canAccessByPolicy = canAccessCourse || lesson.isPreview;
   const canAccessLesson = canAccessByPolicy && isSequentiallyUnlocked;
-  const lockLabel = canAccessByPolicy ? t("course.lesson.labelSequence") : t("course.lesson.labelEnroll");
+  const lockLabel = canAccessByPolicy
+    ? t("course.lesson.labelSequence")
+    : t("course.lesson.labelEnroll");
 
   if (isActive) {
     return (
@@ -737,7 +745,9 @@ export default function LessonView({
                       : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                   }`}
                 >
-                  {lesson.lessonType === "video" ? t("common.video") : t("common.task")}
+                  {lesson.lessonType === "video"
+                    ? t("common.video")
+                    : t("common.task")}
                 </span>
                 {lesson.taskType && (
                   <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-bold border border-cyan-500/20">
@@ -750,7 +760,13 @@ export default function LessonView({
               </h2>
               <p className="text-muted-foreground text-sm">
                 {t("common.lastUpdated")}:{" "}
-                {new Date(lesson.updatedAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
+                {new Date(lesson.updatedAt).toLocaleDateString(
+                  i18n.language === "vi"
+                    ? "vi-VN"
+                    : i18n.language === "ja"
+                      ? "ja-JP"
+                      : "en-US",
+                )}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -767,7 +783,8 @@ export default function LessonView({
                   <span className="material-symbols-outlined text-green-500 text-lg">
                     group
                   </span>
-                  {lesson.completionCount} {t("course.lesson.completedCountSuffix")}
+                  {lesson.completionCount}{" "}
+                  {t("course.lesson.completedCountSuffix")}
                 </div>
               )}
             </div>
@@ -831,7 +848,7 @@ export default function LessonView({
                 <span className="material-symbols-outlined text-5xl mb-3 block text-muted-foreground/40">
                   forum
                 </span>
-                <p className="font-medium mb-1">{t('auto.lessonview_2')}</p>
+                <p className="font-medium mb-1">{t("auto.lessonview_2")}</p>
                 <p className="text-sm text-muted-foreground/60">
                   Tính năng hỏi đáp sẽ sớm được cập nhật
                 </p>
@@ -843,7 +860,7 @@ export default function LessonView({
                 <span className="material-symbols-outlined text-5xl mb-3 block text-muted-foreground/40">
                   edit_note
                 </span>
-                <p className="font-medium mb-1">{t('auto.lessonview_3')}</p>
+                <p className="font-medium mb-1">{t("auto.lessonview_3")}</p>
                 <p className="text-sm text-muted-foreground/60">
                   Tính năng ghi chú cá nhân sẽ sớm được cập nhật
                 </p>
@@ -862,7 +879,9 @@ export default function LessonView({
                   arrow_back
                 </span>
                 <div className="text-left hidden sm:block">
-                  <div className="text-xs text-muted-foreground">{t('auto.lessonview_4')}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("auto.lessonview_4")}
+                  </div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {prevLesson.title}
                   </div>
@@ -872,7 +891,7 @@ export default function LessonView({
               <div className="flex items-center gap-2 px-5 py-3 bg-card text-muted-foreground rounded-xl border border-border font-medium text-sm opacity-70 cursor-not-allowed">
                 <span className="material-symbols-outlined">lock</span>
                 <div className="text-left hidden sm:block">
-                  <div className="text-xs">{t('auto.lessonview_5')}</div>
+                  <div className="text-xs">{t("auto.lessonview_5")}</div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {prevLesson.title}
                   </div>
@@ -888,7 +907,9 @@ export default function LessonView({
                 className="flex items-center gap-2 px-5 py-3 bg-secondary hover:bg-secondary/80 text-white rounded-xl transition-all font-medium text-sm group shadow-lg shadow-secondary/20"
               >
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs text-white/70">{t('auto.lessonview_6')}</div>
+                  <div className="text-xs text-white/70">
+                    {t("auto.lessonview_6")}
+                  </div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {nextLesson.title}
                   </div>
@@ -898,7 +919,7 @@ export default function LessonView({
             ) : nextLesson ? (
               <div className="flex items-center gap-2 px-5 py-3 bg-card text-muted-foreground rounded-xl border border-border font-medium text-sm opacity-70 cursor-not-allowed">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs">{t('auto.lessonview_7')}</div>
+                  <div className="text-xs">{t("auto.lessonview_7")}</div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {nextLesson.title}
                   </div>

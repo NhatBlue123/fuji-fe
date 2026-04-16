@@ -20,7 +20,10 @@ import {
   type PaymentStatusResponse,
   useLazyGetPaymentStatusQuery,
 } from "@/store/services/paymentApi";
-import { type PaymentStatusChangeEvent, usePaymentSocket } from "@/providers/PaymentSocketProvider";
+import {
+  type PaymentStatusChangeEvent,
+  usePaymentSocket,
+} from "@/providers/PaymentSocketProvider";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
 import { useTranslation } from "react-i18next";
@@ -148,12 +151,15 @@ export default function PaymentStatus({
   }, [onClose]);
 
   useEffect(() => {
-    const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
-      if (handledRef.current) return;
-      if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
+    const unsubStatus = onPaymentStatusChange(
+      (data: PaymentStatusChangeEvent) => {
+        if (handledRef.current) return;
+        if (data.transactionType !== "TOPUP" || data.orderId !== orderId)
+          return;
 
-      handleStatusResult(data.newStatus, "socket", data.message);
-    });
+        handleStatusResult(data.newStatus, "socket", data.message);
+      },
+    );
 
     return () => unsubStatus();
   }, [handleStatusResult, onPaymentStatusChange, orderId]);
@@ -290,7 +296,7 @@ export default function PaymentStatus({
               <div className="flex -space-x-2">
                 <div className="w-6 h-6 rounded-full bg-blue-600 border-2 border-[#12141c] flex items-center justify-center text-[10px] font-bold">
                   V
-                 </div>
+                </div>
                 <div className="w-6 h-6 rounded-full bg-red-600 border-2 border-[#12141c] flex items-center justify-center text-[10px] font-bold">
                   N
                 </div>
@@ -321,7 +327,8 @@ export default function PaymentStatus({
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                  <Banknote className="text-indigo-400" /> {t("payment.paymentTitle")}
+                  <Banknote className="text-indigo-400" />{" "}
+                  {t("payment.paymentTitle")}
                 </h3>
                 <p className="text-slate-500 text-sm mt-1">
                   {t("payment.payoutDesc")}
@@ -337,20 +344,40 @@ export default function PaymentStatus({
                 <InfoRow
                   label={t("wallet.table.id")}
                   value={accountNo}
-                  onCopy={() => copyToClipboard(accountNo, t("wallet.table.id"))}
+                  onCopy={() =>
+                    copyToClipboard(accountNo, t("wallet.table.id"))
+                  }
                   isBold
                 />
-                <InfoRow label={t("wallet.withdraw.accountHolder")} value={accountName} />
+                <InfoRow
+                  label={t("wallet.withdraw.accountHolder")}
+                  value={accountName}
+                />
                 <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase text-pink-400 tracking-widest">
                       {t("payment.amountNeeded")}
                     </p>
                     <p className="text-2xl font-black text-white">
-                      {amount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
+                      {amount.toLocaleString(
+                        i18n.language === "vi"
+                          ? "vi-VN"
+                          : i18n.language === "ja"
+                            ? "ja-JP"
+                            : "en-US",
+                      )}{" "}
+                      🌸
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      {t("wallet.withdraw.actualReceived")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
+                      {t("wallet.withdraw.actualReceived")}:{" "}
+                      {qrAmountVnd.toLocaleString(
+                        i18n.language === "vi"
+                          ? "vi-VN"
+                          : i18n.language === "ja"
+                            ? "ja-JP"
+                            : "en-US",
+                      )}
+                      đ
                     </p>
                   </div>
                   <div className="p-2 bg-pink-500 rounded-xl">
@@ -369,7 +396,9 @@ export default function PaymentStatus({
                       {orderId}
                     </span>
                     <button
-                      onClick={() => copyToClipboard(orderId, t("payment.requiredContent"))}
+                      onClick={() =>
+                        copyToClipboard(orderId, t("payment.requiredContent"))
+                      }
                       className="p-2 hover:bg-yellow-500/20 rounded-lg text-pink-500 transition-colors"
                     >
                       <Copy size={18} />

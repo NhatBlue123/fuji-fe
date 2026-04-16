@@ -375,7 +375,9 @@ export function UserDetailModal({
       toast.success(t("admin.user.toast.chatUnbanned"));
       if (onUserUpdated) onUserUpdated();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || t("admin.user.toast.chatUnbanFailed"));
+      toast.error(
+        error?.response?.data?.message || t("admin.user.toast.chatUnbanFailed"),
+      );
     } finally {
       setIsChatBanLoading(false);
     }
@@ -425,7 +427,8 @@ export function UserDetailModal({
       return {
         id: Number(v.id),
         createdAt: v.detectedAt,
-        description: v.messageContent || t("admin.user.modal.violations.suitableLang"),
+        description:
+          v.messageContent || t("admin.user.modal.violations.suitableLang"),
         type: v.violationType || "CHAT_VIOLATION",
         severity,
         isHandled: hasActiveBan,
@@ -562,9 +565,7 @@ export function UserDetailModal({
     if (!user) return;
     setFormData((prev) => ({ ...prev, role: newRole }));
     if (newRole !== user.role) {
-      setRoleChangeWarning(
-        t("admin.user.modal.roleChange.warning"),
-      );
+      setRoleChangeWarning(t("admin.user.modal.roleChange.warning"));
     } else {
       setRoleChangeWarning(null);
     }
@@ -591,7 +592,9 @@ export function UserDetailModal({
       await Promise.all(
         selectedLogs.map((id) => api.post(`/users/me/violations/${id}/handle`)),
       );
-      toast.success(t("admin.user.toast.bulkHandled", { count: selectedLogs.length }));
+      toast.success(
+        t("admin.user.toast.bulkHandled", { count: selectedLogs.length }),
+      );
       setSelectedLogs([]);
       if (onUserUpdated) onUserUpdated();
     } catch (error) {
@@ -610,10 +613,14 @@ export function UserDetailModal({
         setShowConfirmHandleLog(null);
         if (onUserUpdated) onUserUpdated();
       } else {
-        toast.error(response.data.message || t("admin.user.toast.updateFailed"));
+        toast.error(
+          response.data.message || t("admin.user.toast.updateFailed"),
+        );
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t("admin.user.toast.systemError"));
+      toast.error(
+        error.response?.data?.message || t("admin.user.toast.systemError"),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -672,10 +679,14 @@ export function UserDetailModal({
         setIsEditingBasic(false);
         if (onUserUpdated) onUserUpdated();
       } else {
-        toast.error(response.data.message || t("admin.user.toast.updateFailed"));
+        toast.error(
+          response.data.message || t("admin.user.toast.updateFailed"),
+        );
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t("admin.user.toast.systemError"));
+      toast.error(
+        error.response?.data?.message || t("admin.user.toast.systemError"),
+      );
     } finally {
       setIsBasicSubmitting(false);
       setShowConfirmEmailChange(false);
@@ -722,10 +733,14 @@ export function UserDetailModal({
         if (onUserUpdated) onUserUpdated();
         onOpenChange(false);
       } else {
-        toast.error(response.data.message || t("admin.user.toast.updateFailed"));
+        toast.error(
+          response.data.message || t("admin.user.toast.updateFailed"),
+        );
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t("admin.user.toast.systemError"));
+      toast.error(
+        error.response?.data?.message || t("admin.user.toast.systemError"),
+      );
     } finally {
       setIsSubmitting(false);
       setShowConfirmSave(false);
@@ -773,11 +788,14 @@ export function UserDetailModal({
         if (onUserUpdated) onUserUpdated();
         onOpenChange(false);
       } else {
-        toast.error(response.data.message || t("admin.user.toast.actionFailed"));
+        toast.error(
+          response.data.message || t("admin.user.toast.actionFailed"),
+        );
       }
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || t("admin.user.toast.statusUpdateError"),
+        error.response?.data?.message ||
+          t("admin.user.toast.statusUpdateError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -1022,11 +1040,15 @@ export function UserDetailModal({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="STUDENT">{t("common.roles.student")}</SelectItem>
+                            <SelectItem value="STUDENT">
+                              {t("common.roles.student")}
+                            </SelectItem>
                             <SelectItem value="INSTRUCTOR">
                               {t("common.roles.instructor")}
                             </SelectItem>
-                            <SelectItem value="ADMIN">{t("common.roles.admin")}</SelectItem>
+                            <SelectItem value="ADMIN">
+                              {t("common.roles.admin")}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1135,21 +1157,21 @@ export function UserDetailModal({
                             value={basicForm.email}
                             onChange={handleBasicEmailChange}
                             className={`h-10 rounded-lg text-sm bg-background transition-all focus:ring-2 ${emailError ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary/20"}`}
-                          placeholder="example@fuji.edu.vn"
-                          disabled={isBasicSubmitting}
-                        />
-                        {emailError && (
-                          <p className="text-[10px] font-semibold text-destructive mt-1 flex items-center gap-1 animate-in slide-in-from-top-1">
-                            <AlertTriangle className="size-3" />
-                            {emailError}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
-                        {basicForm.email || t("common.notUpdated")}
-                      </div>
-                    )}
+                            placeholder="example@fuji.edu.vn"
+                            disabled={isBasicSubmitting}
+                          />
+                          {emailError && (
+                            <p className="text-[10px] font-semibold text-destructive mt-1 flex items-center gap-1 animate-in slide-in-from-top-1">
+                              <AlertTriangle className="size-3" />
+                              {emailError}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
+                          {basicForm.email || t("common.notUpdated")}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1199,7 +1221,9 @@ export function UserDetailModal({
                               disabled={isSubmitting}
                               className="h-8 px-3 rounded-full font-bold text-[9px] bg-primary text-white shadow-sm animate-in fade-in slide-in-from-left-1 transition-all"
                             >
-                              {t("admin.user.modal.violations.handleXItems", { count: selectedLogs.length })}
+                              {t("admin.user.modal.violations.handleXItems", {
+                                count: selectedLogs.length,
+                              })}
                             </Button>
                           )}
                         </div>
@@ -1207,7 +1231,9 @@ export function UserDetailModal({
                           <div className="relative flex-shrink-0">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                             <Input
-                              placeholder={t("admin.user.placeholder.logSearch")}
+                              placeholder={t(
+                                "admin.user.placeholder.logSearch",
+                              )}
                               className="h-9 w-[280px] pl-9 border-border bg-background text-[11px] rounded-full shadow-sm"
                               value={logSearch}
                               onChange={(e) => setLogSearch(e.target.value)}
@@ -1381,7 +1407,10 @@ export function UserDetailModal({
                                       </div>
                                       {log.testId && (
                                         <div className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                                          {t("admin.user.modal.violations.exam")}:{" "}
+                                          {t(
+                                            "admin.user.modal.violations.exam",
+                                          )}
+                                          :{" "}
                                           <span className="font-bold">
                                             {log.testId}
                                           </span>
@@ -1429,7 +1458,9 @@ export function UserDetailModal({
                                             className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
                                           >
                                             <CheckCircle2 className="size-3" />
-                                            {t("admin.user.modal.violations.openChat")}
+                                            {t(
+                                              "admin.user.modal.violations.openChat",
+                                            )}
                                           </Button>
                                         ) : (
                                           <Button
@@ -1440,7 +1471,9 @@ export function UserDetailModal({
                                             className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
                                           >
                                             <CheckCircle2 className="size-3" />
-                                            {t("admin.user.modal.violations.handleNow")}
+                                            {t(
+                                              "admin.user.modal.violations.handleNow",
+                                            )}
                                           </Button>
                                         )}
                                       </div>
@@ -1465,7 +1498,9 @@ export function UserDetailModal({
                       {Math.ceil(filteredLogs.length / PAGE_SIZE) > 1 && (
                         <div className="p-4 border-t border-border flex justify-between items-center bg-muted/5">
                           <span className="text-[10px] font-bold text-muted-foreground tracking-widest pl-2 whitespace-nowrap">
-                            {t("admin.user.modal.violations.results", { count: filteredLogs.length })}
+                            {t("admin.user.modal.violations.results", {
+                              count: filteredLogs.length,
+                            })}
                           </span>
                           <Pagination>
                             <PaginationContent>
@@ -1660,14 +1695,17 @@ export function UserDetailModal({
                             >
                               {chatBanInfo.banType === "PERMANENT"
                                 ? t("admin.user.modal.permissions.permanentBan")
-                                : t("admin.user.modal.permissions.temporaryBan", {
-                                    date: chatBanInfo.banUntil
-                                      ? format(
-                                          new Date(chatBanInfo.banUntil),
-                                          "HH:mm dd/MM/yyyy",
-                                        )
-                                      : "-",
-                                  })}
+                                : t(
+                                    "admin.user.modal.permissions.temporaryBan",
+                                    {
+                                      date: chatBanInfo.banUntil
+                                        ? format(
+                                            new Date(chatBanInfo.banUntil),
+                                            "HH:mm dd/MM/yyyy",
+                                          )
+                                        : "-",
+                                    },
+                                  )}
                             </Badge>
                           ) : (
                             <Badge

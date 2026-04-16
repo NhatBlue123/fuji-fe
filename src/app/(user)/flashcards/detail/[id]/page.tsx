@@ -36,7 +36,7 @@ export default function FlashcardSetDetailPage({
         <span className="material-symbols-outlined text-6xl text-red-400">
           error
         </span>
-        <p className="text-muted-foreground">{t('auto._id__page_1')}</p>
+        <p className="text-muted-foreground">{t("auto._id__page_1")}</p>
         <Link
           href="/flashcards"
           className="text-secondary hover:underline flex items-center gap-1"

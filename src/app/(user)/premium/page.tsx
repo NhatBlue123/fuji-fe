@@ -58,7 +58,13 @@ function PremiumPageContent() {
 export default function PremiumPage() {
   const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">{t("common.loading")}</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">
+          {t("common.loading")}
+        </div>
+      }
+    >
       <PremiumPageContent />
     </Suspense>
   );

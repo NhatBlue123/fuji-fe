@@ -194,9 +194,14 @@ function JLPTtestPageInner() {
       // Gửi báo cáo vi phạm về backend ngay lập tức
       reportViolation({
         // Chuyển đổi type sang định dạng backend hiểu được
-        type: warning.type === 'tab_switch' ? 'TAB_SWITCH' : (warning.type === 'devtools' ? 'DEVTOOLS' : 'COPY_PASTE'),
+        type:
+          warning.type === "tab_switch"
+            ? "TAB_SWITCH"
+            : warning.type === "devtools"
+              ? "DEVTOOLS"
+              : "COPY_PASTE",
         description: warning.message,
-        testId: testId || undefined
+        testId: testId || undefined,
       });
 
       if (
@@ -204,11 +209,13 @@ function JLPTtestPageInner() {
         warning.count &&
         warning.count >= MAX_TAB_SWITCHES
       ) {
-        alert("Bạn đã vi phạm rời trang thi quá 5 lần. Hệ thống tự động nộp bài!");
+        alert(
+          "Bạn đã vi phạm rời trang thi quá 5 lần. Hệ thống tự động nộp bài!",
+        );
         submitExam();
       }
     },
-    [submitExam, reportViolation, testId]
+    [submitExam, reportViolation, testId],
   );
 
   const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } =

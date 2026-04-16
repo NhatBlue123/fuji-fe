@@ -14,7 +14,10 @@ import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
 import { tMsg } from "@/i18n";
 
-import { connectPaymentSocket, disconnectPaymentSocket } from "@/lib/socket/socket-payment";
+import {
+  connectPaymentSocket,
+  disconnectPaymentSocket,
+} from "@/lib/socket/socket-payment";
 import { store } from "@/store";
 import { useAuth } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
@@ -47,7 +50,9 @@ type PaymentSocketContextValue = {
   onPaymentStatusChange: (cb: StatusChangeCallback) => () => void;
 };
 
-const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(null);
+const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(
+  null,
+);
 
 export function PaymentSocketProvider({
   children,
@@ -124,7 +129,10 @@ export function PaymentSocketProvider({
       // [FRONTEND I18N ROLE] Resolve messageKey ONLY at UI Layer (Toasts)
       if (data.newStatus === "SUCCESS") {
         toast.success(tMsg(data.message) || tMsg("payment.status.success"));
-        if (data.transactionType === "TOPUP" && pathname !== "/premium/success") {
+        if (
+          data.transactionType === "TOPUP" &&
+          pathname !== "/premium/success"
+        ) {
           setTimeout(() => router.push("/premium/success"), 1000);
         }
       } else if (data.newStatus === "FAILED") {
@@ -134,7 +142,12 @@ export function PaymentSocketProvider({
       }
 
       store.dispatch(
-        baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw", "Subscription"]),
+        baseApi.util.invalidateTags([
+          "Wallet",
+          "Payment",
+          "Withdraw",
+          "Subscription",
+        ]),
       );
       statusChangeCallbacks.current.forEach((cb) => cb(data));
     };
@@ -176,7 +189,13 @@ export function PaymentSocketProvider({
       joinPaymentRoom,
       onPaymentStatusChange,
     }),
-    [isAuthenticated, isConnected, joinPaymentRoom, onPaymentStatusChange, socket],
+    [
+      isAuthenticated,
+      isConnected,
+      joinPaymentRoom,
+      onPaymentStatusChange,
+      socket,
+    ],
   );
 
   return (
@@ -189,7 +208,9 @@ export function PaymentSocketProvider({
 export function usePaymentSocket() {
   const context = useContext(PaymentSocketContext);
   if (!context) {
-    throw new Error("usePaymentSocket must be used inside PaymentSocketProvider");
+    throw new Error(
+      "usePaymentSocket must be used inside PaymentSocketProvider",
+    );
   }
 
   return context;

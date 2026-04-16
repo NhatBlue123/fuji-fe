@@ -69,10 +69,13 @@ function isEvaluationWaiting(
   return evaluation?.status === "waiting";
 }
 
-function getSessionDisplayName(session?: {
-  context?: string | null;
-  sessionCode?: string | null;
-}, t?: (key: string) => string): string {
+function getSessionDisplayName(
+  session?: {
+    context?: string | null;
+    sessionCode?: string | null;
+  },
+  t?: (key: string) => string,
+): string {
   const context = String(session?.context || "").trim();
   const translate = t ?? ((key: string) => key);
   if (!context) {
@@ -515,9 +518,12 @@ export default function SenseiPanel() {
                     {isSessionActive &&
                       state.status === "idle" &&
                       t("ai.sensei.status.holdToTalk")}
-                    {state.status === "recording" && t("ai.sensei.status.listening")}
-                    {state.status === "processing" && t("ai.sensei.status.processing")}
-                    {state.status === "playing" && t("ai.sensei.status.speaking")}
+                    {state.status === "recording" &&
+                      t("ai.sensei.status.listening")}
+                    {state.status === "processing" &&
+                      t("ai.sensei.status.processing")}
+                    {state.status === "playing" &&
+                      t("ai.sensei.status.speaking")}
                     {state.status === "error" && t("ai.sensei.status.error")}
                   </p>
                 </div>
@@ -597,7 +603,9 @@ export default function SenseiPanel() {
                   <span className="material-symbols-outlined text-lg mr-1">
                     stop
                   </span>
-                  {isEndingSession ? t("ai.sensei.btn.grading") : t("ai.sensei.btn.stop")}
+                  {isEndingSession
+                    ? t("ai.sensei.btn.grading")
+                    : t("ai.sensei.btn.stop")}
                 </Button>
               </>
             )}
@@ -659,7 +667,9 @@ export default function SenseiPanel() {
                           />
                         </span>
                         <p className="text-sm font-medium">
-                          {isRecording ? t("ai.sensei.history.recording") : t("ai.sensei.status.processing")}
+                          {isRecording
+                            ? t("ai.sensei.history.recording")
+                            : t("ai.sensei.status.processing")}
                         </p>
                       </div>
                     </div>
@@ -731,7 +741,9 @@ export default function SenseiPanel() {
                               <span className="material-symbols-outlined text-sm">
                                 {isReplaying ? "volume_up" : "replay"}
                               </span>
-                              {isReplaying ? t("ai.sensei.btn.replaying") : t("ai.sensei.btn.replay")}
+                              {isReplaying
+                                ? t("ai.sensei.btn.replaying")
+                                : t("ai.sensei.btn.replay")}
                             </button>
                           )}
                         </div>
@@ -938,20 +950,23 @@ export default function SenseiPanel() {
                             <p className="text-sm text-foreground leading-relaxed">
                               {transcriptItem.transcript}
                             </p>
-                            {transcriptItem.role === "assistant" && transcriptItem.audioUrl && (
-                              <button
-                                onClick={() => {
-                                  const audio = new Audio(transcriptItem.audioUrl);
-                                  audio.play().catch(() => {});
-                                }}
-                                className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-secondary transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-sm">
-                                  replay
-                                </span>
-                                {t("ai.sensei.btn.replayLong")}
-                              </button>
-                            )}
+                            {transcriptItem.role === "assistant" &&
+                              transcriptItem.audioUrl && (
+                                <button
+                                  onClick={() => {
+                                    const audio = new Audio(
+                                      transcriptItem.audioUrl,
+                                    );
+                                    audio.play().catch(() => {});
+                                  }}
+                                  className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-secondary transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-sm">
+                                    replay
+                                  </span>
+                                  {t("ai.sensei.btn.replayLong")}
+                                </button>
+                              )}
                           </div>
                         </div>
                       ),
@@ -971,7 +986,10 @@ export default function SenseiPanel() {
         onTopicChange={handleTopicChange}
         scenarios={(selectedTopic?.scenarios || []).map((scenario) => ({
           ...scenario,
-          title: scenario.title || scenario.situation || t("ai.sensei.scenario.defaultTitle"),
+          title:
+            scenario.title ||
+            scenario.situation ||
+            t("ai.sensei.scenario.defaultTitle"),
         }))}
         selectedScenarioId={selectedScenarioId}
         onScenarioChange={(v) => setSelectedScenarioId(Number(v))}
@@ -997,7 +1015,9 @@ export default function SenseiPanel() {
                   sports_score
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2">{t("ai.sensei.popup.finishTitle")}</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {t("ai.sensei.popup.finishTitle")}
+              </h3>
               <p className="text-sm text-muted-foreground mb-6">
                 {t("ai.sensei.popup.finishDesc")}
               </p>

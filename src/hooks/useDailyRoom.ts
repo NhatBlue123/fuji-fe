@@ -58,7 +58,10 @@ function mapParticipant(p: DailySDKParticipant): Participant {
   };
 }
 
-export function useDailyRoom(roomUrl: string | null, token: string | null): UseDailyRoomReturn {
+export function useDailyRoom(
+  roomUrl: string | null,
+  token: string | null,
+): UseDailyRoomReturn {
   const callRef = useRef<DailyCall | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
@@ -144,11 +147,13 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
     call
       .join({ url: roomUrl, token })
       .then(() => {
-        call.updateInputSettings({
-          audio: { processor: { type: "noise-cancellation" as const } },
-        }).catch(() => {
-          // noise cancellation not supported in all browsers
-        });
+        call
+          .updateInputSettings({
+            audio: { processor: { type: "noise-cancellation" as const } },
+          })
+          .catch(() => {
+            // noise cancellation not supported in all browsers
+          });
       })
       .catch((err: Error) => {
         if (isMeetingEndedMessage(err.message)) {
@@ -194,15 +199,17 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
   }, []);
 
   const leave = useCallback(() => {
-    callRef.current
-      ?.leave()
-      .catch((err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : typeof err === "string" ? err : null;
-        if (!isMeetingEndedMessage(message)) {
-          setError(message ?? "Unknown error");
-        }
-      });
+    callRef.current?.leave().catch((err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : null;
+      if (!isMeetingEndedMessage(message)) {
+        setError(message ?? "Unknown error");
+      }
+    });
   }, []);
 
   return {

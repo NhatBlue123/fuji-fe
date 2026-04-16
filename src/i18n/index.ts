@@ -22,9 +22,7 @@ const resources = {
 const isClient = typeof window !== "undefined";
 
 // Restore saved language from localStorage, default to 'vi'
-const savedLng = isClient
-  ? (localStorage.getItem("fuji_lang") ?? "vi")
-  : "vi";
+const savedLng = isClient ? (localStorage.getItem("fuji_lang") ?? "vi") : "vi";
 
 const initOptions: Parameters<typeof i18n.init>[0] = {
   resources,
@@ -40,9 +38,7 @@ const initOptions: Parameters<typeof i18n.init>[0] = {
   },
 };
 
-i18n
-  .use(initReactI18next)
-  .init(initOptions);
+i18n.use(initReactI18next).init(initOptions);
 
 // Persist language choice whenever it changes
 if (isClient) {
@@ -58,7 +54,7 @@ if (isClient) {
  */
 export function tMsg(key: string | undefined | null, options?: any): string {
   if (!key) return "";
-  
+
   if (process.env.NODE_ENV === "development" && !i18n.exists(key)) {
     console.warn("Missing i18n key:", key);
   }

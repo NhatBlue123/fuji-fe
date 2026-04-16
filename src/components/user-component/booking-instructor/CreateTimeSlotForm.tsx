@@ -20,13 +20,14 @@ import PreviewCard from "./PreviewCard";
 const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
 type LevelOption = (typeof LEVEL_OPTIONS)[number];
 
-const SUBJECT_OPTIONS = (t: any) => [
-  { value: "Kaiwa", label: t("booking.subject.kaiwa") },
-  { value: "Bunpo", label: t("booking.subject.bunpo") },
-  { value: "Kanji", label: t("booking.subject.kanji") },
-  { value: "Listening", label: t("booking.subject.listening") },
-  { value: "Reading", label: t("booking.subject.reading") },
-] as const;
+const SUBJECT_OPTIONS = (t: any) =>
+  [
+    { value: "Kaiwa", label: t("booking.subject.kaiwa") },
+    { value: "Bunpo", label: t("booking.subject.bunpo") },
+    { value: "Kanji", label: t("booking.subject.kanji") },
+    { value: "Listening", label: t("booking.subject.listening") },
+    { value: "Reading", label: t("booking.subject.reading") },
+  ] as const;
 type SubjectOption = ReturnType<typeof SUBJECT_OPTIONS>[number]["value"];
 
 function Field({
@@ -70,7 +71,8 @@ export default function CreateTimeSlotForm() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  const composedSubject = subjectType && level ? `${subjectType} - ${level}` : "";
+  const composedSubject =
+    subjectType && level ? `${subjectType} - ${level}` : "";
 
   const handleGoBack = () => {
     router.push("/admin/teacher-schedules/teaching-schedule");
@@ -192,12 +194,14 @@ export default function CreateTimeSlotForm() {
       }
 
       const { data: res } = await api.post("/time-slots/bulk", payload);
-      const bulk = res?.data as {
-        requested: number;
-        created: number;
-        skipped: number;
-        conflicts: { startAt: string; endAt: string; reason: string }[];
-      } | undefined;
+      const bulk = res?.data as
+        | {
+            requested: number;
+            created: number;
+            skipped: number;
+            conflicts: { startAt: string; endAt: string; reason: string }[];
+          }
+        | undefined;
 
       const created = bulk?.created ?? 0;
       const skipped = bulk?.skipped ?? 0;
@@ -208,7 +212,9 @@ export default function CreateTimeSlotForm() {
         setNotice({
           type: "success",
           title: t("booking.success.createTitle"),
-          description: t("booking.success.createDesc", { count: created || estimatedSlots }),
+          description: t("booking.success.createDesc", {
+            count: created || estimatedSlots,
+          }),
           onClose: goToSchedule,
         });
         return;
@@ -224,7 +230,10 @@ export default function CreateTimeSlotForm() {
         setNotice({
           type: "warning",
           title: t("booking.warning.someSkippedTitle"),
-          description: t("booking.warning.someSkippedDesc", { created, skipped }),
+          description: t("booking.warning.someSkippedDesc", {
+            created,
+            skipped,
+          }),
           onClose: goToSchedule,
         });
       }
@@ -333,7 +342,11 @@ export default function CreateTimeSlotForm() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label={mode === "single" ? t("booking.date") : t("booking.dateFrom")}>
+            <Field
+              label={
+                mode === "single" ? t("booking.date") : t("booking.dateFrom")
+              }
+            >
               <input
                 type="date"
                 value={dateFrom}
@@ -358,7 +371,9 @@ export default function CreateTimeSlotForm() {
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
                   className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
-                  <option value="" disabled>{t('auto.booking_slot_1')}</option>
+                  <option value="" disabled>
+                    {t("auto.booking_slot_1")}
+                  </option>
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -383,7 +398,9 @@ export default function CreateTimeSlotForm() {
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
                   className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
-                  <option value="" disabled>{t('auto.booking_slot_2')}</option>
+                  <option value="" disabled>
+                    {t("auto.booking_slot_2")}
+                  </option>
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -401,7 +418,9 @@ export default function CreateTimeSlotForm() {
                 }
                 className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
-                <option value="" disabled>{t('auto.booking_slot_3')}</option>
+                <option value="" disabled>
+                  {t("auto.booking_slot_3")}
+                </option>
                 {SUBJECT_OPTIONS(t).map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
@@ -423,7 +442,11 @@ export default function CreateTimeSlotForm() {
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label={t("booking.topic")}>
               <div className="flex h-12 items-center rounded-xl border border-border bg-card/60 px-4 font-semibold text-foreground">
-                {composedSubject || <span className="text-muted-foreground font-normal">{t('auto.booking_slot_4')}</span>}
+                {composedSubject || (
+                  <span className="text-muted-foreground font-normal">
+                    {t("auto.booking_slot_4")}
+                  </span>
+                )}
               </div>
             </Field>
 
@@ -440,7 +463,15 @@ export default function CreateTimeSlotForm() {
 
             <Field label={t("booking.conversion")}>
               <div className="h-12 rounded-xl border border-primary/40 bg-primary/10 px-4 flex items-center text-foreground font-semibold">
-                ≈ {transferVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
+                ≈{" "}
+                {transferVnd.toLocaleString(
+                  i18n.language === "vi"
+                    ? "vi-VN"
+                    : i18n.language === "ja"
+                      ? "ja-JP"
+                      : "en-US",
+                )}
+                đ
               </div>
             </Field>
           </div>

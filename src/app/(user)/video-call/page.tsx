@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useCallback, useRef, type CSSProperties } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type CSSProperties,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useSignaling } from "@/hooks/useSignaling";
@@ -41,18 +47,20 @@ function SakuraFall({ density = 18 }: { density?: number }) {
           <span
             key={i}
             className="sakura-item sakura-petal"
-            style={{
-              left: `${left}%`,
-              width: `${size}px`,
-              height: `${size}px`,
-              opacity,
-              animationDuration: `${duration}s, ${2.6 + (i % 4) * 0.35}s`,
-              animationDelay: `${delay}s, ${delay * 0.6}s`,
-              ["--sx"]: `${sx}px`,
-              ["--sx2"]: `${sx2}px`,
-              ["--r0"]: `${r0}deg`,
-              ["--r1"]: `${r1}deg`,
-            } as CSSProperties}
+            style={
+              {
+                left: `${left}%`,
+                width: `${size}px`,
+                height: `${size}px`,
+                opacity,
+                animationDuration: `${duration}s, ${2.6 + (i % 4) * 0.35}s`,
+                animationDelay: `${delay}s, ${delay * 0.6}s`,
+                ["--sx"]: `${sx}px`,
+                ["--sx2"]: `${sx2}px`,
+                ["--r0"]: `${r0}deg`,
+                ["--r1"]: `${r1}deg`,
+              } as CSSProperties
+            }
           />
         );
       })}
@@ -99,7 +107,9 @@ export default function VideoCallMatchingPage() {
       user?.fullName?.trim() ||
       user?.fullname?.trim() ||
       user?.username?.trim();
-    return candidate && candidate.length > 0 ? candidate : t("common.anonymous");
+    return candidate && candidate.length > 0
+      ? candidate
+      : t("common.anonymous");
   }, [authUser]);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -233,9 +243,7 @@ export default function VideoCallMatchingPage() {
         >
           {t("video_call.page.title")}
         </h1>
-        <p className="text-sm text-gray-500">
-          {t("video_call.page.subtitle")}
-        </p>
+        <p className="text-sm text-gray-500">{t("video_call.page.subtitle")}</p>
 
         {/* Level Picker */}
         <div className="relative mt-3">
@@ -279,10 +287,10 @@ export default function VideoCallMatchingPage() {
 
       {/* ── Main: Camera Cards (horizontal layout like reference) ── */}
       <div className="relative z-10 flex items-center justify-center gap-4 flex-1 px-4 w-full max-w-3xl mx-auto">
-        
         {/* User camera — dark card */}
-        <div className="relative rounded-[2rem] overflow-hidden shadow-2xl bg-gray-900"
-          style={{ width: '300px', height: '400px', flexShrink: 0 }}
+        <div
+          className="relative rounded-[2rem] overflow-hidden shadow-2xl bg-gray-900"
+          style={{ width: "300px", height: "400px", flexShrink: 0 }}
         >
           <video
             ref={localVideoRef}
@@ -299,7 +307,9 @@ export default function VideoCallMatchingPage() {
           {!webrtc.localStream && isCameraOn && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
               <Loader2 className="h-7 w-7 text-white/50 animate-spin mb-2" />
-              <p className="text-white/40 text-xs">{t('video_call.loadingStream')}</p>
+              <p className="text-white/40 text-xs">
+                {t("video_call.loadingStream")}
+              </p>
             </div>
           )}
 
@@ -307,27 +317,37 @@ export default function VideoCallMatchingPage() {
           {!isCameraOn && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
               <VideoOff className="h-9 w-9 text-white/30 mb-2" />
-              <p className="text-white/30 text-xs">{t('video_call.cameraOff')}</p>
+              <p className="text-white/30 text-xs">
+                {t("video_call.cameraOff")}
+              </p>
             </div>
           )}
 
           {/* Name label top-left */}
           <div className="absolute top-3 left-3">
             <span className="text-white text-xs font-semibold px-1">
-              Camera: {isCameraOn ? t("video_call.status.on") : t("video_call.status.off")}
+              Camera:{" "}
+              {isCameraOn
+                ? t("video_call.status.on")
+                : t("video_call.status.off")}
             </span>
           </div>
 
           {/* User name bottom center */}
           <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
-            <span className="text-white/90 text-sm font-medium" style={{ fontFamily: "'Noto Sans JP', sans-serif" }}>
+            <span
+              className="text-white/90 text-sm font-medium"
+              style={{ fontFamily: "'Noto Sans JP', sans-serif" }}
+            >
               {userName}
             </span>
             {/* Mic icon */}
-            <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
-              isMicOn ? "bg-white/20" : "bg-red-500/80",
-            )}>
+            <div
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center",
+                isMicOn ? "bg-white/20" : "bg-red-500/80",
+              )}
+            >
               {isMicOn ? (
                 <Mic className="h-4 w-4 text-white" />
               ) : (
@@ -340,7 +360,7 @@ export default function VideoCallMatchingPage() {
         {/* Partner card — light card */}
         <div
           className="relative rounded-[2rem] overflow-hidden shadow-xl flex flex-col items-center justify-center gap-4 bg-white/85 backdrop-blur-sm"
-          style={{ width: '300px', height: '400px', flexShrink: 0 }}
+          style={{ width: "300px", height: "400px", flexShrink: 0 }}
         >
           {isSearching ? (
             <>
@@ -444,9 +464,7 @@ export default function VideoCallMatchingPage() {
         </div>
 
         {/* Bottom hint text */}
-        <p className="text-gray-500 text-xs">
-          {t("video_call.bottomHint")}
-        </p>
+        <p className="text-gray-500 text-xs">{t("video_call.bottomHint")}</p>
       </div>
     </div>
   );

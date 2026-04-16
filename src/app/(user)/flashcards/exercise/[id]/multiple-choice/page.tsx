@@ -64,7 +64,9 @@ export default function MultipleChoiceExercisePage({
       const isV2M = Math.random() > 0.5;
       if (isV2M) {
         const wrong = shuffle(
-          cards.filter((c: any) => c.meaning !== card.meaning).map((c: any) => c.meaning),
+          cards
+            .filter((c: any) => c.meaning !== card.meaning)
+            .map((c: any) => c.meaning),
         ).slice(0, 3);
         return {
           id: idx,
@@ -260,7 +262,9 @@ export default function MultipleChoiceExercisePage({
                 <p className="text-2xl font-black text-green-400">
                   {correctCount}
                 </p>
-                <p className="text-xs text-muted-foreground">{t('auto.multiple_choice_page_1')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("auto.multiple_choice_page_1")}
+                </p>
               </div>
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
                 <p className="text-2xl font-black text-red-400">

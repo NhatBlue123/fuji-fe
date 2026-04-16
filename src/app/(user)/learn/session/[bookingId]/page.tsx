@@ -46,7 +46,7 @@ export default function PostSessionPage() {
 
   const { data, isLoading, error } = useGetPostSessionByBookingQuery(
     { bookingId },
-    { skip: !bookingId || Number.isNaN(bookingId) }
+    { skip: !bookingId || Number.isNaN(bookingId) },
   );
 
   const transcriptTxt = useMemo(() => {
@@ -71,7 +71,9 @@ export default function PostSessionPage() {
     return (
       <div className="h-[calc(100vh-64px)] bg-[#0f1117] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#F0F0F0] text-sm">{t('auto.booking_session_1')}</p>
+          <p className="text-[#F0F0F0] text-sm">
+            {t("auto.booking_session_1")}
+          </p>
           <button
             type="button"
             onClick={() => router.push("/booking/bookingmodal")}
@@ -123,15 +125,21 @@ export default function PostSessionPage() {
             <div className="mt-4 space-y-3">
               <div className="rounded-lg border border-white/10 bg-[#121520] p-3">
                 <p className="text-[11px] text-[#8B8FA8]">Summary</p>
-                <p className="text-sm mt-1 whitespace-pre-wrap">{data.summary?.teacherNote || "Chưa có nhận xét"}</p>
+                <p className="text-sm mt-1 whitespace-pre-wrap">
+                  {data.summary?.teacherNote || "Chưa có nhận xét"}
+                </p>
               </div>
               <div className="rounded-lg border border-white/10 bg-[#121520] p-3">
                 <p className="text-[11px] text-[#8B8FA8]">Homework</p>
-                <p className="text-sm mt-1 whitespace-pre-wrap">{data.summary?.homework || "Chưa có bài tập"}</p>
+                <p className="text-sm mt-1 whitespace-pre-wrap">
+                  {data.summary?.homework || "Chưa có bài tập"}
+                </p>
               </div>
               <div className="rounded-lg border border-white/10 bg-[#121520] p-3">
                 <p className="text-[11px] text-[#8B8FA8]">Quiz score</p>
-                <p className="text-sm mt-1">{data.latestQuizScore ?? data.summary?.quizScore ?? "-"}</p>
+                <p className="text-sm mt-1">
+                  {data.latestQuizScore ?? data.summary?.quizScore ?? "-"}
+                </p>
               </div>
             </div>
           </section>
@@ -154,11 +162,20 @@ export default function PostSessionPage() {
               Recordings
             </p>
             <div className="mt-4 space-y-2">
-              {data.recordings.length === 0 && <p className="text-xs text-[#8B8FA8]">{t('auto.booking_session_2')}</p>}
+              {data.recordings.length === 0 && (
+                <p className="text-xs text-[#8B8FA8]">
+                  {t("auto.booking_session_2")}
+                </p>
+              )}
               {data.recordings.map((r, idx) => (
-                <div key={r.id} className="rounded-lg border border-white/10 bg-[#121520] p-3 flex items-center justify-between gap-3">
+                <div
+                  key={r.id}
+                  className="rounded-lg border border-white/10 bg-[#121520] p-3 flex items-center justify-between gap-3"
+                >
                   <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">Recording #{idx + 1}</p>
+                    <p className="text-xs font-medium truncate">
+                      Recording #{idx + 1}
+                    </p>
                     <p className="text-[11px] text-[#8B8FA8] inline-flex items-center gap-1">
                       <Clock3 className="h-3 w-3" />
                       {formatDuration(r.durationSeconds)}
@@ -206,7 +223,10 @@ export default function PostSessionPage() {
                   disabled={!transcriptTxt}
                   onClick={() => {
                     if (!transcriptTxt) return;
-                    downloadTextFile(`lesson-${data.lessonId}-transcript.txt`, transcriptTxt);
+                    downloadTextFile(
+                      `lesson-${data.lessonId}-transcript.txt`,
+                      transcriptTxt,
+                    );
                   }}
                   className="inline-flex items-center gap-1 rounded-md border border-white/15 px-2 py-1 text-[11px] disabled:opacity-40"
                 >
@@ -217,12 +237,21 @@ export default function PostSessionPage() {
             </div>
 
             <div className="mt-3 space-y-2">
-              {data.transcripts.length === 0 && <p className="text-xs text-[#8B8FA8]">{t('auto.booking_session_3')}</p>}
+              {data.transcripts.length === 0 && (
+                <p className="text-xs text-[#8B8FA8]">
+                  {t("auto.booking_session_3")}
+                </p>
+              )}
               {data.transcripts.map((transcript, idx) => (
-                <details key={idx} className="rounded-lg border border-white/10 bg-[#121520] open:border-[#6C63FF]/40">
+                <details
+                  key={idx}
+                  className="rounded-lg border border-white/10 bg-[#121520] open:border-[#6C63FF]/40"
+                >
                   <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium flex items-center justify-between">
                     <span>Transcript #{idx + 1}</span>
-                    <span className="text-[#8B8FA8] text-[11px]">{t('auto.booking_session_4')}</span>
+                    <span className="text-[#8B8FA8] text-[11px]">
+                      {t("auto.booking_session_4")}
+                    </span>
                   </summary>
                   <div className="px-3 pb-3 text-xs whitespace-pre-wrap text-[#D7DBEE]">
                     {transcript}

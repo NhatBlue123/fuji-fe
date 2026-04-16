@@ -10,8 +10,17 @@ import { useJapaneseSuggest } from "@/hooks/useJapaneseSuggest";
 import { useAuth } from "@/store/hooks";
 import { API_CONFIG } from "@/config/api";
 import {
-  Mic, MicOff, Video, VideoOff, WifiOff, RefreshCw,
-  AlertTriangle, PhoneOff, Send, SkipForward, Keyboard,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  WifiOff,
+  RefreshCw,
+  AlertTriangle,
+  PhoneOff,
+  Send,
+  SkipForward,
+  Keyboard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,9 +34,9 @@ interface MatchData {
   peerName: string;
   peerAvatarUrl: string;
   peerLevel: string;
-  myLevel?: string;   // stored by matching page
-  myName?: string;    // stored by matching page
-  myUserId?: string;  // stored by matching page (needed for moderation)
+  myLevel?: string; // stored by matching page
+  myName?: string; // stored by matching page
+  myUserId?: string; // stored by matching page (needed for moderation)
   isInitiator: boolean;
 }
 
@@ -117,12 +126,15 @@ export default function VideoCallRoomPage() {
   useEffect(() => {
     if (matchDataRef.current) return;
     const raw = sessionStorage.getItem("matchData");
-    if (!raw) { router.push("/video-call"); return; }
+    if (!raw) {
+      router.push("/video-call");
+      return;
+    }
     const parsed: MatchData = JSON.parse(raw);
     sessionStorage.removeItem("matchData"); // prevent stale data
     matchDataRef.current = parsed;
     setMatchData(parsed);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Effect 2: Signaling listeners ─────────────────────────────────────────
@@ -152,7 +164,7 @@ export default function VideoCallRoomPage() {
       "ice-candidate",
       async (payload) => {
         await webrtc.addIceCandidate(payload);
-      }
+      },
     );
 
     signaling.on<{
@@ -163,39 +175,39 @@ export default function VideoCallRoomPage() {
       timestamp: number;
       messageId: string;
       isViolation?: boolean;
-    }>(
-      "receive-message",
-      (payload) => {
-        const shouldStickBottom = isNearChatBottom();
-        const incomingId = payload.messageId;
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: incomingId,
-            senderName: payload.senderName,
-            message: payload.message,
-            isMine: false,
-            timestamp: payload.timestamp,
-                status: "SENT",
-            isViolation: payload.isViolation,
-          },
-        ]);
-        unreadIncomingIdsRef.current.add(incomingId);
+    }>("receive-message", (payload) => {
+      const shouldStickBottom = isNearChatBottom();
+      const incomingId = payload.messageId;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: incomingId,
+          senderName: payload.senderName,
+          message: payload.message,
+          isMine: false,
+          timestamp: payload.timestamp,
+          status: "SENT",
+          isViolation: payload.isViolation,
+        },
+      ]);
+      unreadIncomingIdsRef.current.add(incomingId);
 
-        // Inform sender that we have received the message
-        signaling.sendMessageDelivered(roomId, [incomingId]);
+      // Inform sender that we have received the message
+      signaling.sendMessageDelivered(roomId, [incomingId]);
 
-        // If we are actively viewing the room, mark as read immediately
-        if (shouldSendRead()) {
-          const ids = Array.from(unreadIncomingIdsRef.current);
-          unreadIncomingIdsRef.current.clear();
-          if (ids.length > 0) signaling.sendMessageRead(roomId, ids);
-        }
-        if (shouldStickBottom) {
-          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-        }
+      // If we are actively viewing the room, mark as read immediately
+      if (shouldSendRead()) {
+        const ids = Array.from(unreadIncomingIdsRef.current);
+        unreadIncomingIdsRef.current.clear();
+        if (ids.length > 0) signaling.sendMessageRead(roomId, ids);
       }
-    );
+      if (shouldStickBottom) {
+        setTimeout(
+          () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+          50,
+        );
+      }
+    });
 
     signaling.on<{
       messageId: string;
@@ -234,15 +246,18 @@ export default function VideoCallRoomPage() {
       },
     );
 
-    signaling.on<{ roomId: string; messageIds: string[] }>("message_read", (payload) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.isMine && payload.messageIds.includes(m.id)
-            ? { ...m, status: "READ" }
-            : m,
-        ),
-      );
-    });
+    signaling.on<{ roomId: string; messageIds: string[] }>(
+      "message_read",
+      (payload) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.isMine && payload.messageIds.includes(m.id)
+              ? { ...m, status: "READ" }
+              : m,
+          ),
+        );
+      },
+    );
 
     signaling.on("peer-reconnected", async () => {
       console.log("[Signaling] Peer reconnected, re-initiating offer...");
@@ -254,12 +269,20 @@ export default function VideoCallRoomPage() {
     signaling.on("room-expired", () => handleLeave());
 
     return () => {
-      ["offer", "answer", "ice-candidate", "receive-message",
-       "peer-reconnected", "peer-left", "room-expired", "message-sent", "message_delivered", "message_read"].forEach(
-        signaling.off,
-      );
+      [
+        "offer",
+        "answer",
+        "ice-candidate",
+        "receive-message",
+        "peer-reconnected",
+        "peer-left",
+        "room-expired",
+        "message-sent",
+        "message_delivered",
+        "message_read",
+      ].forEach(signaling.off);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, isNearChatBottom]);
 
   // ── Effect: when page regains focus/visibility, mark incoming messages as read ──
@@ -294,7 +317,11 @@ export default function VideoCallRoomPage() {
         webrtc.onConnectionStateChange((state) => {
           console.log("[WebRTC] Connection state:", state);
           setIsConnected(state === "connected");
-          reconnect.handleConnectionStateChange(state, roomId, matchDataRef.current?.myName ?? "user");
+          reconnect.handleConnectionStateChange(
+            state,
+            roomId,
+            matchDataRef.current?.myName ?? "user",
+          );
         });
 
         webrtc.onIceCandidate((candidate) => {
@@ -302,7 +329,12 @@ export default function VideoCallRoomPage() {
         });
 
         const data = matchDataRef.current;
-        console.log("[WebRTC] isInitiator =", data?.isInitiator, "| socket connected =", signaling.socket?.connected);
+        console.log(
+          "[WebRTC] isInitiator =",
+          data?.isInitiator,
+          "| socket connected =",
+          signaling.socket?.connected,
+        );
 
         if (data?.isInitiator) {
           console.log("[WebRTC] I am initiator — creating offer...");
@@ -316,7 +348,7 @@ export default function VideoCallRoomPage() {
         console.error("[WebRTC] Fatal error in room setup:", err);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Stream attachment ──────────────────────────────────────────────────────
@@ -345,14 +377,16 @@ export default function VideoCallRoomPage() {
     webrtc.cleanup();
     reconnect.reset();
     // Pass level via sessionStorage so matching page auto-searches
-    const level = matchDataRef.current?.myLevel ?? matchDataRef.current?.peerLevel ?? "N3";
+    const level =
+      matchDataRef.current?.myLevel ?? matchDataRef.current?.peerLevel ?? "N3";
     sessionStorage.setItem("autoSearch", level);
     router.push("/video-call");
   }, [signaling, webrtc, reconnect, roomId, router]);
 
   const myName = matchData?.myName ?? t("common.me");
-  const myUserId =
-    String(authUser?.id ?? authUser?._id ?? matchData?.myUserId ?? "guest");
+  const myUserId = String(
+    authUser?.id ?? authUser?._id ?? matchData?.myUserId ?? "guest",
+  );
 
   const detectViolationType = useCallback((content: string) => {
     const msg = content.trim();
@@ -388,7 +422,9 @@ export default function VideoCallRoomPage() {
         `${API_CONFIG.BASE_URL}/chat/ban-status/${encodeURIComponent(userId)}`,
         {
           method: "GET",
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
           credentials: "include",
         },
       );
@@ -444,7 +480,8 @@ export default function VideoCallRoomPage() {
 
     setIsSubmittingReport(true);
     try {
-      const reporterIdRaw = authUser?.id ?? authUser?._id ?? matchData?.myUserId;
+      const reporterIdRaw =
+        authUser?.id ?? authUser?._id ?? matchData?.myUserId;
       const reporterId =
         typeof reporterIdRaw === "number"
           ? reporterIdRaw
@@ -481,7 +518,9 @@ export default function VideoCallRoomPage() {
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.success) {
-        throw new Error(json?.message || t("videoCall.room.toast.reportFailed"));
+        throw new Error(
+          json?.message || t("videoCall.room.toast.reportFailed"),
+        );
       }
 
       toast.success(t("videoCall.room.toast.reportSuccess"));
@@ -542,7 +581,8 @@ export default function VideoCallRoomPage() {
     };
     if (isSuggestOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isSuggestOpen, closeSuggestions]);
 
@@ -560,9 +600,13 @@ export default function VideoCallRoomPage() {
     const ban = await fetchBanStatus(myUserId);
     if (ban?.banned) {
       const untilText = ban.until
-         ? t("videoCall.room.ban.until", { date: new Date(ban.until).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language) })
+        ? t("videoCall.room.ban.until", {
+            date: new Date(ban.until).toLocaleString(
+              i18n.language === "vi" ? "vi-VN" : i18n.language,
+            ),
+          })
         : "";
-       toast.error(`${t("videoCall.room.ban.active")}${untilText}`, {
+      toast.error(`${t("videoCall.room.ban.active")}${untilText}`, {
         duration: 4000,
       });
       return;
@@ -594,9 +638,13 @@ export default function VideoCallRoomPage() {
       if (!report?.success && report?.code === "BAN_ACTIVE") {
         // Backend may ban immediately when threshold is reached
         const untilText = report?.data?.until
-           ? t("videoCall.room.ban.until", { date: new Date(report?.data?.until).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language) })
+          ? t("videoCall.room.ban.until", {
+              date: new Date(report?.data?.until).toLocaleString(
+                i18n.language === "vi" ? "vi-VN" : i18n.language,
+              ),
+            })
           : "";
-         toast.error(`${t("videoCall.room.ban.active")}${untilText}`, {
+        toast.error(`${t("videoCall.room.ban.active")}${untilText}`, {
           duration: 4000,
         });
         return;
@@ -617,7 +665,14 @@ export default function VideoCallRoomPage() {
         isViolation,
       },
     ]);
-    signaling.sendChatMessage(roomId, myUserId, myName, content, messageId, isViolation);
+    signaling.sendChatMessage(
+      roomId,
+      myUserId,
+      myName,
+      content,
+      messageId,
+      isViolation,
+    );
     setChatMsg("");
     // Do not force auto-scroll when sending own message.
     // Keep user's current reading position stable.
@@ -675,7 +730,9 @@ export default function VideoCallRoomPage() {
                     {t("videoCall.room.reconnecting")}
                   </p>
                   <p className="text-slate-400 text-xs mt-1">
-                    {t("videoCall.room.secondsLeft", { val: reconnect.countdown })}
+                    {t("videoCall.room.secondsLeft", {
+                      val: reconnect.countdown,
+                    })}
                   </p>
                 </>
               ) : (
@@ -707,10 +764,14 @@ export default function VideoCallRoomPage() {
                 "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg border border-white/15",
                 webrtc.isMicOn
                   ? "bg-slate-900/40 hover:bg-slate-900/70 text-slate-50"
-                  : "bg-secondary hover:bg-secondary/90 text-white"
+                  : "bg-secondary hover:bg-secondary/90 text-white",
               )}
             >
-              {webrtc.isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              {webrtc.isMicOn ? (
+                <Mic className="h-4 w-4" />
+              ) : (
+                <MicOff className="h-4 w-4" />
+              )}
             </button>
             <button
               onClick={webrtc.toggleCamera}
@@ -718,10 +779,14 @@ export default function VideoCallRoomPage() {
                 "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg border border-white/15",
                 webrtc.isCameraOn
                   ? "bg-slate-900/40 hover:bg-slate-900/70 text-slate-50"
-                  : "bg-secondary hover:bg-secondary/90 text-white"
+                  : "bg-secondary hover:bg-secondary/90 text-white",
               )}
             >
-              {webrtc.isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+              {webrtc.isCameraOn ? (
+                <Video className="h-4 w-4" />
+              ) : (
+                <VideoOff className="h-4 w-4" />
+              )}
             </button>
           </div>
 
@@ -767,7 +832,10 @@ export default function VideoCallRoomPage() {
           </div>
 
           {/* Messages */}
-          <div ref={chatListRef} className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0 bg-gradient-to-b from-slate-950/40 to-slate-900/40">
+          <div
+            ref={chatListRef}
+            className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0 bg-gradient-to-b from-slate-950/40 to-slate-900/40"
+          >
             {messages.length === 0 && (
               <div className="h-full flex items-center justify-center">
                 <p className="text-slate-500 text-xs text-center leading-relaxed">
@@ -782,7 +850,7 @@ export default function VideoCallRoomPage() {
                 key={msg.id}
                 className={cn(
                   "flex flex-col gap-0.5",
-                  msg.isMine ? "items-end" : "items-start"
+                  msg.isMine ? "items-end" : "items-start",
                 )}
               >
                 <span className="text-slate-500 text-[10px] px-1">
@@ -793,7 +861,7 @@ export default function VideoCallRoomPage() {
                     "px-3 py-2 rounded-2xl text-sm max-w-[85%] break-words shadow-sm",
                     msg.isMine
                       ? "bg-sky-500/90 text-slate-950 rounded-br-sm"
-                      : "bg-slate-800/90 text-slate-50 rounded-bl-sm"
+                      : "bg-slate-800/90 text-slate-50 rounded-bl-sm",
                   )}
                 >
                   {msg.message}
@@ -926,7 +994,7 @@ export default function VideoCallRoomPage() {
                 <Textarea
                   value={chatMsg}
                   onChange={(e) => setChatMsg(e.target.value)}
-                  placeholder={t('videoCall.room.placeholder.message')}
+                  placeholder={t("videoCall.room.placeholder.message")}
                   className="min-h-[44px] max-h-[120px] resize-none bg-slate-900/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-sky-500"
                   onFocus={() => setIsChatInputFocused(true)}
                   onBlur={() => {
@@ -947,13 +1015,13 @@ export default function VideoCallRoomPage() {
                   }}
                 />
               </div>
-            <Button
-              onClick={() => handleSendMsg()}
-              size="icon"
-              className="shrink-0 bg-sky-500 hover:bg-sky-400 text-slate-950"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+              <Button
+                onClick={() => handleSendMsg()}
+                size="icon"
+                className="shrink-0 bg-sky-500 hover:bg-sky-400 text-slate-950"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -1048,7 +1116,7 @@ export default function VideoCallRoomPage() {
               <Textarea
                 value={reportContent}
                 onChange={(e) => setReportContent(e.target.value)}
-                placeholder={t('videoCall.room.placeholder.report')}
+                placeholder={t("videoCall.room.placeholder.report")}
                 className="min-h-[110px] resize-none bg-slate-950/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-amber-500"
                 disabled={isSubmittingReport}
               />
@@ -1068,7 +1136,9 @@ export default function VideoCallRoomPage() {
                 onClick={() => handleSubmitReport()}
                 disabled={isSubmittingReport || !reportContent.trim()}
               >
-                {isSubmittingReport ? t("videoCall.room.sending") : t("videoCall.room.report")}
+                {isSubmittingReport
+                  ? t("videoCall.room.sending")
+                  : t("videoCall.room.report")}
               </Button>
             </div>
           </div>

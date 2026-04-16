@@ -268,7 +268,7 @@ const TeacherDashboard: React.FC = () => {
                     Số dư khả dụng
                   </span>
                   <div className="text-4xl font-extrabold tracking-tight">
-                    {formatCurrency(dashboardData?.availableBalance || 0)}
+                    {formatCurrency(dashboardData?.availableBalance || 0)} 🌸
                   </div>
                 </div>
 

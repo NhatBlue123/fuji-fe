@@ -152,7 +152,7 @@ export default function PricingCards() {
   const renderBadge = (plan: any) => {
     if (plan.tier === "PREMIUM") {
       return (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-5 py-1.5 rounded-full text-[11px] font-bold tracking-widest flex items-center gap-1.5 whitespace-nowrap shadow-lg shadow-pink-500/30">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-violet-500 text-white px-5 py-1.5 rounded-full text-[11px] font-bold tracking-widest flex items-center gap-1.5 whitespace-nowrap shadow-lg shadow-fuchsia-500/30">
           <Zap className="w-3.5 h-3.5 fill-current" />
           AI PLATFORM
         </div>
@@ -163,12 +163,12 @@ export default function PricingCards() {
 
   const getCardStyle = (tier: string) => {
     if (tier === "PREMIUM") {
-      return "bg-gradient-to-b from-purple-800 to-indigo-950 text-white rounded-[2rem] border border-purple-500/30 flex flex-col relative shadow-[0_10px_40px_rgba(168,85,247,0.2)]";
+      return "bg-gradient-to-br from-[#4b2c8f] via-[#5a2ca0] to-[#6b21a8] text-white rounded-[2rem] border border-violet-400/35 flex flex-col relative shadow-[0_20px_40px_rgba(168,85,247,0.28)] dark:from-[#4b2c8f] dark:via-[#5a2ca0] dark:to-[#6b21a8] dark:text-white dark:border-violet-400/35 dark:shadow-[0_20px_40px_rgba(168,85,247,0.28)]";
     }
     if (tier === "PRO") {
-      return "bg-[#0A0F1E] text-slate-200 rounded-[2rem] border border-pink-500 flex flex-col relative shadow-[0_0_30px_rgba(236,72,153,0.15)]";
+      return "bg-[#122241] text-white rounded-[2rem] border border-pink-400/80 flex flex-col relative shadow-[0_0_0_1px_rgba(244,114,182,0.2),0_18px_40px_rgba(15,23,42,0.45)] dark:bg-[#122241] dark:text-white dark:border-pink-400/80 dark:shadow-[0_0_0_1px_rgba(244,114,182,0.2),0_18px_40px_rgba(15,23,42,0.45)]";
     }
-    return "bg-[#0A0F1E] text-slate-300 rounded-[2rem] flex flex-col relative";
+    return "bg-[#122241] text-slate-200 rounded-[2rem] border border-slate-700/40 flex flex-col relative shadow-[0_18px_40px_rgba(15,23,42,0.4)] dark:bg-[#122241] dark:text-slate-200 dark:border-slate-700/40 dark:shadow-[0_18px_40px_rgba(15,23,42,0.4)]";
   };
 
   const renderButton = (plan: any) => {
@@ -178,7 +178,7 @@ export default function PricingCards() {
       return (
         <button
           disabled
-          className="w-full bg-[#0F172A] text-slate-400 font-semibold py-3.5 rounded-xl transition mb-8 text-sm"
+          className="w-full bg-[#081326] text-slate-400 font-semibold py-3.5 rounded-xl transition mb-8 text-sm border border-slate-800/80"
         >
           {isCurrentPlan ? "Đang sử dụng" : "Mặc định"}
         </button>
@@ -189,7 +189,7 @@ export default function PricingCards() {
       return (
         <button
           onClick={() => router.push("/profile/subscription")}
-          className="w-full bg-slate-800 border border-slate-700 font-bold py-3.5 text-sm rounded-xl transition mb-8"
+          className="w-full bg-[#081326] text-white border border-slate-800 font-bold py-3.5 text-sm rounded-xl transition mb-8"
         >
           Quản lý gói
         </button>
@@ -201,7 +201,7 @@ export default function PricingCards() {
         <button
           onClick={() => openDialog(plan)}
           disabled={isPreviewLoading}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_20px_rgba(236,72,153,0.4)] flex justify-center items-center disabled:opacity-70"
+          className="w-full bg-gradient-to-r from-pink-500 to-fuchsia-500 hover:from-pink-400 hover:to-fuchsia-400 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_24px_rgba(236,72,153,0.35)] flex justify-center items-center disabled:opacity-70"
         >
           {!user ? (
             "Đăng nhập để Nâng cấp"
@@ -218,7 +218,7 @@ export default function PricingCards() {
       <button
         onClick={() => openDialog(plan)}
         disabled={isPreviewLoading}
-        className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-400 hover:to-rose-300 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_20px_rgba(244,63,94,0.4)] flex justify-center items-center disabled:opacity-70"
+        className="w-full bg-gradient-to-r from-pink-500 to-fuchsia-400 hover:from-pink-400 hover:to-fuchsia-300 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_24px_rgba(236,72,153,0.28)] flex justify-center items-center disabled:opacity-70"
       >
         {!user ? (
           "Đăng nhập để Nâng cấp"
@@ -234,7 +234,7 @@ export default function PricingCards() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-6xl">
       {isPlansLoading && (
-        <div className="col-span-1 lg:col-span-3 text-center py-10 opacity-50 flex items-center justify-center gap-3 text-slate-300">
+        <div className="col-span-1 lg:col-span-3 text-center py-10 opacity-80 flex items-center justify-center gap-3 text-slate-300">
           <Loader2 className="animate-spin w-5 h-5" /> Đang tải bảng giá...
         </div>
       )}
@@ -248,7 +248,7 @@ export default function PricingCards() {
             {renderBadge(plan)}
 
             <p
-              className={`${plan.tier === "PREMIUM" ? "text-purple-200" : plan.tier === "PRO" ? "text-pink-400" : "text-slate-400"} text-[11px] font-bold tracking-widest mb-3 uppercase`}
+              className={`${plan.tier === "PREMIUM" ? "text-fuchsia-100" : plan.tier === "PRO" ? "text-pink-400" : "text-slate-400"} text-[11px] font-bold tracking-widest mb-3 uppercase`}
             >
               {plan.tier === "PREMIUM"
                 ? "Tối đa hiệu quả"
@@ -270,7 +270,7 @@ export default function PricingCards() {
                 {plan.price === 0 ? "0" : plan.price.toLocaleString("vi-VN")}
               </span>
               <span
-                className={`${plan.tier === "PREMIUM" ? "text-purple-200" : "text-slate-400"} ml-2 mb-1.5 text-sm`}
+                className={`${plan.tier === "PREMIUM" ? "text-pink-100/80" : "text-slate-400"} ml-2 mb-1.5 text-sm`}
               >
                 hoa / tháng
               </span>
@@ -287,7 +287,7 @@ export default function PricingCards() {
                     className="flex items-start text-[13px] leading-relaxed"
                   >
                     <div
-                      className={`mt-0.5 mr-3 shrink-0 rounded-full flex items-center justify-center size-4 border ${plan.tier === "PREMIUM" ? "border-pink-300 text-pink-300" : plan.tier === "PRO" ? "border-pink-500 text-pink-500" : "border-slate-500 text-slate-500"}`}
+                      className={`mt-0.5 mr-3 shrink-0 rounded-full flex items-center justify-center size-4 border ${plan.tier === "PREMIUM" ? "border-pink-300 text-pink-300" : plan.tier === "PRO" ? "border-pink-400 text-pink-400" : "border-blue-400 text-blue-400"}`}
                     >
                       <CheckCircle2 className="w-3 h-3" />
                     </div>

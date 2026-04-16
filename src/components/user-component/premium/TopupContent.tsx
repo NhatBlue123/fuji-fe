@@ -118,16 +118,16 @@ function TopupContentInner() {
   };
 
   return (
-    <div className="space-y-12">
-      <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between">
+    <div className="space-y-12 text-slate-900 dark:text-white">
+      <div className="bg-white/90 dark:bg-card rounded-2xl p-6 border border-slate-200 dark:border-border flex items-center justify-between shadow-[0_12px_30px_rgba(15,23,42,0.08)] dark:shadow-none">
         <div className="flex items-center gap-x-2">
-          <div className="text-sm font-bold text-muted-foreground uppercase">
+          <div className="text-sm font-bold text-slate-600 dark:text-muted-foreground uppercase">
             SỐ DƯ HIỆN TẠI :
           </div>
           <div className="flex items-center text-2xl font-bold gap-2">
             <span>{availableBalance.toLocaleString("vi-VN")}</span>
             <span className="text-3xl ml-1">🌸</span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-slate-500 dark:text-muted-foreground">
               (~ {(availableBalance * 1000).toLocaleString("vi-VN")}đ)
             </span>
           </div>
@@ -158,7 +158,7 @@ function TopupContentInner() {
               className={`flex items-center space-x-4 p-5 rounded-2xl border transition ${
                 selectedPayment === method.id
                   ? "border-secondary border-2"
-                  : "border-border hover:border-secondary/50"
+                  : "border-slate-200 dark:border-border hover:border-secondary/50 bg-white/90 dark:bg-transparent"
               }`}
             >
               {method.icon}
@@ -172,7 +172,7 @@ function TopupContentInner() {
         <button
           onClick={handleTopupClick}
           disabled={isLoading}
-          className="px-12 py-4 bg-secondary text-secondary-foreground font-bold rounded-xl disabled:opacity-50"
+          className="px-12 py-4 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl disabled:opacity-50 shadow-[0_12px_24px_rgba(236,72,153,0.22)] dark:bg-secondary dark:text-secondary-foreground dark:shadow-none"
         >
           {isLoading ? "Đang tạo đơn..." : "Nạp ngay bằng VietQR"}
         </button>

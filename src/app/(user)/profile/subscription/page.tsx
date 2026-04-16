@@ -97,7 +97,7 @@ export default function SubscriptionPage() {
       <div className="absolute bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px]" />
 
       {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-8 py-6 border-b border-white/5 bg-background/50 backdrop-blur-md">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-8 py-6 border-b border-slate-200 dark:border-white/5 bg-background/50 backdrop-blur-md">
         <div className="space-y-1">
           <button 
             type="button"
@@ -130,9 +130,9 @@ export default function SubscriptionPage() {
       <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Subscription Card */}
-        <Card className={`lg:col-span-8 overflow-hidden border-none bg-gradient-to-br from-[#0B1120] via-[#111827] to-[#0a0c10] text-white relative shadow-2xl rounded-[2.5rem]`}>
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-          <div className={`absolute bottom-0 left-0 w-[300px] h-[300px] ${currentTier === 'PREMIUM' ? 'bg-purple-500/10' : 'bg-cyan-500/10'} rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none`} />
+        <Card className={`lg:col-span-8 overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-[#fff7fb] to-[#f5f8ff] text-slate-900 relative shadow-2xl shadow-pink-500/10 rounded-[2.5rem] dark:border-white/5 dark:bg-gradient-to-br dark:from-[#0B1120] dark:via-[#111827] dark:to-[#0a0c10] dark:text-white dark:shadow-black/30`}>
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/16 dark:bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <div className={`absolute bottom-0 left-0 w-[300px] h-[300px] ${currentTier === 'PREMIUM' ? 'bg-purple-400/12 dark:bg-purple-500/10' : 'bg-cyan-400/12 dark:bg-cyan-500/10'} rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none`} />
           
           <CardHeader className="relative z-10 pt-10 px-10">
             <div className="flex items-center justify-between">
@@ -141,7 +141,7 @@ export default function SubscriptionPage() {
                   {currentDetails.icon}
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Gói hiện tại</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/50 mb-1">Gói hiện tại</p>
                   <h3 className={`text-2xl font-black uppercase tracking-widest ${currentDetails.textColor}`}>
                     {currentDetails.label}
                   </h3>
@@ -150,8 +150,8 @@ export default function SubscriptionPage() {
               
               {mySub?.expireAt && (
                 <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Thời hạn</p>
-                  <p className="font-mono text-lg font-bold">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/50 mb-1">Thời hạn</p>
+                  <p className="font-mono text-lg font-bold text-slate-900 dark:text-white">
                     {mySub.daysRemaining > 0 ? `Còn ${mySub.daysRemaining} ngày` : 'Hết hạn'}
                   </p>
                 </div>
@@ -162,12 +162,12 @@ export default function SubscriptionPage() {
           <CardContent className="relative z-10 px-10 pb-12 pt-6">
             {mySub && currentTier !== 'BASIC' ? (
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/80 border border-slate-200 backdrop-blur-sm dark:bg-white/5 dark:border-white/10">
                   <div className="flex items-center gap-3">
                     <RefreshCw className="text-pink-400" size={20} />
                     <div>
-                      <p className="text-sm font-bold text-white">Gia hạn tự động</p>
-                      <p className="text-xs text-white/50">Tự động trừ tiền từ ví Fuji khi hết hạn</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">Gia hạn tự động</p>
+                      <p className="text-xs text-slate-500 dark:text-white/50">Tự động trừ tiền từ ví Fuji khi hết hạn</p>
                     </div>
                   </div>
                   <Switch 
@@ -179,28 +179,28 @@ export default function SubscriptionPage() {
                 </div>
                 
                 {mySub.expireAt && (
-                   <div className="flex items-center gap-2 text-xs text-white/60">
+                   <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/60">
                      <Calendar size={14} />
                      <span>Ngày hết hạn: {new Date(mySub.expireAt).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                    </div>
                 )}
               </div>
             ) : (
-               <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-3">
-                 <AlertCircle className="mx-auto text-white/40" size={32} />
+               <div className="p-6 rounded-2xl bg-white/80 border border-slate-200 text-center space-y-3 dark:bg-white/5 dark:border-white/10">
+                 <AlertCircle className="mx-auto text-slate-400 dark:text-white/40" size={32} />
                  <p className="text-sm font-bold">Bạn đang sử dụng gói Miễn Phí</p>
-                 <p className="text-xs text-white/50">Nâng cấp ngay để mở khóa toàn bộ tính năng học tập và ôn thi JLPT tốt nhất.</p>
+                 <p className="text-xs text-slate-500 dark:text-white/50">Nâng cấp ngay để mở khóa toàn bộ tính năng học tập và ôn thi JLPT tốt nhất.</p>
                </div>
             )}
             
             {(mySub?.activeFeatures?.length ?? 0) > 0 && (
               <div className="mt-8">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-4">Quyền lợi của bạn</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/50 mb-4">Quyền lợi của bạn</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {mySub?.activeFeatures.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <CheckCircle2 size={16} className={currentDetails.textColor } />
-                      <span className="text-sm  text-white/90">{feat}</span>
+                      <span className="text-sm text-slate-700 dark:text-white/90">{feat}</span>
                     </div>
                   ))}
                 </div>
@@ -211,7 +211,7 @@ export default function SubscriptionPage() {
 
         {/* Side Info */}
         <div className="lg:col-span-4 space-y-4">
-          <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[140px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl group relative overflow-hidden">
+          <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[140px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] bg-white/90 dark:bg-[#0B1120]/60 dark:backdrop-blur-xl group relative overflow-hidden">
             <div className="relative z-10">
               <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Mức học tập</p>
               <p className="text-xl font-black text-foreground dark:text-white uppercase tracking-tighter">
@@ -226,7 +226,7 @@ export default function SubscriptionPage() {
       </div>
 
       {/* History Section */}
-        <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 overflow-hidden rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl transition-all duration-500">
+        <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 overflow-hidden rounded-[2.5rem] bg-white/90 dark:bg-[#0B1120]/60 dark:backdrop-blur-xl transition-all duration-500">
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b dark:border-white/5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-pink-500/10 dark:bg-pink-500/10 rounded-2xl text-pink-500 dark:text-pink-400 border border-pink-500/20 shadow-inner">

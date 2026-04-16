@@ -107,27 +107,34 @@ export default function FujiWallet() {
       <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Wallet Card */}
-          <Card className="lg:col-span-8 overflow-hidden border-none bg-gradient-to-br from-[#0B1120] via-[#111827] to-[#0a0c10] text-white relative shadow-2xl rounded-[2.5rem]">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          <Card className="lg:col-span-8 overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-[#fff7fb] to-[#fff1f6] text-slate-900 relative shadow-2xl shadow-pink-500/10 rounded-[2.5rem] dark:border-white/5 dark:bg-gradient-to-br dark:from-[#0B1120] dark:via-[#111827] dark:to-[#0a0c10] dark:text-white dark:shadow-black/30">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/16 dark:bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-fuchsia-400/10 dark:bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
             <CardHeader className="relative z-10 pt-6 px-10">
-              <div className="flex items-center gap-2 text-white/60">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-inner">
-                  <Wallet size={18} className="text-pink-400" />
+              <div className="flex items-center gap-2 text-slate-700 dark:text-white/60">
+                <div className="rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-inner dark:border-white/10 dark:bg-white/5">
+                  <Wallet
+                    size={18}
+                    className="text-pink-500 dark:text-pink-400"
+                  />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">
+
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-pink-100/70">
                   Tổng số dư khả dụng
                 </span>
+
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info
-                        size={12}
-                        className="opacity-40 hover:opacity-100 text-pink-400"
-                      />
+                    <TooltipTrigger asChild>
+                      <button type="button" className="inline-flex">
+                        <Info
+                          size={12}
+                          className="text-pink-500/70 opacity-60 transition hover:opacity-100 dark:text-pink-400"
+                        />
+                      </button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">
+                    <TooltipContent className="border border-slate-200 bg-white text-[10px] text-slate-700 shadow-lg dark:border-pink-500/20 dark:bg-[#111827] dark:text-pink-100 dark:backdrop-blur-xl">
                       Số dư dùng để thanh toán dịch vụ Fuji
                     </TooltipContent>
                   </Tooltip>
@@ -137,7 +144,7 @@ export default function FujiWallet() {
 
             <CardContent className="relative z-10 px-10 pb-6 pt-4">
               <div className="flex items-baseline gap-4">
-                <span className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <span className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900 drop-shadow-[0_0_18px_rgba(236,72,153,0.12)] dark:text-white dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                   {balance.toLocaleString()}
                 </span>
                 <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">
@@ -145,24 +152,24 @@ export default function FujiWallet() {
                 </span>
               </div>
 
-              <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8 justify-between">
+              <div className="mt-12 pt-8 border-t border-slate-200/80 dark:border-white/5 flex flex-wrap items-center gap-8 justify-between">
                 <div className="flex items-center gap-4 group cursor-help">
                   {/* Gradient Hoa anh đào đổi sang Pink-Purple */}
                   <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-purple-500 flex items-center justify-center font-black text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-500">
                     🌸
                   </div>
                   <div>
-                    <div className="text-[10px] text-pink-100/50 font-black uppercase tracking-widest">
+                    <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest dark:text-pink-100/50">
                       Quy đổi VND
                     </div>
-                    <div className="text-xl font-black text-white">
+                    <div className="text-xl font-black text-slate-900 dark:text-white">
                       {(balance * 1000).toLocaleString()}{" "}
-                      <span className="text-[10px] text-pink-100/30 ml-1">
+                      <span className="text-[10px] text-slate-400 ml-1 dark:text-pink-100/30">
                         VND
                       </span>
                     </div>
                   </div>
-                 
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -171,7 +178,7 @@ export default function FujiWallet() {
                           className="opacity-40 hover:opacity-100 text-pink-400"
                         />
                       </TooltipTrigger>
-                      <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">
+                      <TooltipContent className="border border-slate-200 bg-white text-[10px] text-slate-700 shadow-lg dark:border-pink-500/20 dark:bg-[#111827] dark:text-pink-100 dark:backdrop-blur-xl">
                         Số dư dùng để thanh toán dịch vụ Fuji
                       </TooltipContent>
                     </Tooltip>
@@ -183,7 +190,7 @@ export default function FujiWallet() {
                   <Button
                     onClick={() => router.push("/premium?tab=topup")}
                     size="lg"
-                    className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
+                    className="flex-1 md:flex-none bg-pink-500 hover:bg-pink-600 text-white font-bold px-6 py-2 rounded-xl transition shadow-lg shadow-pink-500/20 dark:bg-secondary dark:hover:bg-secondary/90 dark:shadow-none"
                   >
                     <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp 🌸
                   </Button>
@@ -353,7 +360,7 @@ export default function FujiWallet() {
                     <TableCell
                       className={`px-8 py-6 text-right font-black text-xl tracking-tighter ${tx.type === "DEPOSIT" || tx.amount > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"}`}
                     >
-                      {tx.type === "DEPOSIT" || tx.amount > 0 }
+                      {tx.type === "DEPOSIT" || tx.amount > 0}
                       {tx.amount.toLocaleString()}
                       <span className="text-[10px] ml-1 opacity-70">🌸</span>
                     </TableCell>

@@ -20,7 +20,7 @@ function PremiumPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-8 font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-white via-[#fff8fc] to-[#f4f8ff] text-slate-900 p-8 font-sans dark:bg-[#122241] dark:text-white">
       <div className="max-w-5xl mx-auto">
         <button
           onClick={() => router.back()}
@@ -36,7 +36,7 @@ function PremiumPageContent() {
               <PricingCards />
 
               <div className="mt-16 w-full">
-                <h2 className="text-2xl font-bold text-center mb-8">
+                <h2 className="text-2xl font-bold text-center mb-8 text-slate-900 dark:text-white">
                   Tại sao nên chọn Premium?
                 </h2>
                 <FeatureGrid />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -22,6 +22,7 @@ import {
   Layers,
   AlertTriangle,
   CalendarDays,
+  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -161,6 +162,12 @@ const navGroups: NavGroup[] = [
         icon: Shield,
       },
       {
+        title: "AI RAG",
+        href: "/admin/rag-management",
+        icon: Brain,
+        adminOnly: true,
+      },
+      {
         title: "Thông báo",
         href: "/admin/notifications",
         icon: Bell,
@@ -191,11 +198,6 @@ export function AdminSidebar() {
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, canAccessRoute } = usePermissions();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const defaultOpenMenu = useMemo(() => {
     const matchedItem = navGroups

@@ -16,7 +16,6 @@ import { userPreferenceApi } from "./services/user/userPreferenceApi";
 import { adminFlashcardApi } from "./services/admin/flashcardApi";
 import { userApi } from "./services/admin/userApi";
 import { adminReportApi } from "./services/adminReportApi";
-import { adminRevenueApi } from "./services/adminRevenueApi";
 import { adminChatModerationApi } from "./services/adminChatModerationApi";
 export const store = configureStore({
   reducer: {
@@ -34,7 +33,6 @@ export const store = configureStore({
     [adminFlashcardApi.reducerPath]: adminFlashcardApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [adminReportApi.reducerPath]: adminReportApi.reducer,
-    [adminRevenueApi.reducerPath]: adminRevenueApi.reducer,
     [adminChatModerationApi.reducerPath]: adminChatModerationApi.reducer,
     [userPreferenceApi.reducerPath]: userPreferenceApi.reducer,
   },
@@ -46,7 +44,6 @@ export const store = configureStore({
       .concat(adminJlptApi.middleware)
       .concat(adminFlashcardApi.middleware)
       .concat(userApi.middleware)
-      .concat(adminRevenueApi.middleware)
       .concat(adminChatModerationApi.middleware)
       .concat(userPreferenceApi.middleware)
       .concat(baseApi.middleware)

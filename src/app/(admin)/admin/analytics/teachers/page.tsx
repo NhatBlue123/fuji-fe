@@ -345,7 +345,7 @@ const TeacherDashboard: React.FC = () => {
                       </TableCell>
                       <TableCell>{student.bookingCount}</TableCell>
                       <TableCell className="font-semibold">
-                        {formatCurrency(student.totalSpent)}
+                        {formatCurrency(student.spentAmount)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={idx === 0 ? "default" : "secondary"}>

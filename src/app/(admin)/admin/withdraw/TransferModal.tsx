@@ -22,14 +22,9 @@ interface TransferModalProps {
   onClose: () => void;
   onConfirm: () => void;
   onSuccess: () => void;
+  onPayoutCreated?: () => void;
   isConfirming: boolean;
-  request: {
-    id: number;
-    amount: number;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  } | null;
+  request: Pick<WithdrawRequestData, "id" | "amount" | "bankName" | "accountNumber" | "accountHolder"> | null;
 }
 
 export function TransferModal({
@@ -37,6 +32,7 @@ export function TransferModal({
   onClose,
   onConfirm,
   onSuccess,
+  onPayoutCreated,
   isConfirming,
   request,
 }: TransferModalProps) {
@@ -45,57 +41,76 @@ export function TransferModal({
 
   const [createPayout, { isLoading: isCreatingPayout }] =
     useCreatePayoutMutation();
-  const { data: payoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
+  const { refetch: refetchPayoutStatus } = useGetPayoutStatusQuery(payoutOrderId || "", {
     skip: !payoutOrderId || socketHandled,
-    pollingInterval: 10000, // Fallback 10s, socket handles realtime
   });
 
-  // ── Socket.IO realtime: payout-success ─────────────────────
-  const { onPayoutSuccess } = usePaymentSocket();
+  // ── Socket.IO realtime: payment-status-change ─────────────────────
+  const { onPaymentStatusChange } = usePaymentSocket();
 
   useEffect(() => {
-    const unsub = onPayoutSuccess((data) => {
+    const unsub = onPaymentStatusChange((data) => {
       // Match by withdrawRequestId với request hiện tại
       if (request && data.withdrawRequestId === request.id) {
-        setSocketHandled(true);
-        setPayoutOrderId(null);
-        toast.success(data.message || "Chuyển tiền tự động thành công!");
-        onSuccess();
+        if (data.newStatus === "SUCCESS") {
+          setSocketHandled(true);
+          setPayoutOrderId(null);
+          toast.success(data.message || "Chuyển tiền tự động thành công!");
+          onSuccess();
+        } else if (data.newStatus === "FAILED") {
+          setSocketHandled(true);
+          setPayoutOrderId(null);
+          toast.error(data.message || "Chuyển khoản tự động thất bại!");
+        }
       }
     });
     return () => unsub();
-  }, [request, onPayoutSuccess, onSuccess]);
+  }, [request, onPaymentStatusChange, onSuccess]);
 
-  // Polling fallback
+  // Fallback Check (Phụ thuộc API - Không SetInterval)
   useEffect(() => {
-    if (socketHandled) return;
-    if (
-      payoutStatus?.data?.status === "SUCCESS" ||
-      payoutStatus?.data?.status === "COMPLETED"
-    ) {
-      toast.success("Chuyển tiền tự động thành công!");
-      setPayoutOrderId(null);
-      onSuccess();
-    } else if (payoutStatus?.data?.status === "FAILED") {
-      toast.error(payoutStatus?.data?.message || "Chuyển khoản thất bại!");
-      setPayoutOrderId(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payoutStatus, socketHandled]);
+    if (!payoutOrderId || socketHandled) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const result = await refetchPayoutStatus();
+        const status = result.data?.data?.status;
+        if (status === "SUCCESS" || status === "COMPLETED") {
+          setSocketHandled(true);
+          setPayoutOrderId(null);
+          toast.success("Chuyển tiền tự động thành công!");
+          onSuccess();
+        } else if (status === "FAILED") {
+          setSocketHandled(true);
+          setPayoutOrderId(null);
+          toast.error(result.data?.data?.message || "Chuyển khoản thất bại!");
+        } else {
+          // Giao dịch có thể thật sự bị delay từ Ngân hàng / XGate
+          toast.info("Giao dịch đang chờ xử lý từ ngân hàng...");
+        }
+      } catch (error) {
+        console.error("Fallback check error:", error);
+      }
+    }, 20000); // Fallback 20s (đủ cho 1 chu kỳ polling 15s + margin)
+
+    return () => clearTimeout(timeoutId);
+  }, [payoutOrderId, socketHandled, refetchPayoutStatus, onSuccess]);
 
   const handleAutoPayout = async () => {
     try {
       const res = await createPayout(request!.id).unwrap();
       if (res.data?.orderId) {
         setPayoutOrderId(res.data.orderId);
+        onPayoutCreated?.();
         toast.info("Đang xử lý chuyển tiền tự động, vui lòng chờ...");
       } else {
         toast.success("Đã ghi nhận yêu cầu chuyển tiền tự động!");
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
+      const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
       toast.error(
-        error?.data?.message || "Lỗi khi gọi API chuyển tiền tự động",
+        message || "L???i khi g???i API chuy???n ti???n t??? ?????ng",
       );
     }
   };

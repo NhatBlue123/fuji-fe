@@ -2,7 +2,7 @@ import { aiBaseApi } from "../aiBaseApi";
 import { baseApi } from "../baseApi";
 import type {
   VoiceChatRequest,
-  VoiceChatResponse,
+  VoiceEndSessionResponse,
   VoiceSessionHistory,
 } from "@/types/voice";
 
@@ -23,10 +23,7 @@ export const voiceApi = aiBaseApi.injectEndpoints({
       }),
     }),
 
-    endVoiceSession: builder.mutation<
-      { success: boolean; session: string },
-      string
-    >({
+    endVoiceSession: builder.mutation<VoiceEndSessionResponse, string>({
       query: (sessionCode) => ({
         url: `/api/voice/session/${sessionCode}/end`,
         method: "POST",

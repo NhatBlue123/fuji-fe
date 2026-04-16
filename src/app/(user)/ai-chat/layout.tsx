@@ -4,7 +4,6 @@
  * - Ẩn footer (không cần thanh cuộn toàn trang)
  * - Ghi đè overflow của thẻ main từ parent layout
  */
-import { AIChatSocketProvider } from "../../../providers/AIChatSocketProvider";
 
 export default function AIChatLayout({
   children,
@@ -19,7 +18,7 @@ export default function AIChatLayout({
         footer { display: none !important; }
         main { overflow: hidden !important; }
       `}</style>
-      <AIChatSocketProvider>{children}</AIChatSocketProvider>
+      {children}
     </>
   );
 }

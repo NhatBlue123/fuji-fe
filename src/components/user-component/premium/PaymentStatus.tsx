@@ -1,21 +1,25 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   AlertCircle,
+  Banknote,
   Clock,
   Copy,
   RefreshCw,
-  X,
   ShieldCheck,
-  Banknote,
+  X,
 } from "lucide-react";
-import { useGetPaymentStatusQuery } from "@/store/services/paymentApi";
+
 import { Button } from "@/components/ui/button";
-import { usePaymentSocket } from "@/providers/PaymentSocketProvider";
+import {
+  type PaymentStatusResponse,
+  useLazyGetPaymentStatusQuery,
+} from "@/store/services/paymentApi";
+import { type PaymentStatusChangeEvent, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
 
@@ -26,8 +30,13 @@ interface PaymentStatusProps {
   bankId: string;
   accountNo: string;
   accountName: string;
+  createdAt: number;
   onClose: () => void;
 }
+
+const MAX_WAIT_TIME_MS = 300000;
+const FALLBACK_POLL_INTERVAL_MS = 3000;
+const FALLBACK_POLL_WINDOW_MS = 18000;
 
 export default function PaymentStatus({
   orderId,
@@ -36,67 +45,127 @@ export default function PaymentStatus({
   bankId,
   accountNo,
   accountName,
+  createdAt,
   onClose,
 }: PaymentStatusProps) {
   const router = useRouter();
-  const MAX_POLL_TIME = 300000; // 5 phút
   const [elapsedTime, setElapsedTime] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
-  const [socketHandled, setSocketHandled] = useState(false);
-
-  const { refetch, isLoading: isStatusLoading } =
-    useGetPaymentStatusQuery(orderId);
-
   const [isConfirming, setIsConfirming] = useState(false);
+  const [resolvedBy, setResolvedBy] = useState<"socket" | "poll" | null>(null);
+  const [pollingUntil, setPollingUntil] = useState<number | null>(null);
+  const handledRef = useRef(false);
 
-  const invalidateWalletAndPayment = () => {
+  const [getPaymentStatus, { isFetching: isStatusLoading }] =
+    useLazyGetPaymentStatusQuery();
+
+  const { isConnected, onPaymentStatusChange } = usePaymentSocket();
+
+  const invalidateWalletAndPayment = useCallback(() => {
     store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
-  };
+  }, []);
 
-  // ── Socket.IO realtime: topup-success ─────────────────────
-  const { isConnected, onTopupSuccess, onPaymentStatusChange } =
-    usePaymentSocket();
+  const finalizeSuccess = useCallback(
+    (source: "socket" | "poll") => {
+      handledRef.current = true;
+      setResolvedBy(source);
+      setPollingUntil(null);
+      invalidateWalletAndPayment();
+      if (source === "poll") {
+        toast.success("Thanh toán thành công!");
+      }
+      setTimeout(() => router.push("/premium/success"), 1000);
+    },
+    [invalidateWalletAndPayment, router],
+  );
+
+  const finalizeFailure = useCallback(
+    (source: "socket" | "poll", message?: string) => {
+      handledRef.current = true;
+      setResolvedBy(source);
+      setPollingUntil(null);
+      invalidateWalletAndPayment();
+      if (source === "poll") {
+        toast.error(message || "Thanh toán thất bại.");
+      }
+      onClose();
+    },
+    [invalidateWalletAndPayment, onClose],
+  );
+
+  const handleStatusResult = useCallback(
+    (
+      status: PaymentStatusResponse["status"] | string | undefined,
+      source: "socket" | "poll",
+      message?: string,
+    ) => {
+      if (!status || handledRef.current) return;
+
+      if (status === "SUCCESS") {
+        finalizeSuccess(source);
+        return;
+      }
+
+      if (status === "FAILED") {
+        finalizeFailure(source, message);
+      }
+    },
+    [finalizeFailure, finalizeSuccess],
+  );
+
+  const pollStatus = useCallback(
+    async (source: "poll") => {
+      if (handledRef.current) return;
+
+      try {
+        const result = await getPaymentStatus(orderId, true);
+        handleStatusResult(result.data?.status, source, result.data?.message);
+      } catch (error) {
+        console.error("[payment] status poll failed", { orderId, error });
+      }
+    },
+    [getPaymentStatus, handleStatusResult, orderId],
+  );
 
   useEffect(() => {
-    const unsubTopup = onTopupSuccess((data) => {
-      if (data.orderId === orderId) {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.success(data.message || "Nạp tiền thành công!");
-        setTimeout(() => router.push("/premium/success"), 1000);
-      }
+    console.info("[payment] waiting for realtime payment status", {
+      orderId,
+      createdAt: new Date(createdAt).toISOString(),
+      receivedAt: new Date().toISOString(),
     });
+  }, [createdAt, orderId]);
 
-    const unsubStatus = onPaymentStatusChange((data) => {
-      if (data.orderId === orderId) {
-        if (data.newStatus === "SUCCESS") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          setTimeout(() => router.push("/premium/success"), 1000);
-        } else if (data.newStatus === "FAILED") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          onClose();
-        }
-      }
+  useEffect(() => {
+    const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
+      if (handledRef.current) return;
+      if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
+
+      const receivedAt = Date.now();
+      console.info("[payment] matched payment-status-change", {
+        orderId,
+        newStatus: data.newStatus,
+        receivedAt: new Date(receivedAt).toISOString(),
+        createPaymentCalledAt: new Date(createdAt).toISOString(),
+        latencyMs: receivedAt - createdAt,
+      });
+
+      handleStatusResult(data.newStatus, "socket", data.message);
     });
 
     return () => {
-      unsubTopup();
       unsubStatus();
     };
-  }, [orderId, onTopupSuccess, onPaymentStatusChange, router, onClose]);
+  }, [createdAt, handleStatusResult, onPaymentStatusChange, orderId]);
 
-  // 1. Đếm ngược từng giây
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime((prev) => {
         const nextValue = prev + 1000;
-        if (nextValue >= MAX_POLL_TIME) {
+        if (nextValue >= MAX_WAIT_TIME_MS) {
           clearInterval(timer);
           toast.error(
-            "Giao dịch timeout. Nếu bạn đã chuyển khoản, hệ thống sẽ tự đối soát.",
+            "Giao dịch timeout. Nếu bạn đã chuyển khoản, hệ thống sẽ đối soát sau.",
             { duration: 5000 },
           );
           onClose();
@@ -104,42 +173,56 @@ export default function PaymentStatus({
         return nextValue;
       });
     }, 1000);
+
     return () => clearInterval(timer);
   }, [onClose]);
 
-  // 2. Tự động kiểm tra DUY NHẤT 1 lần khi socket reconnect thành công hoặc mới mount
   useEffect(() => {
-    if (socketHandled || !isConnected) return;
+    if (handledRef.current) return;
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const result = await refetch();
-        if (!isMounted || socketHandled) return;
+    if (!isConnected) {
+      const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
+      setPollingUntil(deadline);
+      console.warn("[payment] socket disconnected, enabling fallback polling", {
+        orderId,
+        pollingUntil: new Date(deadline).toISOString(),
+      });
+      void pollStatus("poll");
+      return;
+    }
 
-        if (result.data?.status === "SUCCESS") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          toast.success("Thanh toán thành công!");
-          setTimeout(() => router.push("/premium/success"), 1000);
-        } else if (result.data?.status === "FAILED") {
-          invalidateWalletAndPayment();
-          setSocketHandled(true);
-          toast.error("Thanh toán thất bại.");
-          onClose();
-        }
-      } catch (error) {
-        console.error("Auto check error:", error);
+    setPollingUntil(null);
+  }, [isConnected, orderId, pollStatus]);
+
+  useEffect(() => {
+    if (handledRef.current || !pollingUntil) return;
+
+    if (Date.now() >= pollingUntil) {
+      setPollingUntil(null);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      if (handledRef.current) {
+        clearInterval(intervalId);
+        return;
       }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [isConnected, refetch, onClose, router, socketHandled]);
 
-  // 3. Xử lý nút Manual Check rate-limited (5s cooldown)
+      if (Date.now() >= pollingUntil) {
+        clearInterval(intervalId);
+        setPollingUntil(null);
+        return;
+      }
+
+      void pollStatus("poll");
+    }, FALLBACK_POLL_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [pollStatus, pollingUntil]);
+
   const handleManualCheck = async () => {
-    if (socketHandled || isManualChecking) return;
+    if (handledRef.current || isManualChecking) return;
+
     const now = Date.now();
     if (now - lastCheckTime < 5000) {
       toast.info("Vui lòng đợi 5 giây giữa các lần kiểm tra.");
@@ -148,19 +231,12 @@ export default function PaymentStatus({
 
     setIsManualChecking(true);
     setLastCheckTime(now);
+
     try {
-      const result = await refetch();
-      if (result.data?.status === "SUCCESS") {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.success("Thanh toán thành công!");
-        setTimeout(() => router.push("/premium/success"), 1000);
-      } else if (result.data?.status === "FAILED") {
-        invalidateWalletAndPayment();
-        setSocketHandled(true);
-        toast.error("Thanh toán thất bại.");
-        onClose();
-      } else {
+      const result = await getPaymentStatus(orderId, true);
+      handleStatusResult(result.data?.status, "poll", result.data?.message);
+
+      if (!handledRef.current) {
         toast.info("Giao dịch đang chờ xác nhận...", { duration: 2000 });
       }
     } catch {
@@ -188,7 +264,6 @@ export default function PaymentStatus({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
       <div className="bg-[#12141c] border border-white/10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] max-w-4xl w-full overflow-hidden relative">
-        {/* --- OVERLAY XÁC NHẬN HỦY: NẰM Ở ĐÂY ĐỂ RA GIỮA TOÀN BỘ MODAL --- */}
         {isConfirming && (
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#0a0c10]/80 backdrop-blur-md animate-in fade-in zoom-in duration-200">
             <div className="bg-[#1a1d29] border border-white/10 p-10 rounded-[2.5rem] max-w-sm w-full mx-4 shadow-2xl text-center space-y-6">
@@ -229,7 +304,6 @@ export default function PaymentStatus({
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* LEFT: QR Code Visual */}
           <div className="p-10 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5">
             <div className="relative group">
               <div className="absolute -inset-4 border-2 border-indigo-500/20 rounded-[2rem] dashed-path animate-pulse" />
@@ -255,10 +329,9 @@ export default function PaymentStatus({
                 </div>
               </div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Hỗ trợ mọi ngân hàng & Napas247
+                Hỗ trợ mọi ngân hàng và Napas247
               </p>
             </div>
-            {/* Manual Check Link */}
             <div className="mt-5 text-center">
               <button
                 onClick={handleManualCheck}
@@ -277,7 +350,6 @@ export default function PaymentStatus({
             </div>
           </div>
 
-          {/* RIGHT: Payment Info & Status */}
           <div className="p-10 flex flex-col justify-between">
             <div className="space-y-6">
               <div>
@@ -348,12 +420,16 @@ export default function PaymentStatus({
                 <div className="flex items-center gap-2 text-pink-400">
                   <RefreshCw size={16} className="animate-spin-slow" />
                   <span className="text-xs font-bold uppercase tracking-widest">
-                    Đang chờ...
+                    {resolvedBy
+                      ? `Đã xác nhận qua ${resolvedBy}`
+                      : isConnected
+                        ? "Đang chờ socket..."
+                        : "Socket mất kết nối, đang fallback..."}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-400 font-mono text-sm">
                   <Clock size={14} />
-                  {formatTimeLeft(MAX_POLL_TIME - elapsedTime)}
+                  {formatTimeLeft(MAX_WAIT_TIME_MS - elapsedTime)}
                 </div>
               </div>
 

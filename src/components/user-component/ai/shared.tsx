@@ -1,8 +1,6 @@
 "use client";
 
 import { memo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,27 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { FuriganaData } from "@/types/voice";
-
-/* ------------------------------------------------------------------ */
-/* n8n Sensei API                                                       */
-/* ------------------------------------------------------------------ */
-
-export async function callSensei(
-  userInput: string,
-  sessionId: string,
-): Promise<string> {
-  const N8N_URL = process.env.NEXT_PUBLIC_N8N_SENSEI_URL!;
-  const response = await fetch(N8N_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chatInput: userInput,
-      sessionId,
-    }),
-  });
-  const data = await response.text();
-  return data;
-}
 
 /** Tách <think>...</think> ra khỏi phần nội dung chính */
 export function parseResponse(raw: string): { think: string; content: string } {
@@ -64,6 +41,7 @@ export type AssistantMessage = {
   textJp?: string;
   textVn?: string;
   think?: string;
+  _streaming?: boolean;
 };
 
 export type PracticeMode = "sensei" | "assistant";
@@ -222,17 +200,19 @@ export const ChatInputArea = memo(function ChatInputArea({
 }) {
   return (
     <div className="p-6 border-t border-border bg-background/80 backdrop-blur-sm shrink-0">
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
-        {chips.map((chip) => (
-          <Button
-            key={chip.text}
-            onClick={() => onInputChange(chip.text)}
-            className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
-          >
-            {chip.emoji} {chip.text}
-          </Button>
-        ))}
-      </div>
+      {chips.length > 0 && (
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+          {chips.map((chip) => (
+            <Button
+              key={chip.text}
+              onClick={() => onInputChange(chip.text)}
+              className="whitespace-nowrap px-4 py-2 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
+            >
+              {chip.emoji} {chip.text}
+            </Button>
+          ))}
+        </div>
+      )}
       <div className="relative flex items-center gap-3">
         <div className="flex-1 relative">
           <Input
@@ -276,8 +256,26 @@ export const ChatInputArea = memo(function ChatInputArea({
 export interface SenseiFeedback {
   score?: number;
   comment?: string;
+  scoreGrammar?: number | null;
+  scoreVocabulary?: number | null;
+  totalScore?: number | null;
+  feedbackText?: string | null;
   strengths?: string[];
   improvements?: string[];
+}
+
+export type SenseiEvaluationStatus = "idle" | "waiting" | "failed";
+
+interface RightSidebarTopic {
+  id: number;
+  title: string;
+}
+
+interface RightSidebarScenario {
+  id: number;
+  level: string;
+  title: string;
+  situation: string;
 }
 
 export const RightSidebar = memo(function RightSidebar({
@@ -290,16 +288,20 @@ export const RightSidebar = memo(function RightSidebar({
   onScenarioChange,
   disabled = false,
   feedback,
+  evaluationStatus = "idle",
+  evaluationMessage,
 }: {
   settingsTitle: string;
-  topics: any[];
+  topics: RightSidebarTopic[];
   selectedTopicId: number | null;
   onTopicChange: (v: string) => void;
-  scenarios: any[];
+  scenarios: RightSidebarScenario[];
   selectedScenarioId: number | null;
   onScenarioChange: (v: string) => void;
   disabled?: boolean;
   feedback?: SenseiFeedback | null;
+  evaluationStatus?: SenseiEvaluationStatus;
+  evaluationMessage?: string | null;
 }) {
   return (
     <aside className="w-80 border-l border-border bg-card/50 overflow-y-auto hidden lg:block shrink-0 flex flex-col">
@@ -412,7 +414,7 @@ export const RightSidebar = memo(function RightSidebar({
               )}
 
               {/* Nhận xét chính */}
-              {feedback.comment && (
+              {(feedback.comment || feedback.feedbackText) && (
                 <div className="bg-card border border-border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="material-symbols-outlined text-secondary text-base">
@@ -423,7 +425,7 @@ export const RightSidebar = memo(function RightSidebar({
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    {feedback.comment}
+                    {feedback.comment || feedback.feedbackText}
                   </p>
                 </div>
               )}
@@ -478,6 +480,34 @@ export const RightSidebar = memo(function RightSidebar({
                 </div>
               )}
             </>
+          ) : evaluationStatus === "waiting" ? (
+            <div className="bg-muted/50 border border-border rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-primary text-xl animate-spin">
+                  progress_activity
+                </span>
+              </div>
+              <p className="text-xs text-foreground font-medium mb-1">
+                Đang chấm điểm phiên hội thoại
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Vui lòng chờ trong giây lát...
+              </p>
+            </div>
+          ) : evaluationStatus === "failed" ? (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-destructive text-xl">
+                  error
+                </span>
+              </div>
+              <p className="text-xs text-destructive font-medium mb-1">
+                Chấm điểm chưa thành công
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {evaluationMessage || "Vui lòng thử kết thúc phiên lại."}
+              </p>
+            </div>
           ) : (
             <div className="bg-muted/50 border border-border rounded-xl p-6 text-center">
               <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">

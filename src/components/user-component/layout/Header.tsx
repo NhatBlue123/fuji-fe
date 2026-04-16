@@ -223,9 +223,11 @@ const Header = () => {
               <ScrollArea className="h-[400px]">
                 {notifications.length > 0 ? (
                   <div className="flex flex-col">
-                    {notifications.slice(0, 10).map((n) => (
+                    {notifications.slice(0, 10).map((n) => {
+                      const notificationKey = typeof n.id === 'string' ? `str-${n.id}` : `num-${n.id}`;
+                      return (
                       <button
-                        key={n.id}
+                        key={notificationKey}
                         onClick={() => handleNotificationClick(n)}
                         className={cn(
                           "flex items-start gap-3 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
@@ -265,7 +267,8 @@ const Header = () => {
                           </span>
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center opacity-30">

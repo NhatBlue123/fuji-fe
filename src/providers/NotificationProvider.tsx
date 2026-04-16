@@ -78,47 +78,70 @@ export function NotificationProvider({
       }
       const ctx = audioContextRef.current;
 
-      const frequencies = [2093, 2637, 3136];
-      const durations = [0.15, 0.15, 0.3];
-      const delays = [0, 0.15, 0.3];
+      // Resume AudioContext nếu nó bị suspended (Chrome autoplay policy)
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {
+          // Ignore errors - audio might still not be allowed
+        });
+      }
 
-      frequencies.forEach((freq, i) => {
-        const startTime = ctx.currentTime + delays[i];
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
+      // Trì hoãn phát tiếng chuông một chút để đợi AudioContext resume
+      const playChime = () => {
+        const frequencies = [2093, 2637, 3136];
+        const durations = [0.15, 0.15, 0.3];
+        const delays = [0, 0.15, 0.3];
 
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        frequencies.forEach((freq, i) => {
+          const startTime = ctx.currentTime + delays[i];
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
 
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(freq, startTime);
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
 
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + durations[i]);
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(freq, startTime);
 
-        oscillator.start(startTime);
-        oscillator.stop(startTime + durations[i]);
-      });
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + durations[i]);
 
-      console.log("[NotificationProvider] 🔔 Bell sound played!");
+          oscillator.start(startTime);
+          oscillator.stop(startTime + durations[i]);
+        });
+      };
+
+      if (ctx.state === "running") {
+        playChime();
+      } else {
+        // Đợi một chút rồi thử lại
+        setTimeout(() => {
+          if (ctx.state === "running") {
+            playChime();
+          }
+        }, 100);
+      }
+
+      console.log("[NotificationProvider] Bell sound played!");
     } catch (error) {
       console.error("Failed to play bell sound:", error);
     }
   }, []);
 
   /**
-   * Lấy danh sách thông báo từ Backend API
+   * Lấy danh sách thông báo từ Backend API (kèm unreadCount từ API)
    */
   const fetchNotifications = useCallback(async () => {
     if (!isInitialized || !isAuthenticated || !accessToken) return;
     try {
       const res = await api.get("/notifications");
+      console.log("[NotificationProvider] fetchNotifications response:", res.data);
       setNotifications(res.data.content);
-      const count = res.data.content.filter(
-        (n: Notification) => !n.isRead,
-      ).length;
-      setUnreadCount(count);
+      // Lấy unreadCount trực tiếp từ response của API (count từ DB, chính xác)
+      if (res.data.unreadCount !== undefined) {
+        console.log("[NotificationProvider] Setting unreadCount from API:", res.data.unreadCount);
+        setUnreadCount(res.data.unreadCount);
+      }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         return;
@@ -215,9 +238,6 @@ export function NotificationProvider({
       setBellRingCount(c => c + 1);
       playBellSound();
     };
-
-    const s = connectNotificationSocket(accessToken, user.id);
-    setSocket(s as Socket);
 
     console.log("[NotificationProvider] Connecting socket with userId:", user.id);
 

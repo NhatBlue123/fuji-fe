@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useGetWalletHistoryQuery } from "@/store/services/walletApi";
 import { Transaction } from "@/types/wallet";
 import { useRouter } from "next/navigation";
-import {
+import { 
   ArrowUpRight,
   ArrowDownLeft,
   ChevronLeft,
@@ -15,9 +15,11 @@ import {
   Download,
   Filter,
   CheckCircle2,
-} from "lucide-react";
+ } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function TransactionHistory() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState<string>("ALL"); // ALL, DEPOSIT, WITHDRAW
@@ -43,7 +45,7 @@ export default function TransactionHistory() {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-[#050508]">
         <div className="w-12 h-12 border-4 border-pink-500 border-t-cyan-400 rounded-full animate-spin shadow-[0_0_20px_rgba(236,72,153,0.3)]"></div>
-        <p className="mt-4 text-pink-500/50 font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">Đang tải dữ liệu...</p>
+        <p className="mt-4 text-pink-500/50 font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">{t('auto.historyPayment_1')}</p>
       </div>
     );
 
@@ -66,13 +68,13 @@ export default function TransactionHistory() {
             <div className="p-2.5 rounded-2xl bg-white/5 group-hover:bg-pink-500/10 border border-white/10 group-hover:border-pink-500/20 transition-all">
               <ArrowLeft size={18} />
             </div>
-            <span className="text-[10px] tracking-widest uppercase">Quay lại</span>
+            <span className="text-[10px] tracking-widest uppercase">{t('auto.historyPayment_2')}</span>
           </button>
 
           <div className="flex items-center gap-6">
             <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-cyan-500/5 border border-cyan-500/20 rounded-full">
                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]" />
-               <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em]">Hệ thống bảo mật</span>
+               <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em]">{t('auto.historyPayment_3')}</span>
             </div>
           </div>
         </div>
@@ -81,12 +83,10 @@ export default function TransactionHistory() {
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8">
           <div className="space-y-3">
             <h1 className="text-5xl font-black text-white flex items-center gap-4 tracking-tighter uppercase">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">Lịch sử</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">{t('auto.historyPayment_4')}</span>
               <History size={32} className="text-pink-500" />
             </h1>
-            <p className="text-slate-500 font-medium max-w-md text-sm border-l-2 border-pink-500/30 pl-4">
-              Quản lý dòng tiền của bạn với bộ nhận diện thông minh Xanh-Hồng.
-            </p>
+            <p className="text-slate-500 font-medium max-w-md text-sm border-l-2 border-pink-500/30 pl-4">{t('auto.historyPayment_5')}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -115,7 +115,7 @@ export default function TransactionHistory() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
               <input
                 type="text"
-                placeholder="Tìm giao dịch..."
+                placeholder={t('auto.historyPayment_16')}
                 className="pl-12 pr-6 h-14 rounded-2xl bg-white/5 border border-white/10 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 outline-none w-full md:w-64 transition-all text-xs font-bold uppercase tracking-widest"
               />
             </div>
@@ -128,12 +128,12 @@ export default function TransactionHistory() {
             <table className="min-w-full text-sm text-left">
               <thead>
                 <tr className="bg-gradient-to-r from-cyan-500/5 to-pink-500/5 border-b border-white/5">
-                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">ID Giao dịch</th>
-                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70 text-center">Phân loại</th>
-                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70 text-right">Giá trị</th>
-                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70">Biến động</th>
-                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">Ngày giờ</th>
-                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70 text-right">Trạng thái</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">{t('auto.historyPayment_6')}</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70 text-center">{t('auto.historyPayment_7')}</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70 text-right">{t('auto.historyPayment_8')}</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70">{t('auto.historyPayment_9')}</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">{t('auto.historyPayment_10')}</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-pink-400/70 text-right">{t('auto.historyPayment_11')}</th>
                 </tr>
               </thead>
 
@@ -161,13 +161,13 @@ export default function TransactionHistory() {
 
                       <td className={`p-6 text-right font-black text-xl tracking-tighter ${isDeposit ? "text-cyan-400" : "text-pink-500"}`}>
                         {isDeposit ? "+" : "-"}{tx.amount.toLocaleString()} 
-                        <span className="text-[10px] ml-1 opacity-40">đ</span>
+                        <span className="text-[10px] ml-1 opacity-40">{t('auto.historyPayment_12')}</span>
                       </td>
 
                       <td className="p-6">
                         <div className="flex flex-col">
                           <span className="font-black text-white text-sm">{tx.balanceAfter.toLocaleString()} đ</span>
-                          <span className="text-[9px] text-slate-600 font-bold uppercase">Sau giao dịch</span>
+                          <span className="text-[9px] text-slate-600 font-bold uppercase">{t('auto.historyPayment_13')}</span>
                         </div>
                       </td>
 
@@ -177,8 +177,7 @@ export default function TransactionHistory() {
 
                       <td className="p-6 text-right">
                         <span className="inline-flex items-center gap-1.5 text-cyan-400/50 font-black text-[9px] uppercase tracking-widest">
-                           <CheckCircle2 size={12} /> Thành công
-                        </span>
+                           <CheckCircle2 size={12} />{t('auto.historyPayment_14')}</span>
                       </td>
                     </tr>
                   );
@@ -192,8 +191,7 @@ export default function TransactionHistory() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 pt-6 border-t border-white/5">
           <div className="flex items-center gap-6">
             <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all uppercase tracking-[0.2em]">
-               <Download size={14} /> Tải báo cáo tháng
-            </button>
+               <Download size={14} />{t('auto.historyPayment_15')}</button>
           </div>
 
           <div className="flex items-center gap-4">

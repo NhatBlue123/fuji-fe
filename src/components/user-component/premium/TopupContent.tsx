@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { Banknote } from "lucide-react";
 import { toast } from "sonner";
@@ -9,14 +10,6 @@ import TopupPackageCard from "./TopupPackageCard";
 import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 import { useCreatePaymentMutation } from "@/store/services/paymentApi";
 import { useGetWalletQuery } from "@/store/services/walletApi";
-
-const paymentMethods = [
-  {
-    id: "bank",
-    name: "Ngân hàng",
-    icon: <Banknote className="w-5 h-5 text-secondary" />,
-  },
-];
 
 type PaymentQrData = {
   orderId: string;
@@ -29,6 +22,7 @@ type PaymentQrData = {
 };
 
 function TopupContentInner() {
+  const { t } = useTranslation();
   const { data: wallet } = useGetWalletQuery(undefined, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
@@ -36,7 +30,7 @@ function TopupContentInner() {
   });
   const [createPayment, { isLoading }] = useCreatePaymentMutation();
 
-  const availableBalance = wallet?.availableBalance || 0;
+  const availableBalance = wallet?.balance || 0;
   const [selectedPackage, setSelectedPackage] = useState<number>(4);
   const [selectedPayment, setSelectedPayment] = useState<string>("bank");
   const [paymentQrData, setPaymentQrData] = useState<PaymentQrData | null>(null);
@@ -50,10 +44,18 @@ function TopupContentInner() {
     { id: 6, price: 500, flowers: 500, bonus: 100 },
   ];
 
+  const paymentMethods = [
+    {
+      id: "bank",
+      name: t("premium.topup.bank"),
+      icon: <Banknote className="w-5 h-5 text-secondary" />,
+    },
+  ];
+
   const handleTopupClick = async () => {
     const selectedPkg = packages.find((pkg) => pkg.id === selectedPackage);
     if (!selectedPkg) {
-      toast.error("Vui lòng chọn gói nạp");
+      toast.error(t("premium.topup.selectPackage"));
       return;
     }
 
@@ -96,7 +98,7 @@ function TopupContentInner() {
           missingAccountNo: !orderData.accountNo,
           missingAccountName: !orderData.accountName,
         });
-        toast.error("Backend chưa cấu hình tài khoản nhận tiền");
+        toast.error(t("premium.topup.noBankAccount"));
         return;
       }
 
@@ -110,10 +112,10 @@ function TopupContentInner() {
         createdAt: createStartedAt,
       });
 
-      toast.info("Vui lòng quét mã QR để thanh toán");
+      toast.info(t("premium.topup.scanQR"));
     } catch (err) {
       console.error("[payment] createPayment failed", err);
-      toast.error("Không thể tạo đơn thanh toán");
+      toast.error(t("premium.topup.createFailed"));
     }
   };
 
@@ -122,7 +124,7 @@ function TopupContentInner() {
       <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between">
         <div className="flex items-center gap-x-2">
           <div className="text-sm font-bold text-muted-foreground uppercase">
-            SỐ DƯ HIỆN TẠI :
+            {t("premium.topup.currentBalance")}
           </div>
           <div className="flex items-center text-2xl font-bold gap-2">
             <span>{availableBalance.toLocaleString("vi-VN")}</span>
@@ -135,7 +137,7 @@ function TopupContentInner() {
       </div>
 
       <div>
-        <h3 className="text-xl font-bold mb-6">Chọn gói nạp</h3>
+        <h3 className="text-xl font-bold mb-6">{t("premium.topup.choosePackage")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages.map((pkg) => (
             <TopupPackageCard
@@ -149,7 +151,7 @@ function TopupContentInner() {
       </div>
 
       <div>
-        <h3 className="text-xl font-bold mb-6">Phương thức thanh toán</h3>
+        <h3 className="text-xl font-bold mb-6">{t("premium.topup.paymentMethod")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {paymentMethods.map((method) => (
             <button
@@ -174,7 +176,7 @@ function TopupContentInner() {
           disabled={isLoading}
           className="px-12 py-4 bg-secondary text-secondary-foreground font-bold rounded-xl disabled:opacity-50"
         >
-          {isLoading ? "Đang tạo đơn..." : "Nạp ngay bằng VietQR"}
+          {isLoading ? t("premium.topup.creatingOrder") : t("premium.topup.payWithQR")}
         </button>
       </div>
 

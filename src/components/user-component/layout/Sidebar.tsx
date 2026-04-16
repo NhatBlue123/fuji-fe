@@ -1,3 +1,10 @@
+/**
+ * [I18N COMPONENT - SIDEBAR]
+ * Thực hiện: 
+ * - Loại bỏ các chuỗi tiếng Việt cứng ở các nhãn menu.
+ * - Sử dụng t("common.*") và t("sidebar.*") để hiển thị đa ngôn ngữ.
+ * - Đảm bảo các nút "Video Call" và "Cài đặt" chuyển từ cho cả 3 ngôn ngữ.
+ */
 "use client";
 
 import Link from "next/link";
@@ -35,7 +42,7 @@ const Sidebar = () => {
   const pathname = usePathname();
   const { roles } = useAuth();
   const { unreadCount } = useNotifications();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -77,11 +84,11 @@ const Sidebar = () => {
     { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
     { label: t("common.booking"), path: "/booking", icon: Calendar },
     { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
-    { label: "/video-call", path: "/video-call", icon: Video, customLabel: "Video call" },
+    { label: t("sidebar.videoCall"), path: "/video-call", icon: Video },
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
-    { label: "Cài đặt", path: "/settings", icon: Settings },
+    { label: t("common.settings"), path: "/settings", icon: Settings },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isMounted, t]);
+  ], [isMounted, t, i18n.language]);
 
   return (
     <TooltipProvider delayDuration={300}>

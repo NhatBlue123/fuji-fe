@@ -11,8 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Clock, CheckCircle2, Activity, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS, ja } from "date-fns/locale";
 import { SystemErrorLog } from "@/store/services/adminSystemErrorApi";
+import { useTranslation } from "react-i18next";
 
 interface SystemErrorTableProps {
   logs: SystemErrorLog[];
@@ -25,18 +26,22 @@ interface SystemErrorTableProps {
  * Cung cấp thông tin tổng quan: Thời gian, Mức độ, Nội dung, Context (User/Path), Trạng thái.
  */
 export const SystemErrorTable = ({ logs, onViewDetail, isLoading }: SystemErrorTableProps) => {
+  const { t, i18n } = useTranslation();
+  
+  const dateLocale = i18n.language === "vi" ? vi : i18n.language === "ja" ? ja : enUS;
+
   return (
     <div className="relative overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50 dark:bg-slate-900 border-y dark:border-border">
-            <TableHead className="w-[100px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">Thời gian</TableHead>
-            <TableHead className="w-[90px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">Mức độ</TableHead>
-            <TableHead className="min-w-[250px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">Thông báo (Message)</TableHead>
-            <TableHead className="w-[180px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">Module / Path</TableHead>
+            <TableHead className="w-[100px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">{t("admin.systemErrors.table.timestamp")}</TableHead>
+            <TableHead className="w-[90px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">{t("admin.systemErrors.table.level")}</TableHead>
+            <TableHead className="min-w-[250px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">{t("admin.systemErrors.table.error")}</TableHead>
+            <TableHead className="w-[180px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">{t("admin.systemErrors.table.path")}</TableHead>
             <TableHead className="w-[120px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">Context</TableHead>
-            <TableHead className="w-[110px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3 text-center">Trạng thái</TableHead>
-            <TableHead className="w-[80px] text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">Hành động</TableHead>
+            <TableHead className="w-[110px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3 text-center">{t("admin.systemErrors.table.status")}</TableHead>
+            <TableHead className="w-[80px] text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-3">{t("admin.systemErrors.table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -45,10 +50,10 @@ export const SystemErrorTable = ({ logs, onViewDetail, isLoading }: SystemErrorT
               <TableCell className="py-3">
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {format(new Date(log.createdAt), "HH:mm:ss", { locale: vi })}
+                    {format(new Date(log.createdAt), "HH:mm:ss", { locale: dateLocale })}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
-                    {format(new Date(log.createdAt), "dd/MM/yyyy", { locale: vi })}
+                    {format(new Date(log.createdAt), "dd/MM/yyyy", { locale: dateLocale })}
                   </span>
                 </div>
               </TableCell>
@@ -80,7 +85,7 @@ export const SystemErrorTable = ({ logs, onViewDetail, isLoading }: SystemErrorT
                   {log.userId ? (
                     <span className="text-[10px] text-slate-600 dark:text-slate-300">UID: {log.userId}</span>
                   ) : (
-                    <span className="text-[9px] text-muted-foreground uppercase italic px-1 bg-slate-100 dark:bg-slate-800 w-max rounded">Guest</span>
+                    <span className="text-[9px] text-muted-foreground uppercase italic px-1 bg-slate-100 dark:bg-slate-800 w-max rounded">{t("common.anonymous")}</span>
                   )}
                   {log.bookingId && (
                     <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">Booking: {log.bookingId}</span>
@@ -89,9 +94,9 @@ export const SystemErrorTable = ({ logs, onViewDetail, isLoading }: SystemErrorT
               </TableCell>
               <TableCell className="py-3 text-center text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
                 {log.resolved ? (
-                  <span className="text-emerald-600 dark:text-emerald-400">[RESOLVED]</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">[{t("admin.systemErrors.filter.resolved").toUpperCase()}]</span>
                 ) : (
-                  <span className="text-amber-600 dark:text-amber-400">[UNRESOLVED]</span>
+                  <span className="text-amber-600 dark:text-amber-400">[{t("admin.systemErrors.filter.pending").toUpperCase()}]</span>
                 )}
               </TableCell>
               <TableCell className="py-3 text-right">
@@ -102,7 +107,7 @@ export const SystemErrorTable = ({ logs, onViewDetail, isLoading }: SystemErrorT
                     className="h-8 p-2 font-bold text-[10px] uppercase gap-1"
                     onClick={() => onViewDetail(log.id)}
                   >
-                    <Eye className="h-3.5 w-3.5 text-slate-400" /> Chi tiết
+                    <Eye className="h-3.5 w-3.5 text-slate-400" /> {t("admin.systemErrors.table.viewDetail")}
                   </Button>
                 </div>
               </TableCell>
@@ -111,7 +116,7 @@ export const SystemErrorTable = ({ logs, onViewDetail, isLoading }: SystemErrorT
           {logs.length === 0 && !isLoading && (
             <TableRow>
               <TableCell colSpan={7} className="h-32 text-center text-xs text-muted-foreground font-medium">
-                Không tìm thấy nhật ký lỗi nào.
+                {t("admin.systemErrors.table.empty")}
               </TableCell>
             </TableRow>
           )}

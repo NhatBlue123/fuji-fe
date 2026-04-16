@@ -1,3 +1,10 @@
+/**
+ * [I18N COMPONENT - HEADER]
+ * Thực hiện:
+ * - Đồng bộ hóa ngôn ngữ giữa các component (Avatar, Role labels, Notifications).
+ * - Sử dụng locale động cho date-fns (vi, ja, enUS) và toLocaleString (vi-VN, ja-JP, en-US).
+ * - Localize các thông báo Toast và tiêu đề trong Account Dropdown.
+ */
 "use client";
 
 import Link from "next/link";
@@ -38,8 +45,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS, ja } from "date-fns/locale";
 import api from "@/lib/api";
+import { tMsg } from "@/i18n";
 import type { ApiEnvelope, BookingDetail } from "@/types/booking";
 import {
   Dialog,
@@ -97,12 +105,12 @@ const Header = () => {
       }
       router.push(n.linkUrl);
     } catch {
-      toast.error("Không mở được lớp học. Vui lòng kiểm tra lại buổi học.");
+      toast.error(t("header.errorOpenClass"));
     }
   };
 
   const formatDateTime = (v: string) =>
-    new Date(v).toLocaleString("vi-VN", {
+    new Date(v).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language === "ja" ? "ja-JP" : "en-US", {
       hour: "2-digit",
       minute: "2-digit",
       day: "2-digit",
@@ -125,12 +133,12 @@ const Header = () => {
   const flowerBalance = wallet?.balance ?? 0;
 
   const getRoleLabel = () => {
-    if (!roles) return "HỌC VIÊN";
+    if (!roles) return t("common.roles.student");
     if (roles.includes("ADMIN") || roles.includes("ROLE_ADMIN"))
-      return "QUẢN TRỊ VIÊN";
+      return t("common.roles.admin");
     if (roles.includes("INSTRUCTOR") || roles.includes("ROLE_INSTRUCTOR"))
-      return "GIẢNG VIÊN";
-    return "HỌC VIÊN";
+      return t("common.roles.instructor");
+    return t("common.roles.student");
   };
 
   const handleLogout = async () => {
@@ -155,10 +163,10 @@ const Header = () => {
           <Link
             href="/profile/wallet"
             className="flex h-10 items-center gap-2 rounded-full border border-secondary/20 bg-secondary/5 px-3 text-secondary transition-colors hover:bg-secondary/10"
-            title="Số 🌸 hiện tại"
+            title={t('auto.header_9')}
           >
             <span className="text-xs font-bold leading-none">
-              {flowerBalance.toLocaleString("vi-VN")} 🌸
+              {flowerBalance.toLocaleString(i18n.language === "vi" ? "vi-VN" : "en-US")} 🌸
             </span>
           </Link>
         )}
@@ -245,7 +253,7 @@ const Header = () => {
                                   : "text-foreground/40",
                               )}
                             >
-                              {n.title}
+                              {tMsg(n.title)}
                             </span>
                           </div>
                           <p
@@ -256,12 +264,12 @@ const Header = () => {
                                 : "text-muted-foreground/50",
                             )}
                           >
-                            {n.content}
+                            {tMsg(n.content)}
                           </p>
                           <span className="text-[9px] text-muted-foreground/40 font-bold mt-1 block">
                             {formatDistanceToNow(new Date(n.createdAt), {
                               addSuffix: true,
-                              locale: vi,
+                              locale: i18n.language === "vi" ? vi : i18n.language === "ja" ? ja : enUS,
                             })}
                           </span>
                         </div>
@@ -367,9 +375,7 @@ const Header = () => {
                     className="flex items-center gap-3 w-full"
                   >
                     <Settings className="size-4 text-secondary" />
-                    <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">
-                      Cài đặt
-                    </span>
+                    <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">{t('auto.header_1')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -401,43 +407,35 @@ const Header = () => {
             variant="ghost"
             onClick={() => router.push("/login")}
             className="text-xs font-bold text-secondary uppercase tracking-widest px-6 h-10 hover:bg-secondary/10 transition-all rounded-xl active:scale-95"
-          >
-            Đăng nhập
-          </Button>
+          >{t('auto.header_2')}</Button>
         )}
       </div>
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Buổi học đã kết thúc</DialogTitle>
+            <DialogTitle>{t('auto.header_3')}</DialogTitle>
           </DialogHeader>
           {bookingInfo && (
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>
-                <span className="font-semibold text-foreground">Môn:</span>{" "}
+                <span className="font-semibold text-foreground">{t('auto.header_4')}</span>{" "}
                 {bookingInfo.subject}
               </p>
               <p>
-                <span className="font-semibold text-foreground">
-                  Giảng viên:
-                </span>{" "}
+                <span className="font-semibold text-foreground">{t('auto.header_5')}</span>{" "}
                 {bookingInfo.teacherName}
               </p>
               <p>
-                <span className="font-semibold text-foreground">Học viên:</span>{" "}
+                <span className="font-semibold text-foreground">{t('auto.header_6')}</span>{" "}
                 {bookingInfo.studentName}
               </p>
               <p>
-                <span className="font-semibold text-foreground">
-                  Thời gian:
-                </span>{" "}
+                <span className="font-semibold text-foreground">{t('auto.header_7')}</span>{" "}
                 {formatDateTime(bookingInfo.startAt)} -{" "}
                 {formatDateTime(bookingInfo.endAt)}
               </p>
               <p>
-                <span className="font-semibold text-foreground">
-                  Trạng thái:
-                </span>{" "}
+                <span className="font-semibold text-foreground">{t('auto.header_8')}</span>{" "}
                 {bookingInfo.status}
               </p>
             </div>

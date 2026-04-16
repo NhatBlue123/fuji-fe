@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
@@ -29,6 +30,7 @@ interface WhiteboardPanelProps {
 }
 
 export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPanelProps) {
+  const { t } = useTranslation();
   const { sendChanges, clearBoard, onRemoteChange, onRemoteClear } = useWhiteboard(lessonId, token);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
@@ -213,8 +215,8 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
         <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center">
           <div className="bg-[#1e2130] border border-white/10 rounded-2xl p-5 max-w-xs text-center shadow-xl">
             <AlertTriangle className="h-8 w-8 text-[#FF6B6B] mx-auto mb-3" />
-            <p className="text-[#F0F0F0] text-sm font-semibold mb-1">Xóa toàn bộ bảng?</p>
-            <p className="text-[#8B8FA8] text-xs mb-4">Hành động này không thể hoàn tác.</p>
+            <p className="text-[#F0F0F0] text-sm font-semibold mb-1">{t('auto.lesson_whiteboard_1')}</p>
+            <p className="text-[#8B8FA8] text-xs mb-4">{t('auto.lesson_whiteboard_2')}</p>
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => setShowClearConfirm(false)}

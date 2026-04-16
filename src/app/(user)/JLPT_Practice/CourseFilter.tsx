@@ -1,5 +1,6 @@
 "use client";
 import Input from "@/components/common/Input";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -37,6 +38,7 @@ export default function CourseFilter({
   activeCategory,
   onCategoryChange,
 }: CourseFilterProps) {
+  const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState("");
 
   const handleSearch = () => {
@@ -49,7 +51,7 @@ export default function CourseFilter({
       <div className="relative mb-6">
         <Input
           icon="search"
-          placeholder="Tìm kiếm đề thi JLPT (VD: N3 đề thi thử, N2...)"
+          placeholder={t('auto.jlpt_filter_1')}
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}

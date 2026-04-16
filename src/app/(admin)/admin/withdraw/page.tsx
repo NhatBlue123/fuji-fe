@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * [I18N PAGE - QUẢN LÝ RÚT TIỀN]
+ * Thực hiện:
+ * - Chuyển đổi toàn bộ bảng quản lý yêu cầu rút tiền sang đa ngôn ngữ.
+ * - Localize các trạng thái (Chờ duyệt, Đang xử lý, Thành công, Từ chối).
+ * - Tích hợp i18n cho các stats cards và các hộp thoại xác nhận chuyển khoản.
+ */
+
 import React, { useEffect, useState } from "react";
 import {
   XCircle,
@@ -21,6 +29,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { PaymentSocketProvider, usePaymentSocket } from "@/providers/PaymentSocketProvider";
+import { useTranslation } from "react-i18next";
 
 import {
   useGetAllWithdrawRequestsQuery,
@@ -31,6 +40,7 @@ import {
 import { TransferModal } from "./TransferModal";
 
 function AdminWithdrawManagementInner() {
+  const { t, i18n } = useTranslation();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -81,7 +91,7 @@ function AdminWithdrawManagementInner() {
     try {
       await approveRequest(selectedRequest.id).unwrap();
       toast.success(
-        `✅ Đã chuyển tiền thành công cho yêu cầu #${selectedRequest.id}! Trạng thái đã được cập nhật.`,
+        t("admin.withdraw.toast.approveSuccess", { id: selectedRequest.id }),
       );
       setIsTransferModalOpen(false);
       setSelectedRequest(null);
@@ -89,7 +99,7 @@ function AdminWithdrawManagementInner() {
     } catch (error) {
       const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
       toast.error(
-        message || `L???i khi duy???t y??u c???u #${selectedRequest.id}`,
+        message || t("admin.withdraw.toast.approveError", { id: selectedRequest.id }),
       );
     } finally {
       setIsApproving(false);
@@ -97,15 +107,15 @@ function AdminWithdrawManagementInner() {
   };
 
   const handleReject = async (id: number) => {
-    const reason = prompt("Lý do từ chối rút tiền:");
+    const reason = prompt(t("admin.withdraw.prompt.rejectReason"));
     if (reason) {
       try {
         await rejectRequest(id).unwrap();
-        toast.error(`Đã từ chối yêu cầu #${id}. Lý do: ${reason}`);
+        toast.error(t("admin.withdraw.toast.rejectSuccess", { id, reason }));
         refetch();
       } catch (error) {
         const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
-        toast.error(message || `L???i khi t??? ch???i y??u c???u #${id}`);
+        toast.error(message || t("admin.withdraw.toast.rejectError", { id }));
       }
     }
   };
@@ -146,14 +156,14 @@ function AdminWithdrawManagementInner() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Rút tiền</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("admin.withdraw.title")}</h1>
           <p className="text-muted-foreground">
-            Phê duyệt và quản lý các yêu cầu rút tiền từ ví của giảng viên.
+            {t("admin.withdraw.desc")}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" /> Xuất Excel
+            <Download className="mr-2 h-4 w-4" /> {t("common.exportExcel")}
           </Button>
         </div>
       </div>
@@ -163,7 +173,7 @@ function AdminWithdrawManagementInner() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Đang chờ duyệt
+              {t("admin.withdraw.stat.waiting")}
             </CardTitle>
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
@@ -171,11 +181,11 @@ function AdminWithdrawManagementInner() {
             <div className="text-2xl font-bold">{pendingCount}</div>
             {processingCount > 0 && (
               <p className="text-xs text-blue-600 mt-1">
-                ({processingCount} đang xử lý)
+                ({processingCount} {t("admin.withdraw.stat.processing")})
               </p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              Yêu cầu cần xử lý
+              {t("admin.withdraw.stat.toProcess")}
             </p>
           </CardContent>
         </Card>
@@ -183,7 +193,7 @@ function AdminWithdrawManagementInner() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Tổng đã chi
+              {t("admin.withdraw.stat.totalPaid")}
             </CardTitle>
             <Banknote className="h-4 w-4 text-emerald-500" />
           </CardHeader>
@@ -192,7 +202,7 @@ function AdminWithdrawManagementInner() {
               {totalPaid.toLocaleString()} 🌸
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Các giao dịch thành công
+              {t("admin.withdraw.stat.successTx")}
             </p>
           </CardContent>
         </Card>
@@ -200,7 +210,7 @@ function AdminWithdrawManagementInner() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Bị từ chối
+              {t("admin.withdraw.stat.rejected")}
             </CardTitle>
             <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
@@ -209,7 +219,7 @@ function AdminWithdrawManagementInner() {
               {rejectedCount.toString().padStart(2, "0")}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Giao dịch đã hoàn tiền
+              {t("admin.withdraw.stat.refunded")}
             </p>
           </CardContent>
         </Card>
@@ -225,7 +235,7 @@ function AdminWithdrawManagementInner() {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm giao dịch, tên, email..."
+                placeholder={t("admin.withdraw.placeholder.search")}
                 className="pl-8"
               />
             </div>
@@ -236,35 +246,35 @@ function AdminWithdrawManagementInner() {
                 size="sm"
                 onClick={() => setFilter("all")}
               >
-                Tất cả
+                {t("admin.withdraw.filter.all")}
               </Button>
               <Button
                 variant={filter === "pending" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter("pending")}
               >
-                Chờ duyệt
+                {t("admin.withdraw.filter.pending")}
               </Button>
               <Button
                 variant={filter === "completed" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter("completed")}
               >
-                Đã duyệt
+                {t("admin.withdraw.filter.completed")}
               </Button>
               <Button
                 variant={filter === "processing" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter("processing")}
               >
-                Đang xử lý
+                {t("admin.withdraw.filter.processing")}
               </Button>
               <Button
                 variant={filter === "rejected" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter("rejected")}
               >
-                Từ chối
+                {t("admin.withdraw.filter.rejected")}
               </Button>
             </div>
           </div>
@@ -274,10 +284,7 @@ function AdminWithdrawManagementInner() {
           <div className="mb-6 flex items-start gap-3 p-4 bg-muted/50 rounded-lg text-sm border">
             <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
             <p className="text-muted-foreground">
-              <strong>Lưu ý:</strong> Hệ thống hiện chưa tự động chuyển tiền qua
-              Ngân hàng số. Sau khi kiểm tra tài khoản nhận hợp lệ và bấm{" "}
-              <span className="font-semibold">Duyệt</span>, bạn vui lòng chuyển
-              khoản thủ công cho người dùng qua app Ngân hàng thực tế.
+              <strong>{t("admin.withdraw.alert.note")}</strong> {t("admin.withdraw.alert.desc")}
             </p>
           </div>
 
@@ -287,22 +294,22 @@ function AdminWithdrawManagementInner() {
                 <thead className="[&_tr]:border-b">
                   <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      Mã / Ngày
+                      {t("admin.withdraw.table.idDate")}
                     </th>
                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      Người dùng
+                      {t("admin.user.table.user")}
                     </th>
                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      Số tiền
+                      {t("admin.withdraw.table.amount")}
                     </th>
                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      Ngân hàng thụ hưởng
+                      {t("admin.withdraw.table.bank")}
                     </th>
                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      Trạng thái
+                      {t("admin.user.table.status")}
                     </th>
                     <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      Thao tác
+                      {t("admin.user.table.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -313,7 +320,7 @@ function AdminWithdrawManagementInner() {
                         colSpan={6}
                         className="p-4 text-center text-muted-foreground h-24"
                       >
-                        Đang tải dữ liệu...
+                        {t("common.loading")}
                       </td>
                     </tr>
                   ) : filteredRequests.length === 0 ? (
@@ -322,7 +329,7 @@ function AdminWithdrawManagementInner() {
                         colSpan={6}
                         className="p-4 text-center text-muted-foreground h-24"
                       >
-                        Không tìm thấy yêu cầu rút tiền nào phù hợp.
+                        {t("admin.withdraw.table.empty")}
                       </td>
                     </tr>
                   ) : (
@@ -336,15 +343,15 @@ function AdminWithdrawManagementInner() {
                             #{req.id}
                           </div>
                           <div className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(req.createdAt).toLocaleString("vi-VN")}
+                            {new Date(req.createdAt).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language)}
                           </div>
                         </td>
                         <td className="p-4 align-middle">
                           <div className="font-medium">
-                            {req.fullName || "Người dùng ẩn danh"}
+                            {req.fullName || t("common.anonymous")}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Mã ID: {req.userId}
+                            {t("admin.user.table.id")}: {req.userId}
                           </div>
                         </td>
                         <td className="p-4 align-middle font-semibold whitespace-nowrap">
@@ -372,24 +379,24 @@ function AdminWithdrawManagementInner() {
                               variant="secondary"
                               className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 hover:bg-orange-100"
                             >
-                              Chờ duyệt
+                              {t("admin.withdraw.status.pending")}
                             </Badge>
                           ) : req.status === "PROCESSING" ? (
                             <Badge
                               variant="secondary"
                               className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100 animate-pulse"
                             >
-                              Đang xử lý
+                              {t("admin.withdraw.status.processing")}
                             </Badge>
                           ) : req.status === "COMPLETED" ? (
                             <Badge
                               variant="default"
                               className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100"
                             >
-                              Đã chuyển
+                              {t("admin.withdraw.status.completed")}
                             </Badge>
                           ) : (
-                            <Badge variant="destructive">Đã từ chối</Badge>
+                            <Badge variant="destructive">{t("admin.withdraw.status.rejected")}</Badge>
                           )}
                         </td>
                         <td className="p-4 align-middle text-right">
@@ -400,17 +407,16 @@ function AdminWithdrawManagementInner() {
                                   variant="outline"
                                   size="sm"
                                   className="h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950 px-3"
-                                  title="Chuyển tiền"
+                                  title={t("admin.withdraw.btn.transfer")}
                                   onClick={() => handleOpenTransferModal(req)}
                                 >
-                                  <Banknote className="h-4 w-4 mr-1" /> Chuyển
-                                  tiền
+                                  <Banknote className="h-4 w-4 mr-1" /> {t("admin.withdraw.btn.transfer")}
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="icon"
                                   className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  title="Từ chối (Hoàn tiền)"
+                                  title={t("admin.user.btn.reject")}
                                   onClick={() => handleReject(req.id)}
                                 >
                                   <XCircle className="h-4 w-4" />
@@ -422,8 +428,7 @@ function AdminWithdrawManagementInner() {
                                 variant="outline"
                                 className="text-blue-600 border-blue-300 animate-pulse"
                               >
-                                <Clock className="h-3 w-3 mr-1" /> Đang
-                                chuyển...
+                                <Clock className="h-3 w-3 mr-1" /> {t("admin.withdraw.status.transferring")}
                               </Badge>
                             )}
                             <Button

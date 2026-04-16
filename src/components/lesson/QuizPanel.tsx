@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
 import { HelpCircle, Play, SkipForward, Eye, Flag, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ interface QuizPanelProps {
 }
 
 export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
+  const { t } = useTranslation();
   const { data: quizzes = [], refetch } = useListQuizzesQuery({ lessonId });
   const [createQuiz, { isLoading: creating }] = useCreateQuizMutation();
   const [submitAnswer, { isLoading: submitting }] = useSubmitQuizAnswerMutation();
@@ -125,28 +127,28 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
         {isTeacher && (
           <div className="rounded-xl border border-white/[0.08] bg-[#252838]/50 p-3 space-y-2">
-            <p className="text-xs text-[#8B8FA8]">Tạo nhanh (1 câu trắc nghiệm)</p>
+            <p className="text-xs text-[#8B8FA8]">{t('auto.lesson_quiz_1')}</p>
             <input
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs"
-              placeholder="Tiêu đề quiz"
+              placeholder={t('auto.lesson_quiz_6')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
             <textarea
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs min-h-[52px]"
-              placeholder="Câu hỏi"
+              placeholder={t('auto.lesson_quiz_7')}
               value={mcQuestion}
               onChange={(e) => setMcQuestion(e.target.value)}
             />
             <input
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs font-mono"
-              placeholder='Options JSON — ví dụ ["A","B","C"]'
+              placeholder={t('auto.lesson_quiz_8')}A","B","C"]'
               value={mcOptions}
               onChange={(e) => setMcOptions(e.target.value)}
             />
             <input
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs"
-              placeholder="Đáp án đúng (khớp một phần tử options)"
+              placeholder={t('auto.lesson_quiz_9')}
               value={mcCorrect}
               onChange={(e) => setMcCorrect(e.target.value)}
             />
@@ -163,9 +165,9 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
         )}
 
         <div className="space-y-2">
-          <p className="text-xs text-[#8B8FA8]">Danh sách</p>
+          <p className="text-xs text-[#8B8FA8]">{t('auto.lesson_quiz_2')}</p>
           {quizzes.length === 0 ? (
-            <p className="text-xs text-[#8B8FA8]/70">Chưa có quiz</p>
+            <p className="text-xs text-[#8B8FA8]/70">{t('auto.lesson_quiz_3')}</p>
           ) : (
             quizzes.map((q: QuizResponse) => (
               <div
@@ -199,7 +201,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                         type="button"
                         className="rounded-md bg-[#6C63FF]/30 px-2 py-1 text-[10px] text-[#F0F0F0]"
                         onClick={() => startQuiz(q.id, 0)}
-                        title="Bắt đầu / gửi câu 0"
+                        title={t('auto.lesson_quiz_11')}
                       >
                         <Play className="inline h-3 w-3 mr-0.5" />
                         Start
@@ -242,7 +244,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {liveQuestion && (
           <div className="rounded-xl border border-[#6C63FF]/30 bg-[#1a1d27] p-3 space-y-2">
-            <p className="text-[10px] uppercase tracking-wide text-[#6C63FF]">Câu đang mở</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#6C63FF]">{t('auto.lesson_quiz_4')}</p>
             <p className="text-sm text-[#F0F0F0] whitespace-pre-wrap">{liveQuestion.questionText}</p>
             {liveQuestion.questionType === "MULTIPLE_CHOICE" && (
               <div className="space-y-1">
@@ -266,7 +268,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
             {liveQuestion.questionType !== "MULTIPLE_CHOICE" && (
               <input
                 className="w-full rounded-lg bg-[#252838] border border-white/10 px-2 py-1.5 text-xs"
-                placeholder="Câu trả lời"
+                placeholder={t('auto.lesson_quiz_10')}
                 value={studentAnswer}
                 onChange={(e) => setStudentAnswer(e.target.value)}
               />
@@ -322,7 +324,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {isTeacher && results && activeQuizId && (
           <div className="rounded-xl border border-white/[0.08] p-2 text-[11px] text-[#8B8FA8]">
-            <p className="text-[#F0F0F0] text-xs mb-1">Tổng kết (REST)</p>
+            <p className="text-[#F0F0F0] text-xs mb-1">{t('auto.lesson_quiz_5')}</p>
             <pre className="whitespace-pre-wrap font-mono text-[10px] overflow-x-auto">
               {JSON.stringify(results.scoresByUser, null, 2)}
             </pre>

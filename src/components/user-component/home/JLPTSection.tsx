@@ -1,3 +1,7 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -37,23 +41,30 @@ const ICON_STYLES = {
 } as const;
 
 export function JLPTSection() {
+  const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-20">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tracking-tight flex items-center gap-3">
             <span className="material-symbols-outlined text-red-500">flag</span>
-            Luyện thi JLPT thực chiến
+            {isMounted ? t("home.jlpt.title") : t("home.jlpt.title", { lng: 'vi' })}
           </h2>
           <p className="text-muted-foreground dark:text-slate-400 mt-1">
-            Bộ đề thi sát với thực tế từ N5 đến N1
+            {isMounted ? t("home.jlpt.subtitle") : t("home.jlpt.subtitle", { lng: 'vi' })}
           </p>
         </div>
         <a
           className="hidden md:flex items-center gap-1 text-primary dark:text-blue-400 font-bold hover:text-blue-300 transition-colors"
-          href="#"
+          href="/jlpt"
         >
-          Kho đề thi{" "}
+          {isMounted ? t("home.jlpt.viewAll") : t("home.jlpt.viewAll", { lng: 'vi' })}{" "}
           <span className="material-symbols-outlined text-sm">
             arrow_forward
           </span>
@@ -88,17 +99,18 @@ export function JLPTSection() {
               <span className="font-bold">{item.level}</span>
             </div>
             <h3 className="text-lg font-bold text-foreground dark:text-white mb-1">
-              Đề thi thử {item.level}
+              {isMounted ? t("home.jlpt.testTitle", { level: item.level }) : t("home.jlpt.testTitle", { level: item.level, lng: 'vi' })}
             </h3>
             <p className="text-sm text-muted-foreground dark:text-slate-400 mb-4">
-              {item.tests} đề • {item.time} phút/đề
+              {isMounted ? t("home.jlpt.testInfo", { count: item.tests, time: item.time }) : t("home.jlpt.testInfo", { count: item.tests, time: item.time, lng: 'vi' })}
             </p>
             <Button className="w-full py-2 rounded-lg bg-muted dark:bg-slate-800 hover:bg-current hover:text-white text-foreground dark:text-white text-sm font-medium transition-colors border border-border dark:border-slate-700 hover:border-current">
-              Làm bài ngay
+              {isMounted ? t("home.jlpt.practiceNow") : t("home.jlpt.practiceNow", { lng: 'vi' })}
             </Button>
           </div>
         ))}
       </div>
+
     </section>
   );
 }

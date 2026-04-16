@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 "use client";
 
 import { use, useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -39,6 +40,7 @@ export default function FillBlankExercisePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const router = useRouter();
   const { data: flashcard, isLoading, error } = useGetFlashCardByIdQuery(id);
@@ -277,7 +279,7 @@ export default function FillBlankExercisePage({
                 <p className="text-2xl font-black text-green-400">
                   {score.correct}
                 </p>
-                <p className="text-xs text-muted-foreground">Đúng</p>
+                <p className="text-xs text-muted-foreground">{t('auto.fill_blank_page_1')}</p>
               </div>
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
                 <p className="text-2xl font-black text-red-400">

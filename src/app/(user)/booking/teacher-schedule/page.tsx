@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
+import { 
   ArrowLeft,
   CalendarDays,
   CheckCheck,
   Clock3,
   Sparkles,
-} from "lucide-react";
+ } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -39,6 +40,7 @@ const WEEKDAY_OPTIONS = [
 ] as const;
 
 function toYmd(date: Date) {
+  const { t } = useTranslation();
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -445,9 +447,7 @@ export default function TeacherSchedulePage() {
     return (
       <main className="min-h-screen bg-background px-4 py-8 text-foreground md:px-6">
         <Card className="mx-auto max-w-3xl border-destructive/20 bg-destructive/5">
-          <CardContent className="p-6 text-destructive">
-            Thiếu `teacherId` trên URL.
-          </CardContent>
+          <CardContent className="p-6 text-destructive">{t('auto.teacherSchedule_1')}</CardContent>
         </Card>
       </main>
     );
@@ -472,9 +472,7 @@ export default function TeacherSchedulePage() {
 
             <div>
               <p className="text-sm text-muted-foreground">Booking</p>
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                Đặt lịch theo giáo viên
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t('auto.teacherSchedule_2')}</h1>
             </div>
           </div>
 
@@ -493,9 +491,7 @@ export default function TeacherSchedulePage() {
             </div>
           ) : isError ? (
             <Card className="border-destructive/20 bg-destructive/5">
-              <CardContent className="p-6 text-destructive">
-                Không tải được lịch rảnh của giáo viên.
-              </CardContent>
+              <CardContent className="p-6 text-destructive">{t('auto.teacherSchedule_3')}</CardContent>
             </Card>
           ) : data ? (
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -516,9 +512,7 @@ export default function TeacherSchedulePage() {
 
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary" className="rounded-full px-3 py-1">
-                              Đặt lịch học
-                            </Badge>
+                            <Badge variant="secondary" className="rounded-full px-3 py-1">{t('auto.teacherSchedule_4')}</Badge>
                             <Badge
                               variant="outline"
                               className="rounded-full border-border/70 bg-background/70 px-3 py-1 text-muted-foreground"
@@ -549,29 +543,21 @@ export default function TeacherSchedulePage() {
                       </span>
 
                       <span className="inline-flex items-center gap-2">
-                        <Sparkles className="size-4 text-secondary" />
-                        Có thể đặt các slot trống còn trong tương lai; vào phòng học từ trước
-                        giờ học 5 phút
-                      </span>
+                        <Sparkles className="size-4 text-secondary" />{t('auto.teacherSchedule_5')}</span>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
                   <CardHeader>
-                    <CardTitle className="text-xl">Thiết lập đặt lịch</CardTitle>
-                    <CardDescription>
-                      Bạn có thể đặt từng buổi hoặc đặt lặp theo lịch cố định trong
-                      một khoảng thời gian.
-                    </CardDescription>
+                    <CardTitle className="text-xl">{t('auto.teacherSchedule_6')}</CardTitle>
+                    <CardDescription>{t('auto.teacherSchedule_7')}</CardDescription>
                   </CardHeader>
 
                   <CardContent className="space-y-5">
                     <div className="grid gap-4 md:grid-cols-3">
                       <label className="block">
-                        <span className="mb-2 block text-sm text-muted-foreground">
-                          Kiểu đặt lịch
-                        </span>
+                        <span className="mb-2 block text-sm text-muted-foreground">{t('auto.teacherSchedule_8')}</span>
                         <select
                           value={repeatMode}
                           onChange={(e) =>
@@ -579,8 +565,8 @@ export default function TeacherSchedulePage() {
                           }
                           className="h-12 w-full rounded-xl border border-border bg-background px-4 outline-none focus:border-ring"
                         >
-                          <option value="NONE">Không lặp lại</option>
-                          <option value="RECURRING">Lặp lại theo lịch cố định</option>
+                          <option value="NONE">{t('auto.teacherSchedule_9')}</option>
+                          <option value="RECURRING">{t('auto.teacherSchedule_10')}</option>
                         </select>
                       </label>
 
@@ -613,18 +599,14 @@ export default function TeacherSchedulePage() {
                           </label>
                         </>
                       ) : (
-                        <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-muted-foreground">
-                          Chế độ này giữ nguyên cách chọn thủ công từng slot như hiện tại.
-                        </div>
+                        <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-muted-foreground">{t('auto.teacherSchedule_11')}</div>
                       )}
                     </div>
 
                     {repeatMode === "RECURRING" ? (
                       <>
                         <div className="space-y-3">
-                          <div className="text-sm font-medium text-foreground">
-                            Chọn các thứ trong tuần
-                          </div>
+                          <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_12')}</div>
 
                           <div className="flex flex-wrap gap-2">
                             {WEEKDAY_OPTIONS.map((day) => {
@@ -650,18 +632,12 @@ export default function TeacherSchedulePage() {
                         </div>
 
                         <div className="space-y-3">
-                          <div className="text-sm font-medium text-foreground">
-                            Chọn khung giờ lặp
-                          </div>
+                          <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_13')}</div>
 
                           {!validRecurringRange ? (
-                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
-                              Hãy chọn khoảng ngày hợp lệ trước.
-                            </div>
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">{t('auto.teacherSchedule_14')}</div>
                           ) : recurringTimeOptions.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
-                              Không có slot khả dụng trong khoảng ngày này.
-                            </div>
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">{t('auto.teacherSchedule_15')}</div>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {recurringTimeOptions.map((option) => {
@@ -711,10 +687,7 @@ export default function TeacherSchedulePage() {
                           />
                         </div>
 
-                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-                          Nếu buổi nào trong lịch lặp không còn slot trống phù hợp thì hệ thống
-                          sẽ tự bỏ qua buổi đó.
-                        </div>
+                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">{t('auto.teacherSchedule_16')}</div>
                       </>
                     ) : null}
                   </CardContent>
@@ -725,9 +698,7 @@ export default function TeacherSchedulePage() {
                     <Card className="flex flex-col border-border/60 bg-card/80 shadow-xl backdrop-blur lg:h-[540px]">
                       <CardHeader className="pb-4">
                         <CardTitle className="flex items-center gap-2 text-xl">
-                          <CalendarDays className="size-5 text-primary" />
-                          Chọn ngày học
-                        </CardTitle>
+                          <CalendarDays className="size-5 text-primary" />{t('auto.teacherSchedule_17')}</CardTitle>
                       </CardHeader>
 
                       <CardContent className="flex min-h-0 flex-1 flex-col space-y-4">
@@ -755,10 +726,7 @@ export default function TeacherSchedulePage() {
                           />
                         </div>
 
-                        <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
-                          Chấm <span className="font-semibold text-primary">xanh</span> là
-                          ngày còn khung giờ trống.
-                        </div>
+                        <div className="mt-auto rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">{t('auto.teacherSchedule_18')}<span className="font-semibold text-primary">xanh</span>{t('auto.teacherSchedule_19')}</div>
                       </CardContent>
                     </Card>
 
@@ -767,9 +735,7 @@ export default function TeacherSchedulePage() {
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                           <div>
                             <CardTitle className="flex items-center gap-2 text-xl">
-                              <Clock3 className="size-5 text-primary" />
-                              Khung giờ học
-                            </CardTitle>
+                              <Clock3 className="size-5 text-primary" />{t('auto.teacherSchedule_20')}</CardTitle>
                             <CardDescription className="mt-2">
                               {formatFullDate(selectedDate)}
                             </CardDescription>
@@ -788,13 +754,8 @@ export default function TeacherSchedulePage() {
                         {selectedDaySlots.length === 0 ? (
                           <div className="flex h-full items-center justify-center rounded-[28px] border border-dashed border-border bg-muted/25 px-6 py-12 text-center">
                             <div>
-                              <p className="text-lg font-medium text-foreground">
-                                Ngày này chưa có lịch học
-                              </p>
-                              <p className="mt-2 text-sm text-muted-foreground">
-                                Hãy chọn ngày khác trên lịch hoặc đợi giáo viên mở
-                                thêm slot mới.
-                              </p>
+                              <p className="text-lg font-medium text-foreground">{t('auto.teacherSchedule_21')}</p>
+                              <p className="mt-2 text-sm text-muted-foreground">{t('auto.teacherSchedule_22')}</p>
                             </div>
                           </div>
                         ) : (
@@ -919,41 +880,27 @@ export default function TeacherSchedulePage() {
                   <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl">
-                        <Sparkles className="size-5 text-primary" />
-                        Preview lịch lặp sẽ được book
-                      </CardTitle>
-                      <CardDescription>
-                        Hệ thống tự gom các slot còn trống đúng theo khoảng ngày, thứ
-                        trong tuần và khung giờ bạn đã chọn.
-                      </CardDescription>
+                        <Sparkles className="size-5 text-primary" />{t('auto.teacherSchedule_23')}</CardTitle>
+                      <CardDescription>{t('auto.teacherSchedule_24')}</CardDescription>
                     </CardHeader>
 
                     <CardContent className="space-y-4">
                       {selectedWeekdays.length === 0 || selectedTimeKeys.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">
-                          Hãy chọn các thứ trong tuần và ít nhất một khung giờ để xem
-                          preview.
-                        </div>
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">{t('auto.teacherSchedule_25')}</div>
                       ) : recurringMatchedSlots.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">
-                          Không tìm thấy slot khả dụng khớp với lịch lặp bạn đã chọn.
-                        </div>
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">{t('auto.teacherSchedule_26')}</div>
                       ) : (
                         <>
                           <div className="grid gap-3 md:grid-cols-2">
                             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                              <div className="text-sm text-muted-foreground">
-                                Buổi sẽ book
-                              </div>
+                              <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_27')}</div>
                               <div className="mt-1 text-3xl font-black text-foreground">
                                 {recurringMatchedSlots.length}
                               </div>
                             </div>
 
                             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                              <div className="text-sm text-muted-foreground">
-                                Buổi bị bỏ qua
-                              </div>
+                              <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_28')}</div>
                               <div className="mt-1 text-3xl font-black text-foreground">
                                 {skippedOccurrences.length}
                               </div>
@@ -1013,18 +960,13 @@ export default function TeacherSchedulePage() {
               <aside className="h-fit xl:sticky xl:top-6">
                 <Card className="overflow-hidden rounded-3xl border-border/60 bg-card/80 shadow-xl backdrop-blur">
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl font-semibold">
-                      Chuẩn bị thanh toán
-                    </CardTitle>
-                    <CardDescription>
-                      Khi bấm tiếp tục, hệ thống sẽ gửi đúng danh sách slot đang được
-                      chọn sang trang quote/checkout.
-                    </CardDescription>
+                    <CardTitle className="text-xl font-semibold">{t('auto.teacherSchedule_29')}</CardTitle>
+                    <CardDescription>{t('auto.teacherSchedule_30')}</CardDescription>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                      <div className="text-sm text-muted-foreground">Số buổi đã chọn</div>
+                      <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_31')}</div>
                       <div className="mt-1 text-3xl font-black text-foreground">
                         {effectiveSelectedIds.length}
                       </div>
@@ -1056,14 +998,10 @@ export default function TeacherSchedulePage() {
                     <Separator />
 
                     <div className="space-y-3">
-                      <div className="text-sm font-medium text-foreground">
-                        Các buổi sẽ gửi sang quote
-                      </div>
+                      <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_32')}</div>
 
                       {effectiveSelectedSlots.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">
-                          Chưa có buổi nào được chọn.
-                        </div>
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">{t('auto.teacherSchedule_33')}</div>
                       ) : (
                         <ScrollArea className="h-[280px] pr-3">
                           <div className="space-y-3">
@@ -1094,16 +1032,12 @@ export default function TeacherSchedulePage() {
                                       size="sm"
                                       className="h-8 rounded-xl text-muted-foreground hover:text-foreground"
                                       onClick={() => toggleSlot(slot)}
-                                    >
-                                      Bỏ chọn
-                                    </Button>
+                                    >{t('auto.teacherSchedule_34')}</Button>
                                   ) : (
                                     <Badge
                                       variant="outline"
                                       className="rounded-full border-border/70 bg-background/70"
-                                    >
-                                      Tự động
-                                    </Badge>
+                                    >{t('auto.teacherSchedule_35')}</Badge>
                                   )}
                                 </div>
                               </div>
@@ -1117,9 +1051,7 @@ export default function TeacherSchedulePage() {
                       onClick={onGoInvoice}
                       disabled={effectiveSelectedIds.length === 0}
                       className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
-                    >
-                      Xem hóa đơn các buổi đã chọn
-                    </Button>
+                    >{t('auto.teacherSchedule_36')}</Button>
                   </CardContent>
                 </Card>
               </aside>

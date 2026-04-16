@@ -3,7 +3,7 @@
 /**
  * NotificationsPage.tsx
  * 
- * Trung tâm thông báo chính của hệ thống cho người dùng.
+  * Trung tâm thông báo chính của hệ thống cho người dùng.
  * Cung cấp các cảnh báo thời gian thực, lọc theo danh mục và logic tương tác
  * giữa hệ thống và người dùng.
  */
@@ -11,24 +11,22 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Bell, 
   CheckCheck, 
-  Clock, 
   MoreHorizontal, 
   Trash2, 
   Inbox, 
   Eye,
-  Undo2,
   LifeBuoy,
-  RotateCcw,
-  type LucideIcon
+  RotateCcw
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, ja, enUS } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { FeedbackDialog } from "@/components/common/FeedbackDialog";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 
 import { useNotifications } from "@/providers/NotificationProvider";
 import { NotificationType, type Notification as NotifType } from "@/types/notification";
@@ -45,12 +43,12 @@ import {
 import { cn } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
-  [NotificationType.course]: "Khóa học",
-  [NotificationType.system]: "Hệ thống",
-  [NotificationType.reminder]: "Nhắc nhở",
-  [NotificationType.security]: "Bảo mật",
-  [NotificationType.booking]: "Lịch học",
-  [NotificationType.message]: "Tin nhắn",
+  [NotificationType.course]: "course",
+  [NotificationType.system]: "system",
+  [NotificationType.reminder]: "reminder",
+  [NotificationType.security]: "security",
+  [NotificationType.booking]: "booking",
+  [NotificationType.message]: "message",
 };
 
 function isCourseNotification(n: NotifType) {
@@ -66,20 +64,33 @@ function isCourseNotification(n: NotifType) {
     link.includes("/booking") ||
     link.includes("/learn/session") ||
     title.includes("giờ học") ||
-    title.includes("buổi học")
+    title.includes("buổi học") ||
+    title.includes("class") ||
+    title.includes("lesson")
   );
 }
 
-function getNotificationTypeLabel(n: NotifType) {
-  if (isCourseNotification(n)) return "Khóa học";
-  return TYPE_LABELS[n.type] ?? "Khác";
-}
-
 export default function NotificationsPage() {
+  const { t, i18n } = useTranslation();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, setNotifications } = useNotifications();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  // Dynamic locale for date formatting
+  const currentLocale = useMemo(() => {
+    switch (i18n.language) {
+      case "vi": return vi;
+      case "ja": return ja;
+      default: return enUS;
+    }
+  }, [i18n.language]);
+
+  const getNotificationTypeLabel = (n: NotifType) => {
+    if (isCourseNotification(n)) return t("notifications.tabs.course");
+    const key = TYPE_LABELS[n.type];
+    return key ? t(`notifications.tabs.${key}`) : t("common.other") || "Other";
+  };
 
   const filteredNotifications = useMemo(() => {
     if (activeTab === "unread") return notifications.filter(n => !n.isRead);
@@ -95,7 +106,7 @@ export default function NotificationsPage() {
     return notifications;
   }, [notifications, activeTab]);
 
-  // Điều hướng đến trang chi tiết chính xác dựa trên linkUrl
+  // Navigate to detail based on linkUrl
   const navigateToDetail = (n: NotifType) => {
     if (!n.isRead) markAsRead(n.id);
     if (n.linkUrl) {
@@ -108,9 +119,9 @@ export default function NotificationsPage() {
     
     setNotifications(prev => prev.filter(n => n.id !== id));
     
-    toast.success("Đã xóa thông báo", {
+    toast.success(t("notifications.actions.deleteSuccess"), {
       action: {
-        label: "Hoàn tác",
+        label: t("common.undo"),
         onClick: () => {
           setNotifications(backup);
         }
@@ -129,7 +140,7 @@ export default function NotificationsPage() {
         <div className="px-6 py-5 border-b border-border bg-background/50 backdrop-blur-md flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-black tracking-tight uppercase">Thông báo</h1>
+              <h1 className="text-lg font-black tracking-tight uppercase">{t("notifications.title")}</h1>
               {unreadCount > 0 && (
                 <Badge className="bg-secondary text-white border-none rounded-full px-2 py-0.5 text-[9px] font-black">
                   {unreadCount}
@@ -152,43 +163,42 @@ export default function NotificationsPage() {
                   className="text-secondary font-bold text-[11px] hover:bg-secondary/5 rounded-xl transition-all"
               >
                   <CheckCheck className="size-3.5 mr-1.5" />
-                  Đọc tất cả
+                  {t("notifications.markAllRead")}
               </Button>
             </div>
           </div>
 
-          {/* Các tab lọc thông báo — phong cách monochrome */}
           <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-muted p-1 rounded-xl h-9 border border-border w-full justify-start gap-0 overflow-x-auto">
               <TabsTrigger value="all" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Tất cả
+                {t("notifications.tabs.all")}
               </TabsTrigger>
               <TabsTrigger value="unread" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Chưa đọc {unreadCount > 0 && <span className="ml-1 text-secondary">({unreadCount})</span>}
+                {t("notifications.tabs.unread")} {unreadCount > 0 && <span className="ml-1 text-secondary">({unreadCount})</span>}
               </TabsTrigger>
               <TabsTrigger value="course" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Khóa học
+                {t("notifications.tabs.course")}
               </TabsTrigger>
               <TabsTrigger value="system" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Hệ thống
+                {t("notifications.tabs.system")}
               </TabsTrigger>
               <TabsTrigger value="reminder" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Nhắc nhở
+                {t("notifications.tabs.reminder")}
               </TabsTrigger>
               <TabsTrigger value="security" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Bảo mật
+                {t("notifications.tabs.security")}
               </TabsTrigger>
               <TabsTrigger value="booking" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Lịch học
+                {t("notifications.tabs.booking")}
               </TabsTrigger>
               <TabsTrigger value="message" className="rounded-lg px-3 font-bold text-[10px] data-[state=active]:bg-background transition-all">
-                Tin nhắn
+                {t("notifications.tabs.message")}
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        {/* DANH SÁCH THÔNG BÁO */}
+        {/* NOTIFICATION LIST */}
         <ScrollArea className="flex-1">
           <div className="flex flex-col">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -212,7 +222,6 @@ export default function NotificationsPage() {
                     >
                       
                       <div className="flex-1 min-w-0 pr-10 cursor-pointer" onClick={() => navigateToDetail(n)}>
-                        {/* Nhãn loại thông báo (VD: Khóa học, Hệ thống) */}
                         <span className={cn(
                           "text-[9px] font-bold uppercase tracking-widest mb-1 block",
                           !n.isRead ? "text-secondary/70" : "text-muted-foreground/60"
@@ -220,7 +229,6 @@ export default function NotificationsPage() {
                           {typeLabel}
                         </span>
                         
-                        {/* Nội dung tiêu đề và đoạn trích thông báo */}
                         <h3 className={cn(
                           "text-[14px] leading-snug break-words mb-1 transition-colors",
                           !n.isRead ? "font-bold text-foreground" : "font-medium text-foreground/50"
@@ -228,20 +236,20 @@ export default function NotificationsPage() {
                           <span className={cn(
                             "font-extrabold mr-1.5",
                             !n.isRead ? "text-secondary" : "text-foreground/40"
-                          )}>{n.title}</span>
+                          )}>{tMsg(n.title)}</span>
                           <span className={!n.isRead ? "text-foreground" : "text-foreground/40"}>
-                            {n.content}
+                            {tMsg(n.content)}
                           </span>
                         </h3>
                         
                         <div className="flex items-center gap-2 mt-1.5">
                            <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/40">
-                             {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: vi })}
+                             {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: currentLocale })}
                            </span>
                         </div>
                       </div>
 
-                      {/* Menu thả xuống */}
+                      {/* Dropdown Menu */}
                       <div className="absolute right-4 top-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -259,7 +267,7 @@ export default function NotificationsPage() {
                                 onClick={() => markAsRead(n.id)}
                                 className="rounded-xl py-3 cursor-pointer gap-3 font-bold text-[12px] whitespace-nowrap tracking-tight text-muted-foreground hover:text-secondary focus:text-secondary focus:bg-secondary/5 transition-all"
                               >
-                                <CheckCheck className="size-4" /> Đánh dấu đã đọc thông báo này
+                                <CheckCheck className="size-4" /> {t("notifications.actions.markRead")}
                               </DropdownMenuItem>
                             )}
 
@@ -267,7 +275,7 @@ export default function NotificationsPage() {
                               onClick={() => setIsFeedbackOpen(true)}
                               className="rounded-xl py-3 cursor-pointer gap-3 font-bold text-[12px] whitespace-nowrap tracking-tight text-muted-foreground hover:text-secondary focus:text-secondary focus:bg-secondary/5 transition-all"
                             >
-                              <LifeBuoy className="size-4" /> Báo cáo sự cố đến đội ngũ FUJI
+                              <LifeBuoy className="size-4" /> {t("notifications.actions.reportBug")}
                             </DropdownMenuItem>
 
                             {n.linkUrl && (
@@ -275,7 +283,7 @@ export default function NotificationsPage() {
                                 onClick={() => navigateToDetail(n)}
                                 className="rounded-xl py-3 cursor-pointer gap-3 font-bold text-[12px] whitespace-nowrap tracking-tight text-muted-foreground hover:text-secondary focus:text-secondary focus:bg-secondary/5 transition-all"
                               >
-                                <Eye className="size-4" /> Xem chi tiết
+                                <Eye className="size-4" /> {t("notifications.actions.viewDetail")}
                               </DropdownMenuItem>
                             )}
                             
@@ -283,7 +291,7 @@ export default function NotificationsPage() {
                               onClick={() => handleDelete(n.id)}
                               className="rounded-xl py-3 cursor-pointer gap-3 font-bold text-[12px] whitespace-nowrap tracking-tight text-muted-foreground hover:text-destructive focus:text-destructive focus:bg-destructive/5 transition-all"
                             >
-                              <Trash2 className="size-4" /> Xóa thông báo
+                              <Trash2 className="size-4" /> {t("notifications.actions.delete")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -295,7 +303,7 @@ export default function NotificationsPage() {
                 <div className="flex flex-col items-center justify-center py-40 opacity-20 transition-all">
                   <Inbox className="size-16 mb-4 animate-bounce duration-1000" />
                   <p className="font-black uppercase tracking-widest text-xs">
-                    {activeTab === "all" ? "Hộp thư trống" : `Không có thông báo ${TYPE_LABELS[activeTab] ?? "trong mục này"}`}
+                    {activeTab === "all" ? t("notifications.empty") : t("notifications.emptyType", { type: t(`notifications.tabs.${activeTab}`) })}
                   </p>
                 </div>
               )}
@@ -303,11 +311,11 @@ export default function NotificationsPage() {
           </div>
         </ScrollArea>
 
-        {/* PHẦN CHÂN TRANG */}
+        {/* FOOTER */}
         <div className="px-6 py-4 border-t border-border bg-muted/20 flex justify-center">
             <Link href="/settings?tab=notifications">
               <Button variant="ghost" size="sm" className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase hover:text-secondary transition-all h-6">
-                  Tùy chỉnh trung tâm thông báo
+                  {t("notifications.customize")}
               </Button>
             </Link>
         </div>

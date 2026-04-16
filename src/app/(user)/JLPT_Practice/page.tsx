@@ -2,6 +2,7 @@
 import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import ExamCard from "./ExamCard";
+import { useTranslation } from "react-i18next";
 import { useState, useMemo, useEffect } from "react";
 import { useGetPublishedTestsQuery, useGetMyAttemptsQuery } from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 export default function JlptPracticePage() {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -91,7 +93,7 @@ export default function JlptPracticePage() {
         {isLoading && (
           <div className="text-center text-muted-foreground py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-400"></div>
-            <p className="mt-4">Đang tải đề thi...</p>
+            <p className="mt-4">{t('auto.jlpt_practice_1')}</p>
           </div>
         )}
 
@@ -116,8 +118,8 @@ export default function JlptPracticePage() {
             <span className="material-symbols-outlined text-6xl mb-4">
               inbox
             </span>
-            <p className="text-lg font-semibold">Chưa có đề thi nào</p>
-            <p className="text-sm mt-2">Hệ thống đang cập nhật đề thi mới</p>
+            <p className="text-lg font-semibold">{t('auto.jlpt_practice_2')}</p>
+            <p className="text-sm mt-2">{t('auto.jlpt_practice_3')}</p>
           </div>
         )}
 

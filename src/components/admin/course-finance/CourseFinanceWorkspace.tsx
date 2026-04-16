@@ -570,8 +570,8 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                   />
                   <Tooltip
                     formatter={(
-                      value: number | string,
-                      name: string | number,
+                      value: number | string | undefined,
+                      name: string | number | undefined,
                     ) => [formatCurrency(Number(value ?? 0)), String(name)]}
                     labelFormatter={(_label, payload) =>
                       payload?.[0]?.payload?.courseTitle || "Khóa học"

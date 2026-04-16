@@ -48,7 +48,17 @@ export default function AdminRevenuePage() {
   } = useGetRevenueStatsQuery();
   const [viewMode, setViewMode] = useState<"line" | "bar">("bar");
 
-  const stats = statsResponse;
+  const stats = (statsResponse ?? {}) as any;
+  const monthlyIncomeBreakdown = (stats?.monthlyRevenues ?? []).map((m: any) => ({
+    date: `${m.month}/${m.year}`,
+    totalRevenue: m.totalRevenue ?? 0,
+    bookingRevenue: (m.bookingFeeRevenue ?? 0) + (m.withdrawalFeeRevenue ?? 0),
+    courseRevenue: m.courseRevenue ?? 0,
+  }));
+  const monthlyIncome = monthlyIncomeBreakdown.reduce(
+    (sum: number, i: any) => sum + (i.totalRevenue ?? 0),
+    0
+  );
 
   const handleRefresh = async () => {
     try {

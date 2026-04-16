@@ -51,10 +51,22 @@ const baseQuery = async (args: any) => {
   return { data };
 };
 
+export interface SessionReviewItem {
+  reviewId: number;
+  bookingId: number;
+  reviewerName: string;
+  reviewedUserName: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  subject: string | null;
+  sessionDate: string | null;
+}
+
 export const adminReportApi = createApi({
   reducerPath: "adminReportApi",
   baseQuery,
-  tagTypes: ["SystemReport", "SystemReportNotes"],
+  tagTypes: ["SystemReport", "SystemReportNotes", "SessionReview"],
   endpoints: (builder) => ({
     getSystemReports: builder.query<
       PaginatedResponse<SystemReport>,
@@ -153,6 +165,33 @@ export const adminReportApi = createApi({
         { type: "SystemReportNotes", id: reportId },
       ],
     }),
+
+    getSessionReviews: builder.query<
+      PaginatedResponse<SessionReviewItem>,
+      {
+        rating?: number;
+        search?: string;
+        page?: number;
+        size?: number;
+        sortBy?: string;
+        sortDir?: "asc" | "desc";
+      }
+    >({
+      query: (params) => {
+        const sp = new URLSearchParams();
+        if (params.rating) sp.set("rating", String(params.rating));
+        if (params.search) sp.set("search", params.search);
+        sp.set("page", String(params.page ?? 0));
+        sp.set("size", String(params.size ?? 20));
+        sp.set("sortBy", params.sortBy ?? "createdAt");
+        sp.set("sortDir", params.sortDir ?? "desc");
+        return `/admin/reports/session-reviews?${sp.toString()}`;
+      },
+      transformResponse: (
+        response: ApiResponse<PaginatedResponse<SessionReviewItem>>,
+      ) => response.data,
+      providesTags: ["SessionReview"],
+    }),
   }),
 });
 
@@ -163,5 +202,6 @@ export const {
   useUpdateSystemReportMutation,
   useGetSystemReportNotesQuery,
   useAddSystemReportNoteMutation,
+  useGetSessionReviewsQuery,
 } = adminReportApi;
 

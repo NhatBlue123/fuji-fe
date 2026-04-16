@@ -48,7 +48,17 @@ export default function AdminRevenuePage() {
   } = useGetRevenueStatsQuery();
   const [viewMode, setViewMode] = useState<"line" | "bar">("bar");
 
-  const stats = statsResponse;
+  const stats = (statsResponse ?? {}) as any;
+  const monthlyIncomeBreakdown = (stats?.monthlyRevenues ?? []).map((m: any) => ({
+    date: `${m.month}/${m.year}`,
+    totalRevenue: m.totalRevenue ?? 0,
+    bookingRevenue: (m.bookingFeeRevenue ?? 0) + (m.withdrawalFeeRevenue ?? 0),
+    courseRevenue: m.courseRevenue ?? 0,
+  }));
+  const monthlyIncome = monthlyIncomeBreakdown.reduce(
+    (sum: number, i: any) => sum + (i.totalRevenue ?? 0),
+    0
+  );
 
   const handleRefresh = async () => {
     try {
@@ -135,7 +145,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
-              {(stats.totalIncome || 0).toLocaleString()}đ
+              {(stats.totalRevenue || 0).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Toàn bộ doanh thu từ trước đến nay
@@ -152,7 +162,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.monthlyIncome || 0).toLocaleString()}đ
+              {(monthlyIncome || 0).toLocaleString()}đ
             </div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
               Biến động gần đây
@@ -169,7 +179,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.bookingIncome || 0).toLocaleString()}đ
+              {((stats.totalBookingFeeRevenue || 0) + (stats.totalWithdrawalFeeRevenue || 0)).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Phí thu từ các lịch đặt học
@@ -186,7 +196,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(stats.courseIncome || 0).toLocaleString()}đ
+              {(stats.totalCourseRevenue || 0).toLocaleString()}đ
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Từ bán khóa học nền tảng
@@ -226,8 +236,7 @@ export default function AdminRevenuePage() {
           </CardHeader>
           <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
             <div className="h-[350px] w-full min-h-[350px] min-w-0">
-              {stats.monthlyIncomeBreakdown &&
-              stats.monthlyIncomeBreakdown.length > 0 ? (
+              {monthlyIncomeBreakdown.length > 0 ? (
                 <ResponsiveContainer
                   width="100%"
                   height="100%"
@@ -236,7 +245,7 @@ export default function AdminRevenuePage() {
                 >
                   {viewMode === "line" ? (
                     <LineChart
-                      data={stats.monthlyIncomeBreakdown}
+                      data={monthlyIncomeBreakdown}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid
@@ -296,7 +305,7 @@ export default function AdminRevenuePage() {
                     </LineChart>
                   ) : (
                     <BarChart
-                      data={stats.monthlyIncomeBreakdown}
+                      data={monthlyIncomeBreakdown}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid

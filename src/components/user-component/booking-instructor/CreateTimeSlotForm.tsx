@@ -54,9 +54,10 @@ export default function CreateTimeSlotForm() {
   const [price, setPrice] = useState<number>(50);
 
   const [notice, setNotice] = useState<{
-    type: "success" | "error";
+    type: "success" | "error" | "warning";
     title: string;
     description: string;
+    onClose?: () => void;
   } | null>(null);
 
   const [daysOfWeek, setDaysOfWeek] = useState<Weekday[]>([]);
@@ -188,8 +189,45 @@ export default function CreateTimeSlotForm() {
         };
       }
 
-      await api.post("/time-slots/bulk", payload);
-      router.push("/admin/teacher-schedules/teaching-schedule");
+      const { data: res } = await api.post("/time-slots/bulk", payload);
+      const bulk = res?.data as {
+        requested: number;
+        created: number;
+        skipped: number;
+        conflicts: { startAt: string; endAt: string; reason: string }[];
+      } | undefined;
+
+      const created = bulk?.created ?? 0;
+      const skipped = bulk?.skipped ?? 0;
+      const goToSchedule = () =>
+        router.push("/admin/teacher-schedules/teaching-schedule");
+
+      if (!bulk || skipped === 0) {
+        setNotice({
+          type: "success",
+          title: "Tạo lịch thành công",
+          description: `Đã tạo ${created || estimatedSlots} slot lịch dạy.`,
+          onClose: goToSchedule,
+        });
+        return;
+      }
+
+      if (created === 0) {
+        setNotice({
+          type: "error",
+          title: "Tất cả lịch bị trùng",
+          description:
+            `Không có slot nào được tạo. Cả ${skipped} slot đều bị trùng với lịch đã tồn tại.`,
+        });
+      } else {
+        setNotice({
+          type: "warning",
+          title: "Tạo lịch có trùng lặp",
+          description:
+            `Đã tạo ${created} slot thành công, bỏ qua ${skipped} slot do trùng giờ với lịch đã tồn tại.`,
+          onClose: goToSchedule,
+        });
+      }
     } catch (e: unknown) {
       const message =
         (e as { response?: { data?: { message?: string } } })?.response?.data
@@ -216,12 +254,25 @@ export default function CreateTimeSlotForm() {
             className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
               notice.type === "success"
                 ? "bg-card border-chart-4/40"
-                : "bg-card border-destructive/50"
+                : notice.type === "warning"
+                  ? "bg-card border-yellow-500/50"
+                  : "bg-card border-destructive/50"
             }`}
           >
-            <h3 className="text-xl font-bold text-foreground">
-              {notice.title}
-            </h3>
+            <div className="flex items-center gap-2">
+              {notice.type === "success" && (
+                <span className="text-2xl">&#10003;</span>
+              )}
+              {notice.type === "warning" && (
+                <span className="text-2xl text-yellow-500">&#9888;</span>
+              )}
+              {notice.type === "error" && (
+                <span className="text-2xl text-destructive">&#10007;</span>
+              )}
+              <h3 className="text-xl font-bold text-foreground">
+                {notice.title}
+              </h3>
+            </div>
             <p className="text-sm text-muted-foreground mt-2">
               {notice.description}
             </p>
@@ -229,7 +280,11 @@ export default function CreateTimeSlotForm() {
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
-                onClick={() => setNotice(null)}
+                onClick={() => {
+                  const cb = notice.onClose;
+                  setNotice(null);
+                  cb?.();
+                }}
                 className="h-10 px-6 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold"
               >
                 OK

@@ -18,6 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { useNotifications } from "@/providers/NotificationProvider";
 
 // Map pathname → breadcrumb label
 const pageTitles: Record<string, string> = {
@@ -44,11 +46,21 @@ export function AdminHeader() {
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { unreadCount, bellRingCount } = useNotifications();
+  const [bellAnimating, setBellAnimating] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  React.useEffect(() => {
+    if (bellRingCount > 0) {
+      setBellAnimating(true);
+      const timer = setTimeout(() => setBellAnimating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [bellRingCount]);
 
   const pageTitle =
     pageTitles[pathname] ??
@@ -101,10 +113,15 @@ export function AdminHeader() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-8 w-8 text-muted-foreground hover:text-sidebar-foreground"
+          className={cn(
+            "relative h-8 w-8 text-muted-foreground hover:text-sidebar-foreground transition-all",
+            bellAnimating && "animate-bell-shake"
+          )}
         >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1 top-1 flex h-2 w-2 items-center justify-center rounded-full bg-destructive" />
+          <Bell className={cn("h-4 w-4", bellAnimating && "animate-bell-ring")} />
+          {unreadCount > 0 && (
+            <span className="absolute right-1 top-1 flex h-2 w-2 items-center justify-center rounded-full bg-secondary" />
+          )}
         </Button>
 
         {/* User dropdown */}

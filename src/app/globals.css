@@ -398,3 +398,33 @@
   outline: 2px solid var(--color-ring);
   border-color: var(--color-ring);
 }
+
+/* Bell Animation for Notifications */
+@keyframes bell-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+@keyframes bell-ring {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(12deg); }
+  20% { transform: rotate(-10deg); }
+  30% { transform: rotate(12deg); }
+  40% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+  70% { transform: rotate(6deg); }
+  80% { transform: rotate(-4deg); }
+  90% { transform: rotate(4deg); }
+  100% { transform: rotate(0); }
+}
+
+.animate-bell-shake {
+  animation: bell-shake 0.6s ease-in-out;
+}
+
+.animate-bell-ring {
+  animation: bell-ring 0.6s ease-in-out;
+  transform-origin: top center;
+}

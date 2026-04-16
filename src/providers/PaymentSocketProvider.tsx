@@ -17,6 +17,7 @@ import { connectPaymentSocket, disconnectPaymentSocket } from "@/lib/socket/sock
 import { store } from "@/store";
 import { useAuth } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
+import { useNotifications } from "@/providers/NotificationProvider";
 
 export interface PaymentStatusChangeEvent {
   userId: number;

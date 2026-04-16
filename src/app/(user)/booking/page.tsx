@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
+  Ban,
   CalendarDays,
   ChevronDown,
   Clock3,
@@ -245,6 +247,40 @@ export default function BookingPage() {
           >
             Lịch của tôi
           </Link>
+        </section>
+
+        <section className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 md:p-5">
+          <div className="flex items-center gap-2 text-amber-200">
+            <AlertTriangle className="size-5" />
+            <h2 className="text-sm font-bold md:text-base">Quy định đặt lịch</h2>
+          </div>
+          <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-100/90 md:text-sm">
+            <li className="flex items-start gap-2">
+              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <span>
+                Chỉ vào phòng học trước tối đa <b>5 phút</b> so với giờ bắt đầu.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <span>
+                Hủy lịch sát giờ học (trong <b>2 giờ</b> trước giờ học) sẽ bị trừ
+                <b> 100%</b> chi phí và có thể bị khóa đặt lịch tạm thời.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Ban className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <span>
+                Tài khoản có thể bị <b>khóa chức năng đặt lịch 24 giờ</b> khi hủy sát giờ.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Ban className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <span>
+                Slot đã hủy sẽ không thể đặt lại bởi chính tài khoản đã hủy.
+              </span>
+            </li>
+          </ul>
         </section>
 
         <section className="glass-card rounded-[2rem] border border-border/60 p-4 shadow-[0_30px_80px_-50px_rgba(15,23,42,0.45)] md:p-5">

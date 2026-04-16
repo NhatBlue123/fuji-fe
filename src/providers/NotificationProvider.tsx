@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { Socket } from "socket.io-client";
 import axios from "axios";
@@ -31,6 +32,8 @@ type NotificationContextValue = {
   markAsRead: (id: number) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: number) => Promise<void>;
+  bellRingCount: number;
+  playBellSound: () => void;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(
@@ -50,6 +53,10 @@ export function NotificationProvider({
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bellRingCount, setBellRingCount] = useState(0);
+  
+  const isMountedRef = useRef(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const resetNotificationSocketState = useCallback(() => {
     setSocket(null);
@@ -62,11 +69,48 @@ export function NotificationProvider({
   }, []);
 
   /**
-   * Lấy danh sách thông báo từ Backend API
+   * Phát tiếng chuông khi có thông báo mới
+   */
+  const playBellSound = useCallback(() => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      const ctx = audioContextRef.current;
+
+      const frequencies = [2093, 2637, 3136];
+      const durations = [0.15, 0.15, 0.3];
+      const delays = [0, 0.15, 0.3];
+
+      frequencies.forEach((freq, i) => {
+        const startTime = ctx.currentTime + delays[i];
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(freq, startTime);
+
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + durations[i]);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + durations[i]);
+      });
+
+      console.log("[NotificationProvider] 🔔 Bell sound played!");
+    } catch (error) {
+      console.error("Failed to play bell sound:", error);
+    }
+  }, []);
+
+  /**
+   * Lấy danh sách thông báo từ Backend API
    */
   const fetchNotifications = useCallback(async () => {
-    // Chờ useAuthInit xác thực / refresh JWT — tránh gọi API khi token cookie còn hết hạn
-    // nhưng Redux đã hydrate isAuthenticated từ localStorage (401 lần đầu load).
     if (!isInitialized || !isAuthenticated || !accessToken) return;
     try {
       const res = await api.get("/notifications");
@@ -84,7 +128,7 @@ export function NotificationProvider({
   }, [isInitialized, isAuthenticated, accessToken]);
 
   /**
-   * Đánh dấu 1 thông báo là đã đọc
+   * Đánh dấu 1 thông báo là đã đọc
    */
   const markAsRead = async (id: number) => {
     try {
@@ -99,7 +143,7 @@ export function NotificationProvider({
   };
 
   /**
-   * Đánh dấu tất cả là đã đọc
+   * Đánh dấu tất cả là đã đọc
    */
   const markAllAsRead = async () => {
     try {
@@ -112,7 +156,7 @@ export function NotificationProvider({
   };
 
   /**
-   * Xóa 1 thông báo
+   * Xóa 1 thông báo
    */
   const deleteNotification = async (id: number) => {
     try {
@@ -129,6 +173,8 @@ export function NotificationProvider({
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!isInitialized || !isAuthenticated || !user) {
       disconnectNotificationSocket();
       queueMicrotask(resetNotificationSocketState);
@@ -164,7 +210,16 @@ export function NotificationProvider({
             }
           : undefined,
       });
+      
+      // Rung chuông + phát tiếng chuông
+      setBellRingCount(c => c + 1);
+      playBellSound();
     };
+
+    const s = connectNotificationSocket(accessToken, user.id);
+    setSocket(s as Socket);
+
+    console.log("[NotificationProvider] Connecting socket with userId:", user.id);
 
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
@@ -177,6 +232,7 @@ export function NotificationProvider({
       s.off("disconnect", handleDisconnect);
       s.off("new-notification", handleNewNotification);
       disconnectNotificationSocket();
+      isMountedRef.current = false;
     };
   }, [
     accessToken,
@@ -185,8 +241,8 @@ export function NotificationProvider({
     isInitialized,
     isAuthenticated,
     user,
-    router,
     fetchNotifications,
+    playBellSound,
   ]);
 
   useEffect(() => {
@@ -250,6 +306,8 @@ export function NotificationProvider({
       markAsRead,
       markAllAsRead,
       deleteNotification,
+      bellRingCount,
+      playBellSound,
     }),
     [socket, isConnected, unreadCount, notifications, fetchNotifications],
   );

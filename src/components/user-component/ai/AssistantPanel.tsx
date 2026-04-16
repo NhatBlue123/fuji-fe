@@ -80,10 +80,24 @@ function intentToLabel(intent?: string) {
   return intent || "Dang xu ly";
 }
 
+function formatThinkingItems(items: RouterThinkingItem[]) {
+  return items
+    .map((item) => String(item.text || "").trim())
+    .filter(Boolean)
+    .map((text, idx) => `${idx + 1}. ${text}`)
+    .join("\n");
+}
+
 function mapMessagesToAssistantMessages(list: AiMessage[]): AssistantMessage[] {
   return list.map((m) => {
     if (m.role === "assistant") {
-      return { id: m.id, role: "ai", textVn: m.content };
+      const { think, content } = parseResponse(m.content);
+      return {
+        id: m.id,
+        role: "ai",
+        textVn: content,
+        think: think || undefined,
+      };
     }
     return { id: m.id, role: "user", textJp: m.content };
   });
@@ -151,6 +165,16 @@ export default function AssistantPanel({
   } | null>(null);
   const pendingBottomScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
   const streamWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const routerThinkingRef = useRef<RouterThinkingItem[]>([]);
+  const typingStartedAtRef = useRef<number | null>(null);
+
+  const resolveResponseTimeMs = useCallback(() => {
+    const startedAt = typingStartedAtRef.current;
+    if (!startedAt) {
+      return Math.max(0, Math.round(elapsedMs));
+    }
+    return Math.max(0, Math.round(Date.now() - startedAt));
+  }, [elapsedMs]);
 
   const clearStreamWatchdog = useCallback(() => {
     if (!streamWatchdogRef.current) {
@@ -162,12 +186,15 @@ export default function AssistantPanel({
 
   const forceFinishStreaming = useCallback(
     (fallbackMessage: string) => {
+      const finalResponseTimeMs = resolveResponseTimeMs();
       clearStreamWatchdog();
       setIsTyping(false);
       setQueuedInfo(null);
       setRouterThinking([]);
+      routerThinkingRef.current = [];
+      typingStartedAtRef.current = null;
       optimisticConversationRef.current = null;
-      pendingBottomScrollBehaviorRef.current = "smooth";
+      pendingBottomScrollBehaviorRef.current = null;
 
       setMessages((prev) => {
         const lastIdx = prev.length - 1;
@@ -180,6 +207,10 @@ export default function AssistantPanel({
           updated[lastIdx] = {
             ...updated[lastIdx],
             textVn: fallbackMessage,
+            responseTimeMs:
+              finalResponseTimeMs > 0
+                ? finalResponseTimeMs
+                : updated[lastIdx].responseTimeMs,
             _streaming: false,
           };
           return updated;
@@ -189,7 +220,7 @@ export default function AssistantPanel({
 
       streamBufferRef.current = "";
     },
-    [clearStreamWatchdog],
+    [clearStreamWatchdog, resolveResponseTimeMs],
   );
 
   const armStreamWatchdog = useCallback(() => {
@@ -215,6 +246,7 @@ export default function AssistantPanel({
       setIsTyping(false);
       setQueuedInfo(null);
       setRouterThinking([]);
+      routerThinkingRef.current = [];
       streamBufferRef.current = "";
       clearStreamWatchdog();
       optimisticConversationRef.current = null;
@@ -457,6 +489,7 @@ export default function AssistantPanel({
       setIsTyping(false);
       setQueuedInfo(null);
       setRouterThinking([]);
+      routerThinkingRef.current = [];
       streamBufferRef.current = "";
 
       const hasWarmSnapshot = restoreConversationSnapshot(activeConversationId);
@@ -473,6 +506,7 @@ export default function AssistantPanel({
     setHasMoreMessages(false);
     setNextBeforeId(null);
     setRouterThinking([]);
+    routerThinkingRef.current = [];
   }, [
     activeConversationId,
     loadInitialMessages,
@@ -484,10 +518,18 @@ export default function AssistantPanel({
   useEffect(() => {
     if (!isTyping) {
       setElapsedMs(0);
+      typingStartedAtRef.current = null;
       return;
     }
-    const start = Date.now();
-    const id = setInterval(() => setElapsedMs(Date.now() - start), 100);
+
+    if (!typingStartedAtRef.current) {
+      typingStartedAtRef.current = Date.now();
+    }
+
+    const id = setInterval(() => {
+      const startAt = typingStartedAtRef.current ?? Date.now();
+      setElapsedMs(Date.now() - startAt);
+    }, 100);
     return () => clearInterval(id);
   }, [isTyping]);
 
@@ -496,6 +538,10 @@ export default function AssistantPanel({
       clearStreamWatchdog();
     };
   }, [clearStreamWatchdog]);
+
+  useEffect(() => {
+    routerThinkingRef.current = routerThinking;
+  }, [routerThinking]);
 
   // Listen socket chat:stream events
   useEffect(() => {
@@ -522,21 +568,48 @@ export default function AssistantPanel({
 
       const text = String(data.text || "").trim();
       if (text) {
-        setRouterThinking((prev) => {
-          if (prev[prev.length - 1]?.text === text) {
-            return prev;
-          }
-
-          const next = [
-            ...prev,
+        const prevThinking = routerThinkingRef.current;
+        const lastText = prevThinking[prevThinking.length - 1]?.text;
+        if (lastText !== text) {
+          const nextThinking = [
+            ...prevThinking,
             {
               phase: data.phase,
               text,
             },
-          ];
+          ].slice(-ROUTER_THINKING_MAX_ITEMS);
 
-          return next.slice(-ROUTER_THINKING_MAX_ITEMS);
-        });
+          routerThinkingRef.current = nextThinking;
+          setRouterThinking(nextThinking);
+
+          const thinkingContent = formatThinkingItems(nextThinking);
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1;
+            if (
+              lastIdx >= 0 &&
+              prev[lastIdx].role === "ai" &&
+              prev[lastIdx]._streaming
+            ) {
+              const updated = [...prev];
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                think: thinkingContent || updated[lastIdx].think,
+              };
+              return updated;
+            }
+
+            return [
+              ...prev,
+              {
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                role: "ai",
+                textVn: "",
+                think: thinkingContent || undefined,
+                _streaming: true,
+              },
+            ];
+          });
+        }
       }
 
       armStreamWatchdog();
@@ -553,8 +626,8 @@ export default function AssistantPanel({
         setIsTyping(true);
         armStreamWatchdog();
         streamBufferRef.current += data.delta;
-        pendingBottomScrollBehaviorRef.current = "smooth";
         const { think, content } = parseResponse(streamBufferRef.current);
+        const fallbackThink = formatThinkingItems(routerThinkingRef.current);
 
         // Update AI message in-place
         setMessages((prev) => {
@@ -568,7 +641,8 @@ export default function AssistantPanel({
             updated[lastIdx] = {
               ...updated[lastIdx],
               textVn: content,
-              think: think || undefined,
+              think:
+                think || updated[lastIdx].think || fallbackThink || undefined,
             };
             return updated;
           }
@@ -579,7 +653,7 @@ export default function AssistantPanel({
               id: Date.now() + Math.floor(Math.random() * 1000),
               role: "ai",
               textVn: content,
-              think: think || undefined,
+              think: think || fallbackThink || undefined,
               _streaming: true,
             },
           ];
@@ -587,14 +661,20 @@ export default function AssistantPanel({
       }
 
       if (data.done) {
+        const finalResponseTimeMs = resolveResponseTimeMs();
         clearStreamWatchdog();
         const finalRawText = streamBufferRef.current;
         const { think, content } = parseResponse(finalRawText);
+        const finalFallbackThink = formatThinkingItems(
+          routerThinkingRef.current,
+        );
         setIsTyping(false);
         setQueuedInfo(null);
         setRouterThinking([]);
+        routerThinkingRef.current = [];
+        typingStartedAtRef.current = null;
         optimisticConversationRef.current = null;
-        pendingBottomScrollBehaviorRef.current = "smooth";
+        pendingBottomScrollBehaviorRef.current = null;
 
         // Finalize message
         setMessages((prev) => {
@@ -608,7 +688,15 @@ export default function AssistantPanel({
             updated[lastIdx] = {
               ...updated[lastIdx],
               textVn: content,
-              think: think || undefined,
+              think:
+                think ||
+                updated[lastIdx].think ||
+                finalFallbackThink ||
+                undefined,
+              responseTimeMs:
+                finalResponseTimeMs > 0
+                  ? finalResponseTimeMs
+                  : updated[lastIdx].responseTimeMs,
               _streaming: false,
             };
             return updated;
@@ -621,7 +709,9 @@ export default function AssistantPanel({
                 id: Date.now() + Math.floor(Math.random() * 1000),
                 role: "ai",
                 textVn: content,
-                think: think || undefined,
+                think: think || finalFallbackThink || undefined,
+                responseTimeMs:
+                  finalResponseTimeMs > 0 ? finalResponseTimeMs : undefined,
                 _streaming: false,
               },
             ];
@@ -665,6 +755,7 @@ export default function AssistantPanel({
     refetchConversations,
     armStreamWatchdog,
     clearStreamWatchdog,
+    resolveResponseTimeMs,
   ]);
 
   const ensureConversationId = useCallback(
@@ -720,9 +811,11 @@ export default function AssistantPanel({
     ]);
 
     setInput("");
+    typingStartedAtRef.current = Date.now();
     setIsTyping(true);
     setQueuedInfo(null);
     setRouterThinking([]);
+    routerThinkingRef.current = [];
     armStreamWatchdog();
 
     // Emit to socket
@@ -759,6 +852,7 @@ export default function AssistantPanel({
       setIsTyping(false);
       setQueuedInfo(null);
       setRouterThinking([]);
+      routerThinkingRef.current = [];
       clearStreamWatchdog();
       streamBufferRef.current = "";
       router.push(`/ai-chat/${conversationId}`);
@@ -885,7 +979,6 @@ export default function AssistantPanel({
                 isTyping={isTyping}
                 queuedInfo={queuedInfo}
                 elapsedMs={elapsedMs}
-                routerThinking={routerThinking}
                 intentToLabel={intentToLabel}
               />
 

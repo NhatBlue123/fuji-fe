@@ -5,9 +5,44 @@ import type {
   CourseComparePayload,
   CourseCompareRow,
   CoursePreviewItem,
+  NextStepsPayload,
   PaymentActionPayload,
+  QuickFactItem,
   StructuredBlockType,
 } from "./types";
+
+const INTERNAL_URL_RE = /^\/[a-z0-9/_-]+(?:\?[a-z0-9=&%._-]+)?$/i;
+const ALLOWED_TONES = new Set([
+  "primary",
+  "sky",
+  "emerald",
+  "amber",
+  "rose",
+  "slate",
+]);
+
+function sanitizeTone(value: unknown) {
+  const tone = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (!tone || !ALLOWED_TONES.has(tone)) {
+    return undefined;
+  }
+  return tone as "primary" | "sky" | "emerald" | "amber" | "rose" | "slate";
+}
+
+function sanitizeIconName(value: unknown) {
+  const icon = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (!icon) {
+    return undefined;
+  }
+  if (!/^[a-z0-9_]{2,36}$/i.test(icon)) {
+    return undefined;
+  }
+  return icon;
+}
 
 function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
   if (!Array.isArray(value)) {
@@ -194,7 +229,7 @@ function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
         ? record.url.trim()
         : "";
 
-    if (!/^\/[a-z0-9/_-]+(?:\?[a-z0-9=&%._-]+)?$/i.test(urlRaw)) {
+    if (!INTERNAL_URL_RE.test(urlRaw)) {
       continue;
     }
 
@@ -203,10 +238,120 @@ function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
         ? record.note.trim()
         : undefined;
 
-    out.push({ label, url: urlRaw, note });
+    const icon = sanitizeIconName(record.icon);
+    const tone = sanitizeTone(record.tone);
+    const cta =
+      typeof record.cta === "string" && record.cta.trim()
+        ? record.cta.trim().slice(0, 28)
+        : undefined;
+
+    out.push({ label, url: urlRaw, note, icon, tone, cta });
   }
 
   return out.slice(0, 6);
+}
+
+function sanitizeQuickFactsPayload(value: unknown): QuickFactItem[] {
+  const wrapped = value as { facts?: unknown };
+  const rawList = Array.isArray(value)
+    ? value
+    : value && typeof value === "object" && Array.isArray(wrapped.facts)
+      ? wrapped.facts
+      : [];
+
+  const out: QuickFactItem[] = [];
+  for (const raw of rawList) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const record = raw as Record<string, unknown>;
+    const label =
+      typeof record.label === "string" && record.label.trim()
+        ? record.label.trim()
+        : "";
+
+    const valueText =
+      typeof record.value === "string" && record.value.trim()
+        ? record.value.trim()
+        : typeof record.amount === "string" && record.amount.trim()
+          ? record.amount.trim()
+          : "";
+
+    if (!label || !valueText) {
+      continue;
+    }
+
+    const note =
+      typeof record.note === "string" && record.note.trim()
+        ? record.note.trim()
+        : undefined;
+
+    out.push({
+      label,
+      value: valueText,
+      note,
+      icon: sanitizeIconName(record.icon),
+      tone: sanitizeTone(record.tone),
+    });
+  }
+
+  return out.slice(0, 6);
+}
+
+function sanitizeNextStepsPayload(value: unknown): NextStepsPayload | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const rawSteps = Array.isArray(record.steps) ? record.steps : [];
+  const steps: NextStepsPayload["steps"] = [];
+
+  for (const raw of rawSteps) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const step = raw as Record<string, unknown>;
+    const label =
+      typeof step.label === "string" && step.label.trim()
+        ? step.label.trim()
+        : typeof step.title === "string" && step.title.trim()
+          ? step.title.trim()
+          : "";
+
+    const urlRaw = typeof step.url === "string" ? step.url.trim() : "";
+    if (!label || !INTERNAL_URL_RE.test(urlRaw)) {
+      continue;
+    }
+
+    const note =
+      typeof step.note === "string" && step.note.trim()
+        ? step.note.trim()
+        : undefined;
+
+    steps.push({
+      label,
+      url: urlRaw,
+      note,
+      icon: sanitizeIconName(step.icon),
+    });
+  }
+
+  if (steps.length === 0) {
+    return null;
+  }
+
+  const title =
+    typeof record.title === "string" && record.title.trim()
+      ? record.title.trim()
+      : undefined;
+
+  return {
+    title,
+    steps: steps.slice(0, 6),
+  };
 }
 
 function parseActionLinksMarkerBody(body: string): ActionLinkItem[] {
@@ -412,13 +557,23 @@ function splitLooseJsonFromMarkdown(
         if (comparePayload) {
           structured = { kind: "course-compare", payload: comparePayload };
         } else {
-          const paymentPayload = sanitizePaymentActionPayload(parsed);
-          if (paymentPayload) {
-            structured = { kind: "payment-action", payload: paymentPayload };
+          const nextStepsPayload = sanitizeNextStepsPayload(parsed);
+          if (nextStepsPayload) {
+            structured = { kind: "next-steps", payload: nextStepsPayload };
           } else {
-            const actionLinks = sanitizeActionLinksPayload(parsed);
-            if (actionLinks.length > 0) {
-              structured = { kind: "action-links", links: actionLinks };
+            const paymentPayload = sanitizePaymentActionPayload(parsed);
+            if (paymentPayload) {
+              structured = { kind: "payment-action", payload: paymentPayload };
+            } else {
+              const quickFacts = sanitizeQuickFactsPayload(parsed);
+              if (quickFacts.length > 0) {
+                structured = { kind: "quick-facts", facts: quickFacts };
+              } else {
+                const actionLinks = sanitizeActionLinksPayload(parsed);
+                if (actionLinks.length > 0) {
+                  structured = { kind: "action-links", links: actionLinks };
+                }
+              }
             }
           }
         }
@@ -458,7 +613,7 @@ function stripIncompleteStructuredBlock(source: string): {
   pendingBlockType: StructuredBlockType | null;
 } {
   const openBlockRegex =
-    /```(course-preview|course-compare|payment-action|action-links)\s*/gi;
+    /```(course-preview|course-compare|payment-action|action-links|quick-facts|next-steps)\s*/gi;
   let match: RegExpExecArray | null;
 
   while ((match = openBlockRegex.exec(source))) {
@@ -515,7 +670,7 @@ export function parseAssistantContent(
     : { visibleSource: source, pendingBlockType: null };
 
   const re =
-    /```(course-preview|course-compare|payment-action|action-links)\s*([\s\S]*?)```/gi;
+    /```(course-preview|course-compare|payment-action|action-links|quick-facts|next-steps)\s*([\s\S]*?)```/gi;
   const segments: AssistantContentSegment[] = [];
   let cursor = 0;
 
@@ -574,6 +729,26 @@ export function parseAssistantContent(
       const links = sanitizeActionLinksPayload(parsed);
       if (links.length > 0) {
         segments.push({ kind: "action-links", links });
+      } else {
+        const rawBlock = visibleSource.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else if (blockType === "quick-facts") {
+      const facts = sanitizeQuickFactsPayload(parsed);
+      if (facts.length > 0) {
+        segments.push({ kind: "quick-facts", facts });
+      } else {
+        const rawBlock = visibleSource.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else if (blockType === "next-steps") {
+      const payload = sanitizeNextStepsPayload(parsed);
+      if (payload) {
+        segments.push({ kind: "next-steps", payload });
       } else {
         const rawBlock = visibleSource.slice(start, end).trim();
         if (rawBlock) {

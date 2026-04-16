@@ -39,13 +39,38 @@ export type ActionLinkItem = {
   label: string;
   url: string;
   note?: string;
+  icon?: string;
+  tone?: "primary" | "sky" | "emerald" | "amber" | "rose" | "slate";
+  cta?: string;
+};
+
+export type QuickFactItem = {
+  label: string;
+  value: string;
+  note?: string;
+  icon?: string;
+  tone?: "primary" | "sky" | "emerald" | "amber" | "rose" | "slate";
+};
+
+export type NextStepItem = {
+  label: string;
+  url: string;
+  note?: string;
+  icon?: string;
+};
+
+export type NextStepsPayload = {
+  title?: string;
+  steps: NextStepItem[];
 };
 
 export type StructuredBlockType =
   | "course-preview"
   | "course-compare"
   | "payment-action"
-  | "action-links";
+  | "action-links"
+  | "quick-facts"
+  | "next-steps";
 
 export type AssistantContentSegment =
   | { kind: "markdown"; content: string }
@@ -53,6 +78,8 @@ export type AssistantContentSegment =
   | { kind: "course-compare"; payload: CourseComparePayload }
   | { kind: "payment-action"; payload: PaymentActionPayload }
   | { kind: "action-links"; links: ActionLinkItem[] }
+  | { kind: "quick-facts"; facts: QuickFactItem[] }
+  | { kind: "next-steps"; payload: NextStepsPayload }
   | { kind: "structured-loading"; blockType: StructuredBlockType };
 
 export type RouterThinkingItem = {

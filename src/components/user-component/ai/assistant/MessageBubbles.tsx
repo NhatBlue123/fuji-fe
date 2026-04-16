@@ -9,14 +9,12 @@ import {
   ActionLinksCard,
   CourseCompareTable,
   CoursePreviewList,
+  NextStepsCard,
   PaymentActionCard,
+  QuickFactsCard,
   StructuredLoadingCard,
 } from "./StructuredCards";
-import type {
-  AssistantQueuedInfo,
-  ParseAssistantContentFn,
-  RouterThinkingItem,
-} from "./types";
+import type { AssistantQueuedInfo, ParseAssistantContentFn } from "./types";
 
 type AiMessageBubbleProps = {
   msg: AssistantMessage;
@@ -32,7 +30,6 @@ type AssistantTypingStatusProps = {
   isTyping: boolean;
   queuedInfo: AssistantQueuedInfo;
   elapsedMs: number;
-  routerThinking: RouterThinkingItem[];
   intentToLabel: (intent?: string) => string;
 };
 
@@ -79,7 +76,9 @@ export function AiMessageBubble({
             <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(255,255,255,0.72),transparent_54%)]" />
 
             <div className="relative z-10">
-              {msg.think && <ThinkBlock content={msg.think} />}
+              {msg.think && (
+                <ThinkBlock content={msg.think} isStreaming={msg._streaming} />
+              )}
 
               {msg.textJp && (
                 <p className="mb-1 text-lg font-bold text-foreground">
@@ -131,6 +130,16 @@ export function AiMessageBubble({
                         key={`links-${msg.id}-${idx}`}
                         links={segment.links}
                       />
+                    ) : segment.kind === "quick-facts" ? (
+                      <QuickFactsCard
+                        key={`facts-${msg.id}-${idx}`}
+                        facts={segment.facts}
+                      />
+                    ) : segment.kind === "next-steps" ? (
+                      <NextStepsCard
+                        key={`steps-${msg.id}-${idx}`}
+                        payload={segment.payload}
+                      />
                     ) : segment.kind === "structured-loading" ? (
                       <StructuredLoadingCard
                         key={`loading-${msg.id}-${idx}`}
@@ -147,31 +156,25 @@ export function AiMessageBubble({
                   )}
                 </div>
               )}
-
-              {msg._streaming && !msg.textVn && (
-                <div className="flex gap-1">
-                  {[0, 150, 300].map((delay) => (
-                    <span
-                      key={delay}
-                      className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
-                      style={{ animationDelay: `${delay}ms` }}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </LiquidGlass>
 
         {!msg._streaming && msg.textVn && (
-          <div className="mt-1 flex gap-2">
+          <div className="mt-1 flex items-center gap-2">
+            {typeof msg.responseTimeMs === "number" &&
+              msg.responseTimeMs > 0 && (
+                <span className="text-[10px] tabular-nums text-muted-foreground/60">
+                  {(msg.responseTimeMs / 1000).toFixed(1)}s
+                </span>
+              )}
             <Button
               variant="ghost"
-              className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+              className="h-7 w-7 rounded-md p-0 text-muted-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
               title="Sao chép"
               onClick={() => onCopy(msg.textVn || "")}
             >
-              <span className="material-symbols-outlined text-lg">
+              <span className="material-symbols-outlined text-[15px]">
                 content_copy
               </span>
             </Button>
@@ -222,7 +225,6 @@ export function AssistantTypingStatus({
   isTyping,
   queuedInfo,
   elapsedMs,
-  routerThinking,
   intentToLabel,
 }: AssistantTypingStatusProps) {
   if (!isTyping) {
@@ -232,17 +234,8 @@ export function AssistantTypingStatus({
   return (
     <>
       <div className="ml-14 flex items-center gap-2 opacity-70">
-        <div className="flex gap-1">
-          {[0, 150, 300].map((delay) => (
-            <span
-              key={delay}
-              className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
-              style={{ animationDelay: `${delay}ms` }}
-            />
-          ))}
-        </div>
         <span className="text-xs text-muted-foreground">
-          Trợ giảng đang soạn...
+          Trợ giảng đang soạn
         </span>
         {queuedInfo && (
           <span className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground/80">
@@ -253,34 +246,6 @@ export function AssistantTypingStatus({
           {(elapsedMs / 1000).toFixed(1)}s
         </span>
       </div>
-
-      {routerThinking.length > 0 && (
-        <LiquidGlass
-          displacementScale={64}
-          blurAmount={0.065}
-          saturation={146}
-          elasticity={0.12}
-          mode="standard"
-          cornerRadius={12}
-          className="ml-14 mt-2 max-w-3xl rounded-lg"
-        >
-          <div className="rounded-lg border border-white/60 bg-white/68 px-3 py-2 backdrop-blur-lg dark:border-white/15 dark:bg-slate-900/55">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/90">
-              Router đang suy nghĩ
-            </p>
-            <div className="mt-1 space-y-1">
-              {routerThinking.map((item, idx) => (
-                <p
-                  key={`${item.phase || "step"}-${idx}`}
-                  className="text-xs leading-5 text-muted-foreground"
-                >
-                  {idx + 1}. {item.text}
-                </p>
-              ))}
-            </div>
-          </div>
-        </LiquidGlass>
-      )}
     </>
   );
 }

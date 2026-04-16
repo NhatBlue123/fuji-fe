@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import LiquidGlass from "@/components/ui/liquid-glass-safe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ export type AssistantMessage = {
   textJp?: string;
   textVn?: string;
   think?: string;
+  responseTimeMs?: number;
   _streaming?: boolean;
 };
 
@@ -157,23 +158,47 @@ export const TypingIndicator = memo(function TypingIndicator({
 /** Khối think — có thể mở/đóng */
 export const ThinkBlock = memo(function ThinkBlock({
   content,
+  isStreaming = false,
 }: {
   content: string;
+  isStreaming?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isStreaming);
+  useEffect(() => {
+    setOpen(isStreaming);
+  }, [isStreaming]);
+
+  const lines = content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const latestLine = lines[lines.length - 1] || "Dang phan tich...";
+
   return (
-    <div className="mb-2">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span className="material-symbols-outlined text-sm">
-          {open ? "expand_less" : "expand_more"}
-        </span>
-        💭 Đã suy nghĩ xong
-      </button>
-      {open && (
-        <div className="mt-1 text-xs text-muted-foreground bg-muted/40 border border-border/50 rounded-lg p-3 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+    <div className="mb-3">
+      {isStreaming ? (
+        <div className="flex items-center gap-2 rounded-lg border border-border/55 bg-muted/45 px-2.5 py-1.5 text-xs text-muted-foreground">
+          <div className="relative flex size-3 items-center justify-center">
+            <span className="size-1.5 rounded-full bg-muted-foreground/80 animate-pulse" />
+          </div>
+          <span className="font-medium text-foreground/80">Dang suy nghi:</span>
+          <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground animate-pulse">
+            {latestLine}
+          </span>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen((p) => !p)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <span className="material-symbols-outlined text-sm group-hover:text-primary/70 transition-colors">
+            {open ? "unfold_less" : "unfold_more"}
+          </span>
+          <span className="flex items-center gap-1">💭 Quá trình suy nghĩ</span>
+        </button>
+      )}
+      {open && !isStreaming && (
+        <div className="mt-2 text-xs text-muted-foreground bg-gradient-to-b from-muted/50 to-muted/30 border border-border/50 rounded-lg p-3 max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
           {content}
         </div>
       )}

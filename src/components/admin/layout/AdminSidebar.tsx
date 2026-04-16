@@ -41,6 +41,7 @@ import { useAuth, useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTranslation } from "react-i18next";
 
 interface NavChild {
   title: string;
@@ -63,137 +64,140 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
-  {
-    label: "Tổng quan",
-    items: [
-      {
-        title: "Dashboard",
-        href: "/admin",
-        icon: LayoutDashboard,
-      },
-      {
-        title: "Teacher Dashboard",
-        href: "/admin/teacher-dashboard",
-        icon: FileText,
-      },
-      {
-        title: "Thống kê",
-        href: "/admin/analytics",
-        icon: BarChart3,
-        children: [
-          {
-            title: "Giáo viên",
-            href: "/admin/analytics/teachers",
-          },
-          {
-            title: "Admin",
-            href: "/admin/analytics/admin",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Quản lý",
-    items: [
-      {
-        title: "Người dùng",
-        href: "/admin/users",
-        icon: Users,
-      },
-      {
-        title: "Rút tiền",
-        href: "/admin/withdraw",
-        icon: Wallet,
-        adminOnly: true,
-      },
-      {
-        title: "Khóa học",
-        href: "/admin/courses",
-        icon: BookOpen,
-        children: [
-          {
-            title: "Quản lý khóa học",
-            href: "/admin/courses",
-          },
-          {
-            title: "Tài chính khóa học (Admin)",
-            href: "/admin/courses/finance",
-            adminOnly: true,
-          },
-          {
-            title: "Tài chính khóa học (Giáo viên)",
-            href: "/admin/courses/finance/teacher",
-          },
-        ],
-      },
-      {
-        title: "Lịch dạy",
-        href: "/admin/teacher-schedules",
-        icon: CalendarDays,
-      },
-      {
-        title: "Flashcard",
-        href: "/admin/flashcard",
-        icon: Layers,
-      },
-      {
-        title: "Đề thi",
-        href: "/admin/jlpt-tests",
-        icon: BookOpenCheck,
-      },
-      {
-        title: "Luyện nói AI",
-        href: "/admin/voice-topics",
-        icon: BookOpen,
-      },
-    ],
-  },
-  {
-    label: "Hệ thống",
-    items: [
-      {
-        title: "Báo cáo & Phản hồi",
-        href: "/admin/reports",
-        icon: AlertTriangle,
-      },
-      {
-        title: "Lỗi hệ thống",
-        href: "/admin/system-errors",
-        icon: Bug,
-        adminOnly: true,
-      },
-      {
-        title: "Chat Moderation",
-        href: "/admin/chat-moderation",
-        icon: MessageSquare,
-      },
-      {
-        title: "Thông báo",
-        href: "/admin/notifications",
-        icon: Bell,
-        badge: "3",
-      },
-      {
-        title: "Phân quyền",
-        href: "/admin/roles",
-        icon: Shield,
-        adminOnly: true,
-      },
-      {
-        title: "Cài đặt",
-        href: "/admin/settings",
-        icon: Settings,
-        adminOnly: true,
-      },
-    ],
-  },
-];
+
 
 export function AdminSidebar() {
+  const { t, i18n } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
+
+  const navGroups: NavGroup[] = useMemo(() => [
+    {
+      label: t("admin.sidebar.groups.overview"),
+      items: [
+        {
+          title: "Dashboard",
+          href: "/admin",
+          icon: LayoutDashboard,
+        },
+        {
+          title: "Teacher Dashboard",
+          href: "/admin/teacher-dashboard",
+          icon: FileText,
+        },
+        {
+          title: t("admin.sidebar.items.analytics"),
+          href: "/admin/analytics",
+          icon: BarChart3,
+          children: [
+            {
+              title: t("admin.sidebar.items.analyticsTeachers"),
+              href: "/admin/analytics/teachers",
+            },
+            {
+              title: "Admin",
+              href: "/admin/analytics/admin",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: t("admin.sidebar.groups.management"),
+      items: [
+        {
+          title: t("admin.sidebar.items.users"),
+          href: "/admin/users",
+          icon: Users,
+        },
+        {
+          title: t("admin.sidebar.items.withdraw"),
+          href: "/admin/withdraw",
+          icon: Wallet,
+          adminOnly: true,
+        },
+        {
+          title: t("admin.sidebar.items.courses"),
+          href: "/admin/courses",
+          icon: BookOpen,
+          children: [
+            {
+              title: t("admin.sidebar.items.coursesManage"),
+              href: "/admin/courses",
+            },
+            {
+              title: t("admin.sidebar.items.coursesFinanceAdmin"),
+              href: "/admin/courses/finance",
+              adminOnly: true,
+            },
+            {
+              title: t("admin.sidebar.items.coursesFinanceTeacher"),
+              href: "/admin/courses/finance/teacher",
+            },
+          ],
+        },
+        {
+          title: t("admin.sidebar.items.schedules"),
+          href: "/admin/teacher-schedules",
+          icon: CalendarDays,
+        },
+        {
+          title: "Flashcard",
+          href: "/admin/flashcard",
+          icon: Layers,
+        },
+        {
+          title: t("admin.sidebar.items.tests"),
+          href: "/admin/jlpt-tests",
+          icon: BookOpenCheck,
+        },
+        {
+          title: t("admin.sidebar.items.voiceTopics"),
+          href: "/admin/voice-topics",
+          icon: BookOpen,
+        },
+      ],
+    },
+    {
+      label: t("admin.sidebar.groups.system"),
+      items: [
+        {
+          title: t("admin.sidebar.items.reports"),
+          href: "/admin/reports",
+          icon: AlertTriangle,
+        },
+        {
+          title: t("admin.sidebar.items.systemErrors"),
+          href: "/admin/system-errors",
+          icon: Bug,
+          adminOnly: true,
+        },
+        {
+          title: "Chat Moderation",
+          href: "/admin/chat-moderation",
+          icon: MessageSquare,
+        },
+        {
+          title: t("admin.sidebar.items.notifications"),
+          href: "/admin/notifications",
+          icon: Bell,
+          badge: "3",
+        },
+        {
+          title: t("admin.sidebar.items.roles"),
+          href: "/admin/roles",
+          icon: Shield,
+          adminOnly: true,
+        },
+        {
+          title: t("common.settings"),
+          href: "/admin/settings",
+          icon: Settings,
+          adminOnly: true,
+        },
+      ],
+    },
+  ], [t, i18n.language]);
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -227,10 +231,10 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     try {
       await dispatch(logoutThunk()).unwrap();
-      toast.success("Đăng xuất thành công!");
+      toast.success(t("auth.logoutSuccess"));
       router.push("/");
     } catch {
-      toast.error("Đăng xuất thất bại");
+      toast.error(t("auth.logoutFailed"));
     }
   };
 
@@ -459,13 +463,13 @@ export function AdminSidebar() {
                   <Moon className="h-4 w-4 shrink-0" />
                 )}
                 {!collapsed && (
-                  <span>Giao diện {theme === "dark" ? "sáng" : "tối"}</span>
+                  <span>{t("common.theme")} {theme === "dark" ? t("common.lightMode") : t("common.darkMode")}</span>
                 )}
               </Button>
             </TooltipTrigger>
             {collapsed && (
               <TooltipContent side="right" sideOffset={8}>
-                <p>Đổi giao diện</p>
+                <p>{t("common.toggleTheme")}</p>
               </TooltipContent>
             )}
           </Tooltip>
@@ -513,7 +517,7 @@ export function AdminSidebar() {
                     <button
                       onClick={handleLogout}
                       className="text-muted-foreground hover:text-destructive transition-colors"
-                      title="Đăng xuất"
+                      title={t("auth.logout")}
                     >
                       <LogOut className="h-3.5 w-3.5" />
                     </button>
@@ -545,12 +549,12 @@ export function AdminSidebar() {
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>Đăng xuất</span>}
+                  {!collapsed && <span>{t("auth.logout")}</span>}
                 </Button>
               </TooltipTrigger>
               {collapsed && (
                 <TooltipContent side="right" sideOffset={8}>
-                  <p>Đăng xuất</p>
+                  <p>{t("auth.logout")}</p>
                 </TooltipContent>
               )}
             </Tooltip>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ export function LessonHeader({
   isRecording = false,
   onTimeUp,
 }: LessonHeaderProps) {
+  const { t } = useTranslation();
   const [remaining, setRemaining] = useState(initialSeconds);
   const hasNotifiedTimeUp = useRef(false);
 
@@ -90,7 +92,7 @@ export function LessonHeader({
         {isRecording && (
           <span
             className="text-[10px] font-bold text-white bg-[#FF2D2D] px-2 py-0.5 rounded-full animate-pulse"
-            title="Đang ghi hình"
+            title={t('auto.lesson_header_1')}
           >
             ● REC
           </span>

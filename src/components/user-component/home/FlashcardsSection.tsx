@@ -1,29 +1,36 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 export function FlashcardsSection() {
+  const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-24 mb-16 relative">
       <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 relative z-10">
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 text-pink-400 font-bold mb-2 uppercase tracking-wider text-xs bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">
             <span className="material-symbols-outlined text-sm">style</span>
-            <span>Smart Flashcards</span>
+            <span>{isMounted ? t("home.flashcards.badge") : t("home.flashcards.badge", { lng: 'vi' })}</span>
           </div>
           <h2 className="text-3xl md:text-5xl font-black text-foreground dark:text-white leading-tight">
-            Ghi nhớ từ vựng <br />
+            {isMounted ? t("home.flashcards.titlePrimary") : t("home.flashcards.titlePrimary", { lng: 'vi' })} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500 text-glow">
-              siêu tốc với AI
+              {isMounted ? t("home.flashcards.titleSecondary") : t("home.flashcards.titleSecondary", { lng: 'vi' })}
             </span>
           </h2>
           <p className="text-muted-foreground dark:text-slate-400 text-lg leading-relaxed max-w-xl">
-            Trải nghiệm hệ thống Flashcards 3D sống động. Hình ảnh trực quan, ví
-            dụ thực tế và thuật toán Spaced Repetition giúp bạn nhớ lâu hơn.
+            {isMounted ? t("home.flashcards.description") : t("home.flashcards.description", { lng: 'vi' })}
           </p>
           <Button className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transform hover:-translate-y-1">
             <span className="material-symbols-outlined">auto_awesome</span>
-            Tạo Flashcard bằng AI
+            {isMounted ? t("home.flashcards.button") : t("home.flashcards.button", { lng: 'vi' })}
           </Button>
         </div>
         <div className="flex-1 flex justify-center w-full relative">
@@ -40,7 +47,7 @@ export function FlashcardsSection() {
                   }}
                 >
                   <div className="absolute top-4 right-4 bg-black/60 backdrop-blur rounded-lg px-2.5 py-1 text-white text-xs font-bold border border-white/10">
-                    N4 - Kanji
+                    {isMounted ? t("home.flashcards.mountainKanjiLevel") : t("home.flashcards.mountainKanjiLevel", { lng: 'vi' })}
                   </div>
                 </div>
                 <div className="h-2/5 p-6 flex flex-col items-center justify-center bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm text-foreground dark:text-white">
@@ -58,19 +65,19 @@ export function FlashcardsSection() {
                     translate
                   </span>
                 </div>
-                <h3 className="text-3xl font-bold text-white mb-2">Núi</h3>
+                <h3 className="text-3xl font-bold text-white mb-2">{isMounted ? t("home.flashcards.mountainKanjiMeaning") : t("home.flashcards.mountainKanjiMeaning", { lng: 'vi' })}</h3>
                 <p className="text-slate-300 text-base mb-6 font-light">
-                  Ngọn núi, đồi núi
+                  {isMounted ? t("home.flashcards.mountainKanjiDescription") : t("home.flashcards.mountainKanjiDescription", { lng: 'vi' })}
                 </p>
                 <div className="bg-black/30 rounded-xl p-4 text-sm text-slate-300 border border-white/5 relative">
                   <span className="absolute -top-2 left-4 text-2xl text-pink-500/50 leading-none">
                     &quot;
                   </span>
                   <p className="italic mb-1 text-white">
-                    富士山は日本で一番高い山です。
+                    {isMounted ? t("home.flashcards.mountainKanjiExampleJa") : t("home.flashcards.mountainKanjiExampleJa", { lng: 'vi' })}
                   </p>
                   <p className="text-xs text-slate-500">
-                    Núi Phú Sĩ là ngọn núi cao nhất Nhật Bản.
+                    {isMounted ? t("home.flashcards.mountainKanjiExampleVn") : t("home.flashcards.mountainKanjiExampleVn", { lng: 'vi' })}
                   </p>
                 </div>
               </div>

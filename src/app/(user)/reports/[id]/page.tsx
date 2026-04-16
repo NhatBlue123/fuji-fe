@@ -7,6 +7,7 @@
  * Người dùng có thể xem phản hồi của admin, các tệp đính kèm và gửi yêu cầu khiếu nại nếu chưa hài lòng.
  */
 
+import { useTranslation } from "react-i18next";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { 
@@ -43,6 +44,7 @@ const REASON_OPTIONS = [
 ];
 
 export default function ReportDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -120,8 +122,8 @@ export default function ReportDetailPage() {
     return (
       <div className="max-w-4xl mx-auto px-6 py-20 flex flex-col items-center justify-center gap-4">
         <AlertCircle className="size-8 text-destructive opacity-30" />
-        <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Không tìm thấy bản ghi</h2>
-        <Button variant="ghost" onClick={() => router.back()} className="text-[10px] font-black uppercase tracking-widest">Quay lại</Button>
+        <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('auto._id__page_1')}</h2>
+        <Button variant="ghost" onClick={() => router.back()} className="text-[10px] font-black uppercase tracking-widest">{t('auto._id__page_2')}</Button>
       </div>
     );
   }
@@ -153,7 +155,7 @@ export default function ReportDetailPage() {
          >
             <ChevronLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
          </Button>
-         <h1 className="text-lg font-black tracking-tight uppercase cursor-default">Báo cáo hệ thống</h1>
+         <h1 className="text-lg font-black tracking-tight uppercase cursor-default">{t('auto._id__page_3')}</h1>
          <div className="flex-1" />
          <Badge className={cn("px-4 py-1.5 rounded-full font-black uppercase tracking-widest text-[9px] border shadow-none transition-all", status.color)}>
             <StatusIcon className="size-2.5 mr-2" />
@@ -166,7 +168,7 @@ export default function ReportDetailPage() {
            {/* PHẦN NỘI DUNG SỰ CỐ */}
            <div className="space-y-4">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block mb-1 underline underline-offset-4 decoration-secondary/30">Hạng mục sự cố</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block mb-1 underline underline-offset-4 decoration-secondary/30">{t('auto._id__page_4')}</span>
                 <h2 className="text-xl font-black tracking-tight leading-tight">{report.title}</h2>
               </div>
               <div className="text-[13px] font-bold leading-relaxed text-slate-700 dark:text-slate-200 bg-muted/15 p-6 rounded-2xl whitespace-pre-wrap selection:bg-secondary/30">
@@ -199,7 +201,7 @@ export default function ReportDetailPage() {
               <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                 <Undo2 className="size-20 -rotate-12" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-secondary mb-4 block">Phản hồi từ Fuji-Team</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-secondary mb-4 block">{t('auto._id__page_5')}</span>
               {report.adminNote ? (
                 <div className="text-[14px] font-black text-slate-800 dark:text-slate-100 leading-relaxed italic border-l-4 border-secondary/30 pl-6 py-1">
                   "{report.adminNote}"
@@ -237,8 +239,8 @@ export default function ReportDetailPage() {
               <div className="animate-in slide-in-from-bottom-4 duration-500 py-2 space-y-8">
                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-base font-black uppercase tracking-tight">Kể cho chúng tôi thêm về sự cố?</h3>
-                      <p className="text-[10px] font-bold text-muted-foreground opacity-60 tracking-tight">Vui lòng cung cấp minh chứng cụ thể nếu có lỗi phát sinh lại.</p>
+                      <h3 className="text-base font-black uppercase tracking-tight">{t('auto._id__page_6')}</h3>
+                      <p className="text-[10px] font-bold text-muted-foreground opacity-60 tracking-tight">{t('auto._id__page_7')}</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsFollowupOpen(false)} className="rounded-full size-8">
                        <X className="size-4 text-muted-foreground" />

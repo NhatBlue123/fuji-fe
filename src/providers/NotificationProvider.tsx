@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import api from "@/lib/api";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 import {
   connectNotificationSocket,
   disconnectNotificationSocket,
@@ -46,6 +48,7 @@ export function NotificationProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { accessToken, isAuthenticated, user, isInitialized } = useAuth();
   const { socket: aiSocket } = useAIChatSocket();
@@ -220,12 +223,12 @@ export function NotificationProvider({
       setUnreadCount((prev) => prev + 1);
 
       // Hiển thị thông báo dạng Popup (Toast) ngay lập tức
-      toast(notification.title, {
-        description: notification.content,
+      toast(tMsg(notification.title), {
+        description: tMsg(notification.content),
         // Nếu thông báo có đường dẫn liên kết, hiển thị nút "Xem ngay"
         action: notification.linkUrl
           ? {
-              label: "Xem ngay",
+              label: tMsg("common.viewNow") || "Xem ngay",
               onClick: () => {
                 markAsRead(notification.id); // Đánh dấu đã đọc khi click
                 router.push(notification.linkUrl!); // Chuyển hướng trang
@@ -276,14 +279,14 @@ export function NotificationProvider({
     }) => {
       if (isAiChatPage) return;
 
-      toast.success("Sensei đã chấm điểm xong", {
+      toast.success(tMsg("ai.evaluationCompleted") || "Sensei đã chấm điểm xong", {
         description:
-          payload?.feedback?.feedbackText ||
+          tMsg(payload?.feedback?.feedbackText) ||
           (payload?.sessionCode
-            ? `Phiên ${payload.sessionCode} đã có nhận xét mới.`
-            : "Bạn đã có nhận xét mới từ Sensei."),
+            ? tMsg("ai.sessionHasNewFeedback", { code: payload.sessionCode }) || `Phiên ${payload.sessionCode} đã có nhận xét mới.`
+            : tMsg("ai.genericFeedbackReceived") || "Bạn đã có nhận xét mới từ Sensei."),
         action: {
-          label: "Mở AI Chat",
+          label: tMsg("ai.openChat") || "Mở AI Chat",
           onClick: () => router.push("/ai-chat"),
         },
       });

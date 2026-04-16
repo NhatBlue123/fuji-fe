@@ -93,22 +93,22 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 mb-6 shadow-glow">
           <span className="size-2 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_#F472B6]"></span>
           <span className="text-xs font-bold tracking-wide uppercase text-secondary">
-            {t("home.badge")}
+            {isMounted ? t("home.badge") : t("home.badge", { lng: 'vi' })}
           </span>
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-7xl font-black leading-tight mb-4 tracking-tight drop-shadow-lg">
-          {t("home.title")} <br />
-          <span className="text-secondary text-glow">{t("home.easier")}</span>
+          {isMounted ? t("home.title") : t("home.title", { lng: 'vi' })} <br />
+          <span className="text-secondary text-glow">{isMounted ? t("home.easier") : t("home.easier", { lng: 'vi' })}</span>
         </h1>
         <p className="text-lg md:text-xl text-slate-300 mb-8 font-light max-w-lg leading-relaxed drop-shadow-md">
-          {t("home.description")}
+          {isMounted ? t("home.description") : t("home.description", { lng: 'vi' })}
         </p>
         <div className="flex flex-wrap items-center gap-4">
           <Link
             href={isMounted && isAuthenticated ? "/course" : "/login"}
             className="h-[52px] bg-pink-500 hover:bg-blue-500 text-white px-8 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group"
           >
-            {t("home.getStarted")}
+            {isMounted ? t("home.getStarted") : t("home.getStarted", { lng: 'vi' })}
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
               arrow_forward
             </span>
@@ -118,7 +118,7 @@ export function HeroSection() {
             className="h-[52px] bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 hover:border-white/40"
           >
             <span className="material-symbols-outlined">play_circle</span>
-            {t("home.watchDemo")}
+            {isMounted ? t("home.watchDemo") : t("home.watchDemo", { lng: 'vi' })}
           </Button>
         </div>
       </div>

@@ -14,6 +14,7 @@ import remarkGfm from "remark-gfm";
 import { Loader2, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
+import { useTranslation } from "react-i18next";
 import {
   useCreateAiConversationMutation,
   useCreateAiMessageMutation,
@@ -85,7 +86,7 @@ type AssistantContentSegment =
 function getConversationTitle(conversation: AiConversation) {
   const title = conversation.title?.trim();
   if (title) return title;
-  return `Cuoc tro chuyen #${conversation.id}`;
+  return `${t("ai.conversation")} #${conversation.id}`;
 }
 
 function formatConversationTime(dateLike?: string | null) {
@@ -101,11 +102,11 @@ function formatConversationTime(dateLike?: string | null) {
 }
 
 function intentToLabel(intent?: string) {
-  if (intent === "grammar_qa") return "Ngu phap";
-  if (intent === "product_info") return "Khoa hoc";
-  if (intent === "general_chat") return "Hoi dap";
-  if (intent === "out_of_scope") return "Ngoai pham vi";
-  return intent || "Dang xu ly";
+  if (intent === "grammar_qa") return t("ai.intent.grammar");
+  if (intent === "product_info") return t("ai.intent.course");
+  if (intent === "general_chat") return t("ai.intent.qna");
+  if (intent === "out_of_scope") return t("ai.intent.outOfScope");
+  return intent || t("ai.intent.processing");
 }
 
 function mapMessagesToAssistantMessages(list: AiMessage[]): AssistantMessage[] {
@@ -480,7 +481,7 @@ function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground">
-                  No preview
+                  {t("ai.noPreview")}
                 </div>
               )}
             </div>
@@ -498,11 +499,11 @@ function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
               )}
               {item.enrolled && (
                 <span className="mt-2 inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
-                  Đã đăng ký
+                  {t("course.detail.enrolled")}
                 </span>
               )}
               <p className="mt-2 text-[11px] font-semibold text-primary">
-                Xem chi tiết khóa học →
+                {t("ai.viewCourseDetails")}
               </p>
             </div>
           </div>
@@ -530,7 +531,7 @@ function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
           <thead>
             <tr className="bg-card">
               <th className="w-40 border-b border-r border-border px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
-                Thuộc tính
+                {t("ai.featureProperty")}
               </th>
               {payload.columns.map((column) => (
                 <th
@@ -552,7 +553,7 @@ function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                          No preview
+                          {t("ai.noPreview")}
                         </div>
                       )}
                     </div>
@@ -598,6 +599,7 @@ export default function AssistantPanel({
   initialConversationId = null,
   forceNewDraft = false,
 }: AssistantPanelProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const { socket, isConnected } = useAIChatSocket();
@@ -1311,7 +1313,7 @@ export default function AssistantPanel({
                           <Button
                             variant="ghost"
                             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                            title="Sao chép"
+                            title={t('auto.ai_assistant_2')}
                             onClick={() =>
                               navigator.clipboard.writeText(msg.textVn || "")
                             }
@@ -1376,7 +1378,7 @@ export default function AssistantPanel({
           onInputChange={setInput}
           onSend={handleSend}
           chips={shouldShowInputChips ? ASSISTANT_CHIPS : []}
-          placeholder="Hỏi bất kỳ điều gì về tiếng Nhật..."
+          placeholder={t('auto.ai_assistant_1')}
         />
       </div>
 

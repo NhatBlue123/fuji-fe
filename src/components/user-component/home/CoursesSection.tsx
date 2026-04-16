@@ -1,30 +1,36 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { FEATURED_COURSES } from "@/types/course";
 import { CourseCard } from "@/components/user-component/course/CourseCard";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
-// ✅ Client Component with static data - fast render
+// Client Component with static data - fast render
 export function CoursesSection() {
   const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-24">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tracking-tight">
-            {t("home.coursesSection.title")}
+            {isMounted ? t("home.coursesSection.title") : t("home.coursesSection.title", { lng: 'vi' })}
           </h2>
           <p className="text-muted-foreground dark:text-slate-400 mt-1">
-            {t("home.coursesSection.subtitle")}
+            {isMounted ? t("home.coursesSection.subtitle") : t("home.coursesSection.subtitle", { lng: 'vi' })}
           </p>
         </div>
         <a
           className="hidden md:flex items-center gap-1 text-primary dark:text-blue-400 font-bold hover:text-blue-300 transition-colors"
           href="/course"
         >
-          {t("home.coursesSection.viewAll")}{" "}
+          {isMounted ? t("home.coursesSection.viewAll") : t("home.coursesSection.viewAll", { lng: 'vi' })}{" "}
           <span className="material-symbols-outlined text-sm">
             arrow_forward
           </span>
@@ -52,18 +58,18 @@ export function CoursesSection() {
               </span>
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
-              {t("home.coursesSection.aiTitle")}{" "}
+              {isMounted ? t("home.coursesSection.aiTitle") : t("home.coursesSection.aiTitle", { lng: 'vi' })}{" "}
               <span className="align-top text-[10px] bg-secondary text-white px-1.5 py-0.5 rounded ml-1 animate-pulse">
                 NEW
               </span>
             </h3>
             <p className="text-sm text-blue-100 mb-6 opacity-80 leading-relaxed">
-              {t("home.coursesSection.aiDescription")}
+              {isMounted ? t("home.coursesSection.aiDescription") : t("home.coursesSection.aiDescription", { lng: 'vi' })}
             </p>
             <div className="mt-auto">
               <Button className="w-full py-3 rounded-xl bg-secondary hover:bg-pink-400 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/40 transform hover:translate-y-[-2px]">
                 <span className="material-symbols-outlined text-lg">mic</span>
-                {t("home.coursesSection.practiceNow")}
+                {isMounted ? t("home.coursesSection.practiceNow") : t("home.coursesSection.practiceNow", { lng: 'vi' })}
               </Button>
             </div>
           </div>

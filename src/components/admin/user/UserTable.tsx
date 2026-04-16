@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Eye, ShieldAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface ViolationLog {
   id: number;
@@ -74,23 +75,25 @@ export const UserTable: React.FC<UserTableProps> = ({
   onViewDetail,
   isLoading,
 }) => {
+  const { t } = useTranslation();
+
   const getRoleBadge = (role: string) => {
     switch (role?.toUpperCase()) {
       case "ADMIN":
-        return <Badge variant="outline" className="font-semibold text-rose-600 bg-white border-rose-200 min-w-[100px] justify-center rounded-full px-2 py-0.5 text-[10px] uppercase">QUẢN TRỊ VIÊN</Badge>;
+        return <Badge variant="outline" className="font-semibold text-rose-600 bg-white border-rose-200 min-w-[100px] justify-center rounded-full px-2 py-0.5 text-[10px] uppercase">{t("admin.user.role.admin")}</Badge>;
       case "INSTRUCTOR":
-        return <Badge variant="outline" className="font-semibold border-[#b3d4ff] text-[#0066cc] bg-white min-w-[100px] justify-center rounded-full px-2 py-0.5 text-[10px] uppercase">GIẢNG VIÊN</Badge>;
+        return <Badge variant="outline" className="font-semibold border-[#b3d4ff] text-[#0066cc] bg-white min-w-[100px] justify-center rounded-full px-2 py-0.5 text-[10px] uppercase">{t("admin.user.role.instructor")}</Badge>;
       case "STUDENT":
       default:
-        return <Badge variant="outline" className="font-semibold border-[#b3d4ff] text-[#0066cc] bg-white min-w-[100px] justify-center rounded-full px-2 py-0.5 text-[10px] uppercase">HỌC VIÊN</Badge>;
+        return <Badge variant="outline" className="font-semibold border-[#b3d4ff] text-[#0066cc] bg-white min-w-[100px] justify-center rounded-full px-2 py-0.5 text-[10px] uppercase">{t("admin.user.role.student")}</Badge>;
     }
   };
 
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
-      <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-100 font-semibold min-w-[90px] justify-center rounded-full px-2 py-0.5 text-[10px]">HOẠT ĐỘNG</Badge>
+      <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-100 font-semibold min-w-[90px] justify-center rounded-full px-2 py-0.5 text-[10px]">{t("admin.user.status.active")}</Badge>
     ) : (
-      <Badge variant="outline" className="text-rose-600 bg-rose-50 border-rose-100 font-semibold min-w-[90px] justify-center rounded-full px-2 py-0.5 text-[10px]">BỊ KHÓA</Badge>
+      <Badge variant="outline" className="text-rose-600 bg-rose-50 border-rose-100 font-semibold min-w-[90px] justify-center rounded-full px-2 py-0.5 text-[10px]">{t("admin.user.status.lockedLabel")}</Badge>
     );
   };
 
@@ -99,19 +102,19 @@ export const UserTable: React.FC<UserTableProps> = ({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30">
-            <TableHead className="w-[180px] font-bold">Người dùng</TableHead>
-            <TableHead className="font-bold">Họ và tên</TableHead>
-            <TableHead className="font-bold text-center">Vai trò</TableHead>
-            <TableHead className="font-bold text-center">Trạng thái</TableHead>
-            <TableHead className="font-bold text-center whitespace-nowrap">Vi phạm</TableHead>
-            <TableHead className="text-right font-bold w-[120px]">Thao tác</TableHead>
+            <TableHead className="w-[180px] font-bold">{t("admin.user.table.user")}</TableHead>
+            <TableHead className="font-bold">{t("admin.user.table.name")}</TableHead>
+            <TableHead className="font-bold text-center">{t("admin.user.table.role")}</TableHead>
+            <TableHead className="font-bold text-center">{t("admin.user.table.status")}</TableHead>
+            <TableHead className="font-bold text-center whitespace-nowrap">{t("admin.user.table.violations")}</TableHead>
+            <TableHead className="text-right font-bold w-[120px]">{t("admin.user.table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {users.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} className="h-24 text-center text-muted-foreground font-medium">
-                Không tìm thấy người dùng nào phù hợp.
+                {t("admin.user.table.empty")}
               </TableCell>
             </TableRow>
           ) : (
@@ -154,13 +157,13 @@ export const UserTable: React.FC<UserTableProps> = ({
                       </div>
                     );
                     
-                    let label = "Nhắc nhở";
+                    let label = t("admin.user.violation.reminder");
                     let style = "text-amber-600 bg-amber-50 border-amber-200";
                     if (violationCount >= 3 && violationCount <= 5) {
-                      label = "Nghiêm trọng";
+                      label = t("admin.user.violation.serious");
                       style = "text-orange-600 bg-orange-50 border-orange-200";
                     } else if (violationCount > 5) {
-                      label = "Vi phạm quá nhiều";
+                      label = t("admin.user.violation.tooMany");
                       style = "text-rose-600 bg-rose-50 border-rose-200";
                     }
 
@@ -179,7 +182,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                     onClick={() => onViewDetail(user)}
                     className="h-8 p-0 rounded-none text-primary hover:text-primary/80 font-semibold text-xs underline decoration-primary/30 underline-offset-4"
                   >
-                    Xem chi tiết
+                    {t("admin.user.btn.viewDetail")}
                   </Button>
                 </TableCell>
               </TableRow>

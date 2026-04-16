@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface SystemErrorFilterProps {
   filters: any;
@@ -37,6 +38,8 @@ export const SystemErrorFilter = ({
   autoRefresh,
   setAutoRefresh 
 }: SystemErrorFilterProps) => {
+  const { t } = useTranslation();
+
   return (
     <div className="p-3 border-b bg-card">
       <div className="flex flex-col xl:flex-row items-center gap-3">
@@ -44,7 +47,7 @@ export const SystemErrorFilter = ({
         <div className="flex-1 w-full min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Tìm theo lỗi, URL hoặc Request ID..." 
+            placeholder={t("admin.systemErrors.filter.searchPlaceholder")} 
             className="pl-9 h-9 text-xs"
             value={filters.keyword}
             onChange={(e) => setFilters({...filters, keyword: e.target.value})}
@@ -55,21 +58,21 @@ export const SystemErrorFilter = ({
         <div className="flex items-center gap-2 w-full xl:w-auto overflow-x-auto">
           <Select value={filters.level} onValueChange={(v) => { setFilters({...filters, level: v}); }}>
             <SelectTrigger className="h-9 w-[140px] shrink-0 text-xs font-semibold">
-              <SelectValue placeholder="Mức độ" />
+              <SelectValue placeholder={t("admin.systemErrors.filter.levelPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">Tất cả Level</SelectItem>
-              <SelectItem value="ERROR" className="text-xs">ERROR (Lỗi)</SelectItem>
-              <SelectItem value="WARN" className="text-xs">WARN (Cảnh báo)</SelectItem>
+              <SelectItem value="all" className="text-xs">{t("admin.systemErrors.filter.allLevels")}</SelectItem>
+              <SelectItem value="ERROR" className="text-xs">ERROR</SelectItem>
+              <SelectItem value="WARN" className="text-xs">WARN</SelectItem>
             </SelectContent>
           </Select>
           
           <Select value={filters.service} onValueChange={(v) => { setFilters({...filters, service: v}); }}>
             <SelectTrigger className="h-9 w-[140px] shrink-0 text-xs font-semibold">
-              <SelectValue placeholder="Dịch vụ" />
+              <SelectValue placeholder={t("admin.systemErrors.filter.servicePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">Toàn hệ thống</SelectItem>
+              <SelectItem value="all" className="text-xs">{t("admin.systemErrors.filter.allServices")}</SelectItem>
               <SelectItem value="Backend-API" className="text-xs">Backend-API</SelectItem>
               <SelectItem value="Frontend-Client" className="text-xs">Frontend-Client</SelectItem>
             </SelectContent>
@@ -77,18 +80,18 @@ export const SystemErrorFilter = ({
 
           <Select value={filters.resolved} onValueChange={(v) => { setFilters({...filters, resolved: v}); }}>
             <SelectTrigger className="h-9 w-[140px] shrink-0 text-xs font-semibold">
-              <SelectValue placeholder="Trạng thái" />
+              <SelectValue placeholder={t("admin.systemErrors.filter.statusPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">Mọi trạng thái</SelectItem>
-              <SelectItem value="true" className="text-xs">Đã xử lý</SelectItem>
-              <SelectItem value="false" className="text-xs">Đang chờ</SelectItem>
+              <SelectItem value="all" className="text-xs">{t("admin.systemErrors.filter.allStatuses")}</SelectItem>
+              <SelectItem value="true" className="text-xs">{t("admin.systemErrors.filter.resolved")}</SelectItem>
+              <SelectItem value="false" className="text-xs">{t("admin.systemErrors.filter.pending")}</SelectItem>
             </SelectContent>
           </Select>
 
           <div className="flex items-center space-x-2 bg-muted/20 border px-3 h-9 rounded-md shrink-0">
             <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
-            <Label htmlFor="auto-refresh" className="text-[10px] font-bold uppercase cursor-pointer text-muted-foreground shrink-0">Auto</Label>
+            <Label htmlFor="auto-refresh" className="text-[10px] font-bold uppercase cursor-pointer text-muted-foreground shrink-0">{t("admin.systemErrors.filter.autoRefresh")}</Label>
           </div>
 
           <TooltipProvider delayDuration={0}>
@@ -99,7 +102,7 @@ export const SystemErrorFilter = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Khôi phục mặc định</p>
+                <p>{t("admin.systemErrors.filter.reset")}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

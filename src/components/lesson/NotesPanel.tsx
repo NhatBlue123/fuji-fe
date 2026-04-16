@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGetMyNoteQuery, useSaveMyNoteMutation } from "@/store/services/lessonApi";
 import { Save, CheckCircle, Loader2 } from "lucide-react";
@@ -9,6 +10,7 @@ interface NotesPanelProps {
 }
 
 export function NotesPanel({ lessonId }: NotesPanelProps) {
+  const { t } = useTranslation();
   const { data: noteData, isLoading: isLoadingNote } = useGetMyNoteQuery({ lessonId });
   const [saveNote, { isLoading: isSaving }] = useSaveMyNoteMutation();
 
@@ -117,7 +119,7 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
         <textarea
           value={content}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="Ghi chú cá nhân trong buổi học...&#10;&#10;• Từ vựng mới&#10;• Ngữ pháp cần ôn&#10;• Câu hỏi cho giáo viên"
+          placeholder={t('auto.lesson_notes_1')}
           className="w-full h-full resize-none bg-transparent text-sm text-[#F0F0F0] placeholder:text-[#8B8FA8]/40 focus:outline-none leading-relaxed"
         />
       </div>

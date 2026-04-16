@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { Send, Paperclip, Image as ImageIcon, FileText, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -114,7 +115,7 @@ function ImageModal({
         <button
           onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
           className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-          title="Thu nhỏ (-)"
+          title={t('auto.lesson_chat_3')}
         >
           <ZoomOut className="h-5 w-5" />
         </button>
@@ -124,7 +125,7 @@ function ImageModal({
         <button
           onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
           className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-          title="Phóng to (+)"
+          title={t('auto.lesson_chat_4')}
         >
           <ZoomIn className="h-5 w-5" />
         </button>
@@ -148,6 +149,7 @@ export function ChatPanel({
   onReaction,
   onMarkSeen,
 }: ChatPanelProps) {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [hoveredMsgId, setHoveredMsgId] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -352,7 +354,7 @@ export function ChatPanel({
         <span className="text-lg">{getFileIcon()}</span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate">{fileName}</div>
-          <div className="text-[10px] text-[#8B8FA8]">Nhấn để tải về</div>
+          <div className="text-[10px] text-[#8B8FA8]">{t('auto.lesson_chat_1')}</div>
         </div>
       </a>
     );
@@ -512,7 +514,7 @@ export function ChatPanel({
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
               className="shrink-0 w-10 h-10 rounded-xl bg-[#252838] hover:bg-[#2d3142] text-[#8B8FA8] hover:text-[#F0F0F0] disabled:opacity-50 flex items-center justify-center transition-colors border border-white/5"
-              title="Đính kèm file"
+              title={t('auto.lesson_chat_5')}
             >
               <Paperclip className="h-4 w-4" />
             </button>
@@ -523,7 +525,7 @@ export function ChatPanel({
             value={input}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Nhắn tin..."
+            placeholder={t('auto.lesson_chat_2')}
             rows={1}
             className="flex-1 min-h-[40px] max-h-[100px] resize-none bg-[#252838] border border-white/10 text-sm text-[#F0F0F0] placeholder:text-[#8B8FA8]/60 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#6C63FF] transition-colors"
           />

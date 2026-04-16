@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 const LEVELS = ["N5", "N4", "N3", "N2", "N1"] as const;
 
 export function VoiceChatSection() {
+  const { t } = useTranslation();
   const [selectedLevel, setSelectedLevel] =
     useState<(typeof LEVELS)[number]>("N3");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <section className="px-6 md:px-12 lg:px-20 mt-20 mb-16">
@@ -37,18 +44,18 @@ export function VoiceChatSection() {
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest mb-4">
               <span className="size-2 rounded-full bg-blue-500 animate-pulse"></span>
-              Random Voice Chat
+              {isMounted ? t("home.voiceChat.badge") : t("home.voiceChat.badge", { lng: 'vi' })}
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2 drop-shadow-lg">
-              Fuji Match - Kết nối &amp; Luyện nói
+              {isMounted ? t("home.voiceChat.title") : t("home.voiceChat.title", { lng: 'vi' })}
             </h2>
             <p className="text-xl text-slate-300 font-medium font-light">
-              Tìm bạn luyện nói tiếng Nhật ngẫu nhiên
+              {isMounted ? t("home.voiceChat.subtitle") : t("home.voiceChat.subtitle", { lng: 'vi' })}
             </p>
           </div>
-          <div className="w-full max-w-md mb-12">
+          <div className="w-full max-md mb-12">
             <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-4">
-              Chọn trình độ của bạn
+              {isMounted ? t("home.voiceChat.selectLevel") : t("home.voiceChat.selectLevel", { lng: 'vi' })}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {LEVELS.map((level) => (
@@ -70,12 +77,13 @@ export function VoiceChatSection() {
           <Button className="group relative inline-flex items-center justify-center gap-3 bg-[#F472B6] hover:bg-pink-400 text-white text-lg font-bold px-10 py-5 rounded-2xl shadow-[0_0_30px_rgba(244,114,182,0.4)] hover:shadow-[0_0_50px_rgba(244,114,182,0.6)] transition-all transform hover:-translate-y-1">
             <span className="absolute -inset-1 rounded-2xl border border-pink-400 opacity-50 animate-ping"></span>
             <span className="material-symbols-outlined text-3xl">mic</span>
-            <span>Bắt đầu ghép cặp</span>
+            <span>{isMounted ? t("home.voiceChat.startButton") : t("home.voiceChat.startButton", { lng: 'vi' })}</span>
           </Button>
           <div className="mt-8 flex items-center gap-2 text-slate-500 text-sm">
             <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>124 người đang online</span>
+            <span>{isMounted ? t("home.voiceChat.onlineCount", { count: 124 }) : t("home.voiceChat.onlineCount", { count: 124, lng: 'vi' })}</span>
           </div>
+
         </div>
       </div>
     </section>

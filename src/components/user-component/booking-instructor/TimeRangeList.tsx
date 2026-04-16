@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { TimeRange } from "./types";
 
 type Props = {
@@ -8,10 +9,11 @@ type Props = {
 };
 
 export default function TimeRangeList({ ranges, onAdd, onRemove, onChange }: Props) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm text-muted-foreground">Khung giờ trong ngày</p>
+        <p className="text-sm text-muted-foreground">{t('auto.booking_time_1')}</p>
         <button
           type="button"
           onClick={onAdd}
@@ -44,9 +46,7 @@ export default function TimeRangeList({ ranges, onAdd, onRemove, onChange }: Pro
               onClick={() => onRemove(idx)}
               disabled={ranges.length === 1}
               className="h-11 px-3 rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40"
-            >
-              Xóa
-            </button>
+            >{t("common.delete")}</button>
           </div>
         ))}
       </div>

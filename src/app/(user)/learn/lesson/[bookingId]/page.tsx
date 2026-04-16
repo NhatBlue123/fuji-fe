@@ -1,3 +1,10 @@
+/**
+ * [I18N PAGE - LESSON ROOM]
+ * Thực hiện:
+ * - Localize các thông báo phòng học (Phòng đã sẵn sàng, Lỗi kết nối).
+ * - Dịch các pop-up quan trọng: Xác nhận ghi hình (Consent), Báo cáo (Report modal), và xác nhận thoát (Exit check).
+ * - Chuyển đổi định dạng thời gian còn lại sang chuẩn quốc tế.
+ */
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
@@ -23,10 +30,13 @@ import { disconnectStomp } from "@/lib/stomp";
 import { useLessonRecordingStomp } from "@/hooks/useLessonRecordingStomp";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 
 export default function LessonPage() {
   const params = useParams<{ bookingId: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const bookingId = Number(params.bookingId);
   const { user, accessToken } = useAuth();
 
@@ -112,11 +122,11 @@ export default function LessonPage() {
       .unwrap()
       .then((data) => {
         setLessonData(data);
-        toast.success("Phòng học đã sẵn sàng!");
+        toast.success(tMsg((data as any).messageKey) || t("lesson.room.ready"));
       })
       .catch((err) => {
         console.error("[Lesson] Failed to create room:", err);
-        const msg = err?.data?.message || "Không thể tạo phòng học";
+        const msg = tMsg(err?.data?.messageKey) || tMsg("api.error") || t("lesson.room.errorCreate");
         toast.error(msg);
       });
   }, [bookingId, createRoom, lessonData]);
@@ -142,13 +152,13 @@ export default function LessonPage() {
     try {
       if (remoteRecording) {
         await stopRecording({ lessonId: lessonData.lessonId }).unwrap();
-        toast.success("Đã dừng ghi hình");
+        toast.success(t("lesson.recording.stopped"));
       } else {
         await startRecording({ lessonId: lessonData.lessonId }).unwrap();
-        toast.success("Đã bắt đầu ghi hình");
+        toast.success(t("lesson.recording.started"));
       }
     } catch {
-      toast.error("Không thể thay đổi trạng thái ghi hình");
+      toast.error(t("lesson.recording.errorToggle"));
     }
   }, [lessonData, role, remoteRecording, startRecording, stopRecording]);
 
@@ -161,7 +171,7 @@ export default function LessonPage() {
   const handleLessonTimeUp = useCallback(async () => {
     if (autoEndedRef.current) return;
     autoEndedRef.current = true;
-    toast.info("Đã hết thời lượng buổi học. Hệ thống tự động rời phòng.");
+    toast.info(t("lesson.timeup"));
 
     if (lessonData && role === "TEACHER") {
       try {
@@ -178,9 +188,9 @@ export default function LessonPage() {
     if (lessonData) {
       try {
         await endLesson({ lessonId: lessonData.lessonId }).unwrap();
-        toast.success("Buổi học đã kết thúc");
+        toast.success(t("lesson.ended"));
       } catch {
-        toast.error("Lỗi khi kết thúc buổi học");
+        toast.error(t("lesson.errorEnd"));
       }
     }
   }, [lessonData, endLesson]);
@@ -188,7 +198,7 @@ export default function LessonPage() {
   const handleEndCall = useCallback(async () => {
     if (role === "TEACHER") {
       const confirmed = window.confirm(
-        "Bạn có chắc muốn kết thúc lớp học? Hành động này sẽ đóng phòng và không thể vào lại."
+        t("lesson.confirm.endTeacher")
       );
       if (!confirmed) return;
       setReportOpen(true);
@@ -196,7 +206,7 @@ export default function LessonPage() {
     }
 
     const confirmedLeave = window.confirm(
-      "Bạn có chắc muốn rời lớp học? Bạn vẫn có thể vào lại nếu buổi học chưa kết thúc."
+      t("lesson.confirm.leaveStudent")
     );
     if (!confirmedLeave) return;
     exitLesson();
@@ -212,20 +222,20 @@ export default function LessonPage() {
 
   // Error state
   if (createError || dailyError) {
-    const errorMessage = dailyError || "Không thể kết nối phòng học";
+    const errorMessage = dailyError || t("lesson.room.errorCreate");
     return (
       <div className="flex items-center justify-center bg-[#0f1117]" style={{ height: "calc(100vh - 64px)" }}>
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-[#1a1d27] px-8 py-7 shadow-xl max-w-md text-center">
           <AlertTriangle className="h-12 w-12 text-[#FF6B6B]" />
           <div>
-            <p className="text-[#F0F0F0] font-semibold text-sm">Không thể kết nối</p>
+            <p className="text-[#F0F0F0] font-semibold text-sm">{t('auto.booking_lesson_1')}</p>
             <p className="text-[#8B8FA8] text-xs mt-1">{String(errorMessage)}</p>
           </div>
           <button
             onClick={() => router.push("/booking/bookingmodal")}
             className="rounded-xl bg-[#6C63FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#5a52e0] transition-colors"
           >
-            Quay lại
+            {t("common.back")}
           </button>
         </div>
       </div>
@@ -242,9 +252,9 @@ export default function LessonPage() {
             <RefreshCw className="absolute h-6 w-6 text-[#6C63FF] animate-spin" />
           </div>
           <div className="text-center">
-            <p className="text-[#F0F0F0] font-semibold text-sm">Đang thiết lập phòng học</p>
+            <p className="text-[#F0F0F0] font-semibold text-sm">{t('auto.booking_lesson_2')}</p>
             <p className="text-[#8B8FA8] text-xs mt-1 animate-pulse">
-              Kết nối Daily.co và chuẩn bị video...
+              {t("common.loading")}
             </p>
           </div>
         </div>
@@ -258,19 +268,19 @@ export default function LessonPage() {
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#1a1d27] p-5">
             <p className="text-sm font-semibold text-[#F0F0F0]">
-              {role === "TEACHER" ? "Báo cáo học viên" : "Báo cáo giảng viên"}
+              {role === "TEACHER" ? t("lesson.report.student") : t("lesson.report.teacher")}
             </p>
             <p className="text-xs text-[#8B8FA8] mt-1">
-              Thông tin này sẽ hiển thị ở mục phản hồi và báo cáo (booking) bên admin.
+              {t("lesson.report.desc")}
             </p>
             <textarea
               value={reportComment}
               onChange={(e) => setReportComment(e.target.value)}
-              placeholder={role === "TEACHER" ? "Nhập nội dung báo cáo học viên" : "Nhập nội dung báo cáo giảng viên"}
+              placeholder={role === "TEACHER" ? t("lesson.report.placeholder_student") : t("lesson.report.placeholder_teacher")}
               className="mt-3 w-full min-h-[80px] rounded-lg bg-[#0f1117] border border-white/10 px-3 py-2 text-xs"
             />
             <div className="mt-2">
-              <p className="text-[11px] text-[#8B8FA8] mb-1">Mức độ (1-5)</p>
+              <p className="text-[11px] text-[#8B8FA8] mb-1">{t('auto.booking_lesson_3')}</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((score) => (
                   <button
@@ -294,7 +304,7 @@ export default function LessonPage() {
                 className="px-4 py-2 rounded-lg border border-white/20 text-xs"
                 onClick={() => setReportOpen(false)}
               >
-                Hủy
+                {t("lesson.report.btn_cancel")}
               </button>
               <button
                 type="button"
@@ -307,16 +317,16 @@ export default function LessonPage() {
                       rating: reportRating,
                       comment: reportComment || undefined,
                     }).unwrap();
-                    toast.success("Đã gửi báo cáo thành công");
+                    toast.success(tMsg("api.success") || t("lesson.report.success"));
                   } catch (err: any) {
-                    toast.error(err?.data?.message || "Không thể gửi báo cáo");
+                    toast.error(tMsg(err?.data?.messageKey) || tMsg("api.error"));
                   } finally {
                     setReportOpen(false);
                     exitLesson();
                   }
                 }}
               >
-                Gửi & kết thúc
+                {t("lesson.report.btn_send")}
               </button>
             </div>
           </div>
@@ -326,17 +336,16 @@ export default function LessonPage() {
       {recordingConsentOpen && role === "STUDENT" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="max-w-md rounded-2xl border border-white/10 bg-[#1a1d27] p-6 shadow-xl">
-            <p className="text-[#F0F0F0] font-semibold text-sm">Ghi hình buổi học</p>
+            <p className="text-[#F0F0F0] font-semibold text-sm">{t('lesson.recording.consentTitle')}</p>
             <p className="text-[#8B8FA8] text-xs mt-2 leading-relaxed">
-              Buổi học đang được ghi bằng cloud recording. Tiếp tục tham gia nghĩa là bạn đã nắm được
-              thông tin này và đồng ý.
+              {t('lesson.recording.consentDesc')}
             </p>
             <button
               type="button"
               className="mt-4 w-full rounded-xl bg-[#6C63FF] py-2.5 text-sm font-semibold text-white hover:bg-[#5a52e0]"
               onClick={() => setRecordingConsentOpen(false)}
             >
-              Đã hiểu
+              {t('lesson.recording.consentBtn')}
             </button>
           </div>
         </div>
@@ -369,7 +378,7 @@ export default function LessonPage() {
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                 <RefreshCw className="h-8 w-8 text-[#8B8FA8] animate-spin" />
-                <p className="text-[#8B8FA8] text-sm">Đang kết nối video...</p>
+                <p className="text-[#8B8FA8] text-sm">{t('common.loading')}</p>
               </div>
             )}
           </div>

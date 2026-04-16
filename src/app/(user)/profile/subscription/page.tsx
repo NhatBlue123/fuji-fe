@@ -31,9 +31,12 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 
 export default function SubscriptionPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const { data: user, isLoading: isUserLoading } = useGetCurrentUserQuery();
 
@@ -57,11 +60,11 @@ export default function SubscriptionPage() {
 
   const handleToggleAutoRenew = async (checked: boolean) => {
     try {
-      await toggleAutoRenew({ enable: checked }).unwrap();
-      toast.success(checked ? "Đã bật gia hạn tự động" : "Đã tắt gia hạn tự động");
+      const res = await toggleAutoRenew({ enable: checked }).unwrap();
+      toast.success(tMsg(res.messageKey) || (checked ? "Đã bật gia hạn tự động" : "Đã tắt gia hạn tự động"));
       refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || err?.message || "Lỗi cập nhật tự động gia hạn");
+      toast.error(tMsg(err?.data?.messageKey) || tMsg("api.error") || "Lỗi cập nhật tự động gia hạn");
     }
   };
 
@@ -104,16 +107,13 @@ export default function SubscriptionPage() {
             onClick={() => router.back()}
             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-3"
           >
-            <ArrowLeft size={14} /> Quay lại
-          </button>
+            <ArrowLeft size={14} />{t('auto.subscription_1')}</button>
           
           <Badge variant="secondary" className="px-3 py-1 gap-2 border-pink-500/20 bg-pink-500/5 text-pink-500 dark:text-pink-400 mb-2">
-            <Crown size={12} /> Quản lý Gói Sub
-          </Badge>
-          <h1 className="text-4xl font-black tracking-tight uppercase">
-            Gói <span className={`drop-shadow-[0_0_15px_rgba(236,72,153,0.3)] ${currentDetails.textColor}`}>{currentTier}</span>
+            <Crown size={12} />{t('auto.subscription_2')}</Badge>
+          <h1 className="text-4xl font-black tracking-tight uppercase">{t('auto.subscription_3')}<span className={`drop-shadow-[0_0_15px_rgba(236,72,153,0.3)] ${currentDetails.textColor}`}>{currentTier}</span>
           </h1>
-          <p className="text-muted-foreground">Quản lý các đặc quyền và lịch sử đăng ký của bạn.</p>
+          <p className="text-muted-foreground">{t('auto.subscription_4')}</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -122,8 +122,7 @@ export default function SubscriptionPage() {
             size="lg"
             className="rounded-2xl h-12 px-8 bg-secondary hover:bg-secondary/90 text-white font-bold py-2 transition"
           >
-            <Star className="mr-2" size={18} strokeWidth={3} /> Nâng cấp Gói
-          </Button>
+            <Star className="mr-2" size={18} strokeWidth={3} />{t('auto.subscription_5')}</Button>
         </div>
       </header>
 
@@ -141,7 +140,7 @@ export default function SubscriptionPage() {
                   {currentDetails.icon}
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Gói hiện tại</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">{t('auto.subscription_6')}</p>
                   <h3 className={`text-2xl font-black uppercase tracking-widest ${currentDetails.textColor}`}>
                     {currentDetails.label}
                   </h3>
@@ -150,7 +149,7 @@ export default function SubscriptionPage() {
               
               {mySub?.expireAt && (
                 <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Thời hạn</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">{t('auto.subscription_7')}</p>
                   <p className="font-mono text-lg font-bold">
                     {mySub.daysRemaining > 0 ? `Còn ${mySub.daysRemaining} ngày` : 'Hết hạn'}
                   </p>
@@ -166,8 +165,8 @@ export default function SubscriptionPage() {
                   <div className="flex items-center gap-3">
                     <RefreshCw className="text-pink-400" size={20} />
                     <div>
-                      <p className="text-sm font-bold text-white">Gia hạn tự động</p>
-                      <p className="text-xs text-white/50">Tự động trừ tiền từ ví Fuji khi hết hạn</p>
+                      <p className="text-sm font-bold text-white">{t('auto.subscription_8')}</p>
+                      <p className="text-xs text-white/50">{t('auto.subscription_9')}</p>
                     </div>
                   </div>
                   <Switch 
@@ -188,14 +187,14 @@ export default function SubscriptionPage() {
             ) : (
                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-3">
                  <AlertCircle className="mx-auto text-white/40" size={32} />
-                 <p className="text-sm font-bold">Bạn đang sử dụng gói Miễn Phí</p>
-                 <p className="text-xs text-white/50">Nâng cấp ngay để mở khóa toàn bộ tính năng học tập và ôn thi JLPT tốt nhất.</p>
+                 <p className="text-sm font-bold">{t('auto.subscription_10')}</p>
+                 <p className="text-xs text-white/50">{t('auto.subscription_11')}</p>
                </div>
             )}
             
             {(mySub?.activeFeatures?.length ?? 0) > 0 && (
               <div className="mt-8">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-4">Quyền lợi của bạn</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-4">{t('auto.subscription_12')}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {mySub?.activeFeatures.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2">
@@ -213,7 +212,7 @@ export default function SubscriptionPage() {
         <div className="lg:col-span-4 space-y-4">
           <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[140px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl group relative overflow-hidden">
             <div className="relative z-10">
-              <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Mức học tập</p>
+              <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-[0.2em] mb-1">{t('auto.subscription_13')}</p>
               <p className="text-xl font-black text-foreground dark:text-white uppercase tracking-tighter">
                 {isPremium ? 'Hardcore Learner' : (isPro ? 'Serious Learner' : 'Beginner')}
               </p>
@@ -233,8 +232,8 @@ export default function SubscriptionPage() {
               <History size={24} />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Lịch sử đăng ký</CardTitle>
-              <CardDescription className="text-muted-foreground dark:text-slate-400">Các gói bạn đã mua</CardDescription>
+              <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">{t('auto.subscription_14')}</CardTitle>
+              <CardDescription className="text-muted-foreground dark:text-slate-400">{t('auto.subscription_15')}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -243,11 +242,11 @@ export default function SubscriptionPage() {
           <Table>
             <TableHeader className="bg-muted/30 dark:bg-black/10 uppercase text-[10px] font-black tracking-widest text-muted-foreground dark:text-slate-500">
               <TableRow className="dark:border-white/5">
-                <TableHead className="px-8 h-12">Mã Gói</TableHead>
-                <TableHead className="px-8 h-12">Loại Gói</TableHead>
-                <TableHead className="px-8 h-12">Thời Gian</TableHead>
-                <TableHead className="px-8 h-12 text-right">Số Tiền</TableHead>
-                <TableHead className="px-8 h-12 text-right">Trạng Thái</TableHead>
+                <TableHead className="px-8 h-12">{t('auto.subscription_16')}</TableHead>
+                <TableHead className="px-8 h-12">{t('auto.subscription_17')}</TableHead>
+                <TableHead className="px-8 h-12">{t('auto.subscription_18')}</TableHead>
+                <TableHead className="px-8 h-12 text-right">{t('auto.subscription_19')}</TableHead>
+                <TableHead className="px-8 h-12 text-right">{t('auto.subscription_20')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -265,7 +264,7 @@ export default function SubscriptionPage() {
                      </span>
                    </TableCell>
                    <TableCell className="px-8 py-6 text-right font-black tracking-tighter text-foreground dark:text-white">
-                     {Number(tx.price || 0).toLocaleString()} <span className="text-[10px] ml-1 opacity-40">đ</span>
+                     {Number(tx.price || 0).toLocaleString()} <span className="text-[10px] ml-1 opacity-40">{t('auto.subscription_21')}</span>
                    </TableCell>
                    <TableCell className="px-8 py-6 text-right">
                      <Badge variant="outline" className={`px-3 py-1 text-[9px] font-black uppercase ring-0 shadow-inner border 
@@ -285,8 +284,8 @@ export default function SubscriptionPage() {
                         <History size={32} />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-sm font-bold uppercase tracking-widest text-foreground dark:text-white">Chưa đăng ký gói nào</p>
-                        <p className="text-[11px] text-muted-foreground dark:text-slate-500 mb-4 max-w-xs mx-auto">Hãy nâng cấp lên PRO hoặc PREMIUM để nhận được nhiều ưu đãi học tập</p>
+                        <p className="text-sm font-bold uppercase tracking-widest text-foreground dark:text-white">{t('auto.subscription_22')}</p>
+                        <p className="text-[11px] text-muted-foreground dark:text-slate-500 mb-4 max-w-xs mx-auto">{t('auto.subscription_23')}</p>
                       </div>
                     </div>
                   </TableCell>
@@ -309,7 +308,7 @@ function LoadingState() {
         <div className="absolute inset-0 w-20 h-20 border-t-2 border-pink-500 rounded-full animate-spin shadow-[0_0_20px_rgba(236,72,153,0.3)]" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-pink-500 dark:text-pink-400 font-black uppercase tracking-[0.3em] text-[10px]">Cập nhật dữ liệu</p>
+        <p className="text-pink-500 dark:text-pink-400 font-black uppercase tracking-[0.3em] text-[10px]">{t('auto.subscription_24')}</p>
       </div>
     </div>
   );

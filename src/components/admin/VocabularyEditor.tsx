@@ -1,9 +1,5 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface VocabularyItem {
   word: string;
@@ -17,6 +13,7 @@ interface VocabularyEditorProps {
 }
 
 export function VocabularyEditor({ value, onChange }: VocabularyEditorProps) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<VocabularyItem[]>([]);
   const [newWord, setNewWord] = useState("");
   const [newReading, setNewReading] = useState("");
@@ -40,7 +37,7 @@ export function VocabularyEditor({ value, onChange }: VocabularyEditorProps) {
 
   const addItem = () => {
     if (!newWord.trim() || !newMeaning.trim()) {
-      alert("Vui lòng điền chữ Nhật và nghĩa");
+      alert(t("admin.vocab.alert.empty"));
       return;
     }
     const newItem: VocabularyItem = {
@@ -67,27 +64,27 @@ export function VocabularyEditor({ value, onChange }: VocabularyEditorProps) {
 
   return (
     <div className="space-y-2">
-      <Label>Từ vựng</Label>
+      <Label>{t("admin.vocab.label.vocab")}</Label>
 
       {/* Input section */}
       <div className="space-y-2">
         <div className="grid grid-cols-3 gap-2">
           <Input
-            placeholder="Chữ Nhật *"
+            placeholder={t("admin.vocab.placeholder.word")}
             value={newWord}
             onChange={(e) => setNewWord(e.target.value)}
             onKeyDown={handleKeyDown}
             className="text-sm"
           />
           <Input
-            placeholder="Phiên âm (tùy)"
+            placeholder={t("admin.vocab.placeholder.reading")}
             value={newReading}
             onChange={(e) => setNewReading(e.target.value)}
             onKeyDown={handleKeyDown}
             className="text-sm"
           />
           <Input
-            placeholder="Nghĩa *"
+            placeholder={t("admin.vocab.placeholder.meaning")}
             value={newMeaning}
             onChange={(e) => setNewMeaning(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -96,7 +93,7 @@ export function VocabularyEditor({ value, onChange }: VocabularyEditorProps) {
         </div>
         <Button type="button" size="sm" onClick={addItem} className="w-full">
           <Plus className="mr-2 h-4 w-4" />
-          Thêm từ vựng
+          {t("admin.vocab.btn.add")}
         </Button>
       </div>
 
@@ -131,7 +128,7 @@ export function VocabularyEditor({ value, onChange }: VocabularyEditorProps) {
             </div>
           ))}
           <p className="text-xs text-muted-foreground">
-            {items.length} từ vựng
+            {items.length} {t("admin.vocab.count")}
           </p>
         </div>
       )}

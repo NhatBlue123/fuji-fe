@@ -12,12 +12,12 @@ import {
 import type { Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
+import { tMsg } from "@/i18n";
 
 import { connectPaymentSocket, disconnectPaymentSocket } from "@/lib/socket/socket-payment";
 import { store } from "@/store";
 import { useAuth } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
-import { useNotifications } from "@/providers/NotificationProvider";
 
 export interface PaymentStatusChangeEvent {
   userId: number;
@@ -114,15 +114,16 @@ export function PaymentSocketProvider({
         receivedAt: new Date().toISOString(),
       });
 
+      // [FRONTEND I18N ROLE] Resolve messageKey ONLY at UI Layer (Toasts)
       if (data.newStatus === "SUCCESS") {
-        toast.success(data.message || "Giao dịch thành công!");
+        toast.success(tMsg(data.message) || tMsg("payment.status.success"));
         if (data.transactionType === "TOPUP" && pathname !== "/premium/success") {
           setTimeout(() => router.push("/premium/success"), 1000);
         }
       } else if (data.newStatus === "FAILED") {
-        toast.error(data.message || "Giao dịch thất bại.");
+        toast.error(tMsg(data.message) || tMsg("payment.status.failed"));
       } else {
-        toast.info(data.message || `Trạng thái giao dịch thay đổi: ${data.newStatus}`);
+        toast.info(tMsg(data.message) || tMsg("payment.status.unknown"));
       }
 
       store.dispatch(

@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Filter from "@/components/user-component/course/Filter";
 import CourseList from "@/components/user-component/course/CourseList";
 
 type CourseCategoryFilter = "all" | "free" | "paid" | "mine";
 
 export default function CoursePage() {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState({
     search: "",
     level: "all",
@@ -35,12 +37,12 @@ export default function CoursePage() {
         </div>
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
           <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3">
-            Kho tàng khóa học{" "}
+            {t("course.page.title_part1")}
             <span className="text-secondary text-glow">FUJI</span>
+            {t("course.page.title_part2")}
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed">
-            Hệ thống bài giảng chất lượng cao, thiết kế độc quyền cho người
-            Việt. Từ sơ cấp N5 đến cao cấp N1.
+            {t("course.page.subtitle")}
           </p>
         </div>
       </div>

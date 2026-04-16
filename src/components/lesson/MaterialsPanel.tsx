@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -56,6 +57,7 @@ function detectFileType(file: File): "IMAGE" | "PDF" | "LINK" {
 }
 
 export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelProps) {
+  const { t } = useTranslation();
   const { data: materials, refetch } = useGetMaterialsQuery({ lessonId });
   const [saveMaterial] = useSaveMaterialMutation();
   const [deleteMaterial] = useDeleteMaterialMutation();
@@ -214,7 +216,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
             type="button"
             onClick={handleZoomOut}
             className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06]"
-            title="Thu nhỏ"
+            title={t('auto.lesson_materials_3')}
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </button>
@@ -225,7 +227,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
             type="button"
             onClick={handleZoomIn}
             className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06]"
-            title="Phóng to"
+            title={t('auto.lesson_materials_4')}
           >
             <ZoomIn className="h-3.5 w-3.5" />
           </button>
@@ -238,7 +240,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
               file={resolvedViewingUrl}
               onLoadSuccess={({ numPages: n }) => setNumPages(n)}
               loading={<Loader2 className="h-6 w-6 text-[#8B8FA8] animate-spin mt-10" />}
-              error={<p className="text-[#FF6B6B] text-xs mt-10">Không thể tải PDF</p>}
+              error={<p className="text-[#FF6B6B] text-xs mt-10">{t('auto.lesson_materials_1')}</p>}
             >
               <Page
                 pageNumber={currentPage}
@@ -321,7 +323,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
               <input
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Tên tài liệu"
+                placeholder={t('auto.lesson_materials_2')}
                 className="w-full bg-[#252838] border border-white/10 text-xs text-[#F0F0F0] placeholder:text-[#8B8FA8]/50 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#6C63FF]"
               />
               <div className="flex gap-1.5">

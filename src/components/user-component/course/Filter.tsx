@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import Input from "@/components/common/Input";
 import {
   Select,
@@ -19,27 +20,28 @@ interface FilterProps {
   }) => void;
 }
 
-const LEVELS = [
-  { id: "all", label: "Tất cả" },
-  { id: "n5", label: "N5" },
-  { id: "n4", label: "N4" },
-  { id: "n3", label: "N3" },
-  { id: "n2", label: "N2" },
-  { id: "n1", label: "N1" },
-];
-
-const CATEGORIES = [
-  { id: "all", label: "Tất cả" },
-  { id: "free", label: "Miễn phí" },
-  { id: "paid", label: "Tốn phí" },
-  { id: "mine", label: "Của tôi" },
-];
-
 export default function Filter({ onFilterChange }: FilterProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedCategory, setSelectedCategory] =
     useState<CourseCategoryFilter>("all");
+
+  const LEVELS = useMemo(() => [
+    { id: "all", label: t("course.filter.all") },
+    { id: "n5", label: "N5" },
+    { id: "n4", label: "N4" },
+    { id: "n3", label: "N3" },
+    { id: "n2", label: "N2" },
+    { id: "n1", label: "N1" },
+  ], [t]);
+
+  const CATEGORIES = useMemo(() => [
+    { id: "all", label: t("course.filter.all") },
+    { id: "free", label: t("course.filter.free") },
+    { id: "paid", label: t("course.filter.paid") },
+    { id: "mine", label: t("course.filter.mine") },
+  ], [t]);
 
   const handleLevelChange = (level: string) => {
     setSelectedLevel(level);
@@ -77,7 +79,7 @@ export default function Filter({ onFilterChange }: FilterProps) {
       <div className="relative mb-6">
         <Input
           icon="search"
-          placeholder="Tìm kiếm khóa học (VD: Luyện thi N3, Kaiwa...)"
+          placeholder={t("course.filter.searchPlaceholder")}
           type="text"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
@@ -88,19 +90,19 @@ export default function Filter({ onFilterChange }: FilterProps) {
           onClick={handleSearch}
           className="absolute inset-y-2 right-2 px-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-lg text-sm transition-colors shadow-lg shadow-secondary/20"
         >
-          Tìm kiếm
+          {t("common.search") || "Tìm kiếm"}
         </button>
       </div>
 
       <div className="flex flex-col xl:flex-row gap-4">
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           <span className="text-muted-foreground text-sm font-bold uppercase tracking-wide">
-            Trình độ:
+            {t("course.filter.levelLabel")}
           </span>
           <div className="min-w-[220px] w-full sm:w-auto">
             <Select value={selectedLevel} onValueChange={handleLevelChange}>
               <SelectTrigger className="w-full rounded-2xl border border-border bg-background/80 backdrop-blur-md text-foreground font-bold">
-                <SelectValue placeholder="Chọn trình độ" />
+                <SelectValue placeholder={t("course.filter.levelPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {LEVELS.map((level) => (
@@ -115,7 +117,7 @@ export default function Filter({ onFilterChange }: FilterProps) {
 
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           <span className="text-muted-foreground text-sm font-bold uppercase tracking-wide">
-            Danh mục:
+            {t("course.filter.categoryLabel")}
           </span>
           <div className="min-w-[220px] w-full sm:w-auto">
             <Select
@@ -123,7 +125,7 @@ export default function Filter({ onFilterChange }: FilterProps) {
               onValueChange={handleCategoryChange}
             >
               <SelectTrigger className="w-full rounded-2xl border border-border bg-background/80 backdrop-blur-md text-foreground font-bold">
-                <SelectValue placeholder="Chọn danh mục" />
+                <SelectValue placeholder={t("course.filter.categoryPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((category) => (

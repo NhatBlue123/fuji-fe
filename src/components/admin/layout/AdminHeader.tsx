@@ -20,27 +20,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/providers/NotificationProvider";
+import { useTranslation } from "react-i18next";
 
-// Map pathname → breadcrumb label
-const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/admin/analytics": "Thống kê",
-  "/admin/users": "Người dùng",
-  "/admin/courses": "Khóa học",
-  "/admin/courses/finance": "Tài chính khóa học (Admin)",
-  "/admin/courses/finance/teacher": "Tài chính khóa học (Giáo viên)",
-  "/admin/teacher-schedules": "Lịch dạy",
-  "/admin/teacher-schedules/teaching-schedule": "Lịch dạy giáo viên",
-  "/admin/teacher-schedules/create-slot": "Tạo lịch dạy",
-  "/admin/flashcard": "Flashcard",
-  "/admin/posts": "Bài viết",
-  "/admin/jlpt-tests": "Đề thi JLPT",
-  "/admin/notifications": "Thông báo",
-  "/admin/roles": "Phân quyền",
-  "/admin/settings": "Cài đặt",
-};
+
 
 export function AdminHeader() {
+  const { t, i18n } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -49,6 +34,24 @@ export function AdminHeader() {
   const { unreadCount, bellRingCount } = useNotifications();
   const [bellAnimating, setBellAnimating] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+
+  const pageTitles: Record<string, string> = React.useMemo(() => ({
+    "/admin": "Dashboard",
+    "/admin/analytics": t("admin.sidebar.items.analytics"),
+    "/admin/users": t("admin.sidebar.items.users"),
+    "/admin/courses": t("admin.sidebar.items.courses"),
+    "/admin/courses/finance": t("admin.sidebar.items.coursesFinanceAdmin"),
+    "/admin/courses/finance/teacher": t("admin.sidebar.items.coursesFinanceTeacher"),
+    "/admin/teacher-schedules": t("admin.sidebar.items.schedules"),
+    "/admin/teacher-schedules/teaching-schedule": t("admin.sidebar.items.schedules"),
+    "/admin/teacher-schedules/create-slot": t("booking.createTitle"),
+    "/admin/flashcard": t("common.flashcard"),
+    "/admin/posts": t("admin.sidebar.items.posts"),
+    "/admin/jlpt-tests": t("admin.sidebar.items.tests"),
+    "/admin/notifications": t("admin.sidebar.items.notifications"),
+    "/admin/roles": t("admin.sidebar.items.roles"),
+    "/admin/settings": t("common.settings"),
+  }), [t, i18n.language]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -75,10 +78,10 @@ export function AdminHeader() {
   const handleLogout = async () => {
     try {
       await dispatch(logoutThunk()).unwrap();
-      toast.success("Đăng xuất thành công!");
+      toast.success(t("auth.logoutSuccess"));
       router.push("/");
     } catch {
-      toast.error("Đăng xuất thất bại");
+      toast.error(t("auth.logoutFailed"));
     }
   };
 
@@ -169,7 +172,7 @@ export function AdminHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <User className="mr-2 h-4 w-4" />
-                Hồ sơ của tôi
+                {t("common.myProfile")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -177,7 +180,7 @@ export function AdminHeader() {
                 className="text-destructive focus:text-destructive"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Đăng xuất
+                {t("auth.logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

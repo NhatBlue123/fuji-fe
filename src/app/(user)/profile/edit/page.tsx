@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import {
+import { 
   User, Phone, Sparkles, ArrowLeft, Save,
   Camera, GraduationCap, PenTool, ShieldCheck, Info
-} from "lucide-react";
+ } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useUpdateProfileMutation } from "@/store/services/user/userApi";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
 export default function EditProfilePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [updateProfile] = useUpdateProfileMutation();
   const { data: user, isLoading, isUninitialized } = useGetCurrentUserQuery();
@@ -131,16 +133,13 @@ export default function EditProfilePage() {
                 onClick={() => router.back()}
                 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-2"
               >
-                <ArrowLeft size={14} /> Trở về
-              </button>
-              <h1 className="text-3xl font-black tracking-tight uppercase">
-                Chỉnh sửa <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">Hồ Sơ</span>
+                <ArrowLeft size={14} />{t('auto.profileEdit_1')}</button>
+              <h1 className="text-3xl font-black tracking-tight uppercase">{t('auto.profileEdit_2')}<span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">{t('auto.profileEdit_3')}</span>
               </h1>
-              <p className="text-muted-foreground text-sm font-medium">Cập nhật thông tin chi tiết của bạn.</p>
+              <p className="text-muted-foreground text-sm font-medium">{t('auto.profileEdit_4')}</p>
             </div>
             <Badge variant="secondary" className="w-fit h-fit px-3 py-1.5 gap-2 border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest text-[9px]">
-              <ShieldCheck size={14} /> Đã xác thực bảo vệ
-            </Badge>
+              <ShieldCheck size={14} />{t('auto.profileEdit_5')}</Badge>
           </div>
 
           <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl transition-all duration-500 relative overflow-hidden">
@@ -188,8 +187,8 @@ export default function EditProfilePage() {
                     />
                   </div>
                   <div className="text-center">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Ảnh đại diện</CardTitle>
-                    <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1 text-muted-foreground">Nhấp để cập nhật diện mạo</CardDescription>
+                    <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">{t('auto.profileEdit_6')}</CardTitle>
+                    <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1 text-muted-foreground">{t('auto.profileEdit_7')}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -199,14 +198,12 @@ export default function EditProfilePage() {
                   {/* Full Name */}
                   <div className="md:col-span-2 space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                      <User size={14} className="text-pink-500" />
-                      Họ và tên
-                    </label>
+                      <User size={14} className="text-pink-500" />{t('auto.profileEdit_8')}</label>
                     <Input
                       name="fullName"
                       value={form.fullName}
                       onChange={handleChange}
-                      placeholder="Nhập họ tên đầy đủ..."
+                      placeholder={t('auto.profileEdit_18')}
                       className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner"
                     />
                   </div>
@@ -214,9 +211,7 @@ export default function EditProfilePage() {
                   {/* Phone */}
                   <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                      <Phone size={14} className="text-emerald-500" />
-                      Số điện thoại liên hệ
-                    </label>
+                      <Phone size={14} className="text-emerald-500" />{t('auto.profileEdit_9')}</label>
                     <Input
                       name="phone"
                       value={form.phone}
@@ -229,20 +224,18 @@ export default function EditProfilePage() {
                   {/* Gender */}
                   <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                      <Sparkles size={14} className="text-cyan-500" />
-                      Giới tính
-                    </label>
+                      <Sparkles size={14} className="text-cyan-500" />{t('auto.profileEdit_10')}</label>
                     <Select
                       value={form.gender}
                       onValueChange={(v) => setForm({ ...form, gender: v })}
                     >
                       <SelectTrigger className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus:ring-pink-500/30 font-bold text-foreground dark:text-white shadow-inner">
-                        <SelectValue placeholder="Chọn giới tính" />
+                        <SelectValue placeholder={t('auto.profileEdit_19')} />
                       </SelectTrigger>
                       <SelectContent className="bg-background dark:bg-[#0f1218] border border-white/10 rounded-xl rounded-t-none border-t-0 p-1">
                         <SelectItem value="MALE" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">Nam</SelectItem>
-                        <SelectItem value="FEMALE" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">Nữ</SelectItem>
-                        <SelectItem value="OTHER" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">Khác</SelectItem>
+                        <SelectItem value="FEMALE" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">{t('auto.profileEdit_11')}</SelectItem>
+                        <SelectItem value="OTHER" className="font-bold py-3 hover:text-pink-400 focus:bg-pink-500/10 focus:text-pink-400">{t('auto.profileEdit_12')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -250,15 +243,13 @@ export default function EditProfilePage() {
                   {/* JLPT */}
                   <div className="md:col-span-2 space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                      <GraduationCap size={14} className="text-purple-500" />
-                      Trình độ cao nhất
-                    </label>
+                      <GraduationCap size={14} className="text-purple-500" />{t('auto.profileEdit_13')}</label>
                     <Select
                       value={form.jlptLevel}
                       onValueChange={(v) => setForm({ ...form, jlptLevel: v })}
                     >
                       <SelectTrigger className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus:ring-pink-500/30 font-bold text-foreground dark:text-white shadow-inner pl-4">
-                        <SelectValue placeholder="Chọn cấp độ JLPT phù hợp với bạn" />
+                        <SelectValue placeholder={t('auto.profileEdit_20')} />
                       </SelectTrigger>
                       <SelectContent className="bg-background dark:bg-[#0f1218] border border-white/10 rounded-xl rounded-t-none border-t-0 p-1">
                         {["N1", "N2", "N3", "N4", "N5"].map((n) => (
@@ -273,14 +264,12 @@ export default function EditProfilePage() {
                   {/* Bio */}
                   <div className="md:col-span-2 space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                      <PenTool size={14} className="text-amber-500" />
-                      Ghi chú riêng / Giới thiệu
-                    </label>
+                      <PenTool size={14} className="text-amber-500" />{t('auto.profileEdit_14')}</label>
                     <Textarea
                       name="bio"
                       value={form.bio}
                       onChange={handleChange}
-                      placeholder="Khát vọng học tập hay đôi lời tản mạn..."
+                      placeholder={t('auto.profileEdit_21')}
                       className="resize-none min-h-[140px] p-4 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner"
                     />
                   </div>
@@ -293,9 +282,7 @@ export default function EditProfilePage() {
                   variant="outline"
                   onClick={() => router.push("/profile")}
                   className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-muted dark:border-white/10 dark:text-slate-400 dark:hover:text-white hover:bg-muted/50 dark:hover:bg-white/5"
-                >
-                  Hủy thay đổi
-                </Button>
+                >{t('auto.profileEdit_15')}</Button>
                 <Button
                   type="submit"
                   disabled={isSaving}
@@ -317,10 +304,8 @@ export default function EditProfilePage() {
               <Info className="h-5 w-5 text-cyan-500" />
             </div>
             <div className="space-y-1 mt-0.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400">Lưu ý bảo mật thông tin</p>
-              <p className="text-xs font-medium text-muted-foreground dark:text-slate-400 leading-relaxed max-w-2xl">
-                Tất cả dữ liệu hồ sơ của bạn được mã hóa an toàn ở DB 2 lớp. Một số thông tin như JLPT sẽ giúp hệ thống đề xuất bài thi thông minh hơn.
-              </p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400">{t('auto.profileEdit_16')}</p>
+              <p className="text-xs font-medium text-muted-foreground dark:text-slate-400 leading-relaxed max-w-2xl">{t('auto.profileEdit_17')}</p>
             </div>
           </div>
         </div>

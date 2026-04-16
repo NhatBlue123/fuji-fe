@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SystemErrorFilter } from "@/components/admin/system-errors/SystemErrorFilter";
 import { SystemErrorTable } from "@/components/admin/system-errors/SystemErrorTable";
 import { SystemErrorDetailSheet } from "@/components/admin/system-errors/SystemErrorDetailSheet";
+import { useTranslation } from "react-i18next";
 
 /**
  * Trang quản lý lỗi hệ thống cho ADMIN.
@@ -32,6 +33,8 @@ import { SystemErrorDetailSheet } from "@/components/admin/system-errors/SystemE
  * Giao diện đồng bộ với Chat Moderation.
  */
 export default function SystemErrorPage() {
+  const { t } = useTranslation();
+
   const [tab, setTab] = useState("all-logs");
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
@@ -105,16 +108,16 @@ export default function SystemErrorPage() {
       {/* Tiêu đề & Icon đồng bộ Chat Moderation */}
       <div className="flex items-center gap-2">
         <Bug className="h-5 w-5" />
-        <h1 className="text-2xl font-bold">Nhật ký lỗi hệ thống</h1>
+        <h1 className="text-2xl font-bold">{t("admin.systemErrors.title")}</h1>
       </div>
 
       {/* Thống kê nhanh (Cards tối giản) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Tổng lỗi (24h)", value: summaryData?.data?.total24h, sub: "Lỗi phát sinh mới nhất", icon: Bug },
-          { label: "Chưa giải quyết", value: summaryData?.data?.unresolved, sub: "Cần admin xử lý", icon: Clock },
-          { label: "Độ ổn định", value: "98.5%", sub: "Backend Uptime", icon: Activity },
-          { label: "Vùng ảnh hưởng", value: "Backend-API", sub: "Module quan trọng", icon: ShieldAlert }
+          { label: t("admin.systemErrors.summary.total24h"), value: summaryData?.data?.total24h, sub: t("admin.systemErrors.summary.total24hDesc"), icon: Bug },
+          { label: t("admin.systemErrors.summary.unresolved"), value: summaryData?.data?.unresolved, sub: t("admin.systemErrors.summary.unresolvedDesc"), icon: Clock },
+          { label: t("admin.systemErrors.summary.stability"), value: "98.5%", sub: t("admin.systemErrors.summary.stabilityDesc"), icon: Activity },
+          { label: t("admin.systemErrors.summary.impactArea"), value: "Backend-API", sub: t("admin.systemErrors.summary.impactAreaDesc"), icon: ShieldAlert }
         ].map((item, index) => (
           <Card key={index} className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4">
@@ -143,9 +146,9 @@ export default function SystemErrorPage() {
         }
       }}>
         <TabsList>
-          <TabsTrigger value="all-logs">Tất cả nhật ký</TabsTrigger>
+          <TabsTrigger value="all-logs">{t("admin.systemErrors.tabs.all")}</TabsTrigger>
           <TabsTrigger value="unresolved" className="gap-2">
-            Dành cho Admin xử lý
+            {t("admin.systemErrors.tabs.unresolved")}
             {summaryData?.data?.unresolved && summaryData.data.unresolved > 0 ? (
               <Badge variant="destructive" className="h-4 px-1 min-w-[16px] text-[9px] flex items-center justify-center rounded-full animate-pulse border-none">
                 {summaryData.data.unresolved}
@@ -183,8 +186,8 @@ export default function SystemErrorPage() {
           {/* Phân trang (Pagination) */}
           <div className="flex items-center justify-between p-3 border-t bg-slate-50/50 dark:bg-slate-900/50">
             <div className="text-xs text-primary font-bold">
-              {tab === "unresolved" ? "Đang xem các lỗi chưa xử lý" : "Đang xem tất cả lịch sử lỗi"} • 
-              Trang {(logsData?.data?.number || 0) + 1} / {logsData?.data?.totalPages || 1} • Tổng {logsData?.data?.totalElements || 0} bản ghi
+              {tab === "unresolved" ? t("admin.systemErrors.tabs.unresolved") : t("admin.systemErrors.tabs.all")} • 
+              {t("common.pageInfo", { current: (logsData?.data?.number || 0) + 1, total: logsData?.data?.totalPages || 1 })} • {t("common.all")} {logsData?.data?.totalElements || 0}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -194,7 +197,7 @@ export default function SystemErrorPage() {
                 disabled={page <= 0}
                 onClick={() => setPage(p => p - 1)}
               >
-                Trước
+                {t("common.prev")}
               </Button>
               <Button
                 variant="outline"
@@ -203,7 +206,7 @@ export default function SystemErrorPage() {
                 disabled={logsData?.data?.last}
                 onClick={() => setPage(p => p + 1)}
               >
-                Sau
+                {t("common.next")}
               </Button>
             </div>
           </div>

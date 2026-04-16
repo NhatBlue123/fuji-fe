@@ -25,6 +25,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useGetTeacherDashboardQuery } from "@/store/services/teacherApi";
+import { useTranslation } from "react-i18next";
 
 // Shadcn UI Components
 import {
@@ -56,6 +57,7 @@ import {
 } from "@/components/ui/select";
 
 const TeacherDashboard: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { data: dashboardData, isLoading } = useGetTeacherDashboardQuery();
@@ -78,7 +80,7 @@ const TeacherDashboard: React.FC = () => {
   const textColor = "hsl(var(--muted-foreground))";
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("vi-VN", {
+    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : i18n.language, {
       style: "currency",
       currency: "VND",
     }).format(val);
@@ -90,37 +92,37 @@ const TeacherDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Phân tích Giáo viên
+            {t("admin.analytics.teacher.title")}
           </h1>
           <p className="text-muted-foreground">
-            Theo dõi hiệu suất giảng dạy và thu nhập của bạn.
+            {t("admin.analytics.teacher.desc")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Calendar className="mr-2 h-4 w-4" />
-            30 ngày qua
+            {t("admin.analytics.teacher.last30Days")}
           </Button>
-          <Button size="sm">Tải báo cáo</Button>
+          <Button size="sm">{t("admin.analytics.teacher.downloadReport")}</Button>
         </div>
       </div>
 
       {/* Overview Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Tổng thu nhập"
+          title={t("admin.analytics.teacher.totalEarnings")}
           value={formatCurrency(dashboardData?.lifetimeEarnings || 0)}
-          description="Tổng doanh thu đã nhận"
+          description={t("admin.analytics.teacher.totalRevenue")}
           icon={<Wallet className="h-4 w-4 text-primary" />}
         />
         <StatCard
-          title="Tăng trưởng tháng"
+          title={t("admin.analytics.teacher.monthlyGrowth")}
           value={`${dashboardData?.monthOverMonthGrowth || 0}%`}
           description={
             dashboardData?.monthOverMonthGrowth &&
             dashboardData.monthOverMonthGrowth >= 0
-              ? "+12% so với tháng trước"
-              : "-5% so với tháng trước"
+              ? t("admin.analytics.teacher.growthVsLastMonth", { val: 12 })
+              : t("admin.analytics.teacher.growthVsLastMonth", { val: -5 })
           }
           icon={
             dashboardData?.monthOverMonthGrowth &&
@@ -138,15 +140,15 @@ const TeacherDashboard: React.FC = () => {
           }
         />
         <StatCard
-          title="Tổng giờ dạy"
+          title={t("admin.analytics.teacher.totalHours")}
           value={`${dashboardData?.totalHoursTaught || 0}h`}
-          description="Buổi học đã hoàn thành"
+          description={t("admin.analytics.teacher.totalClasses")}
           icon={<Clock className="h-4 w-4 text-orange-500" />}
         />
         <StatCard
-          title="Đánh giá TB"
+          title={t("admin.analytics.teacher.avgRating")}
           value={`${dashboardData?.averageRating || 0}/5.0`}
-          description="Dựa trên đánh giá học viên"
+          description={t("admin.analytics.teacher.basedOnReviews")}
           icon={<Zap className="h-4 w-4 text-yellow-500" />}
         />
       </div>
@@ -154,9 +156,9 @@ const TeacherDashboard: React.FC = () => {
       {/* Main Content Area */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="bg-muted/50 p-1">
-          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-          <TabsTrigger value="students">Học viên xuất sắc</TabsTrigger>
-          <TabsTrigger value="courses">Doanh thu khóa học</TabsTrigger>
+          <TabsTrigger value="overview">{t("admin.analytics.teacher.tabs.overview")}</TabsTrigger>
+          <TabsTrigger value="students">{t("admin.analytics.teacher.tabs.topStudents")}</TabsTrigger>
+          <TabsTrigger value="courses">{t("admin.analytics.teacher.tabs.courseRevenue")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -165,19 +167,19 @@ const TeacherDashboard: React.FC = () => {
             <Card className="lg:col-span-2 shadow-sm border-muted/60">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div className="space-y-1">
-                  <CardTitle>Luồng thu nhập</CardTitle>
+                  <CardTitle>{t("admin.analytics.teacher.chart.title")}</CardTitle>
                   <CardDescription>
-                    Phân tích doanh thu hàng ngày
+                    {t("admin.analytics.teacher.chart.desc")}
                   </CardDescription>
                 </div>
                 <Select defaultValue="all">
                   <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Lọc" />
+                    <SelectValue placeholder={t("admin.analytics.teacher.chart.filter")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="courses">Khóa học</SelectItem>
-                    <SelectItem value="sessions">Buổi học</SelectItem>
+                    <SelectItem value="all">{t("admin.analytics.teacher.chart.all")}</SelectItem>
+                    <SelectItem value="courses">{t("admin.analytics.teacher.chart.courses")}</SelectItem>
+                    <SelectItem value="sessions">{t("admin.analytics.teacher.chart.sessions")}</SelectItem>
                   </SelectContent>
                 </Select>
               </CardHeader>
@@ -256,16 +258,16 @@ const TeacherDashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="h-5 w-5 text-primary" />
-                  Số dư ví
+                  {t("admin.analytics.teacher.wallet.title")}
                 </CardTitle>
                 <CardDescription>
-                  Rút thu nhập của bạn một cách dễ dàng
+                  {t("admin.analytics.teacher.wallet.desc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Số dư khả dụng
+                    {t("admin.analytics.teacher.wallet.available")}
                   </span>
                   <div className="text-4xl font-extrabold tracking-tight">
                     {formatCurrency(dashboardData?.availableBalance || 0)}
@@ -275,20 +277,20 @@ const TeacherDashboard: React.FC = () => {
                 <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground">
-                      Đang chờ thanh toán
+                      {t("admin.analytics.teacher.wallet.pending")}
                     </p>
                     <p className="text-lg font-bold">
                       {formatCurrency(dashboardData?.pendingPayouts || 0)}
                     </p>
                   </div>
                   <Badge variant="secondary" className="animate-pulse">
-                    Đang xử lý
+                    {t("admin.analytics.teacher.wallet.processing")}
                   </Badge>
                 </div>
               </CardContent>
               <CardFooter className="pt-2">
                 <Button className="w-full h-11" size="lg">
-                  Yêu cầu rút tiền
+                  {t("admin.analytics.teacher.wallet.requestWithdraw")}
                 </Button>
               </CardFooter>
             </Card>
@@ -300,9 +302,9 @@ const TeacherDashboard: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="space-y-1">
-                <CardTitle>Học viên xuất sắc</CardTitle>
+                <CardTitle>{t("admin.analytics.teacher.tabs.topStudents")}</CardTitle>
                 <CardDescription>
-                  Những học viên đã đầu tư nhiều nhất vào các khóa học của bạn.
+                  {t("admin.analytics.teacher.students.noData") || "Những học viên đã đầu tư nhiều nhất vào các khóa học của bạn."}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -310,7 +312,7 @@ const TeacherDashboard: React.FC = () => {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <input
                     type="search"
-                    placeholder="Tìm học viên..."
+                    placeholder={t("admin.analytics.teacher.students.placeholder")}
                     className="h-9 w-64 rounded-md border border-input pl-8 pr-3 text-sm focus:ring-1 focus:ring-ring outline-none"
                   />
                 </div>
@@ -323,11 +325,11 @@ const TeacherDashboard: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Học viên</TableHead>
-                    <TableHead>Lượt đặt</TableHead>
-                    <TableHead>Tổng chi tiêu</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
+                    <TableHead>{t("admin.analytics.teacher.students.table.name")}</TableHead>
+                    <TableHead>{t("admin.analytics.teacher.students.table.bookings")}</TableHead>
+                    <TableHead>{t("admin.analytics.teacher.students.table.spent")}</TableHead>
+                    <TableHead>{t("admin.analytics.teacher.students.table.status")}</TableHead>
+                    <TableHead className="text-right">{t("admin.user.table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -354,7 +356,7 @@ const TeacherDashboard: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm">
-                          Chi tiết
+                          {t("admin.analytics.teacher.students.table.details")}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -366,7 +368,7 @@ const TeacherDashboard: React.FC = () => {
                         colSpan={5}
                         className="text-center h-24 text-muted-foreground"
                       >
-                        Không có dữ liệu học viên.
+                        {t("admin.analytics.teacher.students.noData")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -390,7 +392,7 @@ const TeacherDashboard: React.FC = () => {
                       {course.courseTitle}
                     </CardTitle>
                     <Badge variant="outline" className="text-[10px]">
-                      {course.studentCount} Học viên
+                      {course.studentCount} {t("admin.analytics.teacher.courses.students")}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -399,7 +401,7 @@ const TeacherDashboard: React.FC = () => {
                     <div className="flex justify-between items-end">
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
-                          Doanh thu
+                          {t("admin.analytics.teacher.courses.revenue")}
                         </p>
                         <p className="text-xl font-black text-primary">
                           {formatCurrency(course.revenue)}
@@ -433,7 +435,7 @@ const TeacherDashboard: React.FC = () => {
             {(!dashboardData?.courseRevenueList ||
               dashboardData.courseRevenueList.length === 0) && (
               <div className="col-span-full flex flex-col items-center justify-center py-12 border rounded-xl bg-muted/20 text-muted-foreground italic">
-                Không có dữ liệu khóa học.
+                {t("admin.analytics.teacher.courses.noData")}
               </div>
             )}
           </div>

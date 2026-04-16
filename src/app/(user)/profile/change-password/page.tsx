@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import { useChangePasswordMutation } from "@/store/services/user/userApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -24,6 +26,7 @@ import { Progress } from "@/components/ui/progress";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -79,12 +82,12 @@ export default function ChangePasswordPage() {
     }
 
     try {
-      await changePassword({ currentPassword, newPassword }).unwrap();
-      alert("Mật khẩu đã được thay đổi an toàn! Hệ thống sẽ yêu cầu bạn đăng nhập lại.");
+      const res = await changePassword({ currentPassword, newPassword }).unwrap();
+      alert(tMsg(res.messageKey) || "Mật khẩu đã được thay đổi an toàn! Hệ thống sẽ yêu cầu bạn đăng nhập lại.");
       localStorage.removeItem("access_token");
       router.push("/login");
     } catch (err: any) {
-      setError(err?.data?.message || "Mật khẩu hiện tại không đúng. Xin thử lại.");
+      setError(tMsg(err?.data?.messageKey) || tMsg("auth.invalidCredentials") || "Mật khẩu hiện tại không đúng. Xin thử lại.");
     }
   };
 
@@ -103,16 +106,13 @@ export default function ChangePasswordPage() {
             onClick={() => router.back()}
             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-2"
           >
-            <ArrowLeft size={14} /> Trở về
-          </button>
-          <h1 className="text-3xl font-black tracking-tight uppercase">
-            Bảo mật <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">Tài Khoản</span>
+            <ArrowLeft size={14} />{t('auto.changePassword_1')}</button>
+          <h1 className="text-3xl font-black tracking-tight uppercase">{t('auto.changePassword_2')}<span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">{t('auto.changePassword_3')}</span>
           </h1>
-          <p className="text-muted-foreground text-sm font-medium">Thay đổi mật khẩu định kỳ để bảo vệ dữ liệu trên ứng dụng.</p>
+          <p className="text-muted-foreground text-sm font-medium">{t('auto.changePassword_4')}</p>
         </div>
         <Badge variant="secondary" className="w-fit h-fit px-3 py-1.5 gap-2 border border-cyan-500/20 bg-cyan-500/5 text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-widest text-[9px] shadow-[0_0_10px_rgba(6,182,212,0.15)]">
-          <ShieldCheck size={14} /> Mã hóa E2E đang bật
-        </Badge>
+          <ShieldCheck size={14} />{t('auto.changePassword_5')}</Badge>
       </header>
 
       <div className="flex-1 overflow-y-auto p-8 animate-in fade-in duration-500">
@@ -131,8 +131,8 @@ export default function ChangePasswordPage() {
                   <KeyRound size={24} />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Thiết lập mật khẩu</CardTitle>
-                  <CardDescription className="text-muted-foreground dark:text-slate-400 font-medium">Bảo đảm nhập đúng mật khẩu hiện tại</CardDescription>
+                  <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">{t('auto.changePassword_6')}</CardTitle>
+                  <CardDescription className="text-muted-foreground dark:text-slate-400 font-medium">{t('auto.changePassword_7')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -141,15 +141,13 @@ export default function ChangePasswordPage() {
               {/* Current Password */}
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                  <Lock size={14} className="text-amber-500" />
-                  Mật khẩu hiện tại
-                </label>
+                  <Lock size={14} className="text-amber-500" />{t('auto.changePassword_8')}</label>
                 <div className="relative">
                   <Input
                     type={showCurrent ? "text" : "password"}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Mật khẩu bảo mật..."
+                    placeholder={t('auto.changePassword_20')}
                     className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner pr-14 tracking-widest text-lg placeholder:text-sm placeholder:tracking-normal"
                   />
                   <button 
@@ -166,15 +164,13 @@ export default function ChangePasswordPage() {
               <div className="space-y-4 pt-2">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                    <Sparkles size={14} className="text-pink-500" />
-                    Mật khẩu mới
-                  </label>
+                    <Sparkles size={14} className="text-pink-500" />{t('auto.changePassword_9')}</label>
                   <div className="relative">
                     <Input
                       type={showNew ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Tối thiểu 8 ký tự..."
+                      placeholder={t('auto.changePassword_21')}
                       className={`h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner pr-14 tracking-widest text-lg placeholder:text-sm placeholder:tracking-normal ${newPassword && strength <= 2 ? 'border-rose-500/50 focus-visible:border-rose-500 focus-visible:ring-rose-500/20' : ''}`}
                     />
                     <button 
@@ -191,7 +187,7 @@ export default function ChangePasswordPage() {
                 {newPassword && (
                   <div className="p-4 rounded-xl border bg-muted/20 dark:bg-black/20 dark:border-white/5 shadow-inner space-y-3 transition-all duration-300">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                      <span className="text-muted-foreground dark:text-slate-500">Độ mạnh mật khẩu</span>
+                      <span className="text-muted-foreground dark:text-slate-500">{t('auto.changePassword_10')}</span>
                       <span className={`transition-colors duration-300 ${strengthText}`}>
                         {strengthLabel}
                       </span>
@@ -204,15 +200,13 @@ export default function ChangePasswordPage() {
               {/* Confirm Password */}
               <div className="space-y-3 pt-2">
                 <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground dark:text-slate-400 ml-1">
-                  <ShieldCheck size={14} className="text-emerald-500" />
-                  Xác nhận khẩu mới
-                </label>
+                  <ShieldCheck size={14} className="text-emerald-500" />{t('auto.changePassword_11')}</label>
                 <div className="relative">
                   <Input
                     type={showConfirm ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Nhập lại chính xác..."
+                    placeholder={t('auto.changePassword_22')}
                     className={`h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner pr-14 tracking-widest text-lg placeholder:text-sm placeholder:tracking-normal ${confirmPassword && newPassword && confirmPassword !== newPassword ? 'border-rose-500/50 focus-visible:border-rose-500 ring-rose-500/20' : confirmPassword && newPassword && confirmPassword === newPassword ? 'border-emerald-500/50 focus-visible:border-emerald-500 ring-emerald-500/20' : ''}`}
                   />
                   <button 
@@ -250,9 +244,7 @@ export default function ChangePasswordPage() {
                 variant="outline"
                 onClick={() => router.back()}
                 className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-muted dark:border-white/10 dark:text-slate-400 dark:hover:text-white hover:bg-muted/50 dark:hover:bg-white/5"
-              >
-                Hủy thay đổi
-              </Button>
+              >{t('auto.changePassword_12')}</Button>
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -274,8 +266,7 @@ export default function ChangePasswordPage() {
           <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl">
             <CardHeader className="border-b dark:border-white/5 pb-6">
               <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-pink-300">
-                <ShieldCheck size={18} /> Lời khuyên an toàn
-              </CardTitle>
+                <ShieldCheck size={18} />{t('auto.changePassword_13')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5 pt-8">
               {[
@@ -302,10 +293,8 @@ export default function ChangePasswordPage() {
                 <ShieldAlert className="h-6 w-6 text-pink-300" />
               </div>
               <div className="space-y-2">
-                <p className="text-[10px] font-black text-pink-600 dark:text-pink-300 uppercase tracking-widest drop-shadow-sm">Ghi nhớ quan trọng</p>
-                <p className="text-[11px] text-amber-700/80 dark:text-pink-400/80 leading-relaxed font-bold">
-                  Thay đổi mật khẩu sẽ <span className="text-pink-300 dark:text-pink-400">bắt buộc đăng xuất</span> tại tất cả các thiết bị. Hệ thống sẽ cấp lại access token ngay sau đó!
-                </p>
+                <p className="text-[10px] font-black text-pink-600 dark:text-pink-300 uppercase tracking-widest drop-shadow-sm">{t('auto.changePassword_14')}</p>
+                <p className="text-[11px] text-amber-700/80 dark:text-pink-400/80 leading-relaxed font-bold">{t('auto.changePassword_15')}<span className="text-pink-300 dark:text-pink-400">{t('auto.changePassword_16')}</span>{t('auto.changePassword_17')}</p>
               </div>
             </CardContent>
           </Card>
@@ -314,8 +303,7 @@ export default function ChangePasswordPage() {
             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0 border border-cyan-500/20 shadow-inner group-hover:scale-110 transition-transform">
               <Info className="h-5 w-5 text-cyan-500" />
             </div>
-            <p className="text-[11px] text-muted-foreground dark:text-slate-400 font-bold uppercase tracking-wider">
-              Có sự cố đổi MK? <Link href="/support" className="text-cyan-500 hover:text-cyan-400 ml-1 drop-shadow-sm">Kêu gọi hỗ trợ</Link>
+            <p className="text-[11px] text-muted-foreground dark:text-slate-400 font-bold uppercase tracking-wider">{t('auto.changePassword_18')}<Link href="/support" className="text-cyan-500 hover:text-cyan-400 ml-1 drop-shadow-sm">{t('auto.changePassword_19')}</Link>
             </p>
           </div>
         </div>

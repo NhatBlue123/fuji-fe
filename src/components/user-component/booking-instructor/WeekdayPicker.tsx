@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { WEEKDAYS } from "./utils";
 import { Weekday } from "./types";
 
@@ -7,9 +8,10 @@ type Props = {
 };
 
 export default function WeekdayPicker({ value, onToggle }: Props) {
+  const { t } = useTranslation();
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-2">Lặp theo thứ</p>
+      <p className="text-sm text-muted-foreground mb-2">{t('auto.booking_weekday_1')}</p>
       <div className="flex flex-wrap gap-2">
         {WEEKDAYS.map((d) => {
           const active = value.includes(d.key);

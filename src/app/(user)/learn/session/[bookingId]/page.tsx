@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useGetPostSessionByBookingQuery } from "@/store/services/lessonApi";
@@ -38,6 +39,7 @@ function downloadTextFile(filename: string, content: string): void {
 }
 
 export default function PostSessionPage() {
+  const { t } = useTranslation();
   const params = useParams<{ bookingId: string }>();
   const router = useRouter();
   const bookingId = Number(params.bookingId);
@@ -69,7 +71,7 @@ export default function PostSessionPage() {
     return (
       <div className="h-[calc(100vh-64px)] bg-[#0f1117] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#F0F0F0] text-sm">Không tải được lịch sử buổi học</p>
+          <p className="text-[#F0F0F0] text-sm">{t('auto.booking_session_1')}</p>
           <button
             type="button"
             onClick={() => router.push("/booking/bookingmodal")}
@@ -152,7 +154,7 @@ export default function PostSessionPage() {
               Recordings
             </p>
             <div className="mt-4 space-y-2">
-              {data.recordings.length === 0 && <p className="text-xs text-[#8B8FA8]">Chưa có recording</p>}
+              {data.recordings.length === 0 && <p className="text-xs text-[#8B8FA8]">{t('auto.booking_session_2')}</p>}
               {data.recordings.map((r, idx) => (
                 <div key={r.id} className="rounded-lg border border-white/10 bg-[#121520] p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -215,12 +217,12 @@ export default function PostSessionPage() {
             </div>
 
             <div className="mt-3 space-y-2">
-              {data.transcripts.length === 0 && <p className="text-xs text-[#8B8FA8]">Chưa có transcript</p>}
+              {data.transcripts.length === 0 && <p className="text-xs text-[#8B8FA8]">{t('auto.booking_session_3')}</p>}
               {data.transcripts.map((t, idx) => (
                 <details key={idx} className="rounded-lg border border-white/10 bg-[#121520] open:border-[#6C63FF]/40">
                   <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium flex items-center justify-between">
                     <span>Transcript #{idx + 1}</span>
-                    <span className="text-[#8B8FA8] text-[11px]">Click để mở/đóng</span>
+                    <span className="text-[#8B8FA8] text-[11px]">{t('auto.booking_session_4')}</span>
                   </summary>
                   <div className="px-3 pb-3 text-xs whitespace-pre-wrap text-[#D7DBEE]">
                     {t}

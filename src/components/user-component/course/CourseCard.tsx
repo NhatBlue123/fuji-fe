@@ -1,19 +1,28 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface CourseCardProps {
   course: Course;
 }
 
 export function CourseCard({ course }: CourseCardProps) {
+  const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const buttonText = course.isEnrolled
     ? course.progress > 0
-      ? "Tiếp tục học"
-      : "Bắt đầu học"
-    : "Đăng ký";
+      ? (isMounted ? t("course.list.continueLearning") : t("course.list.continueLearning", { lng: 'vi' }))
+      : (isMounted ? t("course.list.startLearning") : t("course.list.startLearning", { lng: 'vi' }))
+    : (isMounted ? t("course.list.register") : t("course.list.register", { lng: 'vi' }));
 
   return (
     <div className="bg-card dark:bg-[#1E293B] rounded-2xl overflow-hidden shadow-lg border border-border dark:border-slate-700/50 hover:border-primary/30 dark:hover:border-blue-500/30 transition-all hover:translate-y-[-4px] flex flex-col h-full group">
@@ -41,7 +50,7 @@ export function CourseCard({ course }: CourseCardProps) {
           {course.isEnrolled && (
             <>
               <div className="flex justify-between text-xs font-medium text-muted-foreground dark:text-slate-400 mb-2">
-                <span>Tiến độ</span>
+                <span>{isMounted ? t("course.list.progress") : t("course.list.progress", { lng: 'vi' })}</span>
                 <span className="text-foreground dark:text-white">
                   {course.progress}%
                 </span>

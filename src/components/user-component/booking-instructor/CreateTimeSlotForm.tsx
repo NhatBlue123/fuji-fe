@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -19,12 +20,12 @@ import PreviewCard from "./PreviewCard";
 const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
 type LevelOption = (typeof LEVEL_OPTIONS)[number];
 
-const SUBJECT_OPTIONS = [
-  { value: "Kaiwa", label: "Kaiwa (Hội thoại)" },
-  { value: "Bunpo", label: "Bunpo (Ngữ pháp)" },
-  { value: "Kanji", label: "Kanji" },
-  { value: "Listening", label: "Listening" },
-  { value: "Reading", label: "Reading" },
+const SUBJECT_OPTIONS = (t: any) => [
+  { value: "Kaiwa", label: t("booking.subject.kaiwa") },
+  { value: "Bunpo", label: t("booking.subject.bunpo") },
+  { value: "Kanji", label: t("booking.subject.kanji") },
+  { value: "Listening", label: t("booking.subject.listening") },
+  { value: "Reading", label: t("booking.subject.reading") },
 ] as const;
 type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
 
@@ -44,6 +45,7 @@ function Field({
 }
 
 export default function CreateTimeSlotForm() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>("bulk");
@@ -123,22 +125,22 @@ export default function CreateTimeSlotForm() {
     setNotice(null);
 
     if (!canSubmit) {
-      const message = "Vui lòng điền đủ thông tin hợp lệ trước khi lưu.";
+      const message = t("booking.error.fillAll");
       setErr(message);
       setNotice({
         type: "error",
-        title: "Không thể lưu lịch",
+        title: t("booking.error.saveFailed"),
         description: message,
       });
       return;
     }
 
     if (hasOverlap(timeRanges)) {
-      const message = "Không thể tạo lịch trùng giờ.";
+      const message = t("booking.error.overlap");
       setErr(message);
       setNotice({
         type: "error",
-        title: "Không thể lưu lịch",
+        title: t("booking.error.saveFailed"),
         description: message,
       });
       return;
@@ -160,11 +162,11 @@ export default function CreateTimeSlotForm() {
         const weekday = getWeekdayCodeFromDate(dateFrom);
 
         if (!weekday) {
-          const message = "Ngày dạy không hợp lệ.";
+          const message = t("booking.error.invalidDate");
           setErr(message);
           setNotice({
             type: "error",
-            title: "Không thể lưu lịch",
+            title: t("booking.error.saveFailed"),
             description: message,
           });
           return;
@@ -205,8 +207,8 @@ export default function CreateTimeSlotForm() {
       if (!bulk || skipped === 0) {
         setNotice({
           type: "success",
-          title: "Tạo lịch thành công",
-          description: `Đã tạo ${created || estimatedSlots} slot lịch dạy.`,
+          title: t("booking.success.createTitle"),
+          description: t("booking.success.createDesc", { count: created || estimatedSlots }),
           onClose: goToSchedule,
         });
         return;
@@ -215,27 +217,24 @@ export default function CreateTimeSlotForm() {
       if (created === 0) {
         setNotice({
           type: "error",
-          title: "Tất cả lịch bị trùng",
-          description:
-            `Không có slot nào được tạo. Cả ${skipped} slot đều bị trùng với lịch đã tồn tại.`,
+          title: t("booking.error.allSkippedTitle"),
+          description: t("booking.error.allSkippedDesc", { count: skipped }),
         });
       } else {
         setNotice({
           type: "warning",
-          title: "Tạo lịch có trùng lặp",
-          description:
-            `Đã tạo ${created} slot thành công, bỏ qua ${skipped} slot do trùng giờ với lịch đã tồn tại.`,
+          title: t("booking.warning.someSkippedTitle"),
+          description: t("booking.warning.someSkippedDesc", { created, skipped }),
           onClose: goToSchedule,
         });
       }
     } catch (e: unknown) {
       const message =
-        (e as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Tạo lịch thất bại.";
+        (e as any)?.response?.data?.message || t("booking.error.createFailed");
       setErr(message);
       setNotice({
         type: "error",
-        title: "Không thể lưu lịch",
+        title: t("booking.error.saveFailed"),
         description: message,
       });
     } finally {
@@ -303,10 +302,10 @@ export default function CreateTimeSlotForm() {
               className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent hover:text-accent-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Quay lại
+              {t("common.back")}
             </button>
             <h1 className="text-3xl font-black tracking-tight">
-              Tạo lịch giảng dạy
+              {t("booking.createTitle")}
             </h1>
           </div>
 
@@ -319,7 +318,7 @@ export default function CreateTimeSlotForm() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Một buổi
+              {t("booking.mode.single")}
             </button>
             <button
               onClick={() => setMode("bulk")}
@@ -329,12 +328,12 @@ export default function CreateTimeSlotForm() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Lịch lặp
+              {t("booking.mode.bulk")}
             </button>
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label={mode === "single" ? "Ngày dạy" : "Ngày bắt đầu"}>
+            <Field label={mode === "single" ? t("booking.date") : t("booking.dateFrom")}>
               <input
                 type="date"
                 value={dateFrom}
@@ -344,7 +343,7 @@ export default function CreateTimeSlotForm() {
             </Field>
 
             {mode === "bulk" ? (
-              <Field label="Ngày kết thúc">
+              <Field label={t("booking.dateTo")}>
                 <input
                   type="date"
                   value={dateTo}
@@ -353,13 +352,13 @@ export default function CreateTimeSlotForm() {
                 />
               </Field>
             ) : (
-              <Field label="Cấp độ JLPT">
+              <Field label={t("booking.jlptLevel")}>
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
                   className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
-                  <option value="" disabled>Chọn cấp độ</option>
+                  <option value="" disabled>{t('auto.booking_slot_1')}</option>
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -378,13 +377,13 @@ export default function CreateTimeSlotForm() {
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             {mode === "bulk" ? (
-              <Field label="Cấp độ JLPT">
+              <Field label={t("booking.jlptLevel")}>
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LevelOption)}
                   className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
                 >
-                  <option value="" disabled>Chọn cấp độ</option>
+                  <option value="" disabled>{t('auto.booking_slot_2')}</option>
                   {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -394,7 +393,7 @@ export default function CreateTimeSlotForm() {
               </Field>
             ) : null}
 
-            <Field label="Môn học">
+            <Field label={t("booking.subjectTitle")}>
               <select
                 value={subjectType}
                 onChange={(e) =>
@@ -402,8 +401,8 @@ export default function CreateTimeSlotForm() {
                 }
                 className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
-                <option value="" disabled>Chọn môn học</option>
-                {SUBJECT_OPTIONS.map((item) => (
+                <option value="" disabled>{t('auto.booking_slot_3')}</option>
+                {SUBJECT_OPTIONS(t).map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
                   </option>
@@ -422,13 +421,13 @@ export default function CreateTimeSlotForm() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label="Chủ đề">
+            <Field label={t("booking.topic")}>
               <div className="flex h-12 items-center rounded-xl border border-border bg-card/60 px-4 font-semibold text-foreground">
-                {composedSubject || <span className="text-muted-foreground font-normal">Chọn môn học và cấp độ</span>}
+                {composedSubject || <span className="text-muted-foreground font-normal">{t('auto.booking_slot_4')}</span>}
               </div>
             </Field>
 
-            <Field label="Học phí (Hoa)">
+            <Field label={t("booking.tuition")}>
               <input
                 type="number"
                 min={1}
@@ -439,9 +438,9 @@ export default function CreateTimeSlotForm() {
               />
             </Field>
 
-            <Field label="Quy đổi">
+            <Field label={t("booking.conversion")}>
               <div className="h-12 rounded-xl border border-primary/40 bg-primary/10 px-4 flex items-center text-foreground font-semibold">
-                ≈ {transferVnd.toLocaleString("vi-VN")}đ
+                ≈ {transferVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
               </div>
             </Field>
           </div>
@@ -457,7 +456,7 @@ export default function CreateTimeSlotForm() {
               type="button"
               className="h-12 rounded-xl border border-border bg-card px-6 font-semibold hover:bg-muted"
             >
-              Hủy
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -465,7 +464,7 @@ export default function CreateTimeSlotForm() {
               disabled={!canSubmit || loading}
               className="h-12 rounded-xl bg-secondary px-8 font-bold text-secondary-foreground disabled:opacity-50 hover:bg-secondary/90"
             >
-              {loading ? "Đang lưu..." : "Lưu lịch rảnh"}
+              {loading ? t("common.saving") : t("booking.btn.save")}
             </button>
           </div>
         </section>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { TestAttemptResult } from "@/types/jlpt";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ interface HistoryCardProps {
 }
 
 export default function HistoryCard({ attempts }: HistoryCardProps) {
+  const { t } = useTranslation();
   if (!attempts || attempts.length === 0) return null;
 
   // Show only top 3 recent attempts
@@ -29,7 +31,7 @@ export default function HistoryCard({ attempts }: HistoryCardProps) {
             <span className="material-symbols-outlined">history_edu</span>
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">Lịch sử làm bài</h3>
+            <h3 className="text-xl font-bold text-white">{t('auto.jlpt_history_1')}</h3>
             <p className="text-xs text-slate-400 font-medium">
               Kết quả gần đây nhất
             </p>

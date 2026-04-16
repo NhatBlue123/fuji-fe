@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Mode, TimeRange } from "./types";
 import { toVnd } from "./utils";
 
@@ -16,22 +17,23 @@ export default function PreviewCard({
   ranges,
   estimatedSlots,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <aside className="glass-card rounded-2xl border border-border p-6">
-      <h2 className="text-xl font-bold">Xem trước</h2>
+      <h2 className="text-xl font-bold">{t('auto.booking_preview_1')}</h2>
       <p className="text-muted-foreground text-sm mt-1">
         Ước tính số buổi sẽ tạo trước khi lưu
       </p>
 
       <div className="mt-4 rounded-2xl border border-border bg-card/70 p-5">
-        <p className="text-muted-foreground text-sm">Chế độ</p>
+        <p className="text-muted-foreground text-sm">{t('auto.booking_preview_2')}</p>
         <p className="font-bold">
           {mode === "single" ? "Một buổi" : "Lịch lặp"}
         </p>
 
         <div className="h-px bg-border my-4" />
 
-        <p className="text-muted-foreground text-sm">Khung giờ</p>
+        <p className="text-muted-foreground text-sm">{t('auto.booking_preview_3')}</p>
         <div className="mt-2 space-y-1">
           {ranges.map((r, i) => (
             <p key={i} className=" font-bold">
@@ -42,10 +44,10 @@ export default function PreviewCard({
 
         <div className="h-px bg-border my-4" />
 
-        <p className="text-muted-foreground text-sm">Môn học</p>
+        <p className="text-muted-foreground text-sm">{t('auto.booking_preview_4')}</p>
         <p className="font-bold">{subject || "-"}</p>
 
-        <p className="text-muted-foreground text-sm mt-3">Học phí(1 buổi)</p>
+        <p className="text-muted-foreground text-sm mt-3">{t('auto.booking_preview_5')}</p>
         <p className="font-bold">
           {(price || 0).toLocaleString("vi-VN")} 🌸 · ~
           {toVnd(price).toLocaleString("vi-VN")}đ
@@ -53,7 +55,7 @@ export default function PreviewCard({
 
         <div className="h-px bg-border my-4" />
 
-        <p className="text-muted-foreground text-sm">Ước tính số buổi tạo</p>
+        <p className="text-muted-foreground text-sm">{t('auto.booking_preview_6')}</p>
         <p className="text-3xl font-black">{estimatedSlots}</p>
       </div>
     </aside>

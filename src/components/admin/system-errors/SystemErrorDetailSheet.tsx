@@ -28,8 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS, ja } from "date-fns/locale";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface SystemErrorDetailSheetProps {
   id: number | null;
@@ -42,6 +43,9 @@ interface SystemErrorDetailSheetProps {
  * Cung cấp stack trace, metadata của request và dòng thời gian ghi chú của Admin.
  */
 export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDetailSheetProps) => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === "vi" ? vi : i18n.language === "ja" ? ja : enUS;
+
   const { data: errorDetail, isLoading, isFetching } = useGetSystemErrorDetailQuery(id!, { skip: !id });
   const [resolveError, { isLoading: isResolving }] = useResolveSystemErrorMutation();
   const [addNote, { isLoading: isAddingNote }] = useAddSystemErrorNoteMutation();
@@ -55,10 +59,10 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
     if (!id) return;
     try {
       await resolveError({ id, note: resolutionNote }).unwrap();
-      toast.success("Lỗi đã được đánh dấu là đã giải quyết");
+      toast.success(t("admin.systemErrors.toast.updateSuccess"));
       setResolutionNote("");
     } catch (err: any) {
-      toast.error(err.data?.message || "Lỗi khi cập nhật trạng thái");
+      toast.error(err.data?.message || t("admin.systemErrors.toast.updateError"));
     }
   };
 
@@ -67,10 +71,10 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
     if (!id || !noteText.trim()) return;
     try {
       await addNote({ id, note: noteText }).unwrap();
-      toast.success("Ghi chú đã được thêm thành công");
+      toast.success(t("api.success"));
       setNoteText("");
     } catch (err: any) {
-      toast.error(err.data?.message || "Lỗi khi thêm ghi chú");
+      toast.error(err.data?.message || t("api.error"));
     }
   };
 
@@ -87,15 +91,15 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
                 [{error?.level || "UNKNOWN"}]
               </span>
               <span className="text-slate-500 dark:text-slate-400 border-l border-slate-300 dark:border-slate-700 pl-2">
-                MODULE: {error?.service}
+                {t("admin.systemErrors.table.service").toUpperCase()}: {error?.service}
               </span>
               <span className="text-slate-500 dark:text-slate-400 border-l border-slate-300 dark:border-slate-700 pl-2">
-                TIME: {error ? format(new Date(error.createdAt), "dd/MM/yyyy HH:mm:ss", { locale: vi }) : ""}
+                {t("admin.systemErrors.table.timestamp").toUpperCase()}: {error ? format(new Date(error.createdAt), "dd/MM/yyyy HH:mm:ss", { locale: dateLocale }) : ""}
               </span>
               {error?.resolved ? (
-                <span className="text-emerald-600 dark:text-emerald-500 border-l border-slate-300 dark:border-slate-700 pl-2">[RESOLVED]</span>
+                <span className="text-emerald-600 dark:text-emerald-500 border-l border-slate-300 dark:border-slate-700 pl-2">[{t("admin.systemErrors.filter.resolved").toUpperCase()}]</span>
               ) : (
-                <span className="text-amber-600 dark:text-amber-500 border-l border-slate-300 dark:border-slate-700 pl-2">[UNRESOLVED]</span>
+                <span className="text-amber-600 dark:text-amber-500 border-l border-slate-300 dark:border-slate-700 pl-2">[{t("admin.systemErrors.filter.pending").toUpperCase()}]</span>
               )}
             </div>
 
@@ -116,13 +120,13 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
             {/* Metadata quan trọng */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-border rounded-lg">
-                <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">MÔI TRƯỜNG (PATH)</div>
+                <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">{t("admin.systemErrors.table.path").toUpperCase()}</div>
                 <div className="font-bold text-xs text-slate-800 dark:text-slate-200 font-mono break-all line-clamp-2">{error?.method} {error?.path}</div>
               </div>
               <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-border rounded-lg">
-                <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">NGỮ CẢNH USER</div>
+                <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">{t("admin.systemErrors.detail.context").toUpperCase()}</div>
                 <div className="font-bold text-xs text-slate-800 dark:text-slate-200 font-mono">
-                  {error?.userId ? `UID: ${error.userId}` : "GUEST"}
+                  {error?.userId ? `UID: ${error.userId}` : t("common.anonymous").toUpperCase()}
                   {error?.bookingId ? ` • BOOKING: ${error.bookingId}` : ""}
                 </div>
               </div>
@@ -130,11 +134,11 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
 
             {/* Chi tiết Stack Trace */}
             <div className="space-y-2 pt-2">
-              <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200">STACK TRACE (Chi tiết mã lỗi)</h3>
+              <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200">{t("admin.systemErrors.detail.stackTrace").toUpperCase()}</h3>
               <div className="border border-slate-200 dark:border-border bg-slate-900 dark:bg-[#0a0a0a] rounded-lg">
                 <ScrollArea className="h-[280px]">
                   <pre className="p-4 text-[10px] font-mono leading-relaxed text-slate-300 whitespace-pre-wrap select-all">
-                    {error?.stackTrace || "Không có trace của lỗi này."}
+                    {error?.stackTrace || t("common.noResults")}
                   </pre>
                 </ScrollArea>
               </div>
@@ -142,7 +146,7 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
 
             {/* Lịch sử điều tra lỗi */}
             <div className="space-y-3 pt-4">
-              <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200">LỊCH SỬ ĐIỀU TRA</h3>
+              <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200">{t("indicator.activityLog").toUpperCase()}</h3>
               <div className="space-y-4 relative pl-5 border-l-2 border-slate-200 dark:border-slate-800 ml-2 py-1">
                 {error?.notes && error.notes.length > 0 ? (
                   error.notes.map((note) => (
@@ -152,7 +156,7 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{note.authorName}</span>
                           <span className="text-[10px] text-slate-500">
-                            {format(new Date(note.createdAt), "dd/MM HH:mm:ss", { locale: vi })}
+                            {format(new Date(note.createdAt), "dd/MM HH:mm:ss", { locale: dateLocale })}
                           </span>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-400">{note.note}</p>
@@ -162,7 +166,7 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
                 ) : (
                   <div className="text-[11px] text-slate-400 italic mb-2 relative">
                     <div className="absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700 ring-4 ring-white dark:ring-card" />
-                    Chưa có ghi chú nào được thêm.
+                    {t("category.empty")}
                   </div>
                 )}
               </div>
@@ -171,9 +175,9 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
             {/* Form Giải quyết lỗi */}
             {!error?.resolved ? (
               <div className="border border-slate-200 dark:border-border bg-slate-50 dark:bg-slate-900 p-4 rounded-lg space-y-3 mt-6">
-                <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200">KẾT QUẢ XỬ LÝ (RESOLUTION)</h3>
+                <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200">{t("admin.systemErrors.detail.resolutionNote").toUpperCase()}</h3>
                 <Textarea 
-                  placeholder="Nhập nguyên nhân và cách khắc phục..."
+                  placeholder={t("admin.systemErrors.detail.resolutionPlaceholder")}
                   className="font-sans text-xs min-h-[80px] bg-white dark:bg-black border-slate-200 dark:border-border shadow-none rounded-md"
                   value={resolutionNote}
                   onChange={(e) => setResolutionNote(e.target.value)}
@@ -183,17 +187,17 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
                   disabled={isResolving}
                   className="w-full font-bold uppercase text-[10px] tracking-widest rounded-md"
                 >
-                  XÁC NHẬN ĐÃ GIẢI QUYẾT
+                  {t("admin.systemErrors.detail.resolve").toUpperCase()}
                 </Button>
               </div>
             ) : (
               <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-border rounded-lg space-y-1 mt-6">
-                <h3 className="font-bold text-xs uppercase text-emerald-600 dark:text-emerald-500">[RESOLVED] Đã giải quyết</h3>
+                <h3 className="font-bold text-xs uppercase text-emerald-600 dark:text-emerald-500">[{t("admin.systemErrors.filter.resolved").toUpperCase()}] {t("admin.systemErrors.filter.resolved")}</h3>
                 <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
-                  {error.resolutionNote || "Không có nội dung giải quyết."}
+                  {error.resolutionNote || t("common.noResults")}
                 </div>
                 <div className="text-[10px] text-slate-500 pt-3 border-t border-slate-200 dark:border-border mt-3">
-                  Bởi <span className="font-bold text-slate-700 dark:text-slate-300">{error.resolvedByName}</span> lúc {format(new Date(error.resolvedAt!), "dd/MM/yyyy HH:mm:ss", { locale: vi })}
+                  {t("common.me")} <span className="font-bold text-slate-700 dark:text-slate-300">{error.resolvedByName}</span> {t("common.at")} {format(new Date(error.resolvedAt!), "dd/MM/yyyy HH:mm:ss", { locale: dateLocale })}
                 </div>
               </div>
             )}
@@ -202,9 +206,9 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
 
         {/* Footer ghi chú nhanh */}
         <div className="p-4 border-t border-border bg-slate-50 dark:bg-slate-900 flex gap-2 items-center font-sans">
-          <span className="font-bold text-[10px] uppercase shrink-0 text-slate-500">Ghi chú nhanh</span>
+          <span className="font-bold text-[10px] uppercase shrink-0 text-slate-500">{t("admin.sidebar.items.posts")}</span>
           <Input 
-            placeholder="Nhập nội dung..."
+            placeholder={t("common.searchPlaceholder")}
             className="flex-1 h-9 text-xs bg-white dark:bg-black border-slate-200 dark:border-slate-800 shadow-none rounded-md px-3"
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
@@ -216,7 +220,7 @@ export const SystemErrorDetailSheet = ({ id, open, onOpenChange }: SystemErrorDe
             onClick={handleAddNote}
             disabled={isAddingNote || !noteText.trim()}
           >
-            LƯU LẠI
+            {t("admin.systemErrors.detail.saveNote").toUpperCase()}
           </Button>
         </div>
       </SheetContent>

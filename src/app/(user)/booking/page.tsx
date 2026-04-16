@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   Ban,
@@ -56,8 +57,8 @@ function parseLocalDate(value: string) {
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
-function formatFullDate(value: string) {
-  return parseLocalDate(value).toLocaleDateString("vi-VN", {
+function formatFullDate(value: string, locale: string) {
+  return parseLocalDate(value).toLocaleDateString(locale === "vi" ? "vi-VN" : locale === "ja" ? "ja-JP" : "en-US", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -65,8 +66,8 @@ function formatFullDate(value: string) {
   });
 }
 
-function formatShortDate(value: string) {
-  return parseLocalDate(value).toLocaleDateString("vi-VN", {
+function formatShortDate(value: string, locale: string) {
+  return parseLocalDate(value).toLocaleDateString(locale === "vi" ? "vi-VN" : locale === "ja" ? "ja-JP" : "en-US", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -104,6 +105,7 @@ function extractSubjectType(subject?: string | null) {
 
 export default function BookingPage() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
 
   const [keyword, setKeyword] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("ALL");
@@ -136,8 +138,8 @@ export default function BookingPage() {
           .map((slot) => extractSubjectType(slot.subject))
           .filter((subject): subject is string => Boolean(subject))
       )
-    ).sort((a, b) => a.localeCompare(b, "vi"));
-  }, [availableSlots]);
+    ).sort((a, b) => a.localeCompare(b, i18n.language));
+  }, [availableSlots, i18n.language]);
 
   const filteredSlots = useMemo(() => {
     return availableSlots.filter((slot) => {
@@ -173,7 +175,7 @@ export default function BookingPage() {
           teacherId: slot.teacherId,
           teacherName: slot.teacherName,
           teacherAvatarUrl: slot.teacherAvatarUrl,
-          primarySubjectLabel: slot.subject || "Chưa cập nhật",
+          primarySubjectLabel: slot.subject || t("booking.instructorEmpty"),
           subjectTypeSet: new Set(subjectType ? [subjectType] : []),
           levelSet: new Set(level ? [level] : []),
           slotCount: 1,
@@ -215,8 +217,8 @@ export default function BookingPage() {
         firstTimeLabel: item.firstTimeLabel,
         previewTimes: item.previewTimes,
       }))
-      .sort((a, b) => a.teacherName.localeCompare(b.teacherName, "vi"));
-  }, [filteredSlots]);
+      .sort((a, b) => a.teacherName.localeCompare(b.teacherName, i18n.language));
+  }, [filteredSlots, t, i18n.language]);
 
   const goToTeacherSchedule = (teacherId: number) => {
     router.push(`/booking/teacher-schedule?teacherId=${teacherId}`);
@@ -228,57 +230,46 @@ export default function BookingPage() {
       <div className="pointer-events-none absolute -left-20 top-24 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute -right-16 top-12 -z-10 h-80 w-80 rounded-full bg-secondary/10 blur-3xl" />
 
-      {/* ĐỒNG BỘ: Padding x-axis đồng bộ với page.tsx */}
       <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
         <section className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
-              Đặt lịch cùng <span className="text-secondary text-glow">Sensei</span>
+              {t("booking.title").split("Sensei")[0]}<span className="text-secondary text-glow">Sensei</span>
             </h1>
             <p className="mt-3 text-base text-muted-foreground md:text-xl">
-              Tìm giáo viên phù hợp và chọn khung giờ còn trống.
+              {t("booking.subtitle")}
             </p>
           </div>
 
-          {/* ĐỒNG BỘ: Sửa h-12 -> h-10, rounded-2xl -> rounded-lg */}
           <Link
             href="/booking/bookingmodal"
             className="inline-flex h-10 items-center justify-center rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-secondary-foreground shadow-sm transition hover:bg-secondary/90 active:scale-95"
           >
-            Lịch của tôi
+            {t("booking.mySchedule")}
           </Link>
         </section>
 
         <section className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 md:p-5">
           <div className="flex items-center gap-2 text-amber-200">
             <AlertTriangle className="size-5" />
-            <h2 className="text-sm font-bold md:text-base">Quy định đặt lịch</h2>
+            <h2 className="text-sm font-bold md:text-base">{t("booking.rules.title")}</h2>
           </div>
           <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-100/90 md:text-sm">
             <li className="flex items-start gap-2">
               <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-200" />
-              <span>
-                Chỉ vào phòng học trước tối đa <b>5 phút</b> so với giờ bắt đầu.
-              </span>
+              <span>{t("booking.rules.rule1")}</span>
             </li>
             <li className="flex items-start gap-2">
               <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-200" />
-              <span>
-                Hủy lịch sát giờ học (trong <b>2 giờ</b> trước giờ học) sẽ bị trừ
-                <b> 100%</b> chi phí và có thể bị khóa đặt lịch tạm thời.
-              </span>
+              <span>{t("booking.rules.rule2")}</span>
             </li>
             <li className="flex items-start gap-2">
               <Ban className="mt-0.5 size-4 shrink-0 text-amber-200" />
-              <span>
-                Tài khoản có thể bị <b>khóa chức năng đặt lịch 24 giờ</b> khi hủy sát giờ.
-              </span>
+              <span>{t("booking.rules.rule3")}</span>
             </li>
             <li className="flex items-start gap-2">
               <Ban className="mt-0.5 size-4 shrink-0 text-amber-200" />
-              <span>
-                Slot đã hủy sẽ không thể đặt lại bởi chính tài khoản đã hủy.
-              </span>
+              <span>{t("booking.rules.rule4")}</span>
             </li>
           </ul>
         </section>
@@ -287,11 +278,10 @@ export default function BookingPage() {
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_180px_220px]">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-              {/* ĐỒNG BỘ: Giảm h-14 -> h-11 để hài hòa hơn, bo góc rounded-lg */}
               <input
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Tìm giáo viên theo tên..."
+                placeholder={t("booking.searchPlaceholder")}
                 className="h-11 w-full rounded-lg border border-border bg-background/80 pl-12 pr-4 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
@@ -302,7 +292,7 @@ export default function BookingPage() {
                 onChange={(e) => setSubjectFilter(e.target.value)}
                 className="h-11 w-full appearance-none rounded-lg border border-border bg-background/80 px-4 pr-11 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
-                <option value="ALL">Tất cả môn học</option>
+                <option value="ALL">{t("booking.allSubjects")}</option>
                 {subjectOptions.map((subject) => (
                   <option key={subject} value={subject}>
                     {subject}
@@ -318,7 +308,7 @@ export default function BookingPage() {
                 onChange={(e) => setLevelFilter(e.target.value as LevelFilter)}
                 className="h-11 w-full appearance-none rounded-lg border border-border bg-background/80 px-4 pr-11 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
-                <option value="ALL">Tất cả cấp độ</option>
+                <option value="ALL">{t("booking.allLevels")}</option>
                 {JLPT_LEVELS.map((level) => (
                   <option key={level} value={level}>
                     {level}
@@ -350,12 +340,12 @@ export default function BookingPage() {
 
         <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p className="text-lg font-medium text-muted-foreground">
-            {teacherCards.length} giáo viên khả dụng
+            {t("booking.availableTeachers", { count: teacherCards.length })}
           </p>
 
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-2 text-sm text-muted-foreground shadow-sm">
             <CalendarDays className="size-4 text-primary" />
-            <span>{formatFullDate(selectedDate)}</span>
+            <span>{formatFullDate(selectedDate, i18n.language)}</span>
           </div>
         </div>
 
@@ -372,17 +362,17 @@ export default function BookingPage() {
 
         {isError && (
           <div className="mt-6 rounded-[2rem] border border-destructive/20 bg-destructive/5 px-6 py-5 text-sm text-destructive">
-            Không tải được danh sách giáo viên khả dụng.
+            {t("booking.fetchError")}
           </div>
         )}
 
         {!isLoading && !isFetching && !isError && teacherCards.length === 0 && (
           <div className="mt-6 rounded-[2rem] border border-dashed border-border bg-card/60 px-6 py-10 text-center">
             <p className="text-xl font-semibold text-foreground">
-              Chưa có giáo viên phù hợp
+              {t("booking.noTeachers")}
             </p>
             <p className="mt-2 text-muted-foreground">
-              Hãy thử đổi ngày, môn học, cấp độ hoặc từ khóa tìm kiếm.
+              {t("booking.tryAgain")}
             </p>
           </div>
         )}
@@ -396,7 +386,6 @@ export default function BookingPage() {
               >
                 <div className="flex flex-1 flex-col p-6">
                   <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-5">
-  {/* Left side: Avatar + Name */}
   <div className="flex min-w-0 flex-1 items-center gap-3">
     <img
       src={teacher.teacherAvatarUrl || "/images/avt-default.jpg"}
@@ -405,14 +394,12 @@ export default function BookingPage() {
     />
 
     <div className="min-w-0 flex-1">
-      {/* Giảm size chữ xuống text-lg và dùng truncate để ép cứng trên 1 dòng */}
       <h2 className="text-lg font-black tracking-tight text-foreground truncate">
         {teacher.teacherName}
       </h2>
     </div>
   </div>
 
-  {/* Right side: Topic Tag */}
   <div className="flex shrink-0 items-center max-w-[40%]">
     <span className="inline-flex rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary whitespace-nowrap">
       {teacher.primarySubjectLabel}
@@ -423,23 +410,25 @@ export default function BookingPage() {
                   <div className="mt-5 space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Clock3 className="size-4 text-secondary" />
-                      <span>{teacher.slotCount} khung giờ trống</span>
+                      <span>{t("booking.slotRemaining", { count: teacher.slotCount })}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <Sparkles className="size-4 text-secondary" />
-                      <span>Sớm nhất: {teacher.firstTimeLabel}</span>
+                      <span>{t("booking.earliest", { time: teacher.firstTimeLabel })}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <Users className="size-4 text-secondary" />
-                      <span>{teacher.subjectTypes.length || 1} môn đang mở lịch</span>
+                      <span>{t("booking.groupSubject", { count: teacher.subjectTypes.length || 1 })}</span>
                     </div>
                   </div>
 
                   <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                    Giáo viên đang mở {teacher.slotCount} khung giờ trong ngày{" "}
-                    {formatShortDate(selectedDate)}.
+                    {t("booking.infoDescription", { 
+                      count: teacher.slotCount, 
+                      date: formatShortDate(selectedDate, i18n.language) 
+                    })}
                   </p>
 
                   {teacher.previewTimes.length > 0 && (
@@ -458,13 +447,12 @@ export default function BookingPage() {
 
                 <div className="border-t border-border bg-muted/20 px-6 py-5">
                   <div className="grid grid-cols-2 gap-3">
-                    {/* ĐỒNG BỘ: Sửa h-12 -> h-10, rounded-2xl -> rounded-lg */}
                     <button
                       type="button"
                       onClick={() => goToTeacherSchedule(teacher.teacherId)}
                       className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background text-sm font-semibold text-foreground transition hover:border-primary/30 hover:bg-primary/5 active:scale-95"
                     >
-                     Hồ sơ giáo viên
+                     {t("booking.viewProfile")}
                     </button>
 
                     <button
@@ -472,7 +460,7 @@ export default function BookingPage() {
                       onClick={() => goToTeacherSchedule(teacher.teacherId)}
                       className="inline-flex h-10 items-center justify-center rounded-lg bg-secondary text-sm font-bold text-secondary-foreground shadow-lg shadow-secondary/20 transition hover:bg-secondary/90 active:scale-95"
                     >
-                      Đặt lịch ngay
+                      {t("booking.bookNow")}
                     </button>
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSignaling } from "@/hooks/useSignaling";
@@ -41,6 +42,7 @@ interface ChatMsg {
 }
 
 export default function VideoCallRoomPage() {
+  const { t } = useTranslation();
   const params = useParams<{ roomId: string }>();
   const router = useRouter();
   const roomId = params.roomId;
@@ -348,7 +350,7 @@ export default function VideoCallRoomPage() {
     router.push("/video-call");
   }, [signaling, webrtc, reconnect, roomId, router]);
 
-  const myName = matchData?.myName ?? "Tôi";
+  const myName = matchData?.myName ?? t("common.me");
   const myUserId =
     String(authUser?.id ?? authUser?._id ?? matchData?.myUserId ?? "guest");
 
@@ -435,7 +437,7 @@ export default function VideoCallRoomPage() {
   const handleSubmitReport = useCallback(async () => {
     const trimmed = reportContent.trim();
     if (!trimmed) {
-      toast.error("Vui lòng nhập nội dung báo cáo.");
+      toast.error(t("videoCall.room.toast.reportInputRequired"));
       return;
     }
     if (!matchData) return;
@@ -479,15 +481,15 @@ export default function VideoCallRoomPage() {
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.success) {
-        throw new Error(json?.message || "Gửi báo cáo thất bại");
+        throw new Error(json?.message || t("videoCall.room.toast.reportFailed"));
       }
 
-      toast.success("Báo cáo đã được ghi nhận.");
+      toast.success(t("videoCall.room.toast.reportSuccess"));
       setIsReportModalOpen(false);
       setReportContent("");
     } catch (error) {
       console.error(error);
-      toast.error("Không thể gửi báo cáo, vui lòng thử lại.");
+      toast.error(t("videoCall.room.toast.reportError"));
     } finally {
       setIsSubmittingReport(false);
     }
@@ -558,9 +560,9 @@ export default function VideoCallRoomPage() {
     const ban = await fetchBanStatus(myUserId);
     if (ban?.banned) {
       const untilText = ban.until
-        ? ` • Còn đến: ${new Date(ban.until).toLocaleString("vi-VN")}`
+         ? t("videoCall.room.ban.until", { date: new Date(ban.until).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language) })
         : "";
-      toast.error(`Bạn đang bị cấm chat${untilText}`, {
+       toast.error(`${t("videoCall.room.ban.active")}${untilText}`, {
         duration: 4000,
       });
       return;
@@ -571,10 +573,10 @@ export default function VideoCallRoomPage() {
     const isViolation = Boolean(violationType);
 
     if (violationType) {
-      toast.warning("Vui lòng chỉ chat tiếng Nhật (VN/EN không được phép)", {
+      toast.warning(t("videoCall.room.violation.japaneseOnly"), {
         duration: 4000,
       });
-      setViolationBanner("Vui lòng chỉ chat tiếng Nhật (VN/EN không được phép)");
+      setViolationBanner(t("videoCall.room.violation.japaneseOnly"));
       if (violationBannerTimerRef.current) {
         window.clearTimeout(violationBannerTimerRef.current);
       }
@@ -592,9 +594,9 @@ export default function VideoCallRoomPage() {
       if (!report?.success && report?.code === "BAN_ACTIVE") {
         // Backend may ban immediately when threshold is reached
         const untilText = report?.data?.until
-          ? ` • Còn đến: ${new Date(report?.data?.until).toLocaleString("vi-VN")}`
+           ? t("videoCall.room.ban.until", { date: new Date(report?.data?.until).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language) })
           : "";
-        toast.error(`Bạn đang bị cấm chat${untilText}`, {
+         toast.error(`${t("videoCall.room.ban.active")}${untilText}`, {
           duration: 4000,
         });
         return;
@@ -670,17 +672,17 @@ export default function VideoCallRoomPage() {
                 <>
                   <WifiOff className="h-10 w-10 text-amber-300 mb-3" />
                   <p className="text-slate-50 font-semibold tracking-wide">
-                    Đang kết nối lại...
+                    {t("videoCall.room.reconnecting")}
                   </p>
                   <p className="text-slate-400 text-xs mt-1">
-                    {reconnect.countdown}s còn lại
+                    {t("videoCall.room.secondsLeft", { val: reconnect.countdown })}
                   </p>
                 </>
               ) : (
                 <>
                   <RefreshCw className="h-8 w-8 text-slate-500 animate-spin mb-3" />
                   <p className="text-slate-300 text-sm">
-                    Đang chờ kết nối P2P...
+                    {t("videoCall.room.waitingP2P")}
                   </p>
                 </>
               )}
@@ -751,7 +753,7 @@ export default function VideoCallRoomPage() {
           <div className="px-5 py-3 bg-slate-900/80 border-b border-white/10 shrink-0 flex items-center justify-between">
             <div>
               <h2 className="text-slate-50 font-semibold text-sm tracking-[0.12em] uppercase">
-                Nhắn tin
+                {t("videoCall.room.chatTitle")}
               </h2>
               <p className="text-slate-400 text-xs mt-0.5">
                 {matchData.peerName} • JLPT {matchData.peerLevel}
@@ -759,7 +761,7 @@ export default function VideoCallRoomPage() {
             </div>
             {isConnected && (
               <span className="text-[10px] bg-emerald-400/90 text-emerald-950 font-semibold px-2 py-0.5 rounded-full tracking-wide">
-                Đã kết nối
+                {t("videoCall.room.connected")}
               </span>
             )}
           </div>
@@ -769,9 +771,9 @@ export default function VideoCallRoomPage() {
             {messages.length === 0 && (
               <div className="h-full flex items-center justify-center">
                 <p className="text-slate-500 text-xs text-center leading-relaxed">
-                  Gửi vài câu chào bằng tiếng Nhật
+                  {t("videoCall.room.emptyChat1")}
                   <br />
-                  để bắt đầu cuộc trò chuyện.
+                  {t("videoCall.room.emptyChat2")}
                 </p>
               </div>
             )}
@@ -836,8 +838,8 @@ export default function VideoCallRoomPage() {
                   >
                     <div className="px-3 py-2 text-[10px] text-slate-400 flex items-center justify-between">
                       <span>
-                        Gợi ý từ vựng
-                        {isSuggestLoading ? " (đang tải...)" : ""}
+                        {t("videoCall.room.suggestVocab")}
+                        {isSuggestLoading ? t("videoCall.room.loading") : ""}
                       </span>
                       <span className="text-[9px] flex items-center gap-1 text-slate-500">
                         <Keyboard className="w-3 h-3" /> Ctrl+Space
@@ -859,11 +861,11 @@ export default function VideoCallRoomPage() {
                               {fullSentenceSuggestion}
                             </span>
                             <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/30 text-sky-100">
-                              Parse cả đoạn
+                              {t("videoCall.room.parseSentence")}
                             </span>
                           </div>
                           <div className="text-[11px] text-slate-300 mt-0.5">
-                            Chuyển toàn bộ romaji hiện tại sang hiragana
+                            {t("videoCall.room.convertAllRomaji")}
                           </div>
                         </button>
                       )}
@@ -900,7 +902,7 @@ export default function VideoCallRoomPage() {
                               )}
                               {s.fromHistory && (
                                 <span className="text-[9px] text-amber-400/70">
-                                  ✓ lịch sử
+                                  {t("videoCall.room.fromHistory")}
                                 </span>
                               )}
                             </span>
@@ -924,7 +926,7 @@ export default function VideoCallRoomPage() {
                 <Textarea
                   value={chatMsg}
                   onChange={(e) => setChatMsg(e.target.value)}
-                  placeholder="Nhắn tin... (Ctrl+Space để gợi ý)"
+                  placeholder={t('videoCall.room.placeholder.message')}
                   className="min-h-[44px] max-h-[120px] resize-none bg-slate-900/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-sky-500"
                   onFocus={() => setIsChatInputFocused(true)}
                   onBlur={() => {
@@ -970,7 +972,7 @@ export default function VideoCallRoomPage() {
           className="h-12 px-8 rounded-full bg-secondary hover:bg-secondary/90 text-slate-50 font-semibold tracking-wide gap-2 shadow-[0_18px_40px_rgba(217,70,239,0.45)]"
         >
           <PhoneOff className="h-4 w-4" />
-          Kết thúc
+          {t("videoCall.room.endCall")}
         </Button>
 
         {/* Next — subtle outline */}
@@ -980,7 +982,7 @@ export default function VideoCallRoomPage() {
           className="h-11 px-6 rounded-full border-slate-600 text-slate-100 bg-slate-900/60 hover:bg-slate-800/80 font-medium gap-2 shadow-md"
         >
           <SkipForward className="h-4 w-4" />
-          Tiếp theo
+          {t("videoCall.room.nextPeer")}
         </Button>
 
         {/* Report */}
@@ -990,7 +992,7 @@ export default function VideoCallRoomPage() {
           onClick={() => setIsReportModalOpen(true)}
         >
           <AlertTriangle className="h-4 w-4" />
-          Báo cáo
+          {t("videoCall.room.report")}
         </Button>
       </div>
 
@@ -1000,7 +1002,7 @@ export default function VideoCallRoomPage() {
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-50 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-300" />
-                Báo cáo người dùng
+                {t("videoCall.room.reportUser")}
               </h3>
               <Button
                 variant="ghost"
@@ -1009,13 +1011,13 @@ export default function VideoCallRoomPage() {
                 onClick={() => setIsReportModalOpen(false)}
                 disabled={isSubmittingReport}
               >
-                Đóng
+                {t("common.close")}
               </Button>
             </div>
 
             <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/70 p-3">
               <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                Thông tin người bị báo cáo
+                {t("videoCall.room.reportedInfo")}
               </p>
               <div className="mt-2 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-700">
@@ -1041,12 +1043,12 @@ export default function VideoCallRoomPage() {
 
             <div className="mt-4">
               <p className="text-xs text-slate-400 mb-2">
-                Nội dung báo cáo
+                {t("videoCall.room.reportContent")}
               </p>
               <Textarea
                 value={reportContent}
                 onChange={(e) => setReportContent(e.target.value)}
-                placeholder="Mô tả cụ thể hành vi của người dùng..."
+                placeholder={t('videoCall.room.placeholder.report')}
                 className="min-h-[110px] resize-none bg-slate-950/70 border-slate-700 text-sm text-slate-50 placeholder:text-slate-500 focus-visible:ring-amber-500"
                 disabled={isSubmittingReport}
               />
@@ -1059,14 +1061,14 @@ export default function VideoCallRoomPage() {
                 onClick={() => setIsReportModalOpen(false)}
                 disabled={isSubmittingReport}
               >
-                Hủy
+                {t("common.cancel")}
               </Button>
               <Button
                 className="bg-amber-500 hover:bg-amber-400 text-slate-950"
                 onClick={() => handleSubmitReport()}
                 disabled={isSubmittingReport || !reportContent.trim()}
               >
-                {isSubmittingReport ? "Đang gửi..." : "Gửi báo cáo"}
+                {isSubmittingReport ? t("videoCall.room.sending") : t("videoCall.room.report")}
               </Button>
             </div>
           </div>

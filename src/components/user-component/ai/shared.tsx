@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 "use client";
 
 import { memo, useState } from "react";
@@ -81,6 +82,7 @@ export const FuriganaDisplay = memo(function FuriganaDisplay({
   furigana: FuriganaData;
   highlightIndex: number;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       {/* Main line: kanji + furigana */}
@@ -324,7 +326,7 @@ export const RightSidebar = memo(function RightSidebar({
               onValueChange={onTopicChange}
             >
               <SelectTrigger className="w-full bg-card border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-60">
-                <SelectValue placeholder="Chọn chủ đề" />
+                <SelectValue placeholder={t('auto.shared_1')} />
               </SelectTrigger>
               <SelectContent>
                 {topics.map((t) => (

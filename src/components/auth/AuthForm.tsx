@@ -22,6 +22,7 @@ import {
   useResetPasswordMutation,
 } from "@/store/services/authApi";
 import { useTranslation } from "react-i18next";
+import { tMsg } from "@/i18n";
 import { getGoogleOAuthAuthorizationUrl } from "@/lib/backendOrigin";
 
 type AuthTab = "login" | "register" | "forgot_password";
@@ -200,13 +201,13 @@ export default function AuthForm({
         router.push("/");
       }
     } catch (err: any) {
-      let msg = t("auth.loginFailed");
+      let msg = tMsg("auth.loginFailed");
       // Backend error handler: { messageKey: "auth.invalidCredentials" }
-      if (err?.data?.messageKey) msg = t(err.data.messageKey);
-      else if (err?.error) msg = t("api.networkError");
+      if (err?.data?.messageKey) msg = tMsg(err.data.messageKey);
+      else if (err?.error) msg = tMsg("api.networkError");
       else if (typeof err?.data === "string") msg = err.data;
       setLoginError(msg);
-      toast.error(t("auth.loginFail"), { description: msg });
+      toast.error(tMsg("auth.loginFail"), { description: msg });
     }
   };
 
@@ -255,18 +256,13 @@ export default function AuthForm({
     try {
       // Bước 1: Gửi OTP (không tạo user)
       const res = await sendOtpRegister(payload).unwrap();
-      const msg =
-        (res as any)?.messageKey && typeof (res as any).messageKey === "string"
-          ? t((res as any).messageKey)
-          : t("auth.sendOtpSuccess");
+      const msg = tMsg((res as any)?.messageKey) || tMsg("auth.sendOtpSuccess");
       toast.info(msg, {
-        description: t("auth.sendOtpCheckEmail", { email: formData.email }),
+        description: tMsg("auth.sendOtpCheckEmail", { email: formData.email }),
       });
       setRegisterStep("otp");
     } catch (err: any) {
-      const msg =
-        (err?.data?.messageKey && t(err.data.messageKey)) ||
-        t("auth.sendOtpFailed");
+      const msg = tMsg(err?.data?.messageKey) || tMsg("auth.sendOtpFailed");
       setRegisterServerError(msg);
     }
   };
@@ -282,14 +278,14 @@ export default function AuthForm({
       if (sessionId) {
         // Step 2 for OAuth2: Verify session + OTP
         await verifyOAuth2Otp({ sessionId, otpCode }).unwrap();
-        toast.success(t("auth.googleVerifySuccess"), {
-          description: t("auth.googleWelcome"),
+        toast.success(tMsg("auth.googleVerifySuccess"), {
+          description: tMsg("auth.googleWelcome"),
         });
         router.push("/");
         return;
       }
 
-      // Bước 2: Đăng ký với OTP (tạo user active ngay)
+      // Step 2: Register with OTP
       await registerUser({
         username: formData.username,
         email: formData.email,
@@ -297,16 +293,14 @@ export default function AuthForm({
         fullName: formData.fullname,
         otpCode: otpCode,
       }).unwrap();
-      toast.success(t("auth.registerSuccess"), {
-        description: t("auth.registerCanLogin"),
+      toast.success(tMsg("auth.registerSuccess"), {
+        description: tMsg("auth.registerCanLogin"),
       });
       switchTab("login");
       setRegisterStep("register");
       setOtpCode("");
     } catch (err: any) {
-      const msg =
-        (err?.data?.messageKey && t(err.data.messageKey)) ||
-        t("auth.otpInvalidOrExpired");
+      const msg = tMsg(err?.data?.messageKey) || tMsg("auth.otpInvalidOrExpired");
       setRegisterServerError(msg);
     }
   };
@@ -321,7 +315,7 @@ export default function AuthForm({
     }
     try {
       const res = await sendForgotOtp({ email: forgotEmail }).unwrap();
-      toast.success(res.message);
+      toast.success(tMsg(res.messageKey) || tMsg("auth.forgotPasswordOtpSent"));
       setForgotStep("VERIFY");
 
       // Bắt đầu đếm ngược 60s
@@ -336,7 +330,7 @@ export default function AuthForm({
         });
       }, 1000);
     } catch (err: any) {
-      setForgotServerError(err?.data?.message || "Không thể gửi OTP. Vui lòng kiểm tra lại email.");
+      setForgotServerError(tMsg(err?.data?.messageKey) || tMsg("api.error"));
     }
   };
 
@@ -352,10 +346,10 @@ export default function AuthForm({
         email: forgotEmail,
         otpCode: forgotOtp,
       }).unwrap();
-      toast.success(res.message);
+      toast.success(tMsg(res.messageKey) || tMsg("auth.checkOtpSuccess"));
       setForgotStep("RESET");
     } catch (err: any) {
-      setForgotServerError(err?.data?.message || "Mã xác thực không chính xác hoặc đã hết hạn.");
+      setForgotServerError(tMsg(err?.data?.messageKey) || tMsg("auth.otpInvalidOrExpired"));
     }
   };
 
@@ -382,7 +376,7 @@ export default function AuthForm({
         newPassword: forgotNewPassword,
       }).unwrap();
       
-      toast.success(res.message);
+      toast.success(tMsg(res.messageKey) || tMsg("auth.resetPasswordSuccess"));
       
       // Thành công thì quay lại màn đăng nhập
       setForgotStep("EMAIL");
@@ -394,7 +388,7 @@ export default function AuthForm({
       setLoginEmail(forgotEmail); // Lấy luôn email vừa quên mk để điền sẵn
       setLoginPassword("");
     } catch (err: any) {
-      setForgotServerError(err?.data?.message || "Mã OTP không hợp lệ, hoặc đã xảy ra lỗi");
+      setForgotServerError(tMsg(err?.data?.messageKey) || tMsg("api.error"));
     }
   };
 
@@ -529,9 +523,7 @@ export default function AuthForm({
                         type="button"
                         onClick={() => switchTab("forgot_password")}
                         className="text-xs text-slate-400 hover:text-pink-400 transition-colors font-medium cursor-pointer"
-                      >
-                       Quên mật khẩu?
-                      </button>
+                      >{t('auto.authform_1')}</button>
                     </div>
                   </div>
 
@@ -909,12 +901,8 @@ export default function AuthForm({
                     >
                       <form className="space-y-5" onSubmit={handleForgotEmail}>
                         <div className="text-center mb-6">
-                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">
-                            Khôi phục mật khẩu
-                          </h2>
-                          <p className="text-sm text-slate-400">
-                            Nhập email của bạn để nhận mã OTP khôi phục.
-                          </p>
+                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">{t('auto.authform_2')}</h2>
+                          <p className="text-sm text-slate-400">{t('auto.authform_3')}</p>
                         </div>
 
                         <AuthFloatingInput
@@ -963,12 +951,8 @@ export default function AuthForm({
                     >
                       <form className="space-y-5" onSubmit={handleForgotVerify}>
                         <div className="text-center mb-6">
-                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">
-                            Xác nhận mã OTP
-                          </h2>
-                          <p className="text-sm text-slate-400">
-                            Mã xác nhận đã được gửi đến
-                            <br />{" "}
+                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">{t('auto.authform_4')}</h2>
+                          <p className="text-sm text-slate-400">{t('auto.authform_10')}<br />{" "}
                             <span className="text-white font-bold">
                               {forgotEmail}
                             </span>
@@ -1028,18 +1012,14 @@ export default function AuthForm({
                             type="button"
                             onClick={() => setForgotStep("EMAIL")}
                             className="text-sm text-slate-400 hover:text-white transition-colors"
-                          >
-                            Đổi email khác
-                          </button>
+                          >{t('auto.authform_5')}</button>
                           {forgotCountdown === 0 ? (
                             <button
                               type="button"
                               onClick={(e) => handleForgotEmail(e as any)}
                               className="text-sm text-pink-400 hover:text-pink-300 font-semibold transition-colors"
                               disabled={isSendingForgotOtp}
-                            >
-                              Gửi lại mã
-                            </button>
+                            >{t('auto.authform_6')}</button>
                           ) : (
                             <p className="text-sm text-slate-500">
                               Có thể gửi lại sau {forgotCountdown}s
@@ -1061,12 +1041,8 @@ export default function AuthForm({
                     >
                       <form className="space-y-5" onSubmit={handleForgotReset}>
                         <div className="text-center mb-6">
-                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">
-                            Mật khẩu mới
-                          </h2>
-                          <p className="text-sm text-slate-400">
-                            Nhập mật khẩu mới cho tài khoản
-                            <br />{" "}
+                          <h2 className="text-xl font-bold text-white tracking-tight mb-2">{t('auto.authform_7')}</h2>
+                          <p className="text-sm text-slate-400">{t('auto.authform_11')}<br />{" "}
                             <span className="text-white font-bold">
                               {forgotEmail}
                             </span>
@@ -1141,9 +1117,7 @@ export default function AuthForm({
                           type="button"
                           onClick={() => setForgotStep("VERIFY")}
                           className="w-full text-center text-sm text-slate-400 hover:text-white transition-colors mt-4"
-                        >
-                          Quay lại nhập mã OTP
-                        </button>
+                        >{t('auto.authform_8')}</button>
                       </form>
                     </motion.div>
                   )}
@@ -1185,9 +1159,7 @@ export default function AuthForm({
                   type="button"
                   onClick={() => switchTab("login")}
                   className="font-bold text-secondary hover:text-pink-400 hover:underline decoration-2 underline-offset-4 transition-all"
-                >
-                  Đăng nhập ngay
-                </button>
+                >{t('auto.authform_9')}</button>
               </>
             )}
           </p>

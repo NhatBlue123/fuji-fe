@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Mic,
   MicOff,
@@ -39,6 +40,7 @@ export function ControlBar({
   isRecording = false,
   onToggleRecording,
 }: ControlBarProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center gap-3 py-4 px-6 bg-[#0f1117]/80 backdrop-blur-md border-t border-white/[0.08]">
       {/* Mic */}
@@ -93,7 +95,7 @@ export function ControlBar({
       {/* Settings placeholder for future phases */}
       <button
         className="w-12 h-12 rounded-full flex items-center justify-center text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06] transition-all"
-        title="Cài đặt"
+        title={t('auto.lesson_control_1')}
       >
         <Settings className="h-5 w-5" />
       </button>

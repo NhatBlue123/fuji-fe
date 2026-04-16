@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * [I18N COMPONENT - DẢI PHẢN HỒI (FEEDBACK)]
+ * Thực hiện:
+ * - Bản địa hóa toàn bộ giao diện báo lỗi và đóng góp ý kiến.
+ * - Localize các thông báo xác nhận khi bỏ dở (Abandonment Alert) và trạng thái đang gửi.
+ * - Tích hợp i18next cho các banner hướng dẫn và nhãn tải lên tệp đính kèm.
+ */
+
 import React, { useState, useEffect } from "react";
 import { 
   X, 
@@ -36,6 +44,14 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import api from "@/lib/api";
+import { useTranslation } from "react-i18next";
+
 interface FeedbackDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -44,6 +60,7 @@ interface FeedbackDialogProps {
 }
 
 export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug" }: FeedbackDialogProps) {
+  const { t } = useTranslation();
   const [content, setContent] = useState("");
   const [isAbandonAlertOpen, setIsAbandonAlertOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +93,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
 
   const handleSubmit = async () => {
     if (!content.trim()) {
-      toast.error("Vui lòng nhập nội dung phản hồi");
+      toast.error(t("feedback.toast.errorInput"));
       return;
     }
 
@@ -101,20 +118,20 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
       // 2. Gửi báo cáo kèm URL tệp đính kèm
       await api.post("/reports", {
         category: "NOTIFICATION",
-        title: "Báo cáo sự cố từ hệ thống",
+        title: t("feedback.defaultReportTitle"),
         description: content.trim(),
         priority: "MEDIUM",
         attachmentUrls: attachmentUrls
       });
       
-      toast.success("Đã gửi báo cáo, cảm ơn bạn đã đóng góp ý kiến!");
+      toast.success(t("feedback.toast.success"));
       setContent("");
       setFiles([]);
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Submit error:", error);
-      toast.error("Có lỗi xảy ra khi gửi phản hồi. Vui lòng thử lại sau.");
+      toast.error(t("feedback.toast.errorSubmit"));
     } finally {
       setIsSubmitting(false);
     }
@@ -130,20 +147,20 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
               <Button variant="ghost" size="icon" className="size-8 rounded-full hover:bg-secondary/10 hover:text-secondary group transition-all" onClick={handleClose}>
                 <ChevronLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
               </Button>
-              <DialogTitle className="text-base font-black uppercase tracking-tight">Báo cáo sự cố</DialogTitle>
+              <DialogTitle className="text-base font-black uppercase tracking-tight">{t("feedback.title")}</DialogTitle>
             </div>
           </div>
 
           <div className="p-5 space-y-5">
             <div className="space-y-3.5">
-              <h3 className="text-lg font-black tracking-tight text-foreground">Chúng tôi có thể cải thiện như thế nào?</h3>
+              <h3 className="text-lg font-black tracking-tight text-foreground">{t("feedback.improveTitle")}</h3>
               
               <div className="relative group/textarea">
                 <div className="absolute top-2.5 left-4 text-[9px] font-black text-secondary uppercase tracking-widest z-10 opacity-70 group-focus-within/textarea:opacity-100 transition-opacity">
-                  Chi tiết
+                  {t("feedback.detailLabel")}
                 </div>
                 <Textarea 
-                  placeholder="Vui lòng chia sẻ chi tiết nhất có thể..."
+                  placeholder={t("feedback.placeholder")}
                   className="min-h-[140px] pt-8 pb-3 px-4 bg-muted/15 border-2 border-muted/50 hover:border-secondary/30 focus:border-secondary focus:ring-0 rounded-xl resize-none transition-all text-xs font-bold leading-relaxed"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
@@ -165,7 +182,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Paperclip className="size-3.5 text-muted-foreground group-hover/btn:text-secondary" />
-                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/btn:text-secondary">Thêm video hoặc ảnh chụp màn hình</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/btn:text-secondary">{t("feedback.uploadBtn")}</span>
                 </Button>
 
                 {files.length > 0 && (
@@ -195,7 +212,8 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
             {/* Disclaimer Banner */}
             <div className="p-3.5 rounded-xl bg-muted/10 border border-muted/20 space-y-1.5">
               <p className="text-[11px] font-bold leading-relaxed text-muted-foreground">
-                Nếu bạn có ý tưởng để cải thiện sản phẩm thì hãy cho chúng tôi biết nhé. Còn nếu cần trợ giúp, hãy truy cập <Link href="/help" className="text-secondary font-black hover:underline uppercase tracking-tight">Trung tâm trợ giúp</Link>.
+                {t("feedback.disclaimer")}
+                <Link href="/help" className="text-secondary font-black hover:underline uppercase tracking-tight">{t("feedback.helpCenter")}</Link>.
               </p>
             </div>
             
@@ -206,7 +224,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
                 className="text-muted-foreground font-black uppercase tracking-widest text-[10px] hover:text-[#FF007A] hover:bg-[#FF007A]/5 px-8 h-10 rounded-xl transition-all"
                 onClick={handleClose}
               >
-                Hủy
+                {t("feedback.btnCancel")}
               </Button>
               <Button 
                 className={cn(
@@ -218,7 +236,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
                 disabled={isSubmitting || content.trim().length === 0}
                 onClick={handleSubmit}
               >
-                {isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
+                {isSubmitting ? t("feedback.sending") : t("feedback.btnSubmit")}
               </Button>
             </div>
           </div>
@@ -229,7 +247,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
       <AlertDialog open={isAbandonAlertOpen} onOpenChange={setIsAbandonAlertOpen}>
         <AlertDialogContent className="rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden max-w-[400px]">
           <div className="relative flex items-center justify-center py-4 border-b border-muted/50 bg-muted/10">
-            <AlertDialogTitle className="text-base font-black uppercase tracking-tight">Bỏ phản hồi?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base font-black uppercase tracking-tight">{t("feedback.abandonTitle")}</AlertDialogTitle>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -241,7 +259,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
           </div>
           <div className="p-5 space-y-5">
             <AlertDialogDescription className="text-sm font-bold text-muted-foreground text-center px-4 leading-relaxed">
-              Nếu bỏ bây giờ, bạn sẽ không chia sẻ bất cứ ý kiến đóng góp nào với chúng tôi.
+              {t("feedback.abandonDesc")}
             </AlertDialogDescription>
             
             <div className="flex items-center justify-center gap-2 pt-1">
@@ -250,13 +268,13 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
                 className="flex-1 text-[10px] font-black uppercase tracking-widest text-[#FF007A] hover:bg-[#FF007A]/5 h-11 rounded-xl"
                 onClick={() => setIsAbandonAlertOpen(false)}
               >
-                Tiếp tục
+                {t("feedback.btnContinue")}
               </Button>
               <Button 
                 className="flex-1 bg-secondary hover:bg-secondary/90 text-white font-black uppercase tracking-widest text-[10px] h-11 rounded-xl shadow-lg shadow-secondary/20 transition-all active:scale-95"
                 onClick={confirmAbandon}
               >
-                Bỏ
+                {t("feedback.btnDiscard")}
               </Button>
             </div>
           </div>

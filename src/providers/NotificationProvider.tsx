@@ -7,16 +7,16 @@ import {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { Socket } from "socket.io-client";
 import axios from "axios";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import api from "@/lib/api";
 import { 
   connectNotificationSocket, 
-  disconnectNotificationSocket 
+  disconnectNotificationSocket,
 } from "@/lib/socket/socket-notification";
 import { Notification } from "@/types/notification";
 
@@ -30,6 +30,8 @@ type NotificationContextValue = {
   markAsRead: (id: number) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: number) => Promise<void>;
+  bellRingCount: number;
+  playBellSound: () => void;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -45,13 +47,54 @@ export function NotificationProvider({
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bellRingCount, setBellRingCount] = useState(0);
+  
+  const isMountedRef = useRef(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   /**
-   * Lấy danh sách thông báo từ Backend API
+   * Phát tiếng chuông khi có thông báo mới
+   */
+  const playBellSound = useCallback(() => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      const ctx = audioContextRef.current;
+
+      const frequencies = [2093, 2637, 3136];
+      const durations = [0.15, 0.15, 0.3];
+      const delays = [0, 0.15, 0.3];
+
+      frequencies.forEach((freq, i) => {
+        const startTime = ctx.currentTime + delays[i];
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(freq, startTime);
+
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + durations[i]);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + durations[i]);
+      });
+
+      console.log("[NotificationProvider] 🔔 Bell sound played!");
+    } catch (error) {
+      console.error("Failed to play bell sound:", error);
+    }
+  }, []);
+
+  /**
+   * Lấy danh sách thông báo từ Backend API
    */
   const fetchNotifications = useCallback(async () => {
-    // Chờ useAuthInit xác thực / refresh JWT — tránh gọi API khi token cookie còn hết hạn
-    // nhưng Redux đã hydrate isAuthenticated từ localStorage (401 lần đầu load).
     if (!isInitialized || !isAuthenticated || !accessToken) return;
     try {
       const res = await api.get('/notifications');
@@ -67,7 +110,7 @@ export function NotificationProvider({
   }, [isInitialized, isAuthenticated, accessToken]);
 
   /**
-   * Đánh dấu 1 thông báo là đã đọc
+   * Đánh dấu 1 thông báo là đã đọc
    */
   const markAsRead = async (id: number) => {
     try {
@@ -82,7 +125,7 @@ export function NotificationProvider({
   };
 
   /**
-   * Đánh dấu tất cả là đã đọc
+   * Đánh dấu tất cả là đã đọc
    */
   const markAllAsRead = async () => {
     try {
@@ -95,7 +138,7 @@ export function NotificationProvider({
   };
 
   /**
-   * Xóa 1 thông báo
+   * Xóa 1 thông báo
    */
   const deleteNotification = async (id: number) => {
     try {
@@ -111,6 +154,8 @@ export function NotificationProvider({
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!isInitialized || !isAuthenticated || !user) {
       disconnectNotificationSocket();
       setSocket(null);
@@ -118,35 +163,40 @@ export function NotificationProvider({
       return;
     }
 
+    const handleConnect = () => {
+      if (isMountedRef.current) {
+        setIsConnected(true);
+        console.log("[NotificationProvider] Socket connected, id:", user.id);
+      }
+    };
+    
+    const handleDisconnect = () => {
+      if (isMountedRef.current) {
+        setIsConnected(false);
+        console.log("[NotificationProvider] Socket disconnected");
+      }
+    };
+    
+    const handleNewNotification = (notification: Notification) => {
+      if (!isMountedRef.current) return;
+      console.log("[NotificationProvider] 📩 Received new-notification:", notification.title);
+      
+      setNotifications(prev => [notification, ...prev]);
+      setUnreadCount(prev => {
+        const newCount = prev + 1;
+        console.log("[NotificationProvider] 🔔 Unread count:", prev, "->", newCount);
+        return newCount;
+      });
+      
+      // Rung chuông + phát tiếng chuông
+      setBellRingCount(c => c + 1);
+      playBellSound();
+    };
+
     const s = connectNotificationSocket(accessToken, user.id);
     setSocket(s as Socket);
-    setIsConnected(Boolean(s.connected));
 
-    // Xử lý sự kiện kết nối thành công
-    const handleConnect = () => setIsConnected(true);
-    // Xử lý sự kiện mất kết nối
-    const handleDisconnect = () => setIsConnected(false);
-    
-    // Xử lý khi nhận được thông báo mới từ server qua socket
-    const handleNewNotification = (notification: Notification) => {
-      // Cập nhật danh sách thông báo hiện tại (thêm vào đầu mảng)
-      setNotifications(prev => [notification, ...prev]);
-      // Tăng số lượng thông báo chưa đọc
-      setUnreadCount(prev => prev + 1);
-      
-      // Hiển thị thông báo dạng Popup (Toast) ngay lập tức
-      toast(notification.title, {
-        description: notification.content,
-        // Nếu thông báo có đường dẫn liên kết, hiển thị nút "Xem ngay"
-        action: notification.linkUrl ? {
-          label: "Xem ngay",
-          onClick: () => {
-            markAsRead(notification.id); // Đánh dấu đã đọc khi click
-            router.push(notification.linkUrl!); // Chuyển hướng trang
-          }
-        } : undefined,
-      });
-    };
+    console.log("[NotificationProvider] Connecting socket with userId:", user.id);
 
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
@@ -159,14 +209,15 @@ export function NotificationProvider({
       s.off("disconnect", handleDisconnect);
       s.off("new-notification", handleNewNotification);
       disconnectNotificationSocket();
+      isMountedRef.current = false;
     };
   }, [
     accessToken,
     isInitialized,
     isAuthenticated,
     user,
-    router,
     fetchNotifications,
+    playBellSound,
   ]);
 
   const value = useMemo(
@@ -180,8 +231,10 @@ export function NotificationProvider({
       markAsRead,
       markAllAsRead,
       deleteNotification,
+      bellRingCount,
+      playBellSound,
     }),
-    [socket, isConnected, unreadCount, notifications, fetchNotifications]
+    [socket, isConnected, unreadCount, notifications, fetchNotifications, bellRingCount, playBellSound]
   );
 
   return (

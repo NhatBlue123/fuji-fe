@@ -47,7 +47,7 @@ interface SidePanelProps {
   isTeacher: boolean;
   messages: ChatMessage[];
   typingUsers: TypingStatus[];
-  onSendMessage: (content: string, type?: string) => void;
+  onSendMessage: (content: string, type?: string, fileUrl?: string) => void;
   onSendTyping: (isTyping: boolean) => void;
   onReaction: (messageId: number, emoji: string) => void;
   onMarkSeen: () => void;

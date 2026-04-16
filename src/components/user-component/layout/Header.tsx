@@ -54,7 +54,16 @@ const Header = () => {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
-  const { unreadCount, notifications, markAsRead } = useNotifications();
+  const { unreadCount, notifications, markAsRead, bellRingCount } = useNotifications();
+  const [bellAnimating, setBellAnimating] = useState(false);
+
+  useEffect(() => {
+    if (bellRingCount > 0) {
+      setBellAnimating(true);
+      const timer = setTimeout(() => setBellAnimating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [bellRingCount]);
   const [bookingInfo, setBookingInfo] = useState<BookingDetail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const handleNotificationClick = async (n: {
@@ -180,11 +189,14 @@ const Header = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-secondary transition-all active:scale-90 active:translate-y-[1px]"
+                className={cn(
+                  "h-10 w-10 relative rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-secondary transition-all active:scale-90 active:translate-y-[1px]",
+                  bellAnimating && "animate-bell-shake"
+                )}
               >
-                <Bell className="size-5" />
+                <Bell className={cn("size-5", bellAnimating && "animate-bell-ring")} />
                 {unreadCount > 0 && (
-                  <Badge className="absolute right-1.5 top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-secondary p-0 text-[8px] font-bold text-white border-2 border-background">
+                  <Badge className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-secondary p-0 text-[8px] font-bold text-white border-2 border-background">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </Badge>
                 )}

@@ -19,6 +19,7 @@ import {
 } from "@/lib/socket/socket-payment";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
+import { useNotifications } from "@/providers/NotificationProvider";
 
 // ─── Event payload types ────────────────────────────────────
 export interface TopupSuccessPayload {
@@ -77,6 +78,9 @@ export function PaymentSocketProvider({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
+  // Access notification system to ring bell + play sound when payment succeeds
+  const { playBellSound } = useNotifications();
+
   // Refs to hold subscriber Sets (avoids re-renders on subscribe/unsubscribe)
   const topupCallbacks = useRef<Set<TopupCallback>>(new Set());
   const payoutCallbacks = useRef<Set<PayoutCallback>>(new Set());
@@ -127,6 +131,7 @@ export function PaymentSocketProvider({
     // ── Global event handlers ────────────────────────────────
     const handleTopupSuccess = (data: TopupSuccessPayload) => {
       toast.success(data.message || "Nạp hoa thành công!");
+      playBellSound();
       // Invalidate RTK Query cache → wallet & history tự refresh
       store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
       // Notify all component-level subscribers
@@ -135,6 +140,7 @@ export function PaymentSocketProvider({
 
     const handlePayoutSuccess = (data: PayoutSuccessPayload) => {
       toast.success(data.message || "Rút hoa thành công!");
+      playBellSound();
       store.dispatch(baseApi.util.invalidateTags(["Wallet", "Withdraw"]));
       payoutCallbacks.current.forEach((cb) => cb(data));
     };
@@ -168,7 +174,7 @@ export function PaymentSocketProvider({
       s.off("payment-status-change", handlePaymentStatusChange);
       disconnectPaymentSocket();
     };
-  }, [accessToken, isAuthenticated, user]);
+  }, [accessToken, isAuthenticated, user, playBellSound]);
 
   const value = useMemo(
     () => ({

@@ -29,6 +29,7 @@ function formatTimeRange(startAt: string, endAt: string) {
 }
 
 export default function MySchedulePage() {
+  const { t } = useTranslation();
   const { isTeacher, isInitialized } = useAuth();
   const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
@@ -248,18 +249,18 @@ export default function MySchedulePage() {
       {deletingId !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Lớp nền mờ */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-            onClick={() => !isCancelling && setDeletingId(null)} 
+            onClick={() => !isCancelling && setDeletingId(null)}
           />
-          
+
         {/* Nội dung Modal */}
           <div className="relative bg-[#1e293b] border border-white/10 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex flex-col items-center text-center">
               <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
-              
+
             <h3 className="text-xl font-bold text-white mb-2">
               {actionType === "END_EARLY" ? "Xác nhận kết thúc sớm" : "Xác nhận hủy lớp"}
             </h3>
@@ -268,15 +269,15 @@ export default function MySchedulePage() {
                 ? "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?"
                 : "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?"}
               </p>
-              
+
               <div className="flex gap-3 w-full">
-                <button 
+                <button
                   onClick={() => setDeletingId(null)}
                   disabled={isCancelling}
                   className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
                 >{t('auto.bookingModal_17')}</button>
-                
-                <button 
+
+                <button
                   onClick={handleConfirmCancel}
                   disabled={isCancelling || isEndingEarly}
                   className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-secondary/20"

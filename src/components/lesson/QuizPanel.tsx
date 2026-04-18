@@ -142,7 +142,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
             />
             <input
               className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-[#F0F0F0] text-xs font-mono"
-              placeholder={`${t('auto.lesson_quiz_8')} ["A","B","C"]`}
+              placeholder={`${t("auto.lesson_quiz_8")} ["A","B","C"]`}
               value={mcOptions}
               onChange={(e) => setMcOptions(e.target.value)}
             />

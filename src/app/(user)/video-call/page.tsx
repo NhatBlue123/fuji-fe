@@ -77,6 +77,14 @@ function SearchingDots() {
 
 export default function VideoCallMatchingPage() {
   const { t } = useTranslation();
+  const LEVEL_LABELS: Record<JLPTLevel, string> = {
+    N1: t("jlpt.levels.n1_desc"),
+    N2: t("jlpt.levels.n2_desc"),
+    N3: t("jlpt.levels.n3_desc"),
+    N4: t("jlpt.levels.n4_desc"),
+    N5: t("jlpt.levels.n5_desc"),
+  };
+
   const router = useRouter();
   const signaling = useSignaling();
   const webrtc = useWebRTC();
@@ -279,7 +287,7 @@ export default function VideoCallMatchingPage() {
 
       {/* ── Main: Camera Cards (horizontal layout like reference) ── */}
       <div className="relative z-10 flex items-center justify-center gap-4 flex-1 px-4 w-full max-w-3xl mx-auto">
-        
+
         {/* User camera — dark card */}
         <div className="relative rounded-[2rem] overflow-hidden shadow-2xl bg-gray-900"
           style={{ width: '300px', height: '400px', flexShrink: 0 }}

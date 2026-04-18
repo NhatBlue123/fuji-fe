@@ -307,9 +307,132 @@
       "discussing": "{{count}} người thảo luận"
     },
     "cta": {
-      "title": "Bạn đã sẵn sàng chinh phục JLPT?",
-      "description": "Đăng ký ngay hôm nay để nhận ưu đãi 30% cho khóa học Premium đầu tiên.",
-      "button": "Đăng ký tư vấn"
+      "title": "JLPTを制覇する準備はできていますか？",
+      "description": "今日登録して、初めてのプレミアムコースを30%割引でご利用ください。",
+      "button": "無料相談を申し込む"
+    },
+    "featureMap": {
+      "badge": "機能マップ",
+      "title": "すべての学習ツールが一か所に",
+      "subtitle": "必要な機能を選択してすぐに始めましょう。各カードはシステムの実際の機能に直接リンクしています。",
+      "ctaBtn": "ロードマップで始める",
+      "openFeature": "機能を開く"
+    },
+    "cards": {
+      "course": { "title": "ロードマップ式コース", "desc": "N5→N1まで、動画講義と練習問題が体系的に配置されています。", "badge": "Core" },
+      "jlpt": { "title": "JLPT 模擬試験", "desc": "N5→N1の実際の試験形式で、詳細な進捗統計付きで練習できます。", "badge": "Exam" },
+      "booking": { "title": "1対1教師予約", "desc": "空き時間を選んで個別授業を予約し、次回の授業を追跡できます。", "badge": "Live" },
+      "aiChat": { "title": "日本語AIチャット", "desc": "会話練習、文法解説、文脈に合わせた文章修正をスマートAIで。", "badge": "AI" },
+      "videoCall": { "title": "ライブビデオ授業", "desc": "オンライン教室でネイティブ教師とリアルタイムで練習できます。", "badge": "Realtime" },
+      "flashcards2": { "title": "スマートフラッシュカード", "desc": "SRSシステムで単語を復習し、穴埋めや選択問題も毎日練習。", "badge": "SRS" },
+      "premium2": { "title": "プレミアム・プラン", "desc": "アップグレードプランと現在適用中の特典をご確認ください。", "badge": "Upgrade" },
+      "wallet": { "title": "ウォレット・決済管理", "desc": "残高管理、出金、取引履歴、安全な決済情報の確認。", "badge": "Finance" }
+    },
+    "jlptSection": {
+      "badge": "JLPT 練習",
+      "titlePart1": "レベルを選んで、",
+      "titleHighlight": "今すぐ練習開始",
+      "viewAll": "すべて見る",
+      "practiceNow": "今すぐ練習 →",
+      "levels": { "N5": "初級", "N4": "初中級", "N3": "中級", "N2": "中上級", "N1": "上級" }
+    },
+    "scenariosSection": {
+      "badge": "学習シナリオ",
+      "title": "目標に合った学習方法を選ぶ",
+      "speak": {
+        "title": "毎日20分のスピーキング練習",
+        "subtitle": "スピーキング＋反射神経に集中",
+        "overview": "AIチャットとビデオ通話を組み合わせて、実際の場面での反射神経と発音を同時に鍛えましょう。",
+        "b1": "職場トピックのAIチャットで5分ウォームアップ。",
+        "b2": "シナリオ形式の問答練習でビデオ通話へ。",
+        "b3": "繰り返すミスをプロフィールのメモに保存。",
+        "primary": "AIチャットを開く",
+        "secondary": "ビデオ通話へ"
+      },
+      "exam": {
+        "title": "45分でJLPTを突破",
+        "subtitle": "試験問題＋結果分析に集中",
+        "overview": "模擬試験のペースを維持し、間違えた問題から単語を補充して試験前の安定感を高めましょう。",
+        "b1": "JLPT Practiceで総合ミニテストを1回解く。",
+        "b2": "難しいトピックは関連コースで素早く復習。",
+        "b3": "新しい単語をフラッシュカードに追加して当日復習。",
+        "primary": "JLPTを始める",
+        "secondary": "コースを見る"
+      },
+      "career": {
+        "title": "長期安定モード",
+        "subtitle": "ロードマップ＋財務管理に集中",
+        "overview": "明確なロードマップ、教師スケジュール、プラン管理で継続的な学習習慣を維持しましょう。",
+        "b1": "現在のプランとプレミアム特典を確認。",
+        "b2": "週間学習スケジュールを予約して継続性を保つ。",
+        "b3": "ウォレットと決済履歴でコストを最適化。",
+        "primary": "プレミアムを開く",
+        "secondary": "ウォレットを開く"
+      }
+    },
+    "missionsSection": {
+      "title": "今日のタスク",
+      "count": "{{total}}タスク • {{completed}}完了",
+      "flashcardsMission": { "title": "N3フラッシュカード20枚復習", "desc": "仕事に関する頻出単語セットを完了する。", "eta": "あと約12分" },
+      "jlptMission": { "title": "JLPTミニテストを解く", "desc": "リスニング＋読解の総合テストで学習ペースを維持。", "eta": "あと約18分" },
+      "bookingMission": { "title": "教師と授業予約", "desc": "現在のレベルに合った発音矯正の授業スケジュールを選ぶ。", "eta": "確認1ステップ残り" },
+      "aiMission": { "title": "AI先生とチャット", "desc": "AIと10分会話練習して反射神経を改善。", "eta": "今すぐ始める" }
+    },
+    "quickLinks": {
+      "title": "クイックアクセス",
+      "notifications": "通知",
+      "profile": "プロフィール",
+      "paymentHistory": "支払い履歴",
+      "subscription": "サブスクリプション",
+      "withdraw": "出金",
+      "reports": "学習レポート",
+      "settings": "設定",
+      "help": "ヘルプ"
+    },
+    "aiSection": {
+      "badge": "AI搭載",
+      "title1": "AIチャット",
+      "titleHighlight": "日本語練習",
+      "desc": "会話練習、文法解説、文脈に合わせた修正。AIはベトナム語と日本語を理解します。",
+      "cta": "今すぐ会話"
+    },
+    "videoSection": {
+      "badge": "ライブセッション",
+      "title1": "ビデオ通話",
+      "titleHighlight": "直接授業",
+      "desc": "日本人ネイティブ教師とリアルタイムでオンライン授業を受けましょう。",
+      "cta": "教室に入る"
+    },
+    "flashSection": {
+      "badge": "フラッシュカード SRS",
+      "title": "単語を",
+      "titleHighlight": "いつまでも覚える",
+      "desc": "スマートな間隔反復システム（SRS）が最適なタイミングで単語を復習させます。穴埋めや選択問題も学習できます。",
+      "cta": "単語学習を始める",
+      "kanjiLabel": "N3 • 漢字",
+      "kanjiMeaning": "勉強"
+    },
+    "bookingCard": {
+      "title": "教師を予約",
+      "desc": "経験豊富な教師と1対1で学習。ご都合の良い時間を選んで個別フィードバックを受けましょう。",
+      "stat1": "50人以上の教師",
+      "stat2": "24時間柔軟対応",
+      "cta": "今すぐ予約"
+    },
+    "premiumCard": {
+      "title": "プレミアム・プラン",
+      "desc": "アカウントをアップグレードしてすべてのコンテンツ、無制限AI、特別特典をお楽しみください。",
+      "stat1": "フルアクセス",
+      "stat2": "40%節約",
+      "cta": "プレミアムを見る"
+    },
+    "finalCta": {
+      "badge": "日本語マスターの準備はできましたか？",
+      "title": "今日から学習の",
+      "titleHighlight": "旅を始めよう",
+      "desc": "10,000人以上の学習者と一緒に。パーソナライズされたロードマップ、スマートAI、質の高い教師——すべてが一つのプラットフォームに。",
+      "startLearning": "今すぐ学ぶ",
+      "tryAI": "AIを試す"
     }
   },
   "wallet": {

@@ -43,7 +43,7 @@ interface ChatMsg {
 }
 
 export default function VideoCallRoomPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useParams<{ roomId: string }>();
   const router = useRouter();
   const roomId = params.roomId;

@@ -16,13 +16,54 @@ import {
   useGetFlashCardsQuery,
   useGetFlashListsQuery,
 } from "@/store/services/flashcardApi";
-import { useAuth } from "@/store/hooks";
 import { getMockImage } from "@/lib/mockImages";
-import type { JlptLevel } from "@/types/flashcard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type OwnershipFilter = "all" | "mine" | "community";
+const PAGE_LIMIT = 20;
+
+interface PaginationControlsProps {
+  page: number;
+  totalPages: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}
+
+function PaginationControls({
+  page,
+  totalPages,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
+}: PaginationControlsProps) {
+  return (
+    <div className="mt-8 flex items-center justify-end gap-3">
+      <Button
+        variant="outline"
+        onClick={onPrevious}
+        disabled={!hasPrevious}
+        className="rounded-xl"
+      >
+        Trước
+      </Button>
+      <div className="min-w-[120px] text-center text-sm font-medium text-muted-foreground">
+        Trang {page + 1} / {Math.max(totalPages, 1)}
+      </div>
+      <Button
+        variant="outline"
+        onClick={onNext}
+        disabled={!hasNext}
+        className="rounded-xl"
+      >
+        Sau
+      </Button>
+    </div>
+  );
+}
 
 export default function FlashcardsPage() {
   const { t } = useTranslation();
@@ -32,72 +73,76 @@ export default function FlashcardsPage() {
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [ownershipFilter, setOwnershipFilter] =
     useState<OwnershipFilter>("all");
-  const { user } = useAuth();
+  const [cardsPage, setCardsPage] = useState(0);
+  const [listsPage, setListsPage] = useState(0);
+
+  const searchParam = searchQuery.trim();
+  const levelParam =
+    levelFilter === "all" ? undefined : levelFilter.toUpperCase();
+  const selectParam =
+    ownershipFilter === "mine"
+      ? "me"
+      : ownershipFilter === "community"
+        ? "other"
+        : "all";
 
   // Fetch data from API
   const {
     data: flashCardsData,
     isLoading: isLoadingCards,
     error: cardsError,
-  } = useGetFlashCardsQuery({ page: 0, limit: 20 });
+  } = useGetFlashCardsQuery({
+    page: cardsPage,
+    limit: PAGE_LIMIT,
+    search: searchParam || undefined,
+    level: levelParam,
+    select: selectParam,
+  });
 
   const {
     data: flashListsData,
     isLoading: isLoadingLists,
     error: listsError,
-  } = useGetFlashListsQuery({ page: 0, limit: 20 });
-
-  const isLoading = isLoadingCards || isLoadingLists;
-
-  // Current user ID for ownership filter
-  const currentUserId = user?.id ?? user?._id;
-
-  // Filter flashcards by search + level + ownership
-  const filteredCards = (flashCardsData?.flashCards || []).filter((fc) => {
-    const matchSearch =
-      !searchQuery ||
-      fc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fc.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchLevel =
-      levelFilter === "all" ||
-      fc.level === (levelFilter.toUpperCase() as JlptLevel);
-    const matchOwnership =
-      ownershipFilter === "all" ||
-      (ownershipFilter === "mine" &&
-        String(fc.user?.id) === String(currentUserId)) ||
-      (ownershipFilter === "community" &&
-        String(fc.user?.id) !== String(currentUserId));
-    return matchSearch && matchLevel && matchOwnership;
+  } = useGetFlashListsQuery({
+    page: listsPage,
+    limit: PAGE_LIMIT,
+    search: searchParam || undefined,
+    level: levelParam,
+    select: selectParam,
   });
 
-  // Filter flashlists by search + level + ownership
+  const isLoading = viewMode === "cards" ? isLoadingCards : isLoadingLists;
+  const activeError = viewMode === "cards" ? cardsError : listsError;
+
+  const cards = flashCardsData?.flashCards || [];
   const allLists = [
     ...(flashListsData?.myLists || []),
     ...(flashListsData?.publicLists || []),
   ];
-  // De-duplicate by id
+
+  // De-duplicate by id for defensive rendering.
   const seenIds = new Set<number>();
-  const uniqueLists = allLists.filter((fl) => {
+  const lists = allLists.filter((fl) => {
     if (seenIds.has(fl.id)) return false;
     seenIds.add(fl.id);
     return true;
   });
-  const filteredLists = uniqueLists.filter((fl) => {
-    const matchSearch =
-      !searchQuery ||
-      fl.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fl.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchLevel =
-      levelFilter === "all" ||
-      fl.level === (levelFilter.toUpperCase() as JlptLevel);
-    const matchOwnership =
-      ownershipFilter === "all" ||
-      (ownershipFilter === "mine" &&
-        String(fl.user?.id) === String(currentUserId)) ||
-      (ownershipFilter === "community" &&
-        String(fl.user?.id) !== String(currentUserId));
-    return matchSearch && matchLevel && matchOwnership;
-  });
+
+  const cardsPagination = flashCardsData?.pagination;
+  const cardsTotal = cardsPagination?.totalElements ?? cards.length;
+  const cardsCurrentPage = cardsPagination?.page ?? cardsPage;
+  const cardsTotalPages = Math.max(cardsPagination?.totalPages ?? 1, 1);
+  const cardsHasPrevious = cardsPagination?.hasPrevious ?? cardsCurrentPage > 0;
+  const cardsHasNext =
+    cardsPagination?.hasNext ?? cardsCurrentPage + 1 < cardsTotalPages;
+
+  const listsPagination = flashListsData?.pagination;
+  const listsTotal = listsPagination?.totalElements ?? lists.length;
+  const listsCurrentPage = listsPagination?.page ?? listsPage;
+  const listsTotalPages = Math.max(listsPagination?.totalPages ?? 1, 1);
+  const listsHasPrevious = listsPagination?.hasPrevious ?? listsCurrentPage > 0;
+  const listsHasNext =
+    listsPagination?.hasNext ?? listsCurrentPage + 1 < listsTotalPages;
 
   return (
     <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background dark:bg-[#0f172a]">
@@ -155,7 +200,11 @@ export default function FlashcardsPage() {
                 </div>
                 <Input
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCardsPage(0);
+                    setListsPage(0);
+                  }}
                   className="block w-full pl-11 pr-4 py-3.5 border border-white/10 rounded-2xl leading-5 bg-white/5 backdrop-blur-md text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500/50 focus:bg-white/10 transition-all shadow-lg shadow-black/20"
                   placeholder={t("flashcards.page.searchPlaceholder")}
                   type="search"
@@ -163,7 +212,14 @@ export default function FlashcardsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                 <div className="relative flex-1 sm:flex-none">
-                  <Select value={levelFilter} onValueChange={setLevelFilter}>
+                  <Select
+                    value={levelFilter}
+                    onValueChange={(value) => {
+                      setLevelFilter(value);
+                      setCardsPage(0);
+                      setListsPage(0);
+                    }}
+                  >
                     <SelectTrigger className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-blue-100 py-3.5 pl-5 pr-12 rounded-2xl text-sm font-bold hover:bg-white/10 transition-colors focus:ring-pink-500/30 focus:border-pink-500/50">
                       <SelectValue placeholder={t("flashcards.page.level")} />
                     </SelectTrigger>
@@ -180,9 +236,11 @@ export default function FlashcardsPage() {
                 <div className="relative flex-1 sm:flex-none">
                   <Select
                     value={ownershipFilter}
-                    onValueChange={(v) =>
-                      setOwnershipFilter(v as OwnershipFilter)
-                    }
+                    onValueChange={(v) => {
+                      setOwnershipFilter(v as OwnershipFilter);
+                      setCardsPage(0);
+                      setListsPage(0);
+                    }}
                   >
                     <SelectTrigger className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-blue-100 py-3.5 pl-5 pr-12 rounded-2xl text-sm font-bold hover:bg-white/10 transition-colors focus:ring-pink-500/30 focus:border-pink-500/50">
                       <SelectValue placeholder={t("flashcards.page.owner")} />
@@ -223,7 +281,7 @@ export default function FlashcardsPage() {
         )}
 
         {/* Error state */}
-        {(cardsError || listsError) && !isLoading && (
+        {activeError && !isLoading && (
           <div className="text-center py-20">
             <span className="material-symbols-outlined text-6xl text-red-400 mb-4 block">
               error
@@ -241,10 +299,10 @@ export default function FlashcardsPage() {
               <span className="w-1 h-8 bg-secondary rounded-full"></span>
               {t("flashcards.page.cards")}
               <span className="text-sm font-normal text-muted-foreground">
-                ({filteredCards.length})
+                ({cardsTotal})
               </span>
             </h2>
-            {filteredCards.length === 0 ? (
+            {cards.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   style
@@ -253,7 +311,7 @@ export default function FlashcardsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredCards.map((fc) => (
+                {cards.map((fc) => (
                   <Link key={fc.id} href={`/flashcards/detail/${fc.id}`}>
                     <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full">
                       <div className="relative h-48 bg-muted overflow-hidden flex items-center justify-center">
@@ -301,6 +359,16 @@ export default function FlashcardsPage() {
                 ))}
               </div>
             )}
+            <PaginationControls
+              page={cardsCurrentPage}
+              totalPages={cardsTotalPages}
+              hasPrevious={cardsHasPrevious}
+              hasNext={cardsHasNext}
+              onPrevious={() => setCardsPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() =>
+                setCardsPage((prev) => (cardsHasNext ? prev + 1 : prev))
+              }
+            />
           </section>
         )}
 
@@ -311,10 +379,10 @@ export default function FlashcardsPage() {
               <span className="w-1 h-8 bg-blue-500 rounded-full"></span>
               {t("flashcards.page.lists")}
               <span className="text-sm font-normal text-muted-foreground">
-                ({filteredLists.length})
+                ({listsTotal})
               </span>
             </h2>
-            {filteredLists.length === 0 ? (
+            {lists.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   list
@@ -323,7 +391,7 @@ export default function FlashcardsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredLists.map((fl) => (
+                {lists.map((fl) => (
                   <Link key={fl.id} href={`/flashcards/sets/${fl.id}`}>
                     <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full cursor-pointer">
                       <div className="relative h-48 bg-muted overflow-hidden flex items-center justify-center">
@@ -381,6 +449,16 @@ export default function FlashcardsPage() {
                 ))}
               </div>
             )}
+            <PaginationControls
+              page={listsCurrentPage}
+              totalPages={listsTotalPages}
+              hasPrevious={listsHasPrevious}
+              hasNext={listsHasNext}
+              onPrevious={() => setListsPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() =>
+                setListsPage((prev) => (listsHasNext ? prev + 1 : prev))
+              }
+            />
           </section>
         )}
       </div>

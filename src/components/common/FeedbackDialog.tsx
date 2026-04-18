@@ -9,9 +9,9 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { 
-  X, 
-  Paperclip, 
+import {
+  X,
+  Paperclip,
   AlertCircle,
   HelpCircle,
   MessageSquare,
@@ -20,10 +20,10 @@ import {
   ChevronRight,
   ChevronLeft
 } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogClose
 } from "@/components/ui/dialog";
@@ -93,16 +93,16 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
     setIsSubmitting(true);
     try {
       let attachmentUrls = "";
-      
+
       // 1. Tải lên các tệp trước nếu có
       if (files.length > 0) {
         const formData = new FormData();
         files.forEach(file => formData.append("files", file));
-        
+
         const uploadRes = await api.post("/files/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" }
         });
-        
+
         if (uploadRes.data?.data) {
           attachmentUrls = uploadRes.data.data.join(",");
         }
@@ -116,7 +116,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
         priority: "MEDIUM",
         attachmentUrls: attachmentUrls
       });
-      
+
       toast.success(t("feedback.toast.success"));
       setContent("");
       setFiles([]);
@@ -147,12 +147,12 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
           <div className="p-5 space-y-5">
             <div className="space-y-3.5">
               <h3 className="text-lg font-black tracking-tight text-foreground">{t("feedback.improveTitle")}</h3>
-              
+
               <div className="relative group/textarea">
                 <div className="absolute top-2.5 left-4 text-[9px] font-black text-secondary uppercase tracking-widest z-10 opacity-70 group-focus-within/textarea:opacity-100 transition-opacity">
                   {t("feedback.detailLabel")}
                 </div>
-                <Textarea 
+                <Textarea
                   placeholder={t("feedback.placeholder")}
                   className="min-h-[140px] pt-8 pb-3 px-4 bg-muted/15 border-2 border-muted/50 hover:border-secondary/30 focus:border-secondary focus:ring-0 rounded-xl resize-none transition-all text-xs font-bold leading-relaxed"
                   value={content}
@@ -161,16 +161,16 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
               </div>
 
               <div className="space-y-2">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  multiple 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
                   accept="image/*,video/*"
                   onChange={handleFileChange}
                 />
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full h-auto py-3 px-4 bg-muted/20 border-2 border-dashed border-muted hover:border-secondary/30 hover:bg-secondary/5 rounded-xl flex items-center justify-center gap-2 transition-all group/btn"
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -189,7 +189,7 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
                              <Paperclip className="size-5" />
                            </div>
                          )}
-                         <button 
+                         <button
                            onClick={() => removeFile(i)}
                            className="absolute top-0.5 right-0.5 size-4 bg-destructive text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                          >
@@ -209,21 +209,21 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
                 <Link href="/help" className="text-secondary font-black hover:underline uppercase tracking-tight">{t("feedback.helpCenter")}</Link>.
               </p>
             </div>
-            
+
             {/* Footer Buttons */}
             <div className="flex items-center justify-end gap-2 pt-1">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="text-muted-foreground font-black uppercase tracking-widest text-[10px] hover:text-[#FF007A] hover:bg-[#FF007A]/5 px-8 h-10 rounded-xl transition-all"
                 onClick={handleClose}
               >
                 {t("feedback.btnCancel")}
               </Button>
-              <Button 
+              <Button
                 className={cn(
                   "px-10 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg active:scale-95 h-10",
-                  content.trim().length > 0 
-                    ? "bg-secondary hover:bg-secondary/90 hover:shadow-secondary/20" 
+                  content.trim().length > 0
+                    ? "bg-secondary hover:bg-secondary/90 hover:shadow-secondary/20"
                     : "bg-muted text-muted-foreground pointer-events-none opacity-50"
                 )}
                 disabled={isSubmitting || content.trim().length === 0}
@@ -241,9 +241,9 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
         <AlertDialogContent className="rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden max-w-[400px]">
           <div className="relative flex items-center justify-center py-4 border-b border-muted/50 bg-muted/10">
             <AlertDialogTitle className="text-base font-black uppercase tracking-tight">{t("feedback.abandonTitle")}</AlertDialogTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="absolute right-3 top-2.5 rounded-full hover:bg-muted/60 size-8 transition-colors"
               onClick={() => setIsAbandonAlertOpen(false)}
             >
@@ -254,16 +254,16 @@ export function FeedbackDialog({ isOpen, onClose, onSuccess, initialType = "bug"
             <AlertDialogDescription className="text-sm font-bold text-muted-foreground text-center px-4 leading-relaxed">
               {t("feedback.abandonDesc")}
             </AlertDialogDescription>
-            
+
             <div className="flex items-center justify-center gap-2 pt-1">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="flex-1 text-[10px] font-black uppercase tracking-widest text-[#FF007A] hover:bg-[#FF007A]/5 h-11 rounded-xl"
                 onClick={() => setIsAbandonAlertOpen(false)}
               >
                 {t("feedback.btnContinue")}
               </Button>
-              <Button 
+              <Button
                 className="flex-1 bg-secondary hover:bg-secondary/90 text-white font-black uppercase tracking-widest text-[10px] h-11 rounded-xl shadow-lg shadow-secondary/20 transition-all active:scale-95"
                 onClick={confirmAbandon}
               >

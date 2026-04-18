@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { tMsg } from "@/i18n";
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,6 +20,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth, useAppDispatch } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 import { toast } from "sonner";
+import { tMsg } from "@/i18n";
 
 // ─── Helpers ───────────────────────────────────────────
 
@@ -54,7 +55,6 @@ function formatDuration(minutes: number): string {
 }
 
 function renderStars(rating: number) {
-  const { t } = useTranslation();
   const stars = [];
   const full = Math.floor(rating);
   const hasHalf = rating - full >= 0.25 && rating - full < 0.75;
@@ -294,6 +294,7 @@ function ReviewCard({ review }: { review: RatingResponseDTO }) {
 
 function OverviewContent({ description }: { description: string }) {
   const { t } = useTranslation();
+
   return (
     <div className="space-y-8">
       <div>
@@ -468,6 +469,7 @@ function InstructorContent({
   currentCourseId: number;
 }) {
   const { t } = useTranslation();
+
   // Fetch all courses to show other courses by this instructor
   const { data: allCoursesData } = useGetAllCoursesQuery({
     page: 0,
@@ -800,10 +802,10 @@ function ReviewsContent({
 // ─── Main Component ────────────────────────────────────
 
 export default function CourseDetailView({ courseId }: { courseId: number }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("curriculum");
   const [couponCode, setCouponCode] = useState("");
   const [isPurchased, setIsPurchased] = useState(false);

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   useCreatePayoutMutation,
   useGetPayoutStatusQuery,
-  WithdrawRequestData,
+  type WithdrawRequestData,
 } from "@/store/services/withdrawApi";
 import { usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { useTranslation } from "react-i18next";
@@ -111,7 +111,7 @@ export function TransferModal({
         onSuccess();
       }
     } catch (error) {
-      const message = error && typeof error === "object" && "data" in error ? (error.data as { message?: string })?.message : undefined;
+      const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
       toast.error(
         message || t("common.errorProcessing") || "Error processing payout API",
       );
@@ -286,6 +286,7 @@ function InfoRow({
   textClass?: string;
 }) {
   const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-between py-2 border-b last:border-0">
       <span className="text-sm text-muted-foreground font-medium">{label}</span>

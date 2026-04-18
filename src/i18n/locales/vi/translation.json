@@ -474,6 +474,129 @@
       "title": "Bạn đã sẵn sàng chinh phục JLPT?",
       "description": "Đăng ký ngay hôm nay để nhận ưu đãi 30% cho khóa học Premium đầu tiên.",
       "button": "Đăng ký tư vấn"
+    },
+    "featureMap": {
+      "badge": "Bản đồ tính năng",
+      "title": "Mọi công cụ học tập trong một nơi",
+      "subtitle": "Chọn tính năng bạn cần và bắt đầu ngay. Mỗi card dẫn thẳng đến chức năng thật của hệ thống.",
+      "ctaBtn": "Bắt đầu theo lộ trình",
+      "openFeature": "Mở tính năng"
+    },
+    "cards": {
+      "course": { "title": "Khóa học theo lộ trình", "desc": "Học theo cấp độ từ N5→N1, bài giảng video và bài tập đã được sắp xếp sẵn theo trình tự khoa học.", "badge": "Core" },
+      "jlpt": { "title": "Luyện đề JLPT", "desc": "Tập trung vào đề thi thật theo mức N5→N1 với thống kê tiến bộ chi tiết qua từng lần làm.", "badge": "Exam" },
+      "booking": { "title": "Đặt lịch giáo viên 1-1", "desc": "Chọn khung giờ trống, đặt lịch học riêng và theo dõi buổi học sắp tới với giáo viên.", "badge": "Live" },
+      "aiChat": { "title": "AI Chat tiếng Nhật", "desc": "Luyện hội thoại, giải thích ngữ pháp và sửa câu theo ngữ cảnh với trợ lý AI thông minh.", "badge": "AI" },
+      "videoCall": { "title": "Video Call học trực tiếp", "desc": "Vào phòng học online để luyện nghe nói theo thời gian thực cùng giáo viên bản ngữ.", "badge": "Realtime" },
+      "flashcards2": { "title": "Flashcards thông minh", "desc": "Ôn từ vựng bằng bộ thẻ SRS, luyện bài tập fill-blank và trắc nghiệm mỗi ngày.", "badge": "SRS" },
+      "premium2": { "title": "Premium và gói học", "desc": "Xem gói nâng cấp, lịch sử sử dụng và ưu đãi đang áp dụng cho tài khoản của bạn.", "badge": "Upgrade" },
+      "wallet": { "title": "Ví, nạp rút & thanh toán", "desc": "Quản lý số dư, rút tiền, lịch sử giao dịch và thông tin thanh toán an toàn.", "badge": "Finance" }
+    },
+    "jlptSection": {
+      "badge": "Luyện thi JLPT",
+      "titlePart1": "Chọn cấp độ,",
+      "titleHighlight": "bắt đầu luyện",
+      "viewAll": "Xem tất cả",
+      "practiceNow": "Luyện ngay →",
+      "levels": { "N5": "Sơ cấp", "N4": "Sơ trung", "N3": "Trung cấp", "N2": "Trung cao", "N1": "Cao cấp" }
+    },
+    "scenariosSection": {
+      "badge": "Kịch bản học tập",
+      "title": "Chọn cách học theo mục tiêu",
+      "speak": {
+        "title": "20 phút luyện nói mỗi ngày",
+        "subtitle": "Tập trung Speaking + phản xạ",
+        "overview": "Kết hợp AI Chat và Video Call để vừa luyện phản xạ câu, vừa luyện phát âm theo tình huống thực tế.",
+        "b1": "Khởi động 5 phút với AI Chat theo chủ đề đi làm.",
+        "b2": "Chuyển sang Video Call để luyện hỏi đáp theo kịch bản.",
+        "b3": "Lưu ghi chú vào profile để theo dõi lỗi sai lặp lại.",
+        "primary": "Mở AI Chat",
+        "secondary": "Vào Video Call"
+      },
+      "exam": {
+        "title": "45 phút bứt phá JLPT",
+        "subtitle": "Tập trung đề thi + phân tích kết quả",
+        "overview": "Duy trì nhịp luyện đề và bổ sung từ vựng từ các câu sai để tăng độ ổn định trước kỳ thi.",
+        "b1": "Làm 1 mini test tổng hợp trong JLPT Practice.",
+        "b2": "Gặp chủ đề khó, mở khóa học liên quan để học lại nhanh.",
+        "b3": "Thêm từ mới vào flashcards để ôn lại trong ngày.",
+        "primary": "Bắt đầu JLPT",
+        "secondary": "Xem khóa học"
+      },
+      "career": {
+        "title": "Chế độ ổn định dài hạn",
+        "subtitle": "Tập trung lộ trình + theo dõi tài chính",
+        "overview": "Phù hợp khi cần giữ kỷ luật học tập bền vững: lộ trình rõ ràng, lịch học có giáo viên và quản lý gói học.",
+        "b1": "Kiểm tra gói học và quyền lợi Premium hiện tại.",
+        "b2": "Đặt lịch học trong tuần để giữ cam kết đều đặn.",
+        "b3": "Theo dõi ví và lịch sử thanh toán để tối ưu chi phí.",
+        "primary": "Mở Premium",
+        "secondary": "Mở ví học tập"
+      }
+    },
+    "missionsSection": {
+      "title": "Nhiệm vụ hôm nay",
+      "count": "{{total}} nhiệm vụ • {{completed}} hoàn thành",
+      "flashcardsMission": { "title": "Ôn 20 flashcards N3", "desc": "Hoàn thành bộ thẻ từ vựng thông dụng cho chủ đề công việc.", "eta": "Còn khoảng 12 phút" },
+      "jlptMission": { "title": "Làm mini test JLPT", "desc": "Một bài test tổng hợp nghe + đọc để giữ nhịp học đều.", "eta": "Còn khoảng 18 phút" },
+      "bookingMission": { "title": "Đặt lịch với giáo viên", "desc": "Chọn lịch học phát âm để sửa lỗi nhấn âm theo cấp độ hiện tại.", "eta": "Còn 1 bước xác nhận" },
+      "aiMission": { "title": "Chat với AI Sensei", "desc": "Luyện hội thoại 10 phút với AI để cải thiện phản xạ câu.", "eta": "Bắt đầu ngay" }
+    },
+    "quickLinks": {
+      "title": "Truy cập nhanh",
+      "notifications": "Thông báo",
+      "profile": "Hồ sơ cá nhân",
+      "paymentHistory": "Lịch sử thanh toán",
+      "subscription": "Gói đăng ký",
+      "withdraw": "Rút tiền",
+      "reports": "Báo cáo học tập",
+      "settings": "Cài đặt",
+      "help": "Trợ giúp"
+    },
+    "aiSection": {
+      "badge": "AI Powered",
+      "title1": "AI Chat",
+      "titleHighlight": "tiếng Nhật",
+      "desc": "Luyện hội thoại, giải thích ngữ pháp, sửa câu theo ngữ cảnh. AI hiểu tiếng Việt và tiếng Nhật.",
+      "cta": "Trò chuyện ngay"
+    },
+    "videoSection": {
+      "badge": "Live Session",
+      "title1": "Video Call",
+      "titleHighlight": "học trực tiếp",
+      "desc": "Vào phòng học online luyện nghe nói theo thời gian thực cùng giáo viên bản ngữ Nhật Bản.",
+      "cta": "Vào phòng học"
+    },
+    "flashSection": {
+      "badge": "Flashcards SRS",
+      "title": "Nhớ từ vựng",
+      "titleHighlight": "lâu hơn bao giờ hết",
+      "desc": "Hệ thống lặp lại ngắt quãng (SRS) thông minh giúp bạn ôn từ vựng đúng lúc, đúng thời điểm. Luyện thêm fill-blank, trắc nghiệm và nhiều dạng bài tập khác.",
+      "cta": "Bắt đầu ôn từ vựng",
+      "kanjiLabel": "N3 • Kanji",
+      "kanjiMeaning": "Học tập"
+    },
+    "bookingCard": {
+      "title": "Đặt lịch giáo viên",
+      "desc": "Học 1-1 với giáo viên kinh nghiệm. Chọn khung giờ phù hợp và nhận phản hồi cá nhân hóa.",
+      "stat1": "50+ giáo viên",
+      "stat2": "Linh hoạt 24/7",
+      "cta": "Đặt lịch ngay"
+    },
+    "premiumCard": {
+      "title": "Premium & Gói học",
+      "desc": "Nâng cấp tài khoản để mở khóa toàn bộ nội dung, AI không giới hạn và nhiều ưu đãi đặc biệt.",
+      "stat1": "Truy cập full",
+      "stat2": "Tiết kiệm 40%",
+      "cta": "Xem gói Premium"
+    },
+    "finalCta": {
+      "badge": "Sẵn sàng chinh phục tiếng Nhật?",
+      "title": "Bắt đầu hành trình học",
+      "titleHighlight": "ngay hôm nay",
+      "desc": "Tham gia cùng 10,000+ học viên. Lộ trình cá nhân hóa, AI thông minh, giáo viên chất lượng — tất cả trong một nền tảng.",
+      "startLearning": "Học ngay",
+      "tryAI": "Thử AI ngay"
     }
   },
   "booking": {

@@ -40,21 +40,7 @@ export const baseApi = createApi({
     "AdminPlan",
     "AdminRevenue",
     "SystemError",
-    "SystemErrorSummary",
-    "SystemReport",
-    "SessionReview",
-    "Course",
-    "Lesson",
-    "FlashCard",
-    "FlashList",
-    "AdminTest",
-    "QuestionBank",
-    "JlptQuestionReports",
-    "UserPreference",
-    "ChatViolation",
-    "ChatBan",
-    "JlptTests",
-    "JlptAttempts"
+    "SystemErrorSummary"
   ],
   endpoints: () => ({}),
 });

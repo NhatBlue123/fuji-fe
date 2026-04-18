@@ -2,32 +2,32 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
+import {
   ArrowLeft, Crown, History, Calendar, Star,
   CheckCircle2, AlertCircle, RefreshCw, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  useGetMySubscriptionQuery, 
-  useGetSubscriptionHistoryQuery, 
-  useToggleAutoRenewMutation 
+import {
+  useGetMySubscriptionQuery,
+  useGetSubscriptionHistoryQuery,
+  useToggleAutoRenewMutation
 } from "@/store/services/subscriptionApi";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -60,8 +60,8 @@ export default function SubscriptionPage() {
 
   const handleToggleAutoRenew = async (checked: boolean) => {
     try {
-      await toggleAutoRenew({ enable: checked }).unwrap();
-      toast.success(checked ? "Đã bật gia hạn tự động" : "Đã tắt gia hạn tự động");
+      const res = await toggleAutoRenew({ enable: checked }).unwrap();
+      toast.success(tMsg(res) || (checked ? "Đã bật gia hạn tự động" : "Đã tắt gia hạn tự động"));
       refetch();
     } catch (err: any) {
       toast.error(tMsg(err?.data?.messageKey) || tMsg("api.error") || "Lỗi cập nhật tự động gia hạn");
@@ -102,22 +102,22 @@ export default function SubscriptionPage() {
       {/* Header Section */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-8 py-6 border-b border-white/5 bg-background/50 backdrop-blur-md">
         <div className="space-y-1">
-          <button 
+          <button
             type="button"
             onClick={() => router.back()}
             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-3"
           >
             <ArrowLeft size={14} />{t('auto.subscription_1')}</button>
-          
+
           <Badge variant="secondary" className="px-3 py-1 gap-2 border-pink-500/20 bg-pink-500/5 text-pink-500 dark:text-pink-400 mb-2">
             <Crown size={12} />{t('auto.subscription_2')}</Badge>
           <h1 className="text-4xl font-black tracking-tight uppercase">{t('auto.subscription_3')}<span className={`drop-shadow-[0_0_15px_rgba(236,72,153,0.3)] ${currentDetails.textColor}`}>{currentTier}</span>
           </h1>
           <p className="text-muted-foreground">{t('auto.subscription_4')}</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <Button 
+          <Button
             onClick={() => router.push("/premium")}
             size="lg"
             className="rounded-2xl h-12 px-8 bg-secondary hover:bg-secondary/90 text-white font-bold py-2 transition"
@@ -132,7 +132,7 @@ export default function SubscriptionPage() {
         <Card className={`lg:col-span-8 overflow-hidden border-none bg-gradient-to-br from-[#0B1120] via-[#111827] to-[#0a0c10] text-white relative shadow-2xl rounded-[2.5rem]`}>
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
           <div className={`absolute bottom-0 left-0 w-[300px] h-[300px] ${currentTier === 'PREMIUM' ? 'bg-purple-500/10' : 'bg-cyan-500/10'} rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none`} />
-          
+
           <CardHeader className="relative z-10 pt-10 px-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -146,7 +146,7 @@ export default function SubscriptionPage() {
                   </h3>
                 </div>
               </div>
-              
+
               {mySub?.expireAt && (
                 <div className="text-right">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">{t('auto.subscription_7')}</p>
@@ -157,7 +157,7 @@ export default function SubscriptionPage() {
               )}
             </div>
           </CardHeader>
-          
+
           <CardContent className="relative z-10 px-10 pb-12 pt-6">
             {mySub && currentTier !== 'BASIC' ? (
               <div className="space-y-6">
@@ -169,14 +169,14 @@ export default function SubscriptionPage() {
                       <p className="text-xs text-white/50">{t('auto.subscription_9')}</p>
                     </div>
                   </div>
-                  <Switch 
-                    checked={mySub.autoRenew} 
-                    onCheckedChange={handleToggleAutoRenew} 
+                  <Switch
+                    checked={mySub.autoRenew}
+                    onCheckedChange={handleToggleAutoRenew}
                     disabled={isToggling}
                     className="data-[state=checked]:bg-pink-500"
                   />
                 </div>
-                
+
                 {mySub.expireAt && (
                    <div className="flex items-center gap-2 text-xs text-white/60">
                      <Calendar size={14} />
@@ -191,7 +191,7 @@ export default function SubscriptionPage() {
                  <p className="text-xs text-white/50">{t('auto.subscription_11')}</p>
                </div>
             )}
-            
+
             {(mySub?.activeFeatures?.length ?? 0) > 0 && (
               <div className="mt-8">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-4">{t('auto.subscription_12')}</p>
@@ -237,7 +237,7 @@ export default function SubscriptionPage() {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-muted/30 dark:bg-black/10 uppercase text-[10px] font-black tracking-widest text-muted-foreground dark:text-slate-500">
@@ -267,9 +267,9 @@ export default function SubscriptionPage() {
                      {Number(tx.price || 0).toLocaleString()} <span className="text-[10px] ml-1 opacity-40">{t('auto.subscription_21')}</span>
                    </TableCell>
                    <TableCell className="px-8 py-6 text-right">
-                     <Badge variant="outline" className={`px-3 py-1 text-[9px] font-black uppercase ring-0 shadow-inner border 
-                        ${tx.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 
-                          tx.status === 'EXPIRED' ? 'bg-slate-500/10 text-slate-500 border-slate-500/20' : 
+                     <Badge variant="outline" className={`px-3 py-1 text-[9px] font-black uppercase ring-0 shadow-inner border
+                        ${tx.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                          tx.status === 'EXPIRED' ? 'bg-slate-500/10 text-slate-500 border-slate-500/20' :
                           'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
                        {tx.status}
                      </Badge>
@@ -302,6 +302,7 @@ export default function SubscriptionPage() {
 
 function LoadingState() {
   const { t } = useTranslation();
+
   return (
     <div className="min-h-[400px] flex flex-col justify-center items-center gap-6">
       <div className="relative">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,8 +40,8 @@ function formatDurationReadable(minutes: number, t: any): string {
   if (minutes < 60) return `${minutes} ${t("common.time.minute") || "phút"}`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m > 0 
-    ? `${h} ${t("common.time.hour") || "giờ"} ${m} ${t("common.time.minute") || "phút"}` 
+  return m > 0
+    ? `${h} ${t("common.time.hour") || "giờ"} ${m} ${t("common.time.minute") || "phút"}`
     : `${h} ${t("common.time.hour") || "giờ"}`;
 }
 
@@ -147,13 +148,13 @@ function VideoPlayer({
   lesson,
   onMarkCompleted,
   isCompleting,
-  t,
 }: {
   lesson: LessonResponseDTO;
   onMarkCompleted: () => void;
   isCompleting: boolean;
-  t: any;
 }) {
+  const { t } = useTranslation();
+
   const renderCompletionAction = () => {
     if (lesson.userCompleted) {
       return (
@@ -271,6 +272,7 @@ function TaskContent({
   onMarkCompleted: () => void;
 }) {
   const { t } = useTranslation();
+
   const taskLabel: Record<string, string> = {
     multiple_choice: t("course.task.type.multipleChoice"),
     fill_blank: t("course.task.type.fillBlank"),
@@ -320,6 +322,7 @@ function SidebarLessonItem({
   isSequentiallyUnlocked: boolean;
 }) {
   const { t } = useTranslation();
+
   const isVideo = lesson.lessonType === "video";
   const canAccessByPolicy = canAccessCourse || lesson.isPreview;
   const canAccessLesson = canAccessByPolicy && isSequentiallyUnlocked;
@@ -710,7 +713,6 @@ export default function LessonView({
               lesson={lesson}
               onMarkCompleted={handleMarkCurrentLessonCompleted}
               isCompleting={isCompletingLesson}
-              t={t}
             />
           ) : (
             <TaskContent

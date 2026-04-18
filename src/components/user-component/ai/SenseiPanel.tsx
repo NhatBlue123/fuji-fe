@@ -72,10 +72,13 @@ function isEvaluationWaiting(
 function getSessionDisplayName(session?: {
   context?: string | null;
   sessionCode?: string | null;
-}): string {
+}, t?: (key: string) => string): string {
   const context = String(session?.context || "").trim();
+  const translate = t ?? ((key: string) => key);
   if (!context) {
-    return session?.sessionCode ? `Phiên ${session.sessionCode}` : "Sensei Chat";
+    return session?.sessionCode
+      ? `${translate("ai.sensei.session")} ${session.sessionCode}`
+      : translate("ai.sensei.chat");
   }
 
   const topicMatch = context.match(/Chủ đề:\s*(.+?)(?:\.\s*Tình huống:|$)/i);
@@ -818,7 +821,7 @@ export default function SenseiPanel() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                              {getSessionDisplayName(s)}
+                              {getSessionDisplayName(s, t)}
                             </span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold shrink-0">
                               {s.level}
@@ -860,7 +863,7 @@ export default function SenseiPanel() {
                       </span>
                     </button>
                     <h3 className="text-sm font-bold text-foreground">
-                      {getSessionDisplayName(sessionDetail)}
+                      {getSessionDisplayName(sessionDetail, t)}
                     </h3>
                     {sessionDetail && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
@@ -902,19 +905,19 @@ export default function SenseiPanel() {
                     </p>
                   ) : (
                     sessionDetail.transcripts.map(
-                      (item: VoiceTranscriptItem, i: number) => (
+                      (transcriptItem: VoiceTranscriptItem, i: number) => (
                         <div
                           key={i}
-                          className={`flex gap-3 ${item.role === "user" ? "opacity-80" : ""}`}
+                          className={`flex gap-3 ${transcriptItem.role === "user" ? "opacity-80" : ""}`}
                         >
                           <div
                             className={`shrink-0 size-8 rounded-full mt-0.5 flex items-center justify-center ${
-                              item.role === "assistant"
+                              transcriptItem.role === "assistant"
                                 ? "bg-gradient-to-br from-secondary to-purple-600 p-0.5"
                                 : "bg-muted border border-border"
                             }`}
                           >
-                            {item.role === "assistant" ? (
+                            {transcriptItem.role === "assistant" ? (
                               <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
                                 <span className="material-symbols-outlined text-sm text-secondary">
                                   smart_toy
@@ -928,15 +931,17 @@ export default function SenseiPanel() {
                           </div>
                           <div className="flex-1">
                             <p className="text-xs font-bold text-muted-foreground mb-0.5">
-                              {item.role === "assistant" ? t("ai.sensei.role.assistant") : t("ai.sensei.role.user")}
+                              {transcriptItem.role === "assistant"
+                                ? t("ai.sensei.role.assistant")
+                                : t("ai.sensei.role.user")}
                             </p>
                             <p className="text-sm text-foreground leading-relaxed">
-                              {item.transcript}
+                              {transcriptItem.transcript}
                             </p>
-                            {item.role === "assistant" && item.audioUrl && (
+                            {transcriptItem.role === "assistant" && transcriptItem.audioUrl && (
                               <button
                                 onClick={() => {
-                                  const audio = new Audio(item.audioUrl);
+                                  const audio = new Audio(transcriptItem.audioUrl);
                                   audio.play().catch(() => {});
                                 }}
                                 className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-secondary transition-colors"

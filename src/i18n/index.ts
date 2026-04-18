@@ -58,12 +58,13 @@ if (isClient) {
  */
 export function tMsg(key: string | undefined | null, options?: any): string {
   if (!key) return "";
-  
+
   if (process.env.NODE_ENV === "development" && !i18n.exists(key)) {
     console.warn("Missing i18n key:", key);
   }
-  
-  return String(i18n.t(key, { defaultValue: key, ...options }));
+
+  const translated = i18n.t(key, { defaultValue: key, ...options });
+  return typeof translated === "string" ? translated : key;
 }
 
 export default i18n;

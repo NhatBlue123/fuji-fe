@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   useGetAllCoursesQuery,
-  useSearchCoursesQuery,
   usePurchaseCourseMutation,
 } from "@/store/services/courseApi";
 import type { CourseResponseDTO } from "@/types/course";
@@ -182,75 +181,44 @@ function EmptyState() {
 
 // ─── Pagination ────────────────────────────────────────
 
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
+interface PaginationControlsProps {
+  page: number;
   totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalPages <= 1) return null;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}
 
-  const pages: (number | "...")[] = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    if (currentPage > 3) pages.push("...");
-    for (
-      let i = Math.max(2, currentPage - 1);
-      i <= Math.min(totalPages - 1, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-    if (currentPage < totalPages - 2) pages.push("...");
-    pages.push(totalPages);
-  }
-
+function PaginationControls({
+  page,
+  totalPages,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
+}: PaginationControlsProps) {
   return (
-    <div className="mt-12 flex justify-center">
-      <nav className="flex items-center gap-2">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          className="p-2 rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-sm">
-            chevron_left
-          </span>
-        </button>
-        {pages.map((page, idx) =>
-          page === "..." ? (
-            <span key={`dots-${idx}`} className="text-muted-foreground px-1">
-              ...
-            </span>
-          ) : (
-            <button
-              key={page}
-              onClick={() => onPageChange(page as number)}
-              className={`w-9 h-9 rounded-lg font-bold transition-all ${
-                currentPage === page
-                  ? "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/20"
-                  : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
-              }`}
-            >
-              {page}
-            </button>
-          ),
-        )}
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          className="p-2 rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-sm">
-            chevron_right
-          </span>
-        </button>
-      </nav>
+    <div className="mt-8 flex items-center justify-end gap-3">
+      <Button
+        variant="outline"
+        onClick={onPrevious}
+        disabled={!hasPrevious}
+        className="rounded-xl"
+      >
+        Trước
+      </Button>
+      <div className="min-w-[120px] text-center text-sm font-medium text-muted-foreground">
+        Trang {page} / {Math.max(totalPages, 1)}
+      </div>
+      <Button
+        variant="outline"
+        onClick={onNext}
+        disabled={!hasNext}
+        className="rounded-xl"
+      >
+        Sau
+      </Button>
     </div>
   );
 }
@@ -278,42 +246,27 @@ export default function CourseList({
   );
   const [purchaseCourse] = usePurchaseCourseMutation();
 
-  const isSearching = !!(searchKeyword && searchKeyword.trim());
+  const normalizedKeyword = searchKeyword?.trim() || "";
+  const isSearching = normalizedKeyword.length > 0;
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchKeyword, level, category]);
 
-  // Use search endpoint when keyword is provided, otherwise get all
-  const allCoursesQuery = useGetAllCoursesQuery(
-    {
-      page: currentPage - 1,
-      size: PAGE_SIZE,
-      sortBy: "createdAt",
-      sortDir: "desc",
-      level,
-      category: category as "all" | "free" | "paid" | "mine",
-    },
-    { skip: isSearching },
-  );
-
-  const searchQuery = useSearchCoursesQuery(
-    {
-      keyword: searchKeyword || "",
-      page: currentPage - 1,
-      size: PAGE_SIZE,
-      level,
-      category: category as "all" | "free" | "paid" | "mine",
-    },
-    { skip: !isSearching },
-  );
-
-  const activeQuery = isSearching ? searchQuery : allCoursesQuery;
-  const { data, isLoading, isFetching } = activeQuery;
+  const { data, isLoading, isFetching } = useGetAllCoursesQuery({
+    page: currentPage - 1,
+    size: PAGE_SIZE,
+    sortBy: "createdAt",
+    sortDir: "desc",
+    keyword: normalizedKeyword || undefined,
+    level,
+    category: category as "all" | "free" | "paid" | "mine",
+  });
 
   const courses = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
+  const safeTotalPages = Math.max(totalPages, 1);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -424,10 +377,17 @@ export default function CourseList({
       </div>
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
+      <PaginationControls
+        page={currentPage}
+        totalPages={safeTotalPages}
+        hasPrevious={currentPage > 1}
+        hasNext={currentPage < safeTotalPages}
+        onPrevious={() => handlePageChange(Math.max(currentPage - 1, 1))}
+        onNext={() =>
+          handlePageChange(
+            currentPage < safeTotalPages ? currentPage + 1 : currentPage,
+          )
+        }
       />
     </div>
   );

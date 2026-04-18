@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+
 import { use, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";

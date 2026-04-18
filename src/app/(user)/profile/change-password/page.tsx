@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Eye, EyeOff, Lock, ArrowLeft, AlertCircle, 
+import {
+  Eye, EyeOff, Lock, ArrowLeft, AlertCircle,
   KeyRound, ShieldCheck, CheckCircle2, Info,
   Save, ShieldAlert, Sparkles
 } from "lucide-react";
@@ -54,7 +54,7 @@ export default function ChangePasswordPage() {
 
   const strength = getPasswordStrength(newPassword);
   const strengthPercent = (strength / 5) * 100;
-  
+
   const getStrengthConfig = () => {
     if (strength <= 2) return { label: "Yếu", color: "bg-rose-500", text: "text-rose-500", progress: "bg-rose-500/20 [&>div]:bg-rose-500" };
     if (strength <= 3) return { label: "Cơ bản", color: "bg-amber-500", text: "text-amber-500", progress: "bg-amber-500/20 [&>div]:bg-amber-500" };
@@ -82,8 +82,8 @@ export default function ChangePasswordPage() {
     }
 
     try {
-      await changePassword({ currentPassword, newPassword }).unwrap();
-      alert("Mật khẩu đã được thay đổi an toàn! Hệ thống sẽ yêu cầu bạn đăng nhập lại.");
+      const res = await changePassword({ currentPassword, newPassword }).unwrap();
+      alert(tMsg(res) || "Mật khẩu đã được thay đổi an toàn! Hệ thống sẽ yêu cầu bạn đăng nhập lại.");
       localStorage.removeItem("access_token");
       router.push("/login");
     } catch (err: any) {
@@ -101,7 +101,7 @@ export default function ChangePasswordPage() {
       {/* Header Section */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 py-6 border-b border-white/5 bg-background/50 backdrop-blur-md">
         <div className="space-y-1">
-          <button 
+          <button
             type="button"
             onClick={() => router.back()}
             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-2"
@@ -123,7 +123,7 @@ export default function ChangePasswordPage() {
         <Card className="lg:col-span-2 shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl relative overflow-hidden transition-all duration-500">
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-          
+
           <form onSubmit={handleSubmit} className="relative z-10">
             <CardHeader className="border-b dark:border-white/5 pb-8 pt-8 mx-8 px-0">
               <div className="flex items-center gap-4">
@@ -136,7 +136,7 @@ export default function ChangePasswordPage() {
                 </div>
               </div>
             </CardHeader>
-            
+
             <CardContent className="pt-8 px-8 space-y-8">
               {/* Current Password */}
               <div className="space-y-3">
@@ -150,9 +150,9 @@ export default function ChangePasswordPage() {
                     placeholder={t('auto.changePassword_20')}
                     className="h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner pr-14 tracking-widest text-lg placeholder:text-sm placeholder:tracking-normal"
                   />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowCurrent(!showCurrent)} 
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-pink-500 transition-colors bg-background dark:bg-[#111827] border dark:border-white/10 p-1.5 rounded-lg shadow-sm"
                   >
                     {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -173,9 +173,9 @@ export default function ChangePasswordPage() {
                       placeholder={t('auto.changePassword_21')}
                       className={`h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner pr-14 tracking-widest text-lg placeholder:text-sm placeholder:tracking-normal ${newPassword && strength <= 2 ? 'border-rose-500/50 focus-visible:border-rose-500 focus-visible:ring-rose-500/20' : ''}`}
                     />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowNew(!showNew)} 
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(!showNew)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-pink-500 transition-colors bg-background dark:bg-[#111827] border dark:border-white/10 p-1.5 rounded-lg shadow-sm"
                     >
                       {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -209,9 +209,9 @@ export default function ChangePasswordPage() {
                     placeholder={t('auto.changePassword_22')}
                     className={`h-14 rounded-xl bg-muted/40 dark:bg-black/20 border-muted dark:border-white/5 focus-visible:ring-pink-500/30 focus-visible:border-pink-500/50 font-bold text-foreground dark:text-white transition-all shadow-inner pr-14 tracking-widest text-lg placeholder:text-sm placeholder:tracking-normal ${confirmPassword && newPassword && confirmPassword !== newPassword ? 'border-rose-500/50 focus-visible:border-rose-500 ring-rose-500/20' : confirmPassword && newPassword && confirmPassword === newPassword ? 'border-emerald-500/50 focus-visible:border-emerald-500 ring-emerald-500/20' : ''}`}
                   />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowConfirm(!showConfirm)} 
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-pink-500 transition-colors bg-background dark:bg-[#111827] border dark:border-white/10 p-1.5 rounded-lg shadow-sm"
                   >
                     {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -219,8 +219,8 @@ export default function ChangePasswordPage() {
                 </div>
                 {confirmPassword && newPassword && (
                   <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mt-2 p-2 rounded-lg ${
-                    confirmPassword === newPassword 
-                      ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" 
+                    confirmPassword === newPassword
+                      ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
                       : "text-rose-600 dark:text-rose-400 bg-rose-500/10"
                   }`}>
                     {confirmPassword === newPassword ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
@@ -298,7 +298,7 @@ export default function ChangePasswordPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <div className="p-5 rounded-2xl border bg-cyan-500/5 dark:bg-[#0B1120]/60 flex items-center gap-4 border-cyan-500/20 dark:backdrop-blur-xl shadow-lg shadow-black/5 mt-4 group cursor-pointer hover:-translate-y-1 transition-transform">
             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0 border border-cyan-500/20 shadow-inner group-hover:scale-110 transition-transform">
               <Info className="h-5 w-5 text-cyan-500" />

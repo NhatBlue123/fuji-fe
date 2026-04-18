@@ -1,8 +1,10 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
+import {
   ArrowLeft,
   CalendarDays,
   CheckCheck,
@@ -126,33 +128,7 @@ function LegendChip({
   );
 }
 
-export default function TeacherSchedulePage() {
-  return (
-    <Suspense fallback={<TeacherScheduleLoadingSkeleton />}>
-      <TeacherScheduleContent />
-    </Suspense>
-  );
-}
-
-function TeacherScheduleLoadingSkeleton() {
-  return (
-    <main className="min-h-screen bg-slate-950 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="h-16 bg-slate-800/50 rounded-2xl animate-pulse mb-8" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-4">
-            <div className="h-96 bg-slate-800/50 rounded-2xl animate-pulse" />
-          </div>
-          <div className="lg:col-span-8">
-            <div className="h-96 bg-slate-800/50 rounded-2xl animate-pulse" />
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function TeacherScheduleContent() {
+function TeacherSchedulePageContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1086,5 +1062,23 @@ function TeacherScheduleContent() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function TeacherSchedulePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background px-4 py-8 text-foreground md:px-6">
+          <Card className="mx-auto max-w-3xl border-border/60 bg-card/70">
+            <CardContent className="p-6 text-muted-foreground">
+              Đang tải lịch giáo viên...
+            </CardContent>
+          </Card>
+        </main>
+      }
+    >
+      <TeacherSchedulePageContent />
+    </Suspense>
   );
 }

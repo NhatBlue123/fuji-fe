@@ -105,12 +105,15 @@ export interface FlashListResponseDTO {
 
 export interface PaginationDTO {
   page?: number;
+  limit?: number;
   size?: number;
   total?: number;
   totalPages?: number;
   pageNumber?: number;
   pageSize?: number;
   totalElements?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
   last?: boolean;
 }
 
@@ -144,6 +147,7 @@ export interface FlashCardListParams {
   limit?: number;
   search?: string;
   level?: string;
+  select?: string;
 }
 
 export interface FlashListListParams {
@@ -151,6 +155,7 @@ export interface FlashListListParams {
   limit?: number;
   search?: string;
   level?: string;
+  select?: string;
 }
 
 export interface SearchParams {

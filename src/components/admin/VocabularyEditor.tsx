@@ -1,12 +1,10 @@
+import React, { useEffect, useState } from "react";
 import { Trash2, Plus } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface VocabularyItem {
   word: string;

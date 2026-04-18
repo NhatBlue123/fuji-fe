@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -44,33 +46,7 @@ import { toast } from "sonner";
 import { FeedbackDialog } from "@/components/common/FeedbackDialog";
 import { useGetMePreferencesQuery, useUpdateMePreferencesMutation } from "@/store/services/user/userPreferenceApi";
 
-export default function SettingsPage() {
-  return (
-    <Suspense fallback={<SettingsLoadingSkeleton />}>
-      <SettingsContent />
-    </Suspense>
-  );
-}
-
-function SettingsLoadingSkeleton() {
-  return (
-    <div className="min-h-screen bg-transparent p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="h-24 bg-muted/20 rounded-2xl animate-pulse mb-8" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-3">
-            <div className="h-96 bg-muted/20 rounded-2xl animate-pulse" />
-          </div>
-          <div className="lg:col-span-9">
-            <div className="h-96 bg-muted/20 rounded-2xl animate-pulse" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SettingsContent() {
+function SettingsPageContent() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const searchParams = useSearchParams();
@@ -367,7 +343,7 @@ function SettingsContent() {
                       <div className="h-16 w-full rounded-2xl bg-muted/40 animate-pulse" />
                     )}
                   </div>
-                  
+
                   <div className="p-5 rounded-2xl border bg-cyan-500/5 dark:bg-black/20 flex items-start gap-4 border-cyan-500/20 shadow-inner">
                     <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0 border border-cyan-500/20">
                       <Info className="size-5 text-cyan-500" />
@@ -467,7 +443,7 @@ function SettingsContent() {
                             {t("settings.support.reportBugDesc")}
                           </p>
                         </div>
-                        <Button 
+                        <Button
                           className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] bg-indigo-500 text-white border-none shadow-lg shadow-indigo-500/20 h-10"
                           onClick={() => setIsFeedbackOpen(true)}
                         >
@@ -508,5 +484,19 @@ function SettingsContent() {
       </div>
       <FeedbackDialog isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">
+          Đang tải cài đặt...
+        </div>
+      }
+    >
+      <SettingsPageContent />
+    </Suspense>
   );
 }

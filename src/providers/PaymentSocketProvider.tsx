@@ -31,6 +31,13 @@ export interface PaymentStatusChangeEvent {
   message: string;
 }
 
+interface TopupSuccessEvent {
+  orderId?: string;
+  amount?: number;
+  walletBalance?: number;
+  message?: string;
+}
+
 type StatusChangeCallback = (data: PaymentStatusChangeEvent) => void;
 
 type PaymentSocketContextValue = {
@@ -135,7 +142,7 @@ export function PaymentSocketProvider({
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("payment-status-change", handlePaymentStatusChange);
-    s.on("topup-success", (data: { message?: string }) => {
+    s.on("topup-success", (data: TopupSuccessEvent) => {
       console.info("[payment] topup-success received", {
         ...data,
         receivedAt: new Date().toISOString(),

@@ -27,10 +27,10 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
       </div>
       <div className="flex items-center gap-2">
         {onRefresh && (
-          <Button 
+          <Button
             variant="outline"
             size="sm"
-            onClick={onRefresh} 
+            onClick={onRefresh}
             disabled={isLoading}
             className="gap-2"
           >

@@ -249,26 +249,26 @@ export default function BookingPage() {
           </Link>
         </section>
 
-        <section className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 md:p-5">
-          <div className="flex items-center gap-2 text-amber-200">
+        <section className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 md:p-5 dark:border-amber-400/40 dark:bg-amber-400/10">
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
             <AlertTriangle className="size-5" />
             <h2 className="text-sm font-bold md:text-base">{t("booking.rules.title")}</h2>
           </div>
-          <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-100/90 md:text-sm">
+          <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200 md:text-sm">
             <li className="flex items-start gap-2">
-              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <span>{t("booking.rules.rule1")}</span>
             </li>
             <li className="flex items-start gap-2">
-              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <span>{t("booking.rules.rule2")}</span>
             </li>
             <li className="flex items-start gap-2">
-              <Ban className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <Ban className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <span>{t("booking.rules.rule3")}</span>
             </li>
             <li className="flex items-start gap-2">
-              <Ban className="mt-0.5 size-4 shrink-0 text-amber-200" />
+              <Ban className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <span>{t("booking.rules.rule4")}</span>
             </li>
           </ul>

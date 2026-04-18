@@ -20,12 +20,12 @@ import PreviewCard from "./PreviewCard";
 const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"] as const;
 type LevelOption = (typeof LEVEL_OPTIONS)[number];
 
-const SUBJECT_OPTIONS = (t: any) => [
-  { value: "Kaiwa", label: t("booking.subject.kaiwa") },
-  { value: "Bunpo", label: t("booking.subject.bunpo") },
-  { value: "Kanji", label: t("booking.subject.kanji") },
-  { value: "Listening", label: t("booking.subject.listening") },
-  { value: "Reading", label: t("booking.subject.reading") },
+const SUBJECT_OPTIONS = [
+  { value: "Kaiwa", labelKey: "booking.subject.kaiwa" },
+  { value: "Bunpo", labelKey: "booking.subject.bunpo" },
+  { value: "Kanji", labelKey: "booking.subject.kanji" },
+  { value: "Listening", labelKey: "booking.subject.listening" },
+  { value: "Reading", labelKey: "booking.subject.reading" },
 ] as const;
 type SubjectOption = (typeof SUBJECT_OPTIONS)[number]["value"];
 
@@ -402,9 +402,9 @@ export default function CreateTimeSlotForm() {
                 className="h-12 w-full rounded-xl border border-border bg-background px-4 text-foreground outline-none focus:border-ring dark:[color-scheme:dark]"
               >
                 <option value="" disabled>{t('auto.booking_slot_3')}</option>
-                {SUBJECT_OPTIONS(t).map((item) => (
+                {SUBJECT_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>
-                    {item.label}
+                    {t(item.labelKey)}
                   </option>
                 ))}
               </select>

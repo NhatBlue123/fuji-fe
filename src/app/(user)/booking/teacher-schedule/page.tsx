@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft,
@@ -40,7 +40,6 @@ const WEEKDAY_OPTIONS = [
 ] as const;
 
 function toYmd(date: Date) {
-  const { t } = useTranslation();
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -128,6 +127,33 @@ function LegendChip({
 }
 
 export default function TeacherSchedulePage() {
+  return (
+    <Suspense fallback={<TeacherScheduleLoadingSkeleton />}>
+      <TeacherScheduleContent />
+    </Suspense>
+  );
+}
+
+function TeacherScheduleLoadingSkeleton() {
+  return (
+    <main className="min-h-screen bg-slate-950 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="h-16 bg-slate-800/50 rounded-2xl animate-pulse mb-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4">
+            <div className="h-96 bg-slate-800/50 rounded-2xl animate-pulse" />
+          </div>
+          <div className="lg:col-span-8">
+            <div className="h-96 bg-slate-800/50 rounded-2xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function TeacherScheduleContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 

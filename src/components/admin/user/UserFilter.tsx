@@ -25,9 +25,18 @@ interface UserFilterProps {
   onSortChange: (value: string) => void;
 }
 
+export function UserFilter({
+  search,
+  role,
+  status,
+  securityFilter,
+  sortBy,
+  onSearchChange,
+  onRoleChange,
+  onStatusChange,
   onSecurityFilterChange,
   onSortChange,
-}) => {
+}: UserFilterProps) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col md:flex-row gap-3 bg-muted/20 p-3 rounded-2xl border border-muted-foreground/10">

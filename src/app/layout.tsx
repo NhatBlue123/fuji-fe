@@ -59,23 +59,6 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
-      <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('theme');
-                  var theme = stored;
-                  if (!theme || theme === 'system') {
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  }
-                  document.documentElement.classList.remove('light', 'dark');
-                  document.documentElement.classList.add(theme);
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
       </head>
       <body suppressHydrationWarning>
         <ExtensionCleanup />
@@ -88,6 +71,25 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
+              <Script
+                id="theme-init"
+                strategy="beforeInteractive"
+                dangerouslySetInnerHTML={{
+                  __html: `
+                    (function() {
+                      try {
+                        var stored = localStorage.getItem('theme');
+                        var theme = stored;
+                        if (!theme || theme === 'system') {
+                          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                        }
+                        document.documentElement.classList.remove('light', 'dark');
+                        document.documentElement.classList.add(theme);
+                      } catch(e) {}
+                    })();
+                  `,
+                }}
+              />
               {children}
               <Toaster />
             </ThemeProvider>

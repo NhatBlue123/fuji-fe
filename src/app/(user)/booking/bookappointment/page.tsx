@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -33,7 +33,31 @@ function formatTimeRange(startAt: string, endAt: string) {
   return `${hhmm(s)} - ${hhmm(e)}`;
 }
 
-export default function PaymentPage() {
+function SuccessModal({ router }: { router: ReturnType<typeof useRouter> }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+        <div className="size-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Check className="size-8 text-green-500" />
+        </div>
+        <h3 className="text-2xl font-bold text-slate-100 mb-2">
+          Đặt lịch thành công!
+        </h3>
+        <p className="text-slate-400 mb-8">
+          Cảm ơn bạn đã đặt lịch. Giáo viên sẽ liên hệ xác nhận sớm nhất.
+        </p>
+        <button
+          onClick={() => router.push("/booking")}
+          className="w-full py-3 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl transition-all"
+        >
+          Xem lịch đặt
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BookingContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -298,28 +322,23 @@ export default function PaymentPage() {
   );
 }
 
-function SuccessModal({
-  router,
-}: {
-  router: { push: (path: string) => void };
-}) {
+function LoadingFallback() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">
-        <div className="size-24 rounded-full border-4 border-pink-500 flex items-center justify-center text-pink-500 mb-6">
-          <Check className="h-12 w-12" strokeWidth={3} />
+    <main className="flex-1 overflow-y-auto bg-slate-950 p-8 min-h-screen">
+      <div className="max-w-3xl mx-auto">
+        <div className="animate-pulse space-y-8">
+          <div className="h-12 bg-slate-800 rounded-lg w-1/3" />
+          <div className="h-64 bg-slate-800 rounded-2xl" />
         </div>
-        <h1 className="text-3xl font-bold text-white mb-4">
-          Thanh toán thành công!
-        </h1>
-        <p className="text-slate-300 mb-6">{t('auto.booking_appointment_8')}</p>
-        <button
-          onClick={() => router.push("/booking/bookingmodal")}
-          className="w-full h-12 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl"
-        >
-          Xem lịch của tôi
-        </button>
       </div>
-    </div>
+    </main>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <BookingContent />
+    </Suspense>
   );
 }

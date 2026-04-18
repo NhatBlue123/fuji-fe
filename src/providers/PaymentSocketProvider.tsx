@@ -135,7 +135,7 @@ export function PaymentSocketProvider({
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("payment-status-change", handlePaymentStatusChange);
-    s.on("topup-success", (data: PaymentSocketEvent.TopupSuccess) => {
+    s.on("topup-success", (data: { message?: string }) => {
       console.info("[payment] topup-success received", {
         ...data,
         receivedAt: new Date().toISOString(),

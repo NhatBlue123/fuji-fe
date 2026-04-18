@@ -86,7 +86,7 @@ type AssistantContentSegment =
 function getConversationTitle(conversation: AiConversation) {
   const title = conversation.title?.trim();
   if (title) return title;
-  return `${t("ai.conversation")} #${conversation.id}`;
+  return `Cuộc trò chuyện #${conversation.id}`;
 }
 
 function formatConversationTime(dateLike?: string | null) {
@@ -102,11 +102,11 @@ function formatConversationTime(dateLike?: string | null) {
 }
 
 function intentToLabel(intent?: string) {
-  if (intent === "grammar_qa") return t("ai.intent.grammar");
-  if (intent === "product_info") return t("ai.intent.course");
-  if (intent === "general_chat") return t("ai.intent.qna");
-  if (intent === "out_of_scope") return t("ai.intent.outOfScope");
-  return intent || t("ai.intent.processing");
+  if (intent === "grammar_qa") return "Hỏi ngữ pháp";
+  if (intent === "product_info") return "Thông tin khóa học";
+  if (intent === "general_chat") return "Hỏi đáp";
+  if (intent === "out_of_scope") return "Ngoài phạm vi";
+  return intent || "Đang xử lý";
 }
 
 function mapMessagesToAssistantMessages(list: AiMessage[]): AssistantMessage[] {
@@ -457,6 +457,7 @@ function parseAssistantContent(rawContent: string): AssistantContentSegment[] {
 }
 
 function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
+  const { t } = useTranslation();
   if (items.length === 0) {
     return null;
   }
@@ -514,6 +515,7 @@ function CoursePreviewList({ items }: { items: CoursePreviewItem[] }) {
 }
 
 function CourseCompareTable({ payload }: { payload: CourseComparePayload }) {
+  const { t } = useTranslation();
   if (payload.columns.length === 0 || payload.rows.length === 0) {
     return null;
   }

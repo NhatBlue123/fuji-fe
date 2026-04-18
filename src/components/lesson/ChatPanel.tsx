@@ -30,6 +30,7 @@ function ImageModal({
   alt: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);

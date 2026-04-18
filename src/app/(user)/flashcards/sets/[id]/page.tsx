@@ -1,6 +1,6 @@
-import { useTranslation } from "react-i18next";
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { use } from "react";
 import Link from "next/link";
 import { useGetFlashListByIdQuery } from "@/store/services/flashcardApi";

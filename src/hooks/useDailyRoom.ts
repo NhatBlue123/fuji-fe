@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import DailyIframe, {
   DailyCall,
   DailyEventObjectParticipant,
+  DailyEventObjectParticipantLeft,
   DailyParticipant as DailySDKParticipant,
   DailyEventObjectActiveSpeakerChange,
 } from "@daily-co/daily-js";
@@ -114,7 +115,7 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
       refreshParticipants();
     };
 
-    const handleParticipantLeft = (_evt?: DailyEventObjectParticipant) => {
+    const handleParticipantLeft = (_evt?: DailyEventObjectParticipantLeft) => {
       refreshParticipants();
     };
 

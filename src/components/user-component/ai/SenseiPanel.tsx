@@ -75,7 +75,7 @@ function getSessionDisplayName(session?: {
 }): string {
   const context = String(session?.context || "").trim();
   if (!context) {
-    return session?.sessionCode ? `${t("ai.sensei.session")} ${session.sessionCode}` : t("ai.sensei.chat");
+    return session?.sessionCode ? `Phiên ${session.sessionCode}` : "Sensei Chat";
   }
 
   const topicMatch = context.match(/Chủ đề:\s*(.+?)(?:\.\s*Tình huống:|$)/i);
@@ -902,19 +902,19 @@ export default function SenseiPanel() {
                     </p>
                   ) : (
                     sessionDetail.transcripts.map(
-                      (t: VoiceTranscriptItem, i: number) => (
+                      (item: VoiceTranscriptItem, i: number) => (
                         <div
                           key={i}
-                          className={`flex gap-3 ${t.role === "user" ? "opacity-80" : ""}`}
+                          className={`flex gap-3 ${item.role === "user" ? "opacity-80" : ""}`}
                         >
                           <div
                             className={`shrink-0 size-8 rounded-full mt-0.5 flex items-center justify-center ${
-                              t.role === "assistant"
+                              item.role === "assistant"
                                 ? "bg-gradient-to-br from-secondary to-purple-600 p-0.5"
                                 : "bg-muted border border-border"
                             }`}
                           >
-                            {t.role === "assistant" ? (
+                            {item.role === "assistant" ? (
                               <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
                                 <span className="material-symbols-outlined text-sm text-secondary">
                                   smart_toy
@@ -928,15 +928,15 @@ export default function SenseiPanel() {
                           </div>
                           <div className="flex-1">
                             <p className="text-xs font-bold text-muted-foreground mb-0.5">
-                              {t.role === "assistant" ? t("ai.sensei.role.assistant") : t("ai.sensei.role.user")}
+                              {item.role === "assistant" ? t("ai.sensei.role.assistant") : t("ai.sensei.role.user")}
                             </p>
                             <p className="text-sm text-foreground leading-relaxed">
-                              {t.transcript}
+                              {item.transcript}
                             </p>
-                            {t.role === "assistant" && t.audioUrl && (
+                            {item.role === "assistant" && item.audioUrl && (
                               <button
                                 onClick={() => {
-                                  const audio = new Audio(t.audioUrl);
+                                  const audio = new Audio(item.audioUrl);
                                   audio.play().catch(() => {});
                                 }}
                                 className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-secondary transition-colors"

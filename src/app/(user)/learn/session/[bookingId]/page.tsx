@@ -52,7 +52,7 @@ export default function PostSessionPage() {
   const transcriptTxt = useMemo(() => {
     if (!data?.transcripts?.length) return "";
     return data.transcripts
-      .map((t, i) => `=== Transcript ${i + 1} ===\n${t}`)
+      .map((transcript, i) => `=== Transcript ${i + 1} ===\n${transcript}`)
       .join("\n\n");
   }, [data?.transcripts]);
 
@@ -218,14 +218,14 @@ export default function PostSessionPage() {
 
             <div className="mt-3 space-y-2">
               {data.transcripts.length === 0 && <p className="text-xs text-[#8B8FA8]">{t('auto.booking_session_3')}</p>}
-              {data.transcripts.map((t, idx) => (
+              {data.transcripts.map((transcript, idx) => (
                 <details key={idx} className="rounded-lg border border-white/10 bg-[#121520] open:border-[#6C63FF]/40">
                   <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium flex items-center justify-between">
                     <span>Transcript #{idx + 1}</span>
                     <span className="text-[#8B8FA8] text-[11px]">{t('auto.booking_session_4')}</span>
                   </summary>
                   <div className="px-3 pb-3 text-xs whitespace-pre-wrap text-[#D7DBEE]">
-                    {t}
+                    {transcript}
                   </div>
                 </details>
               ))}

@@ -1,4 +1,7 @@
+"use client";
+
 import { useTranslation } from "react-i18next";
+import { Separator } from "@/components/ui/separator";
 
 export function AdminFooter() {
   const { t } = useTranslation();

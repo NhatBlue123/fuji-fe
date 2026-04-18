@@ -1,6 +1,7 @@
-import { useTranslation } from "react-i18next";
 "use client";
 
+import { useTranslation } from "react-i18next";
+import { tMsg } from "@/i18n";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -141,6 +142,7 @@ function LessonItem({
   courseId: number;
   canAccessCourse: boolean;
 }) {
+  const { t } = useTranslation();
   const isVideo = lesson.lessonType === "video";
   const canAccessLesson = lesson.isPreview || canAccessCourse;
 
@@ -234,6 +236,7 @@ const AVATAR_COLORS = [
 ];
 
 function ReviewCard({ review }: { review: RatingResponseDTO }) {
+  const { t } = useTranslation();
   const colorClass = AVATAR_COLORS[review.user.id % AVATAR_COLORS.length];
 
   return (
@@ -290,6 +293,7 @@ function ReviewCard({ review }: { review: RatingResponseDTO }) {
 // ─── Overview Tab ──────────────────────────────────────
 
 function OverviewContent({ description }: { description: string }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
       <div>
@@ -339,6 +343,7 @@ function CurriculumContent({
   courseId: number;
   canAccessCourse: boolean;
 }) {
+  const { t } = useTranslation();
   const [expandedAll, setExpandedAll] = useState(true);
 
   const completed = lessons.filter((l) => l.userCompleted).length;
@@ -462,6 +467,7 @@ function InstructorContent({
   };
   currentCourseId: number;
 }) {
+  const { t } = useTranslation();
   // Fetch all courses to show other courses by this instructor
   const { data: allCoursesData } = useGetAllCoursesQuery({
     page: 0,
@@ -666,6 +672,7 @@ function ReviewsContent({
   averageRating: number;
   ratingCount: number;
 }) {
+  const { t } = useTranslation();
   const { data: reviews, isLoading } = useGetCourseRatingsQuery(courseId);
   const [sortBy, setSortBy] = useState<string>("newest");
 
@@ -796,6 +803,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("curriculum");
   const [couponCode, setCouponCode] = useState("");
   const [isPurchased, setIsPurchased] = useState(false);

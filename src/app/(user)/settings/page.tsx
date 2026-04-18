@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Settings,
@@ -45,6 +45,32 @@ import { FeedbackDialog } from "@/components/common/FeedbackDialog";
 import { useGetMePreferencesQuery, useUpdateMePreferencesMutation } from "@/store/services/user/userPreferenceApi";
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<SettingsLoadingSkeleton />}>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+function SettingsLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-transparent p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="h-24 bg-muted/20 rounded-2xl animate-pulse mb-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-3">
+            <div className="h-96 bg-muted/20 rounded-2xl animate-pulse" />
+          </div>
+          <div className="lg:col-span-9">
+            <div className="h-96 bg-muted/20 rounded-2xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsContent() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const searchParams = useSearchParams();

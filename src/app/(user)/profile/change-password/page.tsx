@@ -82,8 +82,8 @@ export default function ChangePasswordPage() {
     }
 
     try {
-      const res = await changePassword({ currentPassword, newPassword }).unwrap();
-      alert(tMsg(res.messageKey) || "Mật khẩu đã được thay đổi an toàn! Hệ thống sẽ yêu cầu bạn đăng nhập lại.");
+      await changePassword({ currentPassword, newPassword }).unwrap();
+      alert("Mật khẩu đã được thay đổi an toàn! Hệ thống sẽ yêu cầu bạn đăng nhập lại.");
       localStorage.removeItem("access_token");
       router.push("/login");
     } catch (err: any) {

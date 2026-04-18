@@ -63,7 +63,7 @@ export function tMsg(key: string | undefined | null, options?: any): string {
     console.warn("Missing i18n key:", key);
   }
   
-  return i18n.t(key, { defaultValue: key, ...options });
+  return String(i18n.t(key, { defaultValue: key, ...options }));
 }
 
 export default i18n;

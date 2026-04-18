@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSignaling } from "@/hooks/useSignaling";

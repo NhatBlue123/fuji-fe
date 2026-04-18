@@ -60,8 +60,8 @@ export default function SubscriptionPage() {
 
   const handleToggleAutoRenew = async (checked: boolean) => {
     try {
-      const res = await toggleAutoRenew({ enable: checked }).unwrap();
-      toast.success(tMsg(res.messageKey) || (checked ? "Đã bật gia hạn tự động" : "Đã tắt gia hạn tự động"));
+      await toggleAutoRenew({ enable: checked }).unwrap();
+      toast.success(checked ? "Đã bật gia hạn tự động" : "Đã tắt gia hạn tự động");
       refetch();
     } catch (err: any) {
       toast.error(tMsg(err?.data?.messageKey) || tMsg("api.error") || "Lỗi cập nhật tự động gia hạn");
@@ -301,6 +301,7 @@ export default function SubscriptionPage() {
 }
 
 function LoadingState() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-[400px] flex flex-col justify-center items-center gap-6">
       <div className="relative">

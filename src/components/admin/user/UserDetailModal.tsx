@@ -57,7 +57,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Pagination,

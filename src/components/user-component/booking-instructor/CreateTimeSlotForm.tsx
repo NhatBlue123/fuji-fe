@@ -27,7 +27,7 @@ const SUBJECT_OPTIONS = [
   { value: "Listening", labelKey: "booking.subject.listening" },
   { value: "Reading", labelKey: "booking.subject.reading" },
 ] as const;
-type SubjectOption = ReturnType<typeof SUBJECT_OPTIONS>[number]["value"];
+type SubjectOption = typeof SUBJECT_OPTIONS[number]["value"];
 
 function Field({
   label,

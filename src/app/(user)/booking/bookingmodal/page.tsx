@@ -31,7 +31,6 @@ function formatTimeRange(startAt: string, endAt: string) {
 export default function MySchedulePage() {
   const { t } = useTranslation();
   const { isTeacher, isInitialized } = useAuth();
-  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

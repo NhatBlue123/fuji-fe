@@ -90,14 +90,6 @@ export default function VideoCallMatchingPage() {
   const webrtc = useWebRTC();
   const { user: authUser, isInitialized } = useAuth();
 
-  const LEVEL_LABELS: Record<JLPTLevel, string> = {
-    N1: t("jlpt.levels.n1_desc"),
-    N2: t("jlpt.levels.n2_desc"),
-    N3: t("jlpt.levels.n3_desc"),
-    N4: t("jlpt.levels.n4_desc"),
-    N5: t("jlpt.levels.n5_desc"),
-  };
-
   const resolveDisplayName = useCallback(() => {
     const user = authUser as
       | { fullName?: string; fullname?: string; username?: string }

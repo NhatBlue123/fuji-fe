@@ -3,9 +3,10 @@
 export const dynamic = "force-dynamic";
 
 import { useTranslation } from "react-i18next";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   useCreateBookingMutation,
   useCreateBulkBookingMutation,
@@ -125,9 +126,16 @@ function PaymentPageContent() {
     }
   };
 
+  const handleShowSuccess = () => {
+    toast.success(t("booking.success.title") || "Đặt lịch thành công!", {
+      description: t("booking.success.message") || "Bạn đã đặt lịch học thành công.",
+      duration: 5000,
+    });
+  };
+
   return (
     <main className="flex-1 overflow-y-auto bg-slate-950 p-8 min-h-screen">
-      {showSuccess && <SuccessModal router={router} />}
+      {showSuccess && <SuccessModal router={router} onVisible={handleShowSuccess} />}
 
       <header className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-4">
@@ -316,10 +324,20 @@ export default function PaymentPage() {
 
 function SuccessModal({
   router,
+  onVisible,
 }: {
   router: { push: (path: string) => void };
+  onVisible: () => void;
 }) {
   const { t } = useTranslation();
+  const hasTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
+      onVisible();
+    }
+  }, [onVisible]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

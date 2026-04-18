@@ -1,1 +1,15 @@
-(function(){try{var t=localStorage.getItem('theme'),r=document.documentElement;r.classList.remove('light','dark');if(t==='dark'||t==='light'){r.classList.add(t);}else{r.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}['bis_skin_checked','data-new-gr-c-s-check-loaded','data-gr-ext-installed'].forEach(function(a){document.querySelectorAll('['+a+']').forEach(function(el){el.removeAttribute(a);});});}catch(e){document.documentElement.classList.add('light');}})();
+/**
+ * Theme Initialization Script
+ * Chạy trước khi React hydration để tránh flash
+ */
+(function() {
+  try {
+    var stored = localStorage.getItem('theme');
+    var theme = stored;
+    if (!theme || theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+  } catch(e) {}
+})();

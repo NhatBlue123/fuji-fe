@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-
 import type { TaskDataEnvelope } from "./types";
 import { TaskHeader, EmptyTask } from "./MultipleChoiceTask";
 

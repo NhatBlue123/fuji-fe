@@ -11,6 +11,12 @@ export interface QuizQuestionPublic {
   questionType: string;
   questionText: string;
   optionsJson?: string | null;
+  // New fields for enhanced quiz types
+  quizType?: string;
+  mediaContent?: string | null;
+  passageText?: string | null;
+  groupKey?: string | null;
+  passageQuestions?: QuizQuestionPublic[];
 }
 
 export interface QuizSubmissionEvent {

@@ -59,6 +59,10 @@ export interface MaterialResponse {
   createdAt: string;
 }
 
+/** Quiz type enum - defines the category of quiz */
+export type QuizType = "VOCAB" | "LISTENING" | "READING";
+
+/** Question type enum - defines the format of individual questions */
 export type QuestionType = "MULTIPLE_CHOICE" | "FILL_BLANK" | "MATCHING" | "ORDERING";
 
 export interface QuizQuestionItem {
@@ -68,12 +72,19 @@ export interface QuizQuestionItem {
   correctAnswer: string;
   explanation?: string;
   orderIndex?: number;
+  /** Audio URL for LISTENING type */
+  mediaContent?: string;
+  /** Passage text for READING type (usually on first question of a passage group) */
+  passageText?: string;
+  /** Groups questions sharing the same passage (READING type) */
+  groupKey?: string;
 }
 
 export interface QuizResponse {
   id: number;
   lessonId: number;
   title: string;
+  quizType: QuizType;
   createdByUserId: number;
   createdAt: string;
   questionCount: number;
@@ -85,6 +96,9 @@ export interface QuizResponse {
     correctAnswer?: string;
     explanation?: string | null;
     orderIndex: number;
+    mediaContent?: string | null;
+    passageText?: string | null;
+    groupKey?: string | null;
   }[];
 }
 
@@ -234,7 +248,7 @@ export const lessonApi = baseApi.injectEndpoints({
 
     createQuiz: builder.mutation<
       QuizResponse,
-      { lessonId: number; title: string; questions: QuizQuestionItem[] }
+      { lessonId: number; title: string; quizType: QuizType; mediaContent?: string; passageText?: string; questions: QuizQuestionItem[] }
     >({
       query: ({ lessonId, ...body }) => ({
         url: `/lessons/${lessonId}/quizzes`,
@@ -306,6 +320,17 @@ export const lessonApi = baseApi.injectEndpoints({
       query: ({ bookingId }) => `/lessons/by-booking/${bookingId}/post-session`,
       transformResponse: (res: ApiEnvelope<PostSessionOverviewResponse>) => res.data,
     }),
+
+    // ==================== MEDIA ====================
+
+    uploadAudio: builder.mutation<{ url: string; publicId: string }, FormData>({
+      query: (formData) => ({
+        url: "/media/upload/audio",
+        method: "POST",
+        body: formData,
+      }),
+      transformResponse: (res: ApiEnvelope<{ url: string; publicId: string }>) => res.data,
+    }),
   }),
 });
 
@@ -332,4 +357,5 @@ export const {
   useCreateLessonSummaryMutation,
   useGetLessonSummaryQuery,
   useGetPostSessionByBookingQuery,
+  useUploadAudioMutation,
 } = lessonApi;

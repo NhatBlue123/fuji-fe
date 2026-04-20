@@ -1346,6 +1346,87 @@
         "posts": "Posts"
       }
     },
+    "systemErrors": {
+      "title": "System Error Logs",
+      "subtitle": "Monitor and manage system-level issues",
+      "summary": {
+        "total24h": "Total Errors (24h)",
+        "total24hDesc": "Latest generated errors",
+        "unresolved": "Unresolved",
+        "unresolvedDesc": "Needs attention",
+        "stability": "Stability",
+        "stabilityDesc": "Backend Uptime",
+        "impactArea": "Impact Area",
+        "impactAreaDesc": "Critical modules"
+      },
+      "tabs": {
+        "all": "All Logs",
+        "unresolved": "Needs Attention"
+      },
+      "filter": {
+        "searchPlaceholder": "Search by error, URL or Request ID...",
+        "levelPlaceholder": "Level",
+        "allLevels": "All Levels",
+        "servicePlaceholder": "Service",
+        "allServices": "All Services",
+        "statusPlaceholder": "Status",
+        "allStatuses": "All Statuses",
+        "resolved": "Resolved",
+        "pending": "Pending",
+        "autoRefresh": "Auto",
+        "reset": "Reset to Default"
+      },
+      "table": {
+        "timestamp": "Timestamp",
+        "level": "Level",
+        "service": "Service",
+        "error": "Error Message",
+        "path": "Path / URL",
+        "requestId": "Request ID",
+        "status": "Status",
+        "actions": "Actions",
+        "viewDetail": "View Detail",
+        "empty": "No system errors matching your criteria"
+      },
+      "detail": {
+        "title": "Error Detail",
+        "subtitle": "RequestId: {{id}}",
+        "stackTrace": "Stack Trace",
+        "context": "Context Info",
+        "user": "Affected User",
+        "ip": "IP Address",
+        "resolve": "Mark as Resolved",
+        "unresolve": "Mark as Unresolved",
+        "resolutionNote": "Resolution Notes",
+        "resolutionPlaceholder": "How was this fixed?",
+        "saveNote": "Save Resolution",
+        "requestBody": "Request Payload",
+        "responseBody": "Response Body",
+        "environment": "Environment",
+        "userAgent": "User Agent",
+        "copyToClipboard": "Copy to clipboard",
+        "copied": "Copied!",
+        "noRequestBody": "No request payload",
+        "noResponseBody": "No response body",
+        "addInvestigationNote": "Add investigation note...",
+        "investigationNotes": "Investigation Notes",
+        "statusCode": "Status Code",
+        "method": "Method",
+        "path": "Path",
+        "userId": "User ID",
+        "bookingId": "Booking ID",
+        "roomId": "Room ID",
+        "errorId": "Error ID",
+        "fullMessage": "Full Error Message",
+        "shortMessage": "Short Message"
+      },
+      "toast": {
+        "refreshSuccess": "Logs refreshed",
+        "refreshError": "Failed to refresh logs",
+        "updateSuccess": "Error status updated",
+        "updateError": "Failed to update error status"
+      }
+    },
     "user": {
       "toast": {
         "savedTemplate": "New warning template saved",
@@ -1790,68 +1871,6 @@
           "revenue": "Revenue",
           "popularity": "Popularity",
           "noData": "No course data available."
-        }
-      },
-      "systemErrors": {
-        "title": "System Error Logs",
-        "subtitle": "Monitor and manage system-level issues",
-        "summary": {
-          "total24h": "Total Errors (24h)",
-          "total24hDesc": "Latest generated errors",
-          "unresolved": "Unresolved",
-          "unresolvedDesc": "Needs attention",
-          "stability": "Stability",
-          "stabilityDesc": "Backend Uptime",
-          "impactArea": "Impact Area",
-          "impactAreaDesc": "Critical modules"
-        },
-        "tabs": {
-          "all": "All Logs",
-          "unresolved": "Needs Attention"
-        },
-        "filter": {
-          "searchPlaceholder": "Search by error, URL or Request ID...",
-          "levelPlaceholder": "Level",
-          "allLevels": "All Levels",
-          "servicePlaceholder": "Service",
-          "allServices": "All Services",
-          "statusPlaceholder": "Status",
-          "allStatuses": "All Statuses",
-          "resolved": "Resolved",
-          "pending": "Pending",
-          "autoRefresh": "Auto",
-          "reset": "Reset to Default"
-        },
-        "table": {
-          "timestamp": "Timestamp",
-          "level": "Level",
-          "service": "Service",
-          "error": "Error Message",
-          "path": "Path / URL",
-          "requestId": "Request ID",
-          "status": "Status",
-          "actions": "Actions",
-          "viewDetail": "View Detail",
-          "empty": "No system errors matching your criteria"
-        },
-        "detail": {
-          "title": "Error Detail",
-          "subtitle": "RequestId: {{id}}",
-          "stackTrace": "Stack Trace",
-          "context": "Context Info",
-          "user": "Affected User",
-          "ip": "IP Address",
-          "resolve": "Mark as Resolved",
-          "unresolve": "Mark as Unresolved",
-          "resolutionNote": "Resolution Notes",
-          "resolutionPlaceholder": "How was this fixed?",
-          "saveNote": "Save Resolution"
-        },
-        "toast": {
-          "refreshSuccess": "Logs refreshed",
-          "refreshError": "Failed to refresh logs",
-          "updateSuccess": "Error status updated",
-          "updateError": "Failed to update error status"
         }
       }
     }

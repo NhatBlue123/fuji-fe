@@ -1437,6 +1437,87 @@
         "posts": "投稿"
       }
     },
+    "systemErrors": {
+      "title": "システムエラーログ",
+      "subtitle": "システムレベル问题的監視と管理",
+      "summary": {
+        "total24h": "エラー合計 (24時間)",
+        "total24hDesc": "最新のエラー",
+        "unresolved": "未解決",
+        "unresolvedDesc": "対応が必要",
+        "stability": "安定性",
+        "stabilityDesc": "バックエンド稼働率",
+        "impactArea": "影響範囲",
+        "impactAreaDesc": "重要なモジュール"
+      },
+      "tabs": {
+        "all": "すべてのログ",
+        "unresolved": "要対応"
+      },
+      "filter": {
+        "searchPlaceholder": "エラー、URL、またはRequest IDで検索...",
+        "levelPlaceholder": "レベル",
+        "allLevels": "すべてのレベル",
+        "servicePlaceholder": "サービス",
+        "allServices": "すべてのサービス",
+        "statusPlaceholder": "ステータス",
+        "allStatuses": "すべてのステータス",
+        "resolved": "解決済み",
+        "pending": "保留中",
+        "autoRefresh": "自動",
+        "reset": "リセット"
+      },
+      "table": {
+        "timestamp": "タイムスタンプ",
+        "level": "レベル",
+        "service": "サービス",
+        "error": "エラーメッセージ",
+        "path": "パス / URL",
+        "requestId": "Request ID",
+        "status": "ステータス",
+        "actions": "アクション",
+        "viewDetail": "詳細を見る",
+        "empty": "条件に一致するシステムエラーがありません"
+      },
+      "detail": {
+        "title": "エラー詳細",
+        "subtitle": "RequestId: {{id}}",
+        "stackTrace": "スタックトレース",
+        "context": "コンテキスト情報",
+        "user": "影響を受けたユーザー",
+        "ip": "IPアドレス",
+        "resolve": "解決済みにする",
+        "unresolve": "未解決にする",
+        "resolutionNote": "解決メモ",
+        "resolutionPlaceholder": "どのように解決しましたか？",
+        "saveNote": "メモを保存",
+        "requestBody": "リクエストペイロード",
+        "responseBody": "レスポンスボディ",
+        "environment": "環境",
+        "userAgent": "ユーザーエージェント",
+        "copyToClipboard": "クリップボードにコピー",
+        "copied": "コピーしました！",
+        "noRequestBody": "リクエストペイロードなし",
+        "noResponseBody": "レスポンスボディなし",
+        "addInvestigationNote": "調査メモを追加...",
+        "investigationNotes": "調査メモ",
+        "statusCode": "ステータスコード",
+        "method": "メソッド",
+        "path": "パス",
+        "userId": "ユーザーID",
+        "bookingId": "予約ID",
+        "roomId": "ルームID",
+        "errorId": "エラーID",
+        "fullMessage": "完全エラーメッセージ",
+        "shortMessage": "短縮メッセージ"
+      },
+      "toast": {
+        "refreshSuccess": "ログを更新しました",
+        "refreshError": "ログの更新に失敗しました",
+        "updateSuccess": "エラー状態を更新しました",
+        "updateError": "エラー状態の更新に失敗しました"
+      }
+    },
     "user": {
       "toast": {
         "savedTemplate": "新しい警告テンプレートを保存しました",
@@ -1881,68 +1962,6 @@
           "revenue": "収益",
           "popularity": "人気度",
           "noData": "コースのデータはありません。"
-        }
-      },
-      "systemErrors": {
-        "title": "システムエラーログ",
-        "subtitle": "システムレベルの問題を監視および管理",
-        "summary": {
-          "total24h": "合計エラー (24h)",
-          "total24hDesc": "最新の生成エラー",
-          "unresolved": "未解決",
-          "unresolvedDesc": "対応が必要",
-          "stability": "安定性",
-          "stabilityDesc": "バックエンド稼働時間",
-          "impactArea": "影響範囲",
-          "impactAreaDesc": "重要なモジュール"
-        },
-        "tabs": {
-          "all": "すべてのログ",
-          "unresolved": "対応が必要"
-        },
-        "filter": {
-          "searchPlaceholder": "エラー、URL、またはリクエストIDで検索...",
-          "levelPlaceholder": "レベル",
-          "allLevels": "すべてのレベル",
-          "servicePlaceholder": "サービス",
-          "allServices": "全システム",
-          "statusPlaceholder": "ステータス",
-          "allStatuses": "すべてのステータス",
-          "resolved": "解決済み",
-          "pending": "保留中",
-          "autoRefresh": "自動",
-          "reset": "デフォルトに戻す"
-        },
-        "table": {
-          "timestamp": "タイムスタンプ",
-          "level": "レベル",
-          "service": "サービス",
-          "error": "エラーメッセージ",
-          "path": "パス / URL",
-          "requestId": "リクエストID",
-          "status": "ステータス",
-          "actions": "操作",
-          "viewDetail": "詳細を表示",
-          "empty": "条件に一致するシステムエラーはありません"
-        },
-        "detail": {
-          "title": "エラー詳細",
-          "subtitle": "リクエストID: {{id}}",
-          "stackTrace": "スタックトレース",
-          "context": "コンテキスト情報",
-          "user": "影響を受けたユーザー",
-          "ip": "IPアドレス",
-          "resolve": "解決済みとしてマーク",
-          "unresolve": "未解決としてマーク",
-          "resolutionNote": "解決ノート",
-          "resolutionPlaceholder": "どのように修正されましたか？",
-          "saveNote": "ノートを保存"
-        },
-        "toast": {
-          "refreshSuccess": "ログを更新しました",
-          "refreshError": "ログの更新に失敗しました",
-          "updateSuccess": "エラーステータスを更新しました",
-          "updateError": "エラーステータスの更新に失敗しました"
         }
       }
     }

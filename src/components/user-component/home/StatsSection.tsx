@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { StreakCard } from "./StreakCard";
+import { ProgressChart } from "./ProgressChart";
 
 const STAT_STYLES = {
   blue: "bg-blue-500/20 text-blue-600 dark:text-blue-300 border-blue-500/20",
@@ -58,7 +60,14 @@ export function StatsSection() {
   ];
 
   return (
-    <div className="px-6 md:px-12 lg:px-20 -mt-16 relative z-20">
+    <div className="space-y-4 px-6 md:px-12 lg:px-20 -mt-16 relative z-20">
+      {/* Streak & Progress Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <StreakCard className="w-full" />
+        <ProgressChart className="w-full" />
+      </div>
+
+      {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATS.map((stat, index) => (
           <div

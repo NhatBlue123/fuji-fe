@@ -1494,7 +1494,14 @@
         "resolved": "Đã xử lý",
         "pending": "Đang chờ",
         "autoRefresh": "Tự động",
-        "reset": "Đặt lại"
+        "reset": "Đặt lại",
+        "fromDate": "Từ ngày",
+        "toDate": "Đến ngày",
+        "searchRequestId": "Tìm theo Request ID...",
+        "activeFilters": "Bộ lọc đang áp dụng",
+        "clearDates": "Xóa ngày",
+        "statusResolved": "Đã xử lý",
+        "statusPending": "Đang chờ"
       },
       "table": {
         "timestamp": "Thời gian",

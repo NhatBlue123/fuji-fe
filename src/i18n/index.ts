@@ -51,17 +51,31 @@ if (isClient) {
 }
 
 /**
+ * Check if a string looks like a messageKey (e.g., "notification_reminder_1")
+ */
+function isMessageKey(key: string): boolean {
+  // messageKeys follow pattern: some_text_N (e.g., notification_reminder_1)
+  return /^[a-zA-Z_]+\d+$/.test(key);
+}
+
+/**
  * [FRONTEND I18N ROLE] Global helper for standardized translation with debugging.
  * Ensures fallback to the key itself and warns if a key is missing in development.
  * This is the SINGLE SOURCE OF TRUTH for resolving backend messageKeys.
+ * 
+ * - If key looks like a messageKey (notification_reminder_1), try to translate
+ * - If key doesn't exist, return key silently (for content from backend)
+ * - If key is actual content (not a messageKey), return as-is without warning
  */
 export function tMsg(key: string | undefined | null, options?: Record<string, unknown>): string {
   if (!key) return "";
 
-  if (process.env.NODE_ENV === "development" && !i18n.exists(key)) {
-    console.warn("Missing i18n key:", key);
+  // If it doesn't look like a messageKey, return as-is (likely actual content from backend)
+  if (!isMessageKey(key)) {
+    return key;
   }
 
+  // It's a messageKey - try to translate
   const translated = i18n.t(key, { defaultValue: key, ...options });
   return typeof translated === "string" ? translated : key;
 }

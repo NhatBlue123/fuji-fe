@@ -34,10 +34,10 @@ export function HeroSection() {
   const easier      = isMounted ? t("home.easier")       : "Dễ Dàng Hơn.";
   const description = isMounted ? t("home.description")  : "Chinh phục tiếng Nhật cùng FUJI. Lộ trình cá nhân hóa với trợ lý AI.";
   const getStarted  = isMounted ? t("home.getStarted")   : "Bắt đầu ngay";
-  const watchDemo   = isMounted ? t("home.watchDemo")    : "Xem demo";
+  const continueBtn = isMounted ? t("home.continueLearning") : "Tiếp tục học";
 
   return (
-    <div className="relative w-full min-h-[680px] flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-20 pb-72 overflow-hidden rounded-b-[3rem] shadow-2xl shadow-blue-900/20">
+    <div className="relative w-full min-h-[600px] flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-20 pb-64 overflow-hidden rounded-b-[3rem] shadow-2xl shadow-blue-900/20">
       {/* Hiệu ứng tuyết */}
       {init && (
         <Particles
@@ -95,7 +95,7 @@ export function HeroSection() {
         <div className="flex flex-wrap items-center gap-4">
           <Link
             href="/course"
-            className="h-[52px] bg-pink-500 hover:bg-blue-500 text-white px-8 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group"
+            className="h-[52px] bg-pink-500 hover:bg-pink-400 text-white px-8 rounded-xl font-bold text-base transition-all transform hover:translate-y-[-2px] shadow-lg shadow-pink-500/25 flex items-center justify-center gap-2 group"
           >
             {getStarted}
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
@@ -108,8 +108,8 @@ export function HeroSection() {
             className="h-[52px] bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 hover:border-white/40"
           >
             <Link href="/ai-chat">
-              <span className="material-symbols-outlined">play_circle</span>
-              {watchDemo}
+              <span className="material-symbols-outlined">smart_toy</span>
+              {continueBtn}
             </Link>
           </Button>
         </div>

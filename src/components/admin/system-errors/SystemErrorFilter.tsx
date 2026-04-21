@@ -191,7 +191,7 @@ export const SystemErrorFilter = ({
               <Calendar className="h-4 w-4" />
               {filters.dateFrom
                 ? format(new Date(filters.dateFrom), "dd/MM/yyyy", { locale: dateLocale })
-                : "From Date"}
+                : t("admin.systemErrors.filter.fromDate")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -225,7 +225,7 @@ export const SystemErrorFilter = ({
               <Calendar className="h-4 w-4" />
               {filters.dateTo
                 ? format(new Date(filters.dateTo), "dd/MM/yyyy", { locale: dateLocale })
-                : "To Date"}
+                : t("admin.systemErrors.filter.toDate")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -253,14 +253,14 @@ export const SystemErrorFilter = ({
             onClick={() => setFilters({ ...filters, dateFrom: undefined, dateTo: undefined })}
           >
             <X className="h-3 w-3 mr-1" />
-            Clear dates
+            {t("admin.systemErrors.filter.clearDates")}
           </Button>
         )}
 
         {/* Request ID Search */}
         <div className="flex-1 min-w-[150px]">
           <Input
-            placeholder="Search by Request ID..."
+            placeholder={t("admin.systemErrors.filter.searchRequestId")}
             className="h-9 text-xs"
             value={filters.requestId}
             onChange={(e) => setFilters({ ...filters, requestId: e.target.value })}
@@ -291,7 +291,7 @@ export const SystemErrorFilter = ({
       {hasActiveFilters && (
         <div className="flex items-center gap-2 flex-wrap pt-1">
           <span className="text-[10px] text-muted-foreground uppercase font-bold">
-            Active filters:
+            {t("admin.systemErrors.filter.activeFilters")}:
           </span>
           {filters.level !== "all" && (
             <Badge
@@ -299,7 +299,7 @@ export const SystemErrorFilter = ({
               className="h-5 text-[9px] gap-1 cursor-pointer"
               onClick={() => setFilters({ ...filters, level: "all" })}
             >
-              Level: {filters.level}
+              {t("admin.systemErrors.table.level")}: {filters.level}
               <X className="h-2.5 w-2.5" />
             </Badge>
           )}
@@ -309,7 +309,7 @@ export const SystemErrorFilter = ({
               className="h-5 text-[9px] gap-1 cursor-pointer"
               onClick={() => setFilters({ ...filters, service: "all" })}
             >
-              Service: {filters.service}
+              {t("admin.systemErrors.table.service")}: {filters.service}
               <X className="h-2.5 w-2.5" />
             </Badge>
           )}
@@ -319,7 +319,7 @@ export const SystemErrorFilter = ({
               className="h-5 text-[9px] gap-1 cursor-pointer"
               onClick={() => setFilters({ ...filters, resolved: "all" })}
             >
-              Status: {filters.resolved === "true" ? "Resolved" : "Pending"}
+              {t("admin.systemErrors.table.status")}: {filters.resolved === "true" ? t("admin.systemErrors.filter.statusResolved") : t("admin.systemErrors.filter.statusPending")}
               <X className="h-2.5 w-2.5" />
             </Badge>
           )}
@@ -329,7 +329,7 @@ export const SystemErrorFilter = ({
               className="h-5 text-[9px] gap-1 cursor-pointer"
               onClick={() => setFilters({ ...filters, keyword: "" })}
             >
-              Search: {filters.keyword.slice(0, 20)}
+              {filters.keyword.slice(0, 20)}
               {filters.keyword.length > 20 && "..."}
               <X className="h-2.5 w-2.5" />
             </Badge>

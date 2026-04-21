@@ -1465,7 +1465,14 @@
         "resolved": "解決済み",
         "pending": "保留中",
         "autoRefresh": "自動",
-        "reset": "リセット"
+        "reset": "リセット",
+        "fromDate": "開始日",
+        "toDate": "終了日",
+        "searchRequestId": "Request IDで検索...",
+        "activeFilters": "適用中のフィルター",
+        "clearDates": "日付をクリア",
+        "statusResolved": "解決済み",
+        "statusPending": "保留中"
       },
       "table": {
         "timestamp": "タイムスタンプ",

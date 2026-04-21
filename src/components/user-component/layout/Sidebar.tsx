@@ -25,7 +25,8 @@ import {
   Layers,
   Settings,
   ShieldCheck,
-  Zap
+  Zap,
+  LayoutDashboard
 } from "lucide-react";
 import TopupModal from "@/components/user-component/premium/TopupModal";
 import { useNotifications } from "@/providers/NotificationProvider";
@@ -80,6 +81,7 @@ const Sidebar = () => {
 
   const menuItems = useMemo(() => [
     { label: t("common.home"), path: "/", icon: Home },
+    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: t("common.course"), path: "/course", icon: BookOpen },
     { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
     { label: t("common.booking"), path: "/booking", icon: Calendar },

@@ -210,7 +210,7 @@ export const SystemErrorTable = ({
             {/* Request Info */}
             <div className="space-y-2">
               <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
-                Request Info
+                {t("admin.systemErrors.table.requestId")}
               </h4>
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center gap-2">
@@ -242,10 +242,10 @@ export const SystemErrorTable = ({
               </div>
             </div>
 
-            {/* User Info */}
+            {/* User Context */}
             <div className="space-y-2">
               <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
-                User Context
+                {t("admin.systemErrors.detail.user")}
               </h4>
               <div className="space-y-1.5 text-xs">
                 {log.userId ? (
@@ -271,7 +271,7 @@ export const SystemErrorTable = ({
                   </>
                 ) : (
                   <span className="text-[10px] text-muted-foreground italic bg-muted px-2 py-1 rounded">
-                    Anonymous User
+                    {t("common.anonymous")}
                   </span>
                 )}
               </div>
@@ -280,11 +280,11 @@ export const SystemErrorTable = ({
             {/* Time Info */}
             <div className="space-y-2">
               <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
-                Timeline
+                {t("indicator.activityLog")}
               </h4>
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Created:</span>
+                  <span className="text-muted-foreground">{t("admin.systemErrors.table.timestamp")}:</span>
                   <span className="font-medium">
                     {format(new Date(log.createdAt), "dd/MM/yyyy", {
                       locale: dateLocale,
@@ -292,7 +292,7 @@ export const SystemErrorTable = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Time:</span>
+                  <span className="text-muted-foreground">{t("common.time")}:</span>
                   <span className="font-medium">
                     {format(new Date(log.createdAt), "HH:mm:ss", {
                       locale: dateLocale,
@@ -301,7 +301,7 @@ export const SystemErrorTable = ({
                 </div>
                 {log.resolved && log.resolvedAt && (
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Resolved:</span>
+                    <span className="text-muted-foreground">{t("admin.systemErrors.filter.resolved")}:</span>
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">
                       {format(new Date(log.resolvedAt), "dd/MM HH:mm", {
                         locale: dateLocale,
@@ -316,7 +316,7 @@ export const SystemErrorTable = ({
           {/* Message Preview */}
           <div className="mt-4 pt-4 border-t border-dashed">
             <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider mb-2">
-              Error Message
+              {t("admin.systemErrors.table.error")}
             </h4>
             <p className="text-xs text-slate-700 dark:text-slate-300 bg-white/50 dark:bg-slate-800/50 p-2 rounded border font-mono">
               {log.messageFull || log.messageShort}
@@ -332,7 +332,7 @@ export const SystemErrorTable = ({
       {/* Quick Filter Chips */}
       <div className="flex items-center gap-2 p-3 border-b bg-slate-50/50 dark:bg-slate-900/50">
         <span className="text-[10px] font-bold uppercase text-muted-foreground mr-2">
-          Quick Filter:
+          {t("admin.systemErrors.filter.levelPlaceholder")}:
         </span>
         {Object.entries(LEVEL_CONFIG).map(([level, config]) => {
           const Icon = config.icon;
@@ -366,7 +366,7 @@ export const SystemErrorTable = ({
             className="h-7 text-[10px] ml-auto"
             onClick={() => onQuickFilter?.("")}
           >
-            Clear
+            {t("admin.systemErrors.filter.reset")}
           </Button>
         )}
       </div>

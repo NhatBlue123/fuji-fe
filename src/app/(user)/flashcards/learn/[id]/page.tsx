@@ -24,6 +24,7 @@ import {
   useGetFlashCardByIdQuery,
   useStartLearningMutation,
 } from "@/store/services/flashcardApi";
+import { useRecordActivityMutation } from "@/store/services/progressApi";
 import { getMockImage } from "@/lib/mockImages";
 import styles from "./page.module.css";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function FlashcardStudyPage({
   const router = useRouter();
   const { data: flashcard, isLoading, error } = useGetFlashCardByIdQuery(id);
   const [startLearning] = useStartLearningMutation();
+  const [recordActivity] = useRecordActivityMutation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -45,6 +47,11 @@ export default function FlashcardStudyPage({
     "front" | "back" | "both" | "none"
   >("front");
   const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
+  const [sessionStartTime] = useState(Date.now());
+  const [hasRecordedActivity, setHasRecordedActivity] = useState(false);
+
+  const cards = flashcard?.cards || [];
+  const totalCards = cards.length;
 
   // Initialize learning when page loads
   useEffect(() => {
@@ -53,8 +60,53 @@ export default function FlashcardStudyPage({
     }
   }, [flashcard, id, startLearning]);
 
-  const cards = flashcard?.cards || [];
-  const totalCards = cards.length;
+  // Record activity when completing a flashcard session
+  const recordFlashcardSession = useCallback(async () => {
+    if (hasRecordedActivity || completedCards.size === 0) return;
+
+    setHasRecordedActivity(true);
+    const durationMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
+    const cardsReviewed = completedCards.size;
+
+    try {
+      await recordActivity({
+        activityType: "FLASHCARD",
+        durationMinutes: Math.max(durationMinutes, 1),
+        cardsReviewed,
+        correctAnswers: cardsReviewed,
+        totalQuestions: cardsReviewed,
+        source: "flashcard",
+      }).unwrap();
+      console.log("[Flashcard] Activity recorded:", { cardsReviewed, durationMinutes });
+    } catch (err) {
+      console.error("[Flashcard] Failed to record activity:", err);
+    }
+  }, [hasRecordedActivity, completedCards.size, sessionStartTime, recordActivity]);
+
+  // Record activity when completing all cards
+  useEffect(() => {
+    if (completedCards.size > 0 && completedCards.size === totalCards && totalCards > 0) {
+      recordFlashcardSession();
+    }
+  }, [completedCards.size, totalCards, recordFlashcardSession]);
+
+  // Record on page unmount if session started
+  useEffect(() => {
+    return () => {
+      if (completedCards.size > 0 && !hasRecordedActivity) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
+        recordActivity({
+          activityType: "FLASHCARD",
+          durationMinutes: Math.max(durationMinutes, 1),
+          cardsReviewed: completedCards.size,
+          correctAnswers: completedCards.size,
+          totalQuestions: completedCards.size,
+          source: "flashcard",
+        }).catch(console.error);
+      }
+    };
+  }, [recordActivity, completedCards.size, sessionStartTime, hasRecordedActivity]);
+
   const currentCard = cards[currentIndex];
   const progress =
     totalCards > 0 ? Math.round((completedCards.size / totalCards) * 100) : 0;

@@ -1374,7 +1374,14 @@
         "resolved": "Resolved",
         "pending": "Pending",
         "autoRefresh": "Auto",
-        "reset": "Reset to Default"
+        "reset": "Reset to Default",
+        "fromDate": "From Date",
+        "toDate": "To Date",
+        "searchRequestId": "Search by Request ID...",
+        "activeFilters": "Active filters",
+        "clearDates": "Clear dates",
+        "statusResolved": "Resolved",
+        "statusPending": "Pending"
       },
       "table": {
         "timestamp": "Timestamp",

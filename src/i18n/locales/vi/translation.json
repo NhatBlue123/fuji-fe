@@ -410,6 +410,7 @@
     "description": "Chinh phục tiếng Nhật cùng FUJI. Lộ trình cá nhân hóa với trợ lý AI.",
     "getStarted": "Bắt đầu ngay",
     "watchDemo": "Xem demo",
+    "continueLearning": "Tiếp tục học",
     "stats": {
       "students": "Học viên",
       "courses": "Khóa học",
@@ -1998,68 +1999,6 @@
           "revenue": "Doanh thu",
           "popularity": "Độ phổ biến",
           "noData": "Không có dữ liệu khóa học."
-        }
-      }
-    }
-  },
-  "videoCall": {
-        "summary": {
-          "total24h": "Tổng lỗi (24h)",
-          "total24hDesc": "Lỗi phát sinh mới nhất",
-          "unresolved": "Chưa giải quyết",
-          "unresolvedDesc": "Cần admin xử lý",
-          "stability": "Độ ổn định",
-          "stabilityDesc": "Backend Uptime",
-          "impactArea": "Vùng ảnh hưởng",
-          "impactAreaDesc": "Các module quan trọng"
-        },
-        "tabs": {
-          "all": "Tất cả nhật ký",
-          "unresolved": "Dành cho Admin xử lý"
-        },
-        "filter": {
-          "searchPlaceholder": "Tìm theo lỗi, URL hoặc Request ID...",
-          "levelPlaceholder": "Mức độ",
-          "allLevels": "Tất cả Level",
-          "servicePlaceholder": "Dịch vụ",
-          "allServices": "Toàn hệ thống",
-          "statusPlaceholder": "Trạng thái",
-          "allStatuses": "Mọi trạng thái",
-          "resolved": "Đã xử lý",
-          "pending": "Đang chờ",
-          "autoRefresh": "Tự động",
-          "reset": "Khôi phục mặc định"
-        },
-        "table": {
-          "timestamp": "Thời gian",
-          "level": "Mức độ",
-          "service": "Dịch vụ",
-          "error": "Thông báo lỗi",
-          "path": "Đường dẫn / URL",
-          "requestId": "Request ID",
-          "status": "Trạng thái",
-          "actions": "Thao tác",
-          "viewDetail": "Xem chi tiết",
-          "empty": "Không có lỗi hệ thống nào khớp với tiêu chí tìm kiếm"
-        },
-        "detail": {
-          "title": "Chi tiết lỗi",
-          "subtitle": "Request ID: {{id}}",
-          "stackTrace": "Stack Trace",
-          "context": "Thông tin Context",
-          "user": "Người dùng bị ảnh hưởng",
-          "ip": "Địa chỉ IP",
-          "resolve": "Đánh dấu đã xử lý",
-          "unresolve": "Đánh dấu chưa xử lý",
-          "resolutionNote": "Ghi chú khắc phục",
-          "resolutionPlaceholder": "Lỗi đã được sửa như thế nào?",
-          "saveNote": "Lưu ghi chú"
-        },
-        "toast": {
-          "refreshSuccess": "Đã làm mới nhật ký",
-          "refreshError": "Không thể làm mới nhật ký",
-          "updateSuccess": "Đã cập nhật trạng thái lỗi",
-          "updateError": "Cập nhật trạng thái thất bại"
         }
       }
     }

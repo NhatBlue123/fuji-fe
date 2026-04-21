@@ -246,6 +246,7 @@
     "description": "FUJIで日本語を制覇しましょう。AIのサポートによるパーソナライズされた学習ルート。",
     "getStarted": "今すぐ始める",
     "watchDemo": "デモを見る",
+    "continueLearning": "学習を続ける",
     "stats": {
       "students": "受講生",
       "courses": "コース",

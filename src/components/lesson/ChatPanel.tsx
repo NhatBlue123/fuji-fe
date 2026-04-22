@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react
 import { Send, Paperclip, Image as ImageIcon, FileText, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
-import api from "@/lib/api";
+import api, { downloadFile } from "@/lib/api";
 import { toast } from "sonner";
 
 interface ChatPanelProps {
@@ -345,19 +345,21 @@ export function ChatPanel({
       return '📎';
     };
 
+    const isPdf = msg.fileUrl?.match(/\.pdf$/i);
+    const downloadFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+
     return (
-      <a
-        href={msg.fileUrl!}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-2 bg-[#1a1d27] hover:bg-[#252838] rounded-xl transition-colors border border-white/5"
+      <button
+        type="button"
+        onClick={() => downloadFile(msg.fileUrl!, fileName)}
+        className="flex items-center gap-2 px-3 py-2 bg-[#1a1d27] hover:bg-[#252838] rounded-xl transition-colors border border-white/5 w-full text-left"
       >
-        <span className="text-lg">{getFileIcon()}</span>
+        <span className="text-lg">{isPdf ? '📄' : getFileIcon()}</span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate">{fileName}</div>
           <div className="text-[10px] text-[#8B8FA8]">{t('auto.lesson_chat_1')}</div>
         </div>
-      </a>
+      </button>
     );
   };
 

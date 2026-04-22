@@ -225,10 +225,10 @@ export function NotificationProvider({
       // Hiển thị thông báo dạng Popup (Toast) ngay lập tức
       toast(tMsg(notification.title), {
         description: tMsg(notification.content),
-        // Nếu thông báo có đường dẫn liên kết, hiển thị nút "Xem ngay"
+        // Nếu thông báo có đường dẫn liên kết, hiển thị nút "Học ngay"
         action: notification.linkUrl
           ? {
-              label: tMsg("common.viewNow") || "Xem ngay",
+              label: t("common.viewNow"),
               onClick: () => {
                 markAsRead(notification.id); // Đánh dấu đã đọc khi click
                 router.push(notification.linkUrl!); // Chuyển hướng trang

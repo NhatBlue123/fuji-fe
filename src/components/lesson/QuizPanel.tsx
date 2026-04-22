@@ -451,12 +451,12 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
               quizTitle={quizzes.find(q => q.id === activeQuizId)?.title || "Quiz"}
               totalQuestions={results.totalQuestions}
               userScore={results.scoresByUser[String(results.submissions[0]?.userId)] || 0}
-              userName="Kết quả"
+              userName={results.submissions[0]?.userName || "Học viên"}
               results={results.submissions.map((s, idx) => ({
                 questionId: s.questionId,
-                questionText: `Câu ${idx + 1}`,
-                userAnswer: "",
-                correctAnswer: "",
+                questionText: `Câu ${idx + 1} (ID: ${s.questionId})`,
+                userAnswer: s.correct ? "Đúng" : "Sai",
+                correctAnswer: s.correct ? "Đúng" : "Sai",
                 isCorrect: s.correct,
               }))}
             />
@@ -484,9 +484,19 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
         {isTeacher && results && activeQuizId && !showResults && (
           <div className="rounded-xl border border-white/[0.08] p-2 text-[11px] text-[#8B8FA8]">
             <p className="text-[#F0F0F0] text-xs mb-1">Kết quả</p>
-            <pre className="whitespace-pre-wrap font-mono text-[10px] overflow-x-auto">
-              {JSON.stringify(results.scoresByUser, null, 2)}
-            </pre>
+            <div className="space-y-1">
+              {Object.entries(results.scoresByUser).map(([userId, score]) => {
+                const submissions = results.submissions.filter(s => String(s.userId) === userId);
+                const userName = submissions[0]?.userName || `User ${userId}`;
+                const correctCount = submissions.filter(s => s.correct).length;
+                return (
+                  <div key={userId} className="flex items-center justify-between">
+                    <span className="text-[#6C63FF]">{userName}</span>
+                    <span className="text-emerald-400">{correctCount}/{results.totalQuestions} đúng ({score} điểm)</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

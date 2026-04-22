@@ -51,11 +51,12 @@ if (isClient) {
 }
 
 /**
- * Check if a string looks like a messageKey (e.g., "notification_reminder_1")
+ * Check if a string looks like a messageKey (e.g., "notification_reminder_1", "auth.loginFail")
  */
 function isMessageKey(key: string): boolean {
-  // messageKeys follow pattern: some_text_N (e.g., notification_reminder_1)
-  return /^[a-zA-Z_]+\d+$/.test(key);
+  // messageKeys follow pattern: module_key or module_subkey (e.g., notification_reminder_1, auth.loginFail)
+  // Must contain a dot or underscore and be all alphanumeric with underscores
+  return /^[a-zA-Z][a-zA-Z0-9_]*[._][a-zA-Z0-9_]+$/.test(key);
 }
 
 /**

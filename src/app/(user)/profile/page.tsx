@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar,
-  Trophy, Info, Zap
+  Zap
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -13,6 +13,7 @@ import { logout } from "@/lib/auth";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { useGetMySubscriptionQuery } from "@/store/services/subscriptionApi";
 import { Button } from "@/components/ui/button";
+import { StreakCard } from "@/components/user-component/home/StreakCard";
 import { 
   Card, 
   CardHeader, 
@@ -154,19 +155,9 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Stats Sidebar / Level */}
-            <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-muted dark:border-white/10 p-6 rounded-3xl text-center space-y-3 min-w-[200px] shadow-inner shadow-black/5 dark:shadow-none shrink-0 lg:ml-auto">
-              <div className="p-3 bg-secondary hover:bg-secondary/90 rounded-2xl w-fit mx-auto border border-white/20 shadow-lg shadow-pink-500/20">
-                <Trophy size={24} className="text-white" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-600/80 dark:text-pink-100/60">{t("profile.rank.label")}</p>
-                <p className="text-xl font-black text-foreground dark:text-white tracking-tighter uppercase drop-shadow-md">Silver II</p>
-              </div>
-              <div className="w-full h-2 bg-muted/80 dark:bg-black/40 rounded-full overflow-hidden border border-muted dark:border-white/5 shadow-inner">
-                <div className="h-full bg-gradient-to-r from-pink-500 to-purple-500 w-[65%]" />
-              </div>
-              <p className="text-[10px] font-black text-pink-600/70 dark:text-pink-100/50 uppercase tracking-widest">350 / 500 EXP</p>
+            {/* Streak Card */}
+            <div className="lg:ml-auto lg:w-[220px]">
+              <StreakCard className="w-full" hideMessage />
             </div>
           </div>
         </CardContent>

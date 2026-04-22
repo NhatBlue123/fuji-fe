@@ -43,6 +43,7 @@ export const baseApi = createApi({
     "SystemErrorSummary",
     "Progress",
     "Streak",
+    "StreakProgress",
     "WeeklyStats",
     "WeeklySummary",
     "TodayStats",

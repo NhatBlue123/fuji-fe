@@ -13,7 +13,6 @@ import {
   Settings,
   Sparkles,
   Flame,
-  BarChart3,
 } from "lucide-react";
 import { useTheme } from "@/components/common";
 import { useAuth, useAppDispatch } from "@/store/hooks";
@@ -165,45 +164,19 @@ const Header = () => {
         <div className="flex items-center gap-4">{/* FUJI Logo*/}</div>
 
         <div className="flex items-center gap-1 md:gap-2">
-          {/* Dashboard Link */}
-          {canShowAuthUi && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/dashboard"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-secondary/20 bg-secondary/5 text-secondary transition-all hover:bg-secondary/10 hover:scale-105"
-                >
-                  <BarChart3 className="size-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-secondary text-white border-none">
-                Dashboard
-              </TooltipContent>
-            </Tooltip>
-          )}
-
           {/* Streak Indicator */}
           {canShowAuthUi && streak && streak.currentStreak > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/dashboard"
-                  className={cn(
-                    "flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-bold transition-all hover:scale-105",
-                    "bg-gradient-to-r from-orange-500/20 to-pink-500/20 border border-orange-500/30",
-                    "text-orange-400 hover:from-orange-500/30 hover:to-pink-500/30"
-                  )}
-                >
-                  <Flame className="size-4 text-orange-500 animate-pulse" />
-                  <span>{streak.currentStreak}</span>
-                  <span className="text-xs text-orange-400/70 hidden sm:inline">ngày</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gradient-to-r from-orange-500 to-pink-500 text-white border-none shadow-lg">
-                <p className="font-bold">🔥 {streak.currentStreak} ngày liên tiếp!</p>
-                <p className="text-xs opacity-80">Kỷ lục: {streak.longestStreak} ngày</p>
-              </TooltipContent>
-            </Tooltip>
+            <div
+              className={cn(
+                "flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-bold",
+                "bg-gradient-to-r from-orange-500/20 to-pink-500/20 border border-orange-500/30",
+                "text-orange-400"
+              )}
+            >
+              <Flame className="size-4 text-orange-500 animate-pulse" />
+              <span>{streak.currentStreak}</span>
+              <span className="text-xs text-orange-400/70 hidden sm:inline">ngày</span>
+            </div>
           )}
 
           {canShowAuthUi && (

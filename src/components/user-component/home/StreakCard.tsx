@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { Flame, Calendar, Trophy, Snowflake, Target } from "lucide-react";
+import { useState } from "react";
+import { Flame, Calendar, Trophy, Target, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStreakProgress } from "@/hooks/useStreakProgress";
 import { StreakNotification } from "./StreakNotification";
@@ -9,9 +9,12 @@ import { StreakNotification } from "./StreakNotification";
 interface StreakCardProps {
   className?: string;
   enabled?: boolean;
+  hideMessage?: boolean;
 }
 
-export function StreakCard({ className, enabled = true }: StreakCardProps) {
+export function StreakCard({ className, enabled = true, hideMessage = false }: StreakCardProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   const {
     progress,
     isLoading,
@@ -30,8 +33,7 @@ export function StreakCard({ className, enabled = true }: StreakCardProps) {
     enabled,
     pollingInterval: 15000,
     onQualified: () => {
-      // Could trigger confetti or celebration here
-      console.log("🎉 User just qualified for streak!");
+      console.log("User just qualified for streak!");
     },
   });
 
@@ -43,7 +45,6 @@ export function StreakCard({ className, enabled = true }: StreakCardProps) {
     );
   }
 
-  // Error or no data - show placeholder
   if (isError || !progress) {
     return (
       <div className={cn("rounded-2xl bg-gradient-to-br from-gray-500/20 to-gray-600/20 border border-gray-500/30 p-5", className)}>
@@ -74,12 +75,8 @@ export function StreakCard({ className, enabled = true }: StreakCardProps) {
   };
 
   const getMessageStyle = () => {
-    if (qualified) {
-      return "bg-green-500/20 text-green-400 border border-green-500/30";
-    }
-    if (almostQualified) {
-      return "bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse";
-    }
+    if (qualified) return "bg-green-500/20 text-green-400 border border-green-500/30";
+    if (almostQualified) return "bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse";
     return "bg-blue-500/20 text-blue-400 border border-blue-500/30";
   };
 
@@ -89,11 +86,45 @@ export function StreakCard({ className, enabled = true }: StreakCardProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center",
-              qualified ? "from-green-500 to-emerald-500" : getStreakColor()
-            )}>
-              <Flame className={cn("w-5 h-5", qualified ? "text-white animate-pulse" : "text-white")} />
+            <div className="relative">
+              <div className={cn(
+                "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center",
+                qualified ? "from-green-500 to-emerald-500" : getStreakColor()
+              )}>
+                <Flame className={cn("w-5 h-5", qualified ? "text-white animate-pulse" : "text-white")} />
+              </div>
+              {/* Help Icon */}
+              <button
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-600 border border-slate-500 flex items-center justify-center hover:bg-slate-500 transition-colors z-50"
+              >
+                <HelpCircle className="w-3 h-3 text-white/70" />
+              </button>
+              {/* Tooltip */}
+              {showTooltip && (
+                <div className="absolute right-full top-0 ml-2 z-[100] w-64 p-3 rounded-xl bg-slate-800 border border-slate-600 shadow-xl">
+                  <p className="text-sm font-semibold text-white mb-2">Cách đạt Streak hàng ngày</p>
+                  <ul className="text-xs text-gray-300 space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span>Học thẻ ghi nhớ (flashcards) mỗi ngày</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span>Hoàn thành bài luyện tập JLPT</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span>Đặt lịch hẹn với giáo viên</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span>Học các khóa học trên hệ thống</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
             <div>
               <p className="text-xs text-orange-400 font-medium">Streak hiện tại</p>
@@ -169,12 +200,13 @@ export function StreakCard({ className, enabled = true }: StreakCardProps) {
         </div>
 
         {/* Message */}
-        <div className={cn("text-center py-2 rounded-xl text-sm font-medium", getMessageStyle())}>
-          {message || (qualified ? "Tuyệt vời! Bạn đã giữ streak hôm nay!" : "Học ngay để giữ streak!")}
-        </div>
+        {!hideMessage && (
+          <div className={cn("text-center py-2 rounded-xl text-sm font-medium", getMessageStyle())}>
+            {message || (qualified ? "Tuyệt vời! Bạn đã giữ streak hôm nay!" : "Học ngay để giữ streak!")}
+          </div>
+        )}
       </div>
 
-      {/* Real-time Notification */}
       <StreakNotification
         message={notification?.message || message}
         type={notification?.type || (qualified ? "success" : almostQualified ? "warning" : "info")}

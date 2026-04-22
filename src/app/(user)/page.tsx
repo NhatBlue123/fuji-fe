@@ -8,6 +8,7 @@ import { AnimatePresence, motion, useInView } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/user-component/home/HeroSection";
+import { StreakCard } from "@/components/user-component/home/StreakCard";
 
 /* ─────────────────────────────────────────────────────────────────
    STATIC META — không gọi API, chỉ dùng i18n key để lấy text
@@ -162,8 +163,15 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 bg-background dark:bg-[#0f172a] pb-20">
-      {/* ── HERO (giữ nguyên) ── */}
+      {/* ── HERO ── */}
       <HeroSection />
+
+      {/* ── STREAK CARD ── */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20 -mt-12 relative z-20">
+        <div className="max-w-md">
+          <StreakCard className="w-full" />
+        </div>
+      </div>
 
       <div className="mt-24 space-y-28 px-4 sm:px-6 md:px-12 lg:px-20">
 

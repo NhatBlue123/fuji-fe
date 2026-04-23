@@ -122,6 +122,20 @@ export const bookingApi = baseApi.injectEndpoints({
       ],
     }),
 
+    cancelBookingByTeacher: builder.mutation<{ message: string }, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/teacher-cancel`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<string>) => ({
+        message: res.message || "Booking cancelled",
+      }),
+      invalidatesTags: [
+        { type: "Booking", id: "DISCOVERY" },
+        { type: "Booking", id: "MY_BOOKINGS" },
+      ],
+    }),
+
     endBookingVideoSession: builder.mutation<{ message: string }, { bookingId: number }>({
       query: ({ bookingId }) => ({
         url: `/bookings/${bookingId}/video-session/end`,
@@ -205,6 +219,7 @@ export const {
   useDeleteTimeSlotMutation,
   useUpdateTimeSlotMutation,
   useCancelBookingMutation,
+  useCancelBookingByTeacherMutation,
   useEndBookingVideoSessionMutation,
   useGetMyTeacherScheduleQuery,
   useGetVideoSessionMutation,

@@ -13,6 +13,21 @@ import {
   hasOverlap,
   toVnd,
 } from "./utils";
+
+function formatConflictDateTime(isoString: string, lang: string): string {
+  const d = new Date(isoString);
+  const date = d.toLocaleDateString(lang === "ja" ? "ja-JP" : lang === "en" ? "en-US" : "vi-VN", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const time = d.toLocaleTimeString(lang === "ja" ? "ja-JP" : lang === "en" ? "en-US" : "vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${date} ${time}`;
+}
 import TimeRangeList from "./TimeRangeList";
 import WeekdayPicker from "./WeekdayPicker";
 import PreviewCard from "./PreviewCard";
@@ -60,6 +75,7 @@ export default function CreateTimeSlotForm() {
     title: string;
     description: string;
     onClose?: () => void;
+    conflicts?: { startAt: string; endAt: string }[];
   } | null>(null);
 
   const [daysOfWeek, setDaysOfWeek] = useState<Weekday[]>([]);
@@ -219,12 +235,14 @@ export default function CreateTimeSlotForm() {
           type: "error",
           title: t("booking.error.allSkippedTitle"),
           description: t("booking.error.allSkippedDesc", { count: skipped }),
+          conflicts: bulk?.conflicts ?? [],
         });
       } else {
         setNotice({
           type: "warning",
           title: t("booking.warning.someSkippedTitle"),
           description: t("booking.warning.someSkippedDesc", { created, skipped }),
+          conflicts: bulk?.conflicts ?? [],
           onClose: goToSchedule,
         });
       }
@@ -250,7 +268,7 @@ export default function CreateTimeSlotForm() {
       {notice ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
           <div
-            className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
+            className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl ${
               notice.type === "success"
                 ? "bg-card border-chart-4/40"
                 : notice.type === "warning"
@@ -275,6 +293,36 @@ export default function CreateTimeSlotForm() {
             <p className="text-sm text-muted-foreground mt-2">
               {notice.description}
             </p>
+
+            {notice.conflicts && notice.conflicts.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-foreground mb-2">
+                  {notice.type === "error"
+                    ? t("booking.error.conflictListTitle")
+                    : t("booking.warning.conflictListTitle")}
+                </p>
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-destructive/30 bg-destructive/5 space-y-1.5 p-3">
+                  {notice.conflicts.map((c, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-xs text-muted-foreground"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive" />
+                        <span>
+                          {formatConflictDateTime(c.startAt, i18n.language)}
+                          {" – "}
+                          {new Date(c.endAt).toLocaleTimeString(
+                            i18n.language === "ja" ? "ja-JP" : i18n.language === "en" ? "en-US" : "vi-VN",
+                            { hour: "2-digit", minute: "2-digit", hour12: false }
+                          )}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-6 flex justify-end">
               <button

@@ -656,7 +656,9 @@
       "invalidDate": "Ngày dạy không hợp lệ.",
       "createFailed": "Tạo lịch thất bại.",
       "allSkippedTitle": "Tất cả lịch bị trùng",
-      "allSkippedDesc": "Không có slot nào được tạo. Cả {{count}} slot đều bị trùng với lịch đã tồn tại."
+      "allSkippedDesc": "Không có slot nào được tạo. Cả {{count}} slot đều bị trùng với lịch đã tồn tại.",
+      "conflictListTitle": "Danh sách lịch bị trùng",
+      "conflictReason": "Trùng với lịch đã tồn tại"
     },
     "success": {
       "createTitle": "Tạo lịch thành công",

@@ -699,7 +699,8 @@
       "invalidDate": "無効な授業日です。",
       "createFailed": "スケジュールの作成に失敗しました。",
       "allSkippedTitle": "すべてのスケジュールが重複しています",
-      "allSkippedDesc": "スロットは作成されませんでした。{{count}}個のスロットすべてが既存のスケジュールと重複しています。"
+      "allSkippedDesc": "スロットは作成されませんでした。{{count}}個のスロットすべてが既存のスケジュールと重複しています。",
+      "conflictListTitle": "重複しているスロット"
     },
     "success": {
       "createTitle": "スケジュールの作成に成功しました",
@@ -709,7 +710,8 @@
     "successMessage": "レッスンを予約しました。",
     "warning": {
       "someSkippedTitle": "一部の重複が検出されました",
-      "someSkippedDesc": "{{created}}個のスロットを正常に作成しました。重複のため{{skipped}}個のスロットをスキップしました。"
+      "someSkippedDesc": "{{created}}個のスロットを正常に作成しました。重複のため{{skipped}}個のスロットをスキップしました。",
+      "conflictListTitle": "重複しているスロット"
     }
   },
   "settings": {

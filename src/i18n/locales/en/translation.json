@@ -535,7 +535,8 @@
       "invalidDate": "Invalid teaching date.",
       "createFailed": "Schedule creation failed.",
       "allSkippedTitle": "All Schedules Overlap",
-      "allSkippedDesc": "No slots were created. All {{count}} slots overlap with existing schedules."
+      "allSkippedDesc": "No slots were created. All {{count}} slots overlap with existing schedules.",
+      "conflictListTitle": "Overlapping Slots"
     },
     "success": {
       "createTitle": "Schedule Created Successfully",
@@ -545,7 +546,8 @@
     "successMessage": "You have successfully booked your lesson.",
     "warning": {
       "someSkippedTitle": "Partial Overlap Detected",
-      "someSkippedDesc": "Successfully created {{created}} slots, skipped {{skipped}} slots due to overlap."
+      "someSkippedDesc": "Successfully created {{created}} slots, skipped {{skipped}} slots due to overlap.",
+      "conflictListTitle": "Overlapping Slots"
     }
   },
   "settings": {

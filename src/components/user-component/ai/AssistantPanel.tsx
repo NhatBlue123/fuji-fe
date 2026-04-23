@@ -38,7 +38,9 @@ import type {
 } from "./assistant/types";
 
 const MESSAGES_PAGE_SIZE = 20;
-const STREAM_STALL_TIMEOUT_MS = 70000;
+const STREAM_STALL_TIMEOUT_MS = 20000; // ✅ Giảm từ 70s xuống 20s
+const STREAM_HEARTBEAT_CHECK_MS = 5000; // ✅ Check mỗi 5s
+const STREAM_MAX_IDLE_MS = 15000; // ✅ Timeout nếu 15s không có event
 const ROUTER_THINKING_MAX_ITEMS = 5;
 
 type AssistantPanelProps = {
@@ -165,8 +167,11 @@ export default function AssistantPanel({
   } | null>(null);
   const pendingBottomScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
   const streamWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streamHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null); // ✅ Heartbeat interval
+  const lastStreamEventRef = useRef<number>(0); // ✅ Track last event time
   const routerThinkingRef = useRef<RouterThinkingItem[]>([]);
   const typingStartedAtRef = useRef<number | null>(null);
+  const currentSocketIdRef = useRef<string | null>(null); // ✅ Track socket ID
 
   const resolveResponseTimeMs = useCallback(() => {
     const startedAt = typingStartedAtRef.current;
@@ -176,18 +181,20 @@ export default function AssistantPanel({
     return Math.max(0, Math.round(Date.now() - startedAt));
   }, [elapsedMs]);
 
-  const clearStreamWatchdog = useCallback(() => {
-    if (!streamWatchdogRef.current) {
-      return;
-    }
-    clearTimeout(streamWatchdogRef.current);
-    streamWatchdogRef.current = null;
-  }, []);
-
   const forceFinishStreaming = useCallback(
     (fallbackMessage: string) => {
       const finalResponseTimeMs = resolveResponseTimeMs();
-      clearStreamWatchdog();
+      
+      // ✅ Inline clear watchdog
+      if (streamWatchdogRef.current) {
+        clearTimeout(streamWatchdogRef.current);
+        streamWatchdogRef.current = null;
+      }
+      if (streamHeartbeatRef.current) {
+        clearInterval(streamHeartbeatRef.current);
+        streamHeartbeatRef.current = null;
+      }
+      
       setIsTyping(false);
       setQueuedInfo(null);
       setRouterThinking([]);
@@ -220,17 +227,8 @@ export default function AssistantPanel({
 
       streamBufferRef.current = "";
     },
-    [clearStreamWatchdog, resolveResponseTimeMs],
+    [resolveResponseTimeMs],
   );
-
-  const armStreamWatchdog = useCallback(() => {
-    clearStreamWatchdog();
-    streamWatchdogRef.current = setTimeout(() => {
-      forceFinishStreaming(
-        "⚠️ Kết nối phản hồi bị gián đoạn. Vui lòng gửi lại tin nhắn.",
-      );
-    }, STREAM_STALL_TIMEOUT_MS);
-  }, [clearStreamWatchdog, forceFinishStreaming]);
 
   const goToDraftConversation = useCallback(
     (replaceUrl: boolean) => {
@@ -248,7 +246,17 @@ export default function AssistantPanel({
       setRouterThinking([]);
       routerThinkingRef.current = [];
       streamBufferRef.current = "";
-      clearStreamWatchdog();
+      
+      // ✅ Inline clear watchdog
+      if (streamWatchdogRef.current) {
+        clearTimeout(streamWatchdogRef.current);
+        streamWatchdogRef.current = null;
+      }
+      if (streamHeartbeatRef.current) {
+        clearInterval(streamHeartbeatRef.current);
+        streamHeartbeatRef.current = null;
+      }
+      
       optimisticConversationRef.current = null;
       sessionIdRef.current = `draft_${Date.now()}`;
       pendingBottomScrollBehaviorRef.current = null;
@@ -260,7 +268,7 @@ export default function AssistantPanel({
       }
       router.push("/ai-chat?new=1");
     },
-    [router, clearStreamWatchdog],
+    [router],
   );
 
   const restoreConversationSnapshot = useCallback((conversationId: number) => {
@@ -482,7 +490,16 @@ export default function AssistantPanel({
   // Keep refs in sync with selected conversation and load message page.
   useEffect(() => {
     activeConversationRef.current = activeConversationId;
-    clearStreamWatchdog();
+    
+    // ✅ Inline clear watchdog
+    if (streamWatchdogRef.current) {
+      clearTimeout(streamWatchdogRef.current);
+      streamWatchdogRef.current = null;
+    }
+    if (streamHeartbeatRef.current) {
+      clearInterval(streamHeartbeatRef.current);
+      streamHeartbeatRef.current = null;
+    }
 
     if (activeConversationId != null) {
       sessionIdRef.current = `conv_${activeConversationId}`;
@@ -511,7 +528,6 @@ export default function AssistantPanel({
     activeConversationId,
     loadInitialMessages,
     restoreConversationSnapshot,
-    clearStreamWatchdog,
   ]);
 
   // Timer khi typing
@@ -535,26 +551,123 @@ export default function AssistantPanel({
 
   useEffect(() => {
     return () => {
-      clearStreamWatchdog();
+      // ✅ Cleanup on unmount
+      if (streamWatchdogRef.current) {
+        clearTimeout(streamWatchdogRef.current);
+        streamWatchdogRef.current = null;
+      }
+      if (streamHeartbeatRef.current) {
+        clearInterval(streamHeartbeatRef.current);
+        streamHeartbeatRef.current = null;
+      }
     };
-  }, [clearStreamWatchdog]);
+  }, []);
 
   useEffect(() => {
     routerThinkingRef.current = routerThinking;
   }, [routerThinking]);
 
+  // ✅ Helper functions - stable, không trigger re-render
+  const armWatchdog = useCallback(() => {
+    if (streamWatchdogRef.current) {
+      clearTimeout(streamWatchdogRef.current);
+      streamWatchdogRef.current = null;
+    }
+    if (streamHeartbeatRef.current) {
+      clearInterval(streamHeartbeatRef.current);
+      streamHeartbeatRef.current = null;
+    }
+    
+    lastStreamEventRef.current = Date.now();
+    
+    streamHeartbeatRef.current = setInterval(() => {
+      const elapsed = Date.now() - lastStreamEventRef.current;
+      if (elapsed > STREAM_MAX_IDLE_MS) {
+        console.warn("[Chat] ⚠️ Stream idle timeout:", elapsed, "ms");
+        if (streamWatchdogRef.current) clearTimeout(streamWatchdogRef.current);
+        if (streamHeartbeatRef.current) clearInterval(streamHeartbeatRef.current);
+        streamWatchdogRef.current = null;
+        streamHeartbeatRef.current = null;
+        
+        const finalResponseTimeMs = typingStartedAtRef.current 
+          ? Date.now() - typingStartedAtRef.current 
+          : 0;
+        setIsTyping(false);
+        setQueuedInfo(null);
+        setRouterThinking([]);
+        routerThinkingRef.current = [];
+        typingStartedAtRef.current = null;
+        optimisticConversationRef.current = null;
+        pendingBottomScrollBehaviorRef.current = null;
+
+        setMessages((prev) => {
+          const lastIdx = prev.length - 1;
+          if (lastIdx >= 0 && prev[lastIdx].role === "ai" && prev[lastIdx]._streaming) {
+            const updated = [...prev];
+            updated[lastIdx] = {
+              ...updated[lastIdx],
+              textVn: "⚠️ Kết nối phản hồi bị gián đoạn. Vui lòng gửi lại tin nhắn.",
+              responseTimeMs: finalResponseTimeMs > 0 ? finalResponseTimeMs : updated[lastIdx].responseTimeMs,
+              _streaming: false,
+            };
+            return updated;
+          }
+          return prev;
+        });
+        streamBufferRef.current = "";
+      }
+    }, STREAM_HEARTBEAT_CHECK_MS);
+    
+    streamWatchdogRef.current = setTimeout(() => {
+      console.error("[Chat] ❌ Stream stall timeout");
+      if (streamHeartbeatRef.current) clearInterval(streamHeartbeatRef.current);
+      streamHeartbeatRef.current = null;
+      
+      const finalResponseTimeMs = typingStartedAtRef.current 
+        ? Date.now() - typingStartedAtRef.current 
+        : 0;
+      setIsTyping(false);
+      setQueuedInfo(null);
+      setRouterThinking([]);
+      routerThinkingRef.current = [];
+      typingStartedAtRef.current = null;
+      optimisticConversationRef.current = null;
+      pendingBottomScrollBehaviorRef.current = null;
+
+      setMessages((prev) => {
+        const lastIdx = prev.length - 1;
+        if (lastIdx >= 0 && prev[lastIdx].role === "ai" && prev[lastIdx]._streaming) {
+          const updated = [...prev];
+          updated[lastIdx] = {
+            ...updated[lastIdx],
+            textVn: "⚠️ Kết nối phản hồi bị gián đoạn. Vui lòng gửi lại tin nhắn.",
+            responseTimeMs: finalResponseTimeMs > 0 ? finalResponseTimeMs : updated[lastIdx].responseTimeMs,
+            _streaming: false,
+          };
+          return updated;
+        }
+        return prev;
+      });
+      streamBufferRef.current = "";
+    }, STREAM_STALL_TIMEOUT_MS);
+  }, []); // ✅ Empty deps - stable function
+
   // Listen socket chat:stream events
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      return;
+    }
 
     const handleQueued = (data: {
       sessionId: string;
       intent?: string;
       jobId?: string;
     }) => {
-      if (data.sessionId !== sessionIdRef.current) return;
+      if (data.sessionId !== sessionIdRef.current) {
+        return;
+      }
       setQueuedInfo({ intent: data.intent, jobId: data.jobId });
-      armStreamWatchdog();
+      armWatchdog();
     };
 
     const handleRouterThinking = (data: {
@@ -564,7 +677,13 @@ export default function AssistantPanel({
       done?: boolean;
       route?: string | null;
     }) => {
-      if (data.sessionId !== sessionIdRef.current) return;
+      
+      if (data.sessionId !== sessionIdRef.current) {
+        return;
+      }
+
+      // ✅ Update last event time
+      lastStreamEventRef.current = Date.now();
 
       const text = String(data.text || "").trim();
       if (text) {
@@ -612,7 +731,7 @@ export default function AssistantPanel({
         }
       }
 
-      armStreamWatchdog();
+      armWatchdog();
     };
 
     const handleStream = (data: {
@@ -620,11 +739,16 @@ export default function AssistantPanel({
       delta: string;
       done: boolean;
     }) => {
-      if (data.sessionId !== sessionIdRef.current) return;
+      if (data.sessionId !== sessionIdRef.current) {
+        return;
+      }
+
+      // ✅ Update last event time
+      lastStreamEventRef.current = Date.now();
 
       if (data.delta) {
         setIsTyping(true);
-        armStreamWatchdog();
+        armWatchdog();
         streamBufferRef.current += data.delta;
         const { think, content } = parseResponse(streamBufferRef.current);
         const fallbackThink = formatThinkingItems(routerThinkingRef.current);
@@ -662,7 +786,17 @@ export default function AssistantPanel({
 
       if (data.done) {
         const finalResponseTimeMs = resolveResponseTimeMs();
-        clearStreamWatchdog();
+        
+        // ✅ Inline clear watchdog
+        if (streamWatchdogRef.current) {
+          clearTimeout(streamWatchdogRef.current);
+          streamWatchdogRef.current = null;
+        }
+        if (streamHeartbeatRef.current) {
+          clearInterval(streamHeartbeatRef.current);
+          streamHeartbeatRef.current = null;
+        }
+        
         const finalRawText = streamBufferRef.current;
         const { think, content } = parseResponse(finalRawText);
         const finalFallbackThink = formatThinkingItems(
@@ -744,19 +878,19 @@ export default function AssistantPanel({
     socket.on("chat:stream", handleStream);
 
     return () => {
-      clearStreamWatchdog();
+      if (streamWatchdogRef.current) {
+        clearTimeout(streamWatchdogRef.current);
+        streamWatchdogRef.current = null;
+      }
+      if (streamHeartbeatRef.current) {
+        clearInterval(streamHeartbeatRef.current);
+        streamHeartbeatRef.current = null;
+      }
       socket.off("chat:router:thinking", handleRouterThinking);
       socket.off("chat:queued", handleQueued);
       socket.off("chat:stream", handleStream);
     };
-  }, [
-    socket,
-    createAiMessage,
-    refetchConversations,
-    armStreamWatchdog,
-    clearStreamWatchdog,
-    resolveResponseTimeMs,
-  ]);
+  }, [socket, createAiMessage, refetchConversations, armWatchdog]);
 
   const ensureConversationId = useCallback(
     async (firstMessage: string) => {
@@ -784,10 +918,23 @@ export default function AssistantPanel({
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
-    if (!trimmed || !socket || !isConnected) return;
+    if (!trimmed) {
+      return;
+    }
+    
+    if (!socket) {
+      return;
+    }
+    
+    if (!isConnected) {
+      alert("Kết nối socket chưa sẵn sàng. Vui lòng đợi một chút...");
+      return;
+    }
 
     const conversationId = await ensureConversationId(trimmed);
-    if (!conversationId) return;
+    if (!conversationId) {
+      return;
+    }
 
     activeConversationRef.current = conversationId;
     sessionIdRef.current = `conv_${conversationId}`;
@@ -812,17 +959,24 @@ export default function AssistantPanel({
 
     setInput("");
     typingStartedAtRef.current = Date.now();
+    lastStreamEventRef.current = Date.now();
     setIsTyping(true);
     setQueuedInfo(null);
     setRouterThinking([]);
     routerThinkingRef.current = [];
-    armStreamWatchdog();
+    armWatchdog();
 
     // Emit to socket
     socket.emit(
       "chat:send",
       { sessionId: sessionIdRef.current, message: trimmed },
-      (ack: { ok: boolean; error?: string; intent?: string }) => {
+      (ack: { 
+        ok: boolean; 
+        error?: string; 
+        intent?: string;
+        socketId?: string;
+        jobId?: string;
+      }) => {
         if (!ack?.ok && !ack?.intent) {
           forceFinishStreaming("⚠️ Không thể kết nối. Vui lòng thử lại sau.");
         }
@@ -834,7 +988,7 @@ export default function AssistantPanel({
     isConnected,
     ensureConversationId,
     createAiMessage,
-    armStreamWatchdog,
+    armWatchdog,
     forceFinishStreaming,
   ]);
 
@@ -853,11 +1007,21 @@ export default function AssistantPanel({
       setQueuedInfo(null);
       setRouterThinking([]);
       routerThinkingRef.current = [];
-      clearStreamWatchdog();
+      
+      // ✅ Inline clear watchdog
+      if (streamWatchdogRef.current) {
+        clearTimeout(streamWatchdogRef.current);
+        streamWatchdogRef.current = null;
+      }
+      if (streamHeartbeatRef.current) {
+        clearInterval(streamHeartbeatRef.current);
+        streamHeartbeatRef.current = null;
+      }
+      
       streamBufferRef.current = "";
       router.push(`/ai-chat/${conversationId}`);
     },
-    [router, clearStreamWatchdog],
+    [router],
   );
 
   const handleDeleteConversation = useCallback(
@@ -885,11 +1049,23 @@ export default function AssistantPanel({
     messages.length === 0 && !isTyping && !isLoadingMessages;
 
   return (
-    <div className="flex flex-1 overflow-hidden bg-background/40">
+    <div className="flex flex-1 overflow-hidden bg-background/40 dark:bg-slate-950/95">
       <div className="flex min-w-0 flex-1 flex-col">
         {!isConnected && (
-          <div className="mx-6 mt-4 rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-700">
-            Mat ket noi socket chatbot. Dang thu ket noi lai...
+          <div className="mx-6 mt-4 rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-400">
+            <div className="flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" />
+              <span>Mất kết nối socket chatbot. Đang thử kết nối lại...</span>
+            </div>
+          </div>
+        )}
+
+        {isConnected && (
+          <div className="mx-6 mt-4 rounded-lg border border-green-400/40 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-green-500 dark:bg-green-400" />
+              <span>Đã kết nối</span>
+            </div>
           </div>
         )}
 
@@ -900,24 +1076,24 @@ export default function AssistantPanel({
         >
           {messages.length === 0 && !isTyping ? (
             isLoadingMessages ? (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground dark:text-slate-400">
                 <Loader2 className="mr-2 size-4 animate-spin" />
                 Dang tai lich su hoi thoai...
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
-                <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20">
-                  <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                    <span className="material-symbols-outlined text-primary text-2xl">
+                <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20 dark:from-blue-500 dark:to-blue-700 dark:shadow-blue-500/30">
+                  <div className="w-full h-full rounded-full bg-card flex items-center justify-center dark:bg-slate-800">
+                    <span className="material-symbols-outlined text-primary text-2xl dark:text-blue-400">
                       smart_toy
                     </span>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-foreground mb-1">
+                  <h3 className="text-lg font-bold text-foreground mb-1 dark:text-slate-100">
                     Trợ giảng AI FUJI
                   </h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">
+                  <p className="text-sm text-muted-foreground max-w-xs dark:text-slate-400">
                     Hỏi bất kỳ điều gì về tiếng Nhật — ngữ pháp, từ vựng,
                     JLPT...
                   </p>
@@ -927,7 +1103,7 @@ export default function AssistantPanel({
                     <button
                       key={chip.text}
                       onClick={() => setInput(chip.text)}
-                      className="px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all"
+                      className="px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-card hover:border-primary/40 hover:text-primary transition-all dark:bg-slate-800/80 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/80 dark:hover:border-blue-500/40 dark:hover:text-blue-400"
                     >
                       {chip.emoji} {chip.text}
                     </button>
@@ -940,12 +1116,12 @@ export default function AssistantPanel({
               {(isLoadingOlderMessages || hasMoreMessages) && (
                 <div className="flex justify-center">
                   {isLoadingOlderMessages ? (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground dark:bg-slate-800/80 dark:text-slate-400">
                       <Loader2 className="size-3 animate-spin" />
                       Đang tải tin nhắn cũ hơn...
                     </span>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground/80">
+                    <span className="text-[11px] text-muted-foreground/80 dark:text-slate-500">
                       Cuộn lên để xem tin nhắn cũ hơn
                     </span>
                   )}
@@ -953,7 +1129,7 @@ export default function AssistantPanel({
               )}
 
               <div className="flex justify-center">
-                <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full dark:bg-slate-800/60 dark:text-slate-400">
                   {new Date().toLocaleDateString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",

@@ -5,12 +5,13 @@ export const dynamic = "force-dynamic";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowLeft,
   CalendarDays,
   CheckCheck,
   Clock3,
   Sparkles,
- } from "lucide-react";
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
@@ -349,21 +350,33 @@ function TeacherSchedulePageContent() {
           sortValue: start.getHours() * 60 + start.getMinutes(),
         });
       }
-      if (busySlotsRangeData?.some((busy) => {
-        const slotStart = new Date(slot.startAt).getTime();
-        const slotEnd = new Date(slot.endAt).getTime();
-        const busyStart = new Date(busy.startAt).getTime();
-        const busyEnd = new Date(busy.endAt).getTime();
-        return slotStart < busyEnd && slotEnd > busyStart;
-      })) {
-        map.get(key)!.overlapCount += 1;
-      } else {
+    });
+
+    recurringPool.forEach((slot) => {
+      const key = toTimeKey(slot.startAt, slot.endAt);
+      if (map.has(key)) {
         map.get(key)!.count += 1;
       }
     });
 
+    recurringPoolAll.forEach((slot) => {
+      const key = toTimeKey(slot.startAt, slot.endAt);
+      if (map.has(key)) {
+        const start = new Date(slot.startAt).getTime();
+        const end = new Date(slot.endAt).getTime();
+        const isConflict = busySlotsRangeData?.some((busy) => {
+          const busyStart = new Date(busy.startAt).getTime();
+          const busyEnd = new Date(busy.endAt).getTime();
+          return start < busyEnd && end > busyStart;
+        });
+        if (isConflict) {
+          map.get(key)!.overlapCount += 1;
+        }
+      }
+    });
+
     return [...map.values()].sort((a, b) => a.sortValue - b.sortValue);
-  }, [recurringPoolAll, busySlotsRangeData]);
+  }, [recurringPoolAll, recurringPool, busySlotsRangeData]);
 
   useEffect(() => {
     const optionKeys = new Set(recurringTimeOptions.map((item) => item.key));
@@ -432,11 +445,53 @@ function TeacherSchedulePageContent() {
     );
   }, [recurringMatchedSlots]);
 
-  // Tính số slot trùng lịch đã bị loại khỏi pool (teacher có slot nhưng trùng với lịch học viên)
-  const slotsExcludedByOverlap = useMemo(() => {
-    if (!validRecurringRange) return 0;
-    return recurringPoolAll.length - recurringPool.length;
-  }, [validRecurringRange, recurringPoolAll, recurringPool]);
+  // Kiểm tra 1 thứ (0=CN..6=T7) có bất kỳ occurrence nào bị trùng lịch học viên trong range không
+  const weekdayConflicts = useMemo(() => {
+    const result: Record<number, boolean> = {};
+    if (!validRecurringRange || !busySlotsRangeData?.length) {
+      WEEKDAY_OPTIONS.forEach((d) => { result[d.value] = false; });
+      return result;
+    }
+
+    WEEKDAY_OPTIONS.forEach((dayOption) => {
+      const weekday = dayOption.value;
+      let hasConflict = false;
+
+      let cursor = parseLocalDate(rangeStart);
+      const end = parseLocalDate(rangeEnd);
+
+      while (cursor.getTime() <= end.getTime()) {
+        if (cursor.getDay() === weekday) {
+          const dayDate = toYmd(cursor);
+          const daySlots = recurringPoolAll.filter((slot) => {
+            const slotDate = slot.startAt.slice(0, 10);
+            const slotDay = new Date(slot.startAt).getDay();
+            return slotDate === dayDate && slotDay === weekday;
+          });
+
+          for (const slot of daySlots) {
+            const slotStart = new Date(slot.startAt).getTime();
+            const slotEnd = new Date(slot.endAt).getTime();
+            const isConflict = busySlotsRangeData.some((busy) => {
+              const busyStart = new Date(busy.startAt).getTime();
+              const busyEnd = new Date(busy.endAt).getTime();
+              return slotStart < busyEnd && slotEnd > busyStart;
+            });
+            if (isConflict) {
+              hasConflict = true;
+              break;
+            }
+          }
+        }
+        if (hasConflict) break;
+        cursor = addDaysLocal(cursor, 1);
+      }
+
+      result[weekday] = hasConflict;
+    });
+
+    return result;
+  }, [validRecurringRange, rangeStart, rangeEnd, busySlotsRangeData, recurringPoolAll]);
 
   // Số buổi trùng lịch cá nhân (trong phạm vi + thứ + giờ user chọn, nhưng bị trùng với lịch đã đặt)
   // = Số expected occurrences trùng thứ+giờ nhưng KHÔNG nằm trong recurringMatchedSlots
@@ -724,20 +779,29 @@ function TeacherSchedulePageContent() {
                           <div className="flex flex-wrap gap-2">
                             {WEEKDAY_OPTIONS.map((day) => {
                               const active = selectedWeekdays.includes(day.value);
+                              const conflicted = weekdayConflicts[day.value];
 
                               return (
                                 <button
                                   key={day.value}
                                   type="button"
-                                  onClick={() => toggleWeekday(day.value)}
+                                  disabled={conflicted}
+                                  onClick={() => {
+                                    if (!conflicted) toggleWeekday(day.value);
+                                  }}
                                   className={cn(
                                     "rounded-xl border px-4 py-2 text-sm font-semibold transition",
-                                    active
+                                    conflicted
+                                      ? "border-red-500/50 bg-red-500/10 text-red-500/70 cursor-not-allowed opacity-60"
+                                      : active
                                       ? "border-secondary/30 bg-secondary text-secondary-foreground"
                                       : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                                   )}
                                 >
-                                  {day.label}
+                                  <span className="flex items-center gap-1.5">
+                                    {day.label}
+                                    {conflicted && <AlertTriangle className="size-3" />}
+                                  </span>
                                 </button>
                               );
                             })}
@@ -816,11 +880,6 @@ function TeacherSchedulePageContent() {
                               <span className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-700 dark:text-amber-300">
                                 Hệ thống sẽ tự động bỏ qua <strong>{conflictSkipCount}</strong> buổi bị trùng với lịch học hiện tại của bạn. Bạn chỉ thanh toán cho các buổi còn lại.
                               </span>
-                              {slotsExcludedByOverlap > 0 && (
-                                <span className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-orange-700 dark:text-orange-300">
-                                  Có {slotsExcludedByOverlap} slot giáo viên bị ẩn do trùng với lịch học đã đặt của bạn.
-                                </span>
-                              )}
                             </div>
                           )}
                         </div>
@@ -1148,7 +1207,7 @@ function TeacherSchedulePageContent() {
                     <div className="space-y-3">
                       <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_32')}</div>
 
-                      {effectiveSelectedSlots.length === 0 && skippedOverlappingSlots.length === 0 ? (
+                      {effectiveSelectedSlots.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">{t('auto.teacherSchedule_33')}</div>
                       ) : (
                         <ScrollArea className="h-[280px] pr-3">
@@ -1190,64 +1249,6 @@ function TeacherSchedulePageContent() {
                                 </div>
                               </div>
                             ))}
-
-                            {skippedOverlappingSlots.length > 0 && (
-                              <>
-                                <div className="flex items-center gap-2 pt-1">
-                                  <Separator className="flex-1" />
-                                  <span className="text-xs text-muted-foreground">
-                                    Bị bỏ qua do trùng lịch
-                                  </span>
-                                  <Separator className="flex-1" />
-                                </div>
-                                {skippedOverlappingSlots.map((slot) => {
-                                  const overlapInfo = (() => {
-                                    if (!busySlotsRangeData?.length) return null;
-                                    const slotStart = new Date(slot.startAt).getTime();
-                                    const slotEnd = new Date(slot.endAt).getTime();
-                                    return busySlotsRangeData.find((busy) => {
-                                      const busyStart = new Date(busy.startAt).getTime();
-                                      const busyEnd = new Date(busy.endAt).getTime();
-                                      return slotStart < busyEnd && slotEnd > busyStart;
-                                    });
-                                  })();
-                                  return (
-                                    <div
-                                      key={`skip-${slot.timeSlotId}`}
-                                      className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 opacity-70"
-                                    >
-                                      <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                          <p className="text-sm font-semibold text-foreground">
-                                            {parseLocalDate(
-                                              new Date(slot.startAt).toISOString().slice(0, 10)
-                                            ).toLocaleDateString("vi-VN", {
-                                              day: "2-digit",
-                                              month: "2-digit",
-                                              year: "numeric",
-                                            })}
-                                          </p>
-                                          <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
-                                            {formatTimeRange(slot.startAt, slot.endAt)}
-                                          </p>
-                                          {overlapInfo && (
-                                            <p className="mt-1 text-xs text-amber-600/80 dark:text-amber-400/80">
-                                              Trùng với lịch {overlapInfo.teacherName}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <Badge
-                                          variant="outline"
-                                          className="rounded-full border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                        >
-                                          Bỏ qua
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </>
-                            )}
                           </div>
                         </ScrollArea>
                       )}

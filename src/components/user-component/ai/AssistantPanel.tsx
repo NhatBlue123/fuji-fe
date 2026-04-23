@@ -8,7 +8,7 @@ import {
   useLayoutEffect,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Flame } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import {
   useCreateAiConversationMutation,
@@ -19,7 +19,6 @@ import {
   type AiConversation,
   type AiMessage,
 } from "@/store/services/aiChatHistoryApi";
-import { useRecordActivityMutation } from "@/store/services/progressApi";
 import {
   parseResponse,
   ASSISTANT_CHIPS,
@@ -133,12 +132,6 @@ export default function AssistantPanel({
   const [createAiConversation] = useCreateAiConversationMutation();
   const [createAiMessage] = useCreateAiMessageMutation();
   const [deleteAiConversation] = useDeleteAiConversationMutation();
-  const [recordActivity] = useRecordActivityMutation();
-
-  // Track AI chat session for streak
-  const [chatSessionStart] = useState(Date.now());
-  const [hasRecordedChat, setHasRecordedChat] = useState(false);
-  const [streakUpdated, setStreakUpdated] = useState(false);
 
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
@@ -793,29 +786,6 @@ export default function AssistantPanel({
     const trimmed = input.trim();
     if (!trimmed || !socket || !isConnected) return;
 
-    // Record AI chat activity for streak (first message only)
-    if (!hasRecordedChat) {
-      setHasRecordedChat(true);
-      const durationMinutes = Math.round((Date.now() - chatSessionStart) / 60000);
-      recordActivity({
-        activityType: "CONVERSATION",
-        durationMinutes: Math.max(durationMinutes, 1),
-        cardsReviewed: 0,
-        correctAnswers: 0,
-        totalQuestions: 0,
-        source: "ai-chat",
-      })
-        .unwrap()
-        .then((streak) => {
-          console.log("[Streak] Updated:", streak.currentStreak, "days");
-          setStreakUpdated(true);
-          setTimeout(() => setStreakUpdated(false), 3000);
-        })
-        .catch((error) => {
-          console.error("[Streak] Failed to record activity:", error);
-        });
-    }
-
     const conversationId = await ensureConversationId(trimmed);
     if (!conversationId) return;
 
@@ -866,9 +836,6 @@ export default function AssistantPanel({
     createAiMessage,
     armStreamWatchdog,
     forceFinishStreaming,
-    hasRecordedChat,
-    chatSessionStart,
-    recordActivity,
   ]);
 
   const handleStartNewConversation = useCallback(() => {
@@ -923,13 +890,6 @@ export default function AssistantPanel({
         {!isConnected && (
           <div className="mx-6 mt-4 rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-700">
             Mat ket noi socket chatbot. Dang thu ket noi lai...
-          </div>
-        )}
-
-        {streakUpdated && (
-          <div className="mx-6 mt-4 rounded-lg border border-green-400/40 bg-green-500/10 px-3 py-2 text-sm text-green-600 flex items-center gap-2 animate-pulse">
-            <Flame className="size-4 text-orange-500" />
-            Streak đã được cập nhật!
           </div>
         )}
 

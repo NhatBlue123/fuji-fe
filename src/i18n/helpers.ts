@@ -19,8 +19,8 @@ export async function preloadNamespaceGroup(group: NamespaceGroup): Promise<void
 
   // i18next sẽ cache namespaces sau lần đầu load
   // Function này chỉ để đảm bảo namespaces được init trước
-  const resources = i18n.store.data;
-  
+  const resources = i18n.store.data as Record<string, { translation?: Record<string, unknown> }>;
+
   for (const ns of namespaces) {
     if (!resources[i18n.language]?.translation?.[ns]) {
       // Namespace chưa load - đợi i18next tự load

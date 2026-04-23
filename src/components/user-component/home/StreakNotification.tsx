@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { X, Flame, Trophy, Target } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Flame, Target, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StreakNotificationProps {
-  message: string;
-  type: "success" | "warning" | "info";
+  message?: string;
+  type?: "success" | "warning" | "info";
   show: boolean;
   onDismiss: () => void;
   progressPercent?: number;
@@ -16,111 +16,77 @@ interface StreakNotificationProps {
 
 export function StreakNotification({
   message,
-  type,
+  type = "info",
   show,
   onDismiss,
   progressPercent = 0,
   qualified = false,
   almostQualified = false,
 }: StreakNotificationProps) {
+  const [visible, setVisible] = useState(false);
+
   useEffect(() => {
     if (show) {
-      const timer = setTimeout(() => {
-        onDismiss();
-      }, 5000);
+      setVisible(true);
+    } else {
+      const timer = setTimeout(() => setVisible(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [show, onDismiss]);
+  }, [show]);
 
-  if (!show) return null;
+  if (!visible) return null;
+
+  const getTypeStyles = () => {
+    if (qualified) return "bg-green-500/20 border-green-500/30 text-green-400";
+    if (almostQualified) return "bg-orange-500/20 border-orange-500/30 text-orange-400";
+    return "bg-blue-500/20 border-blue-500/30 text-blue-400";
+  };
 
   const getIcon = () => {
-    if (qualified) return <Trophy className="w-5 h-5 text-yellow-400" />;
-    if (almostQualified) return <Flame className="w-5 h-5 text-orange-400" />;
-    return <Target className="w-5 h-5 text-blue-400" />;
-  };
-
-  const getGlowClass = () => {
-    if (qualified) return "shadow-yellow-500/50 bg-gradient-to-r from-yellow-500/20 to-orange-500/20";
-    if (almostQualified) return "shadow-orange-500/50 bg-gradient-to-r from-orange-500/20 to-red-500/20";
-    return "shadow-blue-500/30 bg-gradient-to-r from-blue-500/10 to-purple-500/10";
-  };
-
-  const getBorderClass = () => {
-    if (qualified) return "border-yellow-500/50";
-    if (almostQualified) return "border-orange-500/50";
-    return "border-blue-500/30";
-  };
-
-  const getIconBgClass = () => {
-    if (qualified) return "bg-yellow-500/20";
-    if (almostQualified) return "bg-orange-500/20";
-    return "bg-blue-500/20";
+    if (qualified) return <CheckCircle2 className="w-5 h-5 text-green-400" />;
+    if (almostQualified) return <AlertCircle className="w-5 h-5 text-orange-400" />;
+    return <Info className="w-5 h-5 text-blue-400" />;
   };
 
   return (
     <div
       className={cn(
-        "fixed bottom-24 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300",
-        "max-w-sm w-full"
+        "fixed bottom-6 right-6 z-[9999] max-w-sm rounded-2xl border p-4 shadow-2xl backdrop-blur-xl transition-all duration-300",
+        getTypeStyles(),
+        show ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       )}
     >
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-2xl border p-4 backdrop-blur-md",
-          "shadow-lg transition-all duration-300",
-          getGlowClass(),
-          getBorderClass()
-        )}
-      >
-        {/* Progress bar */}
-        {progressPercent > 0 && progressPercent < 100 && (
-          <div className="absolute top-0 left-0 right-0 h-1 bg-black/20">
-            <div
-              className={cn(
-                "h-full transition-all duration-500",
-                qualified ? "bg-yellow-400" : almostQualified ? "bg-orange-400" : "bg-blue-400"
-              )}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        )}
-
-        {/* Success glow effect for qualified */}
-        {qualified && (
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-orange-500/10 animate-pulse" />
-        )}
-
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              "flex-shrink-0 rounded-xl p-2",
-              getIconBgClass()
-            )}
-          >
-            {getIcon()}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white leading-tight">{message}</p>
-            
-            {progressPercent > 0 && progressPercent < 100 && (
-              <p className="text-xs text-white/60 mt-1">
-                {progressPercent}% hoàn thành
-              </p>
-            )}
-          </div>
-
-          <button
-            onClick={onDismiss}
-            className={cn(
-              "flex-shrink-0 p-1 rounded-lg transition-colors",
-              "hover:bg-white/10 text-white/60 hover:text-white"
-            )}
-          >
-            <X className="w-4 h-4" />
-          </button>
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 mt-0.5">
+          {getIcon()}
         </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Flame className="w-4 h-4 text-orange-400" />
+            <span className="text-sm font-bold">Streak Update</span>
+          </div>
+          <p className="text-sm opacity-90">{message || "Tiến độ streak của bạn đã thay đổi!"}</p>
+          {!qualified && progressPercent > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    qualified ? "bg-green-500" : almostQualified ? "bg-orange-500" : "bg-blue-500"
+                  )}
+                  style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium">{progressPercent}%</span>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={onDismiss}
+          className="shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors"
+        >
+          <span className="text-lg leading-none">&times;</span>
+        </button>
       </div>
     </div>
   );

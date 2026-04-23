@@ -16,12 +16,14 @@ import {
 
 type ApiErrorWithMessage = {
   data?: {
+    messageKey?: string;
     message?: string;
   };
 };
 
 function extractApiErrorMessage(error: unknown, fallback: string) {
-  return (error as ApiErrorWithMessage)?.data?.message || fallback;
+  const err = error as ApiErrorWithMessage;
+  return err?.data?.messageKey || err?.data?.message || fallback;
 }
 
 function formatDate(v: string) {
@@ -127,8 +129,8 @@ function PaymentPageContent() {
   };
 
   const handleShowSuccess = () => {
-    toast.success(t("booking.success.title") || "Đặt lịch thành công!", {
-      description: t("booking.success.message") || "Bạn đã đặt lịch học thành công.",
+    toast.success(t("booking.successTitle") || "Đặt lịch thành công!", {
+      description: t("booking.successMessage") || "Bạn đã đặt lịch học thành công.",
       duration: 5000,
     });
   };

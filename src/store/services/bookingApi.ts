@@ -11,6 +11,7 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   MyTimeSlotItem,
+  StudentBusySlot,
   StudentBusySlotsResponse,
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
@@ -183,6 +184,12 @@ export const bookingApi = baseApi.injectEndpoints({
       query: ({ date }) => `/bookings/me/busy-slots?date=${date}`,
       transformResponse: (res: ApiEnvelope<StudentBusySlotsResponse>) => res.data,
     }),
+
+    getMyBusySlotsInRange: builder.query<StudentBusySlot[], { fromDate: string; toDate: string }>({
+      query: ({ fromDate, toDate }) =>
+        `/bookings/me/busy-slots-range?fromDate=${fromDate}&toDate=${toDate}`,
+      transformResponse: (res: ApiEnvelope<StudentBusySlot[]>) => res.data,
+    }),
   }),
 });
 
@@ -203,4 +210,5 @@ export const {
   useGetVideoSessionMutation,
   useSubmitSessionReviewMutation,
   useGetMyBusySlotsQuery,
+  useGetMyBusySlotsInRangeQuery,
 } = bookingApi;

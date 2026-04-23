@@ -31,13 +31,6 @@ export interface PaymentStatusChangeEvent {
   message: string;
 }
 
-interface TopupSuccessEvent {
-  orderId?: string;
-  amount?: number;
-  walletBalance?: number;
-  message?: string;
-}
-
 type StatusChangeCallback = (data: PaymentStatusChangeEvent) => void;
 
 type PaymentSocketContextValue = {
@@ -142,16 +135,8 @@ export function PaymentSocketProvider({
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("payment-status-change", handlePaymentStatusChange);
-    s.on("topup-success", (data: TopupSuccessEvent) => {
-      console.info("[payment] topup-success received", {
-        ...data,
-        receivedAt: new Date().toISOString(),
-      });
-      toast.success(data.message || "Nạp hoa thành công!");
-      store.dispatch(
-        baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw"]),
-      );
-    });
+    // topup-success is handled exclusively by PaymentStatus via payment-status-change;
+    // no duplicate toast needed here.
 
     if (s.connected) {
       queueMicrotask(handleConnect);
@@ -161,7 +146,6 @@ export function PaymentSocketProvider({
       s.off("connect", handleConnect);
       s.off("disconnect", handleDisconnect);
       s.off("payment-status-change", handlePaymentStatusChange);
-      s.off("topup-success");
       queueMicrotask(() => {
         setSocket((current) => (current === s ? null : current));
       });

@@ -137,8 +137,10 @@ export default function PaymentStatus({
         const nextValue = prev + 1000;
         if (nextValue >= MAX_WAIT_TIME_MS) {
           clearInterval(timer);
-          toast.error(tMsg("payment.timeoutError"), { duration: 5000 });
-          onClose();
+          if (!handledRef.current) {
+            toast.error(tMsg("payment.timeoutError"), { duration: 5000 });
+            onClose();
+          }
         }
         return nextValue;
       });

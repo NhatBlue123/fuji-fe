@@ -662,6 +662,8 @@
       "createTitle": "Tạo lịch thành công",
       "createDesc": "Đã tạo {{count}} slot lịch dạy."
     },
+    "successTitle": "Đặt lịch thành công!",
+    "successMessage": "Bạn đã đặt lịch học thành công.",
     "warning": {
       "someSkippedTitle": "Tạo lịch có trùng lặp",
       "someSkippedDesc": "Đã tạo {{created}} slot thành công, bỏ qua {{skipped}} slot do trùng giờ với lịch đã tồn tại."

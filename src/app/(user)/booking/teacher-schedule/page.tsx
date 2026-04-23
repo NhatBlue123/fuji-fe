@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
@@ -28,7 +29,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useGetTeacherAvailabilityQuery, useGetMyBusySlotsQuery } from "@/store/services/bookingApi";
+import { useGetTeacherAvailabilityQuery, useGetMyBusySlotsQuery, useGetMyBusySlotsInRangeQuery } from "@/store/services/bookingApi";
 import type { DiscoverySlot } from "@/types/booking";
 
 const WEEKDAY_OPTIONS = [
@@ -165,15 +166,23 @@ function TeacherSchedulePageContent() {
     { skip: !validTeacherId }
   );
 
-  // Fetch busy slots của học viên theo ngày được chọn
+  // Fetch busy slots của học viên theo ngày được chọn (cho mode đơn lẻ)
   const selectedDateKey = selectedDate ? toYmd(selectedDate) : "";
   const { data: busySlotsData } = useGetMyBusySlotsQuery(
     { date: selectedDateKey },
-    { skip: !selectedDateKey }
+    { skip: !selectedDateKey || repeatMode === "RECURRING" }
   );
 
-  // Kiểm tra 1 slot có trùng giờ với busy slots không
-  const isSlotOverlapping = (slot: DiscoverySlot): boolean => {
+  // Fetch busy slots của học viên cho toàn bộ range (cho mode recurring)
+  const validRecurringRange =
+    !!rangeStart && !!rangeEnd && rangeStart >= minBookingDate && rangeStart <= rangeEnd;
+  const { data: busySlotsRangeData } = useGetMyBusySlotsInRangeQuery(
+    { fromDate: rangeStart, toDate: rangeEnd },
+    { skip: repeatMode !== "RECURRING" || !validRecurringRange }
+  );
+
+  // Kiểm tra 1 slot có trùng giờ với busy slots (single-day, dùng cho mode đơn lẻ)
+  const isSlotOverlappingSingleDay = (slot: DiscoverySlot): boolean => {
     if (!busySlotsData?.busySlots?.length) return false;
     const slotStart = new Date(slot.startAt).getTime();
     const slotEnd = new Date(slot.endAt).getTime();
@@ -184,12 +193,25 @@ function TeacherSchedulePageContent() {
     });
   };
 
-  // Lấy thông tin busy slot để hiển thị cảnh báo
-  const getOverlapWarning = (slot: DiscoverySlot): string | null => {
-    if (!busySlotsData?.busySlots?.length) return null;
+  // Kiểm tra 1 slot có trùng giờ với busy slots (range, dùng cho mode recurring)
+  const isSlotOverlappingRange = (slot: DiscoverySlot): boolean => {
+    if (!busySlotsRangeData?.length) return false;
     const slotStart = new Date(slot.startAt).getTime();
     const slotEnd = new Date(slot.endAt).getTime();
-    const overlapping = busySlotsData.busySlots.find((busy) => {
+    return busySlotsRangeData.some((busy) => {
+      const busyStart = new Date(busy.startAt).getTime();
+      const busyEnd = new Date(busy.endAt).getTime();
+      return slotStart < busyEnd && slotEnd > busyStart;
+    });
+  };
+
+  // Lấy cảnh báo trùng lịch cho 1 slot
+  const getOverlapWarning = (slot: DiscoverySlot): string | null => {
+    const busyList = repeatMode === "RECURRING" ? busySlotsRangeData : busySlotsData?.busySlots;
+    if (!busyList?.length) return null;
+    const slotStart = new Date(slot.startAt).getTime();
+    const slotEnd = new Date(slot.endAt).getTime();
+    const overlapping = busyList.find((busy) => {
       const busyStart = new Date(busy.startAt).getTime();
       const busyEnd = new Date(busy.endAt).getTime();
       return slotStart < busyEnd && slotEnd > busyStart;
@@ -281,10 +303,7 @@ function TeacherSchedulePageContent() {
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [groups, selectedIds]);
 
-  const validRecurringRange =
-    !!rangeStart && !!rangeEnd && rangeStart >= minBookingDate && rangeStart <= rangeEnd;
-
-  const recurringPool = useMemo(() => {
+  const recurringPoolAll = useMemo(() => {
     if (!validRecurringRange) return [];
 
     return groups
@@ -293,18 +312,32 @@ function TeacherSchedulePageContent() {
         if (!isAvailable(slot)) return false;
         const slotDate = slot.startAt.slice(0, 10);
         if (slotDate < rangeStart || slotDate > rangeEnd) return false;
-        return new Date(slot.startAt).getTime() > Date.now();
+        if (new Date(slot.startAt).getTime() <= Date.now()) return false;
+        return true;
       })
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [groups, validRecurringRange, rangeStart, rangeEnd]);
 
+  const recurringPool = useMemo(() => {
+    if (!validRecurringRange || !busySlotsRangeData?.length) return recurringPoolAll;
+    return recurringPoolAll.filter((slot) => {
+      const slotStart = new Date(slot.startAt).getTime();
+      const slotEnd = new Date(slot.endAt).getTime();
+      return !busySlotsRangeData.some((busy) => {
+        const busyStart = new Date(busy.startAt).getTime();
+        const busyEnd = new Date(busy.endAt).getTime();
+        return slotStart < busyEnd && slotEnd > busyStart;
+      });
+    });
+  }, [validRecurringRange, recurringPoolAll, busySlotsRangeData]);
+
   const recurringTimeOptions = useMemo(() => {
     const map = new Map<
       string,
-      { key: string; label: string; count: number; sortValue: number }
+      { key: string; label: string; count: number; overlapCount: number; sortValue: number }
     >();
 
-    recurringPool.forEach((slot) => {
+    recurringPoolAll.forEach((slot) => {
       const key = toTimeKey(slot.startAt, slot.endAt);
       if (!map.has(key)) {
         const start = new Date(slot.startAt);
@@ -312,14 +345,25 @@ function TeacherSchedulePageContent() {
           key,
           label: key,
           count: 0,
+          overlapCount: 0,
           sortValue: start.getHours() * 60 + start.getMinutes(),
         });
       }
-      map.get(key)!.count += 1;
+      if (busySlotsRangeData?.some((busy) => {
+        const slotStart = new Date(slot.startAt).getTime();
+        const slotEnd = new Date(slot.endAt).getTime();
+        const busyStart = new Date(busy.startAt).getTime();
+        const busyEnd = new Date(busy.endAt).getTime();
+        return slotStart < busyEnd && slotEnd > busyStart;
+      })) {
+        map.get(key)!.overlapCount += 1;
+      } else {
+        map.get(key)!.count += 1;
+      }
     });
 
     return [...map.values()].sort((a, b) => a.sortValue - b.sortValue);
-  }, [recurringPool]);
+  }, [recurringPoolAll, busySlotsRangeData]);
 
   useEffect(() => {
     const optionKeys = new Set(recurringTimeOptions.map((item) => item.key));
@@ -388,6 +432,38 @@ function TeacherSchedulePageContent() {
     );
   }, [recurringMatchedSlots]);
 
+  // Tính số slot trùng lịch đã bị loại khỏi pool (teacher có slot nhưng trùng với lịch học viên)
+  const slotsExcludedByOverlap = useMemo(() => {
+    if (!validRecurringRange) return 0;
+    return recurringPoolAll.length - recurringPool.length;
+  }, [validRecurringRange, recurringPoolAll, recurringPool]);
+
+  // Số buổi trùng lịch cá nhân (trong phạm vi + thứ + giờ user chọn, nhưng bị trùng với lịch đã đặt)
+  // = Số expected occurrences trùng thứ+giờ nhưng KHÔNG nằm trong recurringMatchedSlots
+  const conflictSkipCount = useMemo(() => {
+    if (repeatMode !== "RECURRING") return 0;
+    if (!validRecurringRange) return 0;
+    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0) return 0;
+
+    const weekdaySet = new Set(selectedWeekdays);
+    const timeKeySet = new Set(selectedTimeKeys);
+
+    return recurringExpectedOccurrences.filter(
+      (item) => {
+        if (!weekdaySet.has(new Date(item.date + "T12:00:00").getDay())) return false;
+        if (!timeKeySet.has(item.timeKey)) return false;
+        return true;
+      }
+    ).length - recurringMatchedSlots.length;
+  }, [
+    repeatMode,
+    validRecurringRange,
+    selectedWeekdays,
+    selectedTimeKeys,
+    recurringMatchedSlots,
+    recurringExpectedOccurrences,
+  ]);
+
   const skippedOccurrences = useMemo(() => {
     return recurringExpectedOccurrences.filter(
       (item) => !recurringMatchedKeys.has(`${item.date}__${item.timeKey}`)
@@ -402,11 +478,46 @@ function TeacherSchedulePageContent() {
     [effectiveSelectedSlots]
   );
 
+  // Các slot trùng lịch bị bỏ qua (hiển thị trong danh sách chọn)
+  const skippedOverlappingSlots = useMemo(() => {
+    if (repeatMode !== "RECURRING") return [];
+    if (!validRecurringRange) return [];
+    if (selectedWeekdays.length === 0 || selectedTimeKeys.length === 0) return [];
+
+    const weekdaySet = new Set(selectedWeekdays);
+    const timeKeySet = new Set(selectedTimeKeys);
+    const matchedKeys = new Set(
+      recurringMatchedSlots.map(
+        (slot) =>
+          `${slot.startAt.slice(0, 10)}__${toTimeKey(slot.startAt, slot.endAt)}`
+      )
+    );
+
+    return recurringPoolAll.filter((slot) => {
+      const slotStart = new Date(slot.startAt).getTime();
+      const slotEnd = new Date(slot.endAt).getTime();
+      const isOverlapping = busySlotsRangeData?.some((busy) => {
+        const busyStart = new Date(busy.startAt).getTime();
+        const busyEnd = new Date(busy.endAt).getTime();
+        return slotStart < busyEnd && slotEnd > busyStart;
+      });
+      if (!isOverlapping) return false;
+      const slotDay = new Date(slot.startAt).getDay();
+      const slotTimeKey = toTimeKey(slot.startAt, slot.endAt);
+      if (!weekdaySet.has(slotDay) || !timeKeySet.has(slotTimeKey)) return false;
+      return true;
+    });
+  }, [repeatMode, validRecurringRange, selectedWeekdays, selectedTimeKeys, recurringPoolAll, recurringMatchedSlots, busySlotsRangeData]);
+
   const toggleSlot = (slot: DiscoverySlot) => {
     if (!isAvailable(slot)) return;
 
     // Kiểm tra trùng giờ với lịch đã đặt
-    if (isSlotOverlapping(slot)) {
+    const isOverlapping = repeatMode === "RECURRING"
+      ? isSlotOverlappingRange(slot)
+      : isSlotOverlappingSingleDay(slot);
+
+    if (isOverlapping) {
       const warning = getOverlapWarning(slot);
       toast.warning("Không thể chọn slot này", {
         description: warning || "Bạn đã có lịch học khác trùng giờ trong ngày.",
@@ -661,7 +772,12 @@ function TeacherSchedulePageContent() {
                                       {option.label}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {option.count} slot khả dụng
+                                      {option.count} buổi khả dụng
+                                      {option.overlapCount > 0 && (
+                                        <span className="ml-1 text-amber-600 dark:text-amber-400">
+                                          (có {option.overlapCount} trùng)
+                                        </span>
+                                      )}
                                     </div>
                                   </button>
                                 );
@@ -670,14 +786,18 @@ function TeacherSchedulePageContent() {
                           )}
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-3">
+                        <div className="grid gap-3 md:grid-cols-4">
                           <MiniStat
                             label="Buổi khớp"
                             value={`${recurringMatchedSlots.length}`}
                           />
                           <MiniStat
-                            label="Buổi bị bỏ qua"
+                            label="Bị bỏ qua"
                             value={`${skippedOccurrences.length}`}
+                          />
+                          <MiniStat
+                            label="Bị trùng lịch"
+                            value={`${conflictSkipCount > 0 ? conflictSkipCount : 0}`}
                           />
                           <MiniStat
                             label="Phạm vi"
@@ -689,7 +809,21 @@ function TeacherSchedulePageContent() {
                           />
                         </div>
 
-                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">{t('auto.teacherSchedule_16')}</div>
+                        <div className="rounded-2xl border border-border/60 bg-muted/35 p-4 text-sm leading-6 text-muted-foreground">
+                          {t('auto.teacherSchedule_16')}
+                          {conflictSkipCount > 0 && (
+                            <div className="mt-2 flex flex-col gap-1.5">
+                              <span className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-700 dark:text-amber-300">
+                                Hệ thống sẽ tự động bỏ qua <strong>{conflictSkipCount}</strong> buổi bị trùng với lịch học hiện tại của bạn. Bạn chỉ thanh toán cho các buổi còn lại.
+                              </span>
+                              {slotsExcludedByOverlap > 0 && (
+                                <span className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-orange-700 dark:text-orange-300">
+                                  Có {slotsExcludedByOverlap} slot giáo viên bị ẩn do trùng với lịch học đã đặt của bạn.
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </>
                     ) : null}
                   </CardContent>
@@ -766,7 +900,7 @@ function TeacherSchedulePageContent() {
                               {selectedDaySlots.map((slot) => {
                                 const selected = selectedIds.includes(slot.timeSlotId);
                                 const available = isAvailable(slot);
-                                const overlapping = isSlotOverlapping(slot);
+                                const overlapping = isSlotOverlappingSingleDay(slot);
                                 const warning = getOverlapWarning(slot);
 
                                 return (
@@ -893,19 +1027,29 @@ function TeacherSchedulePageContent() {
                         <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-8 text-sm text-muted-foreground">{t('auto.teacherSchedule_26')}</div>
                       ) : (
                         <>
-                          <div className="grid gap-3 md:grid-cols-2">
+                          <div className="grid gap-3 md:grid-cols-3">
                             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                              <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_27')}</div>
-                              <div className="mt-1 text-3xl font-black text-foreground">
+                              <div className="text-sm text-muted-foreground">Tổng buổi hợp lệ</div>
+                              <div className="mt-1 text-3xl font-black text-green-600 dark:text-green-400">
                                 {recurringMatchedSlots.length}
                               </div>
+                              <div className="mt-1 text-xs text-muted-foreground">sẽ được thanh toán</div>
                             </div>
 
                             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                              <div className="text-sm text-muted-foreground">{t('auto.teacherSchedule_28')}</div>
-                              <div className="mt-1 text-3xl font-black text-foreground">
+                              <div className="text-sm text-muted-foreground">Bị bỏ qua</div>
+                              <div className="mt-1 text-3xl font-black text-slate-500">
                                 {skippedOccurrences.length}
                               </div>
+                              <div className="mt-1 text-xs text-muted-foreground">không có slot giáo viên</div>
+                            </div>
+
+                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                              <div className="text-sm text-amber-700 dark:text-amber-300">Bị trùng lịch</div>
+                              <div className="mt-1 text-3xl font-black text-amber-600 dark:text-amber-400">
+                                {conflictSkipCount > 0 ? conflictSkipCount : 0}
+                              </div>
+                              <div className="mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">tự động bỏ qua</div>
                             </div>
                           </div>
 
@@ -946,10 +1090,18 @@ function TeacherSchedulePageContent() {
                             </div>
                           </ScrollArea>
 
-                          {skippedOccurrences.length > 0 ? (
-                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                              Có {skippedOccurrences.length} buổi trong lịch lặp bị bỏ qua vì
-                              không còn slot trống phù hợp trong lúc đó.
+                          {skippedOccurrences.length > 0 || conflictSkipCount > 0 ? (
+                            <div className="flex flex-col gap-1.5">
+                              {conflictSkipCount > 0 && (
+                                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                                  <strong>{conflictSkipCount}</strong> buổi bị trùng với lịch học hiện tại của bạn và đã được tự động bỏ qua.
+                                </div>
+                              )}
+                              {skippedOccurrences.length > 0 && (
+                                <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-700 dark:text-orange-300">
+                                  <strong>{skippedOccurrences.length}</strong> buổi bị bỏ qua vì không có slot giáo viên phù hợp trong khoảng thời gian đó.
+                                </div>
+                              )}
                             </div>
                           ) : null}
                         </>
@@ -976,22 +1128,16 @@ function TeacherSchedulePageContent() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <MiniStat
-                        label={repeatMode === "RECURRING" ? "Khớp lịch" : "Trong ngày"}
+                        label={repeatMode === "RECURRING" ? "Buổi hợp lệ" : "Trong ngày"}
                         value={`${
-                          repeatMode === "RECURRING"
-                            ? recurringMatchedSlots.length
-                            : selectedDaySlots.filter((slot) =>
-                                selectedIds.includes(slot.timeSlotId)
-                              ).length
+                          effectiveSelectedSlots.length
                         }`}
                       />
                       <MiniStat
-                        label={
-                          repeatMode === "RECURRING" ? "Bỏ qua" : "Tổng slot trống"
-                        }
+                        label={repeatMode === "RECURRING" ? "Bị bỏ qua" : "Tổng slot trống"}
                         value={`${
                           repeatMode === "RECURRING"
-                            ? skippedOccurrences.length
+                            ? skippedOccurrences.length + (conflictSkipCount > 0 ? conflictSkipCount : 0)
                             : availableSlotCount
                         }`}
                       />
@@ -1002,7 +1148,7 @@ function TeacherSchedulePageContent() {
                     <div className="space-y-3">
                       <div className="text-sm font-medium text-foreground">{t('auto.teacherSchedule_32')}</div>
 
-                      {effectiveSelectedSlots.length === 0 ? (
+                      {effectiveSelectedSlots.length === 0 && skippedOverlappingSlots.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-border bg-muted/25 px-4 py-6 text-sm text-muted-foreground">{t('auto.teacherSchedule_33')}</div>
                       ) : (
                         <ScrollArea className="h-[280px] pr-3">
@@ -1044,16 +1190,94 @@ function TeacherSchedulePageContent() {
                                 </div>
                               </div>
                             ))}
+
+                            {skippedOverlappingSlots.length > 0 && (
+                              <>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Separator className="flex-1" />
+                                  <span className="text-xs text-muted-foreground">
+                                    Bị bỏ qua do trùng lịch
+                                  </span>
+                                  <Separator className="flex-1" />
+                                </div>
+                                {skippedOverlappingSlots.map((slot) => {
+                                  const overlapInfo = (() => {
+                                    if (!busySlotsRangeData?.length) return null;
+                                    const slotStart = new Date(slot.startAt).getTime();
+                                    const slotEnd = new Date(slot.endAt).getTime();
+                                    return busySlotsRangeData.find((busy) => {
+                                      const busyStart = new Date(busy.startAt).getTime();
+                                      const busyEnd = new Date(busy.endAt).getTime();
+                                      return slotStart < busyEnd && slotEnd > busyStart;
+                                    });
+                                  })();
+                                  return (
+                                    <div
+                                      key={`skip-${slot.timeSlotId}`}
+                                      className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 opacity-70"
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="text-sm font-semibold text-foreground">
+                                            {parseLocalDate(
+                                              new Date(slot.startAt).toISOString().slice(0, 10)
+                                            ).toLocaleDateString("vi-VN", {
+                                              day: "2-digit",
+                                              month: "2-digit",
+                                              year: "numeric",
+                                            })}
+                                          </p>
+                                          <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                                            {formatTimeRange(slot.startAt, slot.endAt)}
+                                          </p>
+                                          {overlapInfo && (
+                                            <p className="mt-1 text-xs text-amber-600/80 dark:text-amber-400/80">
+                                              Trùng với lịch {overlapInfo.teacherName}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <Badge
+                                          variant="outline"
+                                          className="rounded-full border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                        >
+                                          Bỏ qua
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </>
+                            )}
                           </div>
                         </ScrollArea>
                       )}
                     </div>
 
-                    <Button
-                      onClick={onGoInvoice}
-                      disabled={effectiveSelectedIds.length === 0}
-                      className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
-                    >{t('auto.teacherSchedule_36')}</Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="block">
+                            <Button
+                              onClick={onGoInvoice}
+                              disabled={effectiveSelectedIds.length === 0}
+                              className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >{t('auto.teacherSchedule_36')}</Button>
+                          </span>
+                        </TooltipTrigger>
+                        {effectiveSelectedIds.length === 0 && repeatMode === "RECURRING" && (
+                          <TooltipContent side="top" className="max-w-xs text-center">
+                            <p>Không có buổi nào khả dụng để đặt.</p>
+                            {conflictSkipCount > 0 && <p className="mt-1">{conflictSkipCount} buổi bị trùng lịch cá nhân.</p>}
+                            {skippedOccurrences.length > 0 && <p className="mt-1">{skippedOccurrences.length} buổi không có slot giáo viên.</p>}
+                          </TooltipContent>
+                        )}
+                        {effectiveSelectedIds.length === 0 && repeatMode === "NONE" && (
+                          <TooltipContent side="top">
+                            <p>Vui lòng chọn ít nhất một buổi học.</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </CardContent>
                 </Card>
               </aside>

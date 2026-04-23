@@ -951,6 +951,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
             src={thumbnail}
             alt={course.title}
             fill
+            sizes="100vw"
             className="object-cover blur-sm scale-105"
             priority
           />

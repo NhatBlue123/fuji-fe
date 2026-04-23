@@ -263,6 +263,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                   src={course.thumbnailUrl || DEFAULT_THUMBNAIL}
                   alt={course.title}
                   fill
+                  sizes="240px"
                   className="object-cover"
                 />
               </div>

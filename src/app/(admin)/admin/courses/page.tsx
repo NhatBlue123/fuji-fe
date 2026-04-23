@@ -543,6 +543,7 @@ export default function CoursesPage() {
                                 src={course.thumbnailUrl || DEFAULT_THUMBNAIL}
                                 alt={course.title}
                                 fill
+                                sizes="96px"
                                 className="object-cover"
                               />
                             </div>

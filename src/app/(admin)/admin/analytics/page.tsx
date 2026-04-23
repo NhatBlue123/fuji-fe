@@ -128,7 +128,7 @@ function AdminAnalyticsView() {
             <CardDescription>Xu hướng doanh thu theo từng tháng</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="h-[350px]">
+            <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.monthlyRevenues}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
@@ -250,7 +250,7 @@ function TeacherAnalyticsView() {
             <CardDescription>Dữ liệu doanh thu gần đây</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="h-[350px]">
+            <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.earningsOverTime}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />

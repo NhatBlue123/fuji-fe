@@ -618,6 +618,7 @@ export default function CreateFlashcardModal({
                       }
                       alt="Thumbnail"
                       fill
+                      sizes="50vw"
                       className="object-cover rounded-lg"
                     />
                     <button

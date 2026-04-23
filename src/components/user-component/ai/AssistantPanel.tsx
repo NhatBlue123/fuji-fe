@@ -1060,15 +1060,6 @@ export default function AssistantPanel({
           </div>
         )}
 
-        {isConnected && (
-          <div className="mx-6 mt-4 rounded-lg border border-green-400/40 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-green-500 dark:bg-green-400" />
-              <span>Đã kết nối</span>
-            </div>
-          </div>
-        )}
-
         <div
           ref={messagesContainerRef}
           onScroll={handleMessagesScroll}

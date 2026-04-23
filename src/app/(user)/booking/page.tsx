@@ -249,29 +249,53 @@ export default function BookingPage() {
           </Link>
         </section>
 
-        <section className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 md:p-5 dark:border-amber-400/40 dark:bg-amber-400/10">
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="size-5" />
-            <h2 className="text-sm font-bold md:text-base">{t("booking.rules.title")}</h2>
+        <section className="mb-6 flex items-center justify-between">
+          <div className="flex-1" />
+          
+          <div className="group relative">
+            <button
+              type="button"
+              className="flex h-8 items-center gap-2 rounded-full border border-border bg-card/80 px-3 text-sm font-medium text-muted-foreground transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+              onClick={(e) => {
+                const popover = e.currentTarget.nextElementSibling as HTMLElement;
+                if (popover) {
+                  popover.classList.toggle('hidden');
+                }
+              }}
+            >
+              <span>{t("booking.rules.title")}</span>
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 16 16">
+                <circle cx="2" cy="8" r="1.5"/>
+                <circle cx="8" cy="8" r="1.5"/>
+                <circle cx="14" cy="8" r="1.5"/>
+              </svg>
+            </button>
+            
+            <div className="absolute right-0 top-10 z-50 hidden w-80 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 shadow-lg backdrop-blur-sm dark:border-amber-400/40 dark:bg-amber-400/10">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="size-5" />
+                <h2 className="text-sm font-bold">{t("booking.rules.title")}</h2>
+              </div>
+              <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+                <li className="flex items-start gap-2">
+                  <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>{t("booking.rules.rule1")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>{t("booking.rules.rule2")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Ban className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>{t("booking.rules.rule3")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Ban className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>{t("booking.rules.rule4")}</span>
+                </li>
+              </ul>
+            </div>
           </div>
-          <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200 md:text-sm">
-            <li className="flex items-start gap-2">
-              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{t("booking.rules.rule1")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{t("booking.rules.rule2")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Ban className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{t("booking.rules.rule3")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Ban className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{t("booking.rules.rule4")}</span>
-            </li>
-          </ul>
         </section>
 
         <section className="glass-card rounded-[2rem] border border-border/60 p-4 shadow-[0_30px_80px_-50px_rgba(15,23,42,0.45)] md:p-5">

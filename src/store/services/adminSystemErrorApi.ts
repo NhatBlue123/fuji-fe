@@ -35,6 +35,9 @@ export interface SystemErrorLog {
   resolvedByName?: string;
   resolutionNote?: string;
   notes: SystemErrorLogNote[];
+  requestBody?: string | Record<string, unknown>;
+  environment?: string;
+  userAgent?: string;
 }
 
 export interface SystemErrorFilters {

@@ -26,12 +26,11 @@ export function useStreakProgress(options: UseStreakProgressOptions = {}) {
 
   const [notification, setNotification] = useState<StreakNotification | null>(null);
   const [showNotification, setShowNotification] = useState(false);
-  
+
   const previousMessageRef = useRef<string | null>(null);
   const previousQualifiedRef = useRef<boolean | null>(null);
   const justQualifiedTriggeredRef = useRef<boolean>(false);
 
-  // Handle qualified event
   useEffect(() => {
     if (progress?.justQualified && !justQualifiedTriggeredRef.current) {
       justQualifiedTriggeredRef.current = true;
@@ -39,17 +38,14 @@ export function useStreakProgress(options: UseStreakProgressOptions = {}) {
     }
   }, [progress?.justQualified, onQualified]);
 
-  // Show notification when message changes (with debounce to avoid spam)
   useEffect(() => {
     if (!progress || isLoading) return;
 
     const currentMessage = progress.message;
-    
-    // Only show notification if message changed and is different
+
     if (previousMessageRef.current !== currentMessage) {
       previousMessageRef.current = currentMessage;
 
-      // Determine notification type
       let type: "success" | "warning" | "info" = "info";
       if (progress.qualified) {
         type = "success";
@@ -57,7 +53,6 @@ export function useStreakProgress(options: UseStreakProgressOptions = {}) {
         type = "warning";
       }
 
-      // Show notification
       setNotification({
         id: Date.now().toString(),
         message: currentMessage,
@@ -66,7 +61,6 @@ export function useStreakProgress(options: UseStreakProgressOptions = {}) {
       });
       setShowNotification(true);
 
-      // Auto hide after 4 seconds
       const timer = setTimeout(() => {
         setShowNotification(false);
       }, 4000);
@@ -75,14 +69,12 @@ export function useStreakProgress(options: UseStreakProgressOptions = {}) {
     }
   }, [progress?.message, progress?.qualified, progress?.almostQualified, isLoading]);
 
-  // Track qualified state
   useEffect(() => {
     if (progress?.qualified !== undefined) {
       previousQualifiedRef.current = progress.qualified;
     }
   }, [progress?.qualified]);
 
-  // Reset justQualified trigger when qualified state changes
   useEffect(() => {
     if (!progress?.qualified) {
       justQualifiedTriggeredRef.current = false;

@@ -56,7 +56,7 @@ export function StreakCard({ className, enabled = true, hideMessage = false }: S
             <p className="text-xs text-gray-400 font-medium">Streak hiện tại</p>
             <p className="text-2xl font-bold text-white">
               0
-              <span className="text-sm text-gray-400 ml-1">ngày</span>
+              <span className="text-sm text-gray-400 ml-1">ngay</span>
             </p>
           </div>
         </div>
@@ -107,19 +107,19 @@ export function StreakCard({ className, enabled = true, hideMessage = false }: S
                   <p className="text-sm font-semibold text-white mb-2">Cách đạt Streak hàng ngày</p>
                   <ul className="text-xs text-gray-300 space-y-1.5">
                     <li className="flex items-start gap-2">
-                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span className="text-orange-400 mt-0.5">*</span>
                       <span>Học thẻ ghi nhớ (flashcards) mỗi ngày</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span className="text-orange-400 mt-0.5">*</span>
                       <span>Hoàn thành bài luyện tập JLPT</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span className="text-orange-400 mt-0.5">*</span>
                       <span>Đặt lịch hẹn với giáo viên</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span className="text-orange-400 mt-0.5">*</span>
                       <span>Học các khóa học trên hệ thống</span>
                     </li>
                   </ul>

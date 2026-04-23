@@ -8,7 +8,7 @@ import { AnimatePresence, motion, useInView } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/user-component/home/HeroSection";
-import { StreakCard } from "@/components/user-component/home/StreakCard";
+import { StatsSection } from "@/components/user-component/home/StatsSection";
 
 /* ─────────────────────────────────────────────────────────────────
    STATIC META — không gọi API, chỉ dùng i18n key để lấy text
@@ -99,7 +99,7 @@ function SlideReveal({
       className={className}
       initial={{ opacity: 0, x, y, filter: "blur(10px)" }}
       animate={isInView ? { opacity: 1, x: 0, y: 0, filter: "blur(0px)" } : {}}
-      transition={{ duration: 0.75, delay, ease: [0.25, 0.8, 0.25, 1] }}
+      transition={{ duration: 0.75, delay, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] }}
     >
       {children}
     </motion.div>
@@ -113,7 +113,7 @@ function FadeUp({ children, className, delay = 0 }: { children: ReactNode; class
     <motion.div ref={ref} className={className}
       initial={{ opacity: 0, y: 32 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, delay, ease: [0.25, 0.8, 0.25, 1] }}
+      transition={{ duration: 0.55, delay, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] }}
     >
       {children}
     </motion.div>
@@ -135,7 +135,7 @@ function Stagger({ children, className }: { children: ReactNode; className?: str
 
 const cardV = {
   hidden: { opacity: 0, y: 48, scale: 0.96 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.25, 0.8, 0.25, 1] } },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] } },
 };
 
 /* ─────────────────────────────────────────────────────────────────
@@ -163,15 +163,9 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 bg-background dark:bg-[#0f172a] pb-20">
-      {/* ── HERO ── */}
+      {/* ── HERO + STATS (giữ nguyên) ── */}
       <HeroSection />
-
-      {/* ── STREAK CARD ── */}
-      <div className="px-4 sm:px-6 md:px-12 lg:px-20 -mt-12 relative z-20">
-        <div className="max-w-md">
-          <StreakCard className="w-full" />
-        </div>
-      </div>
+      <StatsSection />
 
       <div className="mt-24 space-y-28 px-4 sm:px-6 md:px-12 lg:px-20">
 
@@ -335,7 +329,7 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: 60, filter: "blur(8px)" }}
                     animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                     exit={{ opacity: 0, x: -60, filter: "blur(8px)" }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.8, 0.25, 1] }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] }}
                   >
                     <div className="mb-5 flex items-center gap-3">
                       <div className={cn("flex size-12 items-center justify-center rounded-xl bg-gradient-to-br text-white", SCENARIO_META[currentId].gradient)}>

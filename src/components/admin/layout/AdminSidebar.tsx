@@ -499,6 +499,7 @@ export function AdminSidebar() {
                       src={avatarSrc}
                       alt={displayName}
                       fill
+                      sizes="32px"
                       className="object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =

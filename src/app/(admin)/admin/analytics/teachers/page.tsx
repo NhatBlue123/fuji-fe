@@ -183,7 +183,7 @@ const TeacherDashboard: React.FC = () => {
                   </SelectContent>
                 </Select>
               </CardHeader>
-              <CardContent className="h-[350px] pl-2 pt-4 min-h-[350px] min-w-0">
+              <CardContent className="h-[350px] pl-2 pt-4 min-h-[350px] min-w-0 w-full">
                 <ResponsiveContainer
                   width="100%"
                   height="100%"

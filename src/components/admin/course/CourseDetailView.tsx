@@ -10,6 +10,7 @@ import {
   useDeleteLessonMutation,
   useDeleteCourseMutation,
   useUpdateCourseMutation,
+  useUpdateLessonMutation,
 } from "@/store/services/courseApi";
 import {
   Card,
@@ -105,6 +106,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     useDeleteCourseMutation();
   const [updateCourse, { isLoading: isUpdatingCourse }] =
     useUpdateCourseMutation();
+  const [updateLesson] = useUpdateLessonMutation();
 
   const [deleteLessonDialog, setDeleteLessonDialog] = useState<number | null>(
     null,
@@ -189,6 +191,34 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     router.push(`/admin/courses/${courseId}/lessons/new`);
   };
 
+  const handleTogglePreview = async (lessonId: number, currentPreview: boolean) => {
+    try {
+      const lesson = sortedLessons.find(l => l.id === lessonId);
+      if (!lesson) return;
+
+      const formData = new FormData();
+      const lessonData = {
+        title: lesson.title,
+        lessonType: lesson.lessonType,
+        isPreview: !currentPreview,
+      };
+
+      formData.append(
+        "lesson",
+        new Blob([JSON.stringify(lessonData)], { type: "application/json" })
+      );
+
+      await updateLesson({ id: lessonId, formData }).unwrap();
+      toast.success(
+        !currentPreview
+          ? "Đã chuyển thành bài xem thử"
+          : "Đã chuyển thành bài trả phí"
+      );
+    } catch {
+      toast.error("Cập nhật thất bại");
+    }
+  };
+
   if (courseLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -263,6 +293,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                   src={course.thumbnailUrl || DEFAULT_THUMBNAIL}
                   alt={course.title}
                   fill
+                  sizes="240px"
                   className="object-cover"
                 />
               </div>
@@ -450,15 +481,20 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {lesson.isPreview ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-100">
-                          Xem thử
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          --
-                        </span>
-                      )}
+                      <button
+                        onClick={() => handleTogglePreview(lesson.id, lesson.isPreview)}
+                        className="transition-all hover:scale-105"
+                      >
+                        {lesson.isPreview ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer">
+                            Xem thử
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="hover:bg-muted cursor-pointer">
+                            Trả phí
+                          </Badge>
+                        )}
+                      </button>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {lesson.duration > 0

@@ -7,6 +7,7 @@ import type {
   CoursePreviewItem,
   NextStepsPayload,
   PaymentActionPayload,
+  PurchaseSummaryPayload,
   QuickFactItem,
   StructuredBlockType,
 } from "./types";
@@ -489,6 +490,89 @@ function sanitizeNextStepsPayload(value: unknown): NextStepsPayload | null {
   };
 }
 
+function sanitizePurchaseSummaryPayload(
+  value: unknown,
+): PurchaseSummaryPayload | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  // walletAvailable: string "998 🌸" hoặc số 998
+  let walletAvailable = "";
+  if (typeof record.walletAvailable === "string" && record.walletAvailable.trim()) {
+    walletAvailable = record.walletAvailable.trim();
+  } else if (
+    typeof record.walletAvailable === "number" &&
+    Number.isFinite(record.walletAvailable)
+  ) {
+    walletAvailable = `${record.walletAvailable} 🌸`;
+  }
+
+  if (!walletAvailable) {
+    return null;
+  }
+
+  const affordableCount =
+    typeof record.affordableCount === "number" &&
+    Number.isFinite(record.affordableCount) &&
+    record.affordableCount >= 0
+      ? record.affordableCount
+      : 0;
+
+  // cheapestAffordable: string "999 🌸" hoặc object {price: "999 🌸"}
+  let cheapestAffordable: string | null = null;
+  if (typeof record.cheapestAffordable === "string" && record.cheapestAffordable.trim()) {
+    cheapestAffordable = record.cheapestAffordable.trim();
+  } else if (record.cheapestAffordable && typeof record.cheapestAffordable === "object") {
+    const obj = record.cheapestAffordable as Record<string, unknown>;
+    if (typeof obj.price === "string" && obj.price.trim()) {
+      cheapestAffordable = obj.price.trim();
+    } else if (typeof obj.price === "number" && Number.isFinite(obj.price)) {
+      cheapestAffordable = `${obj.price} 🌸`;
+    }
+  }
+
+  // cheapestMissingAmount: string "2.002 🌸" hoặc số 2002
+  let cheapestMissingAmount: string | null = null;
+  if (
+    typeof record.cheapestMissingAmount === "string" &&
+    record.cheapestMissingAmount.trim()
+  ) {
+    cheapestMissingAmount = record.cheapestMissingAmount.trim();
+  } else if (
+    typeof record.cheapestMissingAmount === "number" &&
+    record.cheapestMissingAmount > 0
+  ) {
+    cheapestMissingAmount = `${record.cheapestMissingAmount} 🌸`;
+  }
+
+  const ownedCount =
+    typeof record.ownedCount === "number" &&
+    Number.isFinite(record.ownedCount) &&
+    record.ownedCount >= 0
+      ? record.ownedCount
+      : 0;
+
+  const recommendedAction =
+    record.recommendedAction === "topup" ||
+    record.recommendedAction === "view_affordable"
+      ? record.recommendedAction
+      : affordableCount > 0
+        ? "view_affordable"
+        : "topup";
+
+  return {
+    walletAvailable,
+    affordableCount,
+    cheapestAffordable,
+    cheapestMissingAmount,
+    ownedCount,
+    recommendedAction,
+  };
+}
+
 function parseActionLinksMarkerBody(body: string): ActionLinkItem[] {
   const lines = String(body || "").split(/\r?\n/);
   const parsed: ActionLinkItem[] = [];
@@ -700,13 +784,18 @@ function splitLooseJsonFromMarkdown(
             if (paymentPayload) {
               structured = { kind: "payment-action", payload: paymentPayload };
             } else {
-              const quickFacts = sanitizeQuickFactsPayload(parsed);
-              if (quickFacts.length > 0) {
-                structured = { kind: "quick-facts", facts: quickFacts };
+              const purchaseSummary = sanitizePurchaseSummaryPayload(parsed);
+              if (purchaseSummary) {
+                structured = { kind: "purchase-summary", payload: purchaseSummary };
               } else {
-                const actionLinks = sanitizeActionLinksPayload(parsed);
-                if (actionLinks.length > 0) {
-                  structured = { kind: "action-links", links: actionLinks };
+                const quickFacts = sanitizeQuickFactsPayload(parsed);
+                if (quickFacts.length > 0) {
+                  structured = { kind: "quick-facts", facts: quickFacts };
+                } else {
+                  const actionLinks = sanitizeActionLinksPayload(parsed);
+                  if (actionLinks.length > 0) {
+                    structured = { kind: "action-links", links: actionLinks };
+                  }
                 }
               }
             }
@@ -748,7 +837,7 @@ function stripIncompleteStructuredBlock(source: string): {
   pendingBlockType: StructuredBlockType | null;
 } {
   const openBlockRegex =
-    /```(course-preview|course-compare|payment-action|action-links|quick-facts|next-steps)\s*/gi;
+    /```(course-preview|course-compare|payment-action|action-links|quick-facts|purchase-summary|next-steps)\s*/gi;
   let match: RegExpExecArray | null;
 
   while ((match = openBlockRegex.exec(source))) {
@@ -805,7 +894,7 @@ export function parseAssistantContent(
     : { visibleSource: source, pendingBlockType: null };
 
   const re =
-    /```(course-preview|course-compare|payment-action|action-links|quick-facts|next-steps)\s*([\s\S]*?)```/gi;
+    /```(course-preview|course-compare|payment-action|action-links|quick-facts|purchase-summary|next-steps)\s*([\s\S]*?)```/gi;
   const segments: AssistantContentSegment[] = [];
   let cursor = 0;
 
@@ -874,6 +963,16 @@ export function parseAssistantContent(
       const facts = sanitizeQuickFactsPayload(parsed);
       if (facts.length > 0) {
         segments.push({ kind: "quick-facts", facts });
+      } else {
+        const rawBlock = visibleSource.slice(start, end).trim();
+        if (rawBlock) {
+          segments.push({ kind: "markdown", content: rawBlock });
+        }
+      }
+    } else if (blockType === "purchase-summary") {
+      const payload = sanitizePurchaseSummaryPayload(parsed);
+      if (payload) {
+        segments.push({ kind: "purchase-summary", payload });
       } else {
         const rawBlock = visibleSource.slice(start, end).trim();
         if (rawBlock) {

@@ -137,6 +137,7 @@ export function AdminHeader() {
                     src={avatarSrc}
                     alt={displayName}
                     fill
+                    sizes="28px"
                     className="object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =

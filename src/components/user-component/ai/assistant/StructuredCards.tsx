@@ -10,6 +10,7 @@ import type {
   CoursePreviewItem,
   NextStepsPayload,
   PaymentActionPayload,
+  PurchaseSummaryPayload,
   QuickFactItem,
   StructuredBlockType,
 } from "./types";
@@ -514,9 +515,11 @@ export function StructuredLoadingCard({
           ? "Đang chuẩn bị nút thanh toán..."
           : blockType === "quick-facts"
             ? "Đang chuẩn bị cụm insight..."
-            : blockType === "next-steps"
-              ? "Đang chuẩn bị các bước đề xuất..."
-              : "Đang chuẩn bị các nút điều hướng...";
+            : blockType === "purchase-summary"
+              ? "Đang chuẩn bị tóm tắt mua khóa..."
+              : blockType === "next-steps"
+                ? "Đang chuẩn bị các bước đề xuất..."
+                : "Đang chuẩn bị các nút điều hướng...";
 
   return (
     <LiquidGlass
@@ -565,6 +568,108 @@ export function PaymentActionCard({
             className="inline-flex items-center justify-center rounded-xl border border-white/60 bg-gradient-to-r from-primary to-blue-500 px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-[0_14px_28px_-20px_rgba(37,99,235,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110"
           >
             Đi đến thanh toán
+          </Link>
+        </div>
+      </div>
+    </LiquidGlass>
+  );
+}
+
+export function PurchaseSummaryCard({
+  payload,
+}: {
+  payload: PurchaseSummaryPayload;
+}) {
+  const canAfford = payload.affordableCount > 0;
+  const primaryUrl = canAfford ? "/course" : "/premium?tab=topup";
+  const primaryCta = canAfford ? "Xem khóa mua được" : "Nạp tiền ngay";
+
+  return (
+    <LiquidGlass
+      {...glassCardProps}
+      cornerRadius={18}
+      className="my-3 rounded-2xl"
+    >
+      <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-white/86 via-emerald-50/45 to-sky-100/35 p-4 shadow-[0_20px_45px_-30px_rgba(16,185,129,0.35)] dark:border-white/15 dark:from-slate-900/72 dark:via-slate-900/58 dark:to-slate-800/45">
+        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(255,255,255,0.65),transparent_52%)]" />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">
+              Tóm tắt mua khóa
+            </p>
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/55 bg-white/70 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground dark:border-white/15 dark:bg-slate-900/55">
+              🌸 Ví blossom
+            </span>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-white/60 bg-white/75 p-3 backdrop-blur-sm dark:border-white/15 dark:bg-slate-900/60">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Số dư khả dụng
+              </p>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                {payload.walletAvailable}
+              </p>
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-2">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Mua được
+                </p>
+                <p className="mt-0.5 text-base font-bold text-emerald-700 dark:text-emerald-300">
+                  {payload.affordableCount} khóa
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-sky-400/30 bg-sky-500/10 px-2.5 py-2">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Đã sở hữu
+                </p>
+                <p className="mt-0.5 text-base font-bold text-sky-700 dark:text-sky-300">
+                  {payload.ownedCount} khóa
+                </p>
+              </div>
+            </div>
+
+            {canAfford && payload.cheapestAffordable && (
+              <div className="mt-2 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-2">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Giá thấp nhất
+                </p>
+                <p className="mt-0.5 text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  {payload.cheapestAffordable}
+                </p>
+              </div>
+            )}
+
+            {!canAfford && payload.cheapestMissingAmount && (
+              <div className="mt-2 rounded-lg border border-rose-400/30 bg-rose-500/10 px-2.5 py-2">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Cần nạp thêm
+                </p>
+                <p className="mt-0.5 text-sm font-semibold text-rose-700 dark:text-rose-300">
+                  {payload.cheapestMissingAmount}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Link
+            href={primaryUrl}
+            className={`mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-white/60 px-4 py-2.5 text-sm font-semibold shadow-[0_14px_28px_-20px_rgba(16,185,129,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 ${
+              canAfford
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+                : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+            }`}
+          >
+            {canAfford ? (
+              <SkillIcon name="school" className="text-base" />
+            ) : (
+              <span className="text-base">🌸</span>
+            )}
+            {primaryCta}
           </Link>
         </div>
       </div>

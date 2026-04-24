@@ -3,7 +3,10 @@
  * - Ẩn header của app
  * - Ẩn footer (không cần thanh cuộn toàn trang)
  * - Ghi đè overflow của thẻ main từ parent layout
+ * - Wrap với AIChatSocketProvider (chỉ dành riêng cho AI Chat)
  */
+
+import { AIChatSocketProvider } from "@/providers/AIChatSocketProvider";
 
 export default function AIChatLayout({
   children,
@@ -11,7 +14,7 @@ export default function AIChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <AIChatSocketProvider>
       {/* CSS để ẩn header/footer và khóa overflow của main khi ở trang này */}
       <style>{`
         [data-app-header] { display: none !important; }
@@ -19,6 +22,6 @@ export default function AIChatLayout({
         main { overflow: hidden !important; }
       `}</style>
       {children}
-    </>
+    </AIChatSocketProvider>
   );
 }

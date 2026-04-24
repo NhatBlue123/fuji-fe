@@ -1,23 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Plus,
   Edit3,
   Trash2,
   Package,
   TrendingUp,
-  AlertTriangle,
   Loader2,
   RefreshCw,
   Star,
   GripVertical,
   CheckCircle2,
-  XCircle,
   Clock,
   Infinity,
   X,
-  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -26,8 +23,6 @@ import {
   useUpdatePlanMutation,
   useDeletePlanMutation,
   type AdminSubscriptionPlan,
-  type CreatePlanRequest,
-  type UpdatePlanRequest,
   type SubscriptionTier,
 } from "@/store/services/admin/subscriptionPlanApi";
 
@@ -81,12 +76,24 @@ const formatDuration = (days: number) => {
   return `${days} Ngày`;
 };
 
+function extractErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === "object" && error !== null) {
+    const candidate = error as {
+      data?: { message?: string };
+      message?: string;
+    };
+
+    return candidate.data?.message || candidate.message || fallback;
+  }
+
+  return fallback;
+}
+
 export default function PaymentPackages() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] =
     useState<AdminSubscriptionPlan | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
     tier: "BASIC" as SubscriptionTier,
@@ -110,12 +117,6 @@ export default function PaymentPackages() {
   const [createPlan, { isLoading: isCreating }] = useCreatePlanMutation();
   const [updatePlan, { isLoading: isUpdating }] = useUpdatePlanMutation();
   const [deletePlan, { isLoading: isDeleting }] = useDeletePlanMutation();
-  const ragSheetUrl =
-    process.env.NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_URL?.trim() || "";
-
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) return null;
 
   const handleEdit = (plan: AdminSubscriptionPlan) => {
     setSelectedPlan(plan);
@@ -167,24 +168,14 @@ export default function PaymentPackages() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleOpenRagSheet = () => {
-    if (!ragSheetUrl) {
-      toast.error(
-        "Thiếu NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_URL trong cấu hình FE",
-      );
-      return;
-    }
-    window.open(ragSheetUrl, "_blank", "noopener,noreferrer");
-  };
-
   const confirmDelete = async () => {
     if (!selectedPlan) return;
     try {
       await deletePlan(selectedPlan.id).unwrap();
       toast.success(`Đã xóa gói "${selectedPlan.name}" thành công`);
       setIsDeleteModalOpen(false);
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Không thể xóa gói này");
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error, "Không thể xóa gói này"));
     }
   };
 
@@ -207,8 +198,8 @@ export default function PaymentPackages() {
         toast.success(`Đã tạo gói "${formData.name}" thành công`);
       }
       setIsModalOpen(false);
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Thao tác thất bại");
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error, "Thao tác thất bại"));
     }
   };
 
@@ -247,14 +238,6 @@ export default function PaymentPackages() {
         <div className="mt-4 flex gap-3">
           <Button onClick={handleCreate} className="rounded-xl font-bold">
             <Plus className="w-5 h-5 mr-2" /> Thêm gói mới
-          </Button>
-          <Button
-            onClick={handleOpenRagSheet}
-            variant="outline"
-            className="rounded-xl font-bold"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Mở Google Sheet RAG
           </Button>
           <Button
             onClick={() => refetch()}

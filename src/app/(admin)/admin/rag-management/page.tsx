@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import GuideDocumentManager from "@/components/admin/GuideDocumentManager";
 import { toast } from "sonner";
 import {
   Brain,
   Database,
-  ExternalLink,
   Loader2,
   RefreshCw,
   RotateCcw,
@@ -16,11 +17,8 @@ import {
 import {
   useGetRagOverviewQuery,
   useGetProductRagStatusQuery,
-  useGetGuideRagStatusQuery,
   useResetProductRagMutation,
   useIngestProductRagMutation,
-  useResetGuideRagMutation,
-  useIngestGuideRagMutation,
   type RagIndexedFilter,
   type RagChangedFilter,
   type RagStaleFilter,
@@ -53,11 +51,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const DEFAULT_GUIDE_EMBED_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRJCpUYZ4rW5fITJ3OePBBvFthwYyHDpE0-LgCfrAglWZrgbRcEQ8Ic7Jb4LkebTOvjTzqSY91E0py4/pubhtml?widget=true&headers=false";
-
 type ProductTab = "courses" | "plans";
-const GUIDE_PAGE_SIZE = 12;
 
 function formatDateTime(v?: string | null) {
   if (!v) return "-";
@@ -80,39 +74,7 @@ function formatSecondsToText(seconds?: number) {
   return remain > 0 ? `~ ${minutes} phút ${remain} giây` : `~ ${minutes} phút`;
 }
 
-function normalizeGuideEmbedUrl(rawUrl?: string) {
-  const source = String(rawUrl || "").trim();
-  const fallback = new URL(DEFAULT_GUIDE_EMBED_URL);
 
-  if (!source) {
-    return fallback.toString();
-  }
-
-  try {
-    const url = new URL(source);
-
-    if (url.pathname.includes("/pubhtml")) {
-      if (!url.searchParams.get("widget"))
-        url.searchParams.set("widget", "true");
-      if (!url.searchParams.get("headers"))
-        url.searchParams.set("headers", "false");
-      if (!url.searchParams.get("single"))
-        url.searchParams.set("single", "true");
-      if (!url.searchParams.get("chrome"))
-        url.searchParams.set("chrome", "false");
-      return url.toString();
-    }
-
-    if (url.pathname.includes("/edit")) {
-      url.searchParams.set("rm", "minimal");
-      return url.toString();
-    }
-
-    return source;
-  } catch {
-    return fallback.toString();
-  }
-}
 
 function extractErrorMessage(error: unknown, fallback: string) {
   if (typeof error === "object" && error !== null) {
@@ -161,29 +123,34 @@ function ActionTooltip({
 }
 
 export default function AdminRagManagementPage() {
-  const [activeTab, setActiveTab] = useState<"product" | "guide">("product");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  const tabFromUrl = searchParams.get("tab") as "product" | "guide" | null;
+  const [activeTab, setActiveTab] = useState<"product" | "guide">(
+    tabFromUrl === "guide" ? "guide" : "product"
+  );
   const [productSubTab, setProductSubTab] = useState<ProductTab>("courses");
 
+  // Update URL when tab changes
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    if (currentTab !== activeTab) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", activeTab);
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+  }, [activeTab, searchParams, router]);
+
   const [productKeyword, setProductKeyword] = useState("");
-  const [guideKeyword, setGuideKeyword] = useState("");
 
   const [indexedFilter, setIndexedFilter] = useState<RagIndexedFilter>("all");
   const [changedFilter, setChangedFilter] = useState<RagChangedFilter>("all");
   const [staleFilter, setStaleFilter] = useState<RagStaleFilter>("all");
   const [staleDays, setStaleDays] = useState(30);
-  const [guidePage, setGuidePage] = useState(1);
 
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
   const [selectedPlanIds, setSelectedPlanIds] = useState<number[]>([]);
-
-  const guideEditUrl = (
-    process.env.NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_URL || ""
-  ).trim();
-  const guideIframeUrl = normalizeGuideEmbedUrl(
-    guideEditUrl ||
-      process.env.NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_EMBED_URL?.trim() ||
-      DEFAULT_GUIDE_EMBED_URL,
-  );
 
   const productParams = useMemo(
     () => ({
@@ -196,42 +163,16 @@ export default function AdminRagManagementPage() {
     [productKeyword, indexedFilter, changedFilter, staleFilter, staleDays],
   );
 
-  const guideParams = useMemo(
-    () => ({
-      keyword: guideKeyword || undefined,
-      indexed: indexedFilter,
-      changed: changedFilter,
-      stale: staleFilter,
-      staleDays,
-      page: guidePage,
-      limit: GUIDE_PAGE_SIZE,
-    }),
-    [
-      guideKeyword,
-      indexedFilter,
-      changedFilter,
-      staleFilter,
-      staleDays,
-      guidePage,
-    ],
-  );
-
   const overviewQuery = useGetRagOverviewQuery({ staleDays });
   const productsQuery = useGetProductRagStatusQuery(productParams);
-  const guideQuery = useGetGuideRagStatusQuery(guideParams);
 
   const [resetProductRag, resetProductState] = useResetProductRagMutation();
   const [ingestProductRag, ingestProductState] = useIngestProductRagMutation();
-  const [resetGuideRag, resetGuideState] = useResetGuideRagMutation();
-  const [ingestGuideRag, ingestGuideState] = useIngestGuideRagMutation();
 
   const productData = productsQuery.data?.data;
-  const guideData = guideQuery.data?.data;
-  const guidePagination = guideData?.pagination;
 
   const courses = useMemo(() => productData?.courses ?? [], [productData]);
   const plans = useMemo(() => productData?.plans ?? [], [productData]);
-  const guideItems = useMemo(() => guideData?.items ?? [], [guideData]);
 
   const courseIdSet = useMemo(
     () => new Set(courses.map((c) => c.id)),
@@ -252,17 +193,14 @@ export default function AdminRagManagementPage() {
     effectiveSelectedCourseIds.length + effectiveSelectedPlanIds.length;
   const isRefreshing =
     overviewQuery.isFetching ||
-    productsQuery.isFetching ||
-    guideQuery.isFetching;
+    productsQuery.isFetching;
   const productBusy =
     resetProductState.isLoading || ingestProductState.isLoading;
-  const guideBusy = resetGuideState.isLoading || ingestGuideState.isLoading;
 
   const refreshAll = async () => {
     await Promise.all([
       overviewQuery.refetch(),
       productsQuery.refetch(),
-      guideQuery.refetch(),
     ]);
   };
 
@@ -273,16 +211,6 @@ export default function AdminRagManagementPage() {
     } catch {
       toast.error("Không thể làm mới dữ liệu");
     }
-  };
-
-  const openEditableSheet = () => {
-    if (!guideEditUrl) {
-      toast.error(
-        "Thiếu biến NEXT_PUBLIC_RAG_WEB_GUIDE_SHEET_URL (liên kết Google Sheet có thể chỉnh sửa)",
-      );
-      return;
-    }
-    window.open(guideEditUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleResetProduct = async () => {
@@ -324,33 +252,6 @@ export default function AdminRagManagementPage() {
     } catch (error: unknown) {
       toast.error(
         extractErrorMessage(error, "Nạp dữ liệu RAG Sản phẩm thất bại"),
-      );
-    }
-  };
-
-  const handleResetGuide = async () => {
-    const ok = window.confirm(
-      "Bạn chắc chắn muốn đặt lại toàn bộ chỉ mục Hướng dẫn?",
-    );
-    if (!ok) return;
-
-    try {
-      const resp = await resetGuideRag().unwrap();
-      toast.success(resp.message || "Đã đặt lại RAG Hướng dẫn");
-      await refreshAll();
-    } catch (error: unknown) {
-      toast.error(extractErrorMessage(error, "Đặt lại RAG Hướng dẫn thất bại"));
-    }
-  };
-
-  const handleIngestGuide = async () => {
-    try {
-      const resp = await ingestGuideRag().unwrap();
-      toast.success(resp.message || "Nạp dữ liệu RAG Hướng dẫn thành công");
-      await refreshAll();
-    } catch (error: unknown) {
-      toast.error(
-        extractErrorMessage(error, "Nạp dữ liệu RAG Hướng dẫn thất bại"),
       );
     }
   };
@@ -405,16 +306,6 @@ export default function AdminRagManagementPage() {
                   className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                 />
                 Làm mới trạng thái
-              </Button>
-            </ActionTooltip>
-            <ActionTooltip content="Mở Google Sheet ở chế độ chỉnh sửa trên tab mới">
-              <Button
-                variant="outline"
-                onClick={openEditableSheet}
-                className="rounded-xl font-bold"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Mở Google Sheet (chỉnh sửa)
               </Button>
             </ActionTooltip>
           </div>
@@ -472,7 +363,6 @@ export default function AdminRagManagementPage() {
                 value={indexedFilter}
                 onValueChange={(v) => {
                   setIndexedFilter(v as RagIndexedFilter);
-                  setGuidePage(1);
                 }}
               >
                 <SelectTrigger>
@@ -491,7 +381,6 @@ export default function AdminRagManagementPage() {
                 value={changedFilter}
                 onValueChange={(v) => {
                   setChangedFilter(v as RagChangedFilter);
-                  setGuidePage(1);
                 }}
               >
                 <SelectTrigger>
@@ -855,214 +744,7 @@ export default function AdminRagManagementPage() {
             </TabsContent>
 
             <TabsContent value="guide" className="mt-4 space-y-4">
-              {overview?.guide?.sheetWarning && (
-                <div className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-                  Cảnh báo sheet: {overview.guide.sheetWarning}
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative w-full md:w-[360px]">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={guideKeyword}
-                    onChange={(e) => {
-                      setGuideKeyword(e.target.value);
-                      setGuidePage(1);
-                    }}
-                    placeholder="Tìm doc id, tiêu đề, link, tags hoặc nội dung..."
-                    className="pl-9"
-                  />
-                </div>
-
-                <ActionTooltip content="Xóa toàn bộ chỉ mục phần Hướng dẫn trước khi nạp lại dữ liệu">
-                  <Button
-                    variant="destructive"
-                    onClick={handleResetGuide}
-                    disabled={guideBusy}
-                    className="rounded-xl"
-                  >
-                    {resetGuideState.isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                    )}
-                    Đặt lại RAG Hướng dẫn
-                  </Button>
-                </ActionTooltip>
-
-                <ActionTooltip content="Đọc dữ liệu từ Google Sheet và nạp vào chỉ mục RAG">
-                  <Button
-                    onClick={handleIngestGuide}
-                    disabled={guideBusy}
-                    className="rounded-xl"
-                  >
-                    {ingestGuideState.isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="mr-2 h-4 w-4" />
-                    )}
-                    Nạp dữ liệu Hướng dẫn
-                  </Button>
-                </ActionTooltip>
-              </div>
-
-              <div className="rounded-xl border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Doc ID</TableHead>
-                      <TableHead>Tiêu đề</TableHead>
-                      <TableHead>Link</TableHead>
-                      <TableHead>Tags</TableHead>
-                      <TableHead>Cập nhật nguồn</TableHead>
-                      <TableHead>Chỉ mục</TableHead>
-                      <TableHead>Thay đổi</TableHead>
-                      <TableHead>Độ cũ</TableHead>
-                      <TableHead>Lập chỉ mục lúc</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {guideQuery.isLoading && (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center">
-                          <Loader2 className="mx-auto h-5 w-5 animate-spin" />
-                        </TableCell>
-                      </TableRow>
-                    )}
-
-                    {!guideQuery.isLoading && guideItems.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={9}
-                          className="text-center text-muted-foreground"
-                        >
-                          Không có dòng hướng dẫn phù hợp bộ lọc hiện tại.
-                        </TableCell>
-                      </TableRow>
-                    )}
-
-                    {guideItems.map((item) => (
-                      <TableRow key={item.docId || item.sourceId}>
-                        <TableCell className="font-medium">
-                          <div>{item.docId || item.sourceId}</div>
-                          {item.sourceId && item.docId !== item.sourceId && (
-                            <div className="text-xs text-muted-foreground">
-                              source: {item.sourceId}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{item.title || "-"}</TableCell>
-                        <TableCell
-                          className="max-w-[260px] truncate"
-                          title={item.link || item.routePath || ""}
-                        >
-                          {item.link || item.routePath || "-"}
-                        </TableCell>
-                        <TableCell
-                          className="max-w-[220px] truncate"
-                          title={item.tags || ""}
-                        >
-                          {item.tags || "-"}
-                        </TableCell>
-                        <TableCell>
-                          {formatDateTime(item.sourceUpdatedAt)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge indexed={item.indexed} />
-                        </TableCell>
-                        <TableCell>
-                          {item.changed ? (
-                            <Badge variant="secondary">Có thay đổi</Badge>
-                          ) : (
-                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                              Đã cập nhật mới nhất
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {item.stale ? (
-                            <Badge variant="destructive">
-                              Cũ ({item.staleDays ?? "-"} ngày)
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">Mới</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{formatDateTime(item.indexedAt)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 px-4 py-3 md:flex-row md:items-center md:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Hiển thị {guideItems.length} /{" "}
-                  {guideData?.summary?.filtered ?? 0} dòng phù hợp bộ lọc
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setGuidePage((p) => Math.max(1, p - 1))}
-                    disabled={
-                      guideQuery.isFetching || !guidePagination?.hasPrev
-                    }
-                    className="rounded-lg"
-                  >
-                    Trang trước
-                  </Button>
-
-                  <span className="min-w-[140px] text-center text-sm font-medium text-muted-foreground">
-                    Trang {guidePagination?.page ?? guidePage} /{" "}
-                    {guidePagination?.totalPages ?? 1}
-                  </span>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setGuidePage((p) =>
-                        Math.min(guidePagination?.totalPages ?? p + 1, p + 1),
-                      )
-                    }
-                    disabled={
-                      guideQuery.isFetching || !guidePagination?.hasNext
-                    }
-                    className="rounded-lg"
-                  >
-                    Trang sau
-                  </Button>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border overflow-hidden">
-                <div className="flex items-center justify-between border-b px-4 py-3">
-                  <div>
-                    <p className="font-semibold">Bảng Hướng dẫn (nhúng)</p>
-                    <p className="text-xs text-muted-foreground">
-                      Bạn có thể chỉnh sửa trực tiếp trong khung này (cần đăng
-                      nhập và có quyền sửa). Nếu bị lỗi quyền, dùng nút mở bản
-                      chỉnh sửa.
-                    </p>
-                  </div>
-                  <ActionTooltip content="Mở Google Sheet ở chế độ chỉnh sửa đầy đủ">
-                    <Button variant="outline" onClick={openEditableSheet}>
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Mở bản chỉnh sửa
-                    </Button>
-                  </ActionTooltip>
-                </div>
-
-                <iframe
-                  src={guideIframeUrl}
-                  title="Bảng hướng dẫn RAG"
-                  className="h-[640px] w-full bg-white"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
+              <GuideDocumentManager />
             </TabsContent>
           </Tabs>
         </div>

@@ -2,9 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+// react-pdf removed — replaced with native <iframe> to avoid CORS/worker issues with Cloudinary raw URLs
 import {
   useGetMaterialsQuery,
   useSaveMaterialMutation,
@@ -17,17 +15,13 @@ import {
   Image as ImageIcon,
   Trash2,
   ChevronLeft,
-  ChevronRight,
   Link2,
-  Loader2,
-  X,
-  ZoomIn,
-  ZoomOut,
+  ExternalLink,
 } from "lucide-react";
+import { fixCloudinaryUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface MaterialsPanelProps {
   lessonId: number;
@@ -50,6 +44,15 @@ function resolveMaterialUrl(rawUrl: string): string {
   return rawUrl;
 }
 
+/**
+ * Resolve + fix Cloudinary URL for a material.
+ * Combines path resolution with Cloudinary URL repair (legacy broken URLs).
+ */
+function resolveMaterialUrlFixed(rawUrl: string, fileName: string): string {
+  const resolved = resolveMaterialUrl(rawUrl);
+  return fixCloudinaryUrl(resolved, fileName);
+}
+
 function detectFileType(file: File): "IMAGE" | "PDF" | "LINK" {
   if (file.type.startsWith("image/")) return "IMAGE";
   if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return "PDF";
@@ -69,12 +72,9 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
     name: string;
     type: string | null;
   } | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [numPages, setNumPages] = useState(0);
   const [showUrlForm, setShowUrlForm] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [nameInput, setNameInput] = useState("");
-  const [zoom, setZoom] = useState(1.25);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Apply synced page from peer
@@ -84,6 +84,8 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
       setCurrentPage(syncedPage.pageNumber);
     }
   }, [syncedPage, viewingMaterial, isSyncEnabled]);
+
+
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,28 +165,13 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
     [lessonId, deleteMaterial, refetch, viewingMaterial]
   );
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      setCurrentPage(page);
-      if (isTeacher && viewingMaterial) {
-        sendPageSync(viewingMaterial.id, page);
-      }
-    },
-    [isTeacher, viewingMaterial, sendPageSync]
-  );
 
-  const handleZoomIn = useCallback(() => {
-    setZoom((z) => Math.min(2.5, Number((z + 0.15).toFixed(2))));
-  }, []);
 
-  const handleZoomOut = useCallback(() => {
-    setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))));
-  }, []);
-
-  // PDF viewer mode
+  // PDF/Image viewer mode — use <iframe> for PDFs so the browser renders natively
+  // (avoids CORS/worker/fetch issues that react-pdf has with Cloudinary raw URLs)
   if (viewingMaterial) {
-      const resolvedViewingUrl = resolveMaterialUrl(viewingMaterial.url);
-      const isPdf = viewingMaterial.type === "PDF" || resolvedViewingUrl.match(/\.pdf($|\?)/i);
+    const resolvedViewingUrl = resolveMaterialUrlFixed(viewingMaterial.url, viewingMaterial.name);
+    const isPdf = viewingMaterial.type === "PDF" || resolvedViewingUrl.match(/\.pdf($|\?)/i);
 
     return (
       <div className="flex flex-col h-full">
@@ -197,92 +184,51 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
             <ChevronLeft className="h-3.5 w-3.5" />
             Quay lại
           </button>
-          <span className="text-[10px] text-[#8B8FA8] truncate max-w-[120px]">{viewingMaterial.name}</span>
-          <button
-            onClick={toggleSync}
-            className={cn(
-              "text-[10px] px-2 py-0.5 rounded-full font-medium",
-              isSyncEnabled
-                ? "bg-[#4ECDC4]/20 text-[#4ECDC4]"
-                : "bg-white/5 text-[#8B8FA8]"
-            )}
-          >
-            Sync {isSyncEnabled ? "ON" : "OFF"}
-          </button>
-        </div>
-
-        <div className="shrink-0 flex items-center justify-center gap-2 py-1.5 border-b border-white/[0.08] bg-white/[0.01]">
-          <button
-            type="button"
-            onClick={handleZoomOut}
-            className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06]"
-            title={t('auto.lesson_materials_3')}
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <span className="text-[11px] text-[#F0F0F0] font-mono min-w-[52px] text-center">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06]"
-            title={t('auto.lesson_materials_4')}
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
+          <span className="text-[10px] text-[#8B8FA8] truncate max-w-[140px]">{viewingMaterial.name}</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={toggleSync}
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                isSyncEnabled
+                  ? "bg-[#4ECDC4]/20 text-[#4ECDC4]"
+                  : "bg-white/5 text-[#8B8FA8]"
+              )}
+            >
+              Sync {isSyncEnabled ? "ON" : "OFF"}
+            </button>
+            <a
+              href={resolvedViewingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06] transition-colors"
+              title="Mở trong tab mới"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-h-0 overflow-auto bg-[#252838] flex items-start justify-center p-2">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {isPdf ? (
-            <Document
-              file={resolvedViewingUrl}
-              onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-              loading={<Loader2 className="h-6 w-6 text-[#8B8FA8] animate-spin mt-10" />}
-              error={<p className="text-[#FF6B6B] text-xs mt-10">{t('auto.lesson_materials_1')}</p>}
-            >
-              <Page
-                pageNumber={currentPage}
-                width={520}
-                scale={zoom}
-                renderTextLayer
-                renderAnnotationLayer
-              />
-            </Document>
+            <iframe
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(resolvedViewingUrl)}&embedded=true`}
+              className="w-full h-full border-0"
+              title={viewingMaterial.name}
+              allow="fullscreen"
+            />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={resolvedViewingUrl}
-              alt={viewingMaterial.name}
-              className="max-w-full max-h-full object-contain rounded origin-top"
-              style={{ transform: `scale(${zoom})` }}
-            />
+            <div className="w-full h-full overflow-auto bg-[#252838] flex items-start justify-center p-2">
+              <img
+                src={resolvedViewingUrl}
+                alt={viewingMaterial.name}
+                className="max-w-full object-contain rounded"
+              />
+            </div>
           )}
         </div>
-
-        {/* Page controls */}
-        {isPdf && numPages > 0 && (
-          <div className="shrink-0 flex items-center justify-center gap-3 py-2 border-t border-white/[0.08]">
-            <button
-              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
-              className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-xs text-[#F0F0F0] font-mono">
-              {currentPage} / {numPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(Math.min(numPages, currentPage + 1))}
-              disabled={currentPage >= numPages}
-              className="p-1 rounded text-[#8B8FA8] hover:text-[#F0F0F0] disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
       </div>
     );
   }

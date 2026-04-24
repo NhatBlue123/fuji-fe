@@ -1,29 +1,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import dynamic from "next/dynamic";
-import { MessageSquare, PenTool, FileText, HelpCircle, StickyNote } from "lucide-react";
+import { MessageSquare, PenTool, HelpCircle, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatPanel } from "./ChatPanel";
 import { NotesPanel } from "./NotesPanel";
 import { WhiteboardPanel } from "./WhiteboardPanel";
 import { QuizPanel } from "./QuizPanel";
-
-/** react-pdf / pdf.js dùng DOMMatrix — chỉ load trên browser, không SSR. */
-const MaterialsPanel = dynamic(
-  () => import("./MaterialsPanel").then((m) => ({ default: m.MaterialsPanel })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full min-h-[120px] items-center justify-center text-xs text-[#8B8FA8]">
-        Đang tải trình xem tài liệu...
-      </div>
-    ),
-  }
-);
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
 
-type TabId = "chat" | "whiteboard" | "materials" | "quiz" | "notes";
+
+type TabId = "chat" | "whiteboard" | "quiz" | "notes";
 
 interface Tab {
   id: TabId;
@@ -35,7 +22,6 @@ interface Tab {
 const TABS: Tab[] = [
   { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" />, available: true },
   { id: "whiteboard", label: "Whiteboard", icon: <PenTool className="h-3.5 w-3.5" />, available: true },
-  { id: "materials", label: "Materials", icon: <FileText className="h-3.5 w-3.5" />, available: true },
   { id: "quiz", label: "Quiz", icon: <HelpCircle className="h-3.5 w-3.5" />, available: true },
   { id: "notes", label: "Notes", icon: <StickyNote className="h-3.5 w-3.5" />, available: true },
 ];
@@ -130,14 +116,6 @@ export function SidePanel({
             lessonId={lessonId}
             token={token}
             currentUserId={currentUserId}
-          />
-        )}
-
-        {activeTab === "materials" && (
-          <MaterialsPanel
-            lessonId={lessonId}
-            token={token}
-            isTeacher={isTeacher}
           />
         )}
 

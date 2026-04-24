@@ -61,25 +61,41 @@ function isImageFile(fileName: string): boolean {
 }
 
 /**
- * Fix Cloudinary URL:
- * 1. Thêm extension nếu bị thiếu
- * 2. Đổi resource type: image/upload -> raw/upload cho file không phải ảnh
- *    (Backend upload nhầm resource type nên file không tải được)
+ * Fix Cloudinary URL cho các file được upload trước khi backend fix.
+ *
+ * Cloudinary có thể sinh ra URL lỗi theo 2 dạng:
+ *   1. `...file_xxx-pdf`       → thiếu dấu chấm (nối bằng gạch ngang)
+ *   2. `...file_xxx-.pdf`      → có dấu gạch ngang TRƯỚC dấu chấm (trailing dash)
+ *
+ * Hàm này xử lý cả 2 dạng lỗi và đảm bảo resource type đúng (raw/upload cho file không phải ảnh).
  */
-function fixCloudinaryUrl(url: string, fileName: string): string {
+export function fixCloudinaryUrl(url: string, fileName: string): string {
   if (!url.includes("cloudinary.com")) return url;
 
   let fixed = url;
   const ext = getExtension(fileName);
 
-  // 1. Thêm extension nếu URL bị cắt (VD: file_xxx- -> file_xxx.pdf)
-  if (ext && url.endsWith("-")) {
-    fixed = url + ext;
+  if (ext) {
+    // Pattern 1: URL kết thúc bằng `-.ext` (e.g. `file_xxx-.pdf`)
+    //   → xóa dấu gạch ngang thừa: `file_xxx.pdf`
+    const trailingDashDotExt = `-.${ext}`;
+    if (fixed.endsWith(trailingDashDotExt)) {
+      fixed = fixed.slice(0, -trailingDashDotExt.length) + `.${ext}`;
+    }
+    // Pattern 2: URL kết thúc bằng `-ext` không có dấu chấm (e.g. `file_xxx-pdf`)
+    //   → thêm dấu chấm: `file_xxx.pdf`
+    else {
+      const badSuffix = `-${ext}`;
+      if (fixed.endsWith(badSuffix)) {
+        fixed = fixed.slice(0, -badSuffix.length) + `.${ext}`;
+      }
+    }
   }
 
-  // 2. Đổi image/upload -> raw/upload cho file không phải ảnh
+  // Đảm bảo file không phải ảnh dùng raw/upload resource type
   if (!isImageFile(fileName)) {
     fixed = fixed.replace("/image/upload/", "/raw/upload/");
+    fixed = fixed.replace("/auto/upload/", "/raw/upload/");
   }
 
   return fixed;

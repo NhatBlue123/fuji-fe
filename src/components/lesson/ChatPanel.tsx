@@ -318,8 +318,11 @@ export function ChatPanel({
 
   // Render file message - hiển thị ảnh trực tiếp trong chat
   const renderFileMessage = (msg: ChatMessage) => {
-    const isImage = msg.fileUrl?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
     const fileName = msg.content || "File";
+    const imageExts = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
+    // Check by file name (content) first; fall back to URL check
+    const isImage = imageExts.test(fileName) || (msg.fileUrl ? imageExts.test(msg.fileUrl) : false);
+
 
     if (isImage) {
       return (

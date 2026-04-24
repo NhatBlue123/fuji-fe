@@ -11,6 +11,7 @@ import {
   CoursePreviewList,
   NextStepsCard,
   PaymentActionCard,
+  PurchaseSummaryCard,
   QuickFactsCard,
   StructuredLoadingCard,
 } from "./StructuredCards";
@@ -134,6 +135,11 @@ export function AiMessageBubble({
                       <QuickFactsCard
                         key={`facts-${msg.id}-${idx}`}
                         facts={segment.facts}
+                      />
+                    ) : segment.kind === "purchase-summary" ? (
+                      <PurchaseSummaryCard
+                        key={`purchase-${msg.id}-${idx}`}
+                        payload={segment.payload}
                       />
                     ) : segment.kind === "next-steps" ? (
                       <NextStepsCard

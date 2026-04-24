@@ -44,13 +44,7 @@ export interface GuideDocumentStatusResponse {
 export interface GuideDocumentResponse {
   ok: boolean;
   message?: string;
-  data?: GuideDocument | {
-    id: number;
-    filename: string;
-    contentHash: string;
-    charCount: number;
-    chunkCount?: number;
-  };
+  data?: GuideDocument;
   error?: {
     code?: string;
     message?: string;

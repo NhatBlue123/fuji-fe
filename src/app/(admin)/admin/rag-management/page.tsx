@@ -148,6 +148,7 @@ export default function AdminRagManagementPage() {
   const [changedFilter, setChangedFilter] = useState<RagChangedFilter>("all");
   const [staleFilter, setStaleFilter] = useState<RagStaleFilter>("all");
   const [staleDays, setStaleDays] = useState(30);
+  const [, setGuidePage] = useState(1);
 
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
   const [selectedPlanIds, setSelectedPlanIds] = useState<number[]>([]);

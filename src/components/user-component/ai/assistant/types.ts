@@ -64,12 +64,21 @@ export type NextStepsPayload = {
   steps: NextStepItem[];
 };
 
+export type PurchaseSummaryPayload = {
+  walletAvailable: string;
+  affordableCount: number;
+  cheapestAffordable?: string | null;
+  cheapestMissingAmount?: string | null;
+  ownedCount: number;
+  recommendedAction: "view_affordable" | "topup";
+};
 export type StructuredBlockType =
   | "course-preview"
   | "course-compare"
   | "payment-action"
   | "action-links"
   | "quick-facts"
+  | "purchase-summary"
   | "next-steps";
 
 export type AssistantContentSegment =
@@ -79,6 +88,7 @@ export type AssistantContentSegment =
   | { kind: "payment-action"; payload: PaymentActionPayload }
   | { kind: "action-links"; links: ActionLinkItem[] }
   | { kind: "quick-facts"; facts: QuickFactItem[] }
+  | { kind: "purchase-summary"; payload: PurchaseSummaryPayload }
   | { kind: "next-steps"; payload: NextStepsPayload }
   | { kind: "structured-loading"; blockType: StructuredBlockType };
 

@@ -154,9 +154,7 @@ export default function AdminTopupPackagesPage() {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border bg-card p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          System Admin
-        </p>
+        
         <h1 className="mt-2 flex items-center gap-2 text-3xl font-bold tracking-tight text-foreground">
           Quản lý gói nạp hoa
         </h1>

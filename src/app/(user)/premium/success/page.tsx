@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   ArrowRight,
@@ -13,6 +14,7 @@ import {
 import { useGetWalletQuery } from "@/store/services/walletApi";
 
 export default function PaymentSuccessPage() {
+  const { t } = useTranslation();
   const { data: wallet } = useGetWalletQuery(undefined, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
@@ -153,7 +155,7 @@ export default function PaymentSuccessPage() {
                     <p className="text-slate-500 text-xs uppercase mb-1">
                       Loại ví
                     </p>
-                    <p className="text-slate-200">Ví Premium</p>
+                    <p className="text-slate-200">{t('auto.premium_success_1')}</p>
                   </div>
                 </div>
               </div>

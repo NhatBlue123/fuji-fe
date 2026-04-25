@@ -7,7 +7,6 @@ import {
   Landmark,
   ShieldCheck,
   CheckCircle2,
-  Wallet,
   Banknote,
   AlertCircle,
   HelpCircle,
@@ -24,8 +23,11 @@ import {
 import { toast } from "sonner";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import { useCreateWithdrawRequestMutation } from "@/store/services/withdrawApi";
+import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 export default function WithdrawPage() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { data: wallet } = useGetWalletQuery();
   const balance = wallet?.balance || 0;
@@ -47,11 +49,11 @@ export default function WithdrawPage() {
 
   const validateForm = () => {
     if (withdrawAmount < 50) {
-      toast.error("Số 🌸 rút tối thiểu là 50");
+      toast.error(t("wallet.withdraw.minAmountError"));
       return false;
     }
     if (withdrawAmount > balance) {
-      toast.error("Số dư ví không đủ");
+      toast.error(t("wallet.insufficientBalance"));
       return false;
     }
     if (
@@ -59,7 +61,7 @@ export default function WithdrawPage() {
       !bankInfo.accountNumber ||
       !bankInfo.accountHolder
     ) {
-      toast.error("Vui lòng nhập đầy đủ thông tin ngân hàng");
+      toast.error(t("wallet.withdraw.missingBankInfo"));
       return false;
     }
     return true;
@@ -78,9 +80,10 @@ export default function WithdrawPage() {
         ...bankInfo,
       }).unwrap();
       setIsSuccess(true);
-      toast.success("Gửi yêu cầu thành công!");
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Giao dịch thất bại");
+      toast.success(t("wallet.withdraw.success"));
+    } catch (error: unknown) {
+      const apiError = error as { data?: { message?: string } };
+      toast.error(apiError.data?.message || t("wallet.withdraw.failed"));
     }
   };
 
@@ -89,7 +92,6 @@ export default function WithdrawPage() {
 
   return (
     <main className="min-h-screen bg-transparent text-slate-900 dark:text-slate-200 pb-20">
-      {/* Background Decor - Chỉ dùng 1 tông Pink */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-pink-500/5 blur-[120px] rounded-full" />
       </div>
@@ -101,16 +103,16 @@ export default function WithdrawPage() {
               onClick={() => router.push("/profile/wallet")}
               className="flex items-center gap-2 text-slate-500 hover:text-pink-500 transition-colors text-xs font-bold uppercase tracking-widest"
             >
-              <ArrowLeft size={16} /> Quay lại ví
+              <ArrowLeft size={16} /> {t("wallet.back")}
             </button>
-            <h2 className="text-4xl font-black tracking-tighter">
-              RÚT <span className="text-pink-500">TIỀN</span>
+            <h2 className="text-4xl font-black tracking-tighter uppercase whitespace-nowrap">
+              {t("wallet.withdraw.title").split(" ")[0]} <span className="text-pink-500">{t("wallet.withdraw.title").split(" ")[1] || ""}</span>
             </h2>
           </div>
           <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-full border border-slate-200 dark:border-white/10">
             <ShieldCheck size={14} className="text-pink-500" />
             <span className="text-[10px] font-bold uppercase tracking-tight text-slate-500">
-              Giao dịch an toàn 256-bit
+              {t("wallet.withdraw.secureTransaction")}
             </span>
           </div>
         </header>
@@ -122,12 +124,11 @@ export default function WithdrawPage() {
               onSubmit={handleOpenConfirm}
               className="space-y-8"
             >
-              {/* Nhập số tiền */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 ml-1">
                   <Banknote size={16} className="text-pink-500" />
                   <span className="text-[11px] font-black uppercase tracking-widest opacity-60">
-                    Nhập số 🌸 muốn rút
+                    {t("wallet.withdraw.inputAmount")}
                   </span>
                 </div>
                 <div className="relative group border-b-2 border-slate-200 dark:border-white/10 focus-within:border-pink-500 transition-all pb-2">
@@ -143,17 +144,16 @@ export default function WithdrawPage() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Số tiền thực nhận dự kiến:{" "}
+                  {t("wallet.withdraw.expectedVnd")}{" "}
                   <span className="font-bold text-pink-500">
-                    {payoutAmountVnd.toLocaleString("vi-VN")}đ
+                    {payoutAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}đ
                   </span>
                 </p>
 
                 <div className="space-y-3">
-                  {/* Label nhỏ để hướng dẫn */}
                   <div className="flex items-center gap-2 ml-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                      Chọn nhanh:
+                      {t("wallet.withdraw.quickSelect")}
                     </span>
                   </div>
 
@@ -172,42 +172,39 @@ export default function WithdrawPage() {
                     <button
                       type="button"
                       onClick={() => setShowNote(!showNote)}
-                      className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 ${
-                        showNote
-                          ? "border-pink-500 text-pink-500"
-                          : "border-slate-200 dark:border-white/10 text-slate-500"
-                      }`}
+                      className={cn(
+                        "px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2",
+                        showNote ? "border-pink-500 text-pink-500" : "border-slate-200 dark:border-white/10 text-slate-500"
+                      )}
                     >
-                      <HelpCircle size={14} /> Hạn mức
+                      <HelpCircle size={14} /> {t("wallet.withdraw.limits")}
                     </button>
                   </div>
                 </div>
 
                 {showNote && (
                   <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 text-[11px] font-medium leading-relaxed text-slate-500">
-                    • Tối thiểu: <b className="text-pink-500">50 🌸</b> (≈
-                    50,000đ) / lần <br />• Tối đa:{" "}
-                    <b className="text-pink-500">3 lần</b> / ngày
+                    {t("wallet.withdraw.minLimit")} <br />
+                    {t("wallet.withdraw.maxLimit")}
                   </div>
                 )}
               </div>
 
-              {/* Ngân hàng */}
               <div className="space-y-6 pt-4">
                 <div className="flex items-center gap-2 ml-1">
                   <Landmark size={16} className="text-pink-500" />
                   <span className="text-[11px] font-black uppercase tracking-widest opacity-60">
-                    Thông tin nhận tiền
+                    {t("wallet.withdraw.bankInfoTitle")}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
-                      Ngân hàng
+                      {t("wallet.withdraw.bankName")}
                     </p>
                     <input
                       list="bank-list"
-                      placeholder="Chọn ngân hàng"
+                      placeholder={t("wallet.withdraw.selectBank")}
                       className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-bold outline-none transition-all"
                       onChange={(e) =>
                         setBankInfo({ ...bankInfo, bankName: e.target.value })
@@ -222,11 +219,11 @@ export default function WithdrawPage() {
                   </div>
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
-                      Số tài khoản
+                      {t("wallet.withdraw.accountNumber")}
                     </p>
                     <input
                       type="text"
-                      placeholder="Nhập số tài khoản"
+                      placeholder={t("wallet.withdraw.inputAccountNumber")}
                       className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-mono font-bold outline-none transition-all"
                       onChange={(e) =>
                         setBankInfo({
@@ -239,11 +236,11 @@ export default function WithdrawPage() {
                   </div>
                   <div className="md:col-span-2 space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
-                      Chủ tài khoản
+                      {t("wallet.withdraw.accountHolder")}
                     </p>
                     <input
                       type="text"
-                      placeholder="Tên không dấu (VD: NGUYEN VAN A)"
+                      placeholder={t("wallet.withdraw.accountHolderPlaceholder")}
                       className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-bold uppercase outline-none transition-all"
                       onChange={(e) =>
                         setBankInfo({
@@ -261,45 +258,45 @@ export default function WithdrawPage() {
 
           <aside className="lg:col-span-5">
             <div className="sticky top-8 space-y-6">
-              <div className="bg-white text-slate-900 dark:bg-white/5 dark:text-white p-8 rounded-[2.5rem] border border-slate-200/80 dark:border-white/10 shadow-2xl space-y-8 relative overflow-hidden">
+              <div className="bg-slate-900 text-white dark:bg-white/5 dark:text-white p-8 rounded-[2.5rem] shadow-2xl space-y-8 relative overflow-hidden">
                 <div className="relative z-10 flex flex-col gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
-                    Số dư hiện tại
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
+                    {t("wallet.availableBalance")}
                   </span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-black tracking-tighter">
-                      {balance.toLocaleString()}
+                      {balance.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
                     </span>
-                    <span className="text-xs font-bold text-slate-400 dark:text-white/40 uppercase">
+                    <span className="text-xs font-bold opacity-40 uppercase">
                       🌸
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                    ~ {(balance * 1000).toLocaleString("vi-VN")}đ
+                  <p className="text-xs text-slate-400 mt-2">
+                    ~ {(balance * 1000).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}đ
                   </p>
                 </div>
 
-                <div className="pt-8 border-t border-slate-200 dark:border-white/10 space-y-4">
+                <div className="pt-8 border-t border-white/10 space-y-4">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold uppercase text-slate-500 dark:text-white/60">
-                      Số 🌸 quy đổi
+                    <span className="opacity-60 font-bold uppercase">
+                      {t("wallet.withdraw.blossomsToExchange")}
                     </span>
                     <span className="font-black">
-                      {withdrawAmount.toLocaleString()} 🌸
+                      {withdrawAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')} 🌸
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold uppercase text-slate-500 dark:text-white/60">
-                      Phí giao dịch
+                    <span className="opacity-60 font-bold uppercase">
+                      {t("wallet.withdraw.transactionFee")}
                     </span>
-                    <span className="font-black text-pink-400">Miễn phí</span>
+                    <span className="font-black text-pink-400">{t("common.free")}</span>
                   </div>
-                  <div className="pt-4 flex justify-between items-end border-t border-slate-200 dark:border-white/10">
+                  <div className="pt-4 flex justify-between items-end border-t border-white/10">
                     <span className="text-xs font-black uppercase text-pink-500">
-                      Thực nhận
+                      {t("wallet.withdraw.actualReceived")}
                     </span>
                     <span className="text-3xl font-black tracking-tighter">
-                      {payoutAmountVnd.toLocaleString("vi-VN")}đ
+                      {payoutAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}đ
                     </span>
                   </div>
                 </div>
@@ -310,14 +307,13 @@ export default function WithdrawPage() {
                 disabled={isSubmitting}
                 className="w-full h-16 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest shadow-xl shadow-pink-500/20 transition-all"
               >
-                {isSubmitting ? "Đang gửi..." : "Xác nhận yêu cầu"}
+                {isSubmitting ? t("common.processing") : t("wallet.withdraw.confirmRequest")}
               </Button>
             </div>
           </aside>
         </div>
       </div>
 
-      {/* Confirmation Dialog - Đã làm gọn màu sắc */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent className="rounded-[2rem] p-8">
           <DialogHeader className="text-center">
@@ -325,45 +321,48 @@ export default function WithdrawPage() {
               <AlertCircle size={24} />
             </div>
             <DialogTitle className="text-xl font-black uppercase">
-              Kiểm tra lại thông tin
+              {t("wallet.withdraw.confirmTitle")}
             </DialogTitle>
             <DialogDescription className="text-[11px] font-medium uppercase tracking-tight">
-              Bạn nhập số 🌸, hệ thống sẽ quy đổi ra tiền và chuyển khoản vào
-              tài khoản này
+              {t("wallet.withdraw.confirmDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-2xl space-y-4 my-4">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Số 🌸 quy đổi
+                {t("wallet.withdraw.blossomsToExchange")}
               </span>
               <span className="text-xs font-black">
-                {withdrawAmount.toLocaleString()} 🌸
+                {withdrawAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')} 🌸
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Thực nhận
+                {t("wallet.withdraw.actualReceived")}
               </span>
               <span className="text-xs font-black text-pink-500">
-                {payoutAmountVnd.toLocaleString("vi-VN")}đ
+                {payoutAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}đ
               </span>
             </div>
             {[
-              { label: "Ngân hàng", value: bankInfo.bankName },
+              { label: t("wallet.withdraw.bankName"), value: bankInfo.bankName },
               {
-                label: "Số tài khoản",
+                label: t("wallet.withdraw.accountNumber"),
                 value: bankInfo.accountNumber,
                 mono: true,
               },
-              { label: "Chủ thẻ", value: bankInfo.accountHolder, upper: true },
+              { label: t("wallet.withdraw.accountHolder"), value: bankInfo.accountHolder, upper: true },
             ].map((item, idx) => (
               <div key={idx} className="flex justify-between items-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   {item.label}
                 </span>
                 <span
-                  className={`text-xs font-black ${item.mono ? "font-mono tracking-wider" : ""} ${item.upper ? "uppercase" : ""}`}
+                  className={cn(
+                    "text-xs font-black",
+                    item.mono && "font-mono tracking-wider",
+                    item.upper && "uppercase"
+                  )}
                 >
                   {item.value}
                 </span>
@@ -376,13 +375,13 @@ export default function WithdrawPage() {
               onClick={() => setShowConfirm(false)}
               className="flex-1 font-bold text-xs uppercase"
             >
-              Hủy
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleConfirmWithdraw}
               className="flex-1 bg-pink-500 font-black text-xs uppercase"
             >
-              Xác nhận rút tiền
+              {t("wallet.withdraw.confirmWithdraw")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -391,8 +390,8 @@ export default function WithdrawPage() {
   );
 }
 
-// Success State tinh chỉnh
 function SuccessState({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0c10] flex items-center justify-center p-6">
       <div className="max-w-sm w-full bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-white/5 rounded-[3rem] p-10 text-center space-y-8 shadow-2xl">
@@ -401,17 +400,17 @@ function SuccessState({ onBack }: { onBack: () => void }) {
         </div>
         <div className="space-y-2">
           <h3 className="text-2xl font-black uppercase tracking-tighter">
-            Đã gửi yêu cầu
+            {t("wallet.withdraw.requestSent")}
           </h3>
           <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed">
-            Hệ thống sẽ duyệt trong vòng 24 giờ tới.
+            {t("wallet.withdraw.reviewDesc")}
           </p>
         </div>
         <Button
           onClick={onBack}
           className="w-full h-14 bg-slate-900 dark:bg-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest"
         >
-          Về ví Fuji
+          {t("wallet.backToWallet")}
         </Button>
       </div>
     </div>

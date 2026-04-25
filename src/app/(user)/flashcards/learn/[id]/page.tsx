@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,6 +24,7 @@ import {
   useGetFlashCardByIdQuery,
   useStartLearningMutation,
 } from "@/store/services/flashcardApi";
+import { useRecordActivityMutation } from "@/store/services/progressApi";
 import { getMockImage } from "@/lib/mockImages";
 import styles from "./page.module.css";
 import { Button } from "@/components/ui/button";
@@ -31,10 +34,12 @@ export default function FlashcardStudyPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const router = useRouter();
   const { data: flashcard, isLoading, error } = useGetFlashCardByIdQuery(id);
   const [startLearning] = useStartLearningMutation();
+  const [recordActivity] = useRecordActivityMutation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -42,6 +47,11 @@ export default function FlashcardStudyPage({
     "front" | "back" | "both" | "none"
   >("front");
   const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
+  const [sessionStartTime] = useState(Date.now());
+  const [hasRecordedActivity, setHasRecordedActivity] = useState(false);
+
+  const cards = flashcard?.cards || [];
+  const totalCards = cards.length;
 
   // Initialize learning when page loads
   useEffect(() => {
@@ -50,8 +60,53 @@ export default function FlashcardStudyPage({
     }
   }, [flashcard, id, startLearning]);
 
-  const cards = flashcard?.cards || [];
-  const totalCards = cards.length;
+  // Record activity when completing a flashcard session
+  const recordFlashcardSession = useCallback(async () => {
+    if (hasRecordedActivity || completedCards.size === 0) return;
+
+    setHasRecordedActivity(true);
+    const durationMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
+    const cardsReviewed = completedCards.size;
+
+    try {
+      await recordActivity({
+        activityType: "FLASHCARD",
+        durationMinutes: Math.max(durationMinutes, 1),
+        cardsReviewed,
+        correctAnswers: cardsReviewed,
+        totalQuestions: cardsReviewed,
+        source: "flashcard",
+      }).unwrap();
+      console.log("[Flashcard] Activity recorded:", { cardsReviewed, durationMinutes });
+    } catch (err) {
+      console.error("[Flashcard] Failed to record activity:", err);
+    }
+  }, [hasRecordedActivity, completedCards.size, sessionStartTime, recordActivity]);
+
+  // Record activity when completing all cards
+  useEffect(() => {
+    if (completedCards.size > 0 && completedCards.size === totalCards && totalCards > 0) {
+      recordFlashcardSession();
+    }
+  }, [completedCards.size, totalCards, recordFlashcardSession]);
+
+  // Record on page unmount if session started
+  useEffect(() => {
+    return () => {
+      if (completedCards.size > 0 && !hasRecordedActivity) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
+        recordActivity({
+          activityType: "FLASHCARD",
+          durationMinutes: Math.max(durationMinutes, 1),
+          cardsReviewed: completedCards.size,
+          correctAnswers: completedCards.size,
+          totalQuestions: completedCards.size,
+          source: "flashcard",
+        }).catch(console.error);
+      }
+    };
+  }, [recordActivity, completedCards.size, sessionStartTime, hasRecordedActivity]);
+
   const currentCard = cards[currentIndex];
   const progress =
     totalCards > 0 ? Math.round((completedCards.size / totalCards) * 100) : 0;
@@ -205,13 +260,13 @@ export default function FlashcardStudyPage({
             }
           >
             <SelectTrigger className="w-[140px] h-8 text-xs border-border/40 bg-card/40">
-              <SelectValue placeholder="Hiển thị ảnh" />
+              <SelectValue placeholder={t('auto._id__page_6')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="front">Ảnh mặt trước</SelectItem>
-              <SelectItem value="back">Ảnh mặt sau</SelectItem>
-              <SelectItem value="both">Ảnh 2 mặt</SelectItem>
-              <SelectItem value="none">Không có ảnh</SelectItem>
+              <SelectItem value="front">{t('auto._id__page_1')}</SelectItem>
+              <SelectItem value="back">{t('auto._id__page_2')}</SelectItem>
+              <SelectItem value="both">{t('auto._id__page_3')}</SelectItem>
+              <SelectItem value="none">{t('auto._id__page_4')}</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -219,7 +274,7 @@ export default function FlashcardStudyPage({
             size="icon"
             onClick={handleShuffle}
             className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-            title="Trộn thẻ"
+            title={t('auto._id__page_7')}
           >
             <span className="material-symbols-outlined text-xl">shuffle</span>
           </Button>
@@ -228,7 +283,7 @@ export default function FlashcardStudyPage({
             size="icon"
             onClick={handleFlipAll}
             className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-            title="Đảo thẻ"
+            title={t('auto._id__page_8')}
           >
             <span className="material-symbols-outlined text-xl">flip</span>
           </Button>
@@ -240,14 +295,14 @@ export default function FlashcardStudyPage({
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-                title="Bài tập"
+                title={t('auto._id__page_9')}
               >
                 <span className="material-symbols-outlined text-xl">quiz</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Chọn loại bài tập</DialogTitle>
+                <DialogTitle>{t('auto._id__page_5')}</DialogTitle>
                 <DialogDescription>
                   Lựa chọn bài tập phù hợp để ôn luyện từ vựng
                 </DialogDescription>
@@ -440,7 +495,7 @@ export default function FlashcardStudyPage({
             className={`size-10 rounded-xl bg-card/50 border-border/40 ${
               currentIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            title="Thẻ trước"
+            title={t('auto._id__page_10')}
           >
             <span className="material-symbols-outlined text-xl">
               arrow_back
@@ -459,7 +514,7 @@ export default function FlashcardStudyPage({
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
-            title="Thẻ tiếp theo"
+            title={t('auto._id__page_11')}
           >
             <span className="material-symbols-outlined text-xl">
               arrow_forward

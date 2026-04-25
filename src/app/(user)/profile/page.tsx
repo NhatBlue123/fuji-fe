@@ -4,14 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar,
-  ShieldCheck, Zap, Star, LayoutGrid, ChevronRight, Award, Trophy, Info
+  Zap
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { logout } from "@/lib/auth";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { useGetMySubscriptionQuery } from "@/store/services/subscriptionApi";
 import { Button } from "@/components/ui/button";
+import { StreakCard } from "@/components/user-component/home/StreakCard";
 import { 
   Card, 
   CardHeader, 
@@ -21,10 +23,10 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [openLogout, setOpenLogout] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -74,13 +76,13 @@ export default function ProfilePage() {
 
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
           <Badge variant="secondary" className="px-3 py-1 gap-2 border-pink-500/20 bg-pink-500/10 text-pink-600 dark:text-pink-400 mb-4 inline-flex">
-            <User size={12} /> Thông tin cá nhân
+            <User size={12} /> {t("profile.badge")}
           </Badge>
           <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3 uppercase">
-            Hồ Sơ <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">Cá Nhân</span>
+            {t("profile.page.title").split("Cá Nhân")[0]}<span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">{t("profile.page.title").includes("Cá Nhân") ? "Cá Nhân" : ""}</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed mx-auto md:mx-0">
-            Quản lý diện mạo và thông tin liên hệ của bạn.
+            {t("profile.page.subtitle")}
           </p>
         </div>
       </div>
@@ -138,41 +140,31 @@ export default function ProfilePage() {
               </div>
 
               <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm leading-relaxed italic border-l-2 border-pink-500/30 pl-4 py-1">
-                "{user.bio || "Chưa có lời tựa cho bản thân... Hãy cập nhật hồ sơ để chia sẻ thêm về bạn."}"
+                "{user.bio || t("profile.bio.empty")}"
               </p>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
                 <Button asChild className="rounded-2xl h-11 px-6 bg-secondary hover:bg-secondary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-pink-500/20 transition-all">
                   <Link href="/profile/edit"> 
-                    <Edit size={16} className="mr-2" /> Chỉnh sửa
+                    <Edit size={16} className="mr-2" /> {t("common.edit")}
                   </Link>
                 </Button>
                 <Button variant="outline" onClick={() => setOpenLogout(true)} className="rounded-2xl h-11 px-6 bg-muted/40 dark:bg-white/5 border-muted dark:border-white/10 text-foreground dark:text-white hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-500/30 font-black uppercase tracking-widest text-[10px] transition-all">
-                  <LogOut size={16} className="mr-2" /> Đăng xuất
+                  <LogOut size={16} className="mr-2" /> {t("common.logout")}
                 </Button>
               </div>
             </div>
 
-            {/* Stats Sidebar / Level */}
-            <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-muted dark:border-white/10 p-6 rounded-3xl text-center space-y-3 min-w-[200px] shadow-inner shadow-black/5 dark:shadow-none shrink-0 lg:ml-auto">
-              <div className="p-3 bg-secondary hover:bg-secondary/90 rounded-2xl w-fit mx-auto border border-white/20 shadow-lg shadow-pink-500/20">
-                <Trophy size={24} className="text-white" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-600/80 dark:text-pink-100/60">Hạng học tập</p>
-                <p className="text-xl font-black text-foreground dark:text-white tracking-tighter uppercase drop-shadow-md">Silver II</p>
-              </div>
-              <div className="w-full h-2 bg-muted/80 dark:bg-black/40 rounded-full overflow-hidden border border-muted dark:border-white/5 shadow-inner">
-                <div className="h-full bg-gradient-to-r from-pink-500 to-purple-500 w-[65%]" />
-              </div>
-              <p className="text-[10px] font-black text-pink-600/70 dark:text-pink-100/50 uppercase tracking-widest">350 / 500 EXP</p>
+            {/* Streak Card */}
+            <div className="lg:ml-auto lg:w-[220px]">
+              <StreakCard className="w-full" hideMessage />
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-  {/* Left Column - Details (Chiếm 2 phần) */}
+  {/* Left Column - Details */}
   <div className="lg:col-span-2">
     <Card className="bg-white/60 dark:bg-[#0B1120]/60 backdrop-blur-xl shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 rounded-[2.5rem]">
       <CardHeader className="border-b dark:border-white/5 pb-8">
@@ -181,36 +173,36 @@ export default function ProfilePage() {
             <User size={24} />
           </div>
           <div>
-            <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">Thông tin chi tiết</CardTitle>
-            <CardDescription className="text-muted-foreground dark:text-slate-400">Liên hệ và trình độ ngôn ngữ của bạn</CardDescription>
+            <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">{t("profile.details.title")}</CardTitle>
+            <CardDescription className="text-muted-foreground dark:text-slate-400">{t("profile.details.subtitle")}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <InfoItem icon={<Mail size={16} />} label="Email liên hệ" value={user.email} color="cyan" />
-          <InfoItem icon={<Phone size={16} />} label="Số điện thoại" value={user.phone || "Chưa cập nhật"} color="text-blue-500 dark:text-blue-400" />
-          <InfoItem icon={<Calendar size={16} />} label="Ngày tham gia" value={new Date(user.createdAt).toLocaleDateString("vi-VN")} color="purple" />
-          <InfoItem icon={<BookOpen size={16} />} label="Trình độ" value={`Tiếng Nhật - ${user.jlptLevel || "Chưa xác định"}`} color="pink text-blue-500 dark:text-blue-400" />
+          <InfoItem icon={<Mail size={16} />} label={t("profile.details.email")} value={user.email} color="cyan" />
+          <InfoItem icon={<Phone size={16} />} label={t("profile.details.phone")} value={user.phone || t("common.notUpdated")} color="text-blue-500 dark:text-blue-400" />
+          <InfoItem icon={<Calendar size={16} />} label={t("profile.details.joinedDate")} value={new Date(user.createdAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} color="purple" />
+          <InfoItem icon={<BookOpen size={16} />} label={t("profile.details.level")} value={t("profile.details.jlptLevel", { level: user.jlptLevel || t("common.notDetermined") })} color="pink text-blue-500 dark:text-blue-400" />
         </div>
       </CardContent>
     </Card>
   </div>
 
-  {/* Right Column - Actions (Chiếm 1 phần) */}
+  {/* Right Column - Actions */}
   <div className="lg:col-span-1 space-y-6 grid gap-2">
     <ActionCard 
       href="/profile/change-password"
       icon={<Key size={24} />}
-      title="Bảo mật tài khoản"
-      desc="Đổi mật khẩu định kỳ"
+      title={t("profile.actions.security")}
+      desc={t("profile.actions.changePassword")}
       color="amber bg-secondary hover:bg-secondary/90"
     />
     <ActionCard 
       href="/profile/wallet"
       icon={<Zap size={24} />}
-      title="Ví FUJI"
-      desc="Quản lý số dư của bạn"
+      title={t("profile.actions.wallet")}
+      desc={t("profile.actions.manageWallet")}
       color="pink bg-secondary hover:bg-secondary/90"
     />
   </div>
@@ -225,15 +217,15 @@ export default function ProfilePage() {
               <div className="w-20 h-20 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(244,63,94,0.2)]">
                 <LogOut className="text-rose-500" size={32} />
               </div>
-              <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground dark:text-white">Bạn muốn đăng xuất?</CardTitle>
-              <CardDescription className="text-xs font-medium mt-2">Hành động này sẽ kết thúc phiên làm việc hiện tại của bạn.</CardDescription>
+              <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground dark:text-white">{t("profile.logout.modalTitle")}</CardTitle>
+              <CardDescription className="text-xs font-medium mt-2">{t("profile.logout.modalDesc")}</CardDescription>
             </CardHeader>
             <CardFooter className="flex gap-3 p-8 pt-4 relative z-10">
               <Button variant="outline" onClick={() => setOpenLogout(false)} className="flex-1 h-12 rounded-xl border-muted dark:border-white/10 font-black uppercase text-[10px] tracking-widest text-foreground dark:text-white dark:hover:bg-white/10">
-                Hủy
+                {t("common.cancel")}
               </Button>
               <Button onClick={handleLogout} className="flex-1 h-12 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20">
-                Xác nhận
+                {t("common.confirm")}
               </Button>
             </CardFooter>
           </Card>
@@ -264,28 +256,6 @@ function InfoItem({ icon, label, value, color }: { icon: React.ReactNode, label:
         <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest">{label}</p>
         <p className="font-bold text-sm tracking-tight text-foreground dark:text-slate-200">{value}</p>
       </div>
-    </div>
-  );
-}
-
-function StatItem({ icon, label, value, color }: { icon: React.ReactNode, label: string, value: string, color: string }) {
-  const getColors = () => {
-    switch (color) {
-      case "yellow": return "bg-yellow-500/10 border-yellow-500/20";
-      case "blue": return "bg-blue-500/10 border-blue-500/20";
-      case "emerald": return "bg-emerald-500/10 border-emerald-500/20";
-      case "indigo": return "bg-indigo-500/10 border-indigo-500/20";
-      default: return "bg-primary/10 border-primary/20";
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between group">
-      <div className="flex items-center gap-4">
-        <div className={`p-2.5 rounded-xl border transition-transform group-hover:scale-110 shadow-inner ${getColors()}`}>{icon}</div>
-        <span className="text-xs font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400">{label}</span>
-      </div>
-      <span className="text-xl font-black text-foreground dark:text-white tracking-tighter">{value}</span>
     </div>
   );
 }

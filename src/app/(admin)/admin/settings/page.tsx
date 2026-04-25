@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  Plus, Edit3, Trash2, Package, TrendingUp, AlertTriangle, Loader2,
-  RefreshCw, Star, GripVertical, CheckCircle2, XCircle, Clock, Infinity, X
+  Plus,
+  Edit3,
+  Trash2,
+  Package,
+  TrendingUp,
+  Loader2,
+  RefreshCw,
+  Star,
+  GripVertical,
+  CheckCircle2,
+  Clock,
+  Infinity,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,8 +23,6 @@ import {
   useUpdatePlanMutation,
   useDeletePlanMutation,
   type AdminSubscriptionPlan,
-  type CreatePlanRequest,
-  type UpdatePlanRequest,
   type SubscriptionTier,
 } from "@/store/services/admin/subscriptionPlanApi";
 
@@ -39,10 +48,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const TIER_CONFIG: Record<SubscriptionTier, { label: string; variant: "default" | "secondary" | "destructive" | "outline", colorClass: string }> = {
-  BASIC: { label: "Basic", variant: "outline", colorClass: "text-muted-foreground" },
+const TIER_CONFIG: Record<
+  SubscriptionTier,
+  {
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+    colorClass: string;
+  }
+> = {
+  BASIC: {
+    label: "Basic",
+    variant: "outline",
+    colorClass: "text-muted-foreground",
+  },
   PRO: { label: "Pro", variant: "secondary", colorClass: "text-blue-500" },
-  PREMIUM: { label: "Premium", variant: "default", colorClass: "text-amber-500" },
+  PREMIUM: {
+    label: "Premium",
+    variant: "default",
+    colorClass: "text-amber-500",
+  },
 };
 
 const formatDuration = (days: number) => {
@@ -52,11 +76,24 @@ const formatDuration = (days: number) => {
   return `${days} Ngày`;
 };
 
+function extractErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === "object" && error !== null) {
+    const candidate = error as {
+      data?: { message?: string };
+      message?: string;
+    };
+
+    return candidate.data?.message || candidate.message || fallback;
+  }
+
+  return fallback;
+}
+
 export default function PaymentPackages() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<AdminSubscriptionPlan | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [selectedPlan, setSelectedPlan] =
+    useState<AdminSubscriptionPlan | null>(null);
 
   const [formData, setFormData] = useState({
     tier: "BASIC" as SubscriptionTier,
@@ -71,14 +108,15 @@ export default function PaymentPackages() {
   });
   const [newFeature, setNewFeature] = useState("");
 
-  const { data: plans = [], isLoading, isFetching, refetch } = useGetAdminPlansQuery();
+  const {
+    data: plans = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetAdminPlansQuery();
   const [createPlan, { isLoading: isCreating }] = useCreatePlanMutation();
   const [updatePlan, { isLoading: isUpdating }] = useUpdatePlanMutation();
   const [deletePlan, { isLoading: isDeleting }] = useDeletePlanMutation();
-
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) return null;
 
   const handleEdit = (plan: AdminSubscriptionPlan) => {
     setSelectedPlan(plan);
@@ -86,7 +124,11 @@ export default function PaymentPackages() {
     if (Array.isArray(plan.features)) {
       parsedFeatures = plan.features;
     } else if (typeof plan.features === "string") {
-      try { parsedFeatures = JSON.parse(plan.features); } catch { parsedFeatures = [plan.features]; }
+      try {
+        parsedFeatures = JSON.parse(plan.features);
+      } catch {
+        parsedFeatures = [plan.features];
+      }
     }
 
     setFormData({
@@ -132,8 +174,8 @@ export default function PaymentPackages() {
       await deletePlan(selectedPlan.id).unwrap();
       toast.success(`Đã xóa gói "${selectedPlan.name}" thành công`);
       setIsDeleteModalOpen(false);
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Không thể xóa gói này");
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error, "Không thể xóa gói này"));
     }
   };
 
@@ -149,29 +191,35 @@ export default function PaymentPackages() {
         }).unwrap();
         toast.success(`Đã cập nhật gói "${formData.name}"`);
       } else {
-        await createPlan({ ...formData, description: formData.description || undefined }).unwrap();
+        await createPlan({
+          ...formData,
+          description: formData.description || undefined,
+        }).unwrap();
         toast.success(`Đã tạo gói "${formData.name}" thành công`);
       }
       setIsModalOpen(false);
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Thao tác thất bại");
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error, "Thao tác thất bại"));
     }
   };
 
   const addFeature = () => {
     const f = newFeature.trim();
     if (f && !formData.features.includes(f)) {
-      setFormData(prev => ({ ...prev, features: [...prev.features, f] }));
+      setFormData((prev) => ({ ...prev, features: [...prev.features, f] }));
       setNewFeature("");
     }
   };
 
   const removeFeature = (index: number) => {
-    setFormData(prev => ({ ...prev, features: prev.features.filter((_, i) => i !== index) }));
+    setFormData((prev) => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index),
+    }));
   };
 
-  const activePlans = plans.filter(p => p.active).length;
-  const popularPlan = plans.find(p => p.popular);
+  const activePlans = plans.filter((p) => p.active).length;
+  const popularPlan = plans.find((p) => p.popular);
 
   return (
     <div className="space-y-6">
@@ -183,15 +231,23 @@ export default function PaymentPackages() {
           Quản lý Gói Subscription
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Cấu hình gói đăng ký môn học và truy cập AI. Dữ liệu realtime từ database.
+          Cấu hình gói đăng ký môn học và truy cập AI. Dữ liệu realtime từ
+          database.
         </p>
 
         <div className="mt-4 flex gap-3">
           <Button onClick={handleCreate} className="rounded-xl font-bold">
             <Plus className="w-5 h-5 mr-2" /> Thêm gói mới
           </Button>
-          <Button onClick={() => refetch()} variant="outline" disabled={isFetching} className="rounded-xl font-bold">
-            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            disabled={isFetching}
+            className="rounded-xl font-bold"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
+            />
             Làm mới
           </Button>
         </div>
@@ -200,32 +256,45 @@ export default function PaymentPackages() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-4 flex items-start justify-between">
-            <p className="text-sm font-semibold text-muted-foreground">Tổng gói đăng ký</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              Tổng gói đăng ký
+            </p>
             <span className="rounded-lg border border-secondary/30 bg-secondary/20 px-2 py-1">
               <Package className="text-primary" size={18} />
             </span>
           </div>
           <p className="text-2xl font-black text-foreground">{plans.length}</p>
         </div>
-        
+
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm ">
           <div className="mb-4 flex items-start justify-between">
-            <p className="text-sm font-semibold text-muted-foreground">Gói phổ biến nhất</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              Gói phổ biến nhất
+            </p>
             <span className="rounded-lg border border-secondary/30 bg-secondary/20 px-2 py-1">
               <TrendingUp className="text-primary" size={18} />
             </span>
           </div>
-          <p className="text-2xl font-black text-foreground">{popularPlan?.name || "Chưa đặt"}</p>
+          <p className="text-2xl font-black text-foreground">
+            {popularPlan?.name || "Chưa đặt"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-4 flex items-start justify-between">
-            <p className="text-sm font-semibold text-muted-foreground">Đang hoạt động</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              Đang hoạt động
+            </p>
             <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-2 py-1">
               <CheckCircle2 className="text-emerald-500" size={18} />
             </span>
           </div>
-          <p className="text-2xl font-black text-foreground">{activePlans} <span className="text-lg text-muted-foreground font-medium">/ {plans.length}</span></p>
+          <p className="text-2xl font-black text-foreground">
+            {activePlans}{" "}
+            <span className="text-lg text-muted-foreground font-medium">
+              / {plans.length}
+            </span>
+          </p>
         </div>
       </div>
 
@@ -233,7 +302,9 @@ export default function PaymentPackages() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            <p className="text-muted-foreground font-medium text-sm">Đang tải dữ liệu...</p>
+            <p className="text-muted-foreground font-medium text-sm">
+              Đang tải dữ liệu...
+            </p>
           </div>
         ) : plans.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -259,58 +330,93 @@ export default function PaymentPackages() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...plans].sort((a, b) => a.sortOrder - b.sortOrder).map((plan) => {
-                const tierCfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.BASIC;
-                return (
-                  <TableRow key={plan.id}>
-                    <TableCell>
-                      <Badge variant={tierCfg.variant}>{tierCfg.label}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold">{plan.name}</span>
-                        {plan.popular && <Badge variant="default" className="text-[10px] uppercase">Hot</Badge>}
-                      </div>
-                      {plan.description && <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>}
-                    </TableCell>
-                    <TableCell>
-                      {plan.price === 0 ? (
-                        <span className="font-bold text-emerald-600">Miễn phí</span>
-                      ) : (
-                        <span className="font-bold text-primary">{plan.price.toLocaleString()}đ</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                        {plan.durationDays >= 36500 ? <Infinity size={16} /> : <Clock size={16} />}
-                        {formatDuration(plan.durationDays)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {plan.features?.length || 0} tính năng
-                    </TableCell>
-                    <TableCell>
-                      {plan.active ? (
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                          Hoạt động
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-muted-foreground">
-                          Tắt
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
-                        <Edit3 className="w-4 h-4 " />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(plan)}>
-                        <Trash2 className="w-4 h-4 " />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {[...plans]
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((plan) => {
+                  const tierCfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.BASIC;
+                  return (
+                    <TableRow key={plan.id}>
+                      <TableCell>
+                        <Badge variant={tierCfg.variant}>{tierCfg.label}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold">{plan.name}</span>
+                          {plan.popular && (
+                            <Badge
+                              variant="default"
+                              className="text-[10px] uppercase"
+                            >
+                              Hot
+                            </Badge>
+                          )}
+                        </div>
+                        {plan.description && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {plan.description}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {plan.price === 0 ? (
+                          <span className="font-bold text-emerald-600">
+                            Miễn phí
+                          </span>
+                        ) : (
+                          <span className="font-bold text-primary">
+                            {plan.price.toLocaleString()}đ
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                          {plan.durationDays >= 36500 ? (
+                            <Infinity size={16} />
+                          ) : (
+                            <Clock size={16} />
+                          )}
+                          {formatDuration(plan.durationDays)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {plan.features?.length || 0} tính năng
+                      </TableCell>
+                      <TableCell>
+                        {plan.active ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                          >
+                            Hoạt động
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="secondary"
+                            className="text-muted-foreground"
+                          >
+                            Tắt
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(plan)}
+                        >
+                          <Edit3 className="w-4 h-4 " />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(plan)}
+                        >
+                          <Trash2 className="w-4 h-4 " />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
             </TableBody>
           </Table>
         )}
@@ -326,23 +432,27 @@ export default function PaymentPackages() {
               Tùy chỉnh thông tin gói đăng ký, tính năng và giá bán.
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6 mt-4">
             {!selectedPlan && (
               <div className="space-y-3">
                 <Label>Tier hệ thống</Label>
                 <div className="grid grid-cols-3 gap-3">
-                  {(["BASIC", "PRO", "PREMIUM"] as SubscriptionTier[]).map((tier) => (
-                    <Button
-                      key={tier}
-                      type="button"
-                      variant={formData.tier === tier ? "default" : "outline"}
-                      className="w-full"
-                      onClick={() => setFormData(prev => ({ ...prev, tier }))}
-                    >
-                      {TIER_CONFIG[tier].label}
-                    </Button>
-                  ))}
+                  {(["BASIC", "PRO", "PREMIUM"] as SubscriptionTier[]).map(
+                    (tier) => (
+                      <Button
+                        key={tier}
+                        type="button"
+                        variant={formData.tier === tier ? "default" : "outline"}
+                        className="w-full"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, tier }))
+                        }
+                      >
+                        {TIER_CONFIG[tier].label}
+                      </Button>
+                    ),
+                  )}
                 </div>
               </div>
             )}
@@ -350,7 +460,9 @@ export default function PaymentPackages() {
             {selectedPlan && (
               <div className="flex items-center gap-2">
                 <Label>Tier:</Label>
-                <Badge variant={TIER_CONFIG[selectedPlan.tier]?.variant || "outline"}>
+                <Badge
+                  variant={TIER_CONFIG[selectedPlan.tier]?.variant || "outline"}
+                >
                   {TIER_CONFIG[selectedPlan.tier]?.label || selectedPlan.tier}
                 </Badge>
               </div>
@@ -361,7 +473,9 @@ export default function PaymentPackages() {
                 <Label>Tên gói *</Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   placeholder="VD: PRO (Phổ biến nhất)"
                   required
                 />
@@ -370,7 +484,12 @@ export default function PaymentPackages() {
                 <Label>Mô tả ngắn</Label>
                 <Input
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="Mô tả sẽ hiển thị ở trang báo giá..."
                 />
               </div>
@@ -380,7 +499,12 @@ export default function PaymentPackages() {
                   type="number"
                   min={0}
                   value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      price: Number(e.target.value) || 0,
+                    }))
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -389,7 +513,12 @@ export default function PaymentPackages() {
                   type="number"
                   min={1}
                   value={formData.durationDays}
-                  onChange={(e) => setFormData(prev => ({ ...prev, durationDays: Number(e.target.value) || 1 }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      durationDays: Number(e.target.value) || 1,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -398,19 +527,36 @@ export default function PaymentPackages() {
               <div className="flex items-center gap-3">
                 <Switch
                   checked={formData.active}
-                  onCheckedChange={(c) => setFormData(prev => ({ ...prev, active: c }))}
+                  onCheckedChange={(c) =>
+                    setFormData((prev) => ({ ...prev, active: c }))
+                  }
                   id="active-mode"
                 />
-                <Label htmlFor="active-mode" className="cursor-pointer">Kích hoạt gói</Label>
+                <Label htmlFor="active-mode" className="cursor-pointer">
+                  Kích hoạt gói
+                </Label>
               </div>
               <div className="flex items-center gap-3">
                 <Switch
                   checked={formData.popular}
-                  onCheckedChange={(c) => setFormData(prev => ({ ...prev, popular: c }))}
+                  onCheckedChange={(c) =>
+                    setFormData((prev) => ({ ...prev, popular: c }))
+                  }
                   id="popular-mode"
                 />
-                <Label htmlFor="popular-mode" className="cursor-pointer flex items-center gap-1">
-                  Đánh dấu Nổi Bật <Star size={14} className={formData.popular ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'} />
+                <Label
+                  htmlFor="popular-mode"
+                  className="cursor-pointer flex items-center gap-1"
+                >
+                  Đánh dấu Nổi Bật{" "}
+                  <Star
+                    size={14}
+                    className={
+                      formData.popular
+                        ? "fill-amber-500 text-amber-500"
+                        : "text-muted-foreground"
+                    }
+                  />
                 </Label>
               </div>
             </div>
@@ -419,7 +565,10 @@ export default function PaymentPackages() {
               <Label>Tính năng ({formData.features.length})</Label>
               <div className="space-y-2">
                 {formData.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-center gap-3 bg-background border rounded-lg p-2 group">
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 bg-background border rounded-lg p-2 group"
+                  >
                     <GripVertical size={14} className="text-muted-foreground" />
                     <span className="flex-1 text-sm">{feature}</span>
                     <Button
@@ -438,7 +587,12 @@ export default function PaymentPackages() {
                 <Input
                   value={newFeature}
                   onChange={(e) => setNewFeature(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature(); }}}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addFeature();
+                    }
+                  }}
                   placeholder="Nhập tính năng mới..."
                 />
                 <Button type="button" onClick={addFeature} variant="secondary">
@@ -448,9 +602,17 @@ export default function PaymentPackages() {
             </div>
 
             <DialogFooter className="border-t pt-4 mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Hủy
+              </Button>
               <Button type="submit" disabled={isCreating || isUpdating}>
-                {(isCreating || isUpdating) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {(isCreating || isUpdating) && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 {selectedPlan ? "Lưu thay đổi" : "Xuất bản"}
               </Button>
             </DialogFooter>
@@ -463,12 +625,23 @@ export default function PaymentPackages() {
           <DialogHeader>
             <DialogTitle>Xác nhận xóa</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa gói <strong>{selectedPlan?.name}</strong>? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa gói{" "}
+              <strong>{selectedPlan?.name}</strong>? Hành động này không thể
+              hoàn tác.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Hủy</Button>
-            <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
               {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Xóa ngay
             </Button>

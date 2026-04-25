@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { tMsg } from "@/i18n";
 import {
   AlertCircle,
   Banknote,
@@ -22,10 +23,11 @@ import {
 import { type PaymentStatusChangeEvent, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
+import { useTranslation } from "react-i18next";
 
 interface PaymentStatusProps {
   orderId: string;
-  amount: number;
+  amount?: number;
   transferAmountVnd?: number;
   bankId: string;
   accountNo: string;
@@ -38,6 +40,11 @@ const MAX_WAIT_TIME_MS = 300000;
 const FALLBACK_POLL_INTERVAL_MS = 3000;
 const FALLBACK_POLL_WINDOW_MS = 18000;
 
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 export default function PaymentStatus({
   orderId,
   amount,
@@ -45,10 +52,10 @@ export default function PaymentStatus({
   bankId,
   accountNo,
   accountName,
-  createdAt,
   onClose,
 }: PaymentStatusProps) {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [elapsedTime, setElapsedTime] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
@@ -73,7 +80,7 @@ export default function PaymentStatus({
       setPollingUntil(null);
       invalidateWalletAndPayment();
       if (source === "poll") {
-        toast.success("Thanh toán thành công!");
+        toast.success(tMsg("payment.status.success"));
       }
       setTimeout(() => router.push("/premium/success"), 1000);
     },
@@ -81,13 +88,13 @@ export default function PaymentStatus({
   );
 
   const finalizeFailure = useCallback(
-    (source: "socket" | "poll", message?: string) => {
+    (source: "socket" | "poll", messageKey?: string) => {
       handledRef.current = true;
       setResolvedBy(source);
       setPollingUntil(null);
       invalidateWalletAndPayment();
       if (source === "poll") {
-        toast.error(message || "Thanh toán thất bại.");
+        toast.error(tMsg(messageKey) || tMsg("payment.status.failed"));
       }
       onClose();
     },
@@ -98,7 +105,7 @@ export default function PaymentStatus({
     (
       status: PaymentStatusResponse["status"] | string | undefined,
       source: "socket" | "poll",
-      message?: string,
+      messageKey?: string,
     ) => {
       if (!status || handledRef.current) return;
 
@@ -108,7 +115,7 @@ export default function PaymentStatus({
       }
 
       if (status === "FAILED") {
-        finalizeFailure(source, message);
+        finalizeFailure(source, messageKey);
       }
     },
     [finalizeFailure, finalizeSuccess],
@@ -129,46 +136,15 @@ export default function PaymentStatus({
   );
 
   useEffect(() => {
-    console.info("[payment] waiting for realtime payment status", {
-      orderId,
-      createdAt: new Date(createdAt).toISOString(),
-      receivedAt: new Date().toISOString(),
-    });
-  }, [createdAt, orderId]);
-
-  useEffect(() => {
-    const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
-      if (handledRef.current) return;
-      if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
-
-      const receivedAt = Date.now();
-      console.info("[payment] matched payment-status-change", {
-        orderId,
-        newStatus: data.newStatus,
-        receivedAt: new Date(receivedAt).toISOString(),
-        createPaymentCalledAt: new Date(createdAt).toISOString(),
-        latencyMs: receivedAt - createdAt,
-      });
-
-      handleStatusResult(data.newStatus, "socket", data.message);
-    });
-
-    return () => {
-      unsubStatus();
-    };
-  }, [createdAt, handleStatusResult, onPaymentStatusChange, orderId]);
-
-  useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime((prev) => {
         const nextValue = prev + 1000;
         if (nextValue >= MAX_WAIT_TIME_MS) {
           clearInterval(timer);
-          toast.error(
-            "Giao dịch timeout. Nếu bạn đã chuyển khoản, hệ thống sẽ đối soát sau.",
-            { duration: 5000 },
-          );
-          onClose();
+          if (!handledRef.current) {
+            toast.error(tMsg("payment.timeoutError"), { duration: 5000 });
+            onClose();
+          }
         }
         return nextValue;
       });
@@ -178,15 +154,22 @@ export default function PaymentStatus({
   }, [onClose]);
 
   useEffect(() => {
+    const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
+      if (handledRef.current) return;
+      if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
+
+      handleStatusResult(data.newStatus, "socket", data.message);
+    });
+
+    return () => unsubStatus();
+  }, [handleStatusResult, onPaymentStatusChange, orderId]);
+
+  useEffect(() => {
     if (handledRef.current) return;
 
     if (!isConnected) {
       const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
       setPollingUntil(deadline);
-      console.warn("[payment] socket disconnected, enabling fallback polling", {
-        orderId,
-        pollingUntil: new Date(deadline).toISOString(),
-      });
       void pollStatus("poll");
       return;
     }
@@ -203,17 +186,11 @@ export default function PaymentStatus({
     }
 
     const intervalId = setInterval(() => {
-      if (handledRef.current) {
-        clearInterval(intervalId);
-        return;
-      }
-
-      if (Date.now() >= pollingUntil) {
+      if (handledRef.current || Date.now() >= (pollingUntil || 0)) {
         clearInterval(intervalId);
         setPollingUntil(null);
         return;
       }
-
       void pollStatus("poll");
     }, FALLBACK_POLL_INTERVAL_MS);
 
@@ -225,7 +202,7 @@ export default function PaymentStatus({
 
     const now = Date.now();
     if (now - lastCheckTime < 5000) {
-      toast.info("Vui lòng đợi 5 giây giữa các lần kiểm tra.");
+      toast.info(t("payment.waitFiveSeconds"));
       return;
     }
 
@@ -235,12 +212,8 @@ export default function PaymentStatus({
     try {
       const result = await getPaymentStatus(orderId, true);
       handleStatusResult(result.data?.status, "poll", result.data?.message);
-
-      if (!handledRef.current) {
-        toast.info("Giao dịch đang chờ xác nhận...", { duration: 2000 });
-      }
     } catch {
-      toast.error("Lỗi khi tải lại trạng thái!");
+      toast.error(tMsg("api.error"));
     } finally {
       setIsManualChecking(false);
     }
@@ -248,7 +221,7 @@ export default function PaymentStatus({
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`Đã sao chép ${label}`);
+    toast.success(`${tMsg("common.copied")} ${label}`);
   };
 
   const formatTimeLeft = (ms: number) => {
@@ -258,8 +231,9 @@ export default function PaymentStatus({
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const qrAmountVnd = transferAmountVnd ?? amount * 1000;
-  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${orderId}&accountName=${accountName}`;
+  const displayAmount = toFiniteNumber(amount, 0);
+  const qrAmountVnd = toFiniteNumber(transferAmountVnd, displayAmount * 1000);
+  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(accountName)}`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
@@ -272,10 +246,10 @@ export default function PaymentStatus({
               </div>
               <div className="space-y-2">
                 <h4 className="text-2xl font-black text-white uppercase tracking-tight">
-                  Xác nhận hủy?
+                  {t("payment.confirmCancelTitle")}
                 </h4>
                 <p className="text-slate-400 text-sm font-medium px-4">
-                  Giao dịch sẽ bị dừng lại và mã QR này sẽ không còn hiệu lực.
+                  {t("payment.confirmCancelDesc")}
                 </p>
               </div>
               <div className="flex flex-col gap-3 pt-2">
@@ -283,13 +257,13 @@ export default function PaymentStatus({
                   onClick={onClose}
                   className="h-14 rounded-2xl bg-pink-400 hover:bg-blue-600 text-white font-black uppercase text-xs tracking-widest shadow-lg shadow-red-500/20"
                 >
-                  Đồng ý hủy
+                  {t("payment.agreeCancel")}
                 </Button>
                 <button
                   onClick={() => setIsConfirming(false)}
                   className="h-12 text-slate-500 hover:text-white font-bold text-xs uppercase transition-colors"
                 >
-                  Quay lại thanh toán
+                  {t("payment.backToPayment")}
                 </button>
               </div>
             </div>
@@ -306,7 +280,7 @@ export default function PaymentStatus({
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="p-10 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5">
             <div className="relative group">
-              <div className="absolute -inset-4 border-2 border-indigo-500/20 rounded-[2rem] dashed-path animate-pulse" />
+              <div className="absolute -inset-4 border-2 border-indigo-500/20 rounded-[2rem] animate-pulse" />
               <div className="relative bg-white p-4 rounded-3xl shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
                 <Image
                   src={qrUrl}
@@ -323,13 +297,13 @@ export default function PaymentStatus({
               <div className="flex -space-x-2">
                 <div className="w-6 h-6 rounded-full bg-blue-600 border-2 border-[#12141c] flex items-center justify-center text-[10px] font-bold">
                   V
-                </div>
+                 </div>
                 <div className="w-6 h-6 rounded-full bg-red-600 border-2 border-[#12141c] flex items-center justify-center text-[10px] font-bold">
                   N
                 </div>
               </div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Hỗ trợ mọi ngân hàng và Napas247
+                {t("payment.allBanksSupport")}
               </p>
             </div>
             <div className="mt-5 text-center">
@@ -345,7 +319,7 @@ export default function PaymentStatus({
                 {(isManualChecking || isStatusLoading) && (
                   <RefreshCw size={12} className="animate-spin-slow" />
                 )}
-                Không tự động cập nhật? Kiểm tra trực tiếp
+                {t("payment.manualCheck")}
               </button>
             </div>
           </div>
@@ -354,36 +328,36 @@ export default function PaymentStatus({
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                  <Banknote className="text-indigo-400" /> Thanh toán
+                  <Banknote className="text-indigo-400" /> {t("payment.paymentTitle")}
                 </h3>
                 <p className="text-slate-500 text-sm mt-1">
-                  Thực hiện chuyển khoản theo thông tin bên dưới
+                  {t("payment.payoutDesc")}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <InfoRow
-                  label="Ngân hàng"
+                  label={t("payment.bank")}
                   value={bankId}
-                  onCopy={() => copyToClipboard(bankId, "ngân hàng")}
+                  onCopy={() => copyToClipboard(bankId, t("payment.bank"))}
                 />
                 <InfoRow
-                  label="Số tài khoản"
+                  label={t("wallet.table.id")}
                   value={accountNo}
-                  onCopy={() => copyToClipboard(accountNo, "số tài khoản")}
+                  onCopy={() => copyToClipboard(accountNo, t("wallet.table.id"))}
                   isBold
                 />
-                <InfoRow label="Chủ tài khoản" value={accountName} />
+                <InfoRow label={t("wallet.withdraw.accountHolder")} value={accountName} />
                 <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase text-pink-400 tracking-widest">
-                      Số hoa cần nạp
+                      {t("payment.amountNeeded")}
                     </p>
                     <p className="text-2xl font-black text-white">
-                      {amount.toLocaleString("vi-VN")} 🌸
+                      {displayAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Chuyển khoản: {qrAmountVnd.toLocaleString("vi-VN")}đ
+                      {t("wallet.withdraw.actualReceived")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
                     </p>
                   </div>
                   <div className="p-2 bg-pink-500 rounded-xl">
@@ -395,14 +369,14 @@ export default function PaymentStatus({
               <div className="p-5 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl relative overflow-hidden group">
                 <div className="relative z-10">
                   <p className="text-[10px] font-black uppercase text-pink-500 tracking-[0.2em] mb-2">
-                    Nội dung bắt buộc
+                    {t("payment.requiredContent")}
                   </p>
                   <div className="flex items-center justify-between font-mono">
                     <span className="text-2xl font-black text-white tracking-widest">
                       {orderId}
                     </span>
                     <button
-                      onClick={() => copyToClipboard(orderId, "nội dung")}
+                      onClick={() => copyToClipboard(orderId, t("payment.requiredContent"))}
                       className="p-2 hover:bg-yellow-500/20 rounded-lg text-pink-500 transition-colors"
                     >
                       <Copy size={18} />
@@ -419,12 +393,12 @@ export default function PaymentStatus({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-pink-400">
                   <RefreshCw size={16} className="animate-spin-slow" />
-                  <span className="text-xs font-bold uppercase tracking-widest">
+                  <span className="text-xs font-bold uppercase tracking-widest whitespace-nowrap">
                     {resolvedBy
-                      ? `Đã xác nhận qua ${resolvedBy}`
+                      ? t("payment.confirmedVia", { source: resolvedBy })
                       : isConnected
-                        ? "Đang chờ socket..."
-                        : "Socket mất kết nối, đang fallback..."}
+                        ? t("payment.waitingSocket")
+                        : t("payment.socketFallback")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-400 font-mono text-sm">
@@ -439,7 +413,7 @@ export default function PaymentStatus({
                   variant="ghost"
                   className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-500/10 hover:border-pink-500/30 font-bold text-xs uppercase text-slate-400 hover:text-pink-400 transition-all"
                 >
-                  Hủy giao dịch
+                  {t("payment.cancelTransaction")}
                 </Button>
               </div>
             </div>

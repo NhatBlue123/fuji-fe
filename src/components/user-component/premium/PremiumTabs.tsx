@@ -1,7 +1,10 @@
+"use client";
+
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface PremiumTabsProps {
-  activeTab: "premium" | "topup"; // Xác định tab nào đang hoạt động
+  activeTab: "premium" | "topup";
   onChangeTab: (tab: "premium" | "topup") => void;
 }
 
@@ -9,10 +12,12 @@ export default function PremiumTabs({
   activeTab,
   onChangeTab,
 }: PremiumTabsProps) {
+  const { t } = useTranslation();
+
   const tabs = [
-    { id: "premium", label: "Nâng cấp Premium" },
-    { id: "topup", label: "Nạp Hoa Anh Đào" },
-  ] as const;
+    { id: "premium" as const, label: t("premium.modal.tabPremium") },
+    { id: "topup" as const, label: t("premium.modal.tabTopup") },
+  ];
 
   return (
     <div className="border-b border-slate-200 dark:border-slate-800/40 flex justify-center mb-10 w-full">

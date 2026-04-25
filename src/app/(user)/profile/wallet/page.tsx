@@ -26,6 +26,7 @@ import {
   useGetWalletHistoryQuery,
   useGetWalletQuery,
 } from "@/store/services/walletApi";
+import { useTranslation } from "react-i18next";
 import { Transaction } from "@/types/wallet";
 import {
   Card,
@@ -48,6 +49,7 @@ import { cn } from "@/lib/utils";
 
 export default function FujiWallet() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState<string>("ALL");
   const size = 10;
@@ -90,16 +92,16 @@ export default function FujiWallet() {
             onClick={() => router.back()}
             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-3"
           >
-            <ArrowLeft size={14} /> Quay lại
+            <ArrowLeft size={14} /> {t("wallet.back")}
           </button>
           <h1 className="text-4xl font-black tracking-tight uppercase">
-            Ví{" "}
+            {t("wallet.title").split(" ")[0]}{" "}
             <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">
-              Fuji
+              {t("wallet.title").split(" ")[1] || "Fuji"}
             </span>
           </h1>
           <p className="text-muted-foreground text-sm font-medium">
-            Quản lý số dư và lịch sử giao dịch của bạn.
+            {t("wallet.subtitle")}
           </p>
         </div>
       </header>
@@ -107,35 +109,28 @@ export default function FujiWallet() {
       <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Wallet Card */}
-          <Card className="lg:col-span-8 overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-[#fff7fb] to-[#fff1f6] text-slate-900 relative shadow-2xl shadow-pink-500/10 rounded-[2.5rem] dark:border-white/5 dark:bg-gradient-to-br dark:from-[#0B1120] dark:via-[#111827] dark:to-[#0a0c10] dark:text-white dark:shadow-black/30">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/16 dark:bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-fuchsia-400/10 dark:bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          <Card className="lg:col-span-8 overflow-hidden border-none bg-gradient-to-br from-[#0B1120] via-[#111827] to-[#0a0c10] text-white relative shadow-2xl rounded-[2.5rem]">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
             <CardHeader className="relative z-10 pt-6 px-10">
-              <div className="flex items-center gap-2 text-slate-700 dark:text-white/60">
-                <div className="rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-inner dark:border-white/10 dark:bg-white/5">
-                  <Wallet
-                    size={18}
-                    className="text-pink-500 dark:text-pink-400"
-                  />
+              <div className="flex items-center gap-2 text-white/60">
+                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-inner">
+                   <Wallet size={18} className="text-pink-400" />
                 </div>
-
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-pink-100/70">
-                  Tổng số dư khả dụng
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">
+                  {t("wallet.availableBalance")}
                 </span>
-
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="inline-flex">
-                        <Info
-                          size={12}
-                          className="text-pink-500/70 opacity-60 transition hover:opacity-100 dark:text-pink-400"
-                        />
-                      </button>
+                    <TooltipTrigger>
+                      <Info
+                        size={12}
+                        className="opacity-40 hover:opacity-100 text-pink-400"
+                      />
                     </TooltipTrigger>
-                    <TooltipContent className="border border-slate-200 bg-white text-[10px] text-slate-700 shadow-lg dark:border-pink-500/20 dark:bg-[#111827] dark:text-pink-100 dark:backdrop-blur-xl">
-                      Số dư dùng để thanh toán dịch vụ Fuji
+                    <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">
+                      {t("wallet.balanceDescription")}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -144,27 +139,26 @@ export default function FujiWallet() {
 
             <CardContent className="relative z-10 px-10 pb-6 pt-4">
               <div className="flex items-baseline gap-4">
-                <span className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900 drop-shadow-[0_0_18px_rgba(236,72,153,0.12)] dark:text-white dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                  {balance.toLocaleString()}
+                <span className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                  {balance.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
                 </span>
                 <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">
                   🌸
                 </span>
               </div>
 
-              <div className="mt-12 pt-8 border-t border-slate-200/80 dark:border-white/5 flex flex-wrap items-center gap-8 justify-between">
+              <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8 justify-between">
                 <div className="flex items-center gap-4 group cursor-help">
-                  {/* Gradient Hoa anh đào đổi sang Pink-Purple */}
                   <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-purple-500 flex items-center justify-center font-black text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-500">
                     🌸
                   </div>
                   <div>
-                    <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest dark:text-pink-100/50">
-                      Quy đổi VND
+                    <div className="text-[10px] text-pink-100/50 font-black uppercase tracking-widest">
+                      {t("wallet.exchangeVND")}
                     </div>
-                    <div className="text-xl font-black text-slate-900 dark:text-white">
-                      {(balance * 1000).toLocaleString()}{" "}
-                      <span className="text-[10px] text-slate-400 ml-1 dark:text-pink-100/30">
+                    <div className="text-xl font-black text-white">
+                      {(balance * 1000).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{" "}
+                      <span className="text-[10px] text-pink-100/30 ml-1">
                         VND
                       </span>
                     </div>
@@ -178,8 +172,8 @@ export default function FujiWallet() {
                           className="opacity-40 hover:opacity-100 text-pink-400"
                         />
                       </TooltipTrigger>
-                      <TooltipContent className="border border-slate-200 bg-white text-[10px] text-slate-700 shadow-lg dark:border-pink-500/20 dark:bg-[#111827] dark:text-pink-100 dark:backdrop-blur-xl">
-                        Số dư dùng để thanh toán dịch vụ Fuji
+                      <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">
+                        {t("wallet.balanceDescription")}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -190,9 +184,9 @@ export default function FujiWallet() {
                   <Button
                     onClick={() => router.push("/premium?tab=topup")}
                     size="lg"
-                    className="flex-1 md:flex-none bg-pink-500 hover:bg-pink-600 text-white font-bold px-6 py-2 rounded-xl transition shadow-lg shadow-pink-500/20 dark:bg-secondary dark:hover:bg-secondary/90 dark:shadow-none"
+                    className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
                   >
-                    <Plus className="mr-2" size={18} strokeWidth={3} /> Nạp 🌸
+                    <Plus className="mr-2" size={18} strokeWidth={3} /> {t("wallet.deposit")}
                   </Button>
 
                   <Button
@@ -201,7 +195,7 @@ export default function FujiWallet() {
                     className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
                   >
                     <ArrowUpRight className="mr-2" size={18} strokeWidth={3} />{" "}
-                    Rút Tiền
+                    {t("wallet.withdraw.title").split(" ")[0]}
                   </Button>
                 </div>
               </div>
@@ -214,7 +208,7 @@ export default function FujiWallet() {
               <TrendingUp className="absolute -right-4 -bottom-4 w-32 h-32 text-pink-500/10 -rotate-12 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
               <CardHeader className="pb-2">
                 <CardDescription className="text-pink-500/70 font-black uppercase tracking-[0.2em] text-[10px]">
-                  Giao dịch tháng này
+                  {t("wallet.monthlyTransactions")}
                 </CardDescription>
                 <CardTitle className="text-5xl font-black text-pink-500 dark:text-pink-400 drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">
                   {historyData?.totalElements || 0}
@@ -222,7 +216,7 @@ export default function FujiWallet() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2 text-pink-500 dark:text-pink-400 font-bold text-[10px] uppercase tracking-wider bg-pink-500/10 border border-pink-500/20 px-3 py-1.5 rounded-full shadow-inner animate-pulse">
-                  <ArrowUpRight size={14} /> Tăng trưởng ổn định
+                  <ArrowUpRight size={14} /> {t("wallet.steadyGrowth")}
                 </div>
               </CardContent>
             </Card>
@@ -230,10 +224,10 @@ export default function FujiWallet() {
             <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[100px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl">
               <div>
                 <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-[0.2em] mb-1">
-                  Hạng thành viên
+                  {t("wallet.membershipLevel")}
                 </p>
                 <p className="text-xl font-black text-foreground dark:text-white uppercase tracking-tighter">
-                  Premium User
+                  {t("wallet.premiumUser")}
                 </p>
               </div>
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-400 via-pink-500 to-purple-500 rotate-12 flex items-center justify-center shadow-lg shadow-pink-500/20 text-white">
@@ -252,10 +246,10 @@ export default function FujiWallet() {
               </div>
               <div>
                 <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">
-                  Lịch sử giao dịch
+                  {t("wallet.transactionHistory")}
                 </CardTitle>
                 <CardDescription className="text-muted-foreground dark:text-slate-400 text-[11px] font-medium uppercase tracking-wider">
-                  Chi tiết các biến động số dư
+                  {t("wallet.balanceFluctuations")}
                 </CardDescription>
               </div>
             </div>
@@ -265,7 +259,7 @@ export default function FujiWallet() {
                 {["ALL", "DEPOSIT", "WITHDRAW"].map((type) => (
                   <button
                     key={type}
-                    onClick={() => setFilter(type)}
+                    onClick={() => setFilter(type)} // Filter currently handled by local state if implemented, or query params
                     className={cn(
                       "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                       filter === type
@@ -273,11 +267,7 @@ export default function FujiWallet() {
                         : "text-muted-foreground dark:text-slate-500 hover:text-foreground hover:bg-white/5",
                     )}
                   >
-                    {type === "ALL"
-                      ? "Tất cả"
-                      : type === "DEPOSIT"
-                        ? "Nạp vào"
-                        : "Chi tiêu"}
+                    {t(`wallet.filter.${type.toLowerCase()}`)}
                   </button>
                 ))}
               </div>
@@ -289,7 +279,7 @@ export default function FujiWallet() {
                 />
                 <input
                   type="text"
-                  placeholder="Mã giao dịch..."
+                  placeholder={t("wallet.searchPlaceholder")}
                   className="pl-10 pr-4 h-11 w-full md:w-64 rounded-xl bg-muted dark:bg-black/10 border border-muted dark:border-white/5 focus:ring-2 focus:ring-pink-500/20 outline-none transition-all text-xs font-bold uppercase tracking-widest text-foreground dark:text-white shadow-inner"
                 />
               </div>
@@ -300,14 +290,14 @@ export default function FujiWallet() {
             <Table>
               <TableHeader className="bg-muted/30 dark:bg-black/10 uppercase text-[10px] font-black tracking-widest text-muted-foreground dark:text-slate-500">
                 <TableRow className="dark:border-white/5">
-                  <TableHead className="px-8 h-12">Mã giao dịch</TableHead>
-                  <TableHead className="px-8 h-12">Loại</TableHead>
+                  <TableHead className="px-8 h-12">{t("wallet.table.id")}</TableHead>
+                  <TableHead className="px-8 h-12">{t("wallet.table.type")}</TableHead>
                   <TableHead className="px-8 h-12 text-right">
-                    Số tiền
+                    {t("wallet.table.amount")}
                   </TableHead>
-                  <TableHead className="px-8 h-12">Số dư còn lại</TableHead>
+                  <TableHead className="px-8 h-12 whitespace-nowrap">{t("wallet.table.balanceAfter")}</TableHead>
                   <TableHead className="px-8 h-12 text-right">
-                    Trạng thái
+                    {t("wallet.table.status")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -340,7 +330,7 @@ export default function FujiWallet() {
                           </span>
                           <span className="text-[10px] text-muted-foreground dark:text-slate-500 font-bold mt-0.5">
                             {new Date(tx.createdAt).toLocaleDateString(
-                              "vi-VN",
+                              i18n.language === 'vi' ? 'vi-VN' : 'en-US',
                               {
                                 day: "2-digit",
                                 month: "2-digit",
@@ -353,19 +343,23 @@ export default function FujiWallet() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="px-8 py-6 font-bold text-[10px] uppercase tracking-wider text-muted-foreground dark:text-slate-500">
-                      {tx.type === "DEPOSIT" ? "Nạp 🌸" : "Chi trả dịch vụ"}
+                    <TableCell className="px-8 py-6 font-bold text-[10px] uppercase tracking-wider text-muted-foreground dark:text-slate-500 whitespace-nowrap">
+                      {tx.type === "DEPOSIT" 
+                        ? t("wallet.types.deposit") 
+                        : t("wallet.types.spending")}
                     </TableCell>
-                    {/* Số tiền - Nạp màu Emerald, chi tiêu màu Trắng/Slate mặc định */}
                     <TableCell
-                      className={`px-8 py-6 text-right font-black text-xl tracking-tighter ${tx.type === "DEPOSIT" || tx.amount > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"}`}
+                      className={cn(
+                        "px-8 py-6 text-right font-black text-xl tracking-tighter whitespace-nowrap",
+                        (tx.type === "DEPOSIT" || tx.amount > 0) ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"
+                      )}
                     >
-                      {tx.type === "DEPOSIT" || tx.amount > 0}
-                      {tx.amount.toLocaleString()}
+                      {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : "-"}
+                      {Math.abs(tx.amount).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
                       <span className="text-[10px] ml-1 opacity-70">🌸</span>
                     </TableCell>
-                    <TableCell className="px-8 py-6 font-semibold text-xs text-muted-foreground dark:text-slate-400 tracking-tight">
-                      {tx.balanceAfter.toLocaleString()}{" "}
+                    <TableCell className="px-8 py-6 font-semibold text-xs text-muted-foreground dark:text-slate-400 tracking-tight whitespace-nowrap">
+                      {tx.balanceAfter.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{" "}
                       <span className="text-[10px] opacity-40 whitespace-nowrap">
                         🌸
                       </span>
@@ -375,7 +369,7 @@ export default function FujiWallet() {
                         variant="secondary"
                         className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[9px] font-black uppercase px-3 py-1"
                       >
-                        Thành công
+                        {t("wallet.status.success")}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -388,7 +382,7 @@ export default function FujiWallet() {
                           <History size={32} strokeWidth={1.5} />
                         </div>
                         <p className="text-xs font-black uppercase tracking-widest">
-                          Chưa có giao dịch nào
+                          {t("common.noResults")}
                         </p>
                       </div>
                     </TableCell>
@@ -401,7 +395,7 @@ export default function FujiWallet() {
           {totalPages > 1 && (
             <CardFooter className="py-6 border-t dark:border-white/5 flex items-center justify-between px-10 bg-muted/20 dark:bg-black/10">
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Trang {page + 1} / {totalPages}
+                {t("sidebar.studentLevel")}: {page + 1} / {totalPages}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -432,6 +426,7 @@ export default function FujiWallet() {
 }
 
 function LoadingState() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-[400px] flex flex-col justify-center items-center gap-6">
       <div className="relative">
@@ -440,10 +435,10 @@ function LoadingState() {
       </div>
       <div className="flex flex-col items-center gap-1">
         <p className="text-pink-500 dark:text-pink-400 font-black uppercase tracking-[0.3em] text-[10px]">
-          Fuji Wallet
+          Fuji {t("wallet.title").split(" ")[1] || "Wallet"}
         </p>
         <p className="text-muted-foreground/50 font-bold uppercase tracking-widest text-[8px] animate-pulse">
-          Loading secure data...
+          {t("api.loading")}
         </p>
       </div>
     </div>

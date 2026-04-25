@@ -5,8 +5,8 @@
     "flashcard": "Thẻ ghi nhớ",
     "management": "Quản lý",
     "notification": "Thông báo",
-    "darkMode": "Chế độ tối",
-    "lightMode": "Chế độ sáng",
+    "darkMode": "tối",
+    "lightMode": "sáng",
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
     "creating": "Đang tạo...",
@@ -18,8 +18,59 @@
     "noResults": "Không có kết quả",
     "register": "Đăng ký",
     "viewAll": "Xem tất cả",
+    "viewNow": "Tới ngay",
     "noNotifications": "Không có thông báo mới",
-    "profile": "Hồ sơ"
+    "profile": "Hồ sơ",
+    "all": "Tất cả",
+    "search": "Tìm kiếm",
+    "create": "Tạo mới",
+    "edit": "Chỉnh sửa",
+    "notUpdated": "Chưa cập nhật",
+    "notDetermined": "Chưa xác định",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "processing": "Đang xử lý...",
+    "back": "Quay lại",
+    "save": "Lưu thay đổi",
+    "delete": "Xóa",
+    "loading": "Đang tải...",
+    "success": "Thành công",
+    "error": "Lỗi",
+    "pleaseLogin": "Vui lòng đăng nhập để thao tác!",
+    "package": "Gói",
+    "undo": "Hoàn tác",
+    "free": "Miễn phí",
+    "settings": "Cài đặt",
+    "anonymous": "Ẩn danh",
+    "roles": {
+      "student": "Học viên",
+      "admin": "Quản trị viên",
+      "instructor": "Giảng viên"
+    },
+    "saving": "Đang lưu...",
+    "theme": "Giao diện",
+    "toggleTheme": "Đổi giao diện",
+    "saveChanges": "Lưu thay đổi",
+    "exportExcel": "Xuất Excel",
+    "action": "Hành động",
+    "status": "Trạng thái",
+    "time": "Thời gian",
+    "noAccess": "Không có quyền truy cập",
+    "pageInfo": "Trang {{current}} / {{total}}",
+    "prev": "Trước",
+    "next": "Sau",
+    "myProfile": "Hồ sơ của tôi",
+    "support": "Hỗ trợ",
+    "docs": "Tài liệu",
+    "accounts": "tài khoản",
+    "refresh": "Làm mới",
+    "copy": "Sao chép",
+    "me": "Tôi",
+    "errorOccurred": "Đã có lỗi xảy ra",
+    "tryLater": "Vui lòng thử lại sau",
+    "tryAgain": "Thử lại",
+    "close": "Đóng",
+    "copied": "Đã sao chép"
   },
   "sidebar": {
     "subtitle": "Học Tiếng Nhật",
@@ -30,7 +81,8 @@
     "studentLevel": "Học viên",
     "logoutSuccess": "Đăng xuất thành công!",
     "logoutFailed": "Đăng xuất thất bại",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "videoCall": "Video Call"
   },
   "languageSwitcher": {
     "title": "Cài đặt ngôn ngữ",
@@ -38,9 +90,16 @@
     "noResults": "Không tìm thấy ngôn ngữ phù hợp"
   },
   "auth": {
+    "otpSent": "Mã OTP đã được gửi đến email của bạn",
+    "registerSuccess": "Đăng ký tài khoản thành công!",
+    "registerDirectSuccess": "Tạo tài khoản thành công!",
+    "verifyOtpSuccess": "Xác thực OTP thành công!",
+    "checkOtpSuccess": "Mã xác thực chính xác!",
+    "forgotPasswordEmailNotFound": "Email này chưa được đăng ký trong hệ thống",
+    "forgotPasswordOtpSent": "Mã OTP khôi phục mật khẩu đã được gửi",
+    "resetPasswordSuccess": "Đặt lại mật khẩu thành công!",
     "loginSuccess": "Đăng nhập thành công",
     "loginFail": "Đăng nhập thất bại",
-    "registerSuccess": "Đăng ký thành công",
     "username": "Tên đăng nhập",
     "fullname": "Họ tên",
     "email": "Email",
@@ -65,14 +124,17 @@
     "otpExpired": "Mã OTP đã hết hạn",
     "otpInvalidOrExpired": "Mã OTP không chính xác hoặc đã hết hạn!",
     "registerCanLogin": "Bạn có thể đăng nhập ngay bây giờ.",
-    "verifyOtpSuccess": "Xác thực OTP thành công",
     "userNotFound": "Người dùng không tồn tại",
     "accountNotActivated": "Tài khoản chưa được kích hoạt",
     "accountDisabled": "Tài khoản chưa được kích hoạt hoặc đã bị khóa",
+    "accountLocked": "Tài khoản của bạn đang bị khóa tạm thời",
     "googleVerifySuccess": "Xác thực Google thành công!",
     "googleWelcome": "Chào mừng bạn gia nhập FUJI",
-    "refreshSuccess": "Làm mới token thành công",
-    "logoutSuccess": "Đăng xuất thành công",
+    "googleNoId": "Không lấy được mã định danh Google",
+    "googleNoEmail": "Tài khoản Google không cấp email",
+    "googleEmailConflict": "Email đã liên kết với tài khoản khác",
+    "refreshSuccess": "Làm mới phiên làm việc thành công",
+    "logoutSuccess": "Đăng xuất thành công!",
     "google": "Google",
     "backToEdit": "Quay lại chỉnh sửa thông tin",
     "confirmOtp": "Xác nhận OTP",
@@ -93,17 +155,175 @@
       "confirmPasswordRequired": "Vui lòng xác nhận mật khẩu",
       "passwordsNotMatch": "Mật khẩu không khớp",
       "otpRequired": "Vui lòng nhập đầy đủ 6 số"
+    },
+    "logoutFailed": "Đăng xuất thất bại",
+    "logout": "Đăng xuất",
+    "error": {
+      "invalidEmail": "Email không hợp lệ",
+      "fullNameMinLength": "Họ tên phải có ít nhất 3 ký tự"
+    },
+    "placeholder": {
+      "fullName": "Nhập họ và tên..."
+    },
+    "label": {
+      "fullName": "Họ và tên đầy đủ",
+      "email": "Địa chỉ Email"
     }
   },
   "api": {
     "loading": "Đang tải dữ liệu...",
     "error": "Có lỗi xảy ra",
     "validation": {
-      "invalid": "Dữ liệu không hợp lệ"
+      "invalid": "Dữ liệu không hợp lệ",
+      "failed": "Xác thực dữ liệu thất bại",
+      "jsonError": "Lỗi định dạng dữ liệu gửi lên"
     },
     "unexpectedError": "Đã xảy ra lỗi hệ thống",
     "networkError": "Không thể kết nối đến máy chủ",
-    "createFailed": "Đã xảy ra lỗi khi tạo. Vui lòng thử lại."
+    "createFailed": "Đã xảy ra lỗi khi tạo. Vui lòng thử lại.",
+    "success": "Thao tác thành công"
+  },
+  "prefs": {
+    "getSuccess": "Lấy cài đặt người dùng thành công",
+    "updateSuccess": "Cập nhật cài đặt thành công"
+  },
+  "user": {
+    "fetchAllSuccess": "Lấy danh sách người dùng thành công",
+    "fetchStatsSuccess": "Lấy thống kê người dùng thành công",
+    "fetchDetailSuccess": "Lấy thông tin người dùng thành công",
+    "fetchInstructorsSuccess": "Lấy danh sách giảng viên thành công",
+    "fetchMeSuccess": "Lấy thông tin cá nhân thành công",
+    "updateProfileSuccess": "Cập nhật hồ sơ thành công",
+    "changePasswordSuccess": "Đổi mật khẩu thành công",
+    "resetViolationsSuccess": "Reset số lần vi phạm thành công",
+    "updateUserSuccess": "Cập nhật thông tin người dùng thành công",
+    "violationHandled": "Đã đánh dấu vi phạm là đã xử lý",
+    "violationReported": "Đã ghi nhận vi phạm",
+    "warningSent": "Đã gửi cảnh báo thành công",
+    "notFound": "Không tìm thấy người dùng"
+  },
+  "course": {
+    "buySuccess": "Mua khóa học thành công",
+    "updateProgressSuccess": "Đã cập nhật tiến độ bài học",
+    "fetchAllSuccess": "Lấy danh sách khóa học thành công",
+    "createSuccess": "Tạo khóa học thành công",
+    "fetchPublishedSuccess": "Lấy danh sách khóa học đã publish thành công",
+    "fetchInstructorSuccess": "Lấy danh sách khóa học của giảng viên thành công",
+    "searchSuccess": "Tìm kiếm khóa học thành công",
+    "fetchDetailSuccess": "Lấy thông tin khóa học thành công",
+    "updateSuccess": "Cập nhật khóa học thành công",
+    "deleteSuccess": "Xóa khóa học thành công",
+    "rateSuccess": "Đánh giá khóa học thành công",
+    "fetchRatingsSuccess": "Lấy danh sách đánh giá thành công",
+    "page": {
+      "title": "Kho tàng khóa học FUJI",
+      "subtitle": "Hệ thống bài giảng chất lượng cao, thiết kế độc quyền cho người Việt. Từ sơ cấp N5 đến cao cấp N1.",
+      "title_part1": "Khám phá ",
+      "title_part2": " khóa học"
+    },
+    "filter": {
+      "searchPlaceholder": "Tìm kiếm khóa học (VD: Luyện thi N3, Kaiwa...)",
+      "levelLabel": "Trình độ:",
+      "categoryLabel": "Danh mục:",
+      "levelPlaceholder": "Chọn trình độ",
+      "categoryPlaceholder": "Chọn danh mục",
+      "all": "Tất cả",
+      "free": "Miễn phí",
+      "paid": "Tốn phí",
+      "mine": "Của tôi"
+    },
+    "list": {
+      "free": "Miễn phí",
+      "continueLearning": "Tiếp tục học",
+      "registerFree": "Đăng ký miễn phí",
+      "register": "Đăng ký",
+      "lessons": "{{count}} bài học",
+      "students": "{{count}} học viên",
+      "details": "Chi tiết",
+      "noCourses": "Không tìm thấy khóa học nào",
+      "tryDifferentKeyword": "Hãy thử tìm kiếm với từ khóa khác",
+      "loginToRegister": "Vui lòng đăng nhập để đăng ký khóa học.",
+      "searchResults": "Kết quả tìm kiếm",
+      "featuredCourses": "Khóa học nổi bật",
+      "courseCount": "{{count}} khóa học"
+    },
+    "detail": {
+      "notFound": "Không tìm thấy khóa học",
+      "deleted": "Khóa học này không tồn tại hoặc đã bị xóa",
+      "backToList": "Quay lại danh sách",
+      "intro": "Giới thiệu khóa học",
+      "content": "Nội dung khóa học",
+      "moreFromInstructor": "Các khóa học khác của giảng viên",
+      "allLessons": "Tất cả bài học",
+      "progressInfo": "Tiến độ: {{completed}}/{{total}} bài học",
+      "registerToStart": "Đăng ký để bắt đầu học",
+      "startNow": "Vào học ngay",
+      "studentsBought": "Học viên mua khóa học",
+      "noLessons": "Chưa có bài học nào",
+      "courseInfo": "Thông tin khóa học",
+      "lesson": "Bài học",
+      "registerFree": "Đăng ký miễn phí",
+      "enrolled": "Đã đăng ký"
+    },
+    "lesson": {
+      "notFound": "Không tìm thấy bài học",
+      "deleted": "Bài học này không tồn tại hoặc đã bị xóa",
+      "backToCourse": "Quay về khóa học",
+      "content": "Nội dung bài học",
+      "noDescription": "Chưa có mô tả cho bài học này",
+      "completed": "Bạn đã hoàn thành bài học này",
+      "noLessons": "Chưa có bài học nào",
+      "completeCourse": "Hoàn thành khóa học",
+      "courseContent": "Nội dung khóa học",
+      "lockedTitleSequence": "Bạn cần hoàn thành bài học trước",
+      "lockedTitleEnroll": "Bài học này đã bị khóa",
+      "lockedDescSequence": "Hãy học xong bài trước để mở bài học này.",
+      "lockedDescEnrollSpecific": "Bạn cần đăng ký khóa học để xem \"{{lesson}}\".",
+      "lockedDescEnroll": "Bạn cần đăng ký khóa học để xem bài học này.",
+      "actionSequence": "Học bài đang mở",
+      "actionEnroll": "Về trang khóa học",
+      "actionSequenceAlt": "Xem lộ trình khóa học",
+      "actionEnrollAlt": "Đăng ký để mở khóa",
+      "labelSequence": "Học bài trước",
+      "labelEnroll": "Đăng ký khóa học"
+    },
+    "buyFailed": "Không thể thanh toán khóa học. Vui lòng thử lại.",
+    "alreadyBought": "Bạn đã mua khóa học này trước đó."
+  },
+  "payment": {
+    "createSuccess": "Tạo yêu cầu nạp tiền thành công",
+    "fetchStatusSuccess": "Lấy trạng thái thanh toán thành công",
+    "subscribeSuccess": "Nâng cấp gói thành công",
+    "adminConfirmSuccess": "Admin đã xác nhận thanh toán thành công",
+    "fetchHistorySuccess": "Lấy lịch sử giao dịch thành công",
+    "invalidAmount": "Số hoa nạp phải lớn hơn 0",
+    "topupSuccessTitle": "Nạp hoa thành công",
+    "topupSuccessContent": "Bạn vừa nạp thành công hoa vào ví.",
+    "topupSuccessTitleAdmin": "Nạp hoa thành công (Admin)",
+    "topupSuccessContentAdmin": "Admin đã xác nhận nạp thành công hoa vào ví của bạn.",
+    "status": {
+      "pending": "Đang chờ xử lý",
+      "success": "Giao dịch thành công",
+      "failed": "Giao dịch thất bại",
+      "unknown": "Không rõ trạng thái"
+    },
+    "timeoutError": "Hết thời gian chờ giao dịch. Vui lòng kiểm tra lại số dư hoặc lịch sử giao dịch.",
+    "waitFiveSeconds": "Vui lòng đợi 5 giây giữa các lần nhấn",
+    "confirmCancelTitle": "Xác nhận hủy",
+    "confirmCancelDesc": "Bạn có chắc chắn muốn hủy giao dịch nạp tiền này?",
+    "agreeCancel": "Đồng ý hủy",
+    "backToPayment": "Quay lại thanh toán",
+    "allBanksSupport": "Hỗ trợ hơn 40+ ngân hàng Việt Nam",
+    "manualCheck": "Bạn đã chuyển tiền nhưng chưa thấy cập nhật? Nhấn để kiểm tra ngay",
+    "paymentTitle": "Thanh toán nạp hoa",
+    "payoutDesc": "Vui lòng thực hiện chuyển khoản chính xác nội dung bên dưới để hệ thống tự động cộng hoa.",
+    "requiredContent": "Nội dung chuyển khoản bắt buộc",
+    "confirmedVia": "Xác nhận qua {{source}}",
+    "waitingSocket": "Đang chờ xác nhận từ ngân hàng...",
+    "socketFallback": "Đang kiểm tra trạng thái (polling)...",
+    "cancelTransaction": "Hủy giao dịch",
+    "bank": "Ngân hàng",
+    "amountNeeded": "Số hoa cần nạp"
   },
   "flashlist": {
     "listSuccess": "Lấy danh sách FlashList thành công",
@@ -119,28 +339,79 @@
     "validationFailed": "Dữ liệu FlashList không hợp lệ",
     "validate": {
       "titleRequired": "Vui lòng nhập tiêu đề FlashList",
-      "privateCardInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai. Hãy bỏ chọn các FlashCard riêng tư hoặc đặt FlashList ở chế độ riêng tư."
+      "privateCardInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai."
     },
-    "create": "Tạo Flash List"
+    "create": "Tạo Flash List",
+    "titleLabel": "Tiêu đề FlashList...",
+    "titlePlaceholder": "Nhập tiêu đề...",
+    "descLabel": "Mô tả...",
+    "descPlaceholder": "Nhập mô tả...",
+    "searchFlashcard": "Tìm flashcard để thêm...",
+    "selectedCount": "Đã chọn {{count}} flashcard",
+    "deselectAll": "Bỏ chọn tất cả",
+    "noCardsFound": "Không tìm thấy flashcard nào"
   },
   "flashcard": {
     "visibility": {
-      "otherPrivate": "FlashCard riêng tư của người khác",
-      "ownPrivateInPublicList": "Không thể thêm FlashCard riêng tư vào FlashList công khai"
+      "otherPrivate": "Flashcard của người khác riêng tư",
+      "ownPrivateInPublicList": "Flashcard riêng tư không thể thêm vào list công khai"
     },
     "validate": {
-      "nameRequired": "Vui lòng nhập tên bộ FlashCard",
+      "nameRequired": "Vui lòng nhập tên bộ Flashcard",
       "minOneCard": "Vui lòng nhập ít nhất một thẻ"
     },
-    "create": "Tạo Flash Card"
+    "create": "Tạo Flash Card",
+    "nameLabel": "Tên bộ FlashCard...",
+    "namePlaceholder": "Nhập tên bộ FlashCard...",
+    "descLabel": "Mô tả...",
+    "descPlaceholder": "Nhập mô tả...",
+    "contentLabel": "Nội dung thẻ (mỗi dòng một thẻ)",
+    "contentPlaceholder": "mặt trước - mặt sau",
+    "guideTitle": "Hướng dẫn nhập liệu:",
+    "guideLine1": "Mỗi dòng là một thẻ học tập",
+    "guideLine2": "Dùng dấu \"-\" để phân tách từ vựng và nghĩa",
+    "guideExample": "Ví dụ:",
+    "thumbnailLabel": "Ảnh Thumbnail",
+    "selectImage": "Chọn ảnh",
+    "previewTitle": "Xem trước từ vựng",
+    "settings": {
+      "addCard": "Thêm thẻ",
+      "dragToReorder": "Kéo thả để sắp xếp lại thứ tự. Nhấn vào thẻ để chỉnh sửa thông tin.",
+      "addCardNow": "Thêm thẻ ngay",
+      "editCardIndex": "Chỉnh sửa thẻ #{{index}}",
+      "addSingleCard": "Thêm thẻ đơn"
+    }
+  },
+  "flashcards": {
+    "page": {
+      "title": "Luyện tập từ vựng với Flashcard",
+      "subtitle": "Nâng cao trình độ tiếng Nhật mỗi ngày với hệ thống thẻ ghi nhớ thông minh và kho bài học phong phú.",
+      "searchPlaceholder": "Tìm kiếm bộ thẻ...",
+      "level": "Cấp độ",
+      "allLevels": "Tất cả cấp độ",
+      "owner": "Chủ sở hữu",
+      "mine": "Của tôi",
+      "community": "Cộng đồng",
+      "fetchError": "Không thể tải dữ liệu. Vui lòng thử lại sau.",
+      "noCards": "Chưa có flashcard nào. Hãy tạo mới!",
+      "studyNow": "Học ngay",
+      "cardSetCount": "{{count}} thẻ",
+      "viewCollection": "Xem bộ sưu tập",
+      "noLists": "Chưa có flash list nào. Hãy tạo mới!",
+      "cards": "Flash Cards",
+      "lists": "Flash Lists",
+      "noDesc": "Không có mô tả",
+      "setCount": "{{count}} bộ thẻ"
+    }
   },
   "home": {
     "badge": "Nền tảng học tiếng Nhật số 1",
     "title": "Học Tiếng Nhật",
     "easier": "Dễ Dàng Hơn.",
-    "description": "Chinh phục tiếng Nhật cùng FUJI. Lộ trình cá nhân hóa dành riêng cho người Việt với sự hỗ trợ từ AI.",
+    "description": "Chinh phục tiếng Nhật cùng FUJI. Lộ trình cá nhân hóa với trợ lý AI.",
     "getStarted": "Bắt đầu ngay",
     "watchDemo": "Xem demo",
+    "continueLearning": "Tiếp tục học",
     "stats": {
       "students": "Học viên",
       "courses": "Khóa học",
@@ -149,11 +420,1663 @@
     },
     "coursesSection": {
       "title": "Khóa học của bạn",
-      "subtitle": "Tiếp tục hành trình chinh phục tiếng Nhật nào!",
+      "subtitle": "Tiếp tục hành trình chinh phục tiếng Nhật!",
       "viewAll": "Xem tất cả",
       "aiTitle": "Kaiwa với AI Sensei",
-      "aiDescription": "Luyện nói tiếng Nhật tự nhiên với trợ lý ảo thông minh 24/7. Phản hồi tức thì về phát âm và ngữ điệu.",
+      "aiDescription": "Luyện nói tiếng Nhật tự nhiên với trợ lý ảo thông minh 24/7.",
       "practiceNow": "Luyện tập ngay"
+    },
+    "flashcards": {
+      "badge": "Smart Flashcards",
+      "titlePrimary": "Ghi nhớ từ vựng",
+      "titleSecondary": "siêu tốc với AI",
+      "description": "Trải nghiệm Flashcards 3D sống động. Hình ảnh trực quan, ví dụ thực tế.",
+      "button": "Tạo Flashcard bằng AI",
+      "mountainKanjiMeaning": "Núi",
+      "mountainKanjiDescription": "Ngọn núi, đồi núi",
+      "mountainKanjiExampleJa": "富士山は日本で一番高い山です。",
+      "mountainKanjiExampleVn": "Núi Phú Sĩ là ngọn núi cao nhất Nhật Bản.",
+      "mountainKanjiLevel": "N4 - Kanji"
+    },
+    "jlpt": {
+      "title": "Luyện thi JLPT thực chiến",
+      "subtitle": "Bộ đề thi sát với thực tế từ N5 đến N1",
+      "viewAll": "Kho đề thi",
+      "testTitle": "Đề thi thử {{level}}",
+      "testInfo": "{{count}} đề • {{time}} phút/đề",
+      "practiceNow": "Làm bài ngay"
+    },
+    "voiceChat": {
+      "badge": "Random Voice Chat",
+      "title": "Fuji Match - Kết nối & Luyện nói",
+      "subtitle": "Tìm bạn luyện nói tiếng Nhật ngẫu nhiên",
+      "selectLevel": "Chọn trình độ của bạn",
+      "startButton": "Bắt đầu ghép cặp",
+      "onlineCount": "{{count}} người đang online"
+    },
+    "learningPath": {
+      "title": "Lộ trình học cá nhân hóa",
+      "subtitle": "Dựa trên mục tiêu {{goal}} của bạn",
+      "completed": "Đã hoàn thành",
+      "learning": "Đang học",
+      "next": "Tiếp theo",
+      "upcoming": "Sắp tới",
+      "deadlineToday": "Hạn hoàn thành: Hôm nay"
+    },
+    "community": {
+      "title": "Cộng đồng học viên",
+      "subtitle": "Thảo luận sôi nổi nhất hôm nay",
+      "joinButton": "Tham gia thảo luận",
+      "qna": "Hỏi đáp",
+      "exp": "Kinh nghiệm thi",
+      "replies": "{{count}} trả lời",
+      "discussing": "{{count}} người thảo luận"
+    },
+    "cta": {
+      "title": "Bạn đã sẵn sàng chinh phục JLPT?",
+      "description": "Đăng ký ngay hôm nay để nhận ưu đãi 30% cho khóa học Premium đầu tiên.",
+      "button": "Đăng ký tư vấn"
+    },
+    "featureMap": {
+      "badge": "Bản đồ tính năng",
+      "title": "Mọi công cụ học tập trong một nơi",
+      "subtitle": "Chọn tính năng bạn cần và bắt đầu ngay. Mỗi card dẫn thẳng đến chức năng thật của hệ thống.",
+      "ctaBtn": "Bắt đầu theo lộ trình",
+      "openFeature": "Mở tính năng"
+    },
+    "cards": {
+      "course": { "title": "Khóa học theo lộ trình", "desc": "Học theo cấp độ từ N5→N1, bài giảng video và bài tập đã được sắp xếp sẵn theo trình tự khoa học.", "badge": "Core" },
+      "jlpt": { "title": "Luyện đề JLPT", "desc": "Tập trung vào đề thi thật theo mức N5→N1 với thống kê tiến bộ chi tiết qua từng lần làm.", "badge": "Exam" },
+      "booking": { "title": "Đặt lịch giáo viên 1-1", "desc": "Chọn khung giờ trống, đặt lịch học riêng và theo dõi buổi học sắp tới với giáo viên.", "badge": "Live" },
+      "aiChat": { "title": "AI Chat tiếng Nhật", "desc": "Luyện hội thoại, giải thích ngữ pháp và sửa câu theo ngữ cảnh với trợ lý AI thông minh.", "badge": "AI" },
+      "videoCall": { "title": "Video Call học trực tiếp", "desc": "Vào phòng học online để luyện nghe nói theo thời gian thực cùng giáo viên bản ngữ.", "badge": "Realtime" },
+      "flashcards2": { "title": "Flashcards thông minh", "desc": "Ôn từ vựng bằng bộ thẻ SRS, luyện bài tập fill-blank và trắc nghiệm mỗi ngày.", "badge": "SRS" },
+      "premium2": { "title": "Premium và gói học", "desc": "Xem gói nâng cấp, lịch sử sử dụng và ưu đãi đang áp dụng cho tài khoản của bạn.", "badge": "Upgrade" },
+      "wallet": { "title": "Ví, nạp rút & thanh toán", "desc": "Quản lý số dư, rút tiền, lịch sử giao dịch và thông tin thanh toán an toàn.", "badge": "Finance" }
+    },
+    "jlptSection": {
+      "badge": "Luyện thi JLPT",
+      "titlePart1": "Chọn cấp độ,",
+      "titleHighlight": "bắt đầu luyện",
+      "viewAll": "Xem tất cả",
+      "practiceNow": "Luyện ngay →",
+      "levels": { "N5": "Sơ cấp", "N4": "Sơ trung", "N3": "Trung cấp", "N2": "Trung cao", "N1": "Cao cấp" }
+    },
+    "scenariosSection": {
+      "badge": "Kịch bản học tập",
+      "title": "Chọn cách học theo mục tiêu",
+      "speak": {
+        "title": "20 phút luyện nói mỗi ngày",
+        "subtitle": "Tập trung Speaking + phản xạ",
+        "overview": "Kết hợp AI Chat và Video Call để vừa luyện phản xạ câu, vừa luyện phát âm theo tình huống thực tế.",
+        "b1": "Khởi động 5 phút với AI Chat theo chủ đề đi làm.",
+        "b2": "Chuyển sang Video Call để luyện hỏi đáp theo kịch bản.",
+        "b3": "Lưu ghi chú vào profile để theo dõi lỗi sai lặp lại.",
+        "primary": "Mở AI Chat",
+        "secondary": "Vào Video Call"
+      },
+      "exam": {
+        "title": "45 phút bứt phá JLPT",
+        "subtitle": "Tập trung đề thi + phân tích kết quả",
+        "overview": "Duy trì nhịp luyện đề và bổ sung từ vựng từ các câu sai để tăng độ ổn định trước kỳ thi.",
+        "b1": "Làm 1 mini test tổng hợp trong JLPT Practice.",
+        "b2": "Gặp chủ đề khó, mở khóa học liên quan để học lại nhanh.",
+        "b3": "Thêm từ mới vào flashcards để ôn lại trong ngày.",
+        "primary": "Bắt đầu JLPT",
+        "secondary": "Xem khóa học"
+      },
+      "career": {
+        "title": "Chế độ ổn định dài hạn",
+        "subtitle": "Tập trung lộ trình + theo dõi tài chính",
+        "overview": "Phù hợp khi cần giữ kỷ luật học tập bền vững: lộ trình rõ ràng, lịch học có giáo viên và quản lý gói học.",
+        "b1": "Kiểm tra gói học và quyền lợi Premium hiện tại.",
+        "b2": "Đặt lịch học trong tuần để giữ cam kết đều đặn.",
+        "b3": "Theo dõi ví và lịch sử thanh toán để tối ưu chi phí.",
+        "primary": "Mở Premium",
+        "secondary": "Mở ví học tập"
+      }
+    },
+    "missionsSection": {
+      "title": "Nhiệm vụ hôm nay",
+      "count": "{{total}} nhiệm vụ • {{completed}} hoàn thành",
+      "flashcardsMission": { "title": "Ôn 20 flashcards N3", "desc": "Hoàn thành bộ thẻ từ vựng thông dụng cho chủ đề công việc.", "eta": "Còn khoảng 12 phút" },
+      "jlptMission": { "title": "Làm mini test JLPT", "desc": "Một bài test tổng hợp nghe + đọc để giữ nhịp học đều.", "eta": "Còn khoảng 18 phút" },
+      "bookingMission": { "title": "Đặt lịch với giáo viên", "desc": "Chọn lịch học phát âm để sửa lỗi nhấn âm theo cấp độ hiện tại.", "eta": "Còn 1 bước xác nhận" },
+      "aiMission": { "title": "Chat với AI Sensei", "desc": "Luyện hội thoại 10 phút với AI để cải thiện phản xạ câu.", "eta": "Bắt đầu ngay" }
+    },
+    "quickLinks": {
+      "title": "Truy cập nhanh",
+      "notifications": "Thông báo",
+      "profile": "Hồ sơ cá nhân",
+      "paymentHistory": "Lịch sử thanh toán",
+      "subscription": "Gói đăng ký",
+      "withdraw": "Rút tiền",
+      "reports": "Báo cáo học tập",
+      "settings": "Cài đặt",
+      "help": "Trợ giúp"
+    },
+    "aiSection": {
+      "badge": "AI Powered",
+      "title1": "AI Chat",
+      "titleHighlight": "tiếng Nhật",
+      "desc": "Luyện hội thoại, giải thích ngữ pháp, sửa câu theo ngữ cảnh. AI hiểu tiếng Việt và tiếng Nhật.",
+      "cta": "Trò chuyện ngay"
+    },
+    "videoSection": {
+      "badge": "Live Session",
+      "title1": "Video Call",
+      "titleHighlight": "học trực tiếp",
+      "desc": "Vào phòng học online luyện nghe nói theo thời gian thực cùng giáo viên bản ngữ Nhật Bản.",
+      "cta": "Vào phòng học"
+    },
+    "flashSection": {
+      "badge": "Flashcards SRS",
+      "title": "Nhớ từ vựng",
+      "titleHighlight": "lâu hơn bao giờ hết",
+      "desc": "Hệ thống lặp lại ngắt quãng (SRS) thông minh giúp bạn ôn từ vựng đúng lúc, đúng thời điểm. Luyện thêm fill-blank, trắc nghiệm và nhiều dạng bài tập khác.",
+      "cta": "Bắt đầu ôn từ vựng",
+      "kanjiLabel": "N3 • Kanji",
+      "kanjiMeaning": "Học tập"
+    },
+    "bookingCard": {
+      "title": "Đặt lịch giáo viên",
+      "desc": "Học 1-1 với giáo viên kinh nghiệm. Chọn khung giờ phù hợp và nhận phản hồi cá nhân hóa.",
+      "stat1": "50+ giáo viên",
+      "stat2": "Linh hoạt 24/7",
+      "cta": "Đặt lịch ngay"
+    },
+    "premiumCard": {
+      "title": "Premium & Gói học",
+      "desc": "Nâng cấp tài khoản để mở khóa toàn bộ nội dung, AI không giới hạn và nhiều ưu đãi đặc biệt.",
+      "stat1": "Truy cập full",
+      "stat2": "Tiết kiệm 40%",
+      "cta": "Xem gói Premium"
+    },
+    "finalCta": {
+      "badge": "Sẵn sàng chinh phục tiếng Nhật?",
+      "title": "Bắt đầu hành trình học",
+      "titleHighlight": "ngay hôm nay",
+      "desc": "Tham gia cùng 10,000+ học viên. Lộ trình cá nhân hóa, AI thông minh, giáo viên chất lượng — tất cả trong một nền tảng.",
+      "startLearning": "Học ngay",
+      "tryAI": "Thử AI ngay"
     }
+  },
+  "booking": {
+    "title": "Đặt lịch cùng Sensei",
+    "subtitle": "Tìm giáo viên phù hợp và chọn khung giờ trống.",
+    "mySchedule": "Lịch của tôi",
+    "rules": {
+      "title": "Quy định đặt lịch",
+      "rule1": "Chỉ vào phòng học trước tối đa 5 phút.",
+      "rule2": "Hủy lịch trong vòng 2 giờ trước khi học sẽ mất 100% học phí.",
+      "rule3": "Tài khoản có thể bị khóa chức năng đặt lịch 24 giờ.",
+      "rule4": "Slot đã hủy không thể đặt lại ngay."
+    },
+    "searchPlaceholder": "Tìm giáo viên theo tên...",
+    "allSubjects": "Tất cả môn học",
+    "allLevels": "Tất cả cấp độ",
+    "availableTeachers": "{{count}} giáo viên khả dụng",
+    "noTeachers": "Chưa có giáo viên phù hợp",
+    "tryAgain": "Hãy thử đổi ngày, môn học, cấp độ hoặc từ khóa.",
+    "viewProfile": "Hồ sơ giáo viên",
+    "bookNow": "Đặt lịch ngay",
+    "fetchError": "Không tải được danh sách giáo viên.",
+    "instructorEmpty": "Chưa cập nhật",
+    "groupSubject": "{{count}} môn đang mở lịch",
+    "earliest": "Sớm nhất: {{time}}",
+    "slotRemaining": "{{count}} khung giờ trống",
+    "infoDescription": "Giáo viên đang mở {{count}} khung giờ trong ngày {{date}}.",
+    "createTitle": "Tạo lịch giảng dạy",
+    "mode": {
+      "single": "Một buổi",
+      "bulk": "Lịch lặp"
+    },
+    "date": "Ngày dạy",
+    "dateFrom": "Ngày bắt đầu",
+    "dateTo": "Ngày kết thúc",
+    "jlptLevel": "Cấp độ JLPT",
+    "subjectTitle": "Môn học",
+    "subject": {
+      "kaiwa": "Kaiwa (Hội thoại)",
+      "bunpo": "Bunpo (Ngữ pháp)",
+      "kanji": "Kanji",
+      "listening": "Listening",
+      "reading": "Reading"
+    },
+    "topic": "Chủ đề",
+    "tuition": "Học phí (Hoa)",
+    "conversion": "Quy đổi",
+    "btn": {
+      "save": "Lưu lịch rảnh"
+    },
+    "error": {
+      "fillAll": "Vui lòng điền đủ thông tin hợp lệ trước khi lưu.",
+      "saveFailed": "Không thể lưu lịch",
+      "overlap": "Không thể tạo lịch trùng giờ.",
+      "invalidDate": "Ngày dạy không hợp lệ.",
+      "createFailed": "Tạo lịch thất bại.",
+      "allSkippedTitle": "Tất cả lịch bị trùng",
+      "allSkippedDesc": "Không có slot nào được tạo. Cả {{count}} slot đều bị trùng với lịch đã tồn tại.",
+      "conflictListTitle": "Danh sách lịch bị trùng",
+      "conflictReason": "Trùng với lịch đã tồn tại"
+    },
+    "success": {
+      "createTitle": "Tạo lịch thành công",
+      "createDesc": "Đã tạo {{count}} slot lịch dạy."
+    },
+    "successTitle": "Đặt lịch thành công!",
+    "successMessage": "Bạn đã đặt lịch học thành công.",
+    "warning": {
+      "someSkippedTitle": "Tạo lịch có trùng lặp",
+      "someSkippedDesc": "Đã tạo {{created}} slot thành công, bỏ qua {{skipped}} slot do trùng giờ với lịch đã tồn tại."
+    }
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Giao diện",
+      "notifications": "Thông báo",
+      "language": "Ngôn ngữ",
+      "security": "Bảo mật",
+      "support": "Hỗ trợ & Báo cáo"
+    },
+    "page": {
+      "title": "Cài Đặt",
+      "subtitle": "Cá nhân hóa trải nghiệm người dùng",
+      "title_part1": "Cài đặt",
+      "title_part2": "Hệ thống"
+    },
+    "sidebar": {
+      "category": "Danh mục thiết lập",
+      "shortcuts": "Lối tắt"
+    },
+    "appearance": {
+      "title": "Giao diện & Màu sắc",
+      "mode": "Chế độ hiển thị",
+      "light": "Sáng",
+      "dark": "Tối",
+      "system": "Hệ thống"
+    },
+    "notifications": {
+      "title": "Tùy chỉnh thông báo",
+      "save": "Lưu thiết lập",
+      "saving": "Đang lưu...",
+      "items": {
+        "courseUpdates": {
+          "label": "Cập nhật khóa học",
+          "desc": "Nhận thông báo khi khóa học có bài giảng mới"
+        },
+        "newMessages": {
+          "label": "Tin nhắn hỗ trợ",
+          "desc": "Nhận thông báo khi có phản hồi từ Admin"
+        },
+        "examReminders": {
+          "label": "Nhắc nhở lịch thi",
+          "desc": "Cảnh báo tự động trước kỳ thi JLPT"
+        },
+        "bookingReminders": {
+          "label": "Nhắc nhở lịch học",
+          "desc": "Thông báo trước các buổi học đã đăng ký"
+        },
+        "systemAlerts": {
+          "label": "Cảnh báo hệ thống",
+          "desc": "Bảo trì, cập nhật điều khoản hoặc thay đổi lớn"
+        },
+        "emailDigest": {
+          "label": "Báo cáo Email tuần",
+          "desc": "Tóm tắt chi tiêu ví và học tập"
+        }
+      },
+      "saveSuccess": "Đã lưu cài đặt thành công!",
+      "saveError": "Không thể lưu cài đặt. Vui lòng thử lại."
+    },
+    "language": {
+      "title": "Ngôn ngữ hệ thống",
+      "display": "Ngôn ngữ hiển thị",
+      "placeholder": "Chọn ngôn ngữ",
+      "infoTitle": "Có hiệu lực tức thì",
+      "infoDesc": "Nội dung hệ thống sẽ tự động điều hướng sang ngôn ngữ tương ứng.",
+      "changeSuccess": "Ngôn ngữ đã được thay đổi thành công!"
+    },
+    "security": {
+      "title": "Trung tâm bảo mật",
+      "resetPassword": "Reset mật khẩu",
+      "resetPasswordDesc": "Ngăn chặn truy cập trái phép",
+      "twoFactor": "Xác thực 2 yếu tố (2FA)",
+      "twoFactorDesc": "Tăng cường an ninh chủ động",
+      "comingSoon": "Sắp hỗ trợ"
+    },
+    "support": {
+      "title": "Hỗ trợ & Báo cáo sự cố",
+      "helpCenter": "Trung tâm trợ giúp",
+      "helpCenterDesc": "Tìm câu trả lời cho các câu hỏi thường gặp...",
+      "accessNow": "Truy cập ngay",
+      "reportBug": "Báo cáo sự cố",
+      "reportBugDesc": "Gặp lỗi khi sử dụng hệ thống?",
+      "reportNow": "Báo cáo ngay",
+      "contactChannels": "Kênh liên hệ trực tiếp",
+      "channels": {
+        "hotline": "Hotline",
+        "email": "Email",
+        "messenger": "Messenger"
+      }
+    }
+  },
+  "profile": {
+    "badge": "Thông tin cá nhân",
+    "page": {
+      "title": "Hồ Sơ Cá Nhân",
+      "subtitle": "Quản lý diện mạo và thông tin liên hệ của bạn."
+    },
+    "bio": {
+      "empty": "Chưa có tự bạch..."
+    },
+    "details": {
+      "title": "Thông tin chi tiết",
+      "subtitle": "Liên hệ và trình độ ngôn ngữ của bạn",
+      "email": "Email liên hệ",
+      "phone": "Số điện thoại",
+      "joinedDate": "Ngày tham gia",
+      "level": "Trình độ",
+      "jlptLevel": "Tiếng Nhật - {{level}}"
+    },
+    "rank": {
+      "label": "Hạng học tập"
+    },
+    "actions": {
+      "security": "Bảo mật tài khoản",
+      "changePassword": "Đổi mật khẩu định kỳ",
+      "wallet": "Ví FUJI",
+      "manageWallet": "Quản lý số dư"
+    },
+    "logout": {
+      "modalTitle": "Đăng xuất?",
+      "modalDesc": "Kết thúc phiên làm việc hiện tại của bạn."
+    }
+  },
+  "reports": {
+    "title": "Báo cáo học tập"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "markAllRead": "Đánh dấu tất cả là đã đọc",
+    "empty": "Không có thông báo nào",
+    "emptyType": "Không có thông báo {{type}} nào",
+    "customize": "Tùy chỉnh thông báo",
+    "tabs": {
+      "all": "Tất cả",
+      "unread": "Chưa đọc",
+      "course": "Khóa học",
+      "system": "Hệ thống",
+      "reminder": "Nhắc nhở",
+      "security": "Bảo mật",
+      "booking": "Lịch học",
+      "message": "Tin nhắn"
+    },
+    "actions": {
+      "markRead": "Đánh dấu là đã đọc",
+      "reportBug": "Báo cáo lỗi",
+      "viewDetail": "Xem chi tiết",
+      "delete": "Xóa thông báo",
+      "deleteSuccess": "Đã xóa thông báo"
+    }
+  },
+  "premium": {
+    "whyPremium": "Tại sao nên chọn Premium?",
+    "subscribeSuccess": "Nâng cấp {{name}} thành công!",
+    "inUse": "Đang sử dụng",
+    "default": "Mặc định",
+    "managePackage": "Quản lý gói",
+    "loginToUpgrade": "Đăng nhập để Nâng cấp",
+    "upgradePremium": "Nâng cấp 🚀 PREMIUM (AI)",
+    "upgradePro": "Nâng cấp 🌟 PRO",
+    "loadingPricing": "Đang tải bảng giá...",
+    "currencyPerMonth": "hoa / tháng",
+    "confirmUpgradeTitle": "Xác nhận nâng cấp",
+    "currentPackageDesc": "Bạn đang dùng gói",
+    "stackDesc": "Sẽ được cộng dồn thời gian sử dụng.",
+    "currentExpiry": "Hạn hiện tại:",
+    "newExpiry": "Sau khi mua:",
+    "deductDesc": "Hệ thống sẽ trừ {{amount}} hoa của bạn.",
+    "confirmQuestion": "Nâng cấp gói {{name}}?",
+    "tiers": {
+      "experience": "Trải nghiệm",
+      "serious": "Nghiêm túc",
+      "maximum": "Tối đa"
+    },
+    "features": {
+      "basic": {
+        "courses": "Courses (video + quiz)",
+        "flashcard": "Flashcard (SRS)",
+        "practice": "Luyện tập",
+        "mockTest": "Mock test (hạn chế)",
+        "progress": "Thống kê tiến độ"
+      },
+      "pro": {
+        "allBasic": "Tất cả Basic",
+        "fullMock": "Full Mock Test (N5–N1)",
+        "breakdown": "Phân tích điểm",
+        "history": "Lịch sử học",
+        "videoCall": "Call video ngẫu nhiên",
+        "aiSensei": "AI sensei giới hạn"
+      },
+      "premium": {
+        "allPro": "Tất cả PRO",
+        "fullCourses": "Mở khóa toàn bộ",
+        "heatmap": "Study heatmap",
+        "unlimitedAI": "AI sensei không giới hạn",
+        "aiPath": "AI learning path"
+      }
+    },
+    "featureGrid": {
+      "flashcard": {
+        "title": "Mở rộng số lượng tạo Flashcard",
+        "desc": "Học không giới hạn số lượng thẻ và bộ thẻ mỗi ngày."
+      },
+      "vipCourse": {
+        "title": "Khóa học VIP",
+        "desc": "Truy cập đặc quyền vào tất cả nội dung VIP."
+      },
+      "aiAssist": {
+        "title": "AI hỗ trợ",
+        "desc": "Trợ lý AI giúp giải đáp mọi thắc mắc của bạn tức thì."
+      },
+      "aiKaiwa": {
+        "title": "AI luyện kaiwa",
+        "desc": "Luyện tập giao tiếp tiếng Nhật với trợ lý AI thông minh."
+      }
+    },
+    "topup": {
+      "scanQR": "Vui lòng quét mã QR để thanh toán",
+      "createFailed": "Không thể tạo đơn thanh toán",
+      "paymentMethod": "Phương thức thanh toán",
+      "bank": "Ngân hàng",
+      "selectPackage": "Vui lòng chọn gói nạp",
+      "noBankAccount": "Backend chưa cấu hình tài khoản nhận tiền",
+      "currentBalance": "SỐ DƯ HIỆN TẠI :",
+      "choosePackage": "Chọn gói nạp",
+      "creatingOrder": "Đang tạo đơn...",
+      "payWithQR": "Nạp ngay bằng VietQR"
+    },
+    "modal": {
+      "title": "Nâng cấp tài khoản",
+      "description": "Nâng cấp gói Premium hoặc nạp hoa anh đào",
+      "tabPremium": "Nâng cấp Premium",
+      "tabTopup": "Nạp Hoa Anh Đào"
+    }
+  },
+  "wallet": {
+    "title": "Ví Fuji",
+    "subtitle": "Quản lý số dư và lịch sử giao dịch.",
+    "back": "Quay lại ví",
+    "backToWallet": "Về ví Fuji",
+    "availableBalance": "Số dư khả dụng",
+    "balanceDescription": "Số dư dùng cho dịch vụ Fuji",
+    "exchangeVND": "Quy đổi VND",
+    "deposit": "Nạp 🌸",
+    "withdraw": {
+      "title": "RÚT TIỀN",
+      "secureTransaction": "Giao dịch an toàn 256-bit",
+      "inputAmount": "Nhập số 🌸 muốn rút",
+      "expectedVnd": "Tiền thực nhận dự kiến:",
+      "quickSelect": "Chọn nhanh:",
+      "limits": "Hạn mức",
+      "minLimit": "Tối thiểu: 50 🌸 (≈ 50,000đ)",
+      "maxLimit": "Tối đa: 3 lần / ngày",
+      "bankInfoTitle": "Thông tin nhận tiền",
+      "bankName": "Ngân hàng",
+      "selectBank": "Chọn ngân hàng",
+      "accountNumber": "Số tài khoản",
+      "inputAccountNumber": "Nhập số tài khoản",
+      "accountHolder": "Chủ tài khoản",
+      "accountHolderPlaceholder": "Tên không dấu (VD: NGUYEN VAN A)",
+      "blossomsToExchange": "Số 🌸 quy đổi",
+      "transactionFee": "Phí giao dịch",
+      "actualReceived": "Thực nhận",
+      "confirmRequest": "Xác nhận yêu cầu",
+      "confirmTitle": "Kiểm tra thông tin",
+      "confirmDesc": "Hệ thống sẽ chuyển khoản cho bạn",
+      "confirmWithdraw": "Xác nhận rút tiền",
+      "requestSent": "Đã gửi yêu cầu",
+      "reviewDesc": "Hệ thống duyệt trong 24 giờ tới.",
+      "success": "Gửi yêu cầu thành công!",
+      "failed": "Giao dịch thất bại",
+      "minAmountError": "Tối thiểu là 50 🌸",
+      "missingBankInfo": "Vui lòng nhập đầy đủ thông tin"
+    },
+    "monthlyTransactions": "Giao dịch tháng này",
+    "steadyGrowth": "Tăng trưởng ổn định",
+    "membershipLevel": "Hạng thành viên",
+    "premiumUser": "Premium User",
+    "transactionHistory": "Lịch sử giao dịch",
+    "balanceFluctuations": "Biến động số dư",
+    "filter": {
+      "all": "Tất cả",
+      "deposit": "Nạp vào",
+      "spending": "Chi tiêu"
+    },
+    "searchPlaceholder": "Mã giao dịch...",
+    "table": {
+      "id": "Mã giao dịch",
+      "type": "Loại",
+      "amount": "Số tiền",
+      "balanceAfter": "Số dư còn lại",
+      "status": "Trạng thái",
+      "time": "Thời gian",
+      "note": "Ghi chú"
+    },
+    "types": {
+      "deposit": "Nạp tiền",
+      "withdraw": "Rút tiền",
+      "spending": "Chi tiêu",
+      "reward": "Thưởng"
+    },
+    "status": {
+      "pending": "Đang xử lý",
+      "success": "Thành công",
+      "failed": "Thất bại"
+    },
+    "insufficientBalance": "Số dư không đủ"
+  },
+  "ai": {
+    "viewCourseDetails": "Xem chi tiết khóa học →",
+    "conversation": "Cuộc trò chuyện",
+    "featureProperty": "Thuộc tính",
+    "noPreview": "Không có ảnh đại diện",
+    "intent": {
+      "grammar": "Ngữ pháp",
+      "course": "Khóa học",
+      "qna": "Hỏi đáp",
+      "outOfScope": "Ngoài phạm vi",
+      "processing": "Đang xử lý"
+    },
+    "senseiSettings": "Thiết lập cho Sensei",
+    "sensei": {
+      "session": "Phiên",
+      "chat": "Hội thoại",
+      "topic": "Chủ đề: ",
+      "situation": "Tình huống: ",
+      "role": "Vai trò AI: ",
+      "personality": "Tính cách: ",
+      "sample": "Mẫu hội thoại: ",
+      "defaultGoals": "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
+      "defaultPersonality": "thân thiện",
+      "errorStop": "Không thể kết thúc phiên. Vui lòng thử lại.",
+      "errorEvaluation": "Không thể chấm điểm phiên hội thoại",
+      "status": {
+        "startToTalk": "Bắt đầu phiên để nói",
+        "holdToTalk": "Giữ mic để nói",
+        "listening": "Đang nghe bạn nói...",
+        "processing": "Đang xử lý...",
+        "speaking": "Sensei đang nói...",
+        "error": "Lỗi"
+      },
+      "btn": {
+        "start": "Bắt đầu phiên hội thoại",
+        "stop": "Kết thúc phiên",
+        "grading": "Đang chấm điểm...",
+        "replay": "Nghe lại",
+        "replaying": "Đang phát...",
+        "closeHistory": "Đóng lịch sử",
+        "viewHistory": "Xem lịch sử hội thoại gần đây",
+        "replayLong": "Nghe lại",
+        "continue": "Nói tiếp",
+        "viewResult": "Xem kết quả"
+      },
+      "mic": {
+        "release": "Thả để gửi"
+      },
+      "history": {
+        "title": "Lịch sử hội thoại",
+        "toggle": "Hiện lịch sử",
+        "empty": "Bắt đầu phiên hội thoại để nói chuyện với Sensei",
+        "recording": "Đang thu âm...",
+        "listTitle": "Các phiên hội thoại trước",
+        "listEmpty": "Chưa có phiên hội thoại nào",
+        "detailEmpty": "Phiên này chưa có nội dung hội thoại"
+      },
+      "scenario": {
+        "defaultTitle": "Kịch bản"
+      },
+      "popup": {
+        "finishTitle": "Hoàn thành phiên hội thoại",
+        "finishDesc": "Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có muốn xem điểm không?"
+      }
+    }
+  },
+  "auto": {
+    "header_1": "Cài đặt",
+    "header_2": "Đăng nhập",
+    "header_3": "Buổi học đã kết thúc",
+    "header_4": "Môn:",
+    "header_5": "Giảng viên:",
+    "header_6": "Học viên:",
+    "header_7": "Thời gian:",
+    "header_8": "Trạng thái:",
+    "header_9": "Số 🌸 hiện tại",
+    "footer_1": "Nền tảng học tập JLPT thông minh. Đồng hành cùng bạn trên con đường chinh phục tiếng Nhật.",
+    "footer_2": "Về FUJI",
+    "footer_3": "Giới thiệu",
+    "footer_4": "Tuyển dụng",
+    "footer_5": "Blog học thuật",
+    "footer_6": "Học tập",
+    "footer_7": "Lộ trình N5 - N1",
+    "footer_8": "Luyện Kaiwa AI",
+    "footer_9": "Đề thi JLPT",
+    "footer_10": "Liên hệ",
+    "footer_11": "© 2026 FUJI. CHINH PHỤC TIẾNG NHẬT CÙNG AI.",
+    "footer_12": "Điều khoản",
+    "footer_13": "Bảo mật",
+    "footer_14": "Trợ giúp",
+    "courseDetail_1": "Đã học",
+    "courseDetail_2": "Xem thử",
+    "courseDetail_3": "Khóa",
+    "courseDetail_4": "Đăng ký để mở",
+    "courseDetail_5": "Học viên mua khóa học",
+    "courseDetail_6": "Giới thiệu khóa học",
+    "courseDetail_7": "Bạn sẽ học được gì?",
+    "courseDetail_8": "Nội dung khóa học",
+    "courseDetail_9": "Tất cả bài học",
+    "courseDetail_10": "Chưa có bài học nào",
+    "courseDetail_11": "Giảng viên cao cấp tại FUJI",
+    "courseDetail_12": "Giảng viên chuyên nghiệp tại nền tảng FUJI. Nhiều năm kinh\r\n                nghiệm giảng dạy tiếng Nhật cho học viên Việt Nam. Phương pháp\r\n                giảng dạy tập trung vào việc hiểu sâu bản chất ngôn ngữ và ứng\r\n                dụng thực tế, giúp học viên không chỉ thi đỗ mà còn giao tiếp tự\r\n                tin.",
+    "courseDetail_13": "Khóa học",
+    "courseDetail_14": "Học viên",
+    "courseDetail_15": "Đánh giá",
+    "courseDetail_16": "Các khóa học khác của giảng viên",
+    "courseDetail_17": "Đánh giá từ học viên",
+    "courseDetail_18": "Bình luận nổi bật",
+    "courseDetail_19": "Mới nhất",
+    "courseDetail_20": "Đánh giá cao nhất",
+    "courseDetail_21": "Đánh giá thấp nhất",
+    "courseDetail_22": "Chưa có đánh giá nào",
+    "courseDetail_23": "Xem thêm đánh giá",
+    "courseDetail_24": "Không tìm thấy khóa học",
+    "courseDetail_25": "Khóa học này không tồn tại hoặc đã bị xóa.",
+    "courseDetail_26": "Quay lại danh sách",
+    "courseDetail_27": "Tiếng Việt",
+    "courseDetail_28": "Đăng ký để bắt đầu học",
+    "courseDetail_29": "Chưa có bài học",
+    "courseDetail_30": "Miễn phí",
+    "courseDetail_31": "Thêm vào yêu thích",
+    "courseDetail_32": "Thông tin khóa học",
+    "courseDetail_33": "Có",
+    "courseDetail_34": "Trọn đời",
+    "courseDetail_35": "Mã ưu đãi",
+    "courseDetail_36": "Áp dụng",
+    "courseDetail_37": "Giảng viên",
+    "courseDetail_38": "Nhập mã giảm giá",
+    "profileEdit_1": "Trở về",
+    "profileEdit_2": "Chỉnh sửa",
+    "profileEdit_3": "Hồ Sơ",
+    "profileEdit_4": "Cập nhật thông tin chi tiết của bạn.",
+    "profileEdit_5": "Đã xác thực bảo vệ",
+    "profileEdit_6": "Ảnh đại diện",
+    "profileEdit_7": "Nhấp để cập nhật diện mạo",
+    "profileEdit_8": "Họ và tên",
+    "profileEdit_9": "Số điện thoại liên hệ",
+    "profileEdit_10": "Giới tính",
+    "profileEdit_11": "Nữ",
+    "profileEdit_12": "Khác",
+    "profileEdit_13": "Trình độ cao nhất",
+    "profileEdit_14": "Ghi chú riêng / Giới thiệu",
+    "profileEdit_15": "Hủy thay đổi",
+    "profileEdit_16": "Lưu ý bảo mật thông tin",
+    "profileEdit_17": "Tất cả dữ liệu hồ sơ của bạn được mã hóa an toàn ở DB 2 lớp. Một số thông tin như JLPT sẽ giúp hệ thống đề xuất bài thi thông minh hơn.",
+    "profileEdit_18": "Nhập họ tên đầy đủ...",
+    "profileEdit_19": "Chọn giới tính",
+    "profileEdit_20": "Chọn cấp độ JLPT phù hợp với bạn",
+    "profileEdit_21": "Khát vọng học tập hay đôi lời tản mạn...",
+    "historyPayment_1": "Đang tải dữ liệu...",
+    "historyPayment_2": "Quay lại",
+    "historyPayment_3": "Hệ thống bảo mật",
+    "historyPayment_4": "Lịch sử",
+    "historyPayment_5": "Quản lý dòng tiền của bạn với bộ nhận diện thông minh Xanh-Hồng.",
+    "historyPayment_6": "ID Giao dịch",
+    "historyPayment_7": "Phân loại",
+    "historyPayment_8": "Giá trị",
+    "historyPayment_9": "Biến động",
+    "historyPayment_10": "Ngày giờ",
+    "historyPayment_11": "Trạng thái",
+    "historyPayment_12": "đ",
+    "historyPayment_13": "Sau giao dịch",
+    "historyPayment_14": "Thành công",
+    "historyPayment_15": "Tải báo cáo tháng",
+    "historyPayment_16": "Tìm giao dịch...",
+    "subscription_1": "Quay lại",
+    "subscription_2": "Quản lý Gói Sub",
+    "subscription_3": "Gói",
+    "subscription_4": "Quản lý các đặc quyền và lịch sử đăng ký của bạn.",
+    "subscription_5": "Nâng cấp Gói",
+    "subscription_6": "Gói hiện tại",
+    "subscription_7": "Thời hạn",
+    "subscription_8": "Gia hạn tự động",
+    "subscription_9": "Tự động trừ tiền từ ví Fuji khi hết hạn",
+    "subscription_10": "Bạn đang sử dụng gói Miễn Phí",
+    "subscription_11": "Nâng cấp ngay để mở khóa toàn bộ tính năng học tập và ôn thi JLPT tốt nhất.",
+    "subscription_12": "Quyền lợi của bạn",
+    "subscription_13": "Mức học tập",
+    "subscription_14": "Lịch sử đăng ký",
+    "subscription_15": "Các gói bạn đã mua",
+    "subscription_16": "Mã Gói",
+    "subscription_17": "Loại Gói",
+    "subscription_18": "Thời Gian",
+    "subscription_19": "Số Tiền",
+    "subscription_20": "Trạng Thái",
+    "subscription_21": "đ",
+    "subscription_22": "Chưa đăng ký gói nào",
+    "subscription_23": "Hãy nâng cấp lên PRO hoặc PREMIUM để nhận được nhiều ưu đãi học tập",
+    "subscription_24": "Cập nhật dữ liệu",
+    "changePassword_1": "Trở về",
+    "changePassword_2": "Bảo mật",
+    "changePassword_3": "Tài Khoản",
+    "changePassword_4": "Thay đổi mật khẩu định kỳ để bảo vệ dữ liệu trên ứng dụng.",
+    "changePassword_5": "Mã hóa E2E đang bật",
+    "changePassword_6": "Thiết lập mật khẩu",
+    "changePassword_7": "Bảo đảm nhập đúng mật khẩu hiện tại",
+    "changePassword_8": "Mật khẩu hiện tại",
+    "changePassword_9": "Mật khẩu mới",
+    "changePassword_10": "Độ mạnh mật khẩu",
+    "changePassword_11": "Xác nhận khẩu mới",
+    "changePassword_12": "Hủy thay đổi",
+    "changePassword_13": "Lời khuyên an toàn",
+    "changePassword_14": "Ghi nhớ quan trọng",
+    "changePassword_15": "Thay đổi mật khẩu sẽ",
+    "changePassword_16": "bắt buộc đăng xuất",
+    "changePassword_17": "tại tất cả các thiết bị. Hệ thống sẽ cấp lại access token ngay sau đó!",
+    "changePassword_18": "Có sự cố đổi MK?",
+    "changePassword_19": "Kêu gọi hỗ trợ",
+    "changePassword_20": "Mật khẩu bảo mật...",
+    "changePassword_21": "Tối thiểu 8 ký tự...",
+    "changePassword_22": "Nhập lại chính xác...",
+    "teacherSchedule_1": "Thiếu `teacherId` trên URL.",
+    "teacherSchedule_2": "Đặt lịch theo giáo viên",
+    "teacherSchedule_3": "Không tải được lịch rảnh của giáo viên.",
+    "teacherSchedule_4": "Đặt lịch học",
+    "teacherSchedule_5": "Có thể đặt các slot trống còn trong tương lai; vào phòng học từ trước\r\n                        giờ học 5 phút",
+    "teacherSchedule_6": "Thiết lập đặt lịch",
+    "teacherSchedule_7": "Bạn có thể đặt từng buổi hoặc đặt lặp theo lịch cố định trong\r\n                      một khoảng thời gian.",
+    "teacherSchedule_8": "Kiểu đặt lịch",
+    "teacherSchedule_9": "Không lặp lại",
+    "teacherSchedule_10": "Lặp lại theo lịch cố định",
+    "teacherSchedule_11": "Chế độ này giữ nguyên cách chọn thủ công từng slot như hiện tại.",
+    "teacherSchedule_12": "Chọn các thứ trong tuần",
+    "teacherSchedule_13": "Chọn khung giờ lặp",
+    "teacherSchedule_14": "Hãy chọn khoảng ngày hợp lệ trước.",
+    "teacherSchedule_15": "Không có slot khả dụng trong khoảng ngày này.",
+    "teacherSchedule_16": "Nếu buổi nào trong lịch lặp không còn slot trống phù hợp thì hệ thống\r\n                          sẽ tự bỏ qua buổi đó.",
+    "teacherSchedule_17": "Chọn ngày học",
+    "teacherSchedule_18": "Chấm",
+    "teacherSchedule_19": "là\r\n                          ngày còn khung giờ trống.",
+    "teacherSchedule_20": "Khung giờ học",
+    "teacherSchedule_21": "Ngày này chưa có lịch học",
+    "teacherSchedule_22": "Hãy chọn ngày khác trên lịch hoặc đợi giáo viên mở\r\n                                thêm slot mới.",
+    "teacherSchedule_23": "Preview lịch lặp sẽ được book",
+    "teacherSchedule_24": "Hệ thống tự gom các slot còn trống đúng theo khoảng ngày, thứ\r\n                        trong tuần và khung giờ bạn đã chọn.",
+    "teacherSchedule_25": "Hãy chọn các thứ trong tuần và ít nhất một khung giờ để xem\r\n                          preview.",
+    "teacherSchedule_26": "Không tìm thấy slot khả dụng khớp với lịch lặp bạn đã chọn.",
+    "teacherSchedule_27": "Buổi sẽ book",
+    "teacherSchedule_28": "Buổi bị bỏ qua",
+    "teacherSchedule_29": "Chuẩn bị thanh toán",
+    "teacherSchedule_30": "Khi bấm tiếp tục, hệ thống sẽ gửi đúng danh sách slot đang được\r\n                      chọn sang trang quote/checkout.",
+    "teacherSchedule_31": "Số buổi đã chọn",
+    "teacherSchedule_32": "Các buổi sẽ gửi sang quote",
+    "teacherSchedule_33": "Chưa có buổi nào được chọn.",
+    "teacherSchedule_34": "Bỏ chọn",
+    "teacherSchedule_35": "Tự động",
+    "teacherSchedule_36": "Xem hóa đơn các buổi đã chọn",
+    "bookingModal_1": "Quy định booking",
+    "bookingModal_2": "Hủy sát giờ học (trong 2 giờ trước giờ bắt đầu) bị trừ 100% phí.",
+    "bookingModal_3": "Có thể bị khóa đặt lịch 24 giờ nếu hủy sát giờ.",
+    "bookingModal_4": "Slot đã hủy sẽ không đặt lại được bởi cùng tài khoản.",
+    "bookingModal_5": "Đang tải lịch của bạn...",
+    "bookingModal_6": "Không tải được lịch của bạn. Vui lòng kiểm tra lại kết nối.",
+    "bookingModal_7": "Không có dữ liệu lịch học trong mục này.",
+    "bookingModal_8": "Ngày",
+    "bookingModal_9": "Giờ",
+    "bookingModal_10": "Vào phòng",
+    "bookingModal_11": "Chờ lớp",
+    "bookingModal_12": "Hủy",
+    "bookingModal_13": "Kết thúc sớm",
+    "bookingModal_14": "Hủy lịch",
+    "bookingModal_15": "Hoàn thành",
+    "bookingModal_16": "Đã hủy",
+    "bookingModal_17": "Để sau",
+    "bookingModal_18": "Chỉ vào phòng được trước 5 phút so với giờ bắt đầu",
+    "ai_sensei_1": "Đã hoàn thành!",
+    "ai_assistant_1": "Hỏi bất kỳ điều gì về tiếng Nhật...",
+    "ai_assistant_2": "Sao chép",
+    "jlpt_practice_1": "Đang tải đề thi...",
+    "jlpt_practice_2": "Chưa có đề thi nào",
+    "jlpt_practice_3": "Hệ thống đang cập nhật đề thi mới",
+    "jlpt_filter_1": "Tìm kiếm đề thi JLPT (VD: N3 đề thi thử, N2...)",
+    "jlpt_history_1": "Lịch sử làm bài",
+    "jlpt_history_page_1": "Đang tải lịch sử...",
+    "jlpt_history_page_2": "Không thể tải dữ liệu",
+    "jlpt_history_page_3": "Danh sách lần thi",
+    "jlpt_history_page_4": "Không có kết quả nào phù hợp",
+    "video_call_main_1": "Đang bật camera...",
+    "video_call_main_2": "Camera: TẮT",
+    "video_call_room_1": "Nhắn tin... (Ctrl+Space để gợi ý)",
+    "video_call_room_2": "Mô tả cụ thể hành vi của người dùng...",
+    "booking_lesson_1": "Lỗi kết nối phòng học",
+    "booking_lesson_2": "Đang thiết lập phòng học",
+    "booking_lesson_3": "Đánh giá buổi học",
+    "booking_lesson_4": "Ghi hình buổi học",
+    "booking_lesson_5": "Đang kết nối video...",
+    "booking_session_1": "Không tải được lịch sử buổi học",
+    "booking_session_2": "Chưa có recording",
+    "booking_session_3": "Chưa có transcript",
+    "booking_session_4": "Click để mở/đóng",
+    "booking_appointment_1": "Thanh toán",
+    "booking_appointment_2": "Học phí",
+    "booking_appointment_3": "Phí dịch vụ",
+    "booking_appointment_4": "Tổng cộng",
+    "booking_appointment_5": "Học phí(1 buổi)",
+    "booking_appointment_6": "Phí dịch vụ",
+    "booking_appointment_7": "Tổng cộng",
+    "booking_appointment_8": "Bạn đã đặt lịch học thành công.",
+    "booking_slot_1": "Chọn cấp độ",
+    "booking_slot_2": "Chọn cấp độ",
+    "booking_slot_3": "Chọn môn học",
+    "booking_slot_4": "Chọn môn học và cấp độ",
+    "booking_preview_1": "Xem trước",
+    "booking_preview_2": "Chế độ",
+    "booking_preview_3": "Khung giờ",
+    "booking_preview_4": "Môn học",
+    "booking_preview_5": "Học phí(1 buổi)",
+    "booking_preview_6": "Ước tính số buổi tạo",
+    "booking_time_1": "Khung giờ trong ngày",
+    "booking_weekday_1": "Lặp theo thứ",
+    "notification_booking_1": "Đặt {{count}} lịch học thành công",
+    "notification_booking_2": "Bạn đã đặt {{count}} buổi học với {{teacher}}.",
+    "notification_booking_3": "Hủy lịch học",
+    "notification_booking_4": "Bạn đã hủy buổi học với {{teacher}} vào {{time}}.",
+    "notification_reminder_1": "Sắp đến giờ học!",
+    "notification_reminder_2": "Buổi học với {{teacher}} bắt đầu sau {{time}}.",
+    "premium_success_1": "Ví Premium",
+    "lesson_chat_1": "Nhấn để tải về",
+    "lesson_chat_2": "Nhắn tin...",
+    "lesson_chat_3": "Thu nhỏ (-)",
+    "lesson_chat_4": "Phóng to (+)",
+    "lesson_chat_5": "Đính kèm file",
+    "lesson_control_1": "Cài đặt",
+    "lesson_header_1": "Đang ghi hình",
+    "lesson_materials_1": "Không thể tải PDF",
+    "lesson_materials_2": "Tên tài liệu",
+    "lesson_materials_3": "Thu nhỏ",
+    "lesson_materials_4": "Phóng to",
+    "lesson_notes_1": "Ghi chú cá nhân trong buổi học...&#10;&#10;• Từ vựng mới&#10;• Ngữ pháp cần ôn&#10;• Câu hỏi cho giáo viên",
+    "lesson_quiz_1": "Tạo nhanh (1 câu trắc nghiệm)",
+    "lesson_quiz_2": "Danh sách",
+    "lesson_quiz_3": "Chưa có quiz",
+    "lesson_quiz_4": "Câu đang mở",
+    "lesson_quiz_5": "Tổng kết (REST)",
+    "lesson_quiz_6": "Tiêu đề quiz",
+    "lesson_quiz_7": "Câu hỏi",
+    "lesson_quiz_8": "Options JSON — ví dụ [",
+    "lesson_quiz_9": "Đáp án đúng (khớp một phần tử options)",
+    "lesson_quiz_10": "Câu trả lời",
+    "lesson_quiz_11": "Bắt đầu / gửi câu 0",
+    "lesson_whiteboard_1": "Xóa toàn bộ bảng?",
+    "lesson_whiteboard_2": "Hành động này không thể hoàn tác.",
+    "shared_1": "Chọn chủ đề",
+    "lessonview_1": "Video chưa được tải lên",
+    "lessonview_2": "Chưa có câu hỏi nào",
+    "lessonview_3": "Chưa có ghi chú nào",
+    "lessonview_4": "Bài trước",
+    "lessonview_5": "Bài trước",
+    "lessonview_6": "Bài tiếp theo",
+    "lessonview_7": "Bài tiếp theo",
+    "speakingtask_1": "Luyện nói",
+    "flashcardsettings_1": "Không xác định",
+    "flashcardsettings_2": "N5 - Sơ cấp",
+    "flashcardsettings_3": "N4 - Trung cấp",
+    "flashcardsettings_4": "N3 - Tiền trung cấp",
+    "flashcardsettings_5": "N2 - Trung cấp",
+    "flashcardsettings_6": "N1 - Cao cấp",
+    "flashcardsettings_7": "Tổng thẻ",
+    "flashcardsettings_8": "Phút học",
+    "flashcardsettings_9": "Có hình ảnh",
+    "flashcardsettings_10": "Chưa có thẻ nào trong bộ này",
+    "flashcardsettings_11": ":/phát âm/:\\n\\nVí dụ:\\n日本語 - tiếng Nhật",
+    "flashcardsettings_12": ":/にほんご/:\\nありがとう - cảm ơn :/arigatou/:\\nhello - xin chào",
+    "flashcardsettings_13": "Ví dụ:",
+    "flashcardsettings_14": "Nhập tên bộ thẻ...",
+    "flashcardsettings_15": "Nhập mô tả...",
+    "flashcardsettings_16": "Phiên âm...",
+    "flashcardsettings_17": "Ví dụ câu...",
+    "flashcardsettings_18": "URL hình ảnh...",
+    "flashcardsettings_19": "例: Tiếng Nhật",
+    "error_1": "Có lỗi xảy ra!",
+    "___settings_page_1": "Cài đặt bộ thẻ",
+    "_id__page_1": "Không tìm thấy bản ghi",
+    "fill_blank_page_1": "Đúng",
+    "multiple_choice_page_1": "Đúng",
+    "_id__page_2": "Quay lại",
+    "_id__page_3": "Báo cáo hệ thống",
+    "_id__page_4": "Hạng mục sự cố",
+    "_id__page_5": "Phản hồi từ Fuji-Team",
+    "_id__page_6": "Kể cho chúng tôi thêm về sự cố?",
+    "_id__page_7": "Vui lòng cung cấp minh chứng cụ thể nếu có lỗi phát sinh lại.",
+    "_id__page_8": "Đảo thẻ",
+    "_id__page_9": "Bài tập",
+    "_id__page_10": "Thẻ trước",
+    "_id__page_11": "Thẻ tiếp theo",
+    "help_page_1": "Tìm kiếm phổ biến:",
+    "help_page_2": "Trung tâm giúp đỡ",
+    "help_page_3": "Khám phá các chủ đề được quan tâm nhiều nhất",
+    "help_page_4": "Vẫn chưa tìm thấy câu trả lời?",
+    "help_page_5": "Hỗ trợ 24/7",
+    "help_page_6": "Phản hồi dưới 30p",
+    "help_page_7": "Nhập từ khóa tìm kiếm (ví dụ: cách nạp tiền, reset mật khẩu...)",
+    "settings_page_1": "🇻🇳 Tiếng Việt",
+    "authform_1": "Quên mật khẩu?",
+    "authform_2": "Khôi phục mật khẩu",
+    "authform_3": "Nhập email của bạn để nhận mã OTP khôi phục.",
+    "authform_4": "Xác nhận mã OTP",
+    "authform_5": "Đổi email khác",
+    "authform_6": "Gửi lại mã",
+    "authform_7": "Mật khẩu mới",
+    "authform_8": "Quay lại nhập mã OTP",
+    "authform_9": "Đăng nhập ngay",
+    "authform_10": "Mã xác nhận đã được gửi đến",
+    "authform_11": "Nhập mật khẩu mới cho tài khoản"
+  },
+  "jlpt": {
+    "levels": {
+      "n1_desc": "Nâng cao",
+      "n2_desc": "Trung cấp cao",
+      "n3_desc": "Trung cấp",
+      "n4_desc": "Sơ cấp cao",
+      "n5_desc": "Sơ cấp"
+    }
+  },
+  "video_call": {
+    "page": {
+      "title": "Hội thoại tiếng Nhật",
+      "subtitle": "Luyện tiếng Nhật qua video call ngẫu nhiên"
+    },
+    "status": {
+      "on": "BẬT",
+      "off": "TẮT",
+      "searching": "Đang tìm đối tác...",
+      "idleTitle": "Tìm bạn luyện nói",
+      "idleDesc": "Nhấn Bắt đầu để kết nối..."
+    },
+    "bottomHint": "Luyện hội thoại tiếng Nhật cùng đối tác ngẫu nhiên",
+    "loadingStream": "Đang khởi tạo camera...",
+    "cameraOff": "Camera đã tắt",
+    "mic_toggle_on": "Bật Mic",
+    "mic_toggle_off": "Tắt Mic",
+    "camera_toggle_on": "Bật Camera",
+    "camera_toggle_off": "Tắt Camera",
+    "end_call": "Kết thúc cuộc gọi"
+  },
+  "header": {
+    "errorOpenClass": "Không mở được lớp học. Vui lòng kiểm tra lại buổi học."
+  },
+  "lesson": {
+    "room": {
+      "ready": "Phòng học đã sẵn sàng!",
+      "errorCreate": "Không thể tạo phòng học, vui lòng thử lại."
+    },
+    "recording": {
+      "started": "Đã bắt đầu ghi hình.",
+      "stopped": "Đã dừng ghi hình.",
+      "errorToggle": "Lỗi khi thay đổi trạng thái ghi hình.",
+      "consentTitle": "Thông báo ghi hình",
+      "consentDesc": "Buổi học này đang được ghi hình để đảm bảo chất lượng giảng dạy. Bằng việc tiếp tục, bạn đồng ý với việc ghi hình này.",
+      "consentBtn": "Tôi đã hiểu"
+    },
+    "timeup": "Hết giờ học! Cảm ơn bạn.",
+    "ended": "Buổi học đã kết thúc.",
+    "errorEnd": "Lỗi khi kết thúc buổi học.",
+    "confirm": {
+      "endTeacher": "Bạn có chắc muốn kết thúc buổi học này? Hệ thống sẽ ghi nhận hoàn thành.",
+      "leaveStudent": "Bạn có chắc muốn thoát phòng? Buổi học vẫn có thể tiếp tục nếu còn thời gian."
+    },
+    "report": {
+      "student": "Đánh giá học viên",
+      "teacher": "Đánh giá giảng viên",
+      "desc": "Hãy để lại nhận xét về buổi học vừa qua.",
+      "placeholder_student": "Nhận xét về học viên...",
+      "placeholder_teacher": "Nhận xét về giảng viên...",
+      "btn_cancel": "Hủy",
+      "btn_send": "Gửi đánh giá",
+      "success": "Cảm ơn bạn đã đánh giá!"
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "groups": {
+        "overview": "Tổng quan",
+        "management": "Quản lý",
+        "system": "Hệ thống"
+      },
+      "items": {
+        "analytics": "Thống kê",
+        "analyticsTeachers": "Giáo viên",
+        "users": "Người dùng",
+        "withdraw": "Rút tiền",
+        "courses": "Khóa học",
+        "coursesManage": "Quản lý khóa học",
+        "coursesFinanceAdmin": "Tài chính (Admin)",
+        "coursesFinanceTeacher": "Tài chính (Giáo viên)",
+        "schedules": "Lịch dạy",
+        "tests": "Đề thi",
+        "voiceTopics": "Luyện nói AI",
+        "reports": "Báo cáo & Phản hồi",
+        "systemErrors": "Lỗi hệ thống",
+        "notifications": "Thông báo",
+        "roles": "Phân quyền",
+        "posts": "Bài viết"
+      }
+    },
+    "systemErrors": {
+      "title": "Nhật ký lỗi hệ thống",
+      "subtitle": "Giám sát và quản lý các vấn đề hệ thống",
+      "summary": {
+        "total24h": "Tổng lỗi (24h)",
+        "total24hDesc": "Các lỗi mới nhất được tạo",
+        "unresolved": "Chưa xử lý",
+        "unresolvedDesc": "Cần được chú ý",
+        "stability": "Độ ổn định",
+        "stabilityDesc": "Uptime Backend",
+        "impactArea": "Vùng ảnh hưởng",
+        "impactAreaDesc": "Các module quan trọng"
+      },
+      "tabs": {
+        "all": "Tất cả nhật ký",
+        "unresolved": "Cần xử lý"
+      },
+      "filter": {
+        "searchPlaceholder": "Tìm kiếm lỗi, URL hoặc Request ID...",
+        "levelPlaceholder": "Mức độ",
+        "allLevels": "Tất cả mức độ",
+        "servicePlaceholder": "Dịch vụ",
+        "allServices": "Tất cả dịch vụ",
+        "statusPlaceholder": "Trạng thái",
+        "allStatuses": "Tất cả trạng thái",
+        "resolved": "Đã xử lý",
+        "pending": "Đang chờ",
+        "autoRefresh": "Tự động",
+        "reset": "Đặt lại",
+        "fromDate": "Từ ngày",
+        "toDate": "Đến ngày",
+        "searchRequestId": "Tìm theo Request ID...",
+        "activeFilters": "Bộ lọc đang áp dụng",
+        "clearDates": "Xóa ngày",
+        "statusResolved": "Đã xử lý",
+        "statusPending": "Đang chờ"
+      },
+      "table": {
+        "timestamp": "Thời gian",
+        "level": "Mức độ",
+        "service": "Dịch vụ",
+        "error": "Thông báo lỗi",
+        "path": "Đường dẫn / URL",
+        "requestId": "Request ID",
+        "status": "Trạng thái",
+        "actions": "Hành động",
+        "viewDetail": "Xem chi tiết",
+        "empty": "Không có lỗi hệ thống phù hợp với điều kiện"
+      },
+      "detail": {
+        "title": "Chi tiết lỗi",
+        "subtitle": "RequestId: {{id}}",
+        "stackTrace": "Stack Trace",
+        "context": "Thông tin ngữ cảnh",
+        "user": "Người dùng bị ảnh hưởng",
+        "ip": "Địa chỉ IP",
+        "resolve": "Đánh dấu đã xử lý",
+        "unresolve": "Đánh dấu chưa xử lý",
+        "resolutionNote": "Ghi chú xử lý",
+        "resolutionPlaceholder": "Đã xử lý như thế nào?",
+        "saveNote": "Lưu ghi chú",
+        "requestBody": "Request Payload",
+        "responseBody": "Response Body",
+        "environment": "Môi trường",
+        "userAgent": "User Agent",
+        "copyToClipboard": "Sao chép vào clipboard",
+        "copied": "Đã sao chép!",
+        "noRequestBody": "Không có request payload",
+        "noResponseBody": "Không có response body",
+        "addInvestigationNote": "Thêm ghi chú điều tra...",
+        "investigationNotes": "Ghi chú điều tra",
+        "statusCode": "Mã trạng thái",
+        "method": "Phương thức",
+        "path": "Đường dẫn",
+        "userId": "User ID",
+        "bookingId": "Booking ID",
+        "roomId": "Room ID",
+        "errorId": "Error ID",
+        "fullMessage": "Thông báo lỗi đầy đủ",
+        "shortMessage": "Thông báo ngắn"
+      },
+      "toast": {
+        "refreshSuccess": "Đã làm mới nhật ký",
+        "refreshError": "Không thể làm mới nhật ký",
+        "updateSuccess": "Đã cập nhật trạng thái lỗi",
+        "updateError": "Không thể cập nhật trạng thái lỗi"
+      }
+    },
+    "user": {
+      "toast": {
+        "savedTemplate": "Đã lưu mẫu cảnh báo mới",
+        "chatBannedTemp": "Đã cấm chat 24 giờ",
+        "chatBannedPerm": "Đã cấm chat vĩnh viễn",
+        "chatBanFailed": "Không thể cập nhật cấm chat",
+        "chatUnbanned": "Đã gỡ cấm chat",
+        "chatUnbanFailed": "Không thể gỡ cấm chat",
+        "bulkHandled": "Đã xử lý thành công {{count}} sự cố",
+        "bulkHandleFailed": "Lỗi khi xử lý hàng loạt sự cố",
+        "handled": "Đã xử lý sự cố thành công",
+        "handleFailed": "Không thể xử lý vi phạm",
+        "handleError": "Lỗi khi xử lý sự cố",
+        "basicUpdateSuccess": "Cập nhật thông tin cơ bản thành công",
+        "updateSuccess": "Cập nhật thông tin thành công",
+        "locked": "Đã khóa tài khoản thành công",
+        "unlocked": "Đã mở khóa tài khoản thành công",
+        "resetSuccess": "Đã xóa toàn bộ lịch sử vi phạm",
+        "resetError": "Lỗi khi reset vi phạm",
+        "updateFailed": "Cập nhật thất bại",
+        "systemError": "Lỗi hệ thống khi cập nhật",
+        "invalidEmail": "Email không hợp lệ",
+        "actionFailed": "Thao tác thất bại",
+        "statusUpdateError": "Lỗi hệ thống khi thay đổi trạng thái"
+      },
+      "risk": {
+        "low": "Thấp",
+        "medium": "Trung bình",
+        "high": "Cao"
+      },
+      "btn": {
+        "sendWarning": "Gửi cảnh báo cho người dùng",
+        "viewDetail": "Xem chi tiết",
+        "reject": "Từ chối"
+      },
+      "placeholder": {
+        "logSearch": "Tìm theo mô tả, IP, loại..."
+      },
+      "filter": {
+        "severity": "Mức độ",
+        "allSeverity": "Tất cả mức độ",
+        "severityLow": "Mức độ: Thấp",
+        "severityMed": "Mức độ: T.bình",
+        "severityHigh": "Mức độ: Cao",
+        "status": "Trạng thái",
+        "allStatus": "Tất cả trạng thái",
+        "placeholder": "Tìm theo tên đăng nhập hoặc email...",
+        "rolePlaceholder": "Vai trò",
+        "allRoles": "Tất cả vai trò",
+        "statusPlaceholder": "Trạng thái",
+        "securityPlaceholder": "Bảo mật",
+        "allProfiles": "Tất cả hồ sơ",
+        "violations": "Hành vi vi phạm",
+        "sortPlaceholder": "Sắp xếp",
+        "newest": "Tài khoản mới nhất",
+        "oldest": "Tài khoản cũ nhất"
+      },
+      "status": {
+        "handled": "Đã xử lý",
+        "unhandled": "Chưa xử lý",
+        "active": "HOẠT ĐỘNG",
+        "lockedLabel": "BỊ KHÓA"
+      },
+      "log": {
+        "severity": "Mức độ"
+      },
+      "section": {
+        "role": "Cấp bậc & Vai trò",
+        "basicInfo": "Thông tin cơ bản",
+        "securityLogs": "Nhật ký bảo mật & Chống gian lận"
+      },
+      "label": {
+        "manageRole": "Vai trò quản lý",
+        "sensitiveEmail": "Email (nhạy cảm)"
+      },
+      "desc": "Cấu hình hệ thống, bảo mật & Quản lý phân quyền người dùng.",
+      "role": {
+        "admin": "QUẢN TRỊ VIÊN",
+        "instructor": "GIẢNG VIÊN",
+        "student": "HỌC VIÊN"
+      },
+      "table": {
+        "user": "Người dùng",
+        "name": "Họ và tên",
+        "role": "Vai trò",
+        "status": "Trạng thái",
+        "violations": "Vi phạm",
+        "actions": "Thao tác",
+        "empty": "Không tìm thấy người dùng nào phù hợp."
+      },
+      "violation": {
+        "reminder": "Nhắc nhở",
+        "serious": "Nghiêm trọng",
+        "tooMany": "Vi phạm quá nhiều"
+      },
+      "title": "Quản lý người dùng",
+      "modal": {
+        "title": "Chi tiết người dùng",
+        "riskLevel": "Mức độ rủi ro: {{level}}",
+        "risk": {
+          "low": "An toàn",
+          "medium": "Cảnh báo",
+          "high": "Nguy hiểm"
+        },
+        "tabs": {
+          "overview": "Tổng quan",
+          "violations": "Vi phạm",
+          "permissions": "Quyền truy cập",
+          "activity": "Hoạt động"
+        },
+        "stats": {
+          "violationFreq": "Tần suất vi phạm",
+          "attendance": "Tỉ lệ chuyên cần",
+          "systemTasks": "Tác vụ hệ thống",
+          "week": "Tuần",
+          "month": "Tháng",
+          "avg": "Trung bình",
+          "low": "Thấp",
+          "lateClasses": "Số buổi muộn / Nghỉ",
+          "lmsSource": "Dữ liệu từ hệ thống đào tạo",
+          "expectedSource": "Dự kiến dựa trên nhật ký",
+          "overallRating": "Đánh giá chung",
+          "kpiPoints": "Điểm KPI",
+          "topInstructor": "Giảng viên tiêu biểu"
+        },
+        "info": {
+          "joinedDate": "Ngày gia nhập",
+          "lastAccess": "Lần cuối truy cập",
+          "noData": "Chưa có dữ liệu"
+        },
+        "violations": {
+          "handleXItems": "Xử lý {{count}} mục",
+          "severity": "Mức độ",
+          "status": "Trạng thái",
+          "handled": "Đã xử lý",
+          "unhandled": "Chưa xử lý",
+          "empty": "Không tìm thấy dữ liệu vi phạm",
+          "results": "{{count}} kết quả",
+          "chatViolation": "Vi phạm chat",
+          "openChat": "Mở chat",
+          "handleNow": "Xử lý ngay",
+          "exam": "Bài thi",
+          "suitableLang": "Sử dụng ngôn từ không phù hợp",
+          "solved": "Đã giải quyết"
+        },
+        "permissions": {
+          "title": "Quyền truy cập & Giới hạn",
+          "advanced": "Cấu hình nâng cao",
+          "exam": "Truy cập bài thi",
+          "content": "Truy cập nội dung",
+          "chat": "Truy cập trò chuyện",
+          "deviceLimit": "Giới hạn thiết bị",
+          "expiryDate": "Ngày hết hạn tài khoản",
+          "chatBanStatus": "Trạng thái cấm chat",
+          "permanentBan": "Đang cấm vĩnh viễn",
+          "temporaryBan": "Đang cấm đến {{date}}",
+          "notBanned": "Không bị cấm chat",
+          "ban24h": "Cấm chat 24h",
+          "banPermanent": "Cấm chat vĩnh viễn",
+          "unban": "Gỡ cấm chat"
+        },
+        "warning": {
+          "enterMessage": "Vui lòng nhập nội dung cảnh báo",
+          "success": "Đã gửi cảnh báo tới người dùng",
+          "error": "Lỗi khi gửi cảnh báo",
+          "confirmSend": "Xác nhận gửi cảnh báo",
+          "messageLabel": "Nội dung cảnh báo",
+          "title": "Gửi cảnh báo",
+          "desc": "Nội dung cảnh báo sẽ được gửi trực tiếp đến hộp thư của người dùng.",
+          "btnSend": "Gửi ngay"
+        },
+        "roleChange": {
+          "warning": "Bạn đang thay đổi vai trò. Người dùng này sẽ buộc phải đăng nhập lại.",
+          "confirm": "Xác nhận thay đổi vai trò"
+        },
+        "lock": {
+          "noAdminLock": "Không thể khóa tài khoản QUẢN TRỊ VIÊN.",
+          "confirmTitle": "Xác nhận khóa/mở tài khoản",
+          "locked": "Đã khóa tài khoản",
+          "unlocked": "Đã mở khóa tài khoản"
+        },
+        "basic": {
+          "updateSuccess": "Cập nhật thông tin cơ bản thành công"
+        },
+        "sections": {
+          "teachingLog": "Nhật ký giảng dạy & Chuyên cần",
+          "attendanceKPI": "Chỉ số chuyên cần & Hiệu suất giảng dạy",
+          "adminActions": "LỊCH SỬ TÁC VỤ & QUẢN TRỊ HỆ THỐNG"
+        },
+        "toast": {
+          "bulkHandleSuccess": "Đã xử lý {{count}} sự cố",
+          "bulkHandleError": "Lỗi khi xử lý hàng loạt"
+        },
+        "placeholder": {
+          "instructorLogSearch": "Tìm theo mô tả, IP, loại..."
+        },
+        "filter": {
+          "allSeverities": "Tất cả mức độ",
+          "severityLowLabel": "Mức độ: Thấp",
+          "severityMedLabel": "Mức độ: T.bình",
+          "severityHighLabel": "Mức độ: Cao",
+          "allStatuses": "Tất cả trạng thái"
+        },
+        "indicator": {
+          "realtime": "Dữ liệu thời gian thực",
+          "autoStats": "Thống kê tự động",
+          "autoStatsDesc": "Các chỉ số như <b>Vào lớp muộn, Thiếu giáo án, Sai lộ trình</b> được hệ thống đào tạo cập nhật tự động hàng giờ.",
+          "activityLog": "Nhật ký hoạt động"
+        },
+        "table": {
+          "target": "Đối tượng",
+          "detail": "Chi tiết"
+        },
+        "activity": {
+          "empty": "Không có lịch sử hành động nào"
+        },
+        "confirm": {
+          "saveTitle": "Xác nhận thay đổi",
+          "saveDesc": "Hành động này sẽ cập nhật các thông tin bảo mật và phân quyền cho người dùng <strong>{{username}}</strong>.",
+          "roleWarning": "Mọi phiên đăng nhập hiện tại sẽ bị vô hiệu hóa để áp dụng quyền mới.",
+          "btnUpdate": "Xác nhận cập nhật",
+          "resetTitle": "Reset vi phạm",
+          "resetDesc": "Bạn có chắc chắn muốn xóa toàn bộ lịch sử vi phạm của người dùng này? Hành động này không thể hoàn tác.",
+          "lockTitle": "Khóa/Mở khóa tài khoản",
+          "lockDesc": "Thay đổi trạng thái hoạt động của tài khoản này.",
+          "btnReset": "Xác nhận xóa",
+          "btnLock": "Xác nhận thực hiện",
+          "emailTitle": "Thay đổi Email",
+          "emailDesc": "Thay đổi địa chỉ email sẽ ảnh hưởng đến việc đăng nhập và nhận thông báo của người dùng."
+        }
+      }
+    },
+    "finance": {
+      "tier": {
+        "hot": "Bán chạy",
+        "medium": "Bán vừa",
+        "low": "Bán chậm"
+      },
+      "title": {
+        "admin": "Tài chính khóa học (Admin)",
+        "teacher": "Tài chính khóa học (Giáo viên)"
+      },
+      "desc": {
+        "admin": "Quản trị giá khóa học, mã giảm giá và doanh thu theo từng khóa học trong toàn hệ thống.",
+        "teacher": "Quản lý giá, mã giảm giá và doanh thu các khóa học bạn sở hữu."
+      },
+      "toast": {
+        "refreshSuccess": "Đã cập nhật dữ liệu tài chính khóa học",
+        "refreshError": "Không thể cập nhật dữ liệu",
+        "invalidPrice": "Giá khóa học phải là số lớn hơn hoặc bằng 0",
+        "emptyDiscountCode": "Vui lòng nhập mã giảm giá",
+        "invalidDiscountPercent": "Phần trăm giảm giá phải nằm trong khoảng 1 - 100"
+      },
+      "error": {
+        "noPermission": "Bạn chưa có quyền COURSE_VIEW để xem tài chính khóa học.",
+        "adminOnly": "Chỉ dành cho quản trị viên",
+        "adminOnlyDesc": "Trang này hiển thị toàn bộ doanh thu khóa học hệ thống và chỉ dành cho ADMIN."
+      },
+      "btn": {
+        "refresh": "Làm mới",
+        "editPrice": "Sửa giá",
+        "discountCodes": "Mã giảm giá"
+      },
+      "stat": {
+        "totalCourses": "Tổng khóa học",
+        "totalStudents": "Tổng học viên",
+        "totalRevenue": "Doanh thu thực thu",
+        "activeDiscounts": "Mã giảm giá đang hiệu lực"
+      },
+      "chart": {
+        "title": "Biểu đồ đường doanh thu khóa học",
+        "desc": "Top {{limit}} khóa học theo doanh thu, phân hạng bán chạy, bán vừa, bán chậm bằng màu riêng.",
+        "loading": "Đang tải dữ liệu biểu đồ...",
+        "noData": "Chưa có dữ liệu để hiển thị biểu đồ"
+      },
+      "list": {
+        "title": "Danh sách tài chính theo khóa học",
+        "desc": "Doanh thu được tính từ các giao dịch COURSE_PAYMENT đã phát sinh."
+      },
+      "placeholder": {
+        "search": "Tìm theo tên khóa học"
+      },
+      "table": {
+        "course": "Khóa học",
+        "instructor": "Giảng viên",
+        "price": "Giá",
+        "students": "Học viên",
+        "revenue": "Doanh thu",
+        "transactions": "Giao dịch",
+        "activeCodes": "Mã hiệu lực",
+        "actions": "Thao tác"
+      },
+      "status": {
+        "published": "Đã xuất bản",
+        "draft": "Bản nháp"
+      },
+      "dialog": {
+        "editPrice": "Cập nhật giá khóa học"
+      },
+      "label": {
+        "newPrice": "Giá mới (VND)"
+      }
+    },
+    "vocab": {
+      "alert": {
+        "empty": "Vui lòng điền chữ Nhật và nghĩa"
+      },
+      "label": {
+        "vocab": "Từ vựng"
+      },
+      "placeholder": {
+        "word": "Chữ Nhật *",
+        "reading": "Phiên âm (tùy)",
+        "meaning": "Nghĩa *"
+      },
+      "btn": {
+        "add": "Thêm từ vựng"
+      },
+      "count": "từ vựng"
+    },
+    "withdraw": {
+      "title": "Rút tiền",
+      "desc": "Phê duyệt và quản lý các yêu cầu rút tiền từ ví của giảng viên.",
+      "stat": {
+        "waiting": "Đang chờ duyệt",
+        "processing": "đang xử lý",
+        "toProcess": "Yêu cầu cần xử lý",
+        "totalPaid": "Tổng đã chi",
+        "successTx": "Các giao dịch thành công",
+        "rejected": "Bị từ chối",
+        "refunded": "Giao dịch đã hoàn tiền"
+      },
+      "placeholder": {
+        "search": "Tìm giao dịch, tên, email..."
+      },
+      "alert": {
+        "note": "Lưu ý:",
+        "desc": "Hệ thống hiện chưa tự động chuyển tiền qua Ngân hàng số. Sau khi kiểm tra tài khoản nhận hợp lệ và bấm Duyệt, bạn vui lòng chuyển khoản thủ công cho người dùng qua app Ngân hàng thực tế."
+      },
+      "table": {
+        "idDate": "Mã / Ngày",
+        "amount": "Số tiền",
+        "bank": "Ngân hàng",
+        "empty": "Không tìm thấy yêu cầu rút tiền nào phù hợp."
+      },
+      "status": {
+        "pending": "Chờ duyệt",
+        "processing": "Đang xử lý",
+        "completed": "Đã chuyển",
+        "rejected": "Đã từ chối",
+        "transferring": "Đang chuyển..."
+      },
+      "btn": {
+        "transfer": "Chuyển tiền",
+        "autoPayout": "Thanh toán tự động qua Cổng Payout",
+        "manualConfirm": "Xác nhận chuyển tay thành công"
+      },
+      "toast": {
+        "approveSuccess": "✅ Đã chuyển tiền thành công cho yêu cầu #{{id}}! Trạng thái đã được cập nhật.",
+        "approveError": "Lỗi khi duyệt yêu cầu #{{id}}",
+        "rejectSuccess": "Đã từ chối yêu cầu #{{id}}. Lý do: {{reason}}",
+        "rejectError": "Lỗi khi từ chối yêu cầu #{{id}}",
+        "copied": "Đã sao chép {{label}}"
+      },
+      "prompt": {
+        "rejectReason": "Lý do từ chối rút tiền:"
+      },
+      "modal": {
+        "payoutSuccess": "Chuyển tiền tự động thành công!",
+        "payoutFailed": "Chuyển khoản tự động thất bại!",
+        "payoutPending": "Giao dịch đang chờ xử lý từ ngân hàng...",
+        "payoutProcessing": "Đang xử lý chuyển tiền tự động, vui lòng chờ...",
+        "payoutRecorded": "Đã ghi nhận yêu cầu chuyển tiền tự động!",
+        "title": "Chuyển tiền cho Giảng viên",
+        "desc": "Quét mã QR dưới đây bằng ứng dụng ngân hàng để chuyển khoản. Sau khi chuyển thành công, nhấn \"Xác nhận chuyển thành công\".",
+        "checkRecipient": "Kiểm tra kỹ thông tin người nhận trước khi chuyển"
+      },
+      "label": {
+        "bankName": "Ngân hàng",
+        "accountNumber": "Số tài khoản",
+        "accountHolder": "Chủ tài khoản",
+        "amountBlossom": "Số hoa",
+        "amountVnd": "Số tiền chuyển",
+        "info": "Nội dung"
+      },
+      "filter": {
+        "all": "Tất cả",
+        "pending": "Chờ duyệt",
+        "processing": "Đang xử lý",
+        "completed": "Đã hoàn thành",
+        "rejected": "Bị từ chối"
+      }
+    },
+    "analytics": {
+      "teacher": {
+        "title": "Phân tích Giáo viên",
+        "desc": "Theo dõi hiệu suất giảng dạy và thu nhập của bạn.",
+        "last30Days": "30 ngày qua",
+        "downloadReport": "Tải báo cáo",
+        "totalEarnings": "Tổng thu nhập",
+        "totalRevenue": "Tổng doanh thu đã nhận",
+        "monthlyGrowth": "Tăng trưởng tháng",
+        "growthVsLastMonth": "{{val}}% so với tháng trước",
+        "totalHours": "Tổng giờ dạy",
+        "totalClasses": "Buổi học đã hoàn thành",
+        "avgRating": "Đánh giá TB",
+        "basedOnReviews": "Dựa trên đánh giá học viên",
+        "tabs": {
+          "overview": "Tổng quan",
+          "topStudents": "Học viên xuất sắc",
+          "courseRevenue": "Doanh thu khóa học"
+        },
+        "chart": {
+          "title": "Luồng thu nhập",
+          "desc": "Phân tích doanh thu hàng ngày",
+          "filter": "Lọc",
+          "all": "Tất cả",
+          "courses": "Khóa học",
+          "sessions": "Buổi học"
+        },
+        "wallet": {
+          "title": "Số dư ví",
+          "desc": "Rút thu nhập của bạn một cách dễ dàng",
+          "available": "Số dư khả dụng",
+          "pending": "Đang chờ thanh toán",
+          "processing": "Đang xử lý",
+          "requestWithdraw": "Yêu cầu rút tiền"
+        },
+        "students": {
+          "placeholder": "Tìm học viên...",
+          "table": {
+            "name": "Học viên",
+            "bookings": "Lượt đặt",
+            "spent": "Tổng chi tiêu",
+            "status": "Trạng thái",
+            "details": "Chi tiết"
+          },
+          "noData": "Không có dữ liệu học viên."
+        },
+        "courses": {
+          "students": "Học viên",
+          "revenue": "Doanh thu",
+          "popularity": "Độ phổ biến",
+          "noData": "Không có dữ liệu khóa học."
+        }
+      }
+    }
+  },
+  "videoCall": {
+    "room": {
+      "reconnecting": "Đang kết nối lại...",
+      "secondsLeft": "{{val}}s còn lại",
+      "waitingP2P": "Đang chờ kết nối P2P...",
+      "chatTitle": "Nhắn tin",
+      "connected": "Đã kết nối",
+      "emptyChat1": "Gửi vài câu chào bằng tiếng Nhật",
+      "emptyChat2": "để bắt đầu cuộc trò chuyện.",
+      "suggestVocab": "Gợi ý từ vựng",
+      "loading": " (đang tải...)",
+      "parseSentence": "Parse cả đoạn",
+      "convertAllRomaji": "Chuyển toàn bộ romaji hiện tại sang hiragana",
+      "fromHistory": "✓ lịch sử",
+      "endCall": "Kết thúc",
+      "nextPeer": "Tiếp theo",
+      "report": "Báo cáo",
+      "reportUser": "Báo cáo người dùng",
+      "reportedInfo": "Thông tin người bị báo cáo",
+      "reportContent": "Nội dung báo cáo",
+      "placeholder": {
+        "message": "Nhập tin nhắn bằng tiếng Nhật...",
+        "report": "Nhập nội dung báo cáo chi tiết..."
+      },
+      "btn": {
+        "send": "Gửi"
+      },
+      "violation": {
+        "japaneseOnly": "Vui lòng chỉ chat tiếng Nhật (VN/EN không được phép)"
+      },
+      "ban": {
+        "active": "Bạn đang bị cấm chat",
+        "until": " • Còn đến: {{date}}"
+      },
+      "toast": {
+        "reportSuccess": "Báo cáo đã được ghi nhận.",
+        "reportError": "Không thể gửi báo cáo, vui lòng thử lại.",
+        "reportInputRequired": "Vui lòng nhập nội dung báo cáo.",
+        "reportFailed": "Gửi báo cáo thất bại"
+      },
+      "sending": "Đang gửi..."
+    }
+  },
+  "feedback": {
+    "title": "Báo cáo sự cố",
+    "improveTitle": "Chúng tôi có thể cải thiện như thế nào?",
+    "detailLabel": "Chi tiết",
+    "placeholder": "Vui lòng chia sẻ chi tiết nhất có thể...",
+    "uploadBtn": "Thêm video hoặc ảnh chụp màn hình",
+    "disclaimer": "Nếu bạn có ý tưởng để cải thiện sản phẩm thì hãy cho chúng tôi biết nhé. Còn nếu cần trợ giúp, hãy truy cập ",
+    "helpCenter": "Trung tâm trợ giúp",
+    "btnCancel": "Hủy",
+    "btnSubmit": "Gửi báo cáo",
+    "sending": "Đang gửi...",
+    "abandonTitle": "Bỏ phản hồi?",
+    "abandonDesc": "Nếu bỏ bây giờ, bạn sẽ không chia sẻ bất cứ ý kiến đóng góp nào với chúng tôi.",
+    "btnContinue": "Tiếp tục",
+    "btnDiscard": "Bỏ",
+    "toast": {
+      "errorInput": "Vui lòng nhập nội dung phản hồi",
+      "success": "Đã gửi báo cáo, cảm ơn bạn đã đóng góp ý kiến!",
+      "errorSubmit": "Có lỗi xảy ra khi gửi phản hồi. Vui lòng thử lại sau."
+    },
+    "defaultReportTitle": "Báo cáo sự cố từ hệ thống"
+  },
+  "paywall": {
+    "title": "Tính năng cao cấp",
+    "desc": "Tính năng này chỉ dành cho tài khoản nâng cấp. Vui lòng nâng cấp gói để trải nghiệm tốt nhất.",
+    "btnUpgrade": "Nâng cấp {{tier}}",
+    "btnLater": "Để sau"
   }
 }

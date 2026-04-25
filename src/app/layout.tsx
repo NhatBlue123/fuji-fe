@@ -1,23 +1,12 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_JP } from "next/font/google";
+import Script from "next/script";
 import "material-symbols/outlined.css";
+import "tldraw/tldraw.css";
 import "@/app/globals.css";
 import { ThemeProvider, ExtensionCleanup, I18nProvider } from "@/components/common";
 import { Toaster } from "@/components/ui/sonner";
 import RtkProvider from "./providers";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const notoSansJP = Noto_Sans_JP({
-  subsets: ["latin"],
-  variable: "--font-noto-sans-jp",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "FUJI - Học Tiếng Nhật Online",
@@ -47,11 +36,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const fontVars = {
+    "--font-inter":
+      'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    "--font-noto-sans-jp":
+      '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif',
+  } as React.CSSProperties;
+
   return (
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} ${notoSansJP.variable} antialiased font-display`}
+      className="antialiased font-display"
+      style={fontVars}
     >
       <head suppressHydrationWarning>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
@@ -69,6 +66,11 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
+              <Script
+                id="theme-init"
+                src="/theme-init.js"
+                strategy="beforeInteractive"
+              />
               {children}
               <Toaster />
             </ThemeProvider>

@@ -5,8 +5,8 @@
     "flashcard": "Flashcards",
     "management": "Management",
     "notification": "Notifications",
-    "darkMode": "Dark Mode",
-    "lightMode": "Light Mode",
+    "darkMode": "dark",
+    "lightMode": "light",
     "login": "Login",
     "logout": "Logout",
     "creating": "Creating...",
@@ -19,7 +19,57 @@
     "register": "Register",
     "viewAll": "View All",
     "noNotifications": "No new notifications",
-    "profile": "Profile"
+    "profile": "Profile",
+    "all": "All",
+    "search": "Search",
+    "create": "Create",
+    "edit": "Edit",
+    "notUpdated": "Not updated",
+    "notDetermined": "Not determined",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "processing": "Processing...",
+    "back": "Back",
+    "save": "Save Changes",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "pleaseLogin": "Please log in to proceed!",
+    "package": "Package",
+    "undo": "Undo",
+    "free": "Free",
+    "settings": "Settings",
+    "anonymous": "Anonymous",
+    "roles": {
+      "student": "Student",
+      "admin": "Administrator",
+      "instructor": "Instructor"
+    },
+    "saving": "Saving...",
+    "theme": "Theme",
+    "toggleTheme": "Toggle Theme",
+    "saveChanges": "Save Changes",
+    "exportExcel": "Export Excel",
+    "action": "Action",
+    "status": "Status",
+    "time": "Time",
+    "noAccess": "Access Denied",
+    "pageInfo": "Page {{current}} / {{total}}",
+    "prev": "Prev",
+    "next": "Next",
+    "myProfile": "My Profile",
+    "support": "Support",
+    "docs": "Documentation",
+    "accounts": "accounts",
+    "refresh": "Refresh",
+    "copy": "Copy",
+    "me": "Me",
+    "errorOccurred": "An error occurred",
+    "tryLater": "Please try again later",
+    "tryAgain": "Try again",
+    "close": "Close",
+    "copied": "Copied"
   },
   "sidebar": {
     "subtitle": "Learn Japanese",
@@ -30,7 +80,8 @@
     "studentLevel": "Student",
     "logoutSuccess": "Logged out successfully!",
     "logoutFailed": "Logout failed",
-    "logout": "Logout"
+    "logout": "Logout",
+    "videoCall": "Video Call"
   },
   "languageSwitcher": {
     "title": "Language Settings",
@@ -38,9 +89,16 @@
     "noResults": "No matching language found"
   },
   "auth": {
+    "otpSent": "OTP has been sent to your email",
+    "registerSuccess": "Registration successful!",
+    "registerDirectSuccess": "Account created successfully!",
+    "verifyOtpSuccess": "OTP verification successful!",
+    "checkOtpSuccess": "OTP code is correct!",
+    "forgotPasswordEmailNotFound": "This email is not registered in our system",
+    "forgotPasswordOtpSent": "Password recovery OTP has been sent",
+    "resetPasswordSuccess": "Password reset successful!",
     "loginSuccess": "Login successful",
     "loginFail": "Login failed",
-    "registerSuccess": "Registration successful",
     "username": "Username",
     "fullname": "Full name",
     "email": "Email",
@@ -65,14 +123,17 @@
     "otpExpired": "OTP code has expired",
     "otpInvalidOrExpired": "OTP code is invalid or has expired",
     "registerCanLogin": "You can log in now.",
-    "verifyOtpSuccess": "OTP verification successful",
     "userNotFound": "User not found",
     "accountNotActivated": "Account has not been activated",
     "accountDisabled": "Account is not activated or has been locked",
-    "googleVerifySuccess": "Google verification successful",
-    "googleWelcome": "Welcome to FUJI",
-    "refreshSuccess": "Token refreshed successfully",
-    "logoutSuccess": "Logout successful",
+    "accountLocked": "Your account is temporarily locked",
+    "googleVerifySuccess": "Google verification successful!",
+    "googleWelcome": "Welcome back to FUJI",
+    "googleNoId": "Could not retrieve Google ID",
+    "googleNoEmail": "Google account did not provide an email",
+    "googleEmailConflict": "This email is linked to another account",
+    "refreshSuccess": "Session refreshed successfully",
+    "logoutSuccess": "Logged out successfully!",
     "google": "Google",
     "backToEdit": "Back to edit information",
     "confirmOtp": "Confirm OTP",
@@ -93,46 +154,257 @@
       "confirmPasswordRequired": "Please confirm your password",
       "passwordsNotMatch": "Passwords do not match",
       "otpRequired": "Please enter all 6 digits"
+    },
+    "logoutFailed": "Logout failed",
+    "logout": "Logout",
+    "error": {
+      "invalidEmail": "Invalid email address",
+      "fullNameMinLength": "Full name must be at least 3 characters"
+    },
+    "placeholder": {
+      "fullName": "Enter full name..."
+    },
+    "label": {
+      "fullName": "Full Name",
+      "email": "Email Address"
     }
   },
   "api": {
     "loading": "Loading data...",
     "error": "Something went wrong",
     "validation": {
-      "invalid": "Invalid data"
+      "invalid": "Invalid data",
+      "failed": "Data validation failed",
+      "jsonError": "Invalid data format sent"
     },
     "unexpectedError": "A system error has occurred",
     "networkError": "Unable to connect to the server",
-    "createFailed": "An error occurred while creating. Please try again."
+    "createFailed": "An error occurred while creating. Please try again.",
+    "success": "Operation successful"
+  },
+  "prefs": {
+    "getSuccess": "User settings fetched successfully",
+    "updateSuccess": "Settings updated successfully"
+  },
+  "user": {
+    "fetchAllSuccess": "Users fetched successfully",
+    "fetchStatsSuccess": "User statistics fetched successfully",
+    "fetchDetailSuccess": "User details fetched successfully",
+    "fetchInstructorsSuccess": "Instructors fetched successfully",
+    "fetchMeSuccess": "Profile fetched successfully",
+    "updateProfileSuccess": "Profile updated successfully",
+    "changePasswordSuccess": "Password changed successfully",
+    "resetViolationsSuccess": "Violations reset successfully",
+    "updateUserSuccess": "User information updated successfully",
+    "violationHandled": "Violation marked as handled",
+    "violationReported": "Violation reported successfully",
+    "warningSent": "Warning sent successfully",
+    "notFound": "User not found"
+  },
+  "course": {
+    "buySuccess": "Course purchased successfully",
+    "updateProgressSuccess": "Lesson progress updated",
+    "fetchAllSuccess": "Courses fetched successfully",
+    "createSuccess": "Course created successfully",
+    "fetchPublishedSuccess": "Published courses fetched successfully",
+    "fetchInstructorSuccess": "Instructor courses fetched successfully",
+    "searchSuccess": "Course search completed successfully",
+    "fetchDetailSuccess": "Course details fetched successfully",
+    "updateSuccess": "Course updated successfully",
+    "deleteSuccess": "Course deleted successfully",
+    "rateSuccess": "Course rated successfully",
+    "fetchRatingsSuccess": "Ratings fetched successfully",
+    "page": {
+      "title": "FUJI Course Treasury",
+      "subtitle": "High-quality lecture system, exclusively designed for learners. From Beginner N5 to Advanced N1.",
+      "title_part1": "Explore ",
+      "title_part2": " courses"
+    },
+    "filter": {
+      "searchPlaceholder": "Search courses (e.g., N3 Exam Preparation, Kaiwa...)",
+      "levelLabel": "Level:",
+      "categoryLabel": "Category:",
+      "levelPlaceholder": "Select level",
+      "categoryPlaceholder": "Select category",
+      "all": "All",
+      "free": "Free",
+      "paid": "Paid",
+      "mine": "My Courses"
+    },
+    "list": {
+      "free": "Free",
+      "continueLearning": "Continue Learning",
+      "registerFree": "Register for Free",
+      "register": "Register",
+      "lessons": "{{count}} lessons",
+      "students": "{{count}} students",
+      "details": "Details",
+      "noCourses": "No courses found",
+      "tryDifferentKeyword": "Try searching with a different keyword",
+      "loginToRegister": "Please log in to register for a course.",
+      "searchResults": "Search Results",
+      "featuredCourses": "Featured Courses",
+      "courseCount": "{{count}} courses"
+    },
+    "detail": {
+      "notFound": "Course not found",
+      "deleted": "This course does not exist or has been deleted",
+      "backToList": "Back to list",
+      "intro": "Course Introduction",
+      "content": "Course Content",
+      "moreFromInstructor": "More courses from this instructor",
+      "allLessons": "All lessons",
+      "progressInfo": "Progress: {{completed}}/{{total}} lessons",
+      "registerToStart": "Register to start learning",
+      "startNow": "Start learning now",
+      "studentsBought": "Students enrolled",
+      "noLessons": "No lessons yet",
+      "courseInfo": "Course information",
+      "lesson": "Lesson",
+      "registerFree": "Register for free",
+      "enrolled": "Enrolled"
+    },
+    "lesson": {
+      "notFound": "Lesson not found",
+      "deleted": "This lesson does not exist or has been deleted",
+      "backToCourse": "Back to course",
+      "content": "Lesson Content",
+      "noDescription": "No description for this lesson",
+      "completed": "You have completed this lesson",
+      "noLessons": "No lessons available",
+      "completeCourse": "Complete course",
+      "courseContent": "Course Content",
+      "lockedTitleSequence": "You must complete the previous lesson first",
+      "lockedTitleEnroll": "This lesson is locked",
+      "lockedDescSequence": "Please finish the previous lesson to unlock this one.",
+      "lockedDescEnrollSpecific": "You need to enroll in the course to view \"{{lesson}}\".",
+      "lockedDescEnroll": "You need to enroll in the course to view this lesson.",
+      "actionSequence": "Study available lesson",
+      "actionEnroll": "Back to course page",
+      "actionSequenceAlt": "View learning path",
+      "actionEnrollAlt": "Register to unlock",
+      "labelSequence": "Study previous lesson",
+      "labelEnroll": "Enroll in course"
+    },
+    "buyFailed": "Could not purchase the course. Please try again.",
+    "alreadyBought": "You have already purchased this course."
+  },
+  "payment": {
+    "createSuccess": "Top-up request created successfully",
+    "fetchStatusSuccess": "Payment status fetched successfully",
+    "subscribeSuccess": "Plan upgraded successfully",
+    "adminConfirmSuccess": "Admin confirmed payment successfully",
+    "fetchHistorySuccess": "Transaction history fetched successfully",
+    "invalidAmount": "Top-up amount must be greater than 0",
+    "topupSuccessTitle": "Top-up Successful",
+    "topupSuccessContent": "Blossom has been added to your wallet.",
+    "topupSuccessTitleAdmin": "Top-up Successful (Admin)",
+    "topupSuccessContentAdmin": "Admin has successfully confirmed your top-up.",
+    "status": {
+      "pending": "Pending",
+      "success": "Payment Successful",
+      "failed": "Payment Failed",
+      "unknown": "Unknown status"
+    },
+    "timeoutError": "Transaction timed out. Please check your balance or transaction history.",
+    "waitFiveSeconds": "Please wait 5 seconds between checks",
+    "confirmCancelTitle": "Confirm Cancellation",
+    "confirmCancelDesc": "Are you sure you want to cancel this top-up?",
+    "agreeCancel": "Yes, cancel",
+    "backToPayment": "Back to payment",
+    "allBanksSupport": "Supports 40+ Vietnamese banks",
+    "manualCheck": "Transferred but no update? Click to check now",
+    "paymentTitle": "Top-up Blossom",
+    "payoutDesc": "Please transfer the exact content below for automatic blossom credit.",
+    "requiredContent": "Required transfer content",
+    "confirmedVia": "Confirmed via {{source}}",
+    "waitingSocket": "Waiting for bank confirmation...",
+    "socketFallback": "Checking status (polling)...",
+    "cancelTransaction": "Cancel Transaction",
+    "bank": "Bank",
+    "amountNeeded": "Blossom amount"
   },
   "flashlist": {
-    "listSuccess": "Fetched FlashList successfully",
-    "detailSuccess": "Fetched FlashList detail successfully",
+    "listSuccess": "FlashLists fetched successfully",
+    "common": {
+      "delete": "Delete Flash List"
+    },
+    "detailSuccess": "FlashList details fetched successfully",
     "createSuccess": "FlashList created successfully",
     "updateSuccess": "FlashList updated successfully",
     "deleteSuccess": "FlashList deleted successfully",
-    "deleteAllSuccess": "All FlashLists for the user deleted successfully",
+    "deleteAllSuccess": "All user FlashLists deleted successfully",
     "rateSuccess": "FlashList rated successfully",
     "addCardSuccess": "FlashCard added to FlashList successfully",
     "removeCardSuccess": "FlashCard removed from FlashList successfully",
     "searchSuccess": "FlashList search completed successfully",
-    "validationFailed": "FlashList data is invalid",
+    "validationFailed": "Invalid FlashList data",
     "validate": {
-      "titleRequired": "Please enter a FlashList title",
-      "privateCardInPublicList": "Cannot add private FlashCards to a public FlashList. Please unselect private FlashCards or set the FlashList to private."
+      "titleRequired": "Please enter FlashList title",
+      "privateCardInPublicList": "Cannot add private FlashCard to a public list."
     },
-    "create": "Create Flash List"
+    "create": "Create Flash List",
+    "titleLabel": "FlashList Title...",
+    "titlePlaceholder": "Enter title...",
+    "descLabel": "Description...",
+    "descPlaceholder": "Enter description...",
+    "searchFlashcard": "Search flashcards to add...",
+    "selectedCount": "Selected {{count}} flashcards",
+    "deselectAll": "Deselect All",
+    "noCardsFound": "No flashcards found"
   },
   "flashcard": {
     "visibility": {
-      "otherPrivate": "Private FlashCard owned by another user",
-      "ownPrivateInPublicList": "Cannot add your private FlashCard to a public FlashList"
+      "otherPrivate": "Other's private FlashCard",
+      "ownPrivateInPublicList": "Cannot add private FlashCard to a public list"
     },
     "validate": {
-      "nameRequired": "Please enter a FlashCard set name",
+      "nameRequired": "Please enter FlashCard name",
       "minOneCard": "Please enter at least one card"
     },
-    "create": "Create Flash Card"
+    "create": "Create Flash Card",
+    "nameLabel": "FlashCard Set Name...",
+    "namePlaceholder": "Enter card set name...",
+    "descLabel": "Description...",
+    "descPlaceholder": "Enter description...",
+    "contentLabel": "Card Content (one per line)",
+    "contentPlaceholder": "front - back",
+    "guideTitle": "Input Guide:",
+    "guideLine1": "Each line is one study card",
+    "guideLine2": "Use \"-\" to separate vocabulary and meaning",
+    "guideExample": "Example:",
+    "thumbnailLabel": "Thumbnail Image",
+    "selectImage": "Select Image",
+    "previewTitle": "Vocabulary Preview",
+    "settings": {
+      "addCard": "Add card",
+      "dragToReorder": "Drag and drop to reorder. Click a card to edit information.",
+      "addCardNow": "Add card now",
+      "editCardIndex": "Edit card #{{index}}",
+      "addSingleCard": "Add single card"
+    }
+  },
+  "flashcards": {
+    "page": {
+      "title": "Practice Vocabulary with Flashcards",
+      "subtitle": "Improve your Japanese daily with our smart flashcard system and rich lesson library.",
+      "searchPlaceholder": "Search flashcard sets...",
+      "level": "Level",
+      "allLevels": "All levels",
+      "owner": "Owner",
+      "mine": "Mine",
+      "community": "Community",
+      "fetchError": "Failed to load data. Please try again later.",
+      "noCards": "No flashcards available. Create one now!",
+      "studyNow": "Study Now",
+      "cardSetCount": "{{count}} cards",
+      "viewCollection": "View Collection",
+      "noLists": "No flash lists available. Create one now!",
+      "cards": "Flash Cards",
+      "lists": "Flash Lists",
+      "noDesc": "No description",
+      "setCount": "{{count}} sets"
+    }
   },
   "home": {
     "badge": "No.1 Japanese Learning Platform",
@@ -141,6 +413,7 @@
     "description": "Conquer Japanese with FUJI. Personalized learning path with AI support.",
     "getStarted": "Get Started",
     "watchDemo": "Watch Demo",
+    "continueLearning": "Continue Learning",
     "stats": {
       "students": "Students",
       "courses": "Courses",
@@ -152,8 +425,1537 @@
       "subtitle": "Continue your Japanese conquest journey!",
       "viewAll": "View All",
       "aiTitle": "Kaiwa with AI Sensei",
-      "aiDescription": "Practice natural Japanese with a smart 24/7 AI tutor. Instant feedback on pronunciation.",
+      "aiDescription": "Practice natural Japanese with a smart AI tutor.",
       "practiceNow": "Practice Now"
+    },
+    "flashcards": {
+      "badge": "Smart Flashcards",
+      "titlePrimary": "Memorize vocabulary",
+      "titleSecondary": "faster with AI",
+      "description": "Experience dynamic 3D Flashcards. Visual images, real examples.",
+      "button": "Create Flashcard with AI",
+      "mountainKanjiMeaning": "Mountain",
+      "mountainKanjiDescription": "Mountain, hills",
+      "mountainKanjiExampleJa": "富士山は日本で一番高い山입니다.",
+      "mountainKanjiExampleVn": "Mount Fuji is the highest mountain in Japan.",
+      "mountainKanjiLevel": "N4 - Kanji"
+    },
+    "jlpt": {
+      "title": "Practical JLPT Training",
+      "subtitle": "Exam sets close to reality from N5 to N1",
+      "viewAll": "Test Repository",
+      "testTitle": "{{level}} Practice Test",
+      "testInfo": "{{count}} tests • {{time}} mins/test",
+      "practiceNow": "Practice Now"
+    },
+    "voiceChat": {
+      "badge": "Random Voice Chat",
+      "title": "Fuji Match - Connect & Speak",
+      "subtitle": "Find random Japanese speaking partners",
+      "selectLevel": "Select your level",
+      "startButton": "Start Matching",
+      "onlineCount": "{{count}} people online"
+    },
+    "learningPath": {
+      "title": "Personalized Learning Path",
+      "subtitle": "Based on your {{goal}} goal",
+      "completed": "Completed",
+      "learning": "Learning",
+      "next": "Next",
+      "upcoming": "Upcoming",
+      "deadlineToday": "Deadline: Today"
+    },
+    "community": {
+      "title": "Student Community",
+      "subtitle": "Most active discussions today",
+      "joinButton": "Join Discussion",
+      "qna": "Q&A",
+      "exp": "Exam Experience",
+      "replies": "{{count}} replies",
+      "discussing": "{{count}} people discussing"
+    },
+    "cta": {
+      "title": "Ready to conquer JLPT?",
+      "description": "Sign up today to get 30% off your first Premium course.",
+      "button": "Request Consultation"
     }
+  },
+  "booking": {
+    "title": "Book with Sensei",
+    "subtitle": "Find the right teacher and choose an available slot.",
+    "mySchedule": "My Schedule",
+    "rules": {
+      "title": "Booking Rules",
+      "rule1": "Only enter the classroom up to 5 minutes before start.",
+      "rule2": "Canceling within 2 hours of class will result in a 100% loss of fee.",
+      "rule3": "Account may be locked from booking for 24 hours.",
+      "rule4": "Canceled slot cannot be immediately re-booked."
+    },
+    "searchPlaceholder": "Search teachers by name...",
+    "allSubjects": "All Subjects",
+    "allLevels": "All Levels",
+    "availableTeachers": "{{count}} available teachers",
+    "noTeachers": "No matching teachers found",
+    "tryAgain": "Try changing the date, subject, level, or search keyword.",
+    "viewProfile": "Teacher Profile",
+    "bookNow": "Book Now",
+    "fetchError": "Could not load the list of available teachers.",
+    "instructorEmpty": "Not updated",
+    "groupSubject": "{{count}} subjects available",
+    "earliest": "Earliest: {{time}}",
+    "slotRemaining": "{{count}} slots available",
+    "infoDescription": "Teacher has {{count}} slots open on {{date}}.",
+    "createTitle": "Create Teaching Schedule",
+    "mode": {
+      "single": "Single Session",
+      "bulk": "Recurring Schedule"
+    },
+    "date": "Teaching Date",
+    "dateFrom": "Start Date",
+    "dateTo": "End Date",
+    "jlptLevel": "JLPT Level",
+    "subjectTitle": "Subject",
+    "subject": {
+      "kaiwa": "Kaiwa (Conversation)",
+      "bunpo": "Bunpo (Grammar)",
+      "kanji": "Kanji",
+      "listening": "Listening",
+      "reading": "Reading"
+    },
+    "topic": "Topic",
+    "tuition": "Tuition (Flower)",
+    "conversion": "Conversion",
+    "btn": {
+      "save": "Save Schedule"
+    },
+    "error": {
+      "fillAll": "Please fill in all required information correctly before saving.",
+      "saveFailed": "Failed to save schedule",
+      "overlap": "Cannot create overlapping schedules.",
+      "invalidDate": "Invalid teaching date.",
+      "createFailed": "Schedule creation failed.",
+      "allSkippedTitle": "All Schedules Overlap",
+      "allSkippedDesc": "No slots were created. All {{count}} slots overlap with existing schedules.",
+      "conflictListTitle": "Overlapping Slots"
+    },
+    "success": {
+      "createTitle": "Schedule Created Successfully",
+      "createDesc": "Created {{count}} teaching slots."
+    },
+    "successTitle": "Booking Successful!",
+    "successMessage": "You have successfully booked your lesson.",
+    "warning": {
+      "someSkippedTitle": "Partial Overlap Detected",
+      "someSkippedDesc": "Successfully created {{created}} slots, skipped {{skipped}} slots due to overlap.",
+      "conflictListTitle": "Overlapping Slots"
+    }
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Appearance",
+      "notifications": "Notifications",
+      "language": "Language",
+      "security": "Security",
+      "support": "Support & Reports"
+    },
+    "page": {
+      "title": "Settings",
+      "subtitle": "Personalize your user experience",
+      "title_part1": "System",
+      "title_part2": "Settings"
+    },
+    "sidebar": {
+      "category": "Setting Categories",
+      "shortcuts": "Shortcuts"
+    },
+    "appearance": {
+      "title": "Appearance & Colors",
+      "mode": "Display Mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "notifications": {
+      "title": "Notification Customization",
+      "save": "Save Settings",
+      "saving": "Saving...",
+      "items": {
+        "courseUpdates": {
+          "label": "Course Updates",
+          "desc": "Receive notifications when courses have new lectures"
+        },
+        "newMessages": {
+          "label": "Support Messages",
+          "desc": "Receive notifications when Admin responds"
+        },
+        "examReminders": {
+          "label": "Exam Reminders",
+          "desc": "Automatic alerts before JLPT exams"
+        },
+        "bookingReminders": {
+          "label": "Booking Reminders",
+          "desc": "Notifications before your booked classes"
+        },
+        "systemAlerts": {
+          "label": "System Alerts",
+          "desc": "Maintenance, term updates, or major changes"
+        },
+        "emailDigest": {
+          "label": "Weekly Email Report",
+          "desc": "Summary of wallet spending and learning status"
+        }
+      },
+      "saveSuccess": "Settings saved successfully!",
+      "saveError": "Failed to save settings. Please try again."
+    },
+    "language": {
+      "title": "System Language",
+      "display": "Display Language",
+      "placeholder": "Select language",
+      "infoTitle": "Effective Immediately",
+      "infoDesc": "System content will automatically navigate to corresponding language.",
+      "changeSuccess": "Language changed successfully!"
+    },
+    "security": {
+      "title": "Security Center",
+      "resetPassword": "Reset Password",
+      "resetPasswordDesc": "Prevent unauthorized access",
+      "twoFactor": "Two-Factor Authentication (2FA)",
+      "twoFactorDesc": "Active security enhancement",
+      "comingSoon": "Coming Soon"
+    },
+    "support": {
+      "title": "Support & Bug Reports",
+      "helpCenter": "Help Center",
+      "helpCenterDesc": "Find answers to frequently asked questions...",
+      "accessNow": "Access Now",
+      "reportBug": "Report a Bug",
+      "reportBugDesc": "Encountered an issue?",
+      "reportNow": "Report Now",
+      "contactChannels": "Direct Contact Channels",
+      "channels": {
+        "hotline": "Hotline",
+        "email": "Email",
+        "messenger": "Messenger"
+      }
+    }
+  },
+  "profile": {
+    "badge": "Personal Information",
+    "page": {
+      "title": "My Profile",
+      "subtitle": "Manage your appearance and contact information."
+    },
+    "bio": {
+      "empty": "No bio yet..."
+    },
+    "details": {
+      "title": "Detailed Information",
+      "subtitle": "Your contact and language levels",
+      "email": "Contact Email",
+      "phone": "Phone Number",
+      "joinedDate": "Join Date",
+      "level": "Level",
+      "jlptLevel": "Japanese - {{level}}"
+    },
+    "rank": {
+      "label": "Learning Rank"
+    },
+    "actions": {
+      "security": "Account Security",
+      "changePassword": "Regularly change password",
+      "wallet": "FUJI Wallet",
+      "manageWallet": "Manage your balance"
+    },
+    "logout": {
+      "modalTitle": "Want to log out?",
+      "modalDesc": "This action will end your current session."
+    }
+  },
+  "reports": {
+    "title": "Learning Reports"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "emptyType": "No {{type}} notifications",
+    "customize": "Customize notifications",
+    "tabs": {
+      "all": "All",
+      "unread": "Unread",
+      "course": "Course",
+      "system": "System",
+      "reminder": "Reminder",
+      "security": "Security",
+      "booking": "Booking",
+      "message": "Message"
+    },
+    "actions": {
+      "markRead": "Mark as read",
+      "reportBug": "Report a bug",
+      "viewDetail": "View detail",
+      "delete": "Delete notification",
+      "deleteSuccess": "Notification deleted"
+    }
+  },
+  "premium": {
+    "whyPremium": "Why choose Premium?",
+    "subscribeSuccess": "Upgrade to {{name}} successful!",
+    "inUse": "In Use",
+    "default": "Default",
+    "managePackage": "Manage Package",
+    "loginToUpgrade": "Login to Upgrade",
+    "upgradePremium": "Upgrade 🚀 PREMIUM (AI)",
+    "upgradePro": "Upgrade 🌟 PRO",
+    "loadingPricing": "Loading pricing...",
+    "currencyPerMonth": "blossoms / month",
+    "confirmUpgradeTitle": "Confirm Upgrade",
+    "currentPackageDesc": "You are currently using",
+    "stackDesc": "Additional purchase will be stacked.",
+    "currentExpiry": "Current Expiry:",
+    "newExpiry": "After Purchase:",
+    "deductDesc": "System will deduct {{amount}} blossoms from your wallet.",
+    "confirmQuestion": "Upgrade to {{name}}?",
+    "tiers": {
+      "experience": "Experience",
+      "serious": "Serious",
+      "maximum": "Maximum"
+    },
+    "features": {
+      "basic": {
+        "courses": "Courses (video + quiz)",
+        "flashcard": "Flashcards (SRS)",
+        "practice": "Practice session",
+        "mockTest": "Mock tests (limited)",
+        "progress": "Simple progress tracking"
+      },
+      "pro": {
+        "allBasic": "All Basic features",
+        "fullMock": "Full Mock Test (N5–N1)",
+        "breakdown": "Score breakdown",
+        "history": "Learning history",
+        "videoCall": "Random video call matching",
+        "aiSensei": "Limited AI Sensei usage"
+      },
+      "premium": {
+        "allPro": "All PRO features",
+        "fullCourses": "Unlock all courses",
+        "heatmap": "Study heatmap",
+        "unlimitedAI": "Unlimited AI Sensei",
+        "aiPath": "AI learning path"
+      }
+    },
+    "featureGrid": {
+      "flashcard": {
+        "title": "Extended Flashcard Limits",
+        "desc": "Learn unlimited daily cards and card sets."
+      },
+      "vipCourse": {
+        "title": "VIP Courses",
+        "desc": "Exclusive access to all VIP content."
+      },
+      "aiAssist": {
+        "title": "AI Assistance",
+        "desc": "AI Assistant helps answer all your questions instantly."
+      },
+      "aiKaiwa": {
+        "title": "AI Kaiwa Practice",
+        "desc": "Practice Japanese conversation with a smart AI assistant."
+      }
+    },
+    "topup": {
+      "scanQR": "Please scan the QR code to pay",
+      "createFailed": "Cannot create payment order",
+      "paymentMethod": "Payment method",
+      "bank": "Bank Transfer",
+      "selectPackage": "Please select a package",
+      "noBankAccount": "Backend has no receiving account configured",
+      "currentBalance": "CURRENT BALANCE :",
+      "choosePackage": "Select Package",
+      "creatingOrder": "Creating order...",
+      "payWithQR": "Pay with VietQR"
+    },
+    "modal": {
+      "title": "Upgrade Account",
+      "description": "Upgrade your Premium plan or top up Sakura credits",
+      "tabPremium": "Upgrade Premium",
+      "tabTopup": "Top Up Sakura"
+    }
+  },
+  "wallet": {
+    "title": "Fuji Wallet",
+    "subtitle": "Manage your balance and transaction history.",
+    "back": "Back to Wallet",
+    "backToWallet": "Back to Fuji Wallet",
+    "availableBalance": "Available Balance",
+    "balanceDescription": "Balance used for Fuji services",
+    "exchangeVND": "Exchange VND",
+    "deposit": "Deposit 🌸",
+    "withdraw": {
+      "title": "WITHDRAWAL",
+      "secureTransaction": "256-bit Secure Transaction",
+      "inputAmount": "Enter blossoms to withdraw",
+      "expectedVnd": "Expected actual received:",
+      "quickSelect": "Quick select:",
+      "limits": "Limits",
+      "minLimit": "Minimum: 50 🌸 (≈ 50,000đ)",
+      "maxLimit": "Maximum: 3 times / day",
+      "bankInfoTitle": "Payout Information",
+      "bankName": "Bank Name",
+      "selectBank": "Select Bank",
+      "accountNumber": "Account Number",
+      "inputAccountNumber": "Enter account number",
+      "accountHolder": "Account Holder",
+      "accountHolderPlaceholder": "Name without accents (e.g., NGUYEN VAN A)",
+      "blossomsToExchange": "Blossoms to exchange",
+      "transactionFee": "Transaction Fee",
+      "actualReceived": "Actual Received",
+      "confirmRequest": "Confirm Request",
+      "confirmTitle": "Check Information",
+      "confirmDesc": "The system will transfer to you",
+      "confirmWithdraw": "Confirm Withdrawal",
+      "requestSent": "Request Sent",
+      "reviewDesc": "The system will review within 24 hours.",
+      "success": "Request sent successfully!",
+      "failed": "Transaction failed",
+      "minAmountError": "Minimum withdrawal is 50 🌸",
+      "missingBankInfo": "Please enter full information"
+    },
+    "monthlyTransactions": "Transactions this month",
+    "steadyGrowth": "Steady growth",
+    "membershipLevel": "Membership Level",
+    "premiumUser": "Premium User",
+    "transactionHistory": "Transaction History",
+    "balanceFluctuations": "Balance fluctuation details",
+    "filter": {
+      "all": "All",
+      "deposit": "Deposit",
+      "spending": "Spending"
+    },
+    "searchPlaceholder": "Transaction ID...",
+    "table": {
+      "id": "Transaction ID",
+      "type": "Type",
+      "amount": "Amount",
+      "balanceAfter": "Remaining Balance",
+      "status": "Status",
+      "time": "Time",
+      "note": "Note"
+    },
+    "types": {
+      "deposit": "Deposit",
+      "withdraw": "Withdraw",
+      "spending": "Spending",
+      "reward": "Reward"
+    },
+    "status": {
+      "pending": "Pending",
+      "success": "Success",
+      "failed": "Failed"
+    },
+    "insufficientBalance": "Insufficient balance"
+  },
+  "ai": {
+    "viewCourseDetails": "View course details →",
+    "conversation": "Conversation",
+    "featureProperty": "Property",
+    "noPreview": "No preview",
+    "intent": {
+      "grammar": "Grammar",
+      "course": "Course",
+      "qna": "Q&A",
+      "outOfScope": "Out of scope",
+      "processing": "Processing"
+    },
+    "senseiSettings": "Sensei Settings",
+    "sensei": {
+      "session": "Session",
+      "chat": "Conversation",
+      "topic": "Topic: ",
+      "situation": "Situation: ",
+      "role": "AI Role: ",
+      "personality": "Personality: ",
+      "sample": "Sample Conversation: ",
+      "defaultGoals": "Practice natural pronunciation, quick reaction, and proper vocabulary/grammar",
+      "defaultPersonality": "friendly",
+      "errorStop": "Failed to end session. Please try again.",
+      "errorEvaluation": "Failed to evaluate conversation",
+      "status": {
+        "startToTalk": "Start session to talk",
+        "holdToTalk": "Hold mic to talk",
+        "listening": "Listening...",
+        "processing": "Processing...",
+        "speaking": "Sensei is speaking...",
+        "error": "Error"
+      },
+      "btn": {
+        "start": "Start Conversation Session",
+        "stop": "End Session",
+        "grading": "Grading...",
+        "replay": "Replay",
+        "replaying": "Playing...",
+        "closeHistory": "Close History",
+        "viewHistory": "View recent conversation history",
+        "replayLong": "Replay",
+        "continue": "Continue",
+        "viewResult": "View Result"
+      },
+      "mic": {
+        "release": "Release to send"
+      },
+      "history": {
+        "title": "Conversation History",
+        "toggle": "Show History",
+        "empty": "Start a session to talk with Sensei",
+        "recording": "Recording...",
+        "listTitle": "Previous Sessions",
+        "listEmpty": "No sessions found",
+        "detailEmpty": "No conversation content for this session"
+      },
+      "scenario": {
+        "defaultTitle": "Scenario"
+      },
+      "popup": {
+        "finishTitle": "Conversation Completed",
+        "finishDesc": "You have completed the maximum turn for this scenario. Would you like to view your score?"
+      }
+    }
+  },
+  "auto": {
+    "header_1": "Settings",
+    "header_2": "Sign In",
+    "header_3": "Booking Details",
+    "header_4": "Subject:",
+    "header_5": "Teacher:",
+    "header_6": "Student:",
+    "header_7": "Time:",
+    "header_8": "Status:",
+    "header_9": "View Wallet",
+    "footer_1": "Smart JLPT learning platform. Your companion on the journey to master Japanese.",
+    "footer_2": "About FUJI",
+    "footer_3": "Introduction",
+    "footer_4": "Careers",
+    "footer_5": "Academic Blog",
+    "footer_6": "Learning",
+    "footer_7": "N5 - N1 Learning Path",
+    "footer_8": "AI Kaiwa Practice",
+    "footer_9": "JLPT Tests",
+    "footer_10": "Contact",
+    "footer_11": "© 2026 FUJI. MASTER JAPANESE WITH AI.",
+    "footer_12": "Terms",
+    "footer_13": "Privacy",
+    "footer_14": "Help",
+    "courseDetail_1": "Learned",
+    "courseDetail_2": "View thử",
+    "courseDetail_3": "Course",
+    "courseDetail_4": "Register để mở",
+    "courseDetail_5": "Student mua khóa học",
+    "courseDetail_6": "Course Overview",
+    "courseDetail_7": "What will you learn?",
+    "courseDetail_8": "Course Content",
+    "courseDetail_9": "All bài học",
+    "courseDetail_10": "No lessons yet",
+    "courseDetail_11": "Senior Instructor at FUJI",
+    "courseDetail_12": "Giảng viên chuyên nghiệp tại nền tảng FUJI. Nhiều năm kinh\r\n                nghiệm giảng dạy tiếng Nhật cho học viên Việt Nam. Phương pháp\r\n                giảng dạy tập trung vào việc hiểu sâu bản chất ngôn ngữ và ứng\r\n                dụng thực tế, giúp học viên không chỉ thi đỗ mà còn giao tiếp tự\r\n                tin.",
+    "courseDetail_13": "Course",
+    "courseDetail_14": "Student",
+    "courseDetail_15": "Rating",
+    "courseDetail_16": "Other Courses by Instructor",
+    "courseDetail_17": "Student Reviews",
+    "courseDetail_18": "Top Comments",
+    "courseDetail_19": "Latest",
+    "courseDetail_20": "Highest Rated",
+    "courseDetail_21": "Lowest Rated",
+    "courseDetail_22": "No reviews yet",
+    "courseDetail_23": "View thêm đánh giá",
+    "courseDetail_24": "No tìm thấy khóa học",
+    "courseDetail_25": "Course này không tồn tại hoặc đã bị xóa.",
+    "courseDetail_26": "Back danh sách",
+    "courseDetail_27": "Tiếng Việt",
+    "courseDetail_28": "Register để bắt đầu học",
+    "courseDetail_29": "Chưa có bài học",
+    "courseDetail_30": "Miễn phí",
+    "courseDetail_31": "Add vào yêu thích",
+    "courseDetail_32": "Information khóa học",
+    "courseDetail_33": "Yes",
+    "courseDetail_34": "Trọn đời",
+    "courseDetail_35": "Mã ưu đãi",
+    "courseDetail_36": "Áp dụng",
+    "courseDetail_37": "Instructor",
+    "courseDetail_38": "Nhập mã giảm giá",
+    "profileEdit_1": "Trở về",
+    "profileEdit_2": "Edit",
+    "profileEdit_3": "Hồ Sơ",
+    "profileEdit_4": "Update thông tin chi tiết của bạn.",
+    "profileEdit_5": "Đã xác thực bảo vệ",
+    "profileEdit_6": "Avatar",
+    "profileEdit_7": "Nhấp để cập nhật diện mạo",
+    "profileEdit_8": "Họ và tên",
+    "profileEdit_9": "Số điện thoại liên hệ",
+    "profileEdit_10": "Gender",
+    "profileEdit_11": "Female",
+    "profileEdit_12": "Khác",
+    "profileEdit_13": "Trình độ cao nhất",
+    "profileEdit_14": "Notes riêng / Giới thiệu",
+    "profileEdit_15": "Cancel thay đổi",
+    "profileEdit_16": "Save ý bảo mật thông tin",
+    "profileEdit_17": "All dữ liệu hồ sơ của bạn được mã hóa an toàn ở DB 2 lớp. Một số thông tin như JLPT sẽ giúp hệ thống đề xuất bài thi thông minh hơn.",
+    "profileEdit_18": "Nhập họ tên đầy đủ...",
+    "profileEdit_19": "Chọn giới tính",
+    "profileEdit_20": "Chọn cấp độ JLPT phù hợp với bạn",
+    "profileEdit_21": "Khát vọng học tập hay đôi lời tản mạn...",
+    "historyPayment_1": "Loading dữ liệu...",
+    "historyPayment_2": "Back",
+    "historyPayment_3": "Hệ thống bảo mật",
+    "historyPayment_4": "History",
+    "historyPayment_5": "Quản lý dòng tiền của bạn với bộ nhận diện thông minh Xanh-Hồng.",
+    "historyPayment_6": "ID Giao dịch",
+    "historyPayment_7": "Phân loại",
+    "historyPayment_8": "Giá trị",
+    "historyPayment_9": "Biến động",
+    "historyPayment_10": "Date giờ",
+    "historyPayment_11": "Status",
+    "historyPayment_12": "đ",
+    "historyPayment_13": "Sau giao dịch",
+    "historyPayment_14": "Success",
+    "historyPayment_15": "Tải báo cáo tháng",
+    "historyPayment_16": "Tìm giao dịch...",
+    "subscription_1": "Back",
+    "subscription_2": "Quản lý Package Sub",
+    "subscription_3": "Package",
+    "subscription_4": "Quản lý các đặc quyền và lịch sử đăng ký của bạn.",
+    "subscription_5": "Nâng cấp Package",
+    "subscription_6": "Package hiện tại",
+    "subscription_7": "Thời hạn",
+    "subscription_8": "Gia hạn tự động",
+    "subscription_9": "Tự động trừ tiền từ ví Fuji khi hết hạn",
+    "subscription_10": "Bạn đang sử dụng gói Miễn Phí",
+    "subscription_11": "Nâng cấp ngay để mở khóa toàn bộ tính năng học tập và ôn thi JLPT tốt nhất.",
+    "subscription_12": "Quyền lợi của bạn",
+    "subscription_13": "Mức học tập",
+    "subscription_14": "History đăng ký",
+    "subscription_15": "Các gói bạn đã mua",
+    "subscription_16": "Mã Package",
+    "subscription_17": "Type Package",
+    "subscription_18": "Thời Gian",
+    "subscription_19": "Số Tiền",
+    "subscription_20": "Trạng Thái",
+    "subscription_21": "đ",
+    "subscription_22": "Chưa đăng ký gói nào",
+    "subscription_23": "Hãy nâng cấp lên PRO hoặc PREMIUM để nhận được nhiều ưu đãi học tập",
+    "subscription_24": "Update dữ liệu",
+    "changePassword_1": "Trở về",
+    "changePassword_2": "Privacy",
+    "changePassword_3": "Tài Khoản",
+    "changePassword_4": "Thay đổi mật khẩu định kỳ để bảo vệ dữ liệu trên ứng dụng.",
+    "changePassword_5": "Mã hóa E2E đang bật",
+    "changePassword_6": "Thiết lập mật khẩu",
+    "changePassword_7": "Bảo đảm nhập đúng mật khẩu hiện tại",
+    "changePassword_8": "Password hiện tại",
+    "changePassword_9": "New Password",
+    "changePassword_10": "Độ mạnh mật khẩu",
+    "changePassword_11": "Confirm khẩu mới",
+    "changePassword_12": "Cancel thay đổi",
+    "changePassword_13": "Lời khuyên an toàn",
+    "changePassword_14": "Ghi nhớ quan trọng",
+    "changePassword_15": "Thay đổi mật khẩu sẽ",
+    "changePassword_16": "bắt buộc đăng xuất",
+    "changePassword_17": "tại tất cả các thiết bị. Hệ thống sẽ cấp lại access token ngay sau đó!",
+    "changePassword_18": "Yes sự cố đổi MK?",
+    "changePassword_19": "Kêu gọi hỗ trợ",
+    "changePassword_20": "Password bảo mật...",
+    "changePassword_21": "Tối thiểu 8 ký tự...",
+    "changePassword_22": "Nhập lại chính xác...",
+    "teacherSchedule_1": "Thiếu `teacherId` trên URL.",
+    "teacherSchedule_2": "Book theo giáo viên",
+    "teacherSchedule_3": "No tải được lịch rảnh của giáo viên.",
+    "teacherSchedule_4": "Book học",
+    "teacherSchedule_5": "Yes thể đặt các slot trống còn trong tương lai; vào phòng học từ trước\r\n                        giờ học 5 phút",
+    "teacherSchedule_6": "Thiết lập đặt lịch",
+    "teacherSchedule_7": "Bạn có thể đặt từng buổi hoặc đặt lặp theo lịch cố định trong\r\n                      một khoảng thời gian.",
+    "teacherSchedule_8": "Kiểu đặt lịch",
+    "teacherSchedule_9": "No lặp lại",
+    "teacherSchedule_10": "Lặp lại theo lịch cố định",
+    "teacherSchedule_11": "Chế độ này giữ nguyên cách chọn thủ công từng slot như hiện tại.",
+    "teacherSchedule_12": "Chọn các thứ trong tuần",
+    "teacherSchedule_13": "Chọn khung giờ lặp",
+    "teacherSchedule_14": "Hãy chọn khoảng ngày hợp lệ trước.",
+    "teacherSchedule_15": "No slot khả dụng trong khoảng ngày này.",
+    "teacherSchedule_16": "Nếu buổi nào trong lịch lặp không còn slot trống phù hợp thì hệ thống\r\n                          sẽ tự bỏ qua buổi đó.",
+    "teacherSchedule_17": "Chọn ngày học",
+    "teacherSchedule_18": "Chấm",
+    "teacherSchedule_19": "là\r\n                          ngày còn khung giờ trống.",
+    "teacherSchedule_20": "Khung giờ học",
+    "teacherSchedule_21": "Date này chưa có lịch học",
+    "teacherSchedule_22": "Hãy chọn ngày khác trên lịch hoặc đợi giáo viên mở\r\n                                thêm slot mới.",
+    "teacherSchedule_23": "Preview lịch lặp sẽ được book",
+    "teacherSchedule_24": "Hệ thống tự gom các slot còn trống đúng theo khoảng ngày, thứ\r\n                        trong tuần và khung giờ bạn đã chọn.",
+    "teacherSchedule_25": "Hãy chọn các thứ trong tuần và ít nhất một khung giờ để xem\r\n                          preview.",
+    "teacherSchedule_26": "No tìm thấy slot khả dụng khớp với lịch lặp bạn đã chọn.",
+    "teacherSchedule_27": "Buổi sẽ book",
+    "teacherSchedule_28": "Buổi bị bỏ qua",
+    "teacherSchedule_29": "Chuẩn bị thanh toán",
+    "teacherSchedule_30": "Khi bấm tiếp tục, hệ thống sẽ gửi đúng danh sách slot đang được\r\n                      chọn sang trang quote/checkout.",
+    "teacherSchedule_31": "Số buổi đã chọn",
+    "teacherSchedule_32": "Các buổi sẽ gửi sang quote",
+    "teacherSchedule_33": "Chưa có buổi nào được chọn.",
+    "teacherSchedule_34": "Bỏ chọn",
+    "teacherSchedule_35": "Tự động",
+    "teacherSchedule_36": "View hóa đơn các buổi đã chọn",
+    "bookingModal_1": "Quy định booking",
+    "bookingModal_2": "Cancel sát giờ học (trong 2 giờ trước giờ bắt đầu) bị trừ 100% phí.",
+    "bookingModal_3": "Yes thể bị khóa đặt lịch 24 giờ nếu hủy sát giờ.",
+    "bookingModal_4": "Slot đã hủy sẽ không đặt lại được bởi cùng tài khoản.",
+    "bookingModal_5": "Loading lịch của bạn...",
+    "bookingModal_6": "No tải được lịch của bạn. Vui lòng kiểm tra lại kết nối.",
+    "bookingModal_7": "No dữ liệu lịch học trong mục này.",
+    "bookingModal_8": "Date",
+    "bookingModal_9": "Time",
+    "bookingModal_10": "Vào phòng",
+    "bookingModal_11": "Chờ lớp",
+    "bookingModal_12": "Cancel",
+    "bookingModal_13": "Kết thúc sớm",
+    "bookingModal_14": "Cancel lịch",
+    "bookingModal_15": "Complete",
+    "bookingModal_16": "Cancelled",
+    "bookingModal_17": "Để sau",
+    "bookingModal_18": "Chỉ vào phòng được trước 5 phút so với giờ bắt đầu",
+    "ai_sensei_1": "Đã hoàn thành!",
+    "ai_assistant_1": "Hỏi bất kỳ điều gì về tiếng Nhật...",
+    "ai_assistant_2": "Sao chép",
+    "jlpt_practice_1": "Loading đề thi...",
+    "jlpt_practice_2": "Chưa có đề thi nào",
+    "jlpt_practice_3": "Hệ thống đang cập nhật đề thi mới",
+    "jlpt_filter_1": "Search đề thi JLPT (VD: N3 đề thi thử, N2...)",
+    "jlpt_history_1": "History làm bài",
+    "jlpt_history_page_1": "Loading lịch sử...",
+    "jlpt_history_page_2": "No thể tải dữ liệu",
+    "jlpt_history_page_3": "Danh sách lần thi",
+    "jlpt_history_page_4": "No kết quả nào phù hợp",
+    "video_call_main_1": "Đang bật camera...",
+    "video_call_main_2": "Camera: TẮT",
+    "video_call_room_1": "Nhắn tin... (Ctrl+Space để gợi ý)",
+    "video_call_room_2": "Description cụ thể hành vi của người dùng...",
+    "booking_lesson_1": "Connection Error",
+    "booking_lesson_2": "Setting up lesson room",
+    "booking_lesson_3": "Session Evaluation",
+    "booking_lesson_4": "Ghi hình buổi học",
+    "booking_lesson_5": "Đang kết nối video...",
+    "booking_session_1": "No tải được lịch sử buổi học",
+    "booking_session_2": "Chưa có recording",
+    "booking_session_3": "Chưa có transcript",
+    "booking_session_4": "Click để mở/đóng",
+    "booking_appointment_1": "Payment",
+    "booking_appointment_2": "Tuition",
+    "booking_appointment_3": "Service Fee",
+    "booking_appointment_4": "Total",
+    "booking_appointment_5": "Tuition (1 session)",
+    "booking_appointment_6": "Service Fee",
+    "booking_appointment_7": "Total",
+    "booking_appointment_8": "You have successfully booked your lesson.",
+    "booking_slot_1": "Select Level",
+    "booking_slot_2": "Select Level",
+    "booking_slot_3": "Chọn môn học",
+    "booking_slot_4": "Chọn môn học và cấp độ",
+    "booking_preview_1": "View trước",
+    "booking_preview_2": "Chế độ",
+    "booking_preview_3": "Time Slot",
+    "booking_preview_4": "Môn học",
+    "booking_preview_5": "Học phí(1 buổi)",
+    "booking_preview_6": "Ước tính số buổi tạo",
+    "booking_time_1": "Khung hour trong day",
+    "booking_weekday_1": "Repeat by weekday",
+    "notification_booking_1": "Successfully booked {{count}} lesson(s)",
+    "notification_booking_2": "You have booked {{count}} lesson(s) with {{teacher}}.",
+    "notification_booking_3": "Cancel lesson",
+    "notification_booking_4": "You cancelled the lesson with {{teacher}} at {{time}}.",
+    "notification_reminder_1": "Lesson starting soon!",
+    "notification_reminder_2": "Lesson with {{teacher}} starts in {{time}}.",
+    "premium_success_1": "Premium Wallet",
+    "lesson_chat_1": "Nhấn để tải về",
+    "lesson_chat_2": "Nhắn tin...",
+    "lesson_chat_3": "Thu nhỏ (-)",
+    "lesson_chat_4": "Phóng to (+)",
+    "lesson_chat_5": "Đính kèm file",
+    "lesson_control_1": "Settings",
+    "lesson_header_1": "Đang ghi hình",
+    "lesson_materials_1": "No thể tải PDF",
+    "lesson_materials_2": "Tên tài liệu",
+    "lesson_materials_3": "Thu nhỏ",
+    "lesson_materials_4": "Phóng to",
+    "lesson_notes_1": "Notes cá nhân trong buổi học...&#10;&#10;• Vocabulary mới&#10;• Grammar cần ôn&#10;• Question cho giáo viên",
+    "lesson_quiz_1": "Create nhanh (1 câu trắc nghiệm)",
+    "lesson_quiz_2": "Danh sách",
+    "lesson_quiz_3": "Chưa có quiz",
+    "lesson_quiz_4": "Câu đang mở",
+    "lesson_quiz_5": "Tổng kết (REST)",
+    "lesson_quiz_6": "Tiêu đề quiz",
+    "lesson_quiz_7": "Question",
+    "lesson_quiz_8": "Options JSON — ví dụ [",
+    "lesson_quiz_9": "Answer đúng (khớp một phần tử options)",
+    "lesson_quiz_10": "Answer",
+    "lesson_quiz_11": "Start / gửi câu 0",
+    "lesson_whiteboard_1": "Delete toàn bộ bảng?",
+    "lesson_whiteboard_2": "Hành động này không thể hoàn tác.",
+    "shared_1": "Chọn chủ đề",
+    "lessonview_1": "Video chưa được tải lên",
+    "lessonview_2": "Chưa có câu hỏi nào",
+    "lessonview_3": "Chưa có ghi chú nào",
+    "lessonview_4": "Bài trước",
+    "lessonview_5": "Bài trước",
+    "lessonview_6": "Bài tiếp theo",
+    "lessonview_7": "Bài tiếp theo",
+    "speakingtask_1": "Speaking Practice",
+    "flashcardsettings_1": "No xác định",
+    "flashcardsettings_2": "N5 - Sơ cấp",
+    "flashcardsettings_3": "N4 - Trung cấp",
+    "flashcardsettings_4": "N3 - Tiền trung cấp",
+    "flashcardsettings_5": "N2 - Trung cấp",
+    "flashcardsettings_6": "N1 - Cao cấp",
+    "flashcardsettings_7": "Tổng thẻ",
+    "flashcardsettings_8": "Phút học",
+    "flashcardsettings_9": "Yes hình ảnh",
+    "flashcardsettings_10": "Chưa có thẻ nào trong bộ này",
+    "flashcardsettings_11": ":/phát âm/:\\n\\nWallet dụ:\\n日本語 - tiếng Nhật",
+    "flashcardsettings_12": ":/にほんご/:\\nありがとう - cảm ơn :/arigatou/:\\nhello - xin chào",
+    "flashcardsettings_13": "Wallet dụ:",
+    "flashcardsettings_14": "Nhập tên bộ thẻ...",
+    "flashcardsettings_15": "Nhập mô tả...",
+    "flashcardsettings_16": "Phiên âm...",
+    "flashcardsettings_17": "Wallet dụ câu...",
+    "flashcardsettings_18": "URL hình ảnh...",
+    "flashcardsettings_19": "例: Tiếng Nhật",
+    "error_1": "Yes lỗi xảy ra!",
+    "___settings_page_1": "Settings bộ thẻ",
+    "_id__page_1": "No tìm thấy bản ghi",
+    "fill_blank_page_1": "Correct",
+    "multiple_choice_page_1": "Correct",
+    "_id__page_2": "Back",
+    "_id__page_3": "Report hệ thống",
+    "_id__page_4": "Hạng mục sự cố",
+    "_id__page_5": "Phản hồi từ Fuji-Team",
+    "_id__page_6": "Kể cho chúng tôi thêm về sự cố?",
+    "_id__page_7": "Vui lòng cung cấp minh chứng cụ thể nếu có lỗi phát sinh lại.",
+    "_id__page_8": "Đảo thẻ",
+    "_id__page_9": "Exercise",
+    "_id__page_10": "Thẻ trước",
+    "_id__page_11": "Thẻ tiếp theo",
+    "help_page_1": "Search phổ biến:",
+    "help_page_2": "Trung tâm giúp đỡ",
+    "help_page_3": "Khám phá các chủ đề được quan tâm nhiều nhất",
+    "help_page_4": "Vẫn chưa tìm thấy câu trả lời?",
+    "help_page_5": "Hỗ trợ 24/7",
+    "help_page_6": "Phản hồi dưới 30p",
+    "help_page_7": "Nhập từ khóa tìm kiếm (ví dụ: cách nạp tiền, reset mật khẩu...)",
+    "settings_page_1": "🇻🇳 Tiếng Việt",
+    "authform_1": "Quên mật khẩu?",
+    "authform_2": "Khôi phục mật khẩu",
+    "authform_3": "Nhập email của bạn để nhận mã OTP khôi phục.",
+    "authform_4": "Confirm OTP Code",
+    "authform_5": "Change Email",
+    "authform_6": "Resend Code",
+    "authform_7": "New Password",
+    "authform_8": "Back nhập mã OTP",
+    "authform_9": "Sign In ngay",
+    "authform_10": "Confirmation code sent to",
+    "authform_11": "Enter new password for account"
+  },
+  "jlpt": {
+    "levels": {
+      "n1_desc": "Advanced",
+      "n2_desc": "Upper Intermediate",
+      "n3_desc": "Intermediate",
+      "n4_desc": "Upper Beginner",
+      "n5_desc": "Beginner"
+    }
+  },
+  "video_call": {
+    "page": {
+      "title": "Japanese Conversation",
+      "subtitle": "Practice Japanese via random video call"
+    },
+    "status": {
+      "on": "ON",
+      "off": "OFF",
+      "searching": "Searching for partner...",
+      "idleTitle": "Find speaking partner",
+      "idleDesc": "Press Start to connect..."
+    },
+    "bottomHint": "Practice Japanese conversation with random partners",
+    "loadingStream": "Initializing camera...",
+    "cameraOff": "Camera is off",
+    "mic_toggle_on": "Unmute",
+    "mic_toggle_off": "Mute",
+    "camera_toggle_on": "Turn on Camera",
+    "camera_toggle_off": "Turn off Camera",
+    "end_call": "End Call"
+  },
+  "header": {
+    "errorOpenClass": "Could not open classroom. Please check the session again."
+  },
+  "lesson": {
+    "room": {
+      "ready": "Lesson room is ready!",
+      "errorCreate": "Could not create lesson room, please try again."
+    },
+    "recording": {
+      "started": "Recording started.",
+      "stopped": "Recording stopped.",
+      "errorToggle": "Error toggling recording state.",
+      "consentTitle": "Recording Notice",
+      "consentDesc": "This lesson is being recorded for quality assurance. By continuing, you agree to being recorded.",
+      "consentBtn": "I Understand"
+    },
+    "timeup": "Learning time is up! Thank you.",
+    "ended": "Lesson has ended.",
+    "errorEnd": "Error ending lesson.",
+    "confirm": {
+      "endTeacher": "Are you sure you want to end this lesson? It will be marked as completed.",
+      "leaveStudent": "Are you sure you want to leave? The lesson can continue if there is remaining time."
+    },
+    "report": {
+      "student": "Evaluate Student",
+      "teacher": "Evaluate Teacher",
+      "desc": "Please leave a review for the past lesson.",
+      "placeholder_student": "Comment on student...",
+      "placeholder_teacher": "Comment on teacher...",
+      "btn_cancel": "Cancel",
+      "btn_send": "Send Review",
+      "success": "Thank you for your review!"
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "groups": {
+        "overview": "Overview",
+        "management": "Management",
+        "system": "System"
+      },
+      "items": {
+        "analytics": "Analytics",
+        "analyticsTeachers": "Teachers",
+        "users": "Users",
+        "withdraw": "Withdrawal",
+        "courses": "Courses",
+        "coursesManage": "Manage Courses",
+        "coursesFinanceAdmin": "Finance (Admin)",
+        "coursesFinanceTeacher": "Finance (Teacher)",
+        "schedules": "Schedules",
+        "tests": "JLPT Tests",
+        "voiceTopics": "AI Voice Topics",
+        "reports": "Reports & Feedback",
+        "systemErrors": "System Errors",
+        "notifications": "Notifications",
+        "roles": "Permissions",
+        "posts": "Posts"
+      }
+    },
+    "systemErrors": {
+      "title": "System Error Logs",
+      "subtitle": "Monitor and manage system-level issues",
+      "summary": {
+        "total24h": "Total Errors (24h)",
+        "total24hDesc": "Latest generated errors",
+        "unresolved": "Unresolved",
+        "unresolvedDesc": "Needs attention",
+        "stability": "Stability",
+        "stabilityDesc": "Backend Uptime",
+        "impactArea": "Impact Area",
+        "impactAreaDesc": "Critical modules"
+      },
+      "tabs": {
+        "all": "All Logs",
+        "unresolved": "Needs Attention"
+      },
+      "filter": {
+        "searchPlaceholder": "Search by error, URL or Request ID...",
+        "levelPlaceholder": "Level",
+        "allLevels": "All Levels",
+        "servicePlaceholder": "Service",
+        "allServices": "All Services",
+        "statusPlaceholder": "Status",
+        "allStatuses": "All Statuses",
+        "resolved": "Resolved",
+        "pending": "Pending",
+        "autoRefresh": "Auto",
+        "reset": "Reset to Default",
+        "fromDate": "From Date",
+        "toDate": "To Date",
+        "searchRequestId": "Search by Request ID...",
+        "activeFilters": "Active filters",
+        "clearDates": "Clear dates",
+        "statusResolved": "Resolved",
+        "statusPending": "Pending"
+      },
+      "table": {
+        "timestamp": "Timestamp",
+        "level": "Level",
+        "service": "Service",
+        "error": "Error Message",
+        "path": "Path / URL",
+        "requestId": "Request ID",
+        "status": "Status",
+        "actions": "Actions",
+        "viewDetail": "View Detail",
+        "empty": "No system errors matching your criteria"
+      },
+      "detail": {
+        "title": "Error Detail",
+        "subtitle": "RequestId: {{id}}",
+        "stackTrace": "Stack Trace",
+        "context": "Context Info",
+        "user": "Affected User",
+        "ip": "IP Address",
+        "resolve": "Mark as Resolved",
+        "unresolve": "Mark as Unresolved",
+        "resolutionNote": "Resolution Notes",
+        "resolutionPlaceholder": "How was this fixed?",
+        "saveNote": "Save Resolution",
+        "requestBody": "Request Payload",
+        "responseBody": "Response Body",
+        "environment": "Environment",
+        "userAgent": "User Agent",
+        "copyToClipboard": "Copy to clipboard",
+        "copied": "Copied!",
+        "noRequestBody": "No request payload",
+        "noResponseBody": "No response body",
+        "addInvestigationNote": "Add investigation note...",
+        "investigationNotes": "Investigation Notes",
+        "statusCode": "Status Code",
+        "method": "Method",
+        "path": "Path",
+        "userId": "User ID",
+        "bookingId": "Booking ID",
+        "roomId": "Room ID",
+        "errorId": "Error ID",
+        "fullMessage": "Full Error Message",
+        "shortMessage": "Short Message"
+      },
+      "toast": {
+        "refreshSuccess": "Logs refreshed",
+        "refreshError": "Failed to refresh logs",
+        "updateSuccess": "Error status updated",
+        "updateError": "Failed to update error status"
+      }
+    },
+    "user": {
+      "toast": {
+        "savedTemplate": "New warning template saved",
+        "chatBannedTemp": "Chat banned for 24 hours",
+        "chatBannedPerm": "Chat banned permanently",
+        "chatBanFailed": "Failed to update chat ban",
+        "chatUnbanned": "Chat unbanned",
+        "chatUnbanFailed": "Failed to unban chat",
+        "bulkHandled": "Successfully handled {{count}} incidents",
+        "bulkHandleFailed": "Error handling incidents in bulk",
+        "handled": "Incident handled successfully",
+        "handleFailed": "Failed to handle violation",
+        "handleError": "Error handling incident",
+        "basicUpdateSuccess": "Basic information updated successfully",
+        "updateSuccess": "Information updated successfully",
+        "locked": "Account locked successfully",
+        "unlocked": "Account unlocked successfully",
+        "resetSuccess": "Violation history cleared",
+        "resetError": "Error resetting violations",
+        "updateFailed": "Update failed",
+        "systemError": "System error during update",
+        "invalidEmail": "Invalid email",
+        "actionFailed": "Action failed",
+        "statusUpdateError": "System error during status change"
+      },
+      "risk": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "btn": {
+        "sendWarning": "Send warning to user",
+        "viewDetail": "View Details",
+        "reject": "Reject"
+      },
+      "placeholder": {
+        "logSearch": "Search by description, IP, type..."
+      },
+      "filter": {
+        "severity": "Severity",
+        "allSeverity": "All severities",
+        "severityLow": "Severity: Low",
+        "severityMed": "Severity: Med",
+        "severityHigh": "Severity: High",
+        "status": "Status",
+        "allStatus": "All statuses",
+        "placeholder": "Search by username or email...",
+        "rolePlaceholder": "Role",
+        "allRoles": "All roles",
+        "statusPlaceholder": "Status",
+        "securityPlaceholder": "Security",
+        "allProfiles": "All profiles",
+        "violations": "Violation behavior",
+        "sortPlaceholder": "Sort by",
+        "newest": "Newest accounts",
+        "oldest": "Oldest accounts"
+      },
+      "status": {
+        "handled": "Handled",
+        "unhandled": "Unhandled",
+        "active": "ACTIVE",
+        "lockedLabel": "LOCKED"
+      },
+      "log": {
+        "severity": "Severity"
+      },
+      "section": {
+        "role": "Tier & Role",
+        "basicInfo": "Basic Information",
+        "securityLogs": "Security & Anti-Cheat Logs"
+      },
+      "label": {
+        "manageRole": "Management Role",
+        "sensitiveEmail": "Email (Sensitive)"
+      },
+      "desc": "System configuration, security & user role management.",
+      "role": {
+        "admin": "ADMINISTRATOR",
+        "instructor": "INSTRUCTOR",
+        "student": "STUDENT"
+      },
+      "table": {
+        "user": "User",
+        "name": "Full Name",
+        "role": "Role",
+        "status": "Status",
+        "violations": "Violations",
+        "actions": "Actions",
+        "empty": "No matching users found."
+      },
+      "violation": {
+        "reminder": "Reminder",
+        "serious": "Serious",
+        "tooMany": "Frequent Violations"
+      },
+      "title": "User Management",
+      "modal": {
+        "title": "User Details",
+        "riskLevel": "Risk Level: {{level}}",
+        "risk": {
+          "low": "Safe",
+          "medium": "Warning",
+          "high": "Danger"
+        },
+        "tabs": {
+          "overview": "Overview",
+          "violations": "Violations",
+          "permissions": "Permissions",
+          "activity": "Activity"
+        },
+        "stats": {
+          "violationFreq": "Violation Frequency",
+          "attendance": "Attendance Rate",
+          "systemTasks": "System Tasks",
+          "week": "Week",
+          "month": "Month",
+          "avg": "Average",
+          "low": "Low",
+          "lateClasses": "Late / Absent Sessions",
+          "lmsSource": "Data from LMS",
+          "expectedSource": "Estimated based on logs",
+          "overallRating": "Overall Rating",
+          "kpiPoints": "KPI Points",
+          "topInstructor": "Top Instructor"
+        },
+        "info": {
+          "joinedDate": "Joined Date",
+          "lastAccess": "Last Access",
+          "noData": "No data available"
+        },
+        "violations": {
+          "handleXItems": "Handle {{count}} items",
+          "severity": "Severity",
+          "status": "Status",
+          "handled": "Handled",
+          "unhandled": "Unhandled",
+          "empty": "No violation data found",
+          "results": "{{count}} results",
+          "chatViolation": "Chat Violation",
+          "openChat": "Open Chat",
+          "handleNow": "Handle now",
+          "exam": "Exam",
+          "suitableLang": "Inappropriate language usage",
+          "solved": "Solved"
+        },
+        "permissions": {
+          "title": "Access & Limits",
+          "advanced": "Advanced Config",
+          "exam": "Exam Access",
+          "content": "Content Access",
+          "chat": "Chat Access",
+          "deviceLimit": "Device Limit",
+          "expiryDate": "Account Expiry Date",
+          "chatBanStatus": "Chat Ban Status",
+          "permanentBan": "Permanently Banned",
+          "temporaryBan": "Banned until {{date}}",
+          "notBanned": "Not banned",
+          "ban24h": "Ban for 24h",
+          "banPermanent": "Permanently ban",
+          "unban": "Unban chat"
+        },
+        "warning": {
+          "enterMessage": "Please enter warning message",
+          "success": "Warning sent to user",
+          "error": "Error sending warning",
+          "confirmSend": "Confirm send warning",
+          "messageLabel": "Warning content",
+          "title": "Send Warning",
+          "desc": "Warning content will be sent directly to the user's inbox.",
+          "btnSend": "Send Now"
+        },
+        "roleChange": {
+          "warning": "You are changing the role. This user will be forced to log in again.",
+          "confirm": "Confirm role change"
+        },
+        "lock": {
+          "noAdminLock": "Cannot lock ADMIN accounts.",
+          "confirmTitle": "Confirm Lock/Unlock Account",
+          "locked": "Account locked",
+          "unlocked": "Account unlocked"
+        },
+        "basic": {
+          "updateSuccess": "Basic info updated successfully"
+        },
+        "sections": {
+          "teachingLog": "Teaching Log & Attendance",
+          "attendanceKPI": "Attendance & KPI",
+          "adminActions": "ADMIN ACTIONS & SYSTEM LOGS"
+        },
+        "toast": {
+          "bulkHandleSuccess": "Handled {{count}} incidents",
+          "bulkHandleError": "Error during bulk handling"
+        },
+        "placeholder": {
+          "instructorLogSearch": "Search by description, IP, type..."
+        },
+        "filter": {
+          "allSeverities": "All Severities",
+          "severityLowLabel": "Severity: Low",
+          "severityMedLabel": "Severity: Med",
+          "severityHighLabel": "Severity: High",
+          "allStatuses": "All Statuses"
+        },
+        "indicator": {
+          "realtime": "Real-time data",
+          "autoStats": "Auto Stats",
+          "autoStatsDesc": "Metrics like <b>Late entry, Missing lesson plan, Wrong path</b> are updated hourly by the LMS.",
+          "activityLog": "Activity Log"
+        },
+        "table": {
+          "target": "Target",
+          "detail": "Detail"
+        },
+        "activity": {
+          "empty": "No activity history found"
+        },
+        "confirm": {
+          "saveTitle": "Confirm Changes",
+          "saveDesc": "This action will update security and permission info for <strong>{{username}}</strong>.",
+          "roleWarning": "All current sessions will be invalidated to apply new permissions.",
+          "btnUpdate": "Confirm Update",
+          "resetTitle": "Reset Violations",
+          "resetDesc": "Are you sure you want to clear all violation history of this user? This cannot be undone.",
+          "lockTitle": "Lock/Unlock Account",
+          "lockDesc": "Change the active status of this account.",
+          "btnReset": "Confirm Reset",
+          "btnLock": "Confirm Action",
+          "emailTitle": "Change Email",
+          "emailDesc": "Changing email will affect login and notification delivery."
+        }
+      }
+    },
+    "finance": {
+      "tier": {
+        "hot": "Hot Sales",
+        "medium": "Medium Sales",
+        "low": "Low Sales"
+      },
+      "title": {
+        "admin": "Course Finance (Admin)",
+        "teacher": "Course Finance (Teacher)"
+      },
+      "desc": {
+        "admin": "Manage course prices, discount codes, and revenue for all courses in the system.",
+        "teacher": "Manage prices, discount codes, and revenue for your own courses."
+      },
+      "toast": {
+        "refreshSuccess": "Course finance data updated",
+        "refreshError": "Failed to update data",
+        "invalidPrice": "Course price must be a number greater than or equal to 0",
+        "emptyDiscountCode": "Please enter a discount code",
+        "invalidDiscountPercent": "Discount percentage must be between 1 - 100"
+      },
+      "error": {
+        "noPermission": "You do not have COURSE_VIEW permission to view course finance.",
+        "adminOnly": "Admin Only",
+        "adminOnlyDesc": "This page displays internal system revenue and is restricted to ADMINs."
+      },
+      "btn": {
+        "refresh": "Refresh",
+        "editPrice": "Edit Price",
+        "discountCodes": "Discounts"
+      },
+      "stat": {
+        "totalCourses": "Total Courses",
+        "totalStudents": "Total Students",
+        "totalRevenue": "Total Revenue",
+        "activeDiscounts": "Active Discounts"
+      },
+      "chart": {
+        "title": "Course Revenue Trend Chart",
+        "desc": "Top {{limit}} courses by revenue, categorized by performance tiers.",
+        "loading": "Loading chart data...",
+        "noData": "No data available for chart"
+      },
+      "list": {
+        "title": "Financial List by Course",
+        "desc": "Revenue is calculated based on completed COURSE_PAYMENT transactions."
+      },
+      "placeholder": {
+        "search": "Search by course title"
+      },
+      "table": {
+        "course": "Course",
+        "instructor": "Instructor",
+        "price": "Price",
+        "students": "Students",
+        "revenue": "Revenue",
+        "transactions": "Transactions",
+        "activeCodes": "Active Codes",
+        "actions": "Actions"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft"
+      },
+      "dialog": {
+        "editPrice": "Update Course Price"
+      },
+      "label": {
+        "newPrice": "New Price (VND)"
+      }
+    },
+    "vocab": {
+      "alert": {
+        "empty": "Please fill in both the Japanese word and its meaning"
+      },
+      "label": {
+        "vocab": "Vocabulary"
+      },
+      "placeholder": {
+        "word": "Japanese *",
+        "reading": "Phonetic (optional)",
+        "meaning": "Meaning *"
+      },
+      "btn": {
+        "add": "Add Vocabulary"
+      },
+      "count": "vocab items"
+    },
+    "withdraw": {
+      "title": "Withdrawals",
+      "desc": "Approve and manage withdrawal requests from instructors' wallets.",
+      "stat": {
+        "waiting": "Awaiting Approval",
+        "processing": "processing",
+        "toProcess": "Requests to process",
+        "totalPaid": "Total Paid",
+        "successTx": "Successful transactions",
+        "rejected": "Rejected",
+        "refunded": "Refunded transactions"
+      },
+      "placeholder": {
+        "search": "Search transaction, name, email..."
+      },
+      "alert": {
+        "note": "Note:",
+        "desc": "The system does not yet automatically transfer funds via digital banking. After verifying the recipient account, please manually transfer funds via your actual banking app."
+      },
+      "table": {
+        "idDate": "ID / Date",
+        "amount": "Amount",
+        "bank": "Bank",
+        "empty": "No matching withdrawal requests found."
+      },
+      "status": {
+        "pending": "Awaiting approval",
+        "processing": "Processing",
+        "completed": "Transferred",
+        "rejected": "Rejected",
+        "transferring": "Transferring..."
+      },
+      "btn": {
+        "transfer": "Transfer Funds",
+        "autoPayout": "Automatic Payout via Gateway",
+        "manualConfirm": "Confirm Manual Transfer Success"
+      },
+      "toast": {
+        "approveSuccess": "✅ Successfully transferred funds for request #{{id}}! Status updated.",
+        "approveError": "Error approving request #{{id}}",
+        "rejectSuccess": "Rejected request #{{id}}. Reason: {{reason}}",
+        "rejectError": "Error rejecting request #{{id}}",
+        "copied": "Copied {{label}}"
+      },
+      "prompt": {
+        "rejectReason": "Reason for rejection:"
+      },
+      "modal": {
+        "payoutSuccess": "Automatic transfer successful!",
+        "payoutFailed": "Automatic transfer failed!",
+        "payoutPending": "Transaction is being processed by the bank...",
+        "payoutProcessing": "Processing automatic transfer, please wait...",
+        "payoutRecorded": "Automatic transfer request recorded!",
+        "title": "Transfer Funds to Instructor",
+        "desc": "Scan the QR code below with your banking app to transfer funds. Once successful, click \"Confirm Manual Transfer Success\".",
+        "checkRecipient": "Please verify recipient information carefully before transferring."
+      },
+      "label": {
+        "bankName": "Bank Name",
+        "accountNumber": "Account Number",
+        "accountHolder": "Account Holder",
+        "amountBlossom": "Blossoms",
+        "amountVnd": "Transfer Amount",
+        "info": "Reference Info"
+      },
+      "filter": {
+        "all": "All",
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed",
+        "rejected": "Rejected"
+      }
+    },
+    "analytics": {
+      "teacher": {
+        "title": "Teacher Analytics",
+        "desc": "Track your teaching performance and earnings.",
+        "last30Days": "Last 30 days",
+        "downloadReport": "Download Report",
+        "totalEarnings": "Total Earnings",
+        "totalRevenue": "Total revenue received",
+        "monthlyGrowth": "Monthly Growth",
+        "growthVsLastMonth": "{{val}}% vs last month",
+        "totalHours": "Total Hours",
+        "totalClasses": "Completed sessions",
+        "avgRating": "Avg Rating",
+        "basedOnReviews": "Based on student reviews",
+        "tabs": {
+          "overview": "Overview",
+          "topStudents": "Top Students",
+          "courseRevenue": "Course Revenue"
+        },
+        "chart": {
+          "title": "Earnings Stream",
+          "desc": "Daily revenue analysis",
+          "filter": "Filter",
+          "all": "All",
+          "courses": "Courses",
+          "sessions": "Sessions"
+        },
+        "wallet": {
+          "title": "Wallet Balance",
+          "desc": "Withdraw your earnings easily",
+          "available": "Available Balance",
+          "pending": "Pending Payout",
+          "processing": "Processing",
+          "requestWithdraw": "Request Withdrawal"
+        },
+        "students": {
+          "placeholder": "Search student...",
+          "table": {
+            "name": "Student",
+            "bookings": "Bookings",
+            "spent": "Total Spent",
+            "status": "Status",
+            "details": "Details"
+          },
+          "noData": "No student data available."
+        },
+        "courses": {
+          "students": "Students",
+          "revenue": "Revenue",
+          "popularity": "Popularity",
+          "noData": "No course data available."
+        }
+      }
+    }
+  },
+  "videoCall": {
+    "room": {
+      "reconnecting": "Reconnecting...",
+      "secondsLeft": "{{val}}s left",
+      "waitingP2P": "Waiting for P2P connection...",
+      "chatTitle": "Messaging",
+      "connected": "Connected",
+      "emptyChat1": "Send a few greetings in Japanese",
+      "emptyChat2": "to start the conversation.",
+      "suggestVocab": "Vocabulary Suggestions",
+      "loading": " (loading...)",
+      "parseSentence": "Parse full sentence",
+      "convertAllRomaji": "Convert all romaji to hiragana",
+      "fromHistory": "✓ history",
+      "endCall": "End Call",
+      "nextPeer": "Next",
+      "report": "Report",
+      "reportUser": "Report User",
+      "reportedInfo": "Reported user info",
+      "reportContent": "Report content",
+      "placeholder": {
+        "message": "Type a message in Japanese...",
+        "report": "Describe the issue clearly..."
+      },
+      "btn": {
+        "send": "Send"
+      },
+      "violation": {
+        "japaneseOnly": "Please chat in Japanese only (VN/EN not allowed)"
+      },
+      "ban": {
+        "active": "You are currently banned from chat",
+        "until": " • Until: {{date}}"
+      },
+      "toast": {
+        "reportSuccess": "Report submitted successfully.",
+        "reportError": "Could not submit report, please try again.",
+        "reportInputRequired": "Please enter a report description.",
+        "reportFailed": "Failed to submit report"
+      },
+      "sending": "Sending..."
+    }
+  },
+  "feedback": {
+    "title": "Report an Issue",
+    "improveTitle": "How can we improve?",
+    "detailLabel": "Details",
+    "placeholder": "Please share as much detail as possible...",
+    "uploadBtn": "Add video or screenshot",
+    "disclaimer": "If you have an idea to improve the product, please let us know. If you need help, visit the ",
+    "helpCenter": "Help Center",
+    "btnCancel": "Cancel",
+    "btnSubmit": "Send Report",
+    "sending": "Sending...",
+    "abandonTitle": "Discard feedback?",
+    "abandonDesc": "If you discard now, you will not share any feedback with us.",
+    "btnContinue": "Continue",
+    "btnDiscard": "Discard",
+    "toast": {
+      "errorInput": "Please enter feedback content",
+      "success": "Report sent, thanks for your contribution!",
+      "errorSubmit": "An error occurred while sending feedback. Please try again later."
+    },
+    "defaultReportTitle": "System Issue Report"
+  },
+  "paywall": {
+    "title": "Premium Feature",
+    "desc": "This feature is only available for upgraded accounts. Please upgrade to enjoy the best experience.",
+    "btnUpgrade": "Upgrade {{tier}}",
+    "btnLater": "Maybe later"
   }
 }

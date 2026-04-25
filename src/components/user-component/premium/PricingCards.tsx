@@ -1,7 +1,14 @@
+/**
+ * [I18N COMPONENT - PRICING CARDS]
+ * Thực hiện:
+ * - Localize tất cả các gói dịch vụ (Basic, Pro, Premium).
+ * - Định dạng tiền tệ động dựa trên ngôn ngữ (toLocaleString).
+ * - Xử lý thông báo xác nhận nâng cấp gói với các key i18n.
+ */
 "use client";
 
-import React, { useState } from "react";
-import { CheckCircle2, Loader2, Star, Zap } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { CheckCircle2, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import {
   useGetPlansQuery,
@@ -9,7 +16,11 @@ import {
   useLazyGetSubscriptionPreviewQuery,
 } from "@/store/services/subscriptionApi";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { SubscriptionTier, SubscriptionPreview } from "@/types/subscription";
+import {
+  SubscriptionTier,
+  SubscriptionPreview,
+  type SubscriptionPlan,
+} from "@/types/subscription";
 import {
   Dialog,
   DialogContent,
@@ -20,10 +31,21 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { tMsg } from "@/i18n";
+import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
+
+type ApiError = {
+  data?: {
+    errorCode?: string;
+    messageKey?: string;
+  };
+};
 
 export default function PricingCards() {
   const router = useRouter();
-  const { currentTier, user } = useFeatureAccess();
+  const { t, i18n } = useTranslation();
+  const { planCode: currentTier, user } = useFeatureAccess();
   const { data: plans, isLoading: isPlansLoading } = useGetPlansQuery();
   const [subscribePremium, { isLoading: isSubscribing }] =
     useSubscribeMutation();
@@ -40,31 +62,70 @@ export default function PricingCards() {
     null,
   );
 
+  // Fallback plans with localized features
+  const fallbackPlans = useMemo<SubscriptionPlan[]>(() => [
+    {
+      id: "basic",
+      tier: "BASIC",
+      name: "BASIC",
+      price: 0,
+      features: [
+        t("premium.features.basic.courses"),
+        t("premium.features.basic.flashcard"),
+        t("premium.features.basic.practice"),
+        t("premium.features.basic.mockTest"),
+        t("premium.features.basic.progress"),
+      ],
+      isPopular: false,
+    },
+    {
+      id: "pro",
+      tier: "PRO",
+      name: "PRO",
+      price: 199,
+      features: [
+        t("premium.features.pro.allBasic"),
+        t("premium.features.pro.fullMock"),
+        t("premium.features.pro.breakdown"),
+        t("premium.features.pro.history"),
+        t("premium.features.pro.videoCall"),
+        t("premium.features.pro.aiSensei"),
+      ],
+      isPopular: true,
+    },
+    {
+      id: "premium",
+      tier: "PREMIUM",
+      name: "PREMIUM",
+      price: 399,
+      features: [
+        t("premium.features.premium.allPro"),
+        t("premium.features.premium.fullCourses"),
+        t("premium.features.premium.heatmap"),
+        t("premium.features.premium.unlimitedAI"),
+        t("premium.features.premium.aiPath"),
+      ],
+      isPopular: false,
+    },
+  ], [t]);
+
   const handleSubscribe = async () => {
     if (!selectedPlan) return;
     try {
       await subscribePremium({ tier: selectedPlan.tier }).unwrap();
-      toast.success(
-        `Nâng cấp ${selectedPlan.name} thành công! Chúc bạn học tốt.`,
-      );
+      toast.success(t("premium.subscribeSuccess", { name: selectedPlan.name }));
       setIsOpen(false);
       router.push("/profile/subscription");
-    } catch (err: any) {
+    } catch (err) {
+      const apiError = err as ApiError;
       console.error("Lỗi khi nâng cấp:", err);
-      const errorMsg =
-        err?.data?.message ||
-        err?.message ||
-        "Có lỗi xảy ra, vui lòng thử lại sau";
+      const errorMsg = tMsg(apiError.data?.messageKey) || t("api.error");
 
       if (
-        err?.data?.errorCode === "INSUFFICIENT_BALANCE" ||
-        errorMsg.toLowerCase().includes("số dư") ||
-        errorMsg.toLowerCase().includes("balance") ||
-        errorMsg.toLowerCase().includes("số dư ví không đủ")
+        apiError.data?.errorCode === "INSUFFICIENT_BALANCE" ||
+        apiError.data?.messageKey === "wallet.insufficientBalance"
       ) {
-        toast.error(
-          "Ví của bạn không đủ điểm. Đang chuyển hướng đến trang nạp tiền...",
-        );
+        toast.error(t("wallet.insufficientBalance"));
         setTimeout(() => {
           router.push("/profile/wallet");
         }, 1500);
@@ -75,9 +136,9 @@ export default function PricingCards() {
     }
   };
 
-  const openDialog = async (plan: any) => {
+  const openDialog = async (plan: SubscriptionPlan) => {
     if (!user) {
-      toast.info("Vui lòng đăng nhập để thao tác!");
+      toast.info(t("common.pleaseLogin"));
       router.push("/login?redirect=/premium");
       return;
     }
@@ -92,67 +153,19 @@ export default function PricingCards() {
       const preview = await getPreview(plan.tier).unwrap();
       setPreviewData(preview);
       setIsOpen(true);
-    } catch (err: any) {
-      const errorMsg =
-        err?.data?.message ||
-        err?.message ||
-        "Không thể lấy thông tin gói cước. Vui lòng thử lại.";
+    } catch (err) {
+      const apiError = err as ApiError;
+      const errorMsg = tMsg(apiError.data?.messageKey) || t("api.error");
       toast.error(errorMsg);
     }
   };
 
-  const fallbackPlans = [
-    {
-      id: "basic",
-      tier: "BASIC",
-      name: "BASIC",
-      price: 0,
-      features: [
-        "Học course (video + quiz)",
-        "Flashcard cơ bản (SRS)",
-        "Luyện tập",
-        "Mock test (giới hạn)",
-        "Progress đơn giản",
-      ],
-      isPopular: false,
-    },
-    {
-      id: "pro",
-      tier: "PRO",
-      name: "PRO",
-      price: 199,
-      features: [
-        "Tất cả Basic",
-        "Full Mock Test (N5–N1)",
-        "Score breakdown",
-        "Lịch sử học",
-        "Tìm bạn call video ngẫu nhiên",
-        "Sử dụng AI sensei giới hạn",
-      ],
-      isPopular: true,
-    },
-    {
-      id: "premium",
-      tier: "PREMIUM",
-      name: "PREMIUM",
-      price: 399,
-      features: [
-        "Tất cả PRO",
-        "Mở full khóa học",
-        "Study heatmap",
-        "Sử dụng AI sensei không giới hạn",
-        "AI learning path",
-      ],
-      isPopular: false,
-    },
-  ];
-
   const displayPlans = plans && plans.length > 0 ? plans : fallbackPlans;
 
-  const renderBadge = (plan: any) => {
+  const renderBadge = (plan: SubscriptionPlan) => {
     if (plan.tier === "PREMIUM") {
       return (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-violet-500 text-white px-5 py-1.5 rounded-full text-[11px] font-bold tracking-widest flex items-center gap-1.5 whitespace-nowrap shadow-lg shadow-fuchsia-500/30">
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-5 py-1.5 rounded-full text-[11px] font-bold tracking-widest flex items-center gap-1.5 whitespace-nowrap shadow-lg shadow-pink-500/30">
           <Zap className="w-3.5 h-3.5 fill-current" />
           AI PLATFORM
         </div>
@@ -163,24 +176,24 @@ export default function PricingCards() {
 
   const getCardStyle = (tier: string) => {
     if (tier === "PREMIUM") {
-      return "bg-gradient-to-br from-[#4b2c8f] via-[#5a2ca0] to-[#6b21a8] text-white rounded-[2rem] border border-violet-400/35 flex flex-col relative shadow-[0_20px_40px_rgba(168,85,247,0.28)] dark:from-[#4b2c8f] dark:via-[#5a2ca0] dark:to-[#6b21a8] dark:text-white dark:border-violet-400/35 dark:shadow-[0_20px_40px_rgba(168,85,247,0.28)]";
+      return "bg-gradient-to-b from-purple-800 to-indigo-950 text-white rounded-[2rem] border border-purple-500/30 flex flex-col relative shadow-[0_10px_40px_rgba(168,85,247,0.2)]";
     }
     if (tier === "PRO") {
-      return "bg-[#122241] text-white rounded-[2rem] border border-pink-400/80 flex flex-col relative shadow-[0_0_0_1px_rgba(244,114,182,0.2),0_18px_40px_rgba(15,23,42,0.45)] dark:bg-[#122241] dark:text-white dark:border-pink-400/80 dark:shadow-[0_0_0_1px_rgba(244,114,182,0.2),0_18px_40px_rgba(15,23,42,0.45)]";
+      return "bg-[#0A0F1E] text-slate-200 rounded-[2rem] border border-pink-500 flex flex-col relative shadow-[0_0_30px_rgba(236,72,153,0.15)]";
     }
-    return "bg-[#122241] text-slate-200 rounded-[2rem] border border-slate-700/40 flex flex-col relative shadow-[0_18px_40px_rgba(15,23,42,0.4)] dark:bg-[#122241] dark:text-slate-200 dark:border-slate-700/40 dark:shadow-[0_18px_40px_rgba(15,23,42,0.4)]";
+    return "bg-[#0A0F1E] text-slate-300 rounded-[2rem] flex flex-col relative";
   };
 
-  const renderButton = (plan: any) => {
+  const renderButton = (plan: SubscriptionPlan) => {
     const isCurrentPlan = currentTier === plan.tier;
 
     if (plan.tier === "BASIC") {
       return (
         <button
           disabled
-          className="w-full bg-[#081326] text-slate-400 font-semibold py-3.5 rounded-xl transition mb-8 text-sm border border-slate-800/80"
+          className="w-full bg-[#0F172A] text-slate-400 font-semibold py-3.5 rounded-xl transition mb-8 text-sm"
         >
-          {isCurrentPlan ? "Đang sử dụng" : "Mặc định"}
+          {isCurrentPlan ? t("premium.inUse") : t("premium.default")}
         </button>
       );
     }
@@ -189,9 +202,9 @@ export default function PricingCards() {
       return (
         <button
           onClick={() => router.push("/profile/subscription")}
-          className="w-full bg-[#081326] text-white border border-slate-800 font-bold py-3.5 text-sm rounded-xl transition mb-8"
+          className="w-full bg-slate-800 border border-slate-700 font-bold py-3.5 text-sm rounded-xl transition mb-8"
         >
-          Quản lý gói
+          {t("premium.managePackage")}
         </button>
       );
     }
@@ -201,14 +214,14 @@ export default function PricingCards() {
         <button
           onClick={() => openDialog(plan)}
           disabled={isPreviewLoading}
-          className="w-full bg-gradient-to-r from-pink-500 to-fuchsia-500 hover:from-pink-400 hover:to-fuchsia-400 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_24px_rgba(236,72,153,0.35)] flex justify-center items-center disabled:opacity-70"
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_20px_rgba(236,72,153,0.4)] flex justify-center items-center disabled:opacity-70"
         >
           {!user ? (
-            "Đăng nhập để Nâng cấp"
+            t("premium.loginToUpgrade")
           ) : isPreviewLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            `Nâng cấp 🚀 PREMIUM (AI Platform)`
+            t("premium.upgradePremium")
           )}
         </button>
       );
@@ -218,14 +231,14 @@ export default function PricingCards() {
       <button
         onClick={() => openDialog(plan)}
         disabled={isPreviewLoading}
-        className="w-full bg-gradient-to-r from-pink-500 to-fuchsia-400 hover:from-pink-400 hover:to-fuchsia-300 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_24px_rgba(236,72,153,0.28)] flex justify-center items-center disabled:opacity-70"
+        className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-400 hover:to-rose-300 text-white font-bold py-3.5 text-sm rounded-xl transition mb-8 shadow-[0_0_20px_rgba(244,63,94,0.4)] flex justify-center items-center disabled:opacity-70"
       >
         {!user ? (
-          "Đăng nhập để Nâng cấp"
+          t("premium.loginToUpgrade")
         ) : isPreviewLoading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
         ) : (
-          `Nâng cấp 🌟 PRO (Phổ biến nhất)`
+          t("premium.upgradePro")
         )}
       </button>
     );
@@ -234,13 +247,13 @@ export default function PricingCards() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-6xl">
       {isPlansLoading && (
-        <div className="col-span-1 lg:col-span-3 text-center py-10 opacity-80 flex items-center justify-center gap-3 text-slate-300">
-          <Loader2 className="animate-spin w-5 h-5" /> Đang tải bảng giá...
+        <div className="col-span-1 lg:col-span-3 text-center py-10 opacity-50 flex items-center justify-center gap-3 text-slate-300">
+          <Loader2 className="animate-spin w-5 h-5" /> {t("premium.loadingPricing")}
         </div>
       )}
 
       {!isPlansLoading &&
-        displayPlans.map((plan: any) => (
+        displayPlans.map((plan: SubscriptionPlan) => (
           <div
             key={plan.id || plan.tier}
             className={`p-8 lg:p-10 ${getCardStyle(plan.tier)}`}
@@ -248,46 +261,45 @@ export default function PricingCards() {
             {renderBadge(plan)}
 
             <p
-              className={`${plan.tier === "PREMIUM" ? "text-fuchsia-100" : plan.tier === "PRO" ? "text-pink-400" : "text-slate-400"} text-[11px] font-bold tracking-widest mb-3 uppercase`}
+              className={`${plan.tier === "PREMIUM" ? "text-purple-200" : plan.tier === "PRO" ? "text-pink-400" : "text-slate-400"} text-[11px] font-bold tracking-widest mb-3 uppercase`}
             >
               {plan.tier === "PREMIUM"
-                ? "Tối đa hiệu quả"
+                ? t("premium.tiers.maximum")
                 : plan.tier === "PRO"
-                  ? "Học nghiêm túc"
-                  : "Trải nghiệm"}
+                  ? t("premium.tiers.serious")
+                  : t("premium.tiers.experience")}
             </p>
 
             <h3 className="text-[28px] font-bold mb-4 leading-tight flex items-center gap-2">
-              {plan.tier === "PRO" && (
-                <span className="text-yellow-400 text-2xl">Gói</span>
+              {(plan.tier === "PRO" || plan.tier === "PREMIUM") && (
+                <span className={cn("text-2xl", plan.tier === "PRO" ? "text-yellow-400" : "")}>{t("common.package")}</span>
               )}
-              {plan.tier === "PREMIUM" && <span className="text-2xl">Gói</span>}
               {plan.name}
             </h3>
 
             <div className="flex items-end mb-8">
               <span className="text-[40px] font-black leading-none">
-                {plan.price === 0 ? "0" : plan.price.toLocaleString("vi-VN")}
+                {plan.price === 0 ? "0" : plan.price.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
               </span>
               <span
-                className={`${plan.tier === "PREMIUM" ? "text-pink-100/80" : "text-slate-400"} ml-2 mb-1.5 text-sm`}
+                className={`${plan.tier === "PREMIUM" ? "text-purple-200" : "text-slate-400"} ml-2 mb-1.5 text-sm`}
               >
-                hoa / tháng
+                {t("premium.currencyPerMonth")}
               </span>
             </div>
 
             {renderButton(plan)}
 
             <ul className="space-y-4 flex-1">
-              {plan.features.map((feat: string, idx: number) => {
-                const isHighlight = feat.toLowerCase().startsWith("tất cả");
+              {(plan.features || []).map((feat: string, idx: number) => {
+                const isHighlight = feat.toLowerCase().startsWith("tất cả") || feat.toLowerCase().startsWith("all");
                 return (
                   <li
                     key={idx}
                     className="flex items-start text-[13px] leading-relaxed"
                   >
                     <div
-                      className={`mt-0.5 mr-3 shrink-0 rounded-full flex items-center justify-center size-4 border ${plan.tier === "PREMIUM" ? "border-pink-300 text-pink-300" : plan.tier === "PRO" ? "border-pink-400 text-pink-400" : "border-blue-400 text-blue-400"}`}
+                      className={`mt-0.5 mr-3 shrink-0 rounded-full flex items-center justify-center size-4 border ${plan.tier === "PREMIUM" ? "border-pink-300 text-pink-300" : plan.tier === "PRO" ? "border-pink-500 text-pink-500" : "border-slate-500 text-slate-500"}`}
                     >
                       <CheckCircle2 className="w-3 h-3" />
                     </div>
@@ -306,7 +318,7 @@ export default function PricingCards() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Xác nhận nâng cấp</DialogTitle>
+            <DialogTitle>{t("premium.confirmUpgradeTitle")}</DialogTitle>
             <DialogDescription asChild>
               <div className="text-sm text-muted-foreground mt-2">
                 {previewData?.isRenewal ? (
@@ -314,67 +326,45 @@ export default function PricingCards() {
                     <p className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-500" />
                       <span>
-                        Bạn đang sử dụng gói{" "}
+                        {t("premium.currentPackageDesc")}{" "}
                         <strong className="text-primary">{currentTier}</strong>
                       </span>
                     </p>
                     <p className="flex items-center gap-2">
-                      <span className="text-xl">👉</span>
-                      <span>Mua thêm sẽ được cộng dồn thời gian sử dụng.</span>
+                       <span className="text-xl">👉</span>
+                       <span>{t("premium.stackDesc")}</span>
                     </p>
                     <div className="bg-muted/50 p-3 rounded-lg mt-2 space-y-1">
                       {previewData.currentExpireAt && (
                         <p className="text-xs flex justify-between">
-                          <span>Hạn hiện tại:</span>
+                          <span>{t("premium.currentExpiry")}</span>
                           <strong>
                             {new Date(
                               previewData.currentExpireAt,
-                            ).toLocaleDateString("vi-VN")}
+                            ).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
                           </strong>
                         </p>
                       )}
                       <p className="text-xs flex justify-between">
-                        <span>Sau khi mua:</span>
+                        <span>{t("premium.newExpiry")}</span>
                         <strong className="text-pink-500">
                           {new Date(previewData.newExpireAt).toLocaleDateString(
-                            "vi-VN",
+                            i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US',
                           )}
                         </strong>
                       </p>
                     </div>
                     <div className="pt-2 border-t mt-3 text-center">
-                      Hệ thống sẽ trừ{" "}
-                      <strong className="text-pink-500">
-                        {(
-                          previewData.price ||
-                          selectedPlan?.price ||
-                          0
-                        ).toLocaleString("vi-VN")}{" "}
-                        hoa
-                      </strong>{" "}
-                      vào số dư ví.
+                      {t("premium.deductDesc", { amount: (previewData.price || selectedPlan?.price || 0).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US') })}
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <p>
-                      Bạn có chắc chắn nâng cấp gói{" "}
-                      <strong className="text-primary">
-                        {selectedPlan?.name}
-                      </strong>{" "}
-                      không?
+                      {t("premium.confirmQuestion", { name: selectedPlan?.name })}
                     </p>
                     <div className="pt-2 border-t mt-3 text-center">
-                      Hệ thống sẽ trừ trực tiếp{" "}
-                      <strong className="text-pink-500">
-                        {(
-                          previewData?.price ||
-                          selectedPlan?.price ||
-                          0
-                        ).toLocaleString("vi-VN")}{" "}
-                        hoa
-                      </strong>{" "}
-                      vào số dư ví.
+                      {t("premium.deductDesc", { amount: (previewData?.price || selectedPlan?.price || 0).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US') })}
                     </div>
                   </div>
                 )}
@@ -387,7 +377,7 @@ export default function PricingCards() {
               onClick={() => setIsOpen(false)}
               disabled={isSubscribing}
             >
-              Hủy bỏ
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSubscribe}
@@ -397,7 +387,7 @@ export default function PricingCards() {
               {isSubscribing && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Xác nhận
+              {t("common.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

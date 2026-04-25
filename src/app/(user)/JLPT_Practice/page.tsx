@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import CourseHeader from "./CourseHeader";
 import CourseFilters from "./CourseFilter";
 import ExamCard from "./ExamCard";
@@ -8,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import PaywallPopup from "@/components/common/PaywallPopup";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { getJlptTopupPath } from "@/lib/jlpt-topup";
-import { useGetMyAttemptsQuery, useGetPublishedTestsQuery } from "@/store/services/jlptApi";
+import {
+  useGetMyAttemptsQuery,
+  useGetPublishedTestsQuery,
+} from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -22,6 +26,7 @@ const DEFAULT_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCDxFdbUtg2jEo2f1rVJJRTWZBFyHB44-mlAfp-GKLrUnc3cvcH-cYZkH9ydP1YZODRfyQc0x6eBpLw_08krUI8ntpUCInksY4rGhIQ81URRQSBldgEks8NzAQfdI8muIWwfH4RaeSIOQCcSC46f2ShFOMCOQekPfNuYnJdTzqcgOFbRdGgflkzcH3f6CnWfeMZ-BeBwcAsHM_QHKpoJWgS8OFizAnRfRkQ-wkuB1LIA4y2pGlwyGgNB5FumbYYiB57B4jKGJC2xEI";
 
 export default function JlptPracticePage() {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -84,13 +89,18 @@ export default function JlptPracticePage() {
   const tests = data?.content || [];
   const totalPages = data?.totalPages || 1;
   const upgradePath = getJlptTopupPath(jlptTopupType, jlptRecommendedPlan);
-  const topupTitle = jlptTopupTitle || "Bạn đã dùng hết lượt thi JLPT";
+  const topupTitle =
+    jlptTopupTitle ||
+    t("jlpt.topup.title", { defaultValue: "Ban da dung het luot thi JLPT" });
   const topupMessage =
     jlptTopupMessage ||
-    "Hãy nâng cấp gói hoặc mua thêm để tiếp tục làm bài thi JLPT.";
+    t("jlpt.topup.message", {
+      defaultValue:
+        "Hay nang cap goi hoac mua them de tiep tuc lam bai thi JLPT.",
+    });
   const actionLabel = jlptRecommendedPlan
-    ? `Nâng cấp ${jlptRecommendedPlan}`
-    : "Xem gói phù hợp";
+    ? t("paywall.btnUpgrade", { tier: jlptRecommendedPlan })
+    : t("premium.viewSuitablePlan", { defaultValue: "Xem goi phu hop" });
 
   return (
     <div className="relative min-h-screen flex-1 overflow-y-auto scroll-smooth bg-background">
@@ -136,24 +146,26 @@ export default function JlptPracticePage() {
 
         {isLoading && (
           <div className="py-20 text-center text-muted-foreground">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-pink-400"></div>
-            <p className="mt-4">Đang tải đề thi...</p>
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-pink-400" />
+            <p className="mt-4">{t("auto.jlpt_practice_1")}</p>
           </div>
         )}
 
         {!!error && (
           <div className="py-20 text-center text-pink-500">
             <span className="material-symbols-outlined mb-4 text-6xl">error</span>
-            <p className="text-lg font-semibold">Không thể tải danh sách</p>
-            <p className="mt-2 text-sm text-muted-foreground">Vui lòng thử lại sau</p>
+            <p className="text-lg font-semibold">{t("api.error")}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("common.tryAgainLater", { defaultValue: "Vui long thu lai sau" })}
+            </p>
           </div>
         )}
 
         {!isLoading && !error && tests.length === 0 && (
           <div className="py-20 text-center text-muted-foreground">
             <span className="material-symbols-outlined mb-4 text-6xl">inbox</span>
-            <p className="text-lg font-semibold">Chưa có đề thi nào</p>
-            <p className="mt-2 text-sm">Hệ thống đang cập nhật đề thi mới</p>
+            <p className="text-lg font-semibold">{t("auto.jlpt_practice_2")}</p>
+            <p className="mt-2 text-sm">{t("auto.jlpt_practice_3")}</p>
           </div>
         )}
 
@@ -161,7 +173,9 @@ export default function JlptPracticePage() {
           <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {tests.map((test) => {
               const attempt = attemptsMap[test.id];
-              let status: "new" | "doing" | "done" | "locked" = attempt ? "done" : "new";
+              let status: "new" | "doing" | "done" | "locked" = attempt
+                ? "done"
+                : "new";
 
               if (status === "new" && jlptTopupRequired) {
                 status = "locked";
@@ -178,8 +192,8 @@ export default function JlptPracticePage() {
                   attemptId={attempt?.id}
                   title={test.title}
                   image={DEFAULT_IMAGE}
-                  tag={`${test.level} · ${categoryLabel}`}
-                  info={`${test.totalQuestions} cau hoi • ${test.duration} phut`}
+                  tag={`${test.level} - ${categoryLabel}`}
+                  info={`${test.totalQuestions} cau hoi - ${test.duration} phut`}
                   colorTheme="pink-400"
                   lockedTitle={topupTitle}
                   lockedButtonLabel={actionLabel}

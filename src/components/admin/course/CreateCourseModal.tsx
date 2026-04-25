@@ -151,6 +151,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
                   src={thumbnailPreview}
                   alt="Thumbnail preview"
                   fill
+                  sizes="50vw"
                   className="object-cover"
                 />
                 <button

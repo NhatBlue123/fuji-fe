@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCreateTestMutation,
@@ -80,7 +82,7 @@ function resolveSectionKeyForMondai(
   return keys[0] as SectionKey;
 }
 
-export default function CreateJLPTTestPage() {
+function CreateJLPTTestPageContent() {
   const router = useRouter();
   const [createTest, { isLoading }] = useCreateTestMutation();
   const [addQuestion] = useAddQuestionMutation();
@@ -348,7 +350,7 @@ export default function CreateJLPTTestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const result = await createTest(formData).unwrap();
       if (autoGenerateWithBank) {
@@ -1020,5 +1022,23 @@ export default function CreateJLPTTestPage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+export default function CreateJLPTTestPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6">
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Đang tải trang tạo đề JLPT...
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <CreateJLPTTestPageContent />
+    </Suspense>
   );
 }

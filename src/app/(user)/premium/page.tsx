@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -7,8 +9,10 @@ import PremiumTabs from "@/components/user-component/premium/PremiumTabs";
 import PricingCards from "@/components/user-component/premium/PricingCards";
 import FeatureGrid from "@/components/user-component/premium/FeatureGrid";
 import TopupContent from "@/components/user-component/premium/TopupContent";
+import { useTranslation } from "react-i18next";
 
 function PremiumPageContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,13 +24,13 @@ function PremiumPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-[#fff8fc] to-[#f4f8ff] p-8 font-sans text-slate-900 dark:bg-none dark:bg-[#122241] dark:text-white">
+    <div className="min-h-screen bg-background text-foreground p-8 font-sans">
       <div className="max-w-5xl mx-auto">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-pink-500 transition-colors mb-6"
         >
-          <ArrowLeft size={16} /> Quay lại
+          <ArrowLeft size={16} /> {t("common.back")}
         </button>
         <PremiumTabs activeTab={tab} onChangeTab={handleTabChange} />
 
@@ -36,8 +40,8 @@ function PremiumPageContent() {
               <PricingCards />
 
               <div className="mt-16 w-full">
-                <h2 className="text-2xl font-bold text-center mb-8 text-slate-900 dark:text-white">
-                  Tại sao nên chọn Premium?
+                <h2 className="text-2xl font-bold text-center mb-8">
+                  {t("premium.whyPremium")}
                 </h2>
                 <FeatureGrid />
               </div>
@@ -52,8 +56,9 @@ function PremiumPageContent() {
 }
 
 export default function PremiumPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">Đang tải...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">{t("common.loading")}</div>}>
       <PremiumPageContent />
     </Suspense>
   );

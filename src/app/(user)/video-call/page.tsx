@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useCallback, useRef, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
@@ -20,14 +21,6 @@ import {
 import { cn } from "@/lib/utils";
 
 type JLPTLevel = "N1" | "N2" | "N3" | "N4" | "N5";
-
-const LEVEL_LABELS: Record<JLPTLevel, string> = {
-  N1: "Nâng cao",
-  N2: "Trung cấp cao",
-  N3: "Trung cấp",
-  N4: "Sơ cấp cao",
-  N5: "Sơ cấp",
-};
 
 // Sakura petal falling animation
 function SakuraFall({ density = 18 }: { density?: number }) {
@@ -83,6 +76,15 @@ function SearchingDots() {
 }
 
 export default function VideoCallMatchingPage() {
+  const { t } = useTranslation();
+  const LEVEL_LABELS: Record<JLPTLevel, string> = {
+    N1: t("jlpt.levels.n1_desc"),
+    N2: t("jlpt.levels.n2_desc"),
+    N3: t("jlpt.levels.n3_desc"),
+    N4: t("jlpt.levels.n4_desc"),
+    N5: t("jlpt.levels.n5_desc"),
+  };
+
   const router = useRouter();
   const signaling = useSignaling();
   const webrtc = useWebRTC();
@@ -97,7 +99,7 @@ export default function VideoCallMatchingPage() {
       user?.fullName?.trim() ||
       user?.fullname?.trim() ||
       user?.username?.trim();
-    return candidate && candidate.length > 0 ? candidate : "Ẩn danh";
+    return candidate && candidate.length > 0 ? candidate : t("common.anonymous");
   }, [authUser]);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -229,10 +231,10 @@ export default function VideoCallMatchingPage() {
             textShadow: "0 1px 8px rgba(255,255,255,0.8)",
           }}
         >
-          Hội thoại tiếng Nhật
+          {t("video_call.page.title")}
         </h1>
         <p className="text-sm text-gray-500">
-          Luyện tiếng Nhật qua video call ngẫu nhiên
+          {t("video_call.page.subtitle")}
         </p>
 
         {/* Level Picker */}
@@ -277,7 +279,7 @@ export default function VideoCallMatchingPage() {
 
       {/* ── Main: Camera Cards (horizontal layout like reference) ── */}
       <div className="relative z-10 flex items-center justify-center gap-4 flex-1 px-4 w-full max-w-3xl mx-auto">
-        
+
         {/* User camera — dark card */}
         <div className="relative rounded-[2rem] overflow-hidden shadow-2xl bg-gray-900"
           style={{ width: '300px', height: '400px', flexShrink: 0 }}
@@ -297,7 +299,7 @@ export default function VideoCallMatchingPage() {
           {!webrtc.localStream && isCameraOn && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
               <Loader2 className="h-7 w-7 text-white/50 animate-spin mb-2" />
-              <p className="text-white/40 text-xs">Đang bật camera...</p>
+              <p className="text-white/40 text-xs">{t('video_call.loadingStream')}</p>
             </div>
           )}
 
@@ -305,14 +307,14 @@ export default function VideoCallMatchingPage() {
           {!isCameraOn && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
               <VideoOff className="h-9 w-9 text-white/30 mb-2" />
-              <p className="text-white/30 text-xs">Camera: TẮT</p>
+              <p className="text-white/30 text-xs">{t('video_call.cameraOff')}</p>
             </div>
           )}
 
           {/* Name label top-left */}
           <div className="absolute top-3 left-3">
             <span className="text-white text-xs font-semibold px-1">
-              Camera: {isCameraOn ? "BẬT" : "TẮT"}
+              Camera: {isCameraOn ? t("video_call.status.on") : t("video_call.status.off")}
             </span>
           </div>
 
@@ -360,7 +362,7 @@ export default function VideoCallMatchingPage() {
               </div>
               <div className="text-center">
                 <p className="text-gray-700 font-semibold text-base">
-                  Đang tìm đối tác...
+                  {t("video_call.status.searching")}
                 </p>
                 <p className="text-gray-400 text-xs mt-1 font-mono">
                   {formatTime(waitSeconds)}
@@ -377,10 +379,10 @@ export default function VideoCallMatchingPage() {
               </div>
               <div className="text-center px-4">
                 <p className="text-gray-600 font-medium text-sm">
-                  Tìm bạn luyện nói
+                  {t("video_call.status.idleTitle")}
                 </p>
                 <p className="text-gray-400 text-xs mt-1">
-                  Nhấn Bắt đầu để kết nối...
+                  {t("video_call.status.idleDesc")}
                 </p>
               </div>
             </>
@@ -443,7 +445,7 @@ export default function VideoCallMatchingPage() {
 
         {/* Bottom hint text */}
         <p className="text-gray-500 text-xs">
-          Luyện hội thoại tiếng Nhật cùng đối tác ngẫu nhiên
+          {t("video_call.bottomHint")}
         </p>
       </div>
     </div>

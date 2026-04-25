@@ -1,27 +1,30 @@
 import React from "react";
 import { Infinity, GraduationCap, Bot, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function FeatureGrid() {
+  const { t } = useTranslation();
+
   const features = [
     {
       icon: <Infinity className="w-6 h-6 text-secondary" />,
-      title: "Mở rộng số lượng tạo Flashcard",
-      desc: "Học không giới hạn số lượng thẻ và bộ thẻ mỗi ngày."
+      title: t("premium.featureGrid.flashcard.title"),
+      desc: t("premium.featureGrid.flashcard.desc")
     },
     {
       icon: <GraduationCap className="w-6 h-6 text-secondary" />,
-      title: "Khóa học VIP",
-      desc: "Truy cập đặc quyền vào tất cả nội dung VIP."
+      title: t("premium.featureGrid.vipCourse.title"),
+      desc: t("premium.featureGrid.vipCourse.desc")
     },
     {
       icon: <Bot className="w-6 h-6 text-secondary" />,
-      title: "AI hỗ trợ",
-      desc: "Trợ lý AI giúp giải đáp mọi thắc mắc của bạn tức thì."
+      title: t("premium.featureGrid.aiAssist.title"),
+      desc: t("premium.featureGrid.aiAssist.desc")
     },
     {
       icon: <Zap className="w-6 h-6 text-secondary" />,
-      title: "AI luyện kaiwa",
-      desc: "Luyện tập giao tiếp tiếng Nhật với trợ lý AI thông minh."
+      title: t("premium.featureGrid.aiKaiwa.title"),
+      desc: t("premium.featureGrid.aiKaiwa.desc")
     }
   ];
 

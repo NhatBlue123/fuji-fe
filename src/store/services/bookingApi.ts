@@ -11,6 +11,8 @@ import type {
   DiscoveryResponse,
   MyBookingItem,
   MyTimeSlotItem,
+  StudentBusySlot,
+  StudentBusySlotsResponse,
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
   VideoSessionResponse,
@@ -120,6 +122,31 @@ export const bookingApi = baseApi.injectEndpoints({
       ],
     }),
 
+    cancelBookingByTeacher: builder.mutation<{ message: string }, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/teacher-cancel`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<string>) => ({
+        message: res.message || "Booking cancelled",
+      }),
+      invalidatesTags: [
+        { type: "Booking", id: "DISCOVERY" },
+        { type: "Booking", id: "MY_BOOKINGS" },
+      ],
+    }),
+
+    endBookingVideoSession: builder.mutation<{ message: string }, { bookingId: number }>({
+      query: ({ bookingId }) => ({
+        url: `/bookings/${bookingId}/video-session/end`,
+        method: "POST",
+      }),
+      transformResponse: (res: ApiEnvelope<string>) => ({
+        message: res.message || "Buổi học đã kết thúc",
+      }),
+      invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
+    }),
+
     getMyTimeSlots: builder.query<MyTimeSlotItem[], void>({
       query: () => `/time-slots/me`,
       transformResponse: (res: ApiEnvelope<MyTimeSlotItem[]>) => res.data,
@@ -166,6 +193,17 @@ export const bookingApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<{ reviewId: number; rating: number; comment: string }>) => res.data,
       invalidatesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
     }),
+
+    getMyBusySlots: builder.query<StudentBusySlotsResponse, { date: string }>({
+      query: ({ date }) => `/bookings/me/busy-slots?date=${date}`,
+      transformResponse: (res: ApiEnvelope<StudentBusySlotsResponse>) => res.data,
+    }),
+
+    getMyBusySlotsInRange: builder.query<StudentBusySlot[], { fromDate: string; toDate: string }>({
+      query: ({ fromDate, toDate }) =>
+        `/bookings/me/busy-slots-range?fromDate=${fromDate}&toDate=${toDate}`,
+      transformResponse: (res: ApiEnvelope<StudentBusySlot[]>) => res.data,
+    }),
   }),
 });
 
@@ -181,7 +219,11 @@ export const {
   useDeleteTimeSlotMutation,
   useUpdateTimeSlotMutation,
   useCancelBookingMutation,
+  useCancelBookingByTeacherMutation,
+  useEndBookingVideoSessionMutation,
   useGetMyTeacherScheduleQuery,
   useGetVideoSessionMutation,
   useSubmitSessionReviewMutation,
+  useGetMyBusySlotsQuery,
+  useGetMyBusySlotsInRangeQuery,
 } = bookingApi;

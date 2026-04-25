@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,12 +35,14 @@ function formatDuration(minutes: number): string {
   return `${m}:00`;
 }
 
-function formatDurationReadable(minutes: number): string {
-  if (!minutes || minutes <= 0) return "0 phút";
-  if (minutes < 60) return `${minutes} phút`;
+function formatDurationReadable(minutes: number, t: any): string {
+  if (!minutes || minutes <= 0) return `0 ${t("common.time.minute") || "phút"}`;
+  if (minutes < 60) return `${minutes} ${t("common.time.minute") || "phút"}`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m > 0 ? `${h} giờ ${m} phút` : `${h} giờ`;
+  return m > 0
+    ? `${h} ${t("common.time.hour") || "giờ"} ${m} ${t("common.time.minute") || "phút"}`
+    : `${h} ${t("common.time.hour") || "giờ"}`;
 }
 
 function extractYouTubeId(url: string): string | null {
@@ -93,6 +97,7 @@ function LockedLessonNotice({
   reason: "course" | "sequence";
   fallbackLessonId?: number;
 }) {
+  const { t } = useTranslation();
   const ctaHref =
     reason === "sequence" && fallbackLessonId
       ? `/course/${courseId}/lesson/${fallbackLessonId}`
@@ -105,32 +110,32 @@ function LockedLessonNotice({
       </span>
       <h2 className="text-2xl font-bold text-foreground mb-2">
         {reason === "sequence"
-          ? "Bạn cần hoàn thành bài học trước"
-          : "Bài học này đã bị khóa"}
+          ? t("course.lesson.lockedTitleSequence")
+          : t("course.lesson.lockedTitleEnroll")}
       </h2>
       <p className="text-muted-foreground mb-8 max-w-md">
         {reason === "sequence"
           ? lessonTitle
-            ? `Hãy học xong bài trước để mở "${lessonTitle}".`
-            : "Hãy học xong bài trước để mở bài học này."
+            ? t("course.lesson.lockedDescSequenceDetailed", { title: lessonTitle })
+            : t("course.lesson.lockedDescSequence")
           : lessonTitle
-            ? `Bạn cần đăng ký khóa học để xem "${lessonTitle}".`
-            : "Bạn cần đăng ký khóa học để xem bài học này."}
+            ? t("course.lesson.lockedDescEnrollDetailed", { title: lessonTitle })
+            : t("course.lesson.lockedDescEnroll")}
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href={ctaHref}
           className="px-6 py-3 rounded-xl bg-secondary text-secondary-foreground font-bold hover:bg-secondary/90 transition-colors"
         >
-          {reason === "sequence" ? "Học bài đang mở" : "Về trang khóa học"}
+          {reason === "sequence" ? t("course.lesson.actionSequence") : t("course.lesson.actionEnroll")}
         </Link>
         <Link
           href={`/course/${courseId}`}
           className="px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors"
         >
           {reason === "sequence"
-            ? "Xem lộ trình khóa học"
-            : "Đăng ký để mở khóa"}
+            ? t("course.lesson.actionSequenceAlt")
+            : t("course.lesson.actionEnrollAlt")}
         </Link>
       </div>
     </div>
@@ -148,6 +153,8 @@ function VideoPlayer({
   onMarkCompleted: () => void;
   isCompleting: boolean;
 }) {
+  const { t } = useTranslation();
+
   const renderCompletionAction = () => {
     if (lesson.userCompleted) {
       return (
@@ -155,7 +162,7 @@ function VideoPlayer({
           <span className="material-symbols-outlined filled text-base">
             check_circle
           </span>
-          Bạn đã hoàn thành bài học này
+          {t("course.lesson.completed")}
         </div>
       );
     }
@@ -171,7 +178,7 @@ function VideoPlayer({
           <span className="material-symbols-outlined text-[18px] filled">
             {isCompleting ? "sync" : "check_circle"}
           </span>
-          {isCompleting ? "Đang cập nhật..." : "Đánh dấu đã học xong"}
+          {isCompleting ? t("common.updating") : t("course.lesson.markAsDone")}
         </button>
       </div>
     );
@@ -184,7 +191,7 @@ function VideoPlayer({
           <span className="material-symbols-outlined text-5xl mb-2 block">
             videocam_off
           </span>
-          <p className="text-sm">Video chưa được tải lên</p>
+          <p className="text-sm">{t('auto.lessonview_1')}</p>
         </div>
       </div>
     );
@@ -196,7 +203,7 @@ function VideoPlayer({
       return (
         <div className="w-full aspect-[16/9] min-h-[400px] max-h-[75vh] bg-black rounded-2xl overflow-hidden border border-border flex items-center justify-center">
           <p className="text-muted-foreground text-sm">
-            Link YouTube không hợp lệ
+            {t("course.lesson.invalidYoutube")}
           </p>
         </div>
       );
@@ -264,13 +271,15 @@ function TaskContent({
   lesson: LessonResponseDTO;
   onMarkCompleted: () => void;
 }) {
+  const { t } = useTranslation();
+
   const taskLabel: Record<string, string> = {
-    multiple_choice: "Trắc nghiệm",
-    fill_blank: "Điền vào chỗ trống",
-    listening: "Nghe hiểu",
-    matching: "Nối từ",
-    speaking: "Luyện nói",
-    reading: "Đọc hiểu",
+    multiple_choice: t("course.task.type.multipleChoice"),
+    fill_blank: t("course.task.type.fillBlank"),
+    listening: t("course.task.type.listening"),
+    matching: t("course.task.type.matching"),
+    speaking: t("course.task.type.speaking"),
+    reading: t("course.task.type.reading"),
   };
 
   const parsed = parseTaskData(lesson.taskData ?? null);
@@ -288,8 +297,8 @@ function TaskContent({
           </span>
           <p className="text-sm text-muted-foreground">
             {lesson.taskType
-              ? "Chưa có dữ liệu bài tập"
-              : "Hệ thống bài tập tương tác sẽ được cập nhật sớm"}
+              ? t("course.lesson.noTaskData")
+              : t("course.lesson.taskUpcoming")}
           </p>
         </div>
       )}
@@ -312,10 +321,12 @@ function SidebarLessonItem({
   canAccessCourse: boolean;
   isSequentiallyUnlocked: boolean;
 }) {
+  const { t } = useTranslation();
+
   const isVideo = lesson.lessonType === "video";
   const canAccessByPolicy = canAccessCourse || lesson.isPreview;
   const canAccessLesson = canAccessByPolicy && isSequentiallyUnlocked;
-  const lockLabel = canAccessByPolicy ? "Học bài trước" : "Đăng ký khóa học";
+  const lockLabel = canAccessByPolicy ? t("course.lesson.labelSequence") : t("course.lesson.labelEnroll");
 
   if (isActive) {
     return (
@@ -334,16 +345,16 @@ function SidebarLessonItem({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[10px] bg-secondary text-white px-1.5 py-0.5 rounded font-bold shadow-sm">
-                Đang học
+                {t("course.lesson.status.learning")}
               </span>
               {lesson.userCompleted && (
                 <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold">
-                  Đã học xong
+                  {t("course.lesson.status.completed")}
                 </span>
               )}
               {lesson.isPreview && (
                 <span className="text-[10px] bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">
-                  Xem thử
+                  {t("course.lesson.status.preview")}
                 </span>
               )}
             </div>
@@ -428,17 +439,17 @@ function SidebarLessonItem({
         <div className="flex items-center gap-2">
           {lesson.userCompleted && (
             <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
-              Đã học xong
+              {t("course.lesson.status.completed")}
             </span>
           )}
           {!lesson.userCompleted && (
             <span className="text-[10px] text-sky-400 font-bold bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded">
-              Chưa học
+              {t("course.lesson.status.notStarted")}
             </span>
           )}
           {lesson.isPreview && (
             <span className="text-[10px] text-blue-500 font-bold bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
-              Xem thử
+              {t("course.lesson.status.preview")}
             </span>
           )}
           {lesson.duration > 0 && (
@@ -461,6 +472,7 @@ export default function LessonView({
   courseId: number;
   lessonId: number;
 }) {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { isPremium } = useFeatureAccess();
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "qa" | "notes">(
@@ -486,7 +498,7 @@ export default function LessonView({
   // Sorted lessons
   const sortedLessons = useMemo(
     () => [...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder),
-    [lessons],
+    [lessons, i18n.language],
   );
   const currentLessonMeta = sortedLessons.find((l) => l.id === lessonId);
   const firstIncompleteIndex = sortedLessons.findIndex((l) => !l.userCompleted);
@@ -502,7 +514,7 @@ export default function LessonView({
       }
     });
     return unlockedIds;
-  }, [maxUnlockedIndex, sortedLessons]);
+  }, [maxUnlockedIndex, sortedLessons, i18n.language]);
 
   const canAccessCourse = isPremium || Boolean(course?.isEnrolled);
   const canAccessCurrentLessonByPolicy =
@@ -610,16 +622,16 @@ export default function LessonView({
           error
         </span>
         <h2 className="text-xl font-bold text-foreground mb-2">
-          Không tìm thấy bài học
+          {t("course.lesson.notFound")}
         </h2>
         <p className="text-muted-foreground mb-6">
-          Bài học này không tồn tại hoặc đã bị xóa.
+          {t("course.lesson.deleted")}
         </p>
         <Link
           href={`/course/${courseId}`}
           className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
         >
-          Quay về khóa học
+          {t("course.lesson.backToCourse")}
         </Link>
       </div>
     );
@@ -638,12 +650,12 @@ export default function LessonView({
           </button>
           <div className="h-6 w-px bg-border hidden sm:block" />
           <h1 className="font-bold text-lg text-foreground truncate max-w-[200px] sm:max-w-md">
-            {course?.title || "Đang tải..."}
+            {course?.title || t("common.loading")}
           </h1>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-secondary font-bold hidden sm:inline-block">
-            {progressPercent}% Hoàn thành
+            {progressPercent}% {t("course.lesson.completedSuffix")}
           </span>
           {/* Circular progress */}
           <div className="relative size-10">
@@ -715,7 +727,7 @@ export default function LessonView({
               <div className="flex items-center gap-3 mb-2">
                 {currentIndex >= 0 && (
                   <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                    Bài {currentIndex + 1}
+                    {t("course.lesson.lessonPrefix")} {currentIndex + 1}
                   </span>
                 )}
                 <span
@@ -725,7 +737,7 @@ export default function LessonView({
                       : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                   }`}
                 >
-                  {lesson.lessonType === "video" ? "Video" : "Bài tập"}
+                  {lesson.lessonType === "video" ? t("common.video") : t("common.task")}
                 </span>
                 {lesson.taskType && (
                   <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-bold border border-cyan-500/20">
@@ -737,8 +749,8 @@ export default function LessonView({
                 {lesson.title}
               </h2>
               <p className="text-muted-foreground text-sm">
-                Cập nhật lần cuối:{" "}
-                {new Date(lesson.updatedAt).toLocaleDateString("vi-VN")}
+                {t("common.lastUpdated")}:{" "}
+                {new Date(lesson.updatedAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -747,7 +759,7 @@ export default function LessonView({
                   <span className="material-symbols-outlined text-secondary text-lg">
                     timer
                   </span>
-                  {formatDurationReadable(lesson.duration)}
+                  {formatDurationReadable(lesson.duration, t)}
                 </div>
               )}
               {lesson.completionCount > 0 && (
@@ -755,7 +767,7 @@ export default function LessonView({
                   <span className="material-symbols-outlined text-green-500 text-lg">
                     group
                   </span>
-                  {lesson.completionCount} đã hoàn thành
+                  {lesson.completionCount} {t("course.lesson.completedCountSuffix")}
                 </div>
               )}
             </div>
@@ -772,7 +784,7 @@ export default function LessonView({
                     : "hover:text-foreground"
                 }`}
               >
-                Tổng quan
+                {t("course.lesson.tab.overview")}
               </button>
               <button
                 onClick={() => setActiveSubTab("qa")}
@@ -782,7 +794,7 @@ export default function LessonView({
                     : "hover:text-foreground"
                 }`}
               >
-                Hỏi đáp
+                {t("course.lesson.tab.qa")}
               </button>
               <button
                 onClick={() => setActiveSubTab("notes")}
@@ -792,7 +804,7 @@ export default function LessonView({
                     : "hover:text-foreground"
                 }`}
               >
-                Ghi chú cá nhân
+                {t("course.lesson.tab.notes")}
               </button>
             </div>
 
@@ -800,7 +812,7 @@ export default function LessonView({
             {activeSubTab === "overview" && (
               <div className="prose prose-invert max-w-none text-muted-foreground">
                 <h3 className="text-foreground font-bold text-lg mb-3">
-                  Nội dung bài học
+                  {t("course.lesson.content")}
                 </h3>
                 {lesson.content ? (
                   <div className="whitespace-pre-line leading-relaxed">
@@ -808,7 +820,7 @@ export default function LessonView({
                   </div>
                 ) : (
                   <p className="text-muted-foreground/60 italic">
-                    Chưa có mô tả cho bài học này.
+                    {t("course.lesson.noDescription")}
                   </p>
                 )}
               </div>
@@ -819,7 +831,7 @@ export default function LessonView({
                 <span className="material-symbols-outlined text-5xl mb-3 block text-muted-foreground/40">
                   forum
                 </span>
-                <p className="font-medium mb-1">Chưa có câu hỏi nào</p>
+                <p className="font-medium mb-1">{t('auto.lessonview_2')}</p>
                 <p className="text-sm text-muted-foreground/60">
                   Tính năng hỏi đáp sẽ sớm được cập nhật
                 </p>
@@ -831,7 +843,7 @@ export default function LessonView({
                 <span className="material-symbols-outlined text-5xl mb-3 block text-muted-foreground/40">
                   edit_note
                 </span>
-                <p className="font-medium mb-1">Chưa có ghi chú nào</p>
+                <p className="font-medium mb-1">{t('auto.lessonview_3')}</p>
                 <p className="text-sm text-muted-foreground/60">
                   Tính năng ghi chú cá nhân sẽ sớm được cập nhật
                 </p>
@@ -850,7 +862,7 @@ export default function LessonView({
                   arrow_back
                 </span>
                 <div className="text-left hidden sm:block">
-                  <div className="text-xs text-muted-foreground">Bài trước</div>
+                  <div className="text-xs text-muted-foreground">{t('auto.lessonview_4')}</div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {prevLesson.title}
                   </div>
@@ -860,7 +872,7 @@ export default function LessonView({
               <div className="flex items-center gap-2 px-5 py-3 bg-card text-muted-foreground rounded-xl border border-border font-medium text-sm opacity-70 cursor-not-allowed">
                 <span className="material-symbols-outlined">lock</span>
                 <div className="text-left hidden sm:block">
-                  <div className="text-xs">Bài trước</div>
+                  <div className="text-xs">{t('auto.lessonview_5')}</div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {prevLesson.title}
                   </div>
@@ -876,7 +888,7 @@ export default function LessonView({
                 className="flex items-center gap-2 px-5 py-3 bg-secondary hover:bg-secondary/80 text-white rounded-xl transition-all font-medium text-sm group shadow-lg shadow-secondary/20"
               >
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs text-white/70">Bài tiếp theo</div>
+                  <div className="text-xs text-white/70">{t('auto.lessonview_6')}</div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {nextLesson.title}
                   </div>
@@ -886,7 +898,7 @@ export default function LessonView({
             ) : nextLesson ? (
               <div className="flex items-center gap-2 px-5 py-3 bg-card text-muted-foreground rounded-xl border border-border font-medium text-sm opacity-70 cursor-not-allowed">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs">Bài tiếp theo</div>
+                  <div className="text-xs">{t('auto.lessonview_7')}</div>
                   <div className="text-sm font-bold truncate max-w-[180px]">
                     {nextLesson.title}
                   </div>
@@ -901,7 +913,7 @@ export default function LessonView({
                 <span className="material-symbols-outlined filled">
                   check_circle
                 </span>
-                Hoàn thành khóa học
+                {t("course.lesson.completeCourse")}
               </Link>
             )}
           </div>
@@ -915,7 +927,7 @@ export default function LessonView({
               <span className="material-symbols-outlined text-secondary">
                 list_alt
               </span>
-              Nội dung khóa học
+              {t("course.lesson.courseContent")}
             </h3>
             <div className="flex items-center gap-2 mt-3">
               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -942,7 +954,7 @@ export default function LessonView({
             ))}
             {sortedLessons.length === 0 && (
               <div className="p-6 text-center text-muted-foreground text-sm">
-                Chưa có bài học nào
+                {t("course.lesson.noLessons")}
               </div>
             )}
           </div>
@@ -961,7 +973,7 @@ export default function LessonView({
                   <span className="material-symbols-outlined text-secondary">
                     list_alt
                   </span>
-                  Nội dung khóa học
+                  {t("course.lesson.courseContent")}
                 </h3>
                 <button
                   onClick={() => setSidebarOpen(false)}

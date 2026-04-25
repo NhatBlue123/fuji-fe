@@ -7,7 +7,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen w-full overflow-y-auto bg-[#020617] selection:bg-pink-500 selection:text-white">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-[#020617] selection:bg-pink-500 selection:text-white">
       {/* ═══ Immersive Background ═══ */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         {/* Base */}
@@ -80,7 +80,7 @@ export default function AuthLayout({
       </header>
 
       {/* ═══ Main Content ═══ */}
-      <main className="relative z-10 flex items-center justify-center px-4 py-4 pb-12">
+      <main className="relative z-10 flex items-center justify-center px-4 py-4 pb-12 min-h-[calc(100vh-72px)]">
         {children}
       </main>
 

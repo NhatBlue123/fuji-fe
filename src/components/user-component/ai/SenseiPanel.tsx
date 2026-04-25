@@ -1,5 +1,13 @@
+/**
+ * [I18N COMPONENT - SENSEI AI PANEL]
+ * Thực hiện:
+ * - Đưa toàn bộ cấu trúc Prompt gửi sang AI (Chủ đề, Tình huống, Vai trò) vào file i18n để AI có thể phản hồi phù hợp.
+ * - Localize các trạng thái giọng nói (Đang nghe, Đang xử lý, Sensei đang nói).
+ * - Dịch các nhãn lịch sử hội thoại và hướng dẫn sử dụng Mic.
+ */
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -13,14 +21,74 @@ import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import type {
   VoiceTranscriptItem,
   VoiceSessionHistory,
+  VoiceSessionFeedback,
+  VoiceEvaluationState,
   VoiceTopic,
 } from "@/types/voice";
+import { toast } from "sonner";
 import {
   FuriganaDisplay,
   RightSidebar,
   type SenseiMessage,
   type SenseiFeedback,
 } from "./shared";
+
+function mapSessionFeedback(
+  feedback?: VoiceSessionFeedback | null,
+): SenseiFeedback | null {
+  if (!feedback) return null;
+
+  const score =
+    feedback.totalScore != null ? Math.round(feedback.totalScore) : undefined;
+  const comment = feedback.feedbackText ?? undefined;
+
+  if (
+    score === undefined &&
+    !comment &&
+    (!feedback.strengths || feedback.strengths.length === 0) &&
+    (!feedback.improvements || feedback.improvements.length === 0)
+  ) {
+    return null;
+  }
+
+  return {
+    score,
+    comment,
+    scoreGrammar: feedback.scoreGrammar,
+    scoreVocabulary: feedback.scoreVocabulary,
+    totalScore: feedback.totalScore,
+    feedbackText: feedback.feedbackText,
+    strengths: feedback.strengths,
+    improvements: feedback.improvements,
+  };
+}
+
+function isEvaluationWaiting(
+  evaluation?: VoiceEvaluationState | null,
+): boolean {
+  return evaluation?.status === "waiting";
+}
+
+function getSessionDisplayName(session?: {
+  context?: string | null;
+  sessionCode?: string | null;
+}, t?: (key: string) => string): string {
+  const context = String(session?.context || "").trim();
+  const translate = t ?? ((key: string) => key);
+  if (!context) {
+    return session?.sessionCode
+      ? `${translate("ai.sensei.session")} ${session.sessionCode}`
+      : translate("ai.sensei.chat");
+  }
+
+  const topicMatch = context.match(/Chủ đề:\s*(.+?)(?:\.\s*Tình huống:|$)/i);
+  const topic = topicMatch?.[1]?.trim();
+  if (topic) {
+    return topic.length > 80 ? `${topic.slice(0, 80)}...` : topic;
+  }
+
+  return context.length > 80 ? `${context.slice(0, 80)}...` : context;
+}
 
 /* ------------------------------------------------------------------ */
 /* ChromaKeyVideo — removes white background from a video source        */
@@ -150,17 +218,18 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
 /* ------------------------------------------------------------------ */
 
 export default function SenseiPanel() {
+  const { t } = useTranslation();
   const [showHistory, setShowHistory] = useState(true);
 
   // Sensei feedback state - lưu nhận xét sau khi kết thúc phiên
   const [feedback, setFeedback] = useState<SenseiFeedback | null>(null);
 
   // Topics & Scenarios state
-  const { data: rawTopics, isFetching: topicsLoading } =
-    useGetPublishedTopicsQuery();
-  const topics: VoiceTopic[] = Array.isArray(rawTopics)
-    ? (rawTopics as VoiceTopic[])
-    : [];
+  const { data: rawTopics } = useGetPublishedTopicsQuery();
+  const topics = useMemo(
+    () => (Array.isArray(rawTopics) ? (rawTopics as VoiceTopic[]) : []),
+    [rawTopics],
+  );
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(
     null,
@@ -199,6 +268,10 @@ export default function SenseiPanel() {
 
   // Popup state
   const [showEvaluationPopup, setShowEvaluationPopup] = useState(false);
+  const [isEndingSession, setIsEndingSession] = useState(false);
+  const [isEvaluationWaitingState, setIsEvaluationWaitingState] =
+    useState(false);
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
 
   // Session history
   const [showSessionList, setShowSessionList] = useState(false);
@@ -244,48 +317,83 @@ export default function SenseiPanel() {
   const handleStartSession = useCallback(() => {
     if (!selectedTopic || !selectedScenario) return;
     setSelectedSessionCode(null);
-    setFeedback(null); // Xóa feedback cũ khi bắt đầu phiên mới
+    setFeedback(null);
+    setEvaluationError(null);
+    setIsEvaluationWaitingState(false);
     startSession({
       level: selectedScenario.level,
-      context: `Chủ đề: ${selectedTopic.title}. Tình huống: ${selectedScenario.situation}. Vai trò AI: ${selectedScenario.aiRole}. Tính cách: ${selectedScenario.aiPersonality || "thân thiện"}. Mẫu hội thoại:\n${selectedScenario.sampleConversation || ""}`,
-      goals:
-        "Luyện phát âm tự nhiên, phản xạ nhanh và sử dụng đúng từ vựng/ngữ pháp",
+      context: `${t("ai.sensei.topic")}${selectedTopic.title}. ${t("ai.sensei.situation")}${selectedScenario.situation}. ${t("ai.sensei.role")}${selectedScenario.aiRole}. ${t("ai.sensei.personality")}${selectedScenario.aiPersonality || t("ai.sensei.defaultPersonality")}. ${t("ai.sensei.sample")}\n${selectedScenario.sampleConversation || ""}`,
+      goals: t("ai.sensei.defaultGoals"),
       preferredVoice: "alloy",
       topicId: selectedTopic.id,
       scenarioId: selectedScenario.id,
       openingLine: selectedScenario.openingLine || undefined,
     });
-  }, [startSession, selectedScenario, selectedTopic, isSessionActive]);
+  }, [startSession, selectedScenario, selectedTopic]);
 
   const handleStopSession = useCallback(async () => {
-    await stopSession();
-    if (showSessionList) refetchSessions();
+    setIsEndingSession(true);
+    setFeedback(null);
+    setEvaluationError(null);
+    setIsEvaluationWaitingState(true);
 
-    // Tạo feedback dựa trên lịch sử hội thoại (mock - sẽ thay bằng API thực)
-    const messageCount = state.transcriptHistory.filter(
-      (t) => t.role === "user",
-    ).length;
-    if (messageCount > 0) {
-      // Tính điểm dựa trên số lượng tin nhắn (mock logic)
-      const baseScore = Math.min(70 + messageCount * 5, 95);
-      const score = Math.floor(baseScore);
+    try {
+      const result = await stopSession();
+      if (showSessionList) refetchSessions();
 
-      setFeedback({
-        score,
-        comment: `Bạn đã tham gia ${messageCount} lượt hội thoại. Giọng điệu tự nhiên, phản xạ tốt. Cần cải thiện thêm về ngữ pháp và từ vựng phức tạp.`,
-        strengths: [
-          "Phát âm rõ ràng, dễ nghe",
-          "Phản xạ nhanh trong hội thoại",
-          "Sử dụng đúng ngữ cảnh",
-        ],
-        improvements: [
-          "Cần mở rộng từ vựng về chủ đề này",
-          "Chú ý cách sử dụng trợ từ は và が",
-          "Luyện thêm về cách chia động từ thể lịch sự",
-        ],
-      });
+      if (!result) {
+        setIsEvaluationWaitingState(false);
+        toast.error(t("ai.sensei.errorStop"));
+        return;
+      }
+
+      if (result.sessionCode) {
+        setSelectedSessionCode(result.sessionCode);
+      }
+
+      if (result.feedback) {
+        setFeedback(mapSessionFeedback(result.feedback));
+        setIsEvaluationWaitingState(false);
+        return;
+      }
+
+      if (result.evaluation?.status === "failed") {
+        setIsEvaluationWaitingState(false);
+        setEvaluationError(t("ai.sensei.errorEvaluation"));
+        return;
+      }
+
+      setIsEvaluationWaitingState(isEvaluationWaiting(result.evaluation));
+    } finally {
+      setIsEndingSession(false);
     }
-  }, [stopSession, showSessionList, refetchSessions, state.transcriptHistory]);
+  }, [stopSession, showSessionList, refetchSessions]);
+
+  useEffect(() => {
+    if (!selectedSessionCode) return;
+
+    setEvaluationError(null);
+    if (sessionDetail?.feedback) {
+      setFeedback(mapSessionFeedback(sessionDetail.feedback));
+      setIsEvaluationWaitingState(false);
+      return;
+    }
+
+    if (isEvaluationWaiting(sessionDetail?.evaluation)) {
+      setIsEvaluationWaitingState(true);
+      return;
+    }
+
+    if (sessionDetail?.evaluation?.status === "failed") {
+      setIsEvaluationWaitingState(false);
+      setEvaluationError(t("ai.sensei.errorEvaluation"));
+      return;
+    }
+
+    if (!isLoadingDetail && sessionDetail) {
+      setIsEvaluationWaitingState(false);
+    }
+  }, [selectedSessionCode, sessionDetail, isLoadingDetail]);
 
   const handleMicDown = useCallback(() => {
     if (!isSessionActive || isProcessing || isPlaying) return;
@@ -403,14 +511,14 @@ export default function SenseiPanel() {
                   <p className="text-xs font-bold">
                     {!isSessionActive &&
                       state.status === "idle" &&
-                      "Bắt đầu phiên để nói"}
+                      t("ai.sensei.status.startToTalk")}
                     {isSessionActive &&
                       state.status === "idle" &&
-                      "Giữ mic để nói"}
-                    {state.status === "recording" && "Đang nghe bạn nói..."}
-                    {state.status === "processing" && "Đang xử lý..."}
-                    {state.status === "playing" && "Sensei đang nói..."}
-                    {state.status === "error" && "Lỗi"}
+                      t("ai.sensei.status.holdToTalk")}
+                    {state.status === "recording" && t("ai.sensei.status.listening")}
+                    {state.status === "processing" && t("ai.sensei.status.processing")}
+                    {state.status === "playing" && t("ai.sensei.status.speaking")}
+                    {state.status === "error" && t("ai.sensei.status.error")}
                   </p>
                 </div>
               </div>
@@ -427,7 +535,7 @@ export default function SenseiPanel() {
                 <span className="material-symbols-outlined mr-2">
                   play_arrow
                 </span>
-                Bắt đầu phiên hội thoại
+                {t("ai.sensei.btn.start")}
               </Button>
             ) : (
               <>
@@ -471,25 +579,25 @@ export default function SenseiPanel() {
                   </Button>
                   <p className="absolute -bottom-8 w-48 -left-14 text-center text-[10px] font-bold text-secondary uppercase tracking-widest opacity-80">
                     {isRecording
-                      ? "Thả để gửi"
+                      ? t("ai.sensei.mic.release")
                       : isProcessing
-                        ? "Đang xử lý..."
+                        ? t("ai.sensei.status.processing")
                         : isPlaying
-                          ? "Sensei đang nói..."
-                          : "Giữ mic để nói"}
+                          ? t("ai.sensei.status.speaking")
+                          : t("ai.sensei.status.holdToTalk")}
                   </p>
                 </div>
 
                 {/* Stop session button */}
                 <Button
                   onClick={handleStopSession}
-                  disabled={isRecording || isProcessing}
+                  disabled={isRecording || isProcessing || isEndingSession}
                   className="mt-4 px-4 py-2 rounded-full bg-muted border border-border text-sm font-medium text-foreground hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-all"
                 >
                   <span className="material-symbols-outlined text-lg mr-1">
                     stop
                   </span>
-                  Kết thúc phiên
+                  {isEndingSession ? t("ai.sensei.btn.grading") : t("ai.sensei.btn.stop")}
                 </Button>
               </>
             )}
@@ -512,12 +620,12 @@ export default function SenseiPanel() {
                     forum
                   </span>
                   <h3 className="text-sm font-bold text-foreground">
-                    Lịch sử hội thoại
+                    {t("ai.sensei.history.title")}
                   </h3>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Hiện lịch sử
+                    {t("ai.sensei.history.toggle")}
                   </span>
                   <Switch
                     checked={showHistory}
@@ -551,7 +659,7 @@ export default function SenseiPanel() {
                           />
                         </span>
                         <p className="text-sm font-medium">
-                          {isRecording ? "Đang thu âm..." : "Đang xử lý..."}
+                          {isRecording ? t("ai.sensei.history.recording") : t("ai.sensei.status.processing")}
                         </p>
                       </div>
                     </div>
@@ -559,7 +667,7 @@ export default function SenseiPanel() {
 
                   {displayMessages.length === 0 && !isSessionActive && (
                     <p className="text-xs text-muted-foreground text-center py-4">
-                      Bắt đầu phiên hội thoại để nói chuyện với Sensei
+                      {t("ai.sensei.history.empty")}
                     </p>
                   )}
                   {[...displayMessages].reverse().map((msg) => {
@@ -623,7 +731,7 @@ export default function SenseiPanel() {
                               <span className="material-symbols-outlined text-sm">
                                 {isReplaying ? "volume_up" : "replay"}
                               </span>
-                              {isReplaying ? "Đang phát..." : "Nghe lại"}
+                              {isReplaying ? t("ai.sensei.btn.replaying") : t("ai.sensei.btn.replay")}
                             </button>
                           )}
                         </div>
@@ -668,8 +776,8 @@ export default function SenseiPanel() {
                 {showSessionList ? "close" : "history"}
               </span>
               {showSessionList
-                ? "Đóng lịch sử"
-                : "Xem lịch sử hội thoại gần đây"}
+                ? t("ai.sensei.btn.closeHistory")
+                : t("ai.sensei.btn.viewHistory")}
             </Button>
           </div>
 
@@ -682,13 +790,13 @@ export default function SenseiPanel() {
                     history
                   </span>
                   <h3 className="text-sm font-bold text-foreground">
-                    Các phiên hội thoại trước
+                    {t("ai.sensei.history.listTitle")}
                   </h3>
                 </div>
                 <div className="p-3 max-h-48 overflow-y-auto space-y-2">
                   {!sessions || sessions.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-4">
-                      Chưa có phiên hội thoại nào
+                      {t("ai.sensei.history.listEmpty")}
                     </p>
                   ) : (
                     sessions.map((s: VoiceSessionHistory) => (
@@ -713,7 +821,7 @@ export default function SenseiPanel() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                              {s.context || "Hội thoại"}
+                              {getSessionDisplayName(s, t)}
                             </span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold shrink-0">
                               {s.level}
@@ -755,7 +863,7 @@ export default function SenseiPanel() {
                       </span>
                     </button>
                     <h3 className="text-sm font-bold text-foreground">
-                      {sessionDetail?.context || "Chi tiết phiên"}
+                      {getSessionDisplayName(sessionDetail, t)}
                     </h3>
                     {sessionDetail && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
@@ -793,23 +901,23 @@ export default function SenseiPanel() {
                   ) : !sessionDetail?.transcripts ||
                     sessionDetail.transcripts.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-4">
-                      Phiên này chưa có nội dung hội thoại
+                      {t("ai.sensei.history.detailEmpty")}
                     </p>
                   ) : (
                     sessionDetail.transcripts.map(
-                      (t: VoiceTranscriptItem, i: number) => (
+                      (transcriptItem: VoiceTranscriptItem, i: number) => (
                         <div
                           key={i}
-                          className={`flex gap-3 ${t.role === "user" ? "opacity-80" : ""}`}
+                          className={`flex gap-3 ${transcriptItem.role === "user" ? "opacity-80" : ""}`}
                         >
                           <div
                             className={`shrink-0 size-8 rounded-full mt-0.5 flex items-center justify-center ${
-                              t.role === "assistant"
+                              transcriptItem.role === "assistant"
                                 ? "bg-gradient-to-br from-secondary to-purple-600 p-0.5"
                                 : "bg-muted border border-border"
                             }`}
                           >
-                            {t.role === "assistant" ? (
+                            {transcriptItem.role === "assistant" ? (
                               <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
                                 <span className="material-symbols-outlined text-sm text-secondary">
                                   smart_toy
@@ -823,15 +931,17 @@ export default function SenseiPanel() {
                           </div>
                           <div className="flex-1">
                             <p className="text-xs font-bold text-muted-foreground mb-0.5">
-                              {t.role === "assistant" ? "Sensei" : "Bạn"}
+                              {transcriptItem.role === "assistant"
+                                ? t("ai.sensei.role.assistant")
+                                : t("ai.sensei.role.user")}
                             </p>
                             <p className="text-sm text-foreground leading-relaxed">
-                              {t.transcript}
+                              {transcriptItem.transcript}
                             </p>
-                            {t.role === "assistant" && t.audioUrl && (
+                            {transcriptItem.role === "assistant" && transcriptItem.audioUrl && (
                               <button
                                 onClick={() => {
-                                  const audio = new Audio(t.audioUrl);
+                                  const audio = new Audio(transcriptItem.audioUrl);
                                   audio.play().catch(() => {});
                                 }}
                                 className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-secondary transition-colors"
@@ -839,7 +949,7 @@ export default function SenseiPanel() {
                                 <span className="material-symbols-outlined text-sm">
                                   replay
                                 </span>
-                                Nghe lại
+                                {t("ai.sensei.btn.replayLong")}
                               </button>
                             )}
                           </div>
@@ -855,15 +965,26 @@ export default function SenseiPanel() {
       </div>
 
       <RightSidebar
-        settingsTitle="Thiết lập cho Sensei"
+        settingsTitle={t("ai.senseiSettings")}
         topics={topics}
         selectedTopicId={selectedTopicId}
         onTopicChange={handleTopicChange}
-        scenarios={selectedTopic?.scenarios || []}
+        scenarios={(selectedTopic?.scenarios || []).map((scenario) => ({
+          ...scenario,
+          title: scenario.title || scenario.situation || t("ai.sensei.scenario.defaultTitle"),
+        }))}
         selectedScenarioId={selectedScenarioId}
         onScenarioChange={(v) => setSelectedScenarioId(Number(v))}
         disabled={isSessionActive}
         feedback={feedback}
+        evaluationStatus={
+          isEndingSession || isEvaluationWaitingState
+            ? "waiting"
+            : evaluationError
+              ? "failed"
+              : "idle"
+        }
+        evaluationMessage={evaluationError}
       />
 
       {/* Evaluation Popup */}
@@ -876,10 +997,9 @@ export default function SenseiPanel() {
                   sports_score
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2">Đã hoàn thành!</h3>
+              <h3 className="text-xl font-bold mb-2">{t("ai.sensei.popup.finishTitle")}</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Bạn đã hoàn thành đủ số lượt hội thoại của kịch bản này. Bạn có
-                muốn xem điểm không?
+                {t("ai.sensei.popup.finishDesc")}
               </p>
               <div className="flex gap-3">
                 <Button
@@ -887,7 +1007,7 @@ export default function SenseiPanel() {
                   className="w-full font-bold"
                   onClick={() => setShowEvaluationPopup(false)}
                 >
-                  Nói tiếp
+                  {t("ai.sensei.btn.continue")}
                 </Button>
                 <Button
                   className="w-full bg-primary text-primary-foreground font-bold hover:bg-primary/90"
@@ -896,7 +1016,7 @@ export default function SenseiPanel() {
                     handleStopSession();
                   }}
                 >
-                  Xem kết quả
+                  {t("ai.sensei.btn.viewResult")}
                 </Button>
               </div>
             </div>

@@ -14,8 +14,10 @@ import { toast } from "sonner";
 import {
   useCreatePayoutMutation,
   useGetPayoutStatusQuery,
+  type WithdrawRequestData,
 } from "@/store/services/withdrawApi";
 import { usePaymentSocket } from "@/providers/PaymentSocketProvider";
+import { useTranslation } from "react-i18next";
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -36,6 +38,7 @@ export function TransferModal({
   isConfirming,
   request,
 }: TransferModalProps) {
+  const { t, i18n } = useTranslation();
   const [payoutOrderId, setPayoutOrderId] = useState<string | null>(null);
   const [socketHandled, setSocketHandled] = useState(false);
 
@@ -55,12 +58,12 @@ export function TransferModal({
         if (data.newStatus === "SUCCESS") {
           setSocketHandled(true);
           setPayoutOrderId(null);
-          toast.success(data.message || "Chuyển tiền tự động thành công!");
+          toast.success(data.message || t("admin.withdraw.modal.payoutSuccess"));
           onSuccess();
         } else if (data.newStatus === "FAILED") {
           setSocketHandled(true);
           setPayoutOrderId(null);
-          toast.error(data.message || "Chuyển khoản tự động thất bại!");
+          toast.error(data.message || t("admin.withdraw.modal.payoutFailed"));
         }
       }
     });
@@ -78,15 +81,15 @@ export function TransferModal({
         if (status === "SUCCESS" || status === "COMPLETED") {
           setSocketHandled(true);
           setPayoutOrderId(null);
-          toast.success("Chuyển tiền tự động thành công!");
+          toast.success(t("admin.withdraw.modal.payoutSuccess"));
           onSuccess();
         } else if (status === "FAILED") {
           setSocketHandled(true);
           setPayoutOrderId(null);
-          toast.error(result.data?.data?.message || "Chuyển khoản thất bại!");
+          toast.error(result.data?.data?.message || t("admin.withdraw.modal.payoutFailed"));
         } else {
           // Giao dịch có thể thật sự bị delay từ Ngân hàng / XGate
-          toast.info("Giao dịch đang chờ xử lý từ ngân hàng...");
+          toast.info(t("admin.withdraw.modal.payoutPending"));
         }
       } catch (error) {
         console.error("Fallback check error:", error);
@@ -102,15 +105,15 @@ export function TransferModal({
       if (res.data?.orderId) {
         setPayoutOrderId(res.data.orderId);
         onPayoutCreated?.();
-        toast.info("Đang xử lý chuyển tiền tự động, vui lòng chờ...");
+        toast.info(t("admin.withdraw.modal.payoutProcessing"));
       } else {
-        toast.success("Đã ghi nhận yêu cầu chuyển tiền tự động!");
+        toast.success(t("admin.withdraw.modal.payoutRecorded"));
         onSuccess();
       }
     } catch (error) {
-      const message = error && typeof error === "object" && "data" in error ? error.data?.message : undefined;
+      const message = (error as { data?: { message?: string } } | undefined)?.data?.message;
       toast.error(
-        message || "L???i khi g???i API chuy???n ti???n t??? ?????ng",
+        message || t("common.errorProcessing") || "Error processing payout API",
       );
     }
   };
@@ -150,7 +153,7 @@ export function TransferModal({
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`Đã sao chép ${label}`);
+    toast.success(t("admin.withdraw.toast.copied", { label }));
   };
 
   return (
@@ -160,10 +163,9 @@ export function TransferModal({
     >
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Chuyển tiền cho Giảng viên</DialogTitle>
+          <DialogTitle>{t("admin.withdraw.modal.title")}</DialogTitle>
           <DialogDescription>
-            Quét mã QR dưới đây bằng ứng dụng ngân hàng để chuyển khoản. Sau khi
-            chuyển thành công, nhấn &quot;Xác nhận chuyển thành công&quot;.
+            {t("admin.withdraw.modal.desc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,52 +183,52 @@ export function TransferModal({
               />
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Kiểm tra kỹ thông tin người nhận trước khi chuyển
+              {t("admin.withdraw.modal.checkRecipient")}
             </p>
           </div>
 
           <div className="space-y-4 flex flex-col justify-center">
             <InfoRow
-              label="Ngân hàng"
+              label={t("admin.withdraw.label.bankName")}
               value={request.bankName}
-              onCopy={() => copyToClipboard(request.bankName, "ngân hàng")}
+              onCopy={() => copyToClipboard(request.bankName, t("admin.withdraw.label.bankName"))}
             />
             <InfoRow
-              label="Số tài khoản"
+              label={t("admin.withdraw.label.accountNumber")}
               value={request.accountNumber}
               onCopy={() =>
-                copyToClipboard(request.accountNumber, "số tài khoản")
+                copyToClipboard(request.accountNumber, t("admin.withdraw.label.accountNumber"))
               }
               isBold
             />
             <InfoRow
-              label="Chủ tài khoản"
+              label={t("admin.withdraw.label.accountHolder")}
               value={request.accountHolder}
               onCopy={() =>
-                copyToClipboard(request.accountHolder, "chủ tài khoản")
+                copyToClipboard(request.accountHolder, t("admin.withdraw.label.accountHolder"))
               }
             />
             <InfoRow
-              label="Số hoa"
-              value={`${transferAmountBlossom.toLocaleString("vi-VN")} 🌸`}
+              label={t("admin.withdraw.label.amountBlossom")}
+              value={`${transferAmountBlossom.toLocaleString(i18n.language)} 🌸`}
               onCopy={() =>
-                copyToClipboard(transferAmountBlossom.toString(), "số hoa")
+                copyToClipboard(transferAmountBlossom.toString(), t("admin.withdraw.label.amountBlossom"))
               }
               isBold
               textClass="text-emerald-600"
             />
             <InfoRow
-              label="Số tiền chuyển"
-              value={`${transferAmountVnd.toLocaleString("vi-VN")}đ`}
+              label={t("admin.withdraw.label.amountVnd")}
+              value={`${transferAmountVnd.toLocaleString(i18n.language)}đ`}
               onCopy={() =>
-                copyToClipboard(transferAmountVnd.toString(), "số tiền chuyển")
+                copyToClipboard(transferAmountVnd.toString(), t("admin.withdraw.label.amountVnd"))
               }
               isBold
             />
             <InfoRow
-              label="Nội dung"
+              label={t("admin.withdraw.label.info")}
               value={orderId}
-              onCopy={() => copyToClipboard(orderId, "nội dung")}
+              onCopy={() => copyToClipboard(orderId, t("admin.withdraw.label.info"))}
             />
           </div>
         </div>
@@ -241,8 +243,8 @@ export function TransferModal({
             >
               <Zap className="mr-2 h-4 w-4" />
               {payoutOrderId || isCreatingPayout
-                ? "Đang xử lý tự động..."
-                : "Thanh toán tự động qua Cổng Payout"}
+                ? t("admin.withdraw.status.transferring")
+                : t("admin.withdraw.btn.autoPayout")}
             </Button>
           </div>
           <div className="flex gap-2 w-full sm:w-auto justify-end">
@@ -251,7 +253,7 @@ export function TransferModal({
               onClick={resetStateAndClose}
               disabled={isConfirming || !!payoutOrderId}
             >
-              Đóng
+              {t("common.close")}
             </Button>
             <Button
               onClick={onConfirm}
@@ -260,8 +262,8 @@ export function TransferModal({
             >
               <CheckCircle className="mr-2 h-4 w-4" />
               {isConfirming
-                ? "Đang xử lý..."
-                : "Xác nhận chuyển tay thành công"}
+                ? t("common.processing")
+                : t("admin.withdraw.btn.manualConfirm")}
             </Button>
           </div>
         </DialogFooter>
@@ -283,6 +285,8 @@ function InfoRow({
   isBold?: boolean;
   textClass?: string;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-between py-2 border-b last:border-0">
       <span className="text-sm text-muted-foreground font-medium">{label}</span>
@@ -296,7 +300,7 @@ function InfoRow({
           <button
             onClick={onCopy}
             className="text-muted-foreground hover:text-foreground transition-colors"
-            title="Sao chép"
+            title={t("common.copy")}
           >
             <Copy size={14} />
           </button>

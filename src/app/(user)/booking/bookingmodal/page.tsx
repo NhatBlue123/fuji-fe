@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useCancelBookingMutation, useGetMyBookingsQuery } from "@/store/services/bookingApi";
+import {  AlertTriangle, Ban, Clock3  } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import {
+  useCancelBookingMutation,
+  useEndBookingVideoSessionMutation,
+  useGetMyBookingsQuery,
+} from "@/store/services/bookingApi";
 import { useAuth } from "@/store/hooks";
 
 type BookingTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
@@ -23,6 +29,7 @@ function formatTimeRange(startAt: string, endAt: string) {
 }
 
 export default function MySchedulePage() {
+  const { t } = useTranslation();
   const { isTeacher, isInitialized } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -33,6 +40,7 @@ export default function MySchedulePage() {
   const [tab, setTab] = useState<BookingTab>("UPCOMING");
 
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [actionType, setActionType] = useState<"CANCEL" | "END_EARLY">("CANCEL");
 
   const { data, isLoading, isFetching, isError } = useGetMyBookingsQuery(
     { status: tab },
@@ -40,18 +48,34 @@ export default function MySchedulePage() {
   );
 
   const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
+  const [endBookingSession, { isLoading: isEndingEarly }] = useEndBookingVideoSessionMutation();
 
   const items = data ?? [];
 
   const handleConfirmCancel = async () => {
     if (deletingId === null) return;
     try {
-      await cancelBooking({ bookingId: deletingId }).unwrap();
+      if (actionType === "END_EARLY") {
+        await endBookingSession({ bookingId: deletingId }).unwrap();
+      } else {
+        await cancelBooking({ bookingId: deletingId }).unwrap();
+      }
       setDeletingId(null);
     } catch (e) {
       console.error("Lỗi khi hủy lịch:", e);
-      alert("Không thể hủy lịch, vui lòng thử lại sau.");
+      alert(actionType === "END_EARLY"
+        ? "Không thể kết thúc sớm, vui lòng thử lại sau."
+        : "Không thể hủy lịch, vui lòng thử lại sau.");
     }
+  };
+
+  const getTeacherAction = (startAt: string, endAt: string) => {
+    const now = new Date().getTime();
+    const start = new Date(startAt).getTime();
+    const end = new Date(endAt).getTime();
+    const canCancel = now < start - 5 * 60 * 1000;
+    const canEndEarly = now >= start && now < end;
+    return { canCancel, canEndEarly };
   };
 
   return (
@@ -89,20 +113,31 @@ export default function MySchedulePage() {
           </Link>
         </div>
 
+        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-center gap-2 text-amber-200">
+            <AlertTriangle className="size-4" />
+            <p className="text-sm font-bold">{t('auto.bookingModal_1')}</p>
+          </div>
+          <ul className="mt-2 space-y-1.5 text-xs text-amber-100/90">
+            <li className="flex items-start gap-2">
+              <Clock3 className="mt-0.5 size-3.5 shrink-0" />{t('auto.bookingModal_2')}</li>
+            <li className="flex items-start gap-2">
+              <Ban className="mt-0.5 size-3.5 shrink-0" />{t('auto.bookingModal_3')}</li>
+            <li className="flex items-start gap-2">
+              <Ban className="mt-0.5 size-3.5 shrink-0" />{t('auto.bookingModal_4')}</li>
+          </ul>
+        </div>
+
         {(isLoading || isFetching) && (
-          <div className="text-slate-400 animate-pulse">Đang tải lịch của bạn...</div>
+          <div className="text-slate-400 animate-pulse">{t('auto.bookingModal_5')}</div>
         )}
 
         {isError && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            Không tải được lịch của bạn. Vui lòng kiểm tra lại kết nối.
-          </div>
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{t('auto.bookingModal_6')}</div>
         )}
 
         {!isLoading && !isFetching && !isError && items.length === 0 && (
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">
-            Không có dữ liệu lịch học trong mục này.
-          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">{t('auto.bookingModal_7')}</div>
         )}
 
         <div className="space-y-4">
@@ -130,12 +165,12 @@ export default function MySchedulePage() {
 
                   <div className="flex items-center gap-8 px-8 border-x border-white/10">
                     <div className="flex flex-col items-center">
-                      <p className="text-slate-500 text-xs uppercase tracking-wider">Ngày</p>
+                      <p className="text-slate-500 text-xs uppercase tracking-wider">{t('auto.bookingModal_8')}</p>
                       <p className="text-white font-bold">{formatDate(c.startAt)}</p>
                     </div>
 
                     <div className="flex flex-col items-center">
-                      <p className="text-slate-500 text-xs uppercase tracking-wider">Giờ</p>
+                      <p className="text-slate-500 text-xs uppercase tracking-wider">{t('auto.bookingModal_9')}</p>
                       <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
                     </div>
                   </div>
@@ -144,43 +179,64 @@ export default function MySchedulePage() {
                     {tab === "UPCOMING" && (
                       <>
                         {c.canJoinVideoCall ? (
-                          <Link href={`/learn/session/${c.bookingId}`}>
+                          <Link href={`/learn/lesson/${c.bookingId}`}>
                             <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
-                              <span className="material-symbols-outlined text-sm">videocam</span>
-                              Vào phòng
-                            </button>
+                              <span className="material-symbols-outlined text-sm">videocam</span>{t('auto.bookingModal_10')}</button>
                           </Link>
                         ) : (
                           <button
                             disabled
                             className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
-                            title="Chỉ vào phòng được trước 5 phút so với giờ bắt đầu"
-                          >
-                            Chờ lớp
-                          </button>
+                            title={t('auto.bookingModal_18')}
+                          >{t('auto.bookingModal_11')}</button>
                         )}
                         {!isTeacher && (
                           <button
                             disabled={isCancelling}
-                            onClick={() => setDeletingId(c.bookingId)}
+                            onClick={() => {
+                              setActionType("CANCEL");
+                              setDeletingId(c.bookingId);
+                            }}
                             className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                          >
-                            Hủy
-                          </button>
+                          >{t('auto.bookingModal_12')}</button>
                         )}
+                        {isTeacher && (() => {
+                          const action = getTeacherAction(c.startAt, c.endAt);
+                          if (action.canEndEarly) {
+                            return (
+                              <button
+                                disabled={isEndingEarly}
+                                onClick={() => {
+                                  setActionType("END_EARLY");
+                                  setDeletingId(c.bookingId);
+                                }}
+                                className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
+                              >{t('auto.bookingModal_13')}</button>
+                            );
+                          }
+                          if (action.canCancel) {
+                            return (
+                              <button
+                                disabled={isCancelling}
+                                onClick={() => {
+                                  setActionType("CANCEL");
+                                  setDeletingId(c.bookingId);
+                                }}
+                                className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                              >{t('auto.bookingModal_14')}</button>
+                            );
+                          }
+                          return null;
+                        })()}
                       </>
                     )}
 
                     {tab === "COMPLETED" && (
-                      <span className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">
-                        Hoàn thành
-                      </span>
+                      <span className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">{t('auto.bookingModal_15')}</span>
                     )}
 
                     {tab === "CANCELLED" && (
-                      <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
-                        Đã hủy
-                      </span>
+                      <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">{t('auto.bookingModal_16')}</span>
                     )}
                   </div>
                 </div>
@@ -192,43 +248,45 @@ export default function MySchedulePage() {
       {deletingId !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Lớp nền mờ */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-            onClick={() => !isCancelling && setDeletingId(null)} 
+            onClick={() => !isCancelling && setDeletingId(null)}
           />
-          
+
         {/* Nội dung Modal */}
           <div className="relative bg-[#1e293b] border border-white/10 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex flex-col items-center text-center">
               <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
-              
-              <h3 className="text-xl font-bold text-white mb-2">Xác nhận hủy lớp</h3>
+
+            <h3 className="text-xl font-bold text-white mb-2">
+              {actionType === "END_EARLY" ? "Xác nhận kết thúc sớm" : "Xác nhận hủy lớp"}
+            </h3>
               <p className="text-slate-400 text-sm mb-8">
-                 Bạn sẽ phải chịu 50% phí hủy lớp.Bạn có chắc chắn muốn hủy lịch học này không?
+              {actionType === "END_EARLY"
+                ? "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?"
+                : "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?"}
               </p>
-              
+
               <div className="flex gap-3 w-full">
-                <button 
+                <button
                   onClick={() => setDeletingId(null)}
                   disabled={isCancelling}
                   className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
-                >
-                  Để sau
-                </button>
-                
-                <button 
+                >{t('auto.bookingModal_17')}</button>
+
+                <button
                   onClick={handleConfirmCancel}
-                  disabled={isCancelling}
+                  disabled={isCancelling || isEndingEarly}
                   className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-secondary/20"
                 >
-                  {isCancelling ? (
+                  {(isCancelling || isEndingEarly) ? (
                     <>
                       <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Đang hủy...
+                      {actionType === "END_EARLY" ? "Đang kết thúc..." : "Đang hủy..."}
                     </>
-                  ) : "Đồng ý hủy"}
+                  ) : (actionType === "END_EARLY" ? "Kết thúc sớm" : "Đồng ý hủy")}
                 </button>
               </div>
             </div>

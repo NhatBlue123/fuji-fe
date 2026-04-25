@@ -84,6 +84,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           src={course.thumbnailUrl || DEFAULT_THUMBNAIL}
           alt={course.title}
           fill
+          sizes="200px"
           className="object-cover"
         />
       </div>

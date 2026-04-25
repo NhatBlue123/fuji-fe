@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 import { use } from "react";
 import Link from "next/link";
 import { useGetFlashListByIdQuery } from "@/store/services/flashcardApi";
@@ -10,6 +12,7 @@ export default function FlashListDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const { data: flashlist, isLoading, error } = useGetFlashListByIdQuery(id);
 
@@ -29,7 +32,7 @@ export default function FlashListDetailPage({
         <span className="material-symbols-outlined text-6xl text-red-400">
           error
         </span>
-        <p className="text-muted-foreground">Không thể tải bộ sưu tập này.</p>
+        <p className="text-muted-foreground">{t('auto._id__page_1')}</p>
         <Link
           href="/flashcards"
           className="text-secondary hover:underline flex items-center gap-1"
@@ -238,7 +241,7 @@ export default function FlashListDetailPage({
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   collections
                 </span>
-                <p>Bộ sưu tập này chưa có FlashCard nào.</p>
+                <p>{t('auto._id__page_2')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

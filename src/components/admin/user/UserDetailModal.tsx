@@ -1,6 +1,15 @@
 "use client";
 
+/**
+ * [I18N COMPONENT - MODAL CHI TIẾT NGƯỜI DÙNG]
+ * Thực hiện:
+ * - Localize toàn bộ UI quản trị: Thống kê định danh, nhật ký bảo mật, quyền hạn (Exam, Content, Chat).
+ * - Quản lý các trạng thái cấm chat (Ban/Unban) và giới hạn thiết bị bằng i18next.
+ * - Đảm bảo các thông báo Toast và Dialog đều sử dụng đa ngôn ngữ (vi, en, ja).
+ */
+
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -141,14 +150,14 @@ export const renderPaginationItems = (
   return items;
 };
 
-const getRoleName = (r: string) => {
+const getRoleName = (r: string, t: any) => {
   switch (r) {
     case "STUDENT":
-      return "Học viên";
+      return t("common.roles.student");
     case "INSTRUCTOR":
-      return "Giảng viên";
+      return t("common.roles.instructor");
     case "ADMIN":
-      return "Quản trị viên";
+      return t("common.roles.admin");
     default:
       return r;
   }
@@ -171,6 +180,7 @@ export function UserDetailModal({
   onOpenChange,
   onUserUpdated,
 }: UserDetailModalProps) {
+  const { t } = useTranslation();
   type ChatBanInfo = {
     userId: string;
     banType: "TEMPORARY" | "PERMANENT";
@@ -259,7 +269,7 @@ export function UserDetailModal({
     const updated = [...customTemplates, warningMessage.trim()];
     setCustomTemplates(updated);
     localStorage.setItem("warning_templates", JSON.stringify(updated));
-    toast.success("Đã lưu mẫu cảnh báo mới");
+    toast.success(t("admin.user.toast.savedTemplate"));
   };
 
   const removeTemplate = (t: string) => {
@@ -343,13 +353,13 @@ export function UserDetailModal({
       setChatBanInfo(res?.data?.data ?? null);
       toast.success(
         banType === "TEMPORARY"
-          ? "Đã cấm chat 24 giờ"
-          : "Đã cấm chat vĩnh viễn",
+          ? t("admin.user.toast.chatBannedTemp")
+          : t("admin.user.toast.chatBannedPerm"),
       );
       if (onUserUpdated) onUserUpdated();
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Không thể cập nhật cấm chat",
+        error?.response?.data?.message || t("admin.user.toast.chatBanFailed"),
       );
     } finally {
       setIsChatBanLoading(false);
@@ -362,10 +372,10 @@ export function UserDetailModal({
     try {
       await api.delete(`/admin/bans/${user.id}`);
       setChatBanInfo(null);
-      toast.success("Đã gỡ cấm chat");
+      toast.success(t("admin.user.toast.chatUnbanned"));
       if (onUserUpdated) onUserUpdated();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Không thể gỡ cấm chat");
+      toast.error(error?.response?.data?.message || t("admin.user.toast.chatUnbanFailed"));
     } finally {
       setIsChatBanLoading(false);
     }
@@ -376,25 +386,25 @@ export function UserDetailModal({
 
     if (violationsCount === 0)
       return {
-        label: "Thấp",
+        label: t("admin.user.modal.risk.low"),
         color: "text-emerald-500",
         bg: "bg-emerald-500/10",
         icon: <ShieldStatus className="size-4" />,
       };
     if (violationsCount <= 2)
       return {
-        label: "Trung bình",
+        label: t("admin.user.modal.risk.medium"),
         color: "text-amber-500",
         bg: "bg-amber-500/10",
         icon: <Activity className="size-4" />,
       };
     return {
-      label: "Cao",
+      label: t("admin.user.modal.risk.high"),
       color: "text-rose-500",
       bg: "bg-rose-500/10",
       icon: <AlertTriangle className="size-4" />,
     };
-  }, [user?.violationLogs]);
+  }, [user?.violationLogs, t]);
 
   const filteredLogs = useMemo(() => {
     const now = Date.now();
@@ -415,14 +425,14 @@ export function UserDetailModal({
       return {
         id: Number(v.id),
         createdAt: v.detectedAt,
-        description: v.messageContent || "Sử dụng ngôn từ không phù hợp",
+        description: v.messageContent || t("admin.user.modal.violations.suitableLang"),
         type: v.violationType || "CHAT_VIOLATION",
         severity,
         isHandled: hasActiveBan,
       };
     });
 
-    return mapped.filter((log: any) => {
+    const filtered = mapped.filter((log: any) => {
       const searchTerms = [log.description, log.type]
         .filter(Boolean)
         .map((s) => s?.toLowerCase());
@@ -446,7 +456,7 @@ export function UserDetailModal({
       if (
         last &&
         last.description === log.description &&
-        last.testId === log.testId &&
+        last.type === log.type &&
         lastTime - logTime < 3600000
       ) {
         last.count = (last.count || 1) + 1;
@@ -456,7 +466,7 @@ export function UserDetailModal({
     });
 
     return grouped;
-  }, [user?.violationLogs, logSearch, logSeverity]);
+  }, [chatBanInfo, chatViolations, logSearch, logSeverity, logStatus]);
 
   const filteredInstructorLogs = useMemo(() => {
     if (!user?.violationLogs) return [];
@@ -553,7 +563,7 @@ export function UserDetailModal({
     setFormData((prev) => ({ ...prev, role: newRole }));
     if (newRole !== user.role) {
       setRoleChangeWarning(
-        `Bạn đang thay đổi vai trò. Người dùng này sẽ buộc phải đăng nhập lại.`,
+        t("admin.user.modal.roleChange.warning"),
       );
     } else {
       setRoleChangeWarning(null);
@@ -581,11 +591,11 @@ export function UserDetailModal({
       await Promise.all(
         selectedLogs.map((id) => api.post(`/users/me/violations/${id}/handle`)),
       );
-      toast.success(`Đã xử lý thành công ${selectedLogs.length} sự cố`);
+      toast.success(t("admin.user.toast.bulkHandled", { count: selectedLogs.length }));
       setSelectedLogs([]);
       if (onUserUpdated) onUserUpdated();
     } catch (error) {
-      toast.error("Lỗi khi xử lý hàng loạt sự cố");
+      toast.error(t("admin.user.toast.bulkHandleFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -596,14 +606,14 @@ export function UserDetailModal({
     try {
       const response = await api.post(`/users/me/violations/${id}/handle`);
       if (response.data.success) {
-        toast.success("Đã xử lý sự cố thành công");
+        toast.success(t("admin.user.toast.handled"));
         setShowConfirmHandleLog(null);
         if (onUserUpdated) onUserUpdated();
       } else {
-        toast.error(response.data.message || "Không thể xử lý vi phạm");
+        toast.error(response.data.message || t("admin.user.toast.updateFailed"));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi khi xử lý sự cố");
+      toast.error(error.response?.data?.message || t("admin.user.toast.systemError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -616,7 +626,7 @@ export function UserDetailModal({
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email.trim())) {
-      setEmailError("Email không hợp lệ");
+      setEmailError(t("auth.error.invalidEmail"));
       return false;
     }
     setEmailError("");
@@ -631,7 +641,7 @@ export function UserDetailModal({
 
   const handleBasicSaveClick = () => {
     if (!basicForm.fullName.trim() || basicForm.fullName.trim().length < 3) {
-      toast.error("Họ tên phải có ít nhất 3 ký tự");
+      toast.error(t("auth.error.fullNameMinLength"));
       return;
     }
     if (!validateEmail(basicForm.email)) return;
@@ -653,7 +663,7 @@ export function UserDetailModal({
         email: basicForm.email,
       });
       if (response.data.success) {
-        toast.success("Cập nhật thông tin cơ bản thành công");
+        toast.success(t("admin.user.toast.basicUpdateSuccess"));
         setFormData((prev) => ({
           ...prev,
           fullName: basicForm.fullName,
@@ -662,10 +672,10 @@ export function UserDetailModal({
         setIsEditingBasic(false);
         if (onUserUpdated) onUserUpdated();
       } else {
-        toast.error(response.data.message || "Cập nhật thất bại");
+        toast.error(response.data.message || t("admin.user.toast.updateFailed"));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi hệ thống khi cập nhật");
+      toast.error(error.response?.data?.message || t("admin.user.toast.systemError"));
     } finally {
       setIsBasicSubmitting(false);
       setShowConfirmEmailChange(false);
@@ -681,13 +691,13 @@ export function UserDetailModal({
   const handleSave = async () => {
     if (!user) return;
     if (!formData.fullName.trim() || formData.fullName.trim().length < 3) {
-      toast.error("Họ tên phải có ít nhất 3 ký tự");
+      toast.error(t("auth.error.fullNameMinLength"));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
-      toast.error("Email không hợp lệ");
+      toast.error(t("admin.user.toast.invalidEmail"));
       return;
     }
 
@@ -708,14 +718,14 @@ export function UserDetailModal({
         analyticsAccess: formData.analyticsAccess,
       });
       if (response.data.success) {
-        toast.success("Cập nhật thông tin thành công");
+        toast.success(t("admin.user.toast.updateSuccess"));
         if (onUserUpdated) onUserUpdated();
         onOpenChange(false);
       } else {
-        toast.error(response.data.message || "Cập nhật thất bại");
+        toast.error(response.data.message || t("admin.user.toast.updateFailed"));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi hệ thống khi cập nhật");
+      toast.error(error.response?.data?.message || t("admin.user.toast.systemError"));
     } finally {
       setIsSubmitting(false);
       setShowConfirmSave(false);
@@ -727,12 +737,11 @@ export function UserDetailModal({
     setIsSubmitting(true);
     try {
       await api.post(`/users/me/${user.id}/reset-violations`);
-      toast.success("Đã xóa toàn bộ lịch sử vi phạm");
+      toast.success(t("admin.user.toast.resetSuccess"));
       if (onUserUpdated) onUserUpdated();
-      setShowConfirmReset(false);
       onOpenChange(false);
     } catch (err) {
-      toast.error("Lỗi khi reset vi phạm");
+      toast.error(t("admin.user.toast.resetError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -741,7 +750,7 @@ export function UserDetailModal({
   const handleLockAccount = async () => {
     if (!user) return;
     if (user.role === "ADMIN") {
-      toast.error("Không thể khóa tài khoản QUẢN TRỊ VIÊN.");
+      toast.error(t("admin.user.modal.lock.noAdminLock"));
       return;
     }
     setShowConfirmLock(true);
@@ -757,18 +766,18 @@ export function UserDetailModal({
       if (response.data.success) {
         toast.success(
           user.isActive
-            ? "Đã khóa tài khoản thành công"
-            : "Đã mở khóa tài khoản thành công",
+            ? t("admin.user.toast.locked")
+            : t("admin.user.toast.unlocked"),
         );
         // Update user list and close
         if (onUserUpdated) onUserUpdated();
         onOpenChange(false);
       } else {
-        toast.error(response.data.message || "Thao tác thất bại");
+        toast.error(response.data.message || t("admin.user.toast.actionFailed"));
       }
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Lỗi hệ thống khi thay đổi trạng thái",
+        error.response?.data?.message || t("admin.user.toast.statusUpdateError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -778,7 +787,7 @@ export function UserDetailModal({
 
   const handleSendWarning = async () => {
     if (!user || !warningMessage.trim()) {
-      toast.error("Vui lòng nhập nội dung cảnh báo");
+      toast.error(t("admin.user.modal.warning.enterMessage"));
       return;
     }
     setIsSubmitting(true);
@@ -786,11 +795,11 @@ export function UserDetailModal({
       await api.post(`/users/me/${user.id}/warning`, {
         message: warningMessage,
       });
-      toast.success("Đã gửi cảnh báo tới người dùng");
+      toast.success(t("admin.user.modal.warning.success"));
       setShowSendWarning(false);
       setWarningMessage("");
     } catch (err) {
-      toast.error("Lỗi khi gửi cảnh báo");
+      toast.error(t("admin.user.modal.warning.error"));
     } finally {
       setIsSubmitting(false);
     }
@@ -825,7 +834,7 @@ export function UserDetailModal({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-                  Chi tiết người dùng
+                  {t("admin.user.modal.title")}
                 </DialogTitle>
                 <DialogDescription className="text-xs font-medium text-muted-foreground tracking-tight leading-none">
                   {user.identificationCode ||
@@ -837,7 +846,7 @@ export function UserDetailModal({
                   variant="outline"
                   className={`px-3 py-1 text-[11px] font-semibold ${riskLevel.bg} ${riskLevel.color} border-none`}
                 >
-                  Mức độ rủi ro: {riskLevel.label}
+                  {t("admin.user.modal.riskLevel", { level: riskLevel.label })}
                 </Badge>
               </div>
             </div>
@@ -890,10 +899,10 @@ export function UserDetailModal({
                       <div className="space-y-1">
                         <span className="text-[10px] font-bold text-muted-foreground tracking-widest">
                           {formData.role === "STUDENT"
-                            ? "Tần suất vi phạm"
+                            ? t("admin.user.modal.stats.violationFreq")
                             : formData.role === "INSTRUCTOR"
-                              ? "Tỉ lệ chuyên cần"
-                              : "Tác vụ hệ thống"}
+                              ? t("admin.user.modal.stats.attendance")
+                              : t("admin.user.modal.stats.systemTasks")}
                         </span>
                         <div className="flex gap-1 mt-1">
                           {["day", "week", "month"].map((r) => (
@@ -963,28 +972,28 @@ export function UserDetailModal({
                   <Card className="shadow-sm border-border rounded-xl bg-card p-4 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] font-semibold text-muted-foreground">
-                        Ngày gia nhập
+                        {t("admin.user.modal.info.joinedDate")}
                       </span>
                       <Activity className="size-3 text-muted-foreground" />
                     </div>
                     <div className="text-sm font-bold">
                       {user.createdAt
                         ? format(new Date(user.createdAt), "dd/MM/yyyy")
-                        : "Chưa có dữ liệu"}
+                        : t("admin.user.modal.info.noData")}
                     </div>
                   </Card>
 
                   <Card className="shadow-sm border-border rounded-xl bg-card p-4 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] font-semibold text-muted-foreground">
-                        Lần cuối truy cập
+                        {t("admin.user.modal.info.lastAccess")}
                       </span>
                       <RotateCcw className="size-3 text-muted-foreground" />
                     </div>
                     <div className="text-sm font-medium text-muted-foreground tabular-nums">
                       {user.lastActiveAt
                         ? format(new Date(user.lastActiveAt), "HH:mm dd/MM")
-                        : "Chưa có dữ liệu"}
+                        : t("admin.user.modal.info.noData")}
                     </div>
                   </Card>
                 </div>
@@ -996,14 +1005,14 @@ export function UserDetailModal({
                   <CardHeader className="px-6 py-4 border-b bg-muted/20">
                     <CardTitle className="text-xs font-bold text-foreground tracking-wider flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-primary" />
-                      Cấp bậc & Vai trò
+                      {t("admin.user.section.role")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-bold text-muted-foreground">
-                          Vai trò quản lý
+                          {t("admin.user.label.manageRole")}
                         </Label>
                         <Select
                           value={formData.role}
@@ -1013,11 +1022,11 @@ export function UserDetailModal({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="STUDENT">Học viên</SelectItem>
+                            <SelectItem value="STUDENT">{t("common.roles.student")}</SelectItem>
                             <SelectItem value="INSTRUCTOR">
-                              Giảng viên
+                              {t("common.roles.instructor")}
                             </SelectItem>
-                            <SelectItem value="ADMIN">Quản trị viên</SelectItem>
+                            <SelectItem value="ADMIN">{t("common.roles.admin")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1034,15 +1043,13 @@ export function UserDetailModal({
 
                     {formData.role === "INSTRUCTOR" && (
                       <div className="py-2 text-center border-t border-border/50 italic text-[10px] text-muted-foreground">
-                        Sử dụng khung hiển thị chi tiết bên dưới để quản lý
-                        chuyên cần của giảng viên.
+                        {t("admin.user.desc.instructorAttendance")}
                       </div>
                     )}
 
                     {formData.role === "STUDENT" && (
                       <div className="py-4 text-center border-t border-border/50 italic text-[11px] text-muted-foreground">
-                        Sử dụng tab Bảo mật & Chống gian lận bên dưới để quản lý
-                        các quyền truy cập đặc biệt của học viên.
+                        {t("admin.user.desc.studentSecurity")}
                       </div>
                     )}
                   </CardContent>
@@ -1052,7 +1059,7 @@ export function UserDetailModal({
                   <CardHeader className="px-6 py-4 border-b bg-muted/20 flex flex-row items-center justify-between">
                     <CardTitle className="text-xs font-bold text-foreground tracking-wider flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-blue-500" />
-                      Thông tin cơ bản
+                      {t("admin.user.section.basicInfo")}
                     </CardTitle>
                     {!isEditingBasic ? (
                       <Button
@@ -1061,18 +1068,16 @@ export function UserDetailModal({
                         onClick={() => setIsEditingBasic(true)}
                         className="h-8 text-[10px] font-bold"
                       >
-                        Chỉnh sửa
+                        {t("common.edit")}
                       </Button>
                     ) : (
                       <div className="flex gap-2">
                         <Button
-                          variant="ghost"
-                          size="sm"
                           onClick={handleBasicCancel}
                           className="h-8 text-[10px] font-bold"
                           disabled={isBasicSubmitting}
                         >
-                          Hủy
+                          {t("common.cancel")}
                         </Button>
                         <Button
                           variant="default"
@@ -1084,7 +1089,7 @@ export function UserDetailModal({
                           {isBasicSubmitting && (
                             <Loader2 className="size-3 mr-2 animate-spin" />
                           )}
-                          Lưu thay đổi
+                          {t("common.saveChanges")}
                         </Button>
                       </div>
                     )}
@@ -1092,7 +1097,7 @@ export function UserDetailModal({
                   <CardContent className="p-6 space-y-6 transition-all duration-300">
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground">
-                        Họ và tên đầy đủ
+                        {t("auth.label.fullName")}
                       </Label>
                       {isEditingBasic ? (
                         <Input
@@ -1104,23 +1109,23 @@ export function UserDetailModal({
                             })
                           }
                           className="h-10 border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 transition-all"
-                          placeholder="Nhập họ và tên..."
+                          placeholder={t("auth.placeholder.fullName")}
                           disabled={isBasicSubmitting}
                         />
                       ) : (
                         <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
-                          {basicForm.fullName || "Chưa cập nhật"}
+                          {basicForm.fullName || t("common.notUpdated")}
                         </div>
                       )}
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-semibold text-muted-foreground">
-                          Địa chỉ Email
+                          {t("auth.label.email")}
                         </Label>
                         {isEditingBasic && (
                           <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                            Email (nhạy cảm)
+                            {t("admin.user.label.sensitiveEmail")}
                           </span>
                         )}
                       </div>
@@ -1130,21 +1135,21 @@ export function UserDetailModal({
                             value={basicForm.email}
                             onChange={handleBasicEmailChange}
                             className={`h-10 rounded-lg text-sm bg-background transition-all focus:ring-2 ${emailError ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary/20"}`}
-                            placeholder="example@fuji.edu.vn"
-                            disabled={isBasicSubmitting}
-                          />
-                          {emailError && (
-                            <p className="text-[10px] font-semibold text-destructive mt-1 flex items-center gap-1 animate-in slide-in-from-top-1">
-                              <AlertTriangle className="size-3" />
-                              {emailError}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
-                          {basicForm.email || "Chưa cập nhật"}
-                        </div>
-                      )}
+                          placeholder="example@fuji.edu.vn"
+                          disabled={isBasicSubmitting}
+                        />
+                        {emailError && (
+                          <p className="text-[10px] font-semibold text-destructive mt-1 flex items-center gap-1 animate-in slide-in-from-top-1">
+                            <AlertTriangle className="size-3" />
+                            {emailError}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-10 px-3 flex items-center bg-muted/30 border border-transparent rounded-lg text-sm font-medium text-foreground">
+                        {basicForm.email || t("common.notUpdated")}
+                      </div>
+                    )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1159,7 +1164,7 @@ export function UserDetailModal({
                     <CardHeader className="px-6 py-4 border-b bg-muted/20 flex flex-row items-center justify-between">
                       <CardTitle className="text-xs font-bold tracking-wider flex items-center gap-2">
                         <div className="size-1.5 rounded-full bg-rose-500" />
-                        Nhật ký bảo mật & Chống gian lận
+                        {t("admin.user.section.securityLogs")}
                       </CardTitle>
                     </CardHeader>
 
@@ -1173,7 +1178,7 @@ export function UserDetailModal({
                             className="h-9 px-4 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[10px] hover:bg-amber-500/20 gap-2 shadow-sm"
                           >
                             <MessageSquareWarning className="size-3.5" />
-                            Gửi cảnh báo cho người dùng
+                            {t("admin.user.btn.sendWarning")}
                           </Button>
                           <Button
                             variant="outline"
@@ -1186,7 +1191,7 @@ export function UserDetailModal({
                             className="h-9 px-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] hover:bg-emerald-500/20 gap-2 shadow-sm"
                           >
                             <FileDown className="size-3.5" />
-                            Xuất Excel
+                            {t("common.exportExcel")}
                           </Button>
                           {selectedLogs.length > 0 && (
                             <Button
@@ -1194,7 +1199,7 @@ export function UserDetailModal({
                               disabled={isSubmitting}
                               className="h-8 px-3 rounded-full font-bold text-[9px] bg-primary text-white shadow-sm animate-in fade-in slide-in-from-left-1 transition-all"
                             >
-                              Xử lý {selectedLogs.length} mục
+                              {t("admin.user.modal.violations.handleXItems", { count: selectedLogs.length })}
                             </Button>
                           )}
                         </div>
@@ -1202,7 +1207,7 @@ export function UserDetailModal({
                           <div className="relative flex-shrink-0">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                             <Input
-                              placeholder="Tìm theo mô tả, IP, loại..."
+                              placeholder={t("admin.user.placeholder.logSearch")}
                               className="h-9 w-[280px] pl-9 border-border bg-background text-[11px] rounded-full shadow-sm"
                               value={logSearch}
                               onChange={(e) => setLogSearch(e.target.value)}
@@ -1223,25 +1228,25 @@ export function UserDetailModal({
                                 value="all"
                                 className="text-[11px] font-bold"
                               >
-                                Tất cả mức độ
+                                {t("admin.user.filter.allSeverity")}
                               </SelectItem>
                               <SelectItem
                                 value="LOW"
                                 className="text-[11px] font-bold"
                               >
-                                Mức độ: Thấp
+                                {t("admin.user.filter.severityLow")}
                               </SelectItem>
                               <SelectItem
                                 value="MEDIUM"
                                 className="text-[11px] font-bold"
                               >
-                                Mức độ: T.bình
+                                {t("admin.user.filter.severityMed")}
                               </SelectItem>
                               <SelectItem
                                 value="HIGH"
                                 className="text-[11px] font-bold"
                               >
-                                Mức độ: Cao
+                                {t("admin.user.filter.severityHigh")}
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -1260,19 +1265,19 @@ export function UserDetailModal({
                                 value="all"
                                 className="text-[11px] font-bold"
                               >
-                                Tất cả trạng thái
+                                {t("admin.user.filter.allStatus")}
                               </SelectItem>
                               <SelectItem
                                 value="HANDLED"
                                 className="text-[11px] font-bold"
                               >
-                                Đã xử lý
+                                {t("admin.user.status.handled")}
                               </SelectItem>
                               <SelectItem
                                 value="UNHANDLED"
                                 className="text-[11px] font-bold"
                               >
-                                Chưa xử lý
+                                {t("admin.user.status.unhandled")}
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -1302,19 +1307,19 @@ export function UserDetailModal({
                                 />
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
-                                Thời gian
+                                {t("common.time")}
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
-                                Hành động
+                                {t("common.action")}
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">
-                                Mức độ
+                                {t("admin.user.log.severity")}
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-center">
-                                Trạng thái
+                                {t("common.status")}
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider text-right">
-                                Thao tác
+                                {t("common.action")}
                               </th>
                             </tr>
                           </thead>
@@ -1376,7 +1381,7 @@ export function UserDetailModal({
                                       </div>
                                       {log.testId && (
                                         <div className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                                          Bài thi:{" "}
+                                          {t("admin.user.modal.violations.exam")}:{" "}
                                           <span className="font-bold">
                                             {log.testId}
                                           </span>
@@ -1395,10 +1400,10 @@ export function UserDetailModal({
                                         }`}
                                       >
                                         {log.severity === "HIGH"
-                                          ? "Cao"
+                                          ? t("admin.user.filter.severityHigh")
                                           : log.severity === "MEDIUM"
-                                            ? "Trung bình"
-                                            : "Thấp"}
+                                            ? t("admin.user.modal.stats.avg")
+                                            : t("admin.user.modal.stats.low")}
                                       </Badge>
                                     </td>
                                     <td className="p-4 text-center align-middle">
@@ -1424,7 +1429,7 @@ export function UserDetailModal({
                                             className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
                                           >
                                             <CheckCircle2 className="size-3" />
-                                            Mở chat
+                                            {t("admin.user.modal.violations.openChat")}
                                           </Button>
                                         ) : (
                                           <Button
@@ -1435,7 +1440,7 @@ export function UserDetailModal({
                                             className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
                                           >
                                             <CheckCircle2 className="size-3" />
-                                            Xử lý ngay
+                                            {t("admin.user.modal.violations.handleNow")}
                                           </Button>
                                         )}
                                       </div>
@@ -1448,7 +1453,7 @@ export function UserDetailModal({
                                   <div className="flex flex-col items-center gap-3">
                                     <ShieldStatus className="size-10 text-muted/30" />
                                     <span className="text-xs font-semibold text-muted-foreground tracking-wider">
-                                      Không tìm thấy dữ liệu vi phạm
+                                      {t("admin.user.modal.violations.empty")}
                                     </span>
                                   </div>
                                 </td>
@@ -1460,7 +1465,7 @@ export function UserDetailModal({
                       {Math.ceil(filteredLogs.length / PAGE_SIZE) > 1 && (
                         <div className="p-4 border-t border-border flex justify-between items-center bg-muted/5">
                           <span className="text-[10px] font-bold text-muted-foreground tracking-widest pl-2 whitespace-nowrap">
-                            {filteredLogs.length} kết quả
+                            {t("admin.user.modal.violations.results", { count: filteredLogs.length })}
                           </span>
                           <Pagination>
                             <PaginationContent>
@@ -1525,13 +1530,13 @@ export function UserDetailModal({
                     <CardHeader className="px-6 py-4 border-b bg-muted/20 flex flex-row items-center justify-between">
                       <CardTitle className="text-xs font-bold tracking-wider flex items-center gap-2 text-foreground">
                         <Lock className="size-4 text-rose-500" />
-                        Quyền truy cập & Giới hạn
+                        {t("admin.user.modal.permissions.title")}
                       </CardTitle>
                       <Badge
                         variant="outline"
                         className="text-[9px] font-bold bg-rose-50 text-rose-600 border-none h-5"
                       >
-                        Cấu hình nâng cao
+                        {t("admin.user.modal.permissions.advanced")}
                       </Badge>
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
@@ -1542,7 +1547,7 @@ export function UserDetailModal({
                               htmlFor="exam-access"
                               className="text-sm font-medium text-foreground cursor-pointer"
                             >
-                              Truy cập bài thi
+                              {t("admin.user.modal.permissions.exam")}
                             </Label>
                             <Switch
                               id="exam-access"
@@ -1560,7 +1565,7 @@ export function UserDetailModal({
                               htmlFor="content-access"
                               className="text-sm font-medium text-foreground cursor-pointer"
                             >
-                              Truy cập nội dung
+                              {t("admin.user.modal.permissions.content")}
                             </Label>
                             <Switch
                               id="content-access"
@@ -1578,7 +1583,7 @@ export function UserDetailModal({
                               htmlFor="chat-access"
                               className="text-sm font-medium text-foreground cursor-pointer"
                             >
-                              Truy cập trò chuyện
+                              {t("admin.user.modal.permissions.chat")}
                             </Label>
                             <Switch
                               id="chat-access"
@@ -1598,7 +1603,7 @@ export function UserDetailModal({
                               htmlFor="device-limit"
                               className="text-sm font-medium text-foreground"
                             >
-                              Giới hạn thiết bị
+                              {t("admin.user.modal.permissions.deviceLimit")}
                             </Label>
                             <Input
                               id="device-limit"
@@ -1619,7 +1624,7 @@ export function UserDetailModal({
                               htmlFor="expiry-date"
                               className="text-sm font-medium text-foreground"
                             >
-                              Ngày hết hạn tài khoản
+                              {t("admin.user.modal.permissions.expiryDate")}
                             </Label>
                             <Input
                               id="expiry-date"
@@ -1640,7 +1645,7 @@ export function UserDetailModal({
                       <div className="rounded-xl border border-border bg-muted/10 p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="text-xs font-bold text-foreground">
-                            Trạng thái cấm chat
+                            {t("admin.user.modal.permissions.chatBanStatus")}
                           </div>
                           {isChatBanLoading ? (
                             <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -1654,15 +1659,22 @@ export function UserDetailModal({
                               }
                             >
                               {chatBanInfo.banType === "PERMANENT"
-                                ? "Đang cấm vĩnh viễn"
-                                : `Đang cấm đến ${chatBanInfo.banUntil ? format(new Date(chatBanInfo.banUntil), "HH:mm dd/MM/yyyy") : "-"}`}
+                                ? t("admin.user.modal.permissions.permanentBan")
+                                : t("admin.user.modal.permissions.temporaryBan", {
+                                    date: chatBanInfo.banUntil
+                                      ? format(
+                                          new Date(chatBanInfo.banUntil),
+                                          "HH:mm dd/MM/yyyy",
+                                        )
+                                      : "-",
+                                  })}
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
                               className="text-emerald-600 border-emerald-200 bg-emerald-50"
                             >
-                              Không bị cấm chat
+                              {t("admin.user.modal.permissions.notBanned")}
                             </Badge>
                           )}
                         </div>
@@ -1676,7 +1688,7 @@ export function UserDetailModal({
                             onClick={() => handleSetChatBan("TEMPORARY")}
                             className="text-[11px]"
                           >
-                            Cấm chat 24h
+                            {t("admin.user.modal.permissions.ban24h")}
                           </Button>
                           <Button
                             type="button"
@@ -1686,7 +1698,7 @@ export function UserDetailModal({
                             onClick={() => handleSetChatBan("PERMANENT")}
                             className="text-[11px]"
                           >
-                            Cấm chat vĩnh viễn
+                            {t("admin.user.modal.permissions.banPermanent")}
                           </Button>
                           <Button
                             type="button"
@@ -1695,7 +1707,7 @@ export function UserDetailModal({
                             onClick={handleUnbanChat}
                             className="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white"
                           >
-                            Gỡ cấm chat
+                            {t("admin.user.modal.permissions.unban")}
                           </Button>
                         </div>
                       </div>
@@ -2823,7 +2835,7 @@ export function UserDetailModal({
                   variant="outline"
                   className="h-7 px-4 rounded-full border-2 border-primary/20 text-xs font-bold text-muted-foreground"
                 >
-                  {getRoleName(user?.role || "")}
+                  {getRoleName(user?.role || "", t)}
                 </Badge>
                 <span className="text-[9px] font-bold text-muted-foreground/50 uppercase">
                   Hiện tại
@@ -2836,7 +2848,7 @@ export function UserDetailModal({
 
               <div className="flex flex-col items-center gap-1.5">
                 <Badge className="h-7 px-4 rounded-full bg-primary text-white text-xs font-bold shadow-md shadow-primary/20">
-                  {getRoleName(pendingRole)}
+                  {getRoleName(pendingRole, t)}
                 </Badge>
                 <span className="text-[9px] font-bold text-primary uppercase">
                   Cấp mới

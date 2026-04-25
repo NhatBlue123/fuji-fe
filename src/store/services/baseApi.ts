@@ -1,6 +1,11 @@
-﻿import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getAccessToken } from "@/lib/token";
 
+/**
+ * [FRONTEND I18N ROLE] Base API cho RTK Query.
+ * Không thực hiện dịch tự động (Automatic Translation) trong Layer Service/BaseQuery.
+ * Việc dịch phải được thực hiện ở UI Layer bằng tMsg(data.messageKey).
+ */
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -34,6 +39,16 @@ export const baseApi = createApi({
     "CourseFinance",
     "AdminPlan",
     "TopupPackage",
+    "AdminRevenue",
+    "SystemError",
+    "SystemErrorSummary",
+    "Progress",
+    "Streak",
+    "StreakProgress",
+    "WeeklyStats",
+    "WeeklySummary",
+    "TodayStats",
+    "Insight",
   ],
   endpoints: () => ({}),
 });

@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import { useTranslation } from "react-i18next";
 import React, { useMemo, useState } from "react";
 import { Banknote, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,14 +15,6 @@ import {
 } from "@/store/services/topupPackageApi";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 
-const paymentMethods = [
-  {
-    id: "bank",
-    name: "Ngân hàng",
-    icon: <Banknote className="h-5 w-5 text-secondary" />,
-  },
-];
-
 type PaymentQrData = {
   orderId: string;
   amount: number;
@@ -32,7 +25,13 @@ type PaymentQrData = {
   createdAt: number;
 };
 
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 function TopupContentInner() {
+  const { t } = useTranslation();
   const { data: wallet } = useGetWalletQuery(undefined, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
@@ -46,7 +45,7 @@ function TopupContentInner() {
     isFetching: isFetchingPackages,
   } = useGetTopupPackagesQuery();
 
-  const availableBalance = wallet?.availableBalance || 0;
+  const availableBalance = wallet?.availableBalance ?? wallet?.balance ?? 0;
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>("bank");
   const [paymentQrData, setPaymentQrData] = useState<PaymentQrData | null>(null);
@@ -70,9 +69,17 @@ function TopupContentInner() {
     return packages.find((pkg) => pkg.isPopular) || packages[0] || null;
   }, [packages, selectedPackageId]);
 
+  const paymentMethods = [
+    {
+      id: "bank",
+      name: t("premium.topup.bank"),
+      icon: <Banknote className="w-5 h-5 text-secondary" />,
+    },
+  ];
+
   const handleTopupClick = async () => {
     if (!selectedPkg) {
-      toast.error("Vui lòng chọn gói nạp");
+      toast.error(t("premium.topup.selectPackage"));
       return;
     }
 
@@ -93,6 +100,12 @@ function TopupContentInner() {
         respondedAt: new Date().toISOString(),
       });
 
+      if (!orderData.orderId) {
+        console.error("[payment] createPayment missing order id", orderData);
+        toast.error(t("premium.topup.createFailed"));
+        return;
+      }
+
       const bankId =
         orderData.bankId || process.env.NEXT_PUBLIC_BANK_ID || "MB";
       const accountNo =
@@ -103,25 +116,26 @@ function TopupContentInner() {
         orderData.accountName ||
         process.env.NEXT_PUBLIC_ACCOUNT_NAME ||
         "Duong Luong";
+      const topupAmount = toFiniteNumber(orderData.amount, selectedPkg.flowers);
       const transferAmountVnd =
-        orderData.transferAmountVnd ?? orderData.amount * 1000;
+        toFiniteNumber(orderData.transferAmountVnd, selectedPkg.price);
 
       if (!accountNo) {
         console.error("[payment] createPayment missing account data", {
           orderId: orderData.orderId,
-          amount: orderData.amount,
+          amount: topupAmount,
           transferAmountVnd,
           bankId,
           missingAccountNo: !orderData.accountNo,
           missingAccountName: !orderData.accountName,
         });
-        toast.error("Backend chua cau hinh tai khoan nhan tien");
+        toast.error(t("premium.topup.noBankAccount"));
         return;
       }
 
       setPaymentQrData({
         orderId: orderData.orderId,
-        amount: orderData.amount,
+        amount: topupAmount,
         transferAmountVnd,
         bankId,
         accountNo,
@@ -129,25 +143,25 @@ function TopupContentInner() {
         createdAt: createStartedAt,
       });
 
-      toast.info("Vui lòng quét mã QR để thanh toán");
+      toast.info(t("premium.topup.scanQR"));
     } catch (err) {
       console.error("[payment] createPayment failed", err);
-      toast.error("Không thể tạo đơn thanh toán");
+      toast.error(t("premium.topup.createFailed"));
     }
   };
 
   return (
-    <div className="space-y-12 text-slate-900 dark:text-white">
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)] dark:border-border dark:bg-card dark:shadow-none">
+    <div className="space-y-12">
+      <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between">
         <div className="flex items-center gap-x-2">
-          <div className="text-sm font-bold uppercase text-slate-600 dark:text-muted-foreground">
-            Số dư hiện tại:
+          <div className="text-sm font-bold text-muted-foreground uppercase">
+            {t("premium.topup.currentBalance")}
           </div>
-          <div className="flex items-center gap-2 text-2xl font-bold">
+          <div className="flex items-center text-2xl font-bold gap-2">
             <span>{availableBalance.toLocaleString("vi-VN")}</span>
-            <span className="ml-1 text-3xl">🌸</span>
-            <span className="text-xs text-slate-500 dark:text-muted-foreground">
-              (~ {(availableBalance * 1000).toLocaleString("vi-VN")}d)
+            <span className="text-3xl ml-1">🌸</span>
+            <span className="text-xs text-muted-foreground">
+              (~ {(availableBalance * 1000).toLocaleString("vi-VN")}đ)
             </span>
           </div>
         </div>
@@ -155,28 +169,28 @@ function TopupContentInner() {
 
       <div>
         <div className="mb-6 flex items-center justify-between gap-3">
-          <h3 className="text-xl font-bold">Chọn gói nạp</h3>
+          <h3 className="text-xl font-bold">{t("premium.topup.choosePackage")}</h3>
           {isFetchingPackages && !isLoadingPackages && (
-            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Đang đồng bộ gói nạp...
+              {t("common.loading")}
             </div>
           )}
         </div>
 
         {isLoadingPackages ? (
-          <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/70 text-slate-500 dark:border-border dark:bg-card/40 dark:text-muted-foreground">
+          <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-border bg-card/40 text-muted-foreground">
             <div className="flex items-center gap-2 font-medium">
               <Loader2 className="h-5 w-5 animate-spin" />
-              Đang tải gói nạp...
+              {t("common.loading")}
             </div>
           </div>
         ) : packages.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 p-10 text-center text-slate-500 dark:border-border dark:bg-card/40 dark:text-muted-foreground">
-            Hiện tại chưa có gói nạp nào đang hoạt động.
+          <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center text-muted-foreground">
+            {t("common.noResults")}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {packages.map((pkg) => (
               <TopupPackageCard
                 key={pkg.id}
@@ -193,16 +207,16 @@ function TopupContentInner() {
       </div>
 
       <div>
-        <h3 className="mb-6 text-xl font-bold">Phương thức thanh toán</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <h3 className="text-xl font-bold mb-6">{t("premium.topup.paymentMethod")}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {paymentMethods.map((method) => (
             <button
               key={method.id}
               onClick={() => setSelectedPayment(method.id)}
-              className={`flex items-center space-x-4 rounded-2xl border p-5 transition ${
+              className={`flex items-center space-x-4 p-5 rounded-2xl border transition ${
                 selectedPayment === method.id
-                  ? "border-secondary border-2 bg-white dark:bg-transparent"
-                  : "border-slate-200 bg-white/90 hover:border-secondary/50 dark:border-border dark:bg-transparent"
+                  ? "border-secondary border-2"
+                  : "border-border hover:border-secondary/50"
               }`}
             >
               {method.icon}
@@ -212,28 +226,13 @@ function TopupContentInner() {
         </div>
       </div>
 
-      {selectedPkg && (
-        <div className="rounded-2xl border border-pink-200 bg-pink-50/70 p-4 text-sm text-slate-700 dark:border-secondary/30 dark:bg-secondary/10 dark:text-slate-200">
-          <span className="font-semibold">Gói đang chọn:</span>{" "}
-          {selectedPkg.flowers.toLocaleString("vi-VN")} hoa
-          {selectedPkg.bonusFlowers > 0 && (
-            <span>
-              {" "}+ {selectedPkg.bonusFlowers.toLocaleString("vi-VN")} bonus
-            </span>
-          )}
-          <span>
-            {" "}• Chuyển khoản {selectedPkg.price.toLocaleString("vi-VN")}d
-          </span>
-        </div>
-      )}
-
       <div className="text-center">
         <button
           onClick={handleTopupClick}
           disabled={isCreatingPayment || !selectedPkg}
-          className="rounded-xl bg-pink-500 px-12 py-4 font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)] disabled:opacity-50 dark:bg-secondary dark:text-secondary-foreground dark:shadow-none"
+          className="px-12 py-4 bg-secondary text-secondary-foreground font-bold rounded-xl disabled:opacity-50"
         >
-          {isCreatingPayment ? "Đang tạo đơn..." : "Nạp ngay bằng VietQR"}
+          {isCreatingPayment ? t("premium.topup.creatingOrder") : t("premium.topup.payWithQR")}
         </button>
       </div>
 

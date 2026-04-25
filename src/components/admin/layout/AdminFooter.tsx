@@ -1,7 +1,10 @@
-import React from "react";
+"use client";
+
+import { useTranslation } from "react-i18next";
 import { Separator } from "@/components/ui/separator";
 
 export function AdminFooter() {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -17,13 +20,13 @@ export function AdminFooter() {
             href="#"
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            Hỗ trợ
+            {t("common.support")}
           </a>
           <a
             href="#"
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            Tài liệu
+            {t("common.docs")}
           </a>
         </div>
       </div>

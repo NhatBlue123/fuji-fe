@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 import { use, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -13,6 +15,7 @@ export default function FlashcardSetDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const { data: flashcard, isLoading, error } = useGetFlashCardByIdQuery(id);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -33,7 +36,7 @@ export default function FlashcardSetDetailPage({
         <span className="material-symbols-outlined text-6xl text-red-400">
           error
         </span>
-        <p className="text-muted-foreground">Không thể tải bộ flashcard này.</p>
+        <p className="text-muted-foreground">{t('auto._id__page_1')}</p>
         <Link
           href="/flashcards"
           className="text-secondary hover:underline flex items-center gap-1"

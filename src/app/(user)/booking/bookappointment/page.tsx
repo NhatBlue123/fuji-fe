@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+export const dynamic = "force-dynamic";
+
+import { useTranslation } from "react-i18next";
+import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   useCreateBookingMutation,
   useCreateBulkBookingMutation,
@@ -12,12 +16,14 @@ import {
 
 type ApiErrorWithMessage = {
   data?: {
+    messageKey?: string;
     message?: string;
   };
 };
 
 function extractApiErrorMessage(error: unknown, fallback: string) {
-  return (error as ApiErrorWithMessage)?.data?.message || fallback;
+  const err = error as ApiErrorWithMessage;
+  return err?.data?.messageKey || err?.data?.message || fallback;
 }
 
 function formatDate(v: string) {
@@ -32,7 +38,8 @@ function formatTimeRange(startAt: string, endAt: string) {
   return `${hhmm(s)} - ${hhmm(e)}`;
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -121,9 +128,16 @@ export default function PaymentPage() {
     }
   };
 
+  const handleShowSuccess = () => {
+    toast.success(t("booking.successTitle") || "Đặt lịch thành công!", {
+      description: t("booking.successMessage") || "Bạn đã đặt lịch học thành công.",
+      duration: 5000,
+    });
+  };
+
   return (
     <main className="flex-1 overflow-y-auto bg-slate-950 p-8 min-h-screen">
-      {showSuccess && <SuccessModal router={router} />}
+      {showSuccess && <SuccessModal router={router} onVisible={handleShowSuccess} />}
 
       <header className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-4">
@@ -135,7 +149,7 @@ export default function PaymentPage() {
               <ArrowLeft size={18} />
             </div>
           </button>
-          <h2 className="text-2xl font-bold text-slate-100">Thanh toán</h2>
+          <h2 className="text-2xl font-bold text-slate-100">{t('auto.booking_appointment_1')}</h2>
         </div>
       </header>
 
@@ -217,15 +231,15 @@ export default function PaymentPage() {
 
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>Học phí</span>
+                    <span>{t('auto.booking_appointment_2')}</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>Phí dịch vụ</span>
+                    <span>{t('auto.booking_appointment_3')}</span>
                     <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
-                    <span>Tổng cộng</span>
+                    <span>{t('auto.booking_appointment_4')}</span>
                     <span className="text-pink-500">
                       {quote.totalBlossom} 🌸
                     </span>
@@ -253,15 +267,15 @@ export default function PaymentPage() {
 
                 <div className="pt-4 border-t border-slate-800 space-y-3">
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>Học phí(1 buổi)</span>
+                    <span>{t('auto.booking_appointment_5')}</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-sm">
-                    <span>Phí dịch vụ</span>
+                    <span>{t('auto.booking_appointment_6')}</span>
                     <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
-                    <span>Tổng cộng</span>
+                    <span>{t('auto.booking_appointment_7')}</span>
                     <span className="text-pink-500">
                       {quote.totalBlossom} 🌸
                     </span>
@@ -296,11 +310,37 @@ export default function PaymentPage() {
   );
 }
 
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
+          Đang tải trang thanh toán...
+        </main>
+      }
+    >
+      <PaymentPageContent />
+    </Suspense>
+  );
+}
+
 function SuccessModal({
   router,
+  onVisible,
 }: {
   router: { push: (path: string) => void };
+  onVisible: () => void;
 }) {
+  const { t } = useTranslation();
+  const hasTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
+      onVisible();
+    }
+  }, [onVisible]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-[#0f172a] border border-pink-500/30 rounded-xl p-8 flex flex-col items-center text-center shadow-2xl">
@@ -310,7 +350,7 @@ function SuccessModal({
         <h1 className="text-3xl font-bold text-white mb-4">
           Thanh toán thành công!
         </h1>
-        <p className="text-slate-300 mb-6">Bạn đã đặt lịch học thành công.</p>
+        <p className="text-slate-300 mb-6">{t('auto.booking_appointment_8')}</p>
         <button
           onClick={() => router.push("/booking/bookingmodal")}
           className="w-full h-12 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl"

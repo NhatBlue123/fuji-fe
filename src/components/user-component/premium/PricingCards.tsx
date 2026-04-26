@@ -16,7 +16,11 @@ import {
   useLazyGetSubscriptionPreviewQuery,
 } from "@/store/services/subscriptionApi";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { SubscriptionTier, SubscriptionPreview } from "@/types/subscription";
+import {
+  SubscriptionTier,
+  SubscriptionPreview,
+  type SubscriptionPlan,
+} from "@/types/subscription";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +34,13 @@ import { useRouter } from "next/navigation";
 import { tMsg } from "@/i18n";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+
+type ApiError = {
+  data?: {
+    errorCode?: string;
+    messageKey?: string;
+  };
+};
 
 export default function PricingCards() {
   const router = useRouter();
@@ -52,7 +63,7 @@ export default function PricingCards() {
   );
 
   // Fallback plans with localized features
-  const fallbackPlans = useMemo(() => [
+  const fallbackPlans = useMemo<SubscriptionPlan[]>(() => [
     {
       id: "basic",
       tier: "BASIC",
@@ -105,13 +116,14 @@ export default function PricingCards() {
       toast.success(t("premium.subscribeSuccess", { name: selectedPlan.name }));
       setIsOpen(false);
       router.push("/profile/subscription");
-    } catch (err: any) {
+    } catch (err) {
+      const apiError = err as ApiError;
       console.error("Lỗi khi nâng cấp:", err);
-      const errorMsg = tMsg(err?.data?.messageKey) || t("api.error");
+      const errorMsg = tMsg(apiError.data?.messageKey) || t("api.error");
 
       if (
-        err?.data?.errorCode === "INSUFFICIENT_BALANCE" ||
-        err?.data?.messageKey === "wallet.insufficientBalance"
+        apiError.data?.errorCode === "INSUFFICIENT_BALANCE" ||
+        apiError.data?.messageKey === "wallet.insufficientBalance"
       ) {
         toast.error(t("wallet.insufficientBalance"));
         setTimeout(() => {
@@ -124,7 +136,7 @@ export default function PricingCards() {
     }
   };
 
-  const openDialog = async (plan: any) => {
+  const openDialog = async (plan: SubscriptionPlan) => {
     if (!user) {
       toast.info(t("common.pleaseLogin"));
       router.push("/login?redirect=/premium");
@@ -141,15 +153,16 @@ export default function PricingCards() {
       const preview = await getPreview(plan.tier).unwrap();
       setPreviewData(preview);
       setIsOpen(true);
-    } catch (err: any) {
-      const errorMsg = tMsg(err?.data?.messageKey) || t("api.error");
+    } catch (err) {
+      const apiError = err as ApiError;
+      const errorMsg = tMsg(apiError.data?.messageKey) || t("api.error");
       toast.error(errorMsg);
     }
   };
 
   const displayPlans = plans && plans.length > 0 ? plans : fallbackPlans;
 
-  const renderBadge = (plan: any) => {
+  const renderBadge = (plan: SubscriptionPlan) => {
     if (plan.tier === "PREMIUM") {
       return (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-5 py-1.5 rounded-full text-[11px] font-bold tracking-widest flex items-center gap-1.5 whitespace-nowrap shadow-lg shadow-pink-500/30">
@@ -171,7 +184,7 @@ export default function PricingCards() {
     return "bg-[#0A0F1E] text-slate-300 rounded-[2rem] flex flex-col relative";
   };
 
-  const renderButton = (plan: any) => {
+  const renderButton = (plan: SubscriptionPlan) => {
     const isCurrentPlan = currentTier === plan.tier;
 
     if (plan.tier === "BASIC") {
@@ -240,7 +253,7 @@ export default function PricingCards() {
       )}
 
       {!isPlansLoading &&
-        displayPlans.map((plan: any) => (
+        displayPlans.map((plan: SubscriptionPlan) => (
           <div
             key={plan.id || plan.tier}
             className={`p-8 lg:p-10 ${getCardStyle(plan.tier)}`}

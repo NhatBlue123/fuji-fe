@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +12,9 @@ interface ExamCardProps {
   info: string;
   colorTheme?: string;
   attemptId?: number;
+  lockedTitle?: string;
+  lockedButtonLabel?: string;
+  onLockedClick?: () => void;
 }
 
 export default function ExamCard({
@@ -20,35 +24,37 @@ export default function ExamCard({
   image,
   tag,
   info,
-  colorTheme = "accent-pink",
   attemptId,
+  lockedTitle = "Het luot JLPT",
+  lockedButtonLabel = "Nang cap ngay",
+  onLockedClick,
 }: ExamCardProps) {
   const renderBadge = () => {
     switch (status) {
       case "new":
         return (
-          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur-sm text-slate-300 text-[10px] font-bold border border-slate-700">
-            Chưa làm
+          <span className="absolute top-3 right-3 rounded-md border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold text-slate-300 backdrop-blur-sm">
+            Chua lam
           </span>
         );
       case "doing":
         return (
-          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-blue-500/20 backdrop-blur-sm text-blue-400 text-[10px] font-bold border border-blue-500/20">
-            Đang làm
+          <span className="absolute top-3 right-3 rounded-md border border-blue-500/20 bg-blue-500/20 px-2.5 py-1 text-[10px] font-bold text-blue-400 backdrop-blur-sm">
+            Dang lam
           </span>
         );
       case "done":
         return (
-          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-emerald-500/20 backdrop-blur-sm text-emerald-400 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[12px]">check</span>{" "}
-            Đã xong
+          <span className="absolute top-3 right-3 flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold text-emerald-400 backdrop-blur-sm">
+            <span className="material-symbols-outlined text-[12px]">check</span>
+            Da xong
           </span>
         );
       case "locked":
         return (
-          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-yellow-500/10 backdrop-blur-sm text-yellow-300 text-[10px] font-bold border border-yellow-500/20 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[12px]">lock</span>{" "}
-            Premium
+          <span className="absolute top-3 right-3 flex items-center gap-1 rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-[10px] font-bold text-yellow-300 backdrop-blur-sm">
+            <span className="material-symbols-outlined text-[12px]">lock</span>
+            Topup
           </span>
         );
     }
@@ -58,27 +64,29 @@ export default function ExamCard({
     if (status === "locked") {
       return (
         <Button
-          className="w-full py-2 rounded-lg bg-slate-800 text-slate-500 text-sm font-bold border border-slate-700 cursor-not-allowed"
-          disabled
+          type="button"
+          onClick={onLockedClick}
+          className="w-full rounded-lg border border-transparent bg-gradient-to-r from-pink-500 to-fuchsia-500 py-2 text-sm font-bold text-white shadow-lg shadow-pink-500/20 hover:from-pink-600 hover:to-fuchsia-600"
         >
-          Đã khóa
+          {lockedButtonLabel}
         </Button>
       );
     }
+
     let btnClass = "";
     let btnText = "";
 
     if (status === "new") {
       btnClass = "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-500/20";
-      btnText = "Bắt đầu làm bài";
+      btnText = "Bat dau lam bai";
     } else if (status === "doing") {
       btnClass =
-        "bg-slate-700 hover:bg-blue-600 text-white border-slate-600 hover:border-blue-500";
-      btnText = "Tiếp tục";
+        "border-slate-600 bg-slate-700 text-white hover:border-blue-500 hover:bg-blue-600";
+      btnText = "Tiep tuc";
     } else if (status === "done") {
       btnClass =
-        "bg-slate-700 hover:bg-blue-600 text-white border-slate-600 hover:border-blue-500";
-      btnText = "Xem kết quả";
+        "border-slate-600 bg-slate-700 text-white hover:border-blue-500 hover:bg-blue-600";
+      btnText = "Xem ket qua";
     }
 
     const href =
@@ -89,7 +97,7 @@ export default function ExamCard({
     return (
       <Link
         href={href}
-        className={`block w-full py-2 rounded-lg text-center text-sm font-bold transition-all border border-transparent shadow-lg ${btnClass}`}
+        className={`block w-full rounded-lg border border-transparent py-2 text-center text-sm font-bold shadow-lg transition-all ${btnClass}`}
       >
         {btnText}
       </Link>
@@ -98,53 +106,56 @@ export default function ExamCard({
 
   return (
     <article
-      className={`glass-card rounded-2xl flex flex-col group hover:bg-slate-800/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden h-full ${status === "done" ? "border-t-4 border-t-emerald-500" : ""}`}
+      className={`glass-card group relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-slate-800/60 ${status === "done" ? "border-t-4 border-t-emerald-500" : ""}`}
     >
-      {/* Lớp phủ khóa Premium */}
       {status === "locked" && (
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="material-symbols-outlined text-4xl text-yellow-400 mb-2">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900/60 opacity-0 backdrop-blur-[3px] transition-opacity group-hover:opacity-100">
+          <span className="material-symbols-outlined mb-2 text-4xl text-yellow-400">
             lock
           </span>
-          <p className="text-white font-bold text-sm mb-3">
-            Thành viên JLPT PRO
+          <p className="mb-3 px-4 text-center text-sm font-bold text-white">
+            {lockedTitle}
           </p>
-          <Link href="/premium">
-            <Button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold rounded-lg text-xs shadow-lg shadow-yellow-500/20">
-              Nâng cấp ngay
-            </Button>
-          </Link>
+          <Button
+            type="button"
+            onClick={onLockedClick}
+            className="rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-yellow-500/20 hover:from-yellow-600 hover:to-orange-600"
+          >
+            {lockedButtonLabel}
+          </Button>
         </div>
       )}
 
-      {/* Ảnh bìa */}
       <div
-        className={`relative h-40 bg-slate-800 overflow-hidden ${status === "locked" ? "grayscale group-hover:grayscale-0" : ""}`}
+        className={`relative h-40 overflow-hidden bg-slate-800 ${status === "locked" ? "grayscale group-hover:grayscale-0" : ""}`}
       >
         <img
           alt={title}
-          className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+          className="h-full w-full object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
           src={image}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1E293B] to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1E293B] to-transparent" />
         {renderBadge()}
         {status === "doing" && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700/50">
-            <div className="bg-blue-500 h-full w-[45%] shadow-[0_0_10px_#3b82f6]"></div>
+            <div className="h-full w-[45%] bg-blue-500 shadow-[0_0_10px_#3b82f6]" />
           </div>
         )}
       </div>
 
-      {/* Nội dung text */}
-      <div className="p-5 flex flex-col flex-1">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">{tag}</span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">• {info}</span>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="rounded bg-pink-100 px-2 py-0.5 text-[10px] font-bold text-pink-700 dark:bg-pink-500/20 dark:text-pink-300">
+            {tag}
+          </span>
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            • {info}
+          </span>
         </div>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors line-clamp-2">
+        <h3 className="mb-4 line-clamp-2 text-lg font-bold text-slate-800 transition-colors group-hover:text-pink-600 dark:text-white dark:group-hover:text-pink-400">
           {title}
         </h3>
-        <div className="mt-auto pt-4 border-t border-slate-200 dark:border-white/5">
+        <div className="mt-auto border-t border-slate-200 pt-4 dark:border-white/5">
           {renderButton()}
         </div>
       </div>

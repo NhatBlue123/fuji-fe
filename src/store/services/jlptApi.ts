@@ -3,6 +3,7 @@ import { API_CONFIG } from "@/config/api";
 import { getAccessToken } from "@/lib/token";
 import type {
   JlptTest,
+  JlptQuestion,
   JLPTLevel,
   TestAttemptSubmission,
   TestAttemptResult,
@@ -12,7 +13,15 @@ import type { AnswerReview, QuestionReportPayload, QuestionReport } from "@/type
 import type { SystemReport } from "@/types/admin-reports";
 
 // Base query with authentication
-const baseQuery = async (args: any) => {
+const baseQuery = async (
+  args:
+    | string
+    | {
+        url: string;
+        method?: string;
+        body?: BodyInit | object | null;
+      },
+) => {
   const {
     url,
     method = "GET",
@@ -49,7 +58,12 @@ const baseQuery = async (args: any) => {
     const error = await response
       .json()
       .catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || "Request failed");
+    return {
+      error: {
+        status: response.status,
+        data: error,
+      },
+    };
   }
 
   const data = await response.json();
@@ -113,10 +127,11 @@ export const jlptApi = createApi({
       transformResponse: (response: ApiResponse<JlptTest>) => {
         const test = response.data;
         // Helper to parse options for a question and its children
-        const parseQuestion = (q: any) => {
+        const parseQuestion = (q: JlptQuestion) => {
           if (q.options && typeof q.options === "string") {
             try {
-              q.options = JSON.parse(q.options);
+              const parsed = JSON.parse(q.options);
+              q.options = Array.isArray(parsed) ? parsed : [];
             } catch (e) {
               console.error("Failed to parse options", e);
               q.options = [];

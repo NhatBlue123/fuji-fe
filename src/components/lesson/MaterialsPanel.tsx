@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 // react-pdf removed — replaced with native <iframe> to avoid CORS/worker issues with Cloudinary raw URLs
 import {
   useGetMaterialsQuery,
@@ -64,7 +64,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
   const { data: materials, refetch } = useGetMaterialsQuery({ lessonId });
   const [saveMaterial] = useSaveMaterialMutation();
   const [deleteMaterial] = useDeleteMaterialMutation();
-  const { syncedPage, sendPageSync, isSyncEnabled, toggleSync } = useMaterialSync(lessonId, token);
+  const { isSyncEnabled, toggleSync } = useMaterialSync(lessonId, token);
 
   const [viewingMaterial, setViewingMaterial] = useState<{
     id: number;
@@ -76,16 +76,6 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
   const [urlInput, setUrlInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Apply synced page from peer
-  useEffect(() => {
-    if (!syncedPage || !isSyncEnabled) return;
-    if (viewingMaterial && syncedPage.materialId === viewingMaterial.id) {
-      setCurrentPage(syncedPage.pageNumber);
-    }
-  }, [syncedPage, viewingMaterial, isSyncEnabled]);
-
-
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -315,9 +305,6 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
               className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] transition-colors group cursor-pointer"
               onClick={() => {
                 setViewingMaterial({ id: m.id, url: resolvedUrl, name: m.name, type: m.type });
-                setCurrentPage(1);
-                setNumPages(0);
-                setZoom(1.25);
               }}
             >
               <div className="w-8 h-8 rounded-lg bg-[#6C63FF]/10 flex items-center justify-center shrink-0">

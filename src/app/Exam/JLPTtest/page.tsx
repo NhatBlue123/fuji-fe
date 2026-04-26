@@ -2,26 +2,34 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useCallback, useMemo, Suspense } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import ExamHeader from "./ExamHeader";
 import ExamSidebar from "./ExamSidebar";
 import ExamContent from "./ExamContent";
 import AntiCheatOverlay from "./AntiCheatOverlay";
+import PaywallPopup from "@/components/common/PaywallPopup";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useAntiCheat } from "@/hooks/useAntiCheat";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import {
   useGetTestByIdQuery,
   useSubmitTestMutation,
   useReportViolationMutation,
 } from "@/store/services/jlptApi";
-import type { UserAnswer } from "@/types/jlpt";
+import type { JlptQuestion, UserAnswer } from "@/types/jlpt";
 import {
   JLPT_STRUCTURE,
   rebuildStructureWithCounts,
   type JLPTLevel,
   type SectionConfig,
 } from "@/lib/jlpt-structure";
+import { getJlptTopupPath } from "@/lib/jlpt-topup";
+import {
+  getFeatureErrorMessage,
+  isFeatureError,
+} from "@/lib/subscription-errors";
 
 function parseOptions(opts?: string[] | string | null): string[] {
   if (!opts) return [];
@@ -57,8 +65,15 @@ function JLPTtestPageInner() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [examStartTime] = useState(Date.now());
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+  const examStartTimeRef = useRef(0);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+  const {
+    jlptTopupTitle,
+    jlptTopupMessage,
+    jlptTopupType,
+    jlptRecommendedPlan,
+  } = useFeatureAccess();
 
   const {
     data: testData,
@@ -69,7 +84,15 @@ function JLPTtestPageInner() {
   const [submitTest] = useSubmitTestMutation();
   const [reportViolation] = useReportViolationMutation();
 
-  const allQuestions = testData?.questions || [];
+  const allQuestions = useMemo(
+    () => testData?.questions || [],
+    [testData?.questions],
+  );
+  const upgradePath = getJlptTopupPath(jlptTopupType, jlptRecommendedPlan);
+
+  useEffect(() => {
+    examStartTimeRef.current = Date.now();
+  }, []);
 
   /* ===== STRUCTURE ===== */
   const examStructure = useMemo<SectionConfig[]>(() => {
@@ -78,10 +101,10 @@ function JLPTtestPageInner() {
     try {
       const raw = localStorage.getItem(`jlpt_mondai_config_${testId}`);
       if (raw) {
-        const overrides = JSON.parse(raw);
+        const overrides = JSON.parse(raw) as Record<string, { count: number }>;
         const countMap: Record<number, number> = {};
 
-        Object.entries(overrides).forEach(([k, v]: any) => {
+        Object.entries(overrides).forEach(([k, v]) => {
           if (v.count > 0) countMap[Number(k)] = v.count;
         });
 
@@ -94,11 +117,11 @@ function JLPTtestPageInner() {
     } catch {}
 
     return JLPT_STRUCTURE[testData.level as JLPTLevel] ?? [];
-  }, [testData?.level, testId]);
+  }, [testData, testId]);
 
   /* ===== FLATTEN QUESTIONS ===== */
   const leafQuestions = useMemo(() => {
-    const flattened: any[] = [];
+    const flattened: JlptQuestion[] = [];
     const mondaiPassageMap = new Map<number, boolean>();
     examStructure.forEach((section) => {
       section.mondai.forEach((m) => {
@@ -124,7 +147,7 @@ function JLPTtestPageInner() {
           ...q,
           isReadingPassage: mondaiPassageMap.get(q.mondaiNumber) === true,
         };
-        q.children.forEach((child: any) => {
+        q.children.forEach((child) => {
           const opts = parseOptions(child.options);
           if (opts.length > 0) {
             flattened.push({
@@ -150,7 +173,7 @@ function JLPTtestPageInner() {
     setIsSubmitting(true);
 
     try {
-      const timeSpent = Math.floor((Date.now() - examStartTime) / 1000);
+      const timeSpent = Math.floor((Date.now() - examStartTimeRef.current) / 1000);
 
       const userAnswers: UserAnswer[] = Object.entries(answers).map(
         ([id, selected]) => ({
@@ -167,10 +190,18 @@ function JLPTtestPageInner() {
 
       router.push(`/jlpt/result?attemptId=${result.id}`);
     } catch (e) {
+      if (isFeatureError(e)) {
+        toast.error(getFeatureErrorMessage(e));
+        setShowConfirm(false);
+        setShowUpgradePopup(true);
+        setIsSubmitting(false);
+        return;
+      }
+
       alert("Không thể nộp bài!");
       setIsSubmitting(false);
     }
-  }, [answers, examStartTime, submitTest, router, testId]);
+  }, [answers, submitTest, router, testId]);
 
   /* ===== AUTO SUBMIT WHEN TIME UP ===== */
   const handleAutoSubmit = useCallback(() => {
@@ -211,7 +242,7 @@ function JLPTtestPageInner() {
     [submitExam, reportViolation, testId]
   );
 
-  const { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning } =
+  const { tabSwitchCount, activeWarning, dismissWarning } =
     useAntiCheat({
       maxTabSwitches: MAX_TAB_SWITCHES,
       detectDevTools: true,
@@ -320,6 +351,21 @@ function JLPTtestPageInner() {
           }}
         />
       </main>
+
+      <PaywallPopup
+        isOpen={showUpgradePopup}
+        onClose={() => setShowUpgradePopup(false)}
+        title={jlptTopupTitle || "Ban da dung het luot thi JLPT"}
+        description={
+          jlptTopupMessage ||
+          "Hay nang cap goi hoac mua them luot de tiep tuc lam bai."
+        }
+        requiredTier={jlptRecommendedPlan === "PREMIUM" ? "PREMIUM" : "PRO"}
+        actionLabel={
+          jlptRecommendedPlan ? `Nang cap ${jlptRecommendedPlan}` : undefined
+        }
+        upgradePath={upgradePath}
+      />
     </div>
   );
 }

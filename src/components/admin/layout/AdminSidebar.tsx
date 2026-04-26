@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -26,6 +26,7 @@ import {
   Bug,
   Wallet,
   MessageSquare,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -68,7 +69,7 @@ interface NavGroup {
 
 
 export function AdminSidebar() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -115,6 +116,12 @@ export function AdminSidebar() {
           title: t("admin.sidebar.items.withdraw"),
           href: "/admin/withdraw",
           icon: Wallet,
+          adminOnly: true,
+        },
+        {
+          title: "Gói nạp",
+          href: "/admin/topup-packages",
+          icon: Package,
           adminOnly: true,
         },
         {
@@ -204,19 +211,13 @@ export function AdminSidebar() {
         },
       ],
     },
-  ], [t, i18n.language]);
+  ], [t]);
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, canAccessRoute } = usePermissions();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const defaultOpenMenu = useMemo(() => {
     const matchedItem = navGroups
       .flatMap((group) => group.items)
@@ -228,7 +229,7 @@ export function AdminSidebar() {
       );
 
     return matchedItem?.title ?? null;
-  }, [pathname]);
+  }, [navGroups, pathname]);
 
   const displayName =
     user?.fullname || user?.fullName || user?.username || "Admin";

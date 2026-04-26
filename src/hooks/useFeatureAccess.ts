@@ -28,6 +28,7 @@ export const useFeatureAccess = () => {
 
   return {
     // Plan info
+    currentTier: planCode,
     planCode,
     isPro,
     isPremium,
@@ -45,6 +46,11 @@ export const useFeatureAccess = () => {
     jlptRemaining: features?.jlptRemaining ?? 0,
     jlptLimit: features?.jlptExamLimit ?? 5,
     jlptUnlimited: features?.jlptExamLimit === -1,
+    jlptTopupRequired: features?.jlptTopupRequired ?? false,
+    jlptTopupType: features?.jlptTopupType ?? null,
+    jlptTopupTitle: features?.jlptTopupTitle ?? null,
+    jlptTopupMessage: features?.jlptTopupMessage ?? null,
+    jlptRecommendedPlan: features?.jlptRecommendedPlan ?? null,
 
     aiSenseiRemaining: features?.aiSenseiRemainingToday ?? 0,
     aiSenseiDailyLimit: features?.aiSenseiDailyLimit ?? 0,

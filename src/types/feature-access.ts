@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 export type SubscriptionTier = 'BASIC' | 'PRO' | 'PREMIUM';
+export type JlptTopupType = string;
 
 export interface FeatureAccessData {
   planCode: SubscriptionTier;
@@ -17,6 +18,11 @@ export interface FeatureAccessData {
     // JLPT Quota
     jlptExamLimit: number;      // -1 = unlimited
     jlptRemaining: number;      // -1 = unlimited
+    jlptTopupRequired?: boolean;
+    jlptTopupType?: JlptTopupType | null;
+    jlptTopupTitle?: string | null;
+    jlptTopupMessage?: string | null;
+    jlptRecommendedPlan?: SubscriptionTier | null;
 
     // AI Sensei Quota
     aiSenseiDailyLimit: number; // -1 = unlimited, 0 = disabled
@@ -29,6 +35,11 @@ export interface QuotaRemainingData {
   remaining: number;           // -1 = unlimited
   unlimited: boolean;
   disabled?: boolean;          // only for AI Sensei
+  topupRequired?: boolean;
+  topupType?: JlptTopupType | null;
+  topupTitle?: string | null;
+  topupMessage?: string | null;
+  recommendedPlan?: SubscriptionTier | null;
 }
 
 // Error codes returned by backend for feature/quota errors

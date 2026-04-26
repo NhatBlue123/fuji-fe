@@ -26,6 +26,8 @@ interface PaywallPopupProps {
   title?: string;
   description?: string;
   requiredTier?: "PRO" | "PREMIUM";
+  actionLabel?: string;
+  upgradePath?: string;
 }
 
 export default function PaywallPopup({ 
@@ -33,7 +35,9 @@ export default function PaywallPopup({
   onClose, 
   title, 
   description,
-  requiredTier = "PRO"
+  requiredTier = "PRO",
+  actionLabel,
+  upgradePath = "/premium",
 }: PaywallPopupProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -56,12 +60,12 @@ export default function PaywallPopup({
           <Button 
             onClick={() => {
               onClose();
-              router.push('/premium');
+              router.push(upgradePath);
             }}
             className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black h-14 rounded-2xl uppercase tracking-widest text-sm shadow-lg shadow-pink-500/25"
           >
             <Crown className="w-5 h-5 mr-2" />
-            {t("paywall.btnUpgrade", { tier: requiredTier })}
+            {actionLabel || t("paywall.btnUpgrade", { tier: requiredTier })}
           </Button>
           <Button 
             variant="ghost" 

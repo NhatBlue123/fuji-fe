@@ -1,14 +1,18 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import React, { useState } from "react";
-import { Banknote } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Banknote, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import PaymentStatus from "./PaymentStatus";
 import TopupPackageCard from "./TopupPackageCard";
 import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 import { useCreatePaymentMutation } from "@/store/services/paymentApi";
+import {
+  type TopupPackage,
+  useGetTopupPackagesQuery,
+} from "@/store/services/topupPackageApi";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 
 type PaymentQrData = {
@@ -21,6 +25,11 @@ type PaymentQrData = {
   createdAt: number;
 };
 
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 function TopupContentInner() {
   const { t } = useTranslation();
   const { data: wallet } = useGetWalletQuery(undefined, {
@@ -28,21 +37,37 @@ function TopupContentInner() {
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
-  const [createPayment, { isLoading }] = useCreatePaymentMutation();
+  const [createPayment, { isLoading: isCreatingPayment }] =
+    useCreatePaymentMutation();
+  const {
+    data: topupPackages = [],
+    isLoading: isLoadingPackages,
+    isFetching: isFetchingPackages,
+  } = useGetTopupPackagesQuery();
 
-  const availableBalance = wallet?.balance || 0;
-  const [selectedPackage, setSelectedPackage] = useState<number>(4);
+  const availableBalance = wallet?.availableBalance ?? wallet?.balance ?? 0;
+  const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>("bank");
   const [paymentQrData, setPaymentQrData] = useState<PaymentQrData | null>(null);
 
-  const packages = [
-    { id: 1, price: 10, flowers: 10 },
-    { id: 2, price: 20, flowers: 20 },
-    { id: 3, price: 50, flowers: 50, bonus: 5 },
-    { id: 4, price: 100, flowers: 100, bonus: 20, isPopular: true },
-    { id: 5, price: 200, flowers: 200, bonus: 60 },
-    { id: 6, price: 500, flowers: 500, bonus: 100 },
-  ];
+  const packages = useMemo(
+    () =>
+      [...topupPackages].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.price - b.price || a.id - b.id,
+      ),
+    [topupPackages],
+  );
+
+  const selectedPkg = useMemo<TopupPackage | null>(() => {
+    if (!packages.length) return null;
+
+    if (selectedPackageId != null) {
+      const matched = packages.find((pkg) => pkg.id === selectedPackageId);
+      if (matched) return matched;
+    }
+
+    return packages.find((pkg) => pkg.isPopular) || packages[0] || null;
+  }, [packages, selectedPackageId]);
 
   const paymentMethods = [
     {
@@ -53,7 +78,6 @@ function TopupContentInner() {
   ];
 
   const handleTopupClick = async () => {
-    const selectedPkg = packages.find((pkg) => pkg.id === selectedPackage);
     if (!selectedPkg) {
       toast.error(t("premium.topup.selectPackage"));
       return;
@@ -76,6 +100,12 @@ function TopupContentInner() {
         respondedAt: new Date().toISOString(),
       });
 
+      if (!orderData.orderId) {
+        console.error("[payment] createPayment missing order id", orderData);
+        toast.error(t("premium.topup.createFailed"));
+        return;
+      }
+
       const bankId =
         orderData.bankId || process.env.NEXT_PUBLIC_BANK_ID || "MB";
       const accountNo =
@@ -86,13 +116,14 @@ function TopupContentInner() {
         orderData.accountName ||
         process.env.NEXT_PUBLIC_ACCOUNT_NAME ||
         "Duong Luong";
+      const topupAmount = toFiniteNumber(orderData.amount, selectedPkg.flowers);
       const transferAmountVnd =
-        orderData.transferAmountVnd ?? orderData.amount * 1000;
+        toFiniteNumber(orderData.transferAmountVnd, selectedPkg.price);
 
       if (!accountNo) {
         console.error("[payment] createPayment missing account data", {
           orderId: orderData.orderId,
-          amount: orderData.amount,
+          amount: topupAmount,
           transferAmountVnd,
           bankId,
           missingAccountNo: !orderData.accountNo,
@@ -104,7 +135,7 @@ function TopupContentInner() {
 
       setPaymentQrData({
         orderId: orderData.orderId,
-        amount: orderData.amount,
+        amount: topupAmount,
         transferAmountVnd,
         bankId,
         accountNo,
@@ -137,17 +168,42 @@ function TopupContentInner() {
       </div>
 
       <div>
-        <h3 className="text-xl font-bold mb-6">{t("premium.topup.choosePackage")}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {packages.map((pkg) => (
-            <TopupPackageCard
-              key={pkg.id}
-              {...pkg}
-              isSelected={selectedPackage === pkg.id}
-              onSelect={() => setSelectedPackage(pkg.id)}
-            />
-          ))}
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <h3 className="text-xl font-bold">{t("premium.topup.choosePackage")}</h3>
+          {isFetchingPackages && !isLoadingPackages && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t("common.loading")}
+            </div>
+          )}
         </div>
+
+        {isLoadingPackages ? (
+          <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-border bg-card/40 text-muted-foreground">
+            <div className="flex items-center gap-2 font-medium">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              {t("common.loading")}
+            </div>
+          </div>
+        ) : packages.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center text-muted-foreground">
+            {t("common.noResults")}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {packages.map((pkg) => (
+              <TopupPackageCard
+                key={pkg.id}
+                price={pkg.price}
+                flowers={pkg.flowers}
+                bonusFlowers={pkg.bonusFlowers}
+                isPopular={pkg.isPopular}
+                isSelected={selectedPkg?.id === pkg.id}
+                onSelect={() => setSelectedPackageId(pkg.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -173,10 +229,10 @@ function TopupContentInner() {
       <div className="text-center">
         <button
           onClick={handleTopupClick}
-          disabled={isLoading}
+          disabled={isCreatingPayment || !selectedPkg}
           className="px-12 py-4 bg-secondary text-secondary-foreground font-bold rounded-xl disabled:opacity-50"
         >
-          {isLoading ? t("premium.topup.creatingOrder") : t("premium.topup.payWithQR")}
+          {isCreatingPayment ? t("premium.topup.creatingOrder") : t("premium.topup.payWithQR")}
         </button>
       </div>
 

@@ -1,16 +1,24 @@
 import { baseApi } from "./baseApi";
 
+const unwrapApiData = <T,>(res: unknown): T => {
+  if (res && typeof res === "object" && "data" in res) {
+    return (res as { data: T }).data;
+  }
+
+  return res as T;
+};
+
 // ─── Types ────────────────────────────────────────────
 export interface CreatePaymentResponse {
   orderId: string;
   // Canonical app unit
-  amount: number;
+  amount?: number;
   currency?: "BLOSSOM" | string;
   // Bank transfer boundary unit
   transferAmountVnd?: number;
-  bankId: string;
-  accountNo: string;
-  accountName: string;
+  bankId?: string;
+  accountNo?: string;
+  accountName?: string;
 }
 
 export interface PaymentStatusResponse {
@@ -34,6 +42,8 @@ export const paymentApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
+      transformResponse: (res: unknown) =>
+        unwrapApiData<CreatePaymentResponse>(res),
       invalidatesTags: ["Wallet"],
     }),
 
@@ -44,6 +54,8 @@ export const paymentApi = baseApi.injectEndpoints({
         url: `/payments/status/${orderId}`,
         method: "GET",
       }),
+      transformResponse: (res: unknown) =>
+        unwrapApiData<PaymentStatusResponse>(res),
     }),
   }),
 });

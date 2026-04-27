@@ -78,12 +78,8 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Apply synced page from peer
-  useEffect(() => {
-    if (!syncedPage || !isSyncEnabled) return;
-    if (viewingMaterial && syncedPage.materialId === viewingMaterial.id) {
-      setCurrentPage(syncedPage.pageNumber);
-    }
-  }, [syncedPage, viewingMaterial, isSyncEnabled]);
+  // Note: page sync for PDF/image is handled by the viewer component directly
+  // via syncedPage prop passed from parent
 
 
 
@@ -315,9 +311,6 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
               className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] transition-colors group cursor-pointer"
               onClick={() => {
                 setViewingMaterial({ id: m.id, url: resolvedUrl, name: m.name, type: m.type });
-                setCurrentPage(1);
-                setNumPages(0);
-                setZoom(1.25);
               }}
             >
               <div className="w-8 h-8 rounded-lg bg-[#6C63FF]/10 flex items-center justify-center shrink-0">

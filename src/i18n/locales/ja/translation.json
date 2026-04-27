@@ -753,8 +753,8 @@
           "desc": "Nhận thông báo khi có phản hồi từ Admin"
         },
         "examReminders": {
-          "label": "Nhắc nhở lịch thi",
-          "desc": "Cảnh báo tự động trước kỳ thi JLPT"
+          "label": "新規試験問題の通知を受け取る",
+          "desc": "新しい試験問題が公開されました"
         },
         "bookingReminders": {
           "label": "Nhắc nhở lịch học",
@@ -1212,6 +1212,7 @@
     "bookingModal_16": "キャンセルされました",
     "bookingModal_17": "Để sau",
     "bookingModal_18": "Chỉ vào phòng được trước 5 phút so với giờ bắt đầu",
+    "bookingModal_19": "詳細を見る",
     "ai_sensei_1": "Đã hoàn thành!",
     "ai_assistant_1": "Hỏi bất kỳ điều gì về tiếng Nhật...",
     "ai_assistant_2": "Sao chép",
@@ -2042,6 +2043,13 @@
       "errorSubmit": "フィードバックの送信中にエラーが発生しました。後でもう一度お試しください。"
     },
     "defaultReportTitle": "システムの問題報告"
+  },
+  "notFound": {
+    "heading": "ページが見つかりません",
+    "subtext": "糟了啊！日本語学習の旅で迷ってしまったようです。",
+    "japaneseText": "ページが見つかりません",
+    "backToHome": "ホームに戻る",
+    "continueLearning": "学習を続ける"
   },
   "paywall": {
     "title": "プレミアム機能",

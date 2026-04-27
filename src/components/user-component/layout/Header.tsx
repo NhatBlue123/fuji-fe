@@ -41,15 +41,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
-import api from "@/lib/api";
-import { tMsg } from "@/i18n";
-import type { ApiEnvelope, BookingDetail } from "@/types/booking";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -73,42 +64,6 @@ const Header = () => {
       return () => clearTimeout(timer);
     }
   }, [bellRingCount]);
-  const [bookingInfo, setBookingInfo] = useState<BookingDetail | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const handleNotificationClick = async (n: {
-    id: number;
-    linkUrl?: string;
-  }) => {
-    markAsRead(n.id);
-    if (!n.linkUrl?.startsWith("/learn/session/")) {
-      if (n.linkUrl) router.push(n.linkUrl);
-      return;
-    }
-
-    const bookingId = Number(n.linkUrl.split("/").pop());
-    if (!Number.isFinite(bookingId) || bookingId <= 0) {
-      router.push("/booking/bookingmodal");
-      return;
-    }
-
-    try {
-      const res = await api.get<ApiEnvelope<BookingDetail>>(
-        `/bookings/${bookingId}`,
-      );
-      const detail = res.data.data;
-      const endedStatuses = new Set(["COMPLETED", "NO_SHOW", "CANCELLED"]);
-      const isEnded =
-        endedStatuses.has(detail.status) || new Date(detail.endAt) < new Date();
-      if (isEnded) {
-        setBookingInfo(detail);
-        setDetailOpen(true);
-        return;
-      }
-      router.push(n.linkUrl);
-    } catch {
-      toast.error(t("header.errorOpenClass"));
-    }
-  };
 
   const formatDateTime = (v: string) =>
     new Date(v).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language === "ja" ? "ja-JP" : "en-US", {
@@ -255,7 +210,10 @@ const Header = () => {
                         return (
                         <button
                           key={notificationKey}
-                          onClick={() => handleNotificationClick(n)}
+                          onClick={() => {
+                            markAsRead(n.id);
+                            if (n.linkUrl) router.push(n.linkUrl);
+                          }}
                           className={cn(
                             "flex items-start gap-3 border-b px-5 py-4 text-left transition-all hover:bg-muted/50 group relative",
                             !n.isRead
@@ -273,7 +231,7 @@ const Header = () => {
                                     : "text-foreground/40",
                                 )}
                               >
-                                {tMsg(n.title)}
+                                {t("common.notification")}
                               </span>
                             </div>
                             <p
@@ -284,7 +242,7 @@ const Header = () => {
                                   : "text-muted-foreground/50",
                               )}
                             >
-                              {tMsg(n.content)}
+                              {n.content}
                             </p>
                             <span className="text-[9px] text-muted-foreground/40 font-bold mt-1 block">
                               {formatDistanceToNow(new Date(n.createdAt), {
@@ -430,38 +388,6 @@ const Header = () => {
             >{t('auto.header_2')}</Button>
           )}
         </div>
-        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-          <DialogContent className="sm:max-w-md rounded-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('auto.header_3')}</DialogTitle>
-            </DialogHeader>
-            {bookingInfo && (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>
-                  <span className="font-semibold text-foreground">{t('auto.header_4')}</span>{" "}
-                  {bookingInfo.subject}
-                </p>
-                <p>
-                  <span className="font-semibold text-foreground">{t('auto.header_5')}</span>{" "}
-                  {bookingInfo.teacherName}
-                </p>
-                <p>
-                  <span className="font-semibold text-foreground">{t('auto.header_6')}</span>{" "}
-                  {bookingInfo.studentName}
-                </p>
-                <p>
-                  <span className="font-semibold text-foreground">{t('auto.header_7')}</span>{" "}
-                  {formatDateTime(bookingInfo.startAt)} -{" "}
-                  {formatDateTime(bookingInfo.endAt)}
-                </p>
-                <p>
-                  <span className="font-semibold text-foreground">{t('auto.header_8')}</span>{" "}
-                  {bookingInfo.status}
-                </p>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </header>
     </TooltipProvider>
   );

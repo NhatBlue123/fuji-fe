@@ -47,7 +47,8 @@ export const baseApi = createApi({
     "WeeklyStats",
     "WeeklySummary",
     "TodayStats",
-    "Insight"
+    "Insight",
+    "LessonNote"
   ],
   endpoints: () => ({}),
 });

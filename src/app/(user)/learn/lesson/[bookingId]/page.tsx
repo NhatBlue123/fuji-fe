@@ -16,8 +16,6 @@ import {
   useEndLessonMutation,
   useMarkLessonActiveMutation,
   useGetChatHistoryQuery,
-  useStartLessonRecordingMutation,
-  useStopLessonRecordingMutation,
 } from "@/store/services/lessonApi";
 import { useSubmitSessionReviewMutation } from "@/store/services/bookingApi";
 import type { LessonRoomResponse } from "@/store/services/lessonApi";
@@ -27,7 +25,6 @@ import { ControlBar } from "@/components/lesson/ControlBar";
 import { LessonHeader } from "@/components/lesson/LessonHeader";
 import { SidePanel } from "@/components/lesson/SidePanel";
 import { disconnectStomp } from "@/lib/stomp";
-import { useLessonRecordingStomp } from "@/hooks/useLessonRecordingStomp";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
@@ -47,16 +44,6 @@ export default function LessonPage() {
   const [endLesson] = useEndLessonMutation();
   const [submitSessionReview] = useSubmitSessionReviewMutation();
   const [markActive] = useMarkLessonActiveMutation();
-  const [startRecording] = useStartLessonRecordingMutation();
-  const [stopRecording] = useStopLessonRecordingMutation();
-
-  const { remoteRecording } = useLessonRecordingStomp(
-    lessonData?.lessonId ?? null,
-    accessToken ?? null
-  );
-
-  const [recordingConsentOpen, setRecordingConsentOpen] = useState(false);
-  const recordingConsentShownRef = useRef(false);
   const autoEndedRef = useRef(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportRating, setReportRating] = useState(5);
@@ -140,27 +127,6 @@ export default function LessonPage() {
       setHasMarkedActive(true);
     }
   }, [participants, isJoined, lessonData, hasMarkedActive, markActive]);
-
-  useEffect(() => {
-    if (role !== "STUDENT" || !remoteRecording || recordingConsentShownRef.current) return;
-    recordingConsentShownRef.current = true;
-    setRecordingConsentOpen(true);
-  }, [role, remoteRecording]);
-
-  const handleToggleRecording = useCallback(async () => {
-    if (!lessonData || role !== "TEACHER") return;
-    try {
-      if (remoteRecording) {
-        await stopRecording({ lessonId: lessonData.lessonId }).unwrap();
-        toast.success(t("lesson.recording.stopped"));
-      } else {
-        await startRecording({ lessonId: lessonData.lessonId }).unwrap();
-        toast.success(t("lesson.recording.started"));
-      }
-    } catch {
-      toast.error(t("lesson.recording.errorToggle"));
-    }
-  }, [lessonData, role, remoteRecording, startRecording, stopRecording]);
 
   const exitLesson = useCallback(() => {
     leave();
@@ -333,24 +299,6 @@ export default function LessonPage() {
         </div>
       )}
 
-      {recordingConsentOpen && role === "STUDENT" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="max-w-md rounded-2xl border border-white/10 bg-[#1a1d27] p-6 shadow-xl">
-            <p className="text-[#F0F0F0] font-semibold text-sm">{t('lesson.recording.consentTitle')}</p>
-            <p className="text-[#8B8FA8] text-xs mt-2 leading-relaxed">
-              {t('lesson.recording.consentDesc')}
-            </p>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-xl bg-[#6C63FF] py-2.5 text-sm font-semibold text-white hover:bg-[#5a52e0]"
-              onClick={() => setRecordingConsentOpen(false)}
-            >
-              {t('lesson.recording.consentBtn')}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <LessonHeader
         subject={lessonData.subject}
@@ -359,7 +307,6 @@ export default function LessonPage() {
         remainingSeconds={lessonData.remainingSeconds}
         isConnected={isJoined && participants.filter((p) => !p.local).length > 0}
         role={role}
-        isRecording={remoteRecording}
         onTimeUp={handleLessonTimeUp}
       />
 
@@ -411,8 +358,6 @@ export default function LessonPage() {
         onToggleScreenShare={handleToggleScreenShare}
         onEndCall={handleEndCall}
         isTeacher={role === "TEACHER"}
-        isRecording={remoteRecording}
-        onToggleRecording={handleToggleRecording}
       />
     </div>
   );

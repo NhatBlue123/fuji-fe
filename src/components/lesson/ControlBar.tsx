@@ -10,7 +10,6 @@ import {
   MonitorOff,
   PhoneOff,
   Settings,
-  Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +21,7 @@ interface ControlBarProps {
   onToggleCamera: () => void;
   onToggleScreenShare: () => void;
   onEndCall: () => void;
-  /** Giáo viên: bật/tắt ghi hình cloud */
   isTeacher?: boolean;
-  isRecording?: boolean;
-  onToggleRecording?: () => void;
 }
 
 export function ControlBar({
@@ -37,8 +33,6 @@ export function ControlBar({
   onToggleScreenShare,
   onEndCall,
   isTeacher = false,
-  isRecording = false,
-  onToggleRecording,
 }: ControlBarProps) {
   const { t } = useTranslation();
   return (
@@ -70,25 +64,6 @@ export function ControlBar({
         tooltip={isScreenSharing ? "Dừng chia sẻ" : "Chia sẻ màn hình"}
         highlight={isScreenSharing}
       />
-
-      <div className="w-px h-8 bg-white/10 mx-2" />
-
-      {isTeacher && onToggleRecording && (
-        <button
-          type="button"
-          onClick={onToggleRecording}
-          title={isRecording ? "Dừng ghi hình" : "Bắt đầu ghi hình"}
-          className={cn(
-            "h-12 px-4 rounded-full flex items-center gap-2 text-xs font-semibold border transition-all",
-            isRecording
-              ? "bg-[#FF2D2D]/25 border-[#FF2D2D] text-[#ffb4b4] animate-pulse"
-              : "bg-[#252838] border-white/10 text-[#F0F0F0] hover:bg-[#2f3347]"
-          )}
-        >
-          <Circle className="h-3 w-3 fill-current" />
-          {isRecording ? "Dừng REC" : "Ghi hình"}
-        </button>
-      )}
 
       <div className="w-px h-8 bg-white/10 mx-2" />
 

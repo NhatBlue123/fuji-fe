@@ -95,7 +95,7 @@ export function SidePanel({
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === "chat" && (
+        <div style={{ display: activeTab === "chat" ? "flex" : "none" }} className="h-full flex-col">
           <ChatPanel
             messages={messages}
             typingUsers={typingUsers}
@@ -105,27 +105,27 @@ export function SidePanel({
             onReaction={onReaction}
             onMarkSeen={onMarkSeen}
           />
-        )}
+        </div>
 
-        {activeTab === "notes" && (
+        <div style={{ display: activeTab === "notes" ? "flex" : "none" }} className="h-full flex-col">
           <NotesPanel lessonId={lessonId} />
-        )}
+        </div>
 
-        {activeTab === "whiteboard" && (
+        <div style={{ display: activeTab === "whiteboard" ? "flex" : "none" }} className="h-full flex-col">
           <WhiteboardPanel
             lessonId={lessonId}
             token={token}
             currentUserId={currentUserId}
           />
-        )}
+        </div>
 
-        {activeTab === "quiz" && (
+        <div style={{ display: activeTab === "quiz" ? "flex" : "none" }} className="h-full flex-col">
           <QuizPanel
             lessonId={lessonId}
             token={token}
             isTeacher={isTeacher}
           />
-        )}
+        </div>
       </div>
     </div>
   );

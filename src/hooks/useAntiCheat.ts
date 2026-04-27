@@ -47,9 +47,13 @@ export function useAntiCheat({
   // ─── Feature 1: Tab Switching Detection ─────────────────────────────────────
   useEffect(() => {
     let lastPenaltyTime = 0;
+    // Guard against double-trigger: both blur and visibilitychange can fire
+    // for a single tab switch. We mark a "cooldown" so only one counts.
+    let cooldownFlag = false;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
+        cooldownFlag = true;
         const now = Date.now();
         if (now - lastPenaltyTime < 1000) return;
         lastPenaltyTime = now;
@@ -71,9 +75,13 @@ export function useAntiCheat({
     };
 
     const handleBlur = () => {
+      // Skip if visibilitychange already handled this switch (cooldownFlag set)
+      if (cooldownFlag) {
+        cooldownFlag = false;
+        return;
+      }
       // window blur = switched to another app/window
       if (document.visibilityState === "visible") {
-        // Visible but blurred = another OS window (not tab switch, handled above)
         const now = Date.now();
         if (now - lastPenaltyTime < 1000) return;
         lastPenaltyTime = now;

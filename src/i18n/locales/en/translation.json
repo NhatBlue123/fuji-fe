@@ -589,8 +589,8 @@
           "desc": "Receive notifications when Admin responds"
         },
         "examReminders": {
-          "label": "Exam Reminders",
-          "desc": "Automatic alerts before JLPT exams"
+          "label": "New Exam Notifications",
+          "desc": "Receive notifications when new exam tests are published"
         },
         "bookingReminders": {
           "label": "Booking Reminders",
@@ -1121,6 +1121,7 @@
     "bookingModal_16": "Cancelled",
     "bookingModal_17": "Để sau",
     "bookingModal_18": "Chỉ vào phòng được trước 5 phút so với giờ bắt đầu",
+    "bookingModal_19": "View Details",
     "ai_sensei_1": "Đã hoàn thành!",
     "ai_assistant_1": "Hỏi bất kỳ điều gì về tiếng Nhật...",
     "ai_assistant_2": "Sao chép",
@@ -1951,6 +1952,13 @@
       "errorSubmit": "An error occurred while sending feedback. Please try again later."
     },
     "defaultReportTitle": "System Issue Report"
+  },
+  "notFound": {
+    "heading": "This page could not be found",
+    "subtext": "Oops! Looks like you got lost on your Japanese learning journey.",
+    "japaneseText": "ページが見つかりません",
+    "backToHome": "Back to Home",
+    "continueLearning": "Continue Learning"
   },
   "paywall": {
     "title": "Premium Feature",

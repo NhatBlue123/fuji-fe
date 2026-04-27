@@ -121,15 +121,6 @@ export interface QuizResultResponse {
   }[];
 }
 
-export interface LessonRecordingItem {
-  id: number;
-  roomName: string | null;
-  downloadUrl: string | null;
-  durationSeconds: number | null;
-  externalRecordingId: string | null;
-  createdAt: string;
-}
-
 export interface LessonSummaryResponse {
   id: number;
   lessonId: number;
@@ -139,19 +130,6 @@ export interface LessonSummaryResponse {
   vocabularyList: string[];
   sentAt: string | null;
   createdAt: string | null;
-}
-
-export interface PostSessionOverviewResponse {
-  lessonId: number;
-  bookingId: number;
-  subject: string | null;
-  teacherName: string;
-  studentName: string;
-  summary: LessonSummaryResponse | null;
-  myNote: NoteResponse | null;
-  recordings: LessonRecordingItem[];
-  transcripts: string[];
-  latestQuizScore: number | null;
 }
 
 export const lessonApi = baseApi.injectEndpoints({
@@ -211,6 +189,9 @@ export const lessonApi = baseApi.injectEndpoints({
     getMyNote: builder.query<NoteResponse, { lessonId: number }>({
       query: ({ lessonId }) => `/lessons/${lessonId}/notes/me`,
       transformResponse: (res: ApiEnvelope<NoteResponse>) => res.data,
+      providesTags: (_result, _error, { lessonId }) => [
+        { type: "LessonNote" as const, id: lessonId },
+      ],
     }),
 
     saveMyNote: builder.mutation<NoteResponse, { lessonId: number; content: string }>({
@@ -280,25 +261,6 @@ export const lessonApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<QuizResultResponse>) => res.data,
     }),
 
-    startLessonRecording: builder.mutation<void, { lessonId: number }>({
-      query: ({ lessonId }) => ({
-        url: `/lessons/${lessonId}/recordings/start`,
-        method: "POST",
-      }),
-    }),
-
-    stopLessonRecording: builder.mutation<void, { lessonId: number }>({
-      query: ({ lessonId }) => ({
-        url: `/lessons/${lessonId}/recordings/stop`,
-        method: "POST",
-      }),
-    }),
-
-    listLessonRecordings: builder.query<LessonRecordingItem[], { lessonId: number }>({
-      query: ({ lessonId }) => `/lessons/${lessonId}/recordings`,
-      transformResponse: (res: ApiEnvelope<LessonRecordingItem[]>) => res.data,
-    }),
-
     createLessonSummary: builder.mutation<
       LessonSummaryResponse,
       { lessonId: number; teacherNote?: string; homework?: string; quizScore?: number; vocabularyList?: string[] }
@@ -314,11 +276,6 @@ export const lessonApi = baseApi.injectEndpoints({
     getLessonSummary: builder.query<LessonSummaryResponse | null, { lessonId: number }>({
       query: ({ lessonId }) => `/lessons/${lessonId}/summary`,
       transformResponse: (res: ApiEnvelope<LessonSummaryResponse | null>) => res.data,
-    }),
-
-    getPostSessionByBooking: builder.query<PostSessionOverviewResponse, { bookingId: number }>({
-      query: ({ bookingId }) => `/lessons/by-booking/${bookingId}/post-session`,
-      transformResponse: (res: ApiEnvelope<PostSessionOverviewResponse>) => res.data,
     }),
 
     // ==================== MEDIA ====================
@@ -351,11 +308,7 @@ export const {
   useListQuizzesQuery,
   useSubmitQuizAnswerMutation,
   useGetQuizResultsQuery,
-  useStartLessonRecordingMutation,
-  useStopLessonRecordingMutation,
-  useListLessonRecordingsQuery,
   useCreateLessonSummaryMutation,
   useGetLessonSummaryQuery,
-  useGetPostSessionByBookingQuery,
   useUploadAudioMutation,
 } = lessonApi;

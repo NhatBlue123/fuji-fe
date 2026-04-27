@@ -108,17 +108,21 @@ export interface SubmissionResponse {
   scorePoints: number;
 }
 
+export interface QuizSubmissionResultDto {
+  userId: number;
+  userName: string;
+  questionId: number;
+  userAnswer?: string;
+  correctAnswer?: string;
+  correct: boolean;
+  scorePoints: number;
+}
+
 export interface QuizResultResponse {
   quizId: number;
   totalQuestions: number;
   scoresByUser: Record<string, number>;
-  submissions: {
-    userId: number;
-    userName: string;
-    questionId: number;
-    correct: boolean;
-    scorePoints: number;
-  }[];
+  submissions: QuizSubmissionResultDto[];
 }
 
 export interface LessonSummaryResponse {

@@ -88,13 +88,16 @@ function SectionSidebar({
   sections,
   mondaiLeaves,
   selectedQ,
+  selectedSlotPerMondai,
   onSelect,
 }: {
   sections: SectionConfig[];
   mondaiLeaves: Map<number, JlptQuestionAdmin[]>;
   selectedQ: number | null;
-  onSelect: (n: number) => void;
+  selectedSlotPerMondai: Record<number, number>;
+  onSelect: (questionOrder: number, slotIndex: number, mondaiNumber: number) => void;
 }) {
+
   return (
     <aside className="w-72 shrink-0 border-r border-border bg-muted/30 overflow-y-auto flex flex-col">
       <div className="p-4 border-b border-border">
@@ -140,16 +143,18 @@ function SectionSidebar({
                 <div className="flex flex-wrap gap-1">
                   {nums.map((questionOrder, idx) => {
                     const slotIndex = idx + 1;
+                    const selectedSlot = selectedSlotPerMondai[mondai.number];
+                    const isCurrent = selectedSlot === slotIndex;
+                    const isSaved = actualQuestions.some(q => q.questionOrder === questionOrder);
+
                     const displayLabel = isPassage
                       ? `${mondai.start}.${slotIndex}`
                       : String(questionOrder);
-                    const isSaved = actualQuestions.some(q => q.questionOrder === questionOrder);
-                    const isCurrent = selectedQ === questionOrder;
 
                     return (
                       <button
                         key={questionOrder}
-                        onClick={() => onSelect(questionOrder)}
+                        onClick={() => onSelect(questionOrder, slotIndex, mondai.number)}
                         title={`Câu ${displayLabel}`}
                         className={`h-7 rounded text-xs font-medium transition-all px-1.5 min-w-[2rem]
                           ${isCurrent
@@ -315,6 +320,8 @@ export default function AdminExamLayout() {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(null);
+  // mondaiNumber → slotIndex (1-based) of selected question within that mondai
+  const [selectedSlotPerMondai, setSelectedSlotPerMondai] = useState<Record<number, number>>({});
   const [showSetup, setShowSetup] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
@@ -504,11 +511,11 @@ export default function AdminExamLayout() {
     const found = findMondaiInStructure(selectedQuestionNumber);
     if (!found) return null;
     const node = questionsMap[found.mondai.number];
+    const slotIdx = selectedSlotPerMondai[found.mondai.number] ?? found.passageSlotIndex;
 
     let existingChild: JlptQuestionAdmin | null = null;
-    if (found.mondai.requires_passage && found.passageSlotIndex != null) {
-      // Passage: use slotIndexToQuestionOrder map to find child
-      const qOrder = slotIndexToQuestionOrder.get(found.passageSlotIndex);
+    if (found.mondai.requires_passage && slotIdx != null) {
+      const qOrder = slotIndexToQuestionOrder.get(slotIdx);
       if (qOrder != null) {
         existingChild = node?.children[qOrder] ?? null;
       }
@@ -517,8 +524,8 @@ export default function AdminExamLayout() {
     }
 
     const existingParent = node?.parent ?? null;
-    return { ...found, node, existingChild, existingParent };
-  }, [selectedQuestionNumber, findMondaiInStructure, questionsMap, slotIndexToQuestionOrder]);
+    return { ...found, node, existingChild, existingParent, slotIdx };
+  }, [selectedQuestionNumber, findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai]);
 
   // ── SubLabels and mondaiLeaves ────────────────────────────────────────────
   const { subLabels, mondaiLeaves } = useMemo(() => {
@@ -586,21 +593,69 @@ export default function AdminExamLayout() {
   const bankItems: QuestionBankItem[] = bankPage?.content ?? [];
 
   // ── Select question → populate form ──────────────────────────────────────
-  const handleSelectQuestion = useCallback((n: number) => {
+  const handleSelectQuestion = useCallback((
+    n: number,
+    slotIdx?: number,
+    mondaiNum?: number,
+    passedSlotIdx?: number
+  ) => {
+    // If called with 1 arg (old internal calls), derive from structure
+    if (slotIdx === undefined || mondaiNum === undefined) {
+      const found = findMondaiInStructure(n);
+      if (!found) return;
+      const effectiveSlot = passedSlotIdx ?? found.passageSlotIndex ?? selectedSlotPerMondai[found.mondai.number];
+      setSelectedQuestionNumber(n);
+      setSelectedSlotPerMondai(prev => ({ ...prev, [found.mondai.number]: effectiveSlot ?? 1 }));
+      setShowAIPanel(false);
+      const node = questionsMap[found.mondai.number];
+      const isPassage = found.mondai.requires_passage;
+      let child: JlptQuestionAdmin | null = null;
+      let parent: JlptQuestionAdmin | null = node?.parent ?? null;
+      if (isPassage && effectiveSlot != null) {
+        const qOrder = slotIndexToQuestionOrder.get(effectiveSlot);
+        if (qOrder != null) child = node?.children[qOrder] ?? null;
+      } else {
+        child = node?.children[n] ?? null;
+      }
+      setPassageText(parent?.contentText ?? "");
+      setQuestionText(child?.contentText ?? "");
+      let parsedOptions: string[] = ["", "", "", ""];
+      if (child?.options) {
+        if (Array.isArray(child.options)) {
+          parsedOptions = child.options.length === 4 ? child.options : ["", "", "", ""];
+        } else if (typeof child.options === "string") {
+          try {
+            const arr = JSON.parse(child.options as string);
+            parsedOptions = Array.isArray(arr) && arr.length === 4 ? arr : ["", "", "", ""];
+          } catch { /* leave empty */ }
+        }
+      }
+      setOptions(parsedOptions);
+      setCorrectOption(child?.correctOption ?? 1);
+      setExplanation(child?.explanation ?? "");
+      setPoints(child?.points ?? 1.0);
+      setAudioMediaId(child?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
+      setAudioPreviewUrl(child?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
+      setImageMediaId(child?.imageMedia?.id ?? null);
+      return;
+    }
+
+    // Full call with all 3 args (from sidebar button)
+    const effectiveSlotIdx = passedSlotIdx ?? slotIdx;
     setSelectedQuestionNumber(n);
+    setSelectedSlotPerMondai(prev => ({ ...prev, [mondaiNum]: effectiveSlotIdx }));
     setShowAIPanel(false);
 
+    const node = questionsMap[mondaiNum];
     const found = findMondaiInStructure(n);
-    if (!found) return;
-
-    const node = questionsMap[found.mondai.number];
-    const isPassage = found.mondai.requires_passage;
+    const mondai = found?.mondai;
+    const isPassage = mondai?.requires_passage ?? false;
 
     let child: JlptQuestionAdmin | null = null;
     let parent: JlptQuestionAdmin | null = node?.parent ?? null;
 
-    if (isPassage && found.passageSlotIndex != null) {
-      const qOrder = slotIndexToQuestionOrder.get(found.passageSlotIndex);
+    if (isPassage && effectiveSlotIdx != null) {
+      const qOrder = slotIndexToQuestionOrder.get(effectiveSlotIdx);
       if (qOrder != null) child = node?.children[qOrder] ?? null;
     } else {
       child = node?.children[n] ?? null;
@@ -626,7 +681,7 @@ export default function AdminExamLayout() {
     setAudioMediaId(child?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
     setAudioPreviewUrl(child?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
     setImageMediaId(child?.imageMedia?.id ?? null);
-  }, [findMondaiInStructure, questionsMap, slotIndexToQuestionOrder]);
+  }, [findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai]);
 
   // ── Upload handlers ───────────────────────────────────────────────────────
   const handleAudioUpload = async (file: File) => {
@@ -898,6 +953,7 @@ export default function AdminExamLayout() {
           sections={structure}
           mondaiLeaves={mondaiLeaves}
           selectedQ={selectedQuestionNumber}
+          selectedSlotPerMondai={selectedSlotPerMondai}
           onSelect={handleSelectQuestion}
         />
 

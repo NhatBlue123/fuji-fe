@@ -206,17 +206,47 @@ async function callGemini(apiKey: string, model: string, prompt: string) {
     const msg = data?.error?.message ?? `Gemini API error ${res.status}`;
     throw new Error(msg);
   }
-  let text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  // Robust extraction: find the first '[' and last ']' since the result must be an array
-  const startIdx = text.indexOf('[');
-  const endIdx = text.lastIndexOf(']');
-  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-    text = text.substring(startIdx, endIdx + 1);
-  } else {
-    // Fallback: strip markdown blocks just in case
-    text = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+  let rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+  // ── Robust JSON extraction ─────────────────────────────────────────────────
+  // Strategy 1: Find first '[' and last ']' (valid array)
+  const extractJson = (text: string): string | null => {
+    // Remove markdown code fences first
+    let cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+
+    // Try direct parse
+    try { JSON.parse(cleaned); return cleaned; } catch {}
+
+    // Try array extraction
+    const start = cleaned.indexOf('[');
+    const end = cleaned.lastIndexOf(']');
+    if (start !== -1 && end !== -1 && end > start) {
+      const candidate = cleaned.substring(start, end + 1);
+      try { JSON.parse(candidate); return candidate; } catch {}
+    }
+
+    // Try object extraction (single question wrapper)
+    const objStart = cleaned.indexOf('{');
+    const objEnd = cleaned.lastIndexOf('}');
+    if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+      const candidate = cleaned.substring(objStart, objEnd + 1);
+      try { JSON.parse(candidate); return `[${candidate}]`; } catch {}
+    }
+
+    // Strip leading/trailing noise
+    cleaned = cleaned.replace(/^[^\[{]+/, "").replace(/[^}\]]+$/, "");
+    try { JSON.parse(cleaned); return cleaned; } catch {}
+
+    return null;
+  };
+
+  const extracted = extractJson(rawText);
+  if (!extracted) {
+    console.error("[AI/generate-questions] Failed to extract JSON. Raw response:", rawText.slice(0, 1000));
+    throw new Error("AI trả về định dạng không hợp lệ. Vui lòng thử lại.");
   }
-  return text;
+
+  return extracted;
 }
 
 // ── Route Handler ─────────────────────────────────────────────────────────────
@@ -246,8 +276,8 @@ export async function POST(req: NextRequest) {
     let questions: any[];
     try {
       questions = JSON.parse(text);
-    } catch {
-      console.error("[AI/generate-questions] Bad JSON:", text.slice(0, 300));
+    } catch (parseErr) {
+      console.error("[AI/generate-questions] JSON parse FAILED. Raw text:", text.slice(0, 2000));
       return NextResponse.json({ error: "AI trả về JSON không hợp lệ. Hãy thử lại." }, { status: 500 });
     }
 

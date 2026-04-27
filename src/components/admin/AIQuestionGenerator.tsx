@@ -22,6 +22,10 @@ interface AIQuestionGeneratorProps {
   mondaiEnd: number;
   initialStart: number;
   section: "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
+  /** Maps raw questionOrder slot numbers to display labels (e.g. "31.1", "8.3") */
+  subLabels: Record<number, string>;
+  /** Whether this mondai is a passage mondai (requires_passage) */
+  requiresPassage: boolean;
   /** Gọi khi user xác nhận → điền dữ liệu vào form cha. Truyền kèm vị trí bắt đầu dãy câu hỏi và cờ lưu vào ngân hàng */
   onConfirm: (questions: AIGeneratedQuestion[], startFrom: number, saveToBank: boolean) => void;
 }
@@ -35,8 +39,13 @@ export default function AIQuestionGenerator({
   mondaiEnd,
   initialStart,
   section,
+  subLabels,
+  requiresPassage,
   onConfirm,
 }: AIQuestionGeneratorProps) {
+  // Derive display labels from the subLabels map (e.g. "8.1", "8.2")
+  const getLabel = (slotNumber: number) => subLabels[slotNumber] ?? String(slotNumber);
+
   const [generating, setGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<AIGeneratedQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +75,9 @@ export default function AIQuestionGenerator({
   };
 
   const count = endQ - startQ + 1;
+
+  // Range label for the confirm button (e.g. "8.1 → 8.4")
+  const rangeLabel = `${getLabel(startQ)} → ${getLabel(startQ + count - 1)}`;
 
   const handleGenerate = async () => {
     if (count < 1 || count > 20) {
@@ -238,7 +250,7 @@ export default function AIQuestionGenerator({
             <div key={idx} className="space-y-2.5 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 p-3 relative">
               
               <div className="absolute -top-2.5 -left-2.5 bg-purple-500 text-white text-[10px] font-bold h-6 min-w-6 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 z-10">
-                Câu {startQ + idx}
+                {getLabel(startQ + idx)}
               </div>
 
               {/* Passage (Reading/Listening) */}
@@ -284,7 +296,7 @@ export default function AIQuestionGenerator({
               onClick={handleConfirm}
             >
               <CheckCheck className="h-4 w-4" />
-              Xác nhận — Điền {count} câu (từ Câu {startQ} → {startQ + count - 1})
+              Xác nhận — Điền {count} câu ({rangeLabel})
             </Button>
           </div>
         </div>

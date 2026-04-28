@@ -77,7 +77,12 @@ const Sidebar = () => {
       roles.includes("INSTRUCTOR") ||
       roles.includes("ROLE_INSTRUCTOR"));
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(path);
+  };
 
   const menuItems = useMemo(() => [
     { label: t("common.home"), path: "/", icon: Home },
@@ -112,7 +117,7 @@ const Sidebar = () => {
           href="/"
           className={cn(
             "flex h-16 items-center hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
-            isCollapsed ? "justify-center px-4" : "gap-2 px-3"
+            isCollapsed ? "justify-center px-4" : "gap-2 px-3 -ml-2"
           )}
         >
           <div className="flex-shrink-0">
@@ -141,7 +146,7 @@ const Sidebar = () => {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
                   active
-                    ? "bg-secondary text-white font-black shadow-lg shadow-secondary/20 hover:text-white"
+                    ? "bg-secondary text-white font-black shadow-[inset_0_3px_12px_rgba(0,0,0,0.4),inset_0_-1px_4px_rgba(255,255,255,0.1)] hover:text-white"
                     : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
                 )}
               >

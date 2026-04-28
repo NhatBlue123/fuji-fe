@@ -12,9 +12,12 @@ export const metadata: Metadata = {
   title: "FUJI - Học Tiếng Nhật Online",
   description: "Chinh phục tiếng Nhật cùng FUJI",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "16x16", type: "image/png" },
+    ],
     shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    apple: { url: "/favicon.png", sizes: "180x180", type: "image/png" },
   },
   openGraph: {
     title: "FUJI - Học Tiếng Nhật Online",
@@ -60,9 +63,10 @@ export default function RootLayout({
       style={fontVars}
     >
       <head suppressHydrationWarning>
-        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="icon" href="/favicon.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/favicon.png" sizes="16x16" type="image/png" />
         <link rel="shortcut icon" href="/favicon.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/favicon.png" sizes="180x180" />
       </head>
       <body suppressHydrationWarning>
         <ExtensionCleanup />

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useInView } from "framer-motion";
@@ -208,12 +209,21 @@ function MediaSurface({
           muted
           playsInline
           preload="metadata"
+          loading="lazy"
         />
       ) : (
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${src})` }}
-        />
+        <div className="absolute inset-0">
+          <Image
+            src={src}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=="
+          />
+        </div>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
       {children && <div className="relative z-10 h-full">{children}</div>}
@@ -499,7 +509,17 @@ export default function HomePage() {
         <section className="grid gap-6 lg:grid-cols-2">
           <FadeUp>
             <div className="group overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35">
-              <div className="relative h-[310px] overflow-hidden rounded-none">
+              <div className="relative h-[310px] overflow-hidden rounded-none bg-muted/50">
+                <Image
+                  src={HOME_MEDIA.aiPoster}
+                  alt="AI Chat"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  loading="lazy"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=="
+                />
                 <video
                   ref={aiVideoRef}
                   className="absolute inset-0 size-full object-cover"
@@ -507,7 +527,7 @@ export default function HomePage() {
                   poster={HOME_MEDIA.aiPoster}
                   loop
                   playsInline
-                  preload="metadata"
+                  preload="none"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                 <button
@@ -643,6 +663,16 @@ export default function HomePage() {
 
         <FadeUp className="pb-2">
           <section className="relative min-h-[380px] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 text-white shadow-2xl">
+            <Image
+              src={HOME_MEDIA.finalPoster}
+              alt="FUJI"
+              fill
+              className="object-cover opacity-70"
+              sizes="(max-width: 768px) 100vw, 90vw"
+              loading="lazy"
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=="
+            />
             <video
               className="absolute inset-0 size-full object-cover opacity-70"
               src={HOME_MEDIA.finalVideo}
@@ -651,7 +681,7 @@ export default function HomePage() {
               loop
               muted
               playsInline
-              preload="metadata"
+              preload="none"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-slate-950/10" />
             <div className="relative z-10 flex min-h-[380px] flex-col justify-center p-8 sm:p-10 lg:p-14">

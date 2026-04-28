@@ -72,6 +72,8 @@
     "copied": "Copied"
   },
   "sidebar": {
+    "home": "Home",
+    "courses": "Courses",
     "subtitle": "Learn Japanese",
     "premiumTitle": "Premium Plan",
     "premiumHeading": "Upgrade to Premium",
@@ -478,6 +480,130 @@
       "title": "Ready to conquer JLPT?",
       "description": "Sign up today to get 30% off your first Premium course.",
       "button": "Request Consultation"
+    },
+    "featureMap": {
+      "badge": "Feature map",
+      "title": "Every learning tool in one place",
+      "subtitle": "Choose what you need and start right away. Each card opens a real FUJI feature.",
+      "ctaBtn": "Start with a path",
+      "openFeature": "Open feature"
+    },
+    "cards": {
+      "course": { "title": "Path-based courses", "desc": "Study from N5 to N1 with video lessons and exercises arranged in a clear learning order.", "badge": "Core" },
+      "jlpt": { "title": "JLPT practice", "desc": "Practice realistic N5 to N1 tests with detailed progress after every attempt.", "badge": "Exam" },
+      "booking": { "title": "1-on-1 teacher booking", "desc": "Pick an available slot, book a private lesson, and track upcoming sessions with your teacher.", "badge": "Live" },
+      "aiChat": { "title": "Japanese AI chat", "desc": "Practice conversation, understand grammar, and fix sentences with a context-aware AI tutor.", "badge": "AI" },
+      "videoCall": { "title": "Live video classes", "desc": "Join an online classroom and practice listening and speaking in real time with teachers.", "badge": "Realtime" },
+      "flashcards2": { "title": "Smart flashcards", "desc": "Review vocabulary with SRS cards, fill-blank drills, and multiple-choice practice.", "badge": "SRS" },
+      "premium2": { "title": "Premium plans", "desc": "View upgrades, usage history, and benefits available for your account.", "badge": "Upgrade" },
+      "wallet": { "title": "Wallet and payments", "desc": "Manage balance, withdrawals, transaction history, and secure payment details.", "badge": "Finance" }
+    },
+    "jlptSection": {
+      "badge": "JLPT training",
+      "titlePart1": "Choose a level,",
+      "titleHighlight": "start practicing",
+      "viewAll": "View all",
+      "practiceNow": "Practice now →",
+      "levels": { "N5": "Beginner", "N4": "Upper beginner", "N3": "Intermediate", "N2": "Upper intermediate", "N1": "Advanced" }
+    },
+    "scenariosSection": {
+      "badge": "Learning scenarios",
+      "title": "Choose a study mode for your goal",
+      "speak": {
+        "title": "20 minutes of speaking every day",
+        "subtitle": "Speaking and response practice",
+        "overview": "Combine AI Chat and Video Call to build sentence reflexes and pronunciation in realistic situations.",
+        "b1": "Warm up for 5 minutes with AI Chat on a work topic.",
+        "b2": "Move into Video Call for scenario-based Q&A practice.",
+        "b3": "Save notes to your profile to track repeated mistakes.",
+        "primary": "Open AI Chat",
+        "secondary": "Join Video Call"
+      },
+      "exam": {
+        "title": "45-minute JLPT push",
+        "subtitle": "Test practice and result review",
+        "overview": "Keep a steady test rhythm and turn wrong answers into vocabulary review before exam day.",
+        "b1": "Complete one mixed mini test in JLPT Practice.",
+        "b2": "When a topic feels weak, open the related course for a quick review.",
+        "b3": "Add new words to flashcards and review them later today.",
+        "primary": "Start JLPT",
+        "secondary": "View courses"
+      },
+      "career": {
+        "title": "Long-term consistency mode",
+        "subtitle": "Path, schedule, and finance tracking",
+        "overview": "A steadier setup for long-term discipline: clear path, teacher sessions, and plan management.",
+        "b1": "Check your current plan and Premium benefits.",
+        "b2": "Book a weekly lesson to keep your commitment visible.",
+        "b3": "Review wallet and payment history to manage costs.",
+        "primary": "Open Premium",
+        "secondary": "Open wallet"
+      }
+    },
+    "missionsSection": {
+      "title": "Today's focus",
+      "desc": "A few small tasks to keep your daily study rhythm without opening too many screens at once.",
+      "count": "{{total}} tasks • {{completed}} done",
+      "flashcardsMission": { "title": "Review 20 N3 flashcards", "desc": "Finish a common workplace vocabulary set.", "eta": "About 12 minutes left" },
+      "jlptMission": { "title": "Take a JLPT mini test", "desc": "A mixed listening and reading test to keep your rhythm.", "eta": "About 18 minutes left" },
+      "bookingMission": { "title": "Book a teacher session", "desc": "Choose a pronunciation lesson that matches your current level.", "eta": "1 confirmation step left" },
+      "aiMission": { "title": "Chat with AI Sensei", "desc": "Practice conversation for 10 minutes to improve response speed.", "eta": "Start now" }
+    },
+    "quickLinks": {
+      "title": "Quick access",
+      "notifications": "Notifications",
+      "profile": "Profile",
+      "paymentHistory": "Payment history",
+      "subscription": "Subscription",
+      "withdraw": "Withdraw",
+      "reports": "Learning reports",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "aiSection": {
+      "badge": "AI Powered",
+      "title1": "AI Chat for",
+      "titleHighlight": "Japanese",
+      "desc": "Practice conversations, understand grammar, and correct sentences in context. AI understands Vietnamese, English, and Japanese.",
+      "cta": "Chat now"
+    },
+    "videoSection": {
+      "badge": "Live Session",
+      "title1": "Video Call for",
+      "titleHighlight": "live learning",
+      "desc": "Join online classes and practice listening and speaking in real time with Japanese teachers.",
+      "cta": "Enter classroom"
+    },
+    "flashSection": {
+      "badge": "Flashcards SRS",
+      "title": "Remember vocabulary",
+      "titleHighlight": "for longer",
+      "desc": "Smart spaced repetition helps you review vocabulary at the right time with fill-blank, multiple-choice, and other drills.",
+      "cta": "Start reviewing",
+      "kanjiLabel": "N3 • Kanji",
+      "kanjiMeaning": "Study"
+    },
+    "bookingCard": {
+      "title": "Book a teacher",
+      "desc": "Study 1-on-1 with experienced teachers. Choose a suitable time and get personalized feedback.",
+      "stat1": "50+ teachers",
+      "stat2": "Flexible 24/7",
+      "cta": "Book now"
+    },
+    "premiumCard": {
+      "title": "Upgrade your plan",
+      "desc": "Unlock more lessons, AI practice, and Premium features to keep your study routine steady.",
+      "stat1": "Full access",
+      "stat2": "Better value",
+      "cta": "View Premium"
+    },
+    "finalCta": {
+      "badge": "Start learning",
+      "title": "Build your Japanese routine",
+      "titleHighlight": "with FUJI",
+      "desc": "Courses, practice, teachers, AI, and progress tracking are all ready when you are.",
+      "startLearning": "Start learning",
+      "tryAI": "Try AI Chat"
     }
   },
   "booking": {

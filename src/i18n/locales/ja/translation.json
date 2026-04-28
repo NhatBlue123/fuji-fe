@@ -72,6 +72,8 @@
     "copied": "コピーしました"
   },
   "sidebar": {
+    "home": "ホーム",
+    "courses": "コース",
     "subtitle": "日本語を学ぶ",
     "premiumTitle": "プレミアムプラン",
     "premiumHeading": "プレミアムにアップグレード",
@@ -373,6 +375,7 @@
     },
     "missionsSection": {
       "title": "今日のタスク",
+      "desc": "一日の学習リズムを保つための小さなタスクです。画面を開きすぎず、必要なことに集中できます。",
       "count": "{{total}}タスク • {{completed}}完了",
       "flashcardsMission": { "title": "N3フラッシュカード20枚復習", "desc": "仕事に関する頻出単語セットを完了する。", "eta": "あと約12分" },
       "jlptMission": { "title": "JLPTミニテストを解く", "desc": "リスニング＋読解の総合テストで学習ペースを維持。", "eta": "あと約18分" },

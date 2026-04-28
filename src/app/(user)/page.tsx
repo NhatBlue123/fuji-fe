@@ -1,725 +1,681 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AnimatePresence, motion, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/user-component/home/HeroSection";
 import { StatsSection } from "@/components/user-component/home/StatsSection";
 
-/* ─────────────────────────────────────────────────────────────────
-   STATIC META — không gọi API, chỉ dùng i18n key để lấy text
-   ──────────────────────────────────────────────────────────────── */
-
-type CardKey = "course" | "jlpt" | "booking" | "aiChat" | "videoCall" | "flashcards2" | "premium2" | "wallet";
+type CardKey =
+  | "course"
+  | "jlpt"
+  | "booking"
+  | "aiChat"
+  | "videoCall"
+  | "flashcards2"
+  | "premium2"
+  | "wallet";
 
 interface FeatureMeta {
   key: CardKey;
   href: string;
   icon: string;
-  color: string;
-  gradient: string;
-  iconBg: string;
+  tone: string;
 }
 
 const FEATURE_META: FeatureMeta[] = [
-  { key: "course",      href: "/course",          icon: "school",                 color: "blue",   gradient: "from-blue-500 to-indigo-600",    iconBg: "bg-blue-500/15 text-blue-500 dark:text-blue-400" },
-  { key: "jlpt",        href: "/JLPT_Practice",   icon: "flag",                   color: "red",    gradient: "from-rose-500 to-red-600",       iconBg: "bg-rose-500/15 text-rose-500 dark:text-rose-400" },
-  { key: "booking",     href: "/booking",          icon: "calendar_month",         color: "emerald",gradient: "from-emerald-500 to-teal-600",   iconBg: "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400" },
-  { key: "aiChat",      href: "/ai-chat",          icon: "smart_toy",              color: "cyan",   gradient: "from-cyan-500 to-blue-600",      iconBg: "bg-cyan-500/15 text-cyan-500 dark:text-cyan-400" },
-  { key: "videoCall",   href: "/video-call",       icon: "videocam",               color: "indigo", gradient: "from-indigo-500 to-purple-600",  iconBg: "bg-indigo-500/15 text-indigo-500 dark:text-indigo-400" },
-  { key: "flashcards2", href: "/flashcards",       icon: "style",                  color: "pink",   gradient: "from-pink-500 to-rose-600",      iconBg: "bg-pink-500/15 text-pink-500 dark:text-pink-400" },
-  { key: "premium2",    href: "/premium",          icon: "workspace_premium",      color: "amber",  gradient: "from-amber-500 to-orange-600",   iconBg: "bg-amber-500/15 text-amber-500 dark:text-amber-400" },
-  { key: "wallet",      href: "/profile/wallet",   icon: "account_balance_wallet", color: "violet", gradient: "from-violet-500 to-purple-600",  iconBg: "bg-violet-500/15 text-violet-500 dark:text-violet-400" },
+  { key: "course", href: "/course", icon: "school", tone: "text-sky-600 bg-sky-50 dark:bg-sky-500/10 dark:text-sky-300" },
+  { key: "jlpt", href: "/JLPT_Practice", icon: "flag", tone: "text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-300" },
+  { key: "booking", href: "/booking", icon: "calendar_month", tone: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-300" },
+  { key: "aiChat", href: "/ai-chat", icon: "smart_toy", tone: "text-cyan-600 bg-cyan-50 dark:bg-cyan-500/10 dark:text-cyan-300" },
+  { key: "videoCall", href: "/video-call", icon: "videocam", tone: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-300" },
+  { key: "flashcards2", href: "/flashcards", icon: "style", tone: "text-pink-600 bg-pink-50 dark:bg-pink-500/10 dark:text-pink-300" },
+  { key: "premium2", href: "/premium", icon: "workspace_premium", tone: "text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-300" },
+  { key: "wallet", href: "/profile/wallet", icon: "account_balance_wallet", tone: "text-violet-600 bg-violet-50 dark:bg-violet-500/10 dark:text-violet-300" },
 ];
 
 type ScenarioId = "speak" | "exam" | "career";
 const SCENARIO_IDS: ScenarioId[] = ["speak", "exam", "career"];
 
-const SCENARIO_META: Record<ScenarioId, { icon: string; gradient: string; primaryHref: string; secondaryHref: string }> = {
-  speak:  { icon: "record_voice_over", gradient: "from-blue-600 via-cyan-500 to-blue-400",   primaryHref: "/ai-chat",    secondaryHref: "/video-call" },
-  exam:   { icon: "quiz",              gradient: "from-rose-600 via-pink-500 to-orange-400",  primaryHref: "/JLPT_Practice", secondaryHref: "/course" },
-  career: { icon: "trending_up",       gradient: "from-emerald-600 via-teal-500 to-green-400", primaryHref: "/premium",  secondaryHref: "/profile/wallet" },
+const SCENARIO_META: Record<
+  ScenarioId,
+  { icon: string; primaryHref: string; secondaryHref: string; image: string }
+> = {
+  speak: {
+    icon: "record_voice_over",
+    primaryHref: "/ai-chat",
+    secondaryHref: "/video-call",
+    image: "/images/home/scenario-speaking.webp",
+  },
+  exam: {
+    icon: "quiz",
+    primaryHref: "/JLPT_Practice",
+    secondaryHref: "/course",
+    image: "/images/home/scenario-jlpt.webp",
+  },
+  career: {
+    icon: "trending_up",
+    primaryHref: "/premium",
+    secondaryHref: "/profile/wallet",
+    image: "/images/home/scenario-career.webp",
+  },
 };
 
 interface MissionMeta {
   key: "flashcardsMission" | "jlptMission" | "bookingMission" | "aiMission";
   href: string;
-  icon: string;
   progress: number;
-  color: string;
 }
 
 const MISSIONS_META: MissionMeta[] = [
-  { key: "flashcardsMission", href: "/flashcards",      icon: "auto_awesome",   progress: 68, color: "emerald" },
-  { key: "jlptMission",       href: "/JLPT_Practice",   icon: "quiz",           progress: 40, color: "blue" },
-  { key: "bookingMission",    href: "/booking",          icon: "event_available",progress: 85, color: "purple" },
-  { key: "aiMission",         href: "/ai-chat",          icon: "smart_toy",      progress: 20, color: "cyan" },
+  { key: "flashcardsMission", href: "/flashcards", progress: 68 },
+  { key: "jlptMission", href: "/JLPT_Practice", progress: 40 },
+  { key: "bookingMission", href: "/booking", progress: 85 },
+  { key: "aiMission", href: "/ai-chat", progress: 20 },
 ];
 
-type QuickKey = "notifications" | "profile" | "paymentHistory" | "subscription" | "withdraw" | "reports" | "settings" | "help";
+type QuickKey =
+  | "notifications"
+  | "profile"
+  | "paymentHistory"
+  | "subscription"
+  | "withdraw"
+  | "reports"
+  | "settings"
+  | "help";
 
-const QUICK_META: Array<{ key: QuickKey; href: string; icon: string; color: string }> = [
-  { key: "notifications",  href: "/notifications",           icon: "notifications",          color: "text-amber-500" },
-  { key: "profile",        href: "/profile",                 icon: "account_circle",         color: "text-blue-500" },
-  { key: "paymentHistory", href: "/profile/history-payment", icon: "receipt_long",           color: "text-emerald-500" },
-  { key: "subscription",   href: "/profile/subscription",    icon: "subscriptions",          color: "text-purple-500" },
-  { key: "withdraw",       href: "/withdraw",                icon: "payments",               color: "text-orange-500" },
-  { key: "reports",        href: "/reports",                 icon: "bar_chart",              color: "text-cyan-500" },
-  { key: "settings",       href: "/settings",               icon: "settings",               color: "text-slate-500" },
-  { key: "help",           href: "/help",                   icon: "help",                   color: "text-pink-500" },
+const QUICK_META: Array<{ key: QuickKey; href: string }> = [
+  { key: "notifications", href: "/notifications" },
+  { key: "profile", href: "/profile" },
+  { key: "paymentHistory", href: "/profile/history-payment" },
+  { key: "subscription", href: "/profile/subscription" },
+  { key: "withdraw", href: "/withdraw" },
+  { key: "reports", href: "/reports" },
+  { key: "settings", href: "/settings" },
+  { key: "help", href: "/help" },
 ];
 
 const JLPT_META = [
-  { level: "N5", color: "from-sky-400 to-blue-600",   tests: 12, questions: 180 },
-  { level: "N4", color: "from-emerald-400 to-teal-600",tests: 15, questions: 240 },
-  { level: "N3", color: "from-violet-400 to-purple-600",tests: 18, questions: 320 },
-  { level: "N2", color: "from-rose-400 to-red-600",   tests: 22, questions: 420 },
-  { level: "N1", color: "from-amber-400 to-orange-600",tests: 25, questions: 500 },
+  { level: "N5", tone: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200", tests: 12, questions: 180 },
+  { level: "N4", tone: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200", tests: 15, questions: 240 },
+  { level: "N3", tone: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200", tests: 18, questions: 320 },
+  { level: "N2", tone: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200", tests: 22, questions: 420 },
+  { level: "N1", tone: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200", tests: 25, questions: 500 },
 ] as const;
 
-/* ─────────────────────────────────────────────────────────────────
-   ANIMATION HELPERS
-   ──────────────────────────────────────────────────────────────── */
+const HOME_MEDIA = {
+  featureStudio: "/images/home/fuji-study-studio.webp",
+  jlptDesk: "/images/home/jlpt-desk-practice.webp",
+  aiVideo: "/video/home/ai-speaking-session.mp4",
+  aiPoster: "/images/home/ai-speaking-session-poster.webp",
+  teacherSession: "/images/home/teacher-session.webp",
+  flashcards: "/images/home/flashcards-kanji-table.webp",
+  premiumPlan: "/images/home/premium-learning-plan.webp",
+  finalVideo: "/video/home/fuji-home-closing-loop.mp4",
+  finalPoster: "/images/home/fuji-home-closing-poster.webp",
+};
 
-function SlideReveal({
-  children, className, direction = "left", delay = 0,
-}: { children: ReactNode; className?: string; direction?: "left" | "right" | "up"; delay?: number }) {
+function FadeUp({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.12 });
-  const offset = { left: [-100, 0], right: [100, 0], up: [60, 0] };
-  const [x, y] = direction === "up" ? [0, offset.up[0]] : direction === "left" ? [offset.left[0], 0] : [offset.right[0], 0];
+  const isInView = useInView(ref, { once: true, amount: 0.18 });
 
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={{ opacity: 0, x, y, filter: "blur(10px)" }}
-      animate={isInView ? { opacity: 1, x: 0, y: 0, filter: "blur(0px)" } : {}}
-      transition={{ duration: 0.75, delay, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function FadeUp({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-  return (
-    <motion.div ref={ref} className={className}
-      initial={{ opacity: 0, y: 32 }}
+      initial={{ opacity: 0, y: 28 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, delay, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] }}
+      transition={{
+        duration: 0.55,
+        delay,
+        ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number],
+      }}
     >
       {children}
     </motion.div>
   );
 }
 
-function Stagger({ children, className }: { children: ReactNode; className?: string }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.08 });
+function SectionIntro({
+  eyebrow,
+  title,
+  highlight,
+  description,
+  align = "left",
+}: {
+  eyebrow: string;
+  title: string;
+  highlight?: string;
+  description?: string;
+  align?: "left" | "center";
+}) {
   return (
-    <motion.div ref={ref} className={className}
-      initial="hidden" animate={isInView ? "visible" : "hidden"}
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07 } } }}
-    >
-      {children}
-    </motion.div>
+    <div className={cn("max-w-3xl", align === "center" && "mx-auto text-center")}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-pink-500/90">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+        {title} {highlight && <span className="text-pink-500">{highlight}</span>}
+      </h2>
+      {description && (
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+          {description}
+        </p>
+      )}
+    </div>
   );
 }
 
-const cardV = {
-  hidden: { opacity: 0, y: 48, scale: 0.96 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] } },
-};
+function MediaSurface({
+  src,
+  poster,
+  kind = "image",
+  className,
+  children,
+}: {
+  src: string;
+  poster?: string;
+  kind?: "image" | "video";
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/50 shadow-sm dark:border-white/10 dark:bg-slate-900/60",
+        className,
+      )}
+    >
+      {kind === "video" ? (
+        <video
+          className="absolute inset-0 size-full object-cover"
+          src={src}
+          poster={poster}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${src})` }}
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+      {children && <div className="relative z-10 h-full">{children}</div>}
+    </div>
+  );
+}
 
-/* ─────────────────────────────────────────────────────────────────
-   PAGE
-   ──────────────────────────────────────────────────────────────── */
+function FeatureCard({ feature, label }: { feature: FeatureMeta; label: (key: string) => string }) {
+  return (
+    <Link
+      href={feature.href}
+      className="group flex min-h-[170px] flex-col justify-between rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-pink-300/70 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35"
+    >
+      <div>
+        <div className={cn("mb-4 flex size-10 items-center justify-center rounded-full", feature.tone)}>
+          <span className="material-symbols-outlined text-[20px]">{feature.icon}</span>
+        </div>
+        <h3 className="text-base font-semibold text-foreground">
+          {label(`home.cards.${feature.key}.title`)}
+        </h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+          {label(`home.cards.${feature.key}.desc`)}
+        </p>
+      </div>
+      <span className="mt-4 inline-flex items-center text-sm font-semibold text-pink-500">
+        {label("home.featureMap.openFeature")}
+        <span className="material-symbols-outlined ml-1 text-[16px] transition-transform group-hover:translate-x-1">
+          arrow_forward
+        </span>
+      </span>
+    </Link>
+  );
+}
 
 export default function HomePage() {
   const { t } = useTranslation();
-  const [isMounted, setIsMounted] = useState(false);
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const currentId = SCENARIO_IDS[scenarioIdx];
+  const aiVideoRef = useRef<HTMLVideoElement>(null);
+  const [isAiVideoMuted, setIsAiVideoMuted] = useState(false);
 
-  useEffect(() => { setIsMounted(true); }, []);
-
-  // Auto-rotate scenarios
   useEffect(() => {
     const timer = setInterval(() => {
-      setScenarioIdx((p) => (p + 1) % SCENARIO_IDS.length);
-    }, 6000);
+      setScenarioIdx((current) => (current + 1) % SCENARIO_IDS.length);
+    }, 6500);
     return () => clearInterval(timer);
   }, []);
 
-  const T = (key: string, opts?: Record<string, unknown>) =>
-    isMounted ? t(key, opts) : t(key, { ...opts, lng: "vi" });
+  useEffect(() => {
+    const videoElement = aiVideoRef.current;
+    if (!videoElement) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            videoElement.play().catch(() => {
+              // Nếu autoplay bị chặn, thử phát muted
+              videoElement.muted = true;
+              setIsAiVideoMuted(true);
+              videoElement.play();
+            });
+          } else {
+            videoElement.pause();
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(videoElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const toggleAiVideoMute = () => {
+    if (aiVideoRef.current) {
+      aiVideoRef.current.muted = !isAiVideoMuted;
+      setIsAiVideoMuted(!isAiVideoMuted);
+    }
+  };
+
+  const T = (key: string, opts?: Record<string, unknown>) => t(key, opts);
+
+  const currentScenario = SCENARIO_META[currentId];
 
   return (
-    <div className="flex-1 bg-background dark:bg-[#0f172a] pb-12 sm:pb-16 md:pb-20">
-      {/* ── HERO + STATS (giữ nguyên) ── */}
+    <div className="flex-1 bg-background pb-16 dark:bg-[#0f172a]">
       <HeroSection />
       <StatsSection />
 
-      <div className="mt-12 sm:mt-16 md:mt-20 lg:mt-24 space-y-16 sm:space-y-20 md:space-y-24 lg:space-y-28 px-3 sm:px-4 md:px-6 lg:px-12 xl:px-20">
-
-        {/* ══════════════════════════════════════════════════════
-            1. BẢN ĐỒ TÍNH NĂNG
-            ════════════════════════════════════════════════════ */}
-        <section>
-          <SlideReveal direction="left">
-            <div className="mb-6 sm:mb-8 md:mb-10 flex flex-col gap-4 sm:gap-5 md:flex-row md:items-end md:justify-between">
-              <div>
-                <div className="mb-2 sm:mb-3 inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-blue-600 dark:text-blue-300">
-                  <span className="size-1.5 sm:size-2 rounded-full bg-blue-500 animate-pulse" />
-                  {T("home.featureMap.badge")}
-                </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-foreground dark:text-white">
-                  {T("home.featureMap.title").split("một nơi")[0] || T("home.featureMap.title").split("一か所")[0]}{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">
-                    {T("home.featureMap.title").includes("một nơi") ? "một nơi" :
-                     T("home.featureMap.title").includes("一か所") ? "一か所に" :
-                     ""}
-                  </span>
-                </h2>
-                <p className="mt-1.5 sm:mt-2 max-w-2xl text-xs sm:text-sm md:text-base text-muted-foreground dark:text-slate-400">
-                  {T("home.featureMap.subtitle")}
-                </p>
-              </div>
-              <Button asChild className="h-10 sm:h-11 md:h-12 shrink-0 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 sm:px-6 md:px-7 text-sm sm:text-base font-bold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5">
-                <Link href="/course">
-                  {T("home.featureMap.ctaBtn")}
-                  <span className="material-symbols-outlined text-sm sm:text-base ml-1">arrow_forward</span>
-                </Link>
+      <div className="mx-auto mt-14 w-full max-w-[1480px] space-y-20 px-4 sm:px-6 lg:px-10 xl:px-16">
+        <section className="grid gap-8 lg:grid-cols-[0.95fr_1.35fr] lg:items-end">
+          <FadeUp className="space-y-6">
+            <SectionIntro
+              eyebrow={T("home.featureMap.badge")}
+              title={T("home.featureMap.title").replace("một nơi", "").replace("一か所に", "")}
+              highlight={
+                T("home.featureMap.title").includes("một nơi")
+                  ? "một nơi"
+                  : T("home.featureMap.title").includes("一か所")
+                    ? "一か所に"
+                    : undefined
+              }
+              description={T("home.featureMap.subtitle")}
+            />
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="h-11 rounded-full bg-pink-500 px-6 font-semibold text-white hover:bg-pink-600">
+                <Link href="/course">{T("home.featureMap.ctaBtn")}</Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-full px-6 font-semibold">
+                <Link href="/ai-chat">{T("home.finalCta.tryAI")}</Link>
               </Button>
             </div>
-          </SlideReveal>
+          </FadeUp>
 
-          <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-            {FEATURE_META.map((f) => (
-              <motion.div key={f.href} variants={cardV}>
-                <Link
-                  href={f.href}
-                  className="group relative flex h-full flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-border/60 bg-card/80 p-4 sm:p-5 md:p-6 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/10 dark:border-slate-700/60 dark:bg-[#151f35]/80"
-                >
-                  {/* Bottom gradient accent */}
-                  <div className={cn("absolute bottom-0 left-0 h-[2px] sm:h-[3px] w-0 bg-gradient-to-r transition-all duration-500 group-hover:w-full", f.gradient)} />
-
-                  {/* Icon + Badge */}
-                  <div className="relative z-10 mb-3 sm:mb-4 md:mb-5 flex items-center justify-between">
-                    <div className={cn("flex size-10 sm:size-11 md:size-12 items-center justify-center rounded-lg sm:rounded-xl transition-transform duration-300 group-hover:scale-110", f.iconBg)}>
-                      <span className="material-symbols-outlined text-[20px] sm:text-[22px] md:text-[24px]">{f.icon}</span>
-                    </div>
-                    <span className="rounded-full border border-slate-200/80 bg-slate-100/90 px-2 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] sm:tracking-[0.15em] text-slate-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
-                      {T(`home.cards.${f.key}.badge`)}
-                    </span>
-                  </div>
-
-                  {/* Content */}
-                  <div className="relative z-10 flex-1">
-                    <h3 className="text-sm sm:text-[15px] md:text-[17px] font-bold leading-snug text-foreground dark:text-white">
-                      {T(`home.cards.${f.key}.title`)}
-                    </h3>
-                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm leading-relaxed text-muted-foreground dark:text-slate-400 line-clamp-2">
-                      {T(`home.cards.${f.key}.desc`)}
-                    </p>
-                  </div>
-
-                  {/* Arrow link */}
-                  <div className="relative z-10 mt-3 sm:mt-4 md:mt-5 inline-flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-bold text-blue-600 transition-all group-hover:gap-2 sm:group-hover:gap-3 dark:text-blue-400">
-                    {T("home.featureMap.openFeature")}
-                    <span className="material-symbols-outlined text-[14px] sm:text-[16px] transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </Stagger>
+          <FadeUp delay={0.08}>
+            <MediaSurface src={HOME_MEDIA.featureStudio} className="min-h-[280px] sm:min-h-[360px]">
+              <div className="flex h-full items-end p-6 sm:p-8">
+                <div className="max-w-md rounded-2xl border border-white/15 bg-black/30 p-5 text-white backdrop-blur-md">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+                    FUJI Workspace
+                  </p>
+                  <p className="mt-2 text-xl font-semibold leading-tight">
+                    Một hành trình học gọn hơn, ít nhiễu hơn.
+                  </p>
+                </div>
+              </div>
+            </MediaSurface>
+          </FadeUp>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            2. JLPT LEVELS
-            ════════════════════════════════════════════════════ */}
         <section>
-          <SlideReveal direction="right">
-            <div className="mb-6 sm:mb-8 md:mb-10 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4">
-              <div>
-                <div className="mb-2 sm:mb-3 inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-rose-600 dark:text-rose-300">
-                  <span className="material-symbols-outlined text-xs sm:text-sm">flag</span>
-                  {T("home.jlptSection.badge")}
-                </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-foreground dark:text-white">
-                  {T("home.jlptSection.titlePart1")}{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-400">
-                    {T("home.jlptSection.titleHighlight")}
-                  </span>
-                </h2>
-              </div>
-              <Link href="/JLPT_Practice" className="flex sm:hidden md:flex items-center gap-1 text-sm font-bold text-rose-500 hover:text-rose-400 transition-colors">
+          <FadeUp>
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <SectionIntro
+                eyebrow="Learning tools"
+                title="Các công cụ chính"
+                description="Giữ lại đầy đủ chức năng hiện có, nhưng trình bày nhẹ hơn để người học quét nhanh và chọn đúng việc cần làm."
+              />
+              <Link href="/course" className="text-sm font-semibold text-pink-500 hover:text-pink-600">
                 {T("home.jlptSection.viewAll")}
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </Link>
             </div>
-          </SlideReveal>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {JLPT_META.map((item, i) => (
-              <SlideReveal key={item.level} direction={i % 2 === 0 ? "left" : "right"} delay={i * 0.08}>
-                <Link
-                  href="/JLPT_Practice"
-                  className="group relative flex flex-col items-center overflow-hidden rounded-xl sm:rounded-2xl border border-border/60 bg-card/80 p-4 sm:p-5 md:p-6 text-center transition-all duration-500 hover:-translate-y-2 hover:shadow-xl dark:border-slate-700/60 dark:bg-[#151f35]/80"
-                >
-                  <div className={cn("mb-3 sm:mb-4 flex size-12 sm:size-14 md:size-16 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br text-white text-base sm:text-lg md:text-xl font-black shadow-lg transition-transform duration-300 group-hover:scale-110", item.color)}>
-                    {item.level}
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-foreground dark:text-white">
-                    {T(`home.jlptSection.levels.${item.level}`)}
-                  </p>
-                  <p className="mt-1 text-[10px] sm:text-xs text-muted-foreground dark:text-slate-400">
-                    {item.tests} đề • {item.questions} câu
-                  </p>
-                  <div className={cn("mt-3 sm:mt-4 w-full rounded-lg bg-gradient-to-r py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-white opacity-0 transition-all duration-300 group-hover:opacity-100", item.color)}>
-                    {T("home.jlptSection.practiceNow")}
-                  </div>
-                </Link>
-              </SlideReveal>
+          </FadeUp>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURE_META.map((feature, index) => (
+              <FadeUp key={feature.key} delay={index * 0.035}>
+                <FeatureCard feature={feature} label={T} />
+              </FadeUp>
             ))}
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            3. KỊCH BẢN + NHIỆM VỤ + TRUY CẬP NHANH
-            ════════════════════════════════════════════════════ */}
-        <section className="grid grid-cols-1 gap-6 sm:gap-8 xl:grid-cols-[1.4fr_1fr]">
-          {/* Left: Scenario Carousel */}
-          <SlideReveal direction="left" className="h-full">
-            <div className="relative flex h-full flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-border/60 bg-card/90 shadow-xl dark:border-slate-700/60 dark:bg-[#131d30]/90">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-border/40 px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 dark:border-slate-700/40">
-                <div>
-                  <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.15em] sm:tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
-                    {T("home.scenariosSection.badge")}
+        <section className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
+          <FadeUp className="rounded-[1.75rem] border border-border/70 bg-card p-6 shadow-sm dark:border-white/10 dark:bg-slate-950/35 sm:p-8">
+            <SectionIntro
+              eyebrow={T("home.jlptSection.badge")}
+              title={T("home.jlptSection.titlePart1")}
+              highlight={T("home.jlptSection.titleHighlight")}
+            />
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {JLPT_META.map((item) => (
+                <Link
+                  key={item.level}
+                  href="/JLPT_Practice"
+                  className={cn(
+                    "rounded-2xl border p-4 text-center transition-all hover:-translate-y-1 hover:shadow-md",
+                    item.tone,
+                  )}
+                >
+                  <div className="text-2xl font-black">{item.level}</div>
+                  <p className="mt-2 text-xs font-semibold">
+                    {T(`home.jlptSection.levels.${item.level}`)}
                   </p>
-                  <h3 className="mt-0.5 sm:mt-1 text-lg sm:text-xl md:text-2xl font-black text-foreground dark:text-white">
-                    {T("home.scenariosSection.title")}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  {(["left", "right"] as const).map((dir, idx) => (
-                    <button key={idx} type="button"
-                      className="flex size-8 sm:size-9 items-center justify-center rounded-full border border-border/80 bg-background/80 transition-all hover:bg-muted dark:border-slate-600 dark:bg-slate-800"
-                      onClick={() => setScenarioIdx((p) => idx === 0 ? (p - 1 + SCENARIO_IDS.length) % SCENARIO_IDS.length : (p + 1) % SCENARIO_IDS.length)}
-                    >
-                      <span className="material-symbols-outlined text-base sm:text-lg">{idx === 0 ? "chevron_left" : "chevron_right"}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Scenario content */}
-              <div className="p-4 sm:p-6 md:p-8">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentId}
-                    initial={{ opacity: 0, x: 60, filter: "blur(8px)" }}
-                    animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, x: -60, filter: "blur(8px)" }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.8, 0.25, 1] as [number, number, number, number] }}
-                  >
-                    <div className="mb-4 sm:mb-5 flex items-center gap-2 sm:gap-3">
-                      <div className={cn("flex size-10 sm:size-11 md:size-12 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br text-white", SCENARIO_META[currentId].gradient)}>
-                        <span className="material-symbols-outlined text-lg sm:text-xl">{SCENARIO_META[currentId].icon}</span>
-                      </div>
-                      <div>
-                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] sm:tracking-[0.18em] text-muted-foreground dark:text-slate-400">
-                          {T(`home.scenariosSection.${currentId}.subtitle`)}
-                        </p>
-                        <h4 className="text-base sm:text-lg md:text-xl font-black text-foreground dark:text-white">
-                          {T(`home.scenariosSection.${currentId}.title`)}
-                        </h4>
-                      </div>
-                    </div>
-
-                    <p className="mb-4 sm:mb-5 text-xs sm:text-sm leading-relaxed text-muted-foreground dark:text-slate-300">
-                      {T(`home.scenariosSection.${currentId}.overview`)}
-                    </p>
-
-                    <div className="mb-5 sm:mb-6 space-y-2 sm:space-y-2.5">
-                      {(["b1", "b2", "b3"] as const).map((b, i) => (
-                        <motion.div key={b} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.1 }}
-                          className="flex items-start gap-2 sm:gap-2.5 text-xs sm:text-sm text-foreground/90 dark:text-slate-200">
-                          <span className="mt-0.5 material-symbols-outlined text-sm sm:text-base text-emerald-500">check_circle</span>
-                          <span>{T(`home.scenariosSection.${currentId}.${b}`)}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                      <Button asChild className="h-9 sm:h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-6 text-sm font-bold text-white shadow-md transition-all">
-                        <Link href={SCENARIO_META[currentId].primaryHref}>
-                          {T(`home.scenariosSection.${currentId}.primary`)}
-                        </Link>
-                      </Button>
-                      <Button asChild variant="outline" className="h-9 sm:h-10 rounded-xl border-blue-500/30 bg-blue-500/5 px-4 sm:px-6 text-sm font-bold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400">
-                        <Link href={SCENARIO_META[currentId].secondaryHref}>
-                          {T(`home.scenariosSection.${currentId}.secondary`)}
-                        </Link>
-                      </Button>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Dots */}
-                <div className="mt-5 sm:mt-6 flex items-center gap-2">
-                  {SCENARIO_IDS.map((id, i) => (
-                    <button key={id} type="button" aria-label={`Kịch bản ${i + 1}`}
-                      className={cn("h-2 rounded-full transition-all duration-300", scenarioIdx === i ? "w-8 bg-gradient-to-r from-blue-500 to-indigo-500" : "w-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-700")}
-                      onClick={() => setScenarioIdx(i)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </SlideReveal>
-
-          {/* Right: Missions + Quick Links */}
-          <div className="space-y-5 sm:space-y-6">
-            {/* Missions */}
-            <SlideReveal direction="right">
-              <div className="rounded-2xl sm:rounded-3xl border border-border/60 bg-card/90 p-4 sm:p-5 md:p-6 shadow-lg dark:border-slate-700/60 dark:bg-[#141f32]/90">
-                <div className="mb-4 sm:mb-5 flex items-center gap-2 sm:gap-3">
-                  <div className="flex size-9 sm:size-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white">
-                    <span className="material-symbols-outlined text-base sm:text-lg">task_alt</span>
-                  </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-black text-foreground dark:text-white">
-                      {T("home.missionsSection.title")}
-                    </h3>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground dark:text-slate-400">
-                      {T("home.missionsSection.count", { total: 4, completed: 2 })}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2.5 sm:space-y-3">
-                  {MISSIONS_META.map((m, i) => (
-                    <FadeUp key={m.key} delay={i * 0.09}>
-                      <Link href={m.href}
-                        className="group block rounded-lg sm:rounded-xl border border-border/50 bg-background/60 p-3 sm:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-500/30 hover:shadow-md dark:border-slate-700/50 dark:bg-slate-900/40"
-                      >
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <div className={cn("flex size-8 sm:size-9 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110",
-                            m.color === "emerald" && "bg-emerald-500/15 text-emerald-500",
-                            m.color === "blue"    && "bg-blue-500/15 text-blue-500",
-                            m.color === "purple"  && "bg-purple-500/15 text-purple-500",
-                            m.color === "cyan"    && "bg-cyan-500/15 text-cyan-500",
-                          )}>
-                            <span className="material-symbols-outlined text-base sm:text-lg">{m.icon}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-bold text-foreground dark:text-white truncate">
-                              {T(`home.missionsSection.${m.key}.title`)}
-                            </p>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground dark:text-slate-400 truncate">
-                              {T(`home.missionsSection.${m.key}.desc`)}
-                            </p>
-                          </div>
-                          <span className="text-[10px] sm:text-[11px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">{m.progress}%</span>
-                        </div>
-                        <div className="mt-2.5 sm:mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
-                          <motion.div
-                            className={cn("h-full rounded-full bg-gradient-to-r",
-                              m.color === "emerald" && "from-emerald-500 to-teal-400",
-                              m.color === "blue"    && "from-blue-500 to-cyan-400",
-                              m.color === "purple"  && "from-purple-500 to-indigo-400",
-                              m.color === "cyan"    && "from-cyan-500 to-blue-400",
-                            )}
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${m.progress}%` }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 1, delay: 0.3 + i * 0.12, ease: "easeOut" }}
-                          />
-                        </div>
-                        <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-[11px] text-muted-foreground dark:text-slate-500">
-                          {T(`home.missionsSection.${m.key}.eta`)}
-                        </p>
-                      </Link>
-                    </FadeUp>
-                  ))}
-                </div>
-              </div>
-            </SlideReveal>
-
-          </div>
-        </section>
-
-        {/* Quick Links — full width row */}
-        <SlideReveal direction="up">
-          <div className="rounded-2xl sm:rounded-3xl border border-border/60 bg-card/90 p-4 sm:p-5 md:p-6 shadow-lg dark:border-slate-700/60 dark:bg-[#131e31]/90">
-            <div className="mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3">
-              <div className="flex size-9 sm:size-10 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 text-white">
-                <span className="material-symbols-outlined text-base sm:text-lg">grid_view</span>
-              </div>
-              <h3 className="text-base sm:text-lg font-black text-foreground dark:text-white">
-                {T("home.quickLinks.title")}
-              </h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_META.map((q, i) => (
-                <FadeUp key={q.key} delay={i * 0.04}>
-                  <Link href={q.href}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-muted-foreground transition-all duration-300 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:text-blue-400"
-                  >
-                    <span className={cn("material-symbols-outlined text-sm sm:text-base", q.color)}>{q.icon}</span>
-                    <span className="whitespace-nowrap">{T(`home.quickLinks.${q.key}`)}</span>
-                  </Link>
-                </FadeUp>
+                  <p className="mt-1 text-[11px] opacity-75">
+                    {item.tests} đề / {item.questions} câu
+                  </p>
+                </Link>
               ))}
             </div>
-          </div>
-        </SlideReveal>
+          </FadeUp>
 
-        {/* ══════════════════════════════════════════════════════
-            4. AI CHAT + VIDEO CALL SHOWCASE
-            ════════════════════════════════════════════════════ */}
-        <section className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 lg:grid-cols-2">
-          <SlideReveal direction="left">
-            <Link href="/ai-chat"
-              className="group relative block overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-[#0c1929] via-[#0f2240] to-[#132d52] p-6 sm:p-8 md:p-10 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20"
-            >
-              <div className="pointer-events-none absolute -right-12 sm:-right-16 -top-12 sm:-top-16 h-36 w-36 sm:h-48 sm:w-48 rounded-full bg-cyan-500/15 blur-3xl transition-all duration-700 group-hover:bg-cyan-500/25" />
-              <div className="pointer-events-none absolute -bottom-8 sm:-bottom-12 -left-8 sm:-left-12 h-28 w-28 sm:h-36 sm:w-36 rounded-full bg-blue-500/15 blur-3xl" />
-              <div className="pointer-events-none absolute right-4 sm:right-6 top-4 sm:top-6 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-                <span className="material-symbols-outlined text-[80px] sm:text-[100px] text-cyan-300">smart_toy</span>
-              </div>
-              <div className="relative z-10">
-                <div className="mb-3 sm:mb-4 inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-cyan-300">
-                  <span className="size-1.5 sm:size-2 rounded-full bg-cyan-400 animate-pulse" />
-                  {T("home.aiSection.badge")}
-                </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-black">
-                  {T("home.aiSection.title1")}{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-400">
-                    {T("home.aiSection.titleHighlight")}
-                  </span>
-                </h3>
-                <p className="mt-2 sm:mt-3 max-w-sm text-xs sm:text-sm leading-relaxed text-slate-300/90">
-                  {T("home.aiSection.desc")}
-                </p>
-                <div className="mt-5 sm:mt-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-cyan-500/20 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-cyan-200 backdrop-blur-sm transition-all group-hover:bg-cyan-500/30">
-                  {T("home.aiSection.cta")}
-                  <span className="material-symbols-outlined text-sm sm:text-base transition-transform group-hover:translate-x-1">arrow_forward</span>
+          <FadeUp delay={0.08}>
+            <MediaSurface src={HOME_MEDIA.jlptDesk} className="h-full min-h-[330px]">
+              <div className="flex h-full items-end p-6">
+                <div className="max-w-xs text-white">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                    JLPT Practice
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">
+                    Luyện đề đều đặn, xem lại lỗi sai và tiến bộ rõ sau từng buổi học.
+                  </p>
                 </div>
               </div>
-            </Link>
-          </SlideReveal>
-
-          <SlideReveal direction="right">
-            <Link href="/video-call"
-              className="group relative block overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-[#120c29] via-[#1a0f40] to-[#221352] p-6 sm:p-8 md:p-10 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20"
-            >
-              <div className="pointer-events-none absolute -right-12 sm:-right-16 -top-12 sm:-top-16 h-36 w-36 sm:h-48 sm:w-48 rounded-full bg-indigo-500/15 blur-3xl transition-all duration-700 group-hover:bg-indigo-500/25" />
-              <div className="pointer-events-none absolute -bottom-8 sm:-bottom-12 -left-8 sm:-left-12 h-28 w-28 sm:h-36 sm:w-36 rounded-full bg-purple-500/15 blur-3xl" />
-              <div className="pointer-events-none absolute right-4 sm:right-6 top-4 sm:top-6 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-                <span className="material-symbols-outlined text-[80px] sm:text-[100px] text-indigo-300">videocam</span>
-              </div>
-              <div className="relative z-10">
-                <div className="mb-3 sm:mb-4 inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-indigo-300">
-                  <span className="size-1.5 sm:size-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {T("home.videoSection.badge")}
-                </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-black">
-                  {T("home.videoSection.title1")}{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400">
-                    {T("home.videoSection.titleHighlight")}
-                  </span>
-                </h3>
-                <p className="mt-2 sm:mt-3 max-w-sm text-xs sm:text-sm leading-relaxed text-slate-300/90">
-                  {T("home.videoSection.desc")}
-                </p>
-                <div className="mt-5 sm:mt-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-indigo-500/20 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-indigo-200 backdrop-blur-sm transition-all group-hover:bg-indigo-500/30">
-                  {T("home.videoSection.cta")}
-                  <span className="material-symbols-outlined text-sm sm:text-base transition-transform group-hover:translate-x-1">arrow_forward</span>
-                </div>
-              </div>
-            </Link>
-          </SlideReveal>
+            </MediaSurface>
+          </FadeUp>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            5. FLASHCARDS SHOWCASE
-            ════════════════════════════════════════════════════ */}
-        <section>
-          <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-20">
-            <SlideReveal direction="left" className="flex-1 space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-pink-600 dark:text-pink-300">
-                <span className="material-symbols-outlined text-sm">style</span>
-                {T("home.flashSection.badge")}
-              </div>
-              <h2 className="text-3xl font-black tracking-tight text-foreground dark:text-white md:text-4xl lg:text-5xl">
-                {T("home.flashSection.title")}{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 text-glow">
-                  {T("home.flashSection.titleHighlight")}
-                </span>
-              </h2>
-              <p className="max-w-xl text-base leading-relaxed text-muted-foreground dark:text-slate-400">
-                {T("home.flashSection.desc")}
-              </p>
-              <Button asChild className="h-12 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white px-8 rounded-xl font-bold transition-all shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:-translate-y-0.5">
-                <Link href="/flashcards">
-                  <span className="material-symbols-outlined mr-1">auto_awesome</span>
-                  {T("home.flashSection.cta")}
-                </Link>
-              </Button>
-            </SlideReveal>
-
-            <SlideReveal direction="right" className="flex-1 flex justify-center">
-              <div className="relative">
-                <div className="absolute top-4 left-4 h-[280px] w-[220px] rotate-6 rounded-2xl border border-purple-500/20 bg-purple-100/50 dark:bg-purple-900/20 blur-[1px]" />
-                <div className="absolute top-2 left-2 h-[280px] w-[220px] -rotate-3 rounded-2xl border border-pink-500/20 bg-pink-100/50 dark:bg-pink-900/20 blur-[1px]" />
-                {/* Flashcard demo */}
-                <div className="relative h-[280px] w-[220px] overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xl dark:border-slate-700 dark:bg-[#1a2744]">
-                  <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-                    <div className="mb-2 rounded-full bg-pink-500/10 px-3 py-0.5 text-[10px] font-bold text-pink-500 dark:text-pink-400">
-                      {T("home.flashSection.kanjiLabel")}
-                    </div>
-                    <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-slate-800 to-slate-500 dark:from-white dark:to-slate-400">
-                      勉強
-                    </h3>
-                    <p className="mt-2 text-lg font-medium tracking-widest text-slate-500 dark:text-slate-400">
-                      べんきょう
-                    </p>
-                    <div className="mt-4 rounded-lg border border-border/60 bg-muted/50 px-4 py-2 text-sm dark:border-slate-700 dark:bg-slate-800/50">
-                      <span className="text-foreground dark:text-white font-bold">
-                        {T("home.flashSection.kanjiMeaning")}
-                      </span>
-                    </div>
+        <section className="grid gap-6 xl:grid-cols-[1.45fr_0.9fr]">
+          <FadeUp>
+            <div className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm dark:border-white/10 dark:bg-slate-950/35">
+              <div className="grid min-h-[430px] lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="p-6 sm:p-8">
+                  <SectionIntro
+                    eyebrow={T("home.scenariosSection.badge")}
+                    title={T(`home.scenariosSection.${currentId}.title`)}
+                    description={T(`home.scenariosSection.${currentId}.overview`)}
+                  />
+                  <div className="mt-7 flex gap-2">
+                    {SCENARIO_IDS.map((id, index) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setScenarioIdx(index)}
+                        className={cn(
+                          "h-2.5 rounded-full transition-all",
+                          id === currentId ? "w-10 bg-pink-500" : "w-2.5 bg-muted-foreground/30",
+                        )}
+                        aria-label={id}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <Button asChild className="h-11 rounded-full bg-foreground px-6 text-background hover:bg-foreground/90">
+                        <Link href={currentScenario.primaryHref}>
+                        {T(`home.scenariosSection.${currentId}.primary`)}
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="h-11 rounded-full px-6">
+                        <Link href={currentScenario.secondaryHref}>
+                        {T(`home.scenariosSection.${currentId}.secondary`)}
+                      </Link>
+                    </Button>
                   </div>
                 </div>
+                <MediaSurface src={currentScenario.image} className="min-h-[300px] rounded-none border-0 shadow-none">
+                  <div className="flex h-full items-start justify-end p-6">
+                    <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-sm">
+                      <span className="material-symbols-outlined">{currentScenario.icon}</span>
+                    </div>
+                  </div>
+                </MediaSurface>
               </div>
-            </SlideReveal>
-          </div>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.08}>
+            <div className="h-full rounded-[1.75rem] border border-border/70 bg-card p-6 shadow-sm dark:border-white/10 dark:bg-slate-950/35 sm:p-7">
+              <SectionIntro
+                eyebrow="Daily focus"
+                title={T("home.missionsSection.title")}
+                description={T("home.missionsSection.desc")}
+              />
+              <div className="mt-7 space-y-4">
+                {MISSIONS_META.map((mission) => (
+                  <Link key={mission.key} href={mission.href} className="block rounded-2xl border border-border/70 p-4 transition-colors hover:border-pink-300/70 dark:border-white/10">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-foreground">
+                          {T(`home.missionsSection.${mission.key}.title`)}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {T(`home.missionsSection.${mission.key}.eta`)}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-pink-500">
+                        {mission.progress}%
+                      </span>
+                    </div>
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-pink-500" style={{ width: `${mission.progress}%` }} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </FadeUp>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            6. BOOKING + PREMIUM
-            ════════════════════════════════════════════════════ */}
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <SlideReveal direction="left">
-            <Link href="/booking"
-              className="group relative block h-full overflow-hidden rounded-3xl border border-emerald-500/20 bg-card/90 p-7 shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-xl dark:border-slate-700/60 dark:bg-[#121d2f]/90 md:p-8"
+        <section className="grid gap-6 lg:grid-cols-2">
+          <FadeUp>
+            <div className="group overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35">
+              <div className="relative h-[310px] overflow-hidden rounded-none">
+                <video
+                  ref={aiVideoRef}
+                  className="absolute inset-0 size-full object-cover"
+                  src={HOME_MEDIA.aiVideo}
+                  poster={HOME_MEDIA.aiPoster}
+                  loop
+                  playsInline
+                  preload="metadata"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                <button
+                  type="button"
+                  onClick={toggleAiVideoMute}
+                  className="absolute right-4 top-4 z-20 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/70"
+                  aria-label={isAiVideoMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {isAiVideoMuted ? "volume_off" : "volume_up"}
+                  </span>
+                </button>
+              </div>
+              <Link href="/ai-chat" className="block p-6 sm:p-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-500">
+                  {T("home.aiSection.badge")}
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold text-foreground">
+                  {T("home.aiSection.title1")}{" "}
+                  <span className="text-cyan-500">{T("home.aiSection.titleHighlight")}</span>
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  {T("home.aiSection.desc")}
+                </p>
+              </Link>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.08}>
+            <Link
+              href="/video-call"
+              className="group block overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35"
             >
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl group-hover:bg-emerald-500/20 transition-all duration-700" />
-              <div className="relative z-10">
-                <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-500 transition-transform group-hover:scale-110 duration-300">
-                  <span className="material-symbols-outlined text-3xl">calendar_month</span>
-                </div>
-                <h3 className="text-xl font-black text-foreground dark:text-white md:text-2xl">
+              <MediaSurface src={HOME_MEDIA.teacherSession} className="h-[310px] rounded-none border-0 shadow-none" />
+              <div className="p-6 sm:p-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
+                  {T("home.videoSection.badge")}
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold text-foreground">
+                  {T("home.videoSection.title1")}{" "}
+                  <span className="text-indigo-500">{T("home.videoSection.titleHighlight")}</span>
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  {T("home.videoSection.desc")}
+                </p>
+              </div>
+            </Link>
+          </FadeUp>
+        </section>
+
+        <section className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <FadeUp>
+            <MediaSurface src={HOME_MEDIA.flashcards} className="min-h-[420px]" />
+          </FadeUp>
+          <FadeUp delay={0.08} className="space-y-6">
+            <SectionIntro
+              eyebrow={T("home.flashSection.badge")}
+              title={T("home.flashSection.title")}
+              highlight={T("home.flashSection.titleHighlight")}
+              description={T("home.flashSection.desc")}
+            />
+            <Button asChild className="h-11 rounded-full bg-pink-500 px-6 font-semibold text-white hover:bg-pink-600">
+              <Link href="/flashcards">{T("home.flashSection.cta")}</Link>
+            </Button>
+          </FadeUp>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2">
+          <FadeUp>
+            <Link href="/booking" className="group grid min-h-[360px] overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35 sm:grid-cols-[0.9fr_1.1fr]">
+              <MediaSurface src={HOME_MEDIA.teacherSession} className="min-h-[220px] rounded-none border-0 shadow-none" />
+              <div className="p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-500">
+                  Booking
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold text-foreground">
                   {T("home.bookingCard.title")}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-slate-400">
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
                   {T("home.bookingCard.desc")}
                 </p>
-                <div className="mt-5 flex items-center gap-4 text-xs text-muted-foreground dark:text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-emerald-500 text-sm">person</span>
-                    {T("home.bookingCard.stat1")}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-emerald-500 text-sm">schedule</span>
-                    {T("home.bookingCard.stat2")}
-                  </span>
-                </div>
-                <div className="mt-5 inline-flex items-center gap-1 text-sm font-bold text-emerald-600 dark:text-emerald-400 transition-all group-hover:gap-2">
+                <p className="mt-5 text-sm font-semibold text-emerald-500">
                   {T("home.bookingCard.cta")}
-                  <span className="material-symbols-outlined text-base">arrow_forward</span>
-                </div>
+                </p>
               </div>
             </Link>
-          </SlideReveal>
+          </FadeUp>
 
-          <SlideReveal direction="right">
-            <Link href="/premium"
-              className="group relative block h-full overflow-hidden rounded-3xl border border-amber-500/20 bg-card/90 p-7 shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-xl dark:border-slate-700/60 dark:bg-[#121d2f]/90 md:p-8"
-            >
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-500/10 blur-2xl group-hover:bg-amber-500/20 transition-all duration-700" />
-              <div className="pointer-events-none absolute right-8 bottom-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                <span className="material-symbols-outlined text-[120px] text-amber-400">workspace_premium</span>
-              </div>
-              <div className="relative z-10">
-                <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 transition-transform group-hover:scale-110 duration-300">
-                  <span className="material-symbols-outlined text-3xl">workspace_premium</span>
-                </div>
-                <h3 className="text-xl font-black text-foreground dark:text-white md:text-2xl">
+          <FadeUp delay={0.08}>
+            <Link href="/premium" className="group grid min-h-[360px] overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35 sm:grid-cols-[0.9fr_1.1fr]">
+              <MediaSurface src={HOME_MEDIA.premiumPlan} className="min-h-[220px] rounded-none border-0 shadow-none" />
+              <div className="p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-500">
+                  Premium
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold text-foreground">
                   {T("home.premiumCard.title")}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-slate-400">
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
                   {T("home.premiumCard.desc")}
                 </p>
-                <div className="mt-5 flex items-center gap-4 text-xs text-muted-foreground dark:text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-amber-500 text-sm">all_inclusive</span>
-                    {T("home.premiumCard.stat1")}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-amber-500 text-sm">savings</span>
-                    {T("home.premiumCard.stat2")}
-                  </span>
-                </div>
-                <div className="mt-5 inline-flex items-center gap-1 text-sm font-bold text-amber-600 dark:text-amber-400 transition-all group-hover:gap-2">
+                <p className="mt-5 text-sm font-semibold text-amber-500">
                   {T("home.premiumCard.cta")}
-                  <span className="material-symbols-outlined text-base">arrow_forward</span>
-                </div>
+                </p>
               </div>
             </Link>
-          </SlideReveal>
+          </FadeUp>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            7. FINAL CTA
-            ════════════════════════════════════════════════════ */}
-        <SlideReveal direction="up" className="pb-4">
-          <div className="relative overflow-hidden rounded-[2rem] border border-blue-500/25 bg-gradient-to-r from-[#0a1628] via-[#0f2240] to-[#152d52] p-8 text-white shadow-2xl shadow-blue-900/30 md:p-12">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-400/20 blur-3xl" />
-            <div className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full bg-pink-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute right-1/4 top-1/2 h-32 w-32 rounded-full bg-indigo-500/15 blur-3xl" />
+        <FadeUp>
+          <section className="rounded-[1.75rem] border border-border/70 bg-card p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/35 sm:p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-lg font-semibold text-foreground">
+                {T("home.quickLinks.title")}
+              </h3>
+              <span className="text-sm text-muted-foreground">
+                FUJI
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_META.map((quick) => (
+                <Link
+                  key={quick.key}
+                  href={quick.href}
+                  className="rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-pink-300 hover:text-pink-500 dark:border-white/10"
+                >
+                  {T(`home.quickLinks.${quick.key}`)}
+                </Link>
+              ))}
+            </div>
+          </section>
+        </FadeUp>
 
-            <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-              <div className="max-w-xl">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">
-                  {T("home.finalCta.badge")}
-                </p>
-                <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
-                  {T("home.finalCta.title")}{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-pink-400">
-                    {T("home.finalCta.titleHighlight")}
-                  </span>
-                </h2>
-                <p className="mt-3 text-sm text-blue-100/80 md:text-base">
-                  {T("home.finalCta.desc")}
-                </p>
-              </div>
-
-              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                <Button asChild className="h-12 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 px-7 font-black text-white shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all hover:-translate-y-0.5">
+        <FadeUp className="pb-2">
+          <section className="relative min-h-[380px] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 text-white shadow-2xl">
+            <video
+              className="absolute inset-0 size-full object-cover opacity-70"
+              src={HOME_MEDIA.finalVideo}
+              poster={HOME_MEDIA.finalPoster}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-slate-950/10" />
+            <div className="relative z-10 flex min-h-[380px] flex-col justify-center p-8 sm:p-10 lg:p-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-pink-300">
+                {T("home.finalCta.badge")}
+              </p>
+              <h2 className="mt-4 max-w-2xl text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
+                {T("home.finalCta.title")}{" "}
+                <span className="text-pink-300">{T("home.finalCta.titleHighlight")}</span>
+              </h2>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-white/75 sm:text-base">
+                {T("home.finalCta.desc")}
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild className="h-11 rounded-full bg-pink-500 px-6 font-semibold text-white hover:bg-pink-600">
                   <Link href="/course">{T("home.finalCta.startLearning")}</Link>
                 </Button>
-                <Button asChild variant="outline" className="h-12 rounded-xl border-white/30 bg-white/10 px-7 font-black text-white hover:bg-white/20 backdrop-blur-sm">
-                  <Link href="/ai-chat">
-                    <span className="material-symbols-outlined text-lg mr-1">smart_toy</span>
-                    {T("home.finalCta.tryAI")}
-                  </Link>
+                <Button asChild variant="outline" className="h-11 rounded-full border-white/25 bg-white/10 px-6 font-semibold text-white hover:bg-white/20">
+                  <Link href="/ai-chat">{T("home.finalCta.tryAI")}</Link>
                 </Button>
               </div>
             </div>
-          </div>
-        </SlideReveal>
-
+          </section>
+        </FadeUp>
       </div>
     </div>
   );

@@ -73,6 +73,8 @@
     "copied": "Đã sao chép"
   },
   "sidebar": {
+    "home": "Trang chủ",
+    "courses": "Khóa học",
     "subtitle": "Học Tiếng Nhật",
     "premiumTitle": "Gói cao cấp",
     "premiumHeading": "Nâng cấp Premium",
@@ -538,6 +540,7 @@
     },
     "missionsSection": {
       "title": "Nhiệm vụ hôm nay",
+      "desc": "Một vài việc nhỏ để giữ nhịp học đều trong ngày, không cần mở quá nhiều màn hình cùng lúc.",
       "count": "{{total}} nhiệm vụ • {{completed}} hoàn thành",
       "flashcardsMission": { "title": "Ôn 20 flashcards N3", "desc": "Hoàn thành bộ thẻ từ vựng thông dụng cho chủ đề công việc.", "eta": "Còn khoảng 12 phút" },
       "jlptMission": { "title": "Làm mini test JLPT", "desc": "Một bài test tổng hợp nghe + đọc để giữ nhịp học đều.", "eta": "Còn khoảng 18 phút" },

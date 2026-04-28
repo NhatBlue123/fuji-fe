@@ -41,12 +41,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Header = () => {
   const router = useRouter();
@@ -59,20 +54,14 @@ const Header = () => {
 
   useEffect(() => {
     if (bellRingCount > 0) {
-      setBellAnimating(true);
+      const startTimer = window.setTimeout(() => setBellAnimating(true), 0);
       const timer = setTimeout(() => setBellAnimating(false), 1000);
-      return () => clearTimeout(timer);
+      return () => {
+        window.clearTimeout(startTimer);
+        clearTimeout(timer);
+      };
     }
   }, [bellRingCount]);
-
-  const formatDateTime = (v: string) =>
-    new Date(v).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language === "ja" ? "ja-JP" : "en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -114,9 +103,9 @@ const Header = () => {
     <TooltipProvider delayDuration={300}>
       <header
         data-app-header
-        className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 md:px-8 lg:px-12 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-none transition-all duration-300"
+        className="sticky top-0 z-50 h-16 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300 hidden md:flex items-center justify-between px-4 md:px-8 lg:px-12"
       >
-        <div className="flex items-center gap-4">{/* FUJI Logo*/}</div>
+        <div className="flex items-center gap-4"></div>
 
         <div className="flex items-center gap-1 md:gap-2">
           {/* Streak Indicator */}

@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: "FUJI - Học Tiếng Nhật Online",
   description: "Chinh phục tiếng Nhật cùng FUJI",
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
   openGraph: {
     title: "FUJI - Học Tiếng Nhật Online",
@@ -51,9 +51,9 @@ export default function RootLayout({
       style={fontVars}
     >
       <head suppressHydrationWarning>
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
       </head>
       <body suppressHydrationWarning>
         <ExtensionCleanup />

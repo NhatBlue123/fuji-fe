@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -41,7 +42,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const Sidebar = () => {
   const pathname = usePathname();
   const { roles } = useAuth();
-  const { unreadCount } = useNotifications();
+  useNotifications();
   const { t, i18n } = useTranslation();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -110,12 +111,12 @@ const Sidebar = () => {
         <Link
           href="/"
           className={cn(
-            "flex h-16 items-center px-4 hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
-            isCollapsed ? "justify-center" : "gap-3 px-6"
+            "flex h-16 items-center hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
+            isCollapsed ? "justify-center px-4" : "gap-2 px-3"
           )}
         >
-          <div className="flex-shrink-0 size-9 rounded-xl bg-secondary text-white flex items-center justify-center shadow-lg shadow-secondary/20">
-            <span className="material-symbols-outlined text-2xl font-bold">landscape</span>
+          <div className="flex-shrink-0">
+            <Image src="/images/logofuji_v1.png" alt="FUJI Logo" width={90} height={60} quality={100} className="object-contain" />
           </div>
 
           {!isCollapsed && (

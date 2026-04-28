@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { Mail, Phone, Facebook, Youtube, Instagram } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -18,7 +19,8 @@ const Footer = () => {
 
   // Chỉ render translation sau khi client mount để tránh hydration mismatch
   useEffect(() => {
-    setIsMounted(true);
+    const timer = window.setTimeout(() => setIsMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (
@@ -29,9 +31,7 @@ const Footer = () => {
           {/* Cột 1: Brand */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center size-7 rounded-lg bg-secondary text-white shadow-lg shadow-secondary/10">
-                <span className="material-symbols-outlined text-sm">landscape</span>
-              </div>
+              <Image src="/images/logofuji_v1.png" alt="FUJI Logo" width={72} height={48} quality={100} className="object-contain" />
               <h2 className="text-base font-black tracking-tighter text-foreground uppercase">FUJI</h2>
             </div>
             {isMounted ? (

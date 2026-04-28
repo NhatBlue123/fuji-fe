@@ -209,7 +209,6 @@ function MediaSurface({
           muted
           playsInline
           preload="metadata"
-          loading="lazy"
         />
       ) : (
         <div className="absolute inset-0">

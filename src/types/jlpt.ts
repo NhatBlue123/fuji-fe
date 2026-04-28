@@ -32,6 +32,7 @@ export interface JlptTest {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
+  mondaiCounts?: Record<number, number>;
   questions?: JlptQuestion[];
 }
 

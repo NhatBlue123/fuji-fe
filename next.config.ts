@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+
   // Disabled: Strict Mode double-mounts components in dev, which closes the
   // RTCPeerConnection while createOffer() is pending → Chrome hangs promise forever.
   reactStrictMode: false,

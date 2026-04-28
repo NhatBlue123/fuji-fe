@@ -1,5 +1,7 @@
 import type { UserSummaryDTO } from "@/types/course";
 
+export type DiscountType = "PERCENT" | "FIXED_AMOUNT";
+
 export interface CourseFinanceCourse {
   courseId: number;
   title: string;
@@ -23,9 +25,12 @@ export interface CourseFinanceSummary {
 
 export interface CourseDiscount {
   id: number;
-  courseId: number;
+  courseId: number | null;
+  isGlobal: boolean;
   code: string;
-  discountPercent: number;
+  discountType: DiscountType;
+  discountPercent: number | null;
+  discountAmount: number | null;
   startAt: string | null;
   endAt: string | null;
   isActive: boolean;
@@ -49,7 +54,19 @@ export interface UpdateCoursePricePayload {
 export interface CreateCourseDiscountPayload {
   courseId: number;
   code: string;
-  discountPercent: number;
+  discountType?: DiscountType;
+  discountPercent?: number | null;
+  discountAmount?: number | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  isActive?: boolean;
+}
+
+export interface CreateGlobalDiscountPayload {
+  code: string;
+  discountType: DiscountType;
+  discountPercent?: number | null;
+  discountAmount?: number | null;
   startAt?: string | null;
   endAt?: string | null;
   isActive?: boolean;
@@ -59,7 +76,20 @@ export interface UpdateCourseDiscountPayload {
   courseId: number;
   discountId: number;
   code?: string;
-  discountPercent?: number;
+  discountType?: DiscountType;
+  discountPercent?: number | null;
+  discountAmount?: number | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  isActive?: boolean;
+}
+
+export interface UpdateGlobalDiscountPayload {
+  discountId: number;
+  code?: string;
+  discountType?: DiscountType;
+  discountPercent?: number | null;
+  discountAmount?: number | null;
   startAt?: string | null;
   endAt?: string | null;
   isActive?: boolean;

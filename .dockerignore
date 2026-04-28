@@ -1,0 +1,14 @@
+.git
+.next
+.turbo
+node_modules
+Dockerfile
+.dockerignore
+.env
+.env.*
+npm-debug.log*
+errors.log
+tsconfig.tsbuildinfo
+Docs
+.agent
+.agents

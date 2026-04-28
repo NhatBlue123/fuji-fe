@@ -14,6 +14,7 @@ import {
   useCompleteLessonMutation,
 } from "@/store/services/courseApi";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useAuth } from "@/store/hooks";
 import type { LessonResponseDTO, TaskType } from "@/types/course";
 import {
   MultipleChoiceTask,
@@ -475,6 +476,7 @@ export default function LessonView({
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { isPremium } = useFeatureAccess();
+  const { isAuthenticated } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "qa" | "notes">(
     "overview",
   );
@@ -501,22 +503,27 @@ export default function LessonView({
     [lessons, i18n.language],
   );
   const currentLessonMeta = sortedLessons.find((l) => l.id === lessonId);
+
+  const canAccessCourse = isAuthenticated && (isPremium || Boolean(course?.isEnrolled));
+
+  // Khi chưa enroll: không unlock bài nào theo sequential (chỉ preview mới qua được)
   const firstIncompleteIndex = sortedLessons.findIndex((l) => !l.userCompleted);
-  const maxUnlockedIndex =
-    firstIncompleteIndex === -1
+  const maxUnlockedIndex = !canAccessCourse
+    ? -1
+    : firstIncompleteIndex === -1
       ? sortedLessons.length - 1
       : firstIncompleteIndex;
+
   const sequentialUnlockedLessonIds = useMemo(() => {
     const unlockedIds = new Set<number>();
+    if (!canAccessCourse) return unlockedIds;
     sortedLessons.forEach((item, idx) => {
       if (idx <= maxUnlockedIndex || item.userCompleted) {
         unlockedIds.add(item.id);
       }
     });
     return unlockedIds;
-  }, [maxUnlockedIndex, sortedLessons, i18n.language]);
-
-  const canAccessCourse = isPremium || Boolean(course?.isEnrolled);
+  }, [canAccessCourse, maxUnlockedIndex, sortedLessons, i18n.language]);
   const canAccessCurrentLessonByPolicy =
     canAccessCourse || Boolean(currentLessonMeta?.isPreview);
   const isCurrentLessonSequentiallyUnlocked = currentLessonMeta
@@ -578,22 +585,13 @@ export default function LessonView({
     return <LessonSkeleton />;
   }
 
-  const lessonErrorStatus =
-    typeof lessonError === "object" &&
-    lessonError !== null &&
-    "status" in lessonError
-      ? Number((lessonError as { status?: number }).status)
-      : undefined;
-
-  if (
-    !lesson &&
-    (lessonErrorStatus === 403 ||
-      (Boolean(currentLessonMeta) && !canAccessCurrentLessonByPolicy))
-  ) {
+  // Kiểm tra quyền truy cập TRƯỚC khi render lesson content
+  // Không phụ thuộc vào việc lesson data có load được hay không
+  if (currentLessonMeta && !canAccessCurrentLessonByPolicy) {
     return (
       <LockedLessonNotice
         courseId={courseId}
-        lessonTitle={currentLessonMeta?.title}
+        lessonTitle={currentLessonMeta.title}
         reason="course"
       />
     );
@@ -610,6 +608,24 @@ export default function LessonView({
         lessonTitle={currentLessonMeta.title}
         reason="sequence"
         fallbackLessonId={fallbackLessonId}
+      />
+    );
+  }
+
+  // Fallback: nếu API trả 403 (backend block)
+  const lessonErrorStatus =
+    typeof lessonError === "object" &&
+    lessonError !== null &&
+    "status" in lessonError
+      ? Number((lessonError as { status?: number }).status)
+      : undefined;
+
+  if (!lesson && lessonErrorStatus === 403) {
+    return (
+      <LockedLessonNotice
+        courseId={courseId}
+        lessonTitle={currentLessonMeta?.title}
+        reason="course"
       />
     );
   }

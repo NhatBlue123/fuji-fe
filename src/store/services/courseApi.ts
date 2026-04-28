@@ -182,6 +182,26 @@ export const courseApi = createApi({
       ],
     }),
 
+    previewDiscount: builder.query<
+      {
+        code: string;
+        originalPrice: number;
+        discountAmount: number;
+        finalPrice: number;
+        discountType: "PERCENT" | "FIXED_AMOUNT" | null;
+        discountPercent: number | null;
+        valid: boolean;
+        message: string;
+      },
+      { courseId: number; code: string }
+    >({
+      query: ({ courseId, code }) => ({
+        url: `/courses/${courseId}/preview-discount`,
+        params: { code },
+      }),
+      transformResponse: (res: ApiResponse<any>) => res.data,
+    }),
+
     // ==================== RATING ====================
 
     rateCourse: builder.mutation<
@@ -345,6 +365,8 @@ export const {
   useUpdateCourseMutation,
   useDeleteCourseMutation,
   usePurchaseCourseMutation,
+  usePreviewDiscountQuery,
+  useLazyPreviewDiscountQuery,
   useRateCourseMutation,
   useGetCourseRatingsQuery,
   useGetLessonsByCourseQuery,

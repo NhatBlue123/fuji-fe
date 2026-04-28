@@ -21,8 +21,10 @@ import {
   rebuildStructureWithCounts,
   getQuestionNumbers,
   getStructureForTestType,
+  getMondaiInstruction,
   type JLPTLevel,
   type SectionConfig,
+  type MondaiConfig,
 } from "@/lib/jlpt-structure";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,12 +44,97 @@ interface MondaiOverride {
   instruction: string;
 }
 
-const JLPT_MONDAI_DEFAULTS: Record<string, Record<number, number>> = {
-  N5: { 8: 5, 9: 4, 10: 3 },
-  N4: { 8: 4, 9: 5, 10: 3 },
-  N3: { 8: 6, 9: 6, 10: 3, 11: 3 },
-  N2: { 9: 6, 10: 6, 11: 4, 12: 4, 13: 3, 14: 4, 15: 4, 16: 4, 17: 4 },
-  N1: { 7: 5, 8: 6, 9: 5, 10: 5, 11: 5, 12: 4, 13: 4, 14: 4, 15: 4, 16: 4, 17: 4, 18: 4, 19: 4, 20: 4, 21: 4, 22: 4, 23: 4, 24: 4, 25: 4 },
+const JLPT_MONDAI_DEFAULTS: Record<string, Record<number, { count: number; instruction: string }>> = {
+  N5: {
+    1:  { count: 9,  instruction: "＿＿の　ことばは　ひらがなで　どう　かきますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    2:  { count: 6,  instruction: "もんだい＿＿＿のことばは　どう　かきますか。１・２・３・４から　いちばん　いいものを　ひとつ　えらんで　ください。" },
+    3:  { count: 10, instruction: "もんだい（　　　）に　なにを　いれますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    4:  { count: 5,  instruction: "もんだい　＿＿＿の　ぶんと　だいたい　おなじ　いみの　ぶんが　あります。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    5:  { count: 5,  instruction: "もんだい　つぎの　ことばの　つかいかたで　いちばん　いい　ものを　１・２・３・４　から　ひとつ　えらんで　ください。" },
+    6:  { count: 5,  instruction: "もんだい　（　　　）に　何を　入れますか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    7:  { count: 6,  instruction: "もんだい　（　　　）に　入る　ものは　どれですか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    8:  { count: 1,  instruction: "問題　次の文章を読んで、文章全体の内容を考えて、（１）から（４）の中に入る最もよいものを、１・２・３・４から一つ選びなさい。" },
+    9:  { count: 1,  instruction: "もんだい　つぎの（１）から（４）の文章を読んで、質問に答えてください。こたえは、１・２・３・４からいちばんいいものを一つえらんでください。" },
+    10: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いちばんいいものを一つえらんでください。" },
+    11: { count: 7,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    12: { count: 7,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    13: { count: 6,  instruction: "もんだい　では、はじめに　しつもんを　きいて　ください。　それから、はなしを　きいて、もんだいようしの　1から　４の　ながから、いい　ものを　ひとつ　えらんで　ください。" },
+    14: { count: 16, instruction: "１から３の　ながから、いい　ものを　ひとつ　えらんでください。" },
+  },
+  N4: {
+    1:  { count: 7,  instruction: "＿＿の　ことばは　ひらがなで　どう　かきますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    2:  { count: 6,  instruction: "もんだい＿＿＿のことばは　どう　かきますか。１・２・３・４から　いちばん　いいものを　ひとつ　えらんで　ください。" },
+    3:  { count: 10, instruction: "もんだい（　　　）に　なにを　いれますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    4:  { count: 5,  instruction: "もんだい　＿＿＿の　ぶんと　だいたい　おなじ　いみの　ぶんが　あります。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    5:  { count: 5,  instruction: "もんだい　つぎの　ことばの　つかいかたで　いちばん　いい　ものを　１・２・３・４　から　ひとつ　えらんで　ください。" },
+    6:  { count: 5,  instruction: "もんだい　（　　　）に　入る　ものは　どれですか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    7:  { count: 4,  instruction: "もんだい　（　　　）に　何を　入れますか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    8:  { count: 1,  instruction: "問題　次の文章を読んで、文章全体の内容を考えて、（１）から（４）の中に入る最もよいものを、１・２・３・４から一つ選びなさい。" },
+    9:  { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いちばんいいものを一つえらんでください。" },
+    10: { count: 1,  instruction: "つぎのを見て、質問に答えてください。答えは、１．２．３．４から、いいものを一つ選んでください。" },
+    11: { count: 7,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    12: { count: 7,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    13: { count: 6,  instruction: "もんだい　では、はじめに　しつもんを　きいて　ください。　それから、はなしを　きいて、もんだいようしの　1から　４の　なかから、いい　ものを　ひとつ　えらんで　ください。" },
+    14: { count: 16, instruction: "１から３の　ながから、いい　ものを　ひとつ　えらんでください。" },
+  },
+  N3: {
+    1:  { count: 8,  instruction: "＿＿の　ことばは　ひらがなで　どう　かきますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    2:  { count: 6,  instruction: "もんだい＿＿＿のことばは　どう　かきますか。１・２・３・４から　いちばん　いいものを　ひとつ　えらんで　ください。" },
+    3:  { count: 11, instruction: "もんだい（　　　）に　なにを　いれますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    4:  { count: 5,  instruction: "もんだい　＿＿＿の　ぶんと　だいたい　おなじ　いみの　ぶんが　あります。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    5:  { count: 5,  instruction: "もんだい　つぎの　ことばの　つかいかたで　いちばん　いい　ものを　１・２・３・４　から　ひとつ　えらんで　ください。" },
+    6:  { count: 13, instruction: "もんだい　（　　　）に　何を　入れますか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    7:  { count: 5,  instruction: "もんだい　（　　　）に　入る　ものは　どれですか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    8:  { count: 1,  instruction: "問題　次の文章を読んで、文章全体の内容を考えて、（１）から（４）の中に入る最もよいものを、１・２・３・４から一つ選びなさい。" },
+    9:  { count: 1,  instruction: "もんだい　つぎの（１）から（４）の文章を読んで、質問に答えてください。こたえは、１・２・３・４からいちばんいいものを一つえらんでください。" },
+    10: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いちばんいいものを一つえらんでください。" },
+    11: { count: 1,  instruction: "つぎのを見て、質問に答えてください。答えは、１．２．３．４から、いいものを一つ選んでください。" },
+    12: { count: 7,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    13: { count: 7,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    14: { count: 6,  instruction: "もんだい　では、はじめに　しつもんを　きいて　ください。　それから、はなしを　きいて、もんだいようしの　1から　４の　なかから、いい　ものを　ひとつ　えらんで　ください。" },
+    15: { count: 11, instruction: "１から３の　ながから、いい　ものを　ひとつ　えらんでください。" },
+  },
+  N2: {
+    1:  { count: 5,  instruction: "＿＿の　ことばは　ひらがなで　どう　かきますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    2:  { count: 5,  instruction: "もんだい＿＿＿のことばは　どう　かきますか。１・２・３・４から　いちばん　いいものを　ひとつ　えらんで　ください。" },
+    3:  { count: 5,  instruction: "もんだい　つぎの　ぶん中の　＿＿＿の　ぶんと　だいたい　同じ　いみの　ぶぶんが　あります。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    4:  { count: 7,  instruction: "もんだい（　　　）に　なにを　いれますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    5:  { count: 5,  instruction: "もんだい　つぎの　ことばの　つかいかたで　いちばん　いい　ものを　１・２・３・４　から　ひとつ　えらんで　ください。" },
+    6:  { count: 5,  instruction: "もんだい　つぎの　文中の　＿＿＿の　部分に　入れるのに　最も　いいものを、１・２・３・４から　一つ　選んで　ください。" },
+    7:  { count: 10, instruction: "もんだい　（　　　）に　入る　ものは　どれですか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    8:  { count: 6,  instruction: "もんだい　（　　　）に　何を　入れますか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    9:  { count: 1,  instruction: "問題　次の文章を読んで、文章全体の内容を考えて、（１）から（４）の中に入る最もよいものを、１・２・３・４から一つ選びなさい。" },
+    10: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いいものを一つ選んでください。" },
+    11: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いいものを一つ選んでください。" },
+    12: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いいものを一つ選んでください。" },
+    13: { count: 1,  instruction: "つぎのを見て、質問に答えてください。答えは、１．２．３．４から、いいものを一つ選んでください。" },
+    14: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いいものを一つ選んでください。" },
+    15: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・４から、いいものを一つ選んでください。" },
+    16: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・٤から、いいものを一つ選んでください。" },
+    17: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・٣・٤から、いいものを一つ選んでください。" },
+    18: { count: 6,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    19: { count: 6,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    20: { count: 6,  instruction: "もんだい　では、はじめに　しつもんを　きいて　ください。　それから、はなしを　きいて、もんだいようしの　1から　４の　なかから、いい　ものを　ひとつ　えらんで　ください。" },
+    21: { count: 18, instruction: "１から３の　ながから、いい　ものを　ひとつ　えらんでください。" },
+  },
+  N1: {
+    1:  { count: 6,  instruction: "＿＿の　ことばは　ひらがなで　どう　かきますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    2:  { count: 7,  instruction: "もんだい（　　　）に　なにを　いれますか。１・２・３・４から　いちばん　いい　ものを　ひとつ　えらんで　ください。" },
+    3:  { count: 5,  instruction: "もんだい　つぎの　ことばの　つかいかたで　いちばん　いい　ものを　１・２・３・４　から　ひとつ　えらんで　ください。" },
+    4:  { count: 5,  instruction: "もんだい　つぎの　文中の　＿＿＿の　部分に　入れるのに　最も　いいものを、１・２・３・４から　一つ　選んで　ください。" },
+    5:  { count: 10, instruction: "もんだい　（　　　）に　入る　ものは　どれですか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    6:  { count: 5,  instruction: "もんだい　（　　　）に　何を　入れますか。１・２・３・４から　いちばん　いい　ものを　一つ　えらんで　ください。" },
+    7:  { count: 1,  instruction: "問題　次の文章を読んで、文章全体の内容を考えて、（１）から（４）の中に入る最もよいものを、１・２・３・４から一つ選びなさい。" },
+    8:  { count: 1,  instruction: "もんだい　つぎの（１）から（４）の文章を読んで、質問に答えてください。こたえは、１・２・٣・٤からいちばんいいものを一つえらんでください。" },
+    9:  { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・３・٤から、いいものを一つ選んでください。" },
+    10: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・٣・٤から、いいものを一つ選んでください。" },
+    11: { count: 1,  instruction: "つぎのを見て、質問に答えてください。答えは、１．２．٣．٤から、いいものを一つ選んでください。" },
+    12: { count: 1,  instruction: "もんだい　つぎの文章を読んで、質問に答えてください。答えは、１・２・٣・٤から、いいものを一つ選んでください。" },
+    13: { count: 6,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    14: { count: 6,  instruction: "もんだい　では、まず　しつもんを　聞いて　ください。それから　話を　聞いて、もんだいようしの　1から4の中から、いい　ものを　一つ　えらんで　ください。" },
+    15: { count: 6,  instruction: "もんだい　では、はじめに　しつもんを　きいて　ください。　それから、はなしを　きいて、もんだいようしの　1から　４の　なかから、いい　ものを　ひとつ　えらんで　ください。" },
+    16: { count: 18, instruction: "１から３の　ながから、いい　ものを　ひとつ　えらんでください。" },
+  },
 };
 
 interface MondaiNode {
@@ -60,26 +147,35 @@ type QuestionsMap = Record<number, MondaiNode>;
 function buildQuestionsMap(questions: JlptQuestionAdmin[]): QuestionsMap {
   const map: QuestionsMap = {};
 
-  for (const q of questions) {
-    if (!map[q.mondaiNumber]) map[q.mondaiNumber] = { parent: null, children: {} };
-
-    if (q.parentId == null) {
-      if (q.children && q.children.length > 0) {
-        map[q.mondaiNumber].parent = q;
-        for (const child of q.children) {
-          map[q.mondaiNumber].children[child.questionOrder] = child;
-        }
-      } else {
-        if (q.options || q.correctOption != null) {
-          map[q.mondaiNumber].children[q.questionOrder] = q;
-        } else {
-          map[q.mondaiNumber].parent = q;
-        }
-      }
+  // Backend trả về TREE: mỗi item là parent với nested children[]
+  questions.forEach((parent) => {
+    if (!map[parent.mondaiNumber]) {
+      map[parent.mondaiNumber] = { parent: null, children: {} };
     }
-  }
+
+    // Nếu parent có nested children
+    if (parent.children && parent.children.length > 0) {
+      map[parent.mondaiNumber].parent = parent;
+      parent.children.forEach((child: JlptQuestionAdmin) => {
+        map[parent.mondaiNumber].children[child.questionOrder] = child;
+      });
+    }
+    // Không có children - kiểm tra có phải là standalone question không
+    // Listening audio-only questions: có audioMedia nhưng không có options → vẫn là standalone question
+    else if (parent.options != null || parent.correctOption != null || parent.audioMedia != null) {
+      // Standalone question không có parent (mondai không require_passage)
+      map[parent.mondaiNumber].children[parent.questionOrder] = parent;
+    } else {
+      // Parent không có children và không có options/audio = passage-only
+      map[parent.mondaiNumber].parent = parent;
+    }
+  });
 
   return map;
+}
+
+function isReadingMondaiFn(mondai: { title?: string }) {
+  return /読解|情報検索|統合/.test(mondai.title || "");
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -87,14 +183,14 @@ function buildQuestionsMap(questions: JlptQuestionAdmin[]): QuestionsMap {
 function SectionSidebar({
   sections,
   mondaiLeaves,
+  mondaiActualStarts,
   selectedQ,
-  selectedSlotPerMondai,
   onSelect,
 }: {
   sections: SectionConfig[];
   mondaiLeaves: Map<number, JlptQuestionAdmin[]>;
+  mondaiActualStarts: Record<number, number>;
   selectedQ: number | null;
-  selectedSlotPerMondai: Record<number, number>;
   onSelect: (questionOrder: number, slotIndex: number, mondaiNumber: number) => void;
 }) {
 
@@ -111,9 +207,16 @@ function SectionSidebar({
           </div>
 
           {section.mondai.map((mondai) => {
-            const nums = getQuestionNumbers(mondai);
+            const actualStart = mondaiActualStarts[mondai.number] ?? mondai.start;
+            // Đối với passage mondai: count = số câu con (_totalCount)
+            // Đối với standalone: count = end - start + 1
+            const count = mondai.requires_passage 
+              ? (mondai._totalCount ?? 1) 
+              : (mondai.end - mondai.start + 1);
+            const nums = Array.from({ length: count }, (_, i) => actualStart + i);
             const actualQuestions = mondaiLeaves.get(mondai.number) || [];
             const isPassage = mondai.requires_passage;
+            const isReading = isReadingMondaiFn(mondai);
 
             return (
               <div key={mondai.number} className="px-4 py-3 border-t border-border/50">
@@ -122,7 +225,7 @@ function SectionSidebar({
                     問題{mondai.number}
                   </span>
                   <span className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                    {actualQuestions.length}/{mondai._totalCount ?? (mondai.end - mondai.start + 1)}
+                    {actualQuestions.length}/{count}
                   </span>
                 </div>
                 <p className="text-xs text-foreground/70 mb-2">{mondai.title}</p>
@@ -133,7 +236,7 @@ function SectionSidebar({
                       <Volume2 className="h-2.5 w-2.5" />Audio
                     </Badge>
                   )}
-                  {isPassage && (
+                  {(isPassage || isReading) && (
                     <Badge variant="outline" className="text-[9px] py-0 px-1 gap-0.5 border-blue-400 text-blue-600">
                       <FileText className="h-2.5 w-2.5" />Passage
                     </Badge>
@@ -143,13 +246,10 @@ function SectionSidebar({
                 <div className="flex flex-wrap gap-1">
                   {nums.map((questionOrder, idx) => {
                     const slotIndex = idx + 1;
-                    const selectedSlot = selectedSlotPerMondai[mondai.number];
-                    const isCurrent = selectedSlot === slotIndex;
-                    const isSaved = actualQuestions.some(q => q.questionOrder === questionOrder);
+                    const isCurrent = selectedQ === questionOrder;
+                    const isSaved = actualQuestions.some(q => q.questionOrder === questionOrder && q.mondaiNumber === mondai.number);
 
-                    const displayLabel = isPassage
-                      ? `${mondai.start}.${slotIndex}`
-                      : String(questionOrder);
+                    const displayLabel = String(questionOrder);
 
                     return (
                       <button
@@ -231,6 +331,7 @@ function PassagePanel({
   audioPreviewUrl,
   handleAudioUpload,
   uploadingAudio,
+  initialOpen = false,
 }: {
   mondaiNumber: number;
   passageText: string;
@@ -239,13 +340,13 @@ function PassagePanel({
   audioPreviewUrl: string | null;
   handleAudioUpload: (file: File) => void;
   uploadingAudio: boolean;
+  initialOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(() => passageText.trim().length > 0);
+  // Reading mondai (standalone) always start open; passage mondai only if has existing text
+  const hasExistingText = passageText.trim().length > 0;
+  const [open, setOpen] = useState(() => initialOpen || hasExistingText);
 
   const handleToggle = () => {
-    if (open) {
-      setPassageText("");
-    }
     setOpen((v) => !v);
   };
 
@@ -309,7 +410,7 @@ export default function AdminExamLayout() {
   const router = useRouter();
   const testId = Number(params.id);
 
-  const { data: test, isLoading } = useGetTestByIdQuery(testId);
+  const { data: test, isLoading, refetch } = useGetTestByIdQuery(testId);
   const [addQuestion] = useAddQuestionMutation();
   const [updateQuestion] = useUpdateQuestionMutation();
   const [uploadAudio] = useUploadAudioMutation();
@@ -320,7 +421,7 @@ export default function AdminExamLayout() {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(null);
-  // mondaiNumber → slotIndex (1-based) of selected question within that mondai
+  // (kept for future extensibility, but highlight now uses selectedQuestionNumber directly)
   const [selectedSlotPerMondai, setSelectedSlotPerMondai] = useState<Record<number, number>>({});
   const [showSetup, setShowSetup] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -329,6 +430,9 @@ export default function AdminExamLayout() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Ref để luôn đọc được audioMediaId mới nhất (không bị stale closure khi save ngay sau upload)
+  const audioMediaIdRef = useRef<number | null>(null);
+
   // ── Mondai config ─────────────────────────────────────────────────────────
   const STORAGE_KEY = `jlpt_mondai_config_${testId}`;
   const [mondaiOverrides, setMondaiOverrides] = useState<Record<number, MondaiOverride>>({});
@@ -336,15 +440,26 @@ export default function AdminExamLayout() {
   useEffect(() => {
     if (!test?.level) return;
     const merged: Record<number, MondaiOverride> = {};
-    const levelDefaults = JLPT_MONDAI_DEFAULTS[test.level] || {};
+
+    // Build counts from JLPT_STRUCTURE for this level
+    const levelStructure = JLPT_STRUCTURE[test.level as JLPTLevel] || [];
+    const levelCounts: Record<number, number> = {};
+    levelStructure.forEach((section) => {
+      section.mondai.forEach((m) => {
+        levelCounts[m.number] = m.end - m.start + 1;
+      });
+    });
 
     if (test.mondaiCounts && Object.keys(test.mondaiCounts).length > 0) {
       Object.entries(test.mondaiCounts).forEach(([k, v]) => {
-        merged[Number(k)] = { count: v, instruction: "" };
+        merged[Number(k)] = {
+          count: v,
+          instruction: getMondaiInstruction(Number(k)),
+        };
       });
     } else {
-      Object.entries(levelDefaults).forEach(([k, v]) => {
-        merged[Number(k)] = { count: v, instruction: "" };
+      Object.entries(levelCounts).forEach(([k, v]) => {
+        merged[Number(k)] = { count: v, instruction: getMondaiInstruction(Number(k)) };
       });
     }
 
@@ -386,6 +501,67 @@ export default function AdminExamLayout() {
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   const [imageMediaId, setImageMediaId] = useState<number | null>(null);
 
+  // Keep audioMediaIdRef in sync with audioMediaId state
+  useEffect(() => { audioMediaIdRef.current = audioMediaId; }, [audioMediaId]);
+
+  // ── Reload form after API refetch ─────────────────────────────────────────
+  // Track when questions data was last updated; trigger form reload from fresh data
+  const [lastRefetchKey, setLastRefetchKey] = useState(0);
+  const [reloadCounter, setReloadCounter] = useState(0);
+
+  useEffect(() => {
+    if (!test?.questions || !selectedQuestionNumber || !derived) return;
+    const question = test.questions.find(
+      (q) =>
+        q.mondaiNumber === derived.mondai.number &&
+        q.questionOrder === selectedQuestionNumber
+    );
+    if (!question) return;
+
+    const isReading = isReadingMondaiFn(derived.mondai);
+
+    // Parse content: for reading standalone → split 【読解】\n<passage>\n\n<question>
+    if (isReading && question.contentText?.includes("【読解】")) {
+      const parts = question.contentText.split("【読解】\n");
+      if (parts.length >= 2) {
+        const [passagePart, questionPart] = parts[1].split("\n\n");
+        setPassageText(passagePart ?? "");
+        setQuestionText(questionPart ?? parts[1]);
+      } else {
+        setPassageText("");
+        setQuestionText(question.contentText ?? "");
+      }
+    } else {
+      setPassageText("");
+      setQuestionText(question.contentText ?? "");
+    }
+
+    let parsedOptions: string[] = ["", "", "", ""];
+    if (question.options) {
+      if (Array.isArray(question.options)) {
+        parsedOptions = question.options.length === 4 ? question.options : ["", "", "", ""];
+      } else if (typeof question.options === "string") {
+        try {
+          const arr = JSON.parse(question.options as string);
+          parsedOptions = Array.isArray(arr) && arr.length === 4 ? arr : ["", "", "", ""];
+        } catch { /* leave empty */ }
+      }
+    }
+    setOptions(parsedOptions);
+    setCorrectOption(question.correctOption ?? 1);
+    setExplanation(question.explanation ?? "");
+    setPoints(question.points ?? 1.0);
+    setAudioMediaId(question.audioMedia?.id ?? null);
+    setAudioPreviewUrl(question.audioMedia?.url ?? null);
+    setImageMediaId(question.imageMedia?.id ?? null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadCounter, test?.questions, selectedQuestionNumber]);
+
+  // Increment reload counter after refetch completes
+  const handleAfterRefetch = useCallback(() => {
+    setReloadCounter((c) => c + 1);
+  }, []);
+
   // ── Question bank modal state ──────────────────────────────────────────────
   const [bankSearch, setBankSearch] = useState("");
   const [bankLevel, setBankLevel] = useState<JLPTLevel | "">("");
@@ -398,23 +574,37 @@ export default function AdminExamLayout() {
     return map;
   }, [mondaiOverrides]);
 
+  // mondaiCounts từ overrides (từ setup panel/database)
+  const mondaiCounts = useMemo<Record<number, number>>(() => {
+    const map: Record<number, number> = {};
+    Object.entries(mondaiOverrides).forEach(([k, v]) => { map[Number(k)] = v.count || 0; });
+    return map;
+  }, [mondaiOverrides]);
+
   const structure = useMemo<SectionConfig[]>(() => {
     if (!test?.level) return [];
-    const testType = test.testType ?? "full_test";
-    const hasAnyCount = Object.values(countMap).some((c) => c > 0);
-    if (hasAnyCount) {
-      const rebuilt = rebuildStructureWithCounts(test.level as JLPTLevel, countMap);
-      const targetSectionNames = new Set(
-        getStructureForTestType(test.level as JLPTLevel, testType).map((s) => s.name)
-      );
-      return rebuilt.filter((s) => targetSectionNames.has(s.name));
-    }
-    return getStructureForTestType(test.level as JLPTLevel, testType);
-  }, [test?.level, test?.testType, countMap]);
+
+    // Filter sections by testType (e.g. "vocabulary" → only VOCABULARY section)
+    const filtered = getStructureForTestType(test.level as JLPTLevel, test.testType ?? "full_test");
+
+    // Always rebuild so slot positions are consistent between admin and exam.
+    // rebuildStructureWithCounts handles the zero-count case correctly (uses hardcoded defaults).
+    return rebuildStructureWithCounts(test.level as JLPTLevel, mondaiCounts, filtered);
+  }, [test?.level, test?.testType, mondaiCounts]);
 
   const questionsMap = useMemo<QuestionsMap>(() => {
     if (!test?.questions) return {};
     return buildQuestionsMap(test.questions);
+  }, [test?.questions]);
+
+  // ── Reverse index: questionOrder → mondaiNumber (for all questions, including AI-created) ──
+  const questionOrderToMondaiNumber = useMemo<Map<number, number>>(() => {
+    const map = new Map<number, number>();
+    if (!test?.questions) return map;
+    test.questions.forEach((q) => {
+      map.set(q.questionOrder, q.mondaiNumber);
+    });
+    return map;
   }, [test?.questions]);
 
   // ── Map from slotIndex → questionOrder for passage mondai children ───────────
@@ -508,10 +698,26 @@ export default function AdminExamLayout() {
   // ── Derived: current selection resolved ───────────────────────────────────
   const derived = useMemo(() => {
     if (!selectedQuestionNumber) return null;
-    const found = findMondaiInStructure(selectedQuestionNumber);
-    if (!found) return null;
-    const node = questionsMap[found.mondai.number];
-    const slotIdx = selectedSlotPerMondai[found.mondai.number] ?? found.passageSlotIndex;
+
+    // First try findMondaiInStructure (works for questions within structure range)
+    let found = findMondaiInStructure(selectedQuestionNumber);
+    let mondaiNum = found?.mondai.number;
+
+    // If not found, try reverse index from questionsMap (works for AI-created questions)
+    if (!found || mondaiNum == null) {
+      mondaiNum = questionOrderToMondaiNumber.get(selectedQuestionNumber);
+      if (mondaiNum != null) {
+        // Find mondai from structure by mondaiNumber
+        for (const section of structure) {
+          const m = section.mondai.find(m => m.number === mondaiNum);
+          if (m) { found = { section, mondai: m, passageSlotIndex: null }; break; }
+        }
+      }
+    }
+
+    if (!found || mondaiNum == null) return null;
+    const node = questionsMap[mondaiNum];
+    const slotIdx = selectedSlotPerMondai[mondaiNum] ?? found.passageSlotIndex;
 
     let existingChild: JlptQuestionAdmin | null = null;
     if (found.mondai.requires_passage && slotIdx != null) {
@@ -525,60 +731,48 @@ export default function AdminExamLayout() {
 
     const existingParent = node?.parent ?? null;
     return { ...found, node, existingChild, existingParent, slotIdx };
-  }, [selectedQuestionNumber, findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai]);
-
-  // ── SubLabels and mondaiLeaves ────────────────────────────────────────────
-  const { subLabels, mondaiLeaves } = useMemo(() => {
-    const labels: Record<number, string> = {};
-    const leavesMap = new Map<number, JlptQuestionAdmin[]>();
-
-    if (!test?.questions) return { subLabels: labels, mondaiLeaves: leavesMap };
-
-    const listeningMondaiNums = new Set<number>();
-    structure.forEach((section) => {
-      if (section.sectionKeys.includes("LISTENING")) {
-        section.mondai.forEach((m) => listeningMondaiNums.add(m.number));
-      }
-    });
-
-    test.questions.forEach((q) => {
-      if (listeningMondaiNums.has(q.mondaiNumber)) return;
-      if (q.parentId != null || q.options != null || q.correctOption != null) {
-        if (!leavesMap.has(q.mondaiNumber)) leavesMap.set(q.mondaiNumber, []);
-        leavesMap.get(q.mondaiNumber)!.push(q);
-      }
-    });
-
-  // Build subLabels: displayCounter (questionOrder for standalone) → display label
-  // For passage: "M.slot" (e.g. "8.1", "8.2"); for standalone: String(questionOrder)
-  let displayCounter = 1;
-
-  structure.forEach((section) => {
-    if (section.sectionKeys.includes("LISTENING")) return;
-
-    section.mondai.forEach((mondai) => {
-      const nums = getQuestionNumbers(mondai);
-
-      if (mondai.requires_passage) {
-        const passageBase = mondai.start;
-        nums.forEach((_qOrder, idx) => {
-          const slotIndex = idx + 1;
-          labels[displayCounter] = `${passageBase}.${slotIndex}`;
-          displayCounter++;
-        });
-      } else {
-        nums.forEach((qNum) => {
-          labels[displayCounter] = String(qNum);
-          displayCounter++;
-        });
-      }
-    });
-  });
-
-    return { subLabels: labels, mondaiLeaves: leavesMap };
-  }, [test?.questions, structure]);
+  }, [selectedQuestionNumber, findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai, questionOrderToMondaiNumber, structure]);
 
   // ── Question bank query ───────────────────────────────────────────────────
+  // ── mondaiNumber → ACTUAL starting questionOrder from the rebuilt structure ─
+  // Must use the rebuilt structure's m.start (which reflects correct slot positions)
+  // NOT the hardcoded static JLPT_STRUCTURE values (which differ for N3 passage mondai)
+  const mondaiActualStarts = useMemo<Record<number, number>>(() => {
+    const map: Record<number, number> = {};
+    structure.forEach(s => s.mondai.forEach(m => {
+      map[m.number] = m.start;
+    }));
+    return map;
+  }, [structure]);
+
+  const mondaiLeaves = useMemo<Map<number, JlptQuestionAdmin[]>>(() => {
+    const leavesMap = new Map<number, JlptQuestionAdmin[]>();
+    if (!test?.questions) return leavesMap;
+
+    // Backend trả về TREE: parent có nested children[]
+    // mondaiLeaves chứa children (sub-questions), KHÔNG count parent
+    // Áp dụng cho TẤT CẢ mondai (bao gồm cả Listening) để sidebar highlight đúng
+    test.questions.forEach((parent) => {
+      const mondaiNum = parent.mondaiNumber;
+      
+      // Có children → extract children
+      if (parent.children && parent.children.length > 0) {
+        parent.children.forEach((child: JlptQuestionAdmin) => {
+          if (!leavesMap.has(mondaiNum)) leavesMap.set(mondaiNum, []);
+          leavesMap.get(mondaiNum)!.push(child);
+        });
+      }
+      
+      // Không có children nhưng có options → standalone question
+      if ((!parent.children || parent.children.length === 0) && 
+          (parent.options != null || parent.correctOption != null)) {
+        if (!leavesMap.has(mondaiNum)) leavesMap.set(mondaiNum, []);
+        leavesMap.get(mondaiNum)!.push(parent);
+      }
+    });
+    
+    return leavesMap;
+  }, [test?.questions]);
   const { data: bankPage } = useGetQuestionBankItemsQuery(
     showBankModal && bankLevel && bankSection
       ? {
@@ -647,9 +841,13 @@ export default function AdminExamLayout() {
     setShowAIPanel(false);
 
     const node = questionsMap[mondaiNum];
-    const found = findMondaiInStructure(n);
-    const mondai = found?.mondai;
-    const isPassage = mondai?.requires_passage ?? false;
+    // Find mondai config from structure by mondaiNumber
+    let mondaiConfig: MondaiConfig | null = null;
+    for (const section of structure) {
+      const m = section.mondai.find(m => m.number === mondaiNum);
+      if (m) { mondaiConfig = m; break; }
+    }
+    const isPassage = mondaiConfig?.requires_passage ?? false;
 
     let child: JlptQuestionAdmin | null = null;
     let parent: JlptQuestionAdmin | null = node?.parent ?? null;
@@ -682,6 +880,76 @@ export default function AdminExamLayout() {
     setAudioPreviewUrl(child?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
     setImageMediaId(child?.imageMedia?.id ?? null);
   }, [findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai]);
+
+  // ── Populate form from derived (question data) whenever reloadCounter changes ──
+  // This ensures form always reads fresh data after refetch, even when handleSelectQuestion
+  // is called via setTimeout before refetch completes
+  useEffect(() => {
+    if (!derived || !selectedQuestionNumber) return;
+    const { node, existingChild, existingParent } = derived;
+    const isPassage = derived.mondai.requires_passage;
+    const parent = existingParent ?? node?.parent ?? null;
+
+    // For passage: read from parent; for standalone: child IS the question
+    if (isPassage) {
+      setPassageText(parent?.contentText ?? "");
+      setQuestionText(existingChild?.contentText ?? "");
+      let parsedOptions: string[] = ["", "", "", ""];
+      if (existingChild?.options) {
+        if (Array.isArray(existingChild.options)) {
+          parsedOptions = existingChild.options.length === 4 ? existingChild.options : ["", "", "", ""];
+        } else if (typeof existingChild.options === "string") {
+          try {
+            const arr = JSON.parse(existingChild.options as string);
+            parsedOptions = Array.isArray(arr) && arr.length === 4 ? arr : ["", "", "", ""];
+          } catch {}
+        }
+      }
+      setOptions(parsedOptions);
+      setCorrectOption(existingChild?.correctOption ?? 1);
+      setExplanation(existingChild?.explanation ?? "");
+      setPoints(existingChild?.points ?? 1.0);
+      setAudioMediaId(existingChild?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
+      setAudioPreviewUrl(existingChild?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
+      setImageMediaId(existingChild?.imageMedia?.id ?? null);
+    } else {
+      // Standalone question: child IS the question record
+      // For READING standalone (読解/情報検索/統合): extract passage from 【読解】\n...\n\n... format
+      const isReadingStandalone = isReadingMondaiFn(derived.mondai);
+      const rawContent = existingChild?.contentText ?? "";
+      let extractedPassage = "";
+      let extractedQuestion = rawContent;
+      if (isReadingStandalone) {
+        const match = rawContent.match(/^【読解】\s*\n([\s\S]+?)\n\n([\s\S]+)$/);
+        if (match) {
+          extractedPassage = match[1];
+          extractedQuestion = match[2];
+        }
+      }
+
+      setPassageText(extractedPassage);
+      setQuestionText(extractedQuestion);
+      let parsedOptions: string[] = ["", "", "", ""];
+      if (existingChild?.options) {
+        if (Array.isArray(existingChild.options)) {
+          parsedOptions = existingChild.options.length === 4 ? existingChild.options : ["", "", "", ""];
+        } else if (typeof existingChild.options === "string") {
+          try {
+            const arr = JSON.parse(existingChild.options as string);
+            parsedOptions = Array.isArray(arr) && arr.length === 4 ? arr : ["", "", "", ""];
+          } catch {}
+        }
+      }
+      setOptions(parsedOptions);
+      setCorrectOption(existingChild?.correctOption ?? 1);
+      setExplanation(existingChild?.explanation ?? "");
+      setPoints(existingChild?.points ?? 1.0);
+      setAudioMediaId(existingChild?.audioMedia?.id ?? null);
+      setAudioPreviewUrl(existingChild?.audioMedia?.url ?? null);
+      setImageMediaId(existingChild?.imageMedia?.id ?? null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadCounter, derived]);
 
   // ── Upload handlers ───────────────────────────────────────────────────────
   const handleAudioUpload = async (file: File) => {
@@ -721,22 +989,26 @@ export default function AdminExamLayout() {
     // For passage: questionOrder = mondai.start + passageSlotIndex (passage at mondai.start, children at mondai.start+1...)
     // For standalone: questionOrder = selectedQuestionNumber
     const isPassage = mondai.requires_passage;
+    // Is this a standalone READING mondai (読解/情報検索/統合 in title)?
+    const isReadingStandalone = isReadingMondaiFn(mondai) && !isPassage;
+    // Always use mondai.start as the authoritative start position for passage mondai
+    // This ensures children are correctly numbered: mondai.start (passage), mondai.start+1, mondai.start+2...
+    const mondaiStart = mondai.start;
     const questionOrder = isPassage && passageSlotIndex != null
-      ? mondai.start + passageSlotIndex
+      ? mondaiStart + passageSlotIndex - 1
       : selectedQuestionNumber;
 
     const resolveSectionKey = (): SectionKey => {
       const keys = section.sectionKeys;
       if (keys.length === 1) return keys[0] as SectionKey;
       if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
-      if (mondai.requires_passage && keys.includes("READING")) return "READING";
       const title = mondai.title || "";
       if (keys.includes("GRAMMAR") && keys.includes("READING")) {
-        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        if (isReadingMondaiFn(mondai) || mondai.requires_passage) return "READING";
         return "GRAMMAR";
       }
       if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR") && keys.includes("READING")) {
-        if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
+        if (isReadingMondaiFn(mondai) || mondai.requires_passage) return "READING";
         if (/文法/.test(title)) return "GRAMMAR";
         return "VOCABULARY";
       }
@@ -744,13 +1016,6 @@ export default function AdminExamLayout() {
     };
 
     const sectionKey = resolveSectionKey();
-    const isListeningSection =
-      sectionKey === "LISTENING" || section.sectionKeys.includes("LISTENING");
-
-    if (isListeningSection && !explanation.trim()) {
-      toast.error("Phần nghe bắt buộc nhập script nghe trước khi lưu.");
-      return;
-    }
 
     setSaving(true);
     try {
@@ -759,12 +1024,13 @@ export default function AdminExamLayout() {
       const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
       const effectiveMondaiTitle = overrideInstruction || mondai.title;
 
-      if (mondai.requires_passage && passageText.trim()) {
+      // PASSAGE mondai (requires_passage=true): save passage separately + question as child
+      if (isPassage && passageText.trim()) {
         const passagePayload: CreateQuestionDTO = {
           mondaiNumber: mondai.number,
           mondaiTitle: effectiveMondaiTitle,
           parentId: null,
-          questionOrder: mondai.start,
+          questionOrder: mondaiStart,
           section: sectionKey,
           contentText: passageText,
           options: undefined,
@@ -781,26 +1047,47 @@ export default function AdminExamLayout() {
         }
       }
 
+      // Build content: for standalone READING → merge passageText + questionText into one
+      const combinedContent = isReadingStandalone && passageText.trim()
+        ? `【読解】\n${passageText.trim()}\n\n${questionText}`
+        : questionText;
+
       const childPayload: CreateQuestionDTO = {
         mondaiNumber: mondai.number,
         mondaiTitle: effectiveMondaiTitle,
-        parentId: parentId,
+        parentId: isReadingStandalone ? null : parentId,
         questionOrder,
         section: sectionKey,
-        contentText: questionText,
+        contentText: combinedContent,
         options: JSON.stringify(options) as unknown as string,
         correctOption,
         explanation: explanation || undefined,
         points,
-        audioMediaId: mondai.requires_audio && !mondai.requires_passage ? (audioMediaId ?? undefined) : undefined,
+        audioMediaId: mondai.requires_audio && !isPassage ? (audioMediaIdRef.current ?? undefined) : undefined,
         imageMediaId: imageMediaId ?? undefined,
       };
 
+      let savedQuestion: JlptQuestionAdmin;
       if (existingChild) {
-        await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
+        savedQuestion = await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
       } else {
-        await addQuestion({ testId, data: childPayload }).unwrap();
+        savedQuestion = await addQuestion({ testId, data: childPayload }).unwrap();
       }
+
+      // Update local media state from saved response so AudioUploader shows the correct
+      // audio immediately — before refetch completes and before handleSelectQuestion
+      // re-reads from the stale questionsMap cache.
+      if (savedQuestion.audioMedia) {
+        setAudioMediaId(savedQuestion.audioMedia.id);
+        setAudioPreviewUrl(savedQuestion.audioMedia.url);
+      }
+      if (savedQuestion.imageMedia) {
+        setImageMediaId(savedQuestion.imageMedia.id);
+      }
+
+      // Reload data after save
+      await refetch();
+      handleAfterRefetch();
 
       // For passage: advance within mondai children (e.g. 54→55→56)
       // For standalone: advance to next slot (e.g. 52→53)
@@ -814,8 +1101,7 @@ export default function AdminExamLayout() {
       handleSelectQuestion(nextQ);
 
     } catch (err) {
-      console.error(err);
-      toast.error("Lưu câu hỏi thất bại!");
+      toast.error(`Lưu câu hỏi thất bại: ${(err as Error).message}`);
     } finally {
       setSaving(false);
     }
@@ -824,8 +1110,8 @@ export default function AdminExamLayout() {
   // ── Human-readable label for selected question ─────────────────────────────
   const selectedSubLabel = useMemo(() => {
     if (!selectedQuestionNumber) return "";
-    return subLabels[selectedQuestionNumber] ?? String(selectedQuestionNumber);
-  }, [selectedQuestionNumber, subLabels]);
+    return String(selectedQuestionNumber);
+  }, [selectedQuestionNumber]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -866,6 +1152,7 @@ export default function AdminExamLayout() {
             <Settings className="h-4 w-4 mr-1" />
             Cấu hình mondai
           </Button>
+          {!derived || !derived.section.sectionKeys.includes("LISTENING") && (
           <Button
             variant="outline"
             size="sm"
@@ -875,6 +1162,7 @@ export default function AdminExamLayout() {
             <Sparkles className="h-4 w-4 mr-1" />
             AI Tạo câu hỏi
           </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -952,8 +1240,8 @@ export default function AdminExamLayout() {
         <SectionSidebar
           sections={structure}
           mondaiLeaves={mondaiLeaves}
+          mondaiActualStarts={mondaiActualStarts}
           selectedQ={selectedQuestionNumber}
-          selectedSlotPerMondai={selectedSlotPerMondai}
           onSelect={handleSelectQuestion}
         />
 
@@ -972,17 +1260,35 @@ export default function AdminExamLayout() {
           ) : (
             <div className="max-w-2xl space-y-6">
               {/* AI Question Generator Panel */}
-              {showAIPanel && derived && (
+              {showAIPanel && derived ? (() => {
+                const actualStart = mondaiActualStarts[derived.mondai.number] ?? derived.mondai.start;
+                const count = derived.mondai._totalCount ?? (derived.mondai.end - derived.mondai.start + 1);
+                const actualEnd = actualStart + count - 1;
+                
+                // Xác định section đúng: nếu mondai requires_passage hoặc có từ khóa đọc thì là READING
+                const resolveAIGeneratorSection = (): "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING" => {
+                  if (derived.mondai.requires_passage || isReadingMondaiFn(derived.mondai)) return "READING";
+                  if (derived.section.sectionKeys.includes("LISTENING")) return "LISTENING";
+                  if (derived.section.sectionKeys.includes("VOCABULARY")) return "VOCABULARY";
+                  if (derived.section.sectionKeys.includes("GRAMMAR")) return "GRAMMAR";
+                  return derived.section.sectionKeys[0] as "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
+                };
+                const aiSection = resolveAIGeneratorSection();
+                // requiresPassage = true for passage mondai (keep AI in passage mode)
+                // For standalone reading, AI should NOT use passage mode (it'll be handled by isStandaloneReading in component)
+                const isReadingStandalone = !derived.mondai.requires_passage && isReadingMondaiFn(derived.mondai);
+                
+                return (
                 <AIQuestionGenerator
                   level={test.level}
                   mondaiNumber={derived.mondai.number}
                   mondaiTitle={mondaiOverrides[derived.mondai.number]?.instruction || derived.mondai.title}
                   mondaiStart={derived.mondai.start}
-                  mondaiEnd={derived.mondai.end}
+                  mondaiEnd={derived.mondai.start + count - 1}
                   initialStart={selectedQuestionNumber}
-                  section={derived.section.sectionKeys[0] as "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING"}
-                  subLabels={subLabels}
-                  requiresPassage={derived.mondai.requires_passage}
+                  section={aiSection}
+                  subLabels={{}}
+                  requiresPassage={isReadingStandalone ? false : derived.mondai.requires_passage}
                   onConfirm={async (questions: AIGeneratedQuestion[], startFrom: number, saveToBank: boolean) => {
                     if (!derived) return;
 
@@ -990,184 +1296,243 @@ export default function AdminExamLayout() {
                     setShowAIPanel(false);
 
                     try {
-                      let currentQNum = startFrom;
                       const { section, mondai } = derived;
+                      const mondaiStart = mondai.start;
+                      const isPassage = mondai.requires_passage;
+                      const isReadingStandaloneAI = !isPassage && isReadingMondaiFn(mondai);
 
-                      const resolveSectionKey = (): SectionKey => {
-                        const keys = section.sectionKeys;
-                        if (keys.length === 1) return keys[0] as SectionKey;
-                        if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
-                        if (mondai.requires_passage && keys.includes("READING")) return "READING";
-                        const title = mondai.title || "";
-                        if (keys.includes("GRAMMAR") && keys.includes("READING")) {
-                          if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
-                          return "GRAMMAR";
-                        }
-                        if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR") && keys.includes("READING")) {
-                          if (mondai.requires_passage || /読解|情報検索|統合/.test(title)) return "READING";
-                          if (/文法/.test(title)) return "GRAMMAR";
-                          return "VOCABULARY";
-                        }
-                        return keys[0] as SectionKey;
-                      };
-                      const sectionKey = resolveSectionKey();
-
-                      const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
-                      const effectiveMondaiTitle = overrideInstruction || mondai.title;
-
-                      let parentId: number | null = derived.existingParent?.id ?? null;
-                      let passageSaved = false;
-
-                      const firstQ = questions[0];
-                      if (firstQ?.passageText && mondai.requires_passage) {
-                        try {
-                          setPassageText(firstQ.passageText);
-
-                          const passagePayload: CreateQuestionDTO = {
-                            mondaiNumber: mondai.number,
-                            mondaiTitle: effectiveMondaiTitle,
-                            parentId: null,
-                            questionOrder: mondai.start,
-                            section: sectionKey,
-                            contentText: firstQ.passageText,
-                            options: undefined,
-                            correctOption: undefined,
-                            audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
-                          };
-
-                          if (derived.existingParent) {
-                            const updated = await updateQuestion({ id: derived.existingParent.id, data: passagePayload }).unwrap();
-                            parentId = updated.id;
-                          } else {
-                            const created = await addQuestion({ testId, data: passagePayload }).unwrap();
-                            parentId = created.id;
-                          }
-                          passageSaved = true;
-                        } catch (passageErr) {
-                          const msg = (passageErr as { messageKey?: string; message?: string; errors?: Record<string, string[]> })?.messageKey
-                            ?? Object.values((passageErr as { errors?: Record<string, string[]> })?.errors ?? {}).join("; ")
-                            ?? (typeof (passageErr as { message?: string })?.message === "string" ? (passageErr as { message: string }).message : String(passageErr));
-                          console.error("Lưu passage thất bại:", msg);
-                          toast.error(`Lưu passage thất bại: ${msg}. Vẫn tiếp tục lưu câu hỏi...`);
-                        }
+                      // For standalone READING: sync passageText state from AI data before processing
+                      // This ensures the AI-generated passage is available when building combinedContent
+                      if (isReadingStandaloneAI && questions[0]?.passageText) {
+                        setPassageText(questions[0].passageText);
                       }
 
+                      const sectionKey: SectionKey = (() => {
+                        if (section.sectionKeys.includes("LISTENING")) return "LISTENING";
+                        if (section.sectionKeys.includes("VOCABULARY")) return "VOCABULARY";
+                        if (section.sectionKeys.includes("GRAMMAR") && section.sectionKeys.includes("READING")) {
+                          return isReadingStandaloneAI ? "READING" : "GRAMMAR";
+                        }
+                        if (section.sectionKeys.includes("GRAMMAR")) return "GRAMMAR";
+                        return section.sectionKeys[0] as SectionKey;
+                      })();
+
+                      const effectiveMondaiTitle = mondaiOverrides[mondai.number]?.instruction?.trim() || mondai.title;
+
+                      // For standalone READING: enforce exactly 1 question per mondai (defensive — in case AI ignores count=1)
+                      const questionsToSave = isReadingStandaloneAI ? questions.slice(0, 1) : questions;
                       let savedCount = 0;
                       let failedCount = 0;
-                      for (let i = 0; i < questions.length; i++) {
-                        const q = questions[i];
-                        if (currentQNum > mondai.end) break;
 
-                        const targetNode = questionsMap[mondai.number];
-                        const existingChild = targetNode?.children[currentQNum] ?? null;
+                      // ========== PARENT-CHILD STRUCTURE ==========
+                      if (isPassage) {
+                        // 1. Lưu passage vào parent
+                        const firstQ = questions[0];
+                        let parentId: number | null = derived.existingParent?.id ?? null;
+                        
+                        if (firstQ?.passageText) {
+                          try {
+                            setPassageText(firstQ.passageText);
+                            const passagePayload: CreateQuestionDTO = {
+                              mondaiNumber: mondai.number,
+                              mondaiTitle: effectiveMondaiTitle,
+                              parentId: null,
+                              questionOrder: mondaiStart,
+                              section: sectionKey,
+                              contentText: firstQ.passageText,
+                              options: undefined,
+                              correctOption: undefined,
+                              audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+                            };
 
-                        const parsedOptions = q.options.length === 4 ? q.options : [...q.options, "", "", "", ""].slice(0, 4);
-
-                        const childPayload: CreateQuestionDTO = {
-                          mondaiNumber: mondai.number,
-                          mondaiTitle: effectiveMondaiTitle,
-                          parentId: parentId,
-                          questionOrder: currentQNum,
-                          section: sectionKey,
-                          contentText: q.contentText,
-                          options: JSON.stringify(parsedOptions) as unknown as string,
-                          correctOption: (q.correctOption ?? 0) + 1,
-                          explanation: q.explanation || undefined,
-                          points: 1.0,
-                          audioMediaId: mondai.requires_audio && !mondai.requires_passage ? (audioMediaId ?? undefined) : undefined,
-                          imageMediaId: imageMediaId ?? undefined,
-                        };
-
-                        try {
-                          if (existingChild) {
-                            await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
-                          } else {
-                            await addQuestion({ testId, data: childPayload }).unwrap();
+                            if (derived.existingParent) {
+                              const updated = await updateQuestion({ id: derived.existingParent.id, data: passagePayload }).unwrap();
+                              parentId = updated.id;
+                            } else {
+                              const created = await addQuestion({ testId, data: passagePayload }).unwrap();
+                              // CRITICAL: use the NEWLY CREATED passage's ID for children
+                              // Previously this used the old parentId (= null) which orphaned all children
+                              parentId = created.id;
+                            }
+                          } catch (passageErr) {
+                            toast.error(`Lưu passage thất bại: ${(passageErr as Error).message}`);
+                            setSaving(false);
+                            return;
                           }
-                          savedCount++;
-                        } catch (qErr) {
-                          failedCount++;
-                          const errMsg = (qErr as { messageKey?: string; message?: string; errors?: Record<string, string[]> })?.messageKey
-                            ?? Object.values((qErr as { errors?: Record<string, string[]> })?.errors ?? {}).join("; ")
-                            ?? (typeof (qErr as { message?: string })?.message === "string" ? (qErr as { message: string }).message : JSON.stringify(qErr));
-                          console.error(`Lưu câu hỏi ${currentQNum} thất bại:`, errMsg);
                         }
 
-                        currentQNum++;
-                      }
+                        // 2. Lưu children bắt đầu từ mondaiStart + 1
+                        // CRITICAL: skip questions[0] only when passage was actually saved above.
+                        // If firstQ has NO passageText (passage not saved), questions[0] IS the first child.
+                        const hasSavedPassage = firstQ?.passageText;
+                        const childStart = hasSavedPassage ? 1 : 0;
+                        let currentQNum = mondaiStart + 1;
 
-                      let summaryParts: string[] = [];
-                      if (savedCount > 0) summaryParts.push(`${savedCount} câu hỏi`);
-                      if (failedCount > 0) summaryParts.push(`${failedCount} câu thất bại`);
-                      const summaryText = summaryParts.join(", ") || "0 câu hỏi";
+                        for (let i = childStart; i < questions.length; i++) {
+                          const q = questions[i];
+                          const targetNode = questionsMap[mondai.number];
+                          const existingChild = targetNode?.children[currentQNum] ?? null;
 
-                      if (saveToBank && savedCount > 0) {
-                        try {
-                          const baseTags = [test.level as JLPTLevel, sectionKey, "ai"];
-                          let extraTag = "";
-                          const lowerTitle = (effectiveMondaiTitle || "").toLowerCase();
-                          if (lowerTitle.includes("kanji") || lowerTitle.includes("漢字")) {
-                            extraTag = "cách đọc kanji";
-                          } else if (lowerTitle.includes("語彙") || lowerTitle.includes("từ vựng")) {
-                            extraTag = "từ vựng";
-                          } else if (lowerTitle.includes("文脈") || lowerTitle.includes("ngữ cảnh")) {
-                            extraTag = "từ theo ngữ cảnh";
-                          } else if (lowerTitle.includes("言い換え")) {
-                            extraTag = "paraphrase";
-                          } else if (lowerTitle.includes("文法")) {
-                            extraTag = "ngữ pháp";
+                          const parsedOptions = q.options.length === 4 ? q.options : ["", "", "", ""];
+
+                          const childPayload: CreateQuestionDTO = {
+                            mondaiNumber: mondai.number,
+                            mondaiTitle: effectiveMondaiTitle,
+                            parentId,
+                            questionOrder: currentQNum,
+                            section: sectionKey,
+                            contentText: q.contentText,
+                            options: JSON.stringify(parsedOptions) as unknown as string,
+                            correctOption: (q.correctOption != null && q.correctOption >= 1 && q.correctOption <= 4) ? q.correctOption : 1,
+                            explanation: q.explanation || undefined,
+                            points: 1.0,
+                            audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+                            imageMediaId: imageMediaId ?? undefined,
+                          };
+
+                          try {
+                            if (existingChild) {
+                              await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
+                            } else {
+                              await addQuestion({ testId, data: childPayload }).unwrap();
+                            }
+                            savedCount++;
+                          } catch (qErr) {
+                            failedCount++;
+                            toast.error(`Lưu câu ${currentQNum} thất bại: ${(qErr as Error).message}`);
                           }
 
+                          currentQNum++;
+                        }
+
+                      } else {
+                        // ========== STANDALONE (no passage / non-passage mondai) ==========
+                        // For standalone READING mondai: passage + question → 1 combined question at mondai.start
+                        // For other standalone: each AI question → 1 record
+                        const isStandaloneReading = isReadingStandaloneAI;
+
+                        for (let i = 0; i < questionsToSave.length; i++) {
+                          const q = questionsToSave[i];
+                          const targetNode = questionsMap[mondai.number];
+                          const existingChild = targetNode?.children[startFrom] ?? null;
+
+                          const parsedOptions = q.options.length === 4 ? q.options : ["", "", "", ""];
+
+                          if (isStandaloneReading) {
+                            // READING standalone: merge passage+question into 1 question at mondai.start
+                            // Discard extra questions beyond the first one (mondai has only 1 slot)
+                            const combinedContent = q.passageText
+                              ? `【読解】\n${q.passageText}\n\n${q.contentText}`
+                              : q.contentText;
+
+                            const childPayload: CreateQuestionDTO = {
+                              mondaiNumber: mondai.number,
+                              mondaiTitle: effectiveMondaiTitle,
+                              parentId: null,
+                              questionOrder: startFrom,
+                              section: sectionKey,
+                              contentText: combinedContent,
+                              options: JSON.stringify(parsedOptions) as unknown as string,
+                              correctOption: (q.correctOption != null && q.correctOption >= 1 && q.correctOption <= 4) ? q.correctOption : 1,
+                              explanation: q.explanation || undefined,
+                              points: 1.0,
+                              audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+                              imageMediaId: imageMediaId ?? undefined,
+                            };
+
+                            try {
+                              if (existingChild) {
+                                await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
+                              } else {
+                                await addQuestion({ testId, data: childPayload }).unwrap();
+                              }
+                              savedCount++;
+                            } catch (qErr) {
+                              failedCount++;
+                              toast.error(`Lưu câu ${startFrom} thất bại: ${(qErr as Error).message}`);
+                            }
+                            // Only save the first question for standalone reading (mondai has 1 slot)
+                            break;
+                          } else {
+                            // Other standalone sections: save each question sequentially
+                            const childPayload: CreateQuestionDTO = {
+                              mondaiNumber: mondai.number,
+                              mondaiTitle: effectiveMondaiTitle,
+                              parentId: null,
+                              questionOrder: startFrom + i,
+                              section: sectionKey,
+                              contentText: q.contentText,
+                              options: JSON.stringify(parsedOptions) as unknown as string,
+                              correctOption: (q.correctOption != null && q.correctOption >= 1 && q.correctOption <= 4) ? q.correctOption : 1,
+                              explanation: q.explanation || undefined,
+                              points: 1.0,
+                              audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+                              imageMediaId: imageMediaId ?? undefined,
+                            };
+
+                            try {
+                              if (existingChild) {
+                                await updateQuestion({ id: existingChild.id, data: childPayload }).unwrap();
+                              } else {
+                                await addQuestion({ testId, data: childPayload }).unwrap();
+                              }
+                              savedCount++;
+                            } catch (qErr) {
+                              failedCount++;
+                              toast.error(`Lưu câu ${startFrom + i} thất bại: ${(qErr as Error).message}`);
+                            }
+                          }
+                        }
+                      }
+
+                      // Lưu vào ngân hàng
+                      if (saveToBank && savedCount > 0) {
+                        try {
                           const payloads = questions.slice(0, savedCount).map((q) => ({
                             level: test.level as JLPTLevel,
                             section: sectionKey,
                             difficulty: "MEDIUM" as const,
                             mondaiNumber: mondai.number,
                             mondaiTitle: effectiveMondaiTitle,
-                            passageText: q.passageText || undefined,
+                            passageText: isPassage ? (q.passageText || undefined) : undefined,
                             contentText: q.contentText,
                             options: JSON.stringify(q.options),
-                            correctOption: (q.correctOption ?? 0) + 1,
+                            correctOption: (q.correctOption != null && q.correctOption >= 1 && q.correctOption <= 4) ? q.correctOption : 1,
                             explanation: q.explanation || undefined,
                             points: 1.0,
-                            tags: [baseTags.join(","), extraTag].filter(Boolean).join(","),
+                            tags: [test.level, sectionKey, "ai"].join(","),
                           }));
-
-                          const result = await bulkCreateBank(payloads).unwrap();
-                          console.log("[Bank] Saved successfully:", result.length, "items");
-                          toast.success(`Đã lưu ${result.length} câu hỏi vào ngân hàng.`);
+                          await bulkCreateBank(payloads).unwrap();
+                          toast.success(`Đã lưu ${savedCount} câu vào ngân hàng.`);
                         } catch (bankErr) {
-                          const msg = (bankErr as { messageKey?: string; message?: string; errors?: Record<string, string[]> })?.messageKey
-                            ?? Object.values((bankErr as { errors?: Record<string, string[]> })?.errors ?? {}).join("; ")
-                            ?? (typeof (bankErr as { message?: string })?.message === "string" ? (bankErr as { message: string }).message : JSON.stringify(bankErr));
-                          console.error("[Bank] Save failed:", msg, bankErr);
-                          toast.error(`Lưu ngân hàng câu hỏi thất bại: ${msg}`);
+                          toast.error(`Lưu ngân hàng thất bại: ${(bankErr as Error).message}`);
                         }
                       }
 
-                      const finalQNum = Math.min(currentQNum, mondai.end);
-                      handleSelectQuestion(finalQNum);
+                      const finalQNum = isPassage ? mondaiStart + 1 : (savedCount > 0 ? startFrom + savedCount - 1 : startFrom);
+                      const savedFinalQNum = finalQNum;
 
                       if (failedCount === 0) {
-                        toast.success(`Đã chèn và lưu thành công ${savedCount} câu hỏi! (Từ câu ${startFrom})`);
+                        toast.success(`Đã lưu ${savedCount} câu hỏi!`);
                       } else {
-                        toast(`Đã lưu ${savedCount}/${savedCount + failedCount} câu hỏi. ${failedCount} câu thất bại — kiểm tra console.`, {
-                          duration: 8000,
-                        });
+                        toast(`Đã lưu ${savedCount}/${savedCount + failedCount} câu.`);
                       }
 
+                      await refetch();
+                      handleAfterRefetch();
+
+                      // Select question AFTER reloadCounter updates so the form reads fresh data
+                      setTimeout(() => handleSelectQuestion(savedFinalQNum), 0);
+
                     } catch (error) {
-                      const msg = (error as { messageKey?: string; message?: string; errors?: Record<string, string[]> })?.messageKey
-                        ?? Object.values((error as { errors?: Record<string, string[]> })?.errors ?? {}).join("; ")
-                        ?? (typeof (error as { message?: string })?.message === "string" ? (error as { message: string }).message : "Lỗi không xác định");
-                      console.error("Lỗi khi lưu batch AI:", msg);
-                      toast.error(`Có lỗi xảy ra khi lưu hàng loạt câu hỏi: ${msg}`);
+                      toast.error(`Có lỗi xảy ra khi lưu: ${(error as Error).message}`);
                     } finally {
                       setSaving(false);
                     }
                   }}
                 />
-              )}
+                );
+              })() : null}
 
               {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-sm">
@@ -1186,8 +1551,8 @@ export default function AdminExamLayout() {
                 </div>
               )}
 
-              {/* Passage Editor */}
-              {derived.mondai.requires_passage && (
+              {/* Passage Editor — hiện cho cả passage mondai VÀ standalone reading mondai */}
+              {(derived.mondai.requires_passage || isReadingMondaiFn(derived.mondai)) && (
                 <PassagePanel
                   mondaiNumber={derived.mondai.number}
                   passageText={passageText}
@@ -1196,11 +1561,12 @@ export default function AdminExamLayout() {
                   audioPreviewUrl={audioPreviewUrl}
                   handleAudioUpload={handleAudioUpload}
                   uploadingAudio={uploadingAudio}
+                  initialOpen={isReadingMondaiFn(derived.mondai)}
                 />
               )}
 
               {/* Audio (non-passage listening) */}
-              {derived.mondai.requires_audio && !derived.mondai.requires_passage && (
+              {derived.mondai.requires_audio && !derived.mondai.requires_passage && !isReadingMondaiFn(derived.mondai) && (
                 <AudioUploader
                   label="File Audio"
                   required
@@ -1309,20 +1675,12 @@ export default function AdminExamLayout() {
               {/* Explanation + Points */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm">
-                    {derived.mondai.requires_audio
-                      ? "Script nghe *"
-                      : "Giải thích (tùy chọn)"}
-                  </Label>
+                  <Label className="text-sm">Giải thích (tùy chọn)</Label>
                   <Textarea
                     rows={2}
                     value={explanation}
                     onChange={(e) => setExplanation(e.target.value)}
-                    placeholder={
-                      derived.mondai.requires_audio
-                        ? "Nhập script nội dung nghe..."
-                        : "Giải thích đáp án đúng..."
-                    }
+                    placeholder="Giải thích đáp án đúng..."
                     className="text-sm"
                   />
                 </div>
@@ -1344,9 +1702,8 @@ export default function AdminExamLayout() {
                   onClick={handleSave}
                   disabled={
                     saving ||
-                    !questionText.trim() ||
-                    (derived.mondai.requires_audio && !audioMediaId) ||
-                    (derived.mondai.requires_audio && !explanation.trim())
+                    uploadingAudio ||
+                    !questionText.trim()
                   }
                   className="min-w-32"
                 >
@@ -1356,18 +1713,6 @@ export default function AdminExamLayout() {
                     <><Save className="h-4 w-4 mr-2" />Lưu câu {selectedSubLabel}</>
                   )}
                 </Button>
-                {derived.mondai.requires_audio && !audioMediaId && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <Volume2 className="h-3 w-3" />
-                    Bắt buộc upload audio cho phần Listening
-                  </p>
-                )}
-                {derived.mondai.requires_audio && !explanation.trim() && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <FileText className="h-3 w-3" />
-                    Bắt buộc nhập script nghe trước khi lưu
-                  </p>
-                )}
                 {derived.existingChild && (
                   <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
                     <CheckCircle className="h-3 w-3 text-green-500" />
@@ -1418,8 +1763,7 @@ export default function AdminExamLayout() {
                         setShowBankModal(false);
                         handleSelectQuestion(selectedQuestionNumber);
                       } catch (e) {
-                        console.error(e);
-                        toast.error("Gắn câu hỏi từ ngân hàng thất bại");
+                        toast.error(`Gắn câu hỏi thất bại: ${(e as Error).message}`);
                       }
                     }}
                   >

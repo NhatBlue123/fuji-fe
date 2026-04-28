@@ -16,6 +16,7 @@ import {
   useDeleteQuestionMutation,
 } from "@/store/services/adminJlptApi";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -106,6 +107,7 @@ const INITIAL_FORM = {
   languageKnowledgePassScore: 19,
   readingPassScore: 19,
   listeningPassScore: 19,
+  isAntiCheatEnabled: true,
 };
 
 export default function AdminJLPTTestsPage() {
@@ -196,6 +198,7 @@ export default function AdminJLPTTestsPage() {
       languageKnowledgePassScore: test.languageKnowledgePassScore || 19,
       readingPassScore: test.readingPassScore || 19,
       listeningPassScore: test.listeningPassScore || 19,
+      isAntiCheatEnabled: test.isAntiCheatEnabled !== undefined ? test.isAntiCheatEnabled : true,
     });
     setAutoGenerateWithBank(false);
     setAutoGenerateWithAI(false);
@@ -1005,6 +1008,25 @@ export default function AdminJLPTTestsPage() {
                           }
                           required
                         />
+                      </div>
+
+                      {/* ── Anti-Cheat Toggle ── */}
+                      <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg border border-border">
+                        <div className="flex items-center justify-between flex-1">
+                          <div className="space-y-0.5">
+                            <Label className="text-sm font-semibold flex items-center gap-2">
+                              <span className="material-symbols-outlined text-base text-amber-500">security</span>
+                              Chống gian lận
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Rời tab, mở DevTools, copy sẽ bị cảnh báo và ghi nhận
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formData.isAntiCheatEnabled ?? true}
+                            onCheckedChange={(v) => updateField("isAntiCheatEnabled", v)}
+                          />
+                        </div>
                       </div>
 
                       {/* Pass Scores — adaptive per testType */}

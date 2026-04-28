@@ -187,6 +187,8 @@ export const jlptApi = createApi({
         method: "POST",
         body,
       }),
+      // Never throw on error — anti-cheat logging must not break the exam
+      transformResponse: () => {},
     }),
 
     // Optional feedback for overall JLPT test quality (not per-question report)

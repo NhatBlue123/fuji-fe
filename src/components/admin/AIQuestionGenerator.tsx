@@ -24,6 +24,8 @@ interface AIQuestionGeneratorProps {
   section: "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
   /** Maps raw questionOrder slot numbers to display labels (e.g. "31.1", "8.3") */
   subLabels: Record<number, string>;
+  /** The actual start questionOrder for this mondai (may differ from mondaiStart if structure was rebuilt) */
+  actualMondaiStart?: number;
   /** Whether this mondai is a passage mondai (requires_passage) */
   requiresPassage: boolean;
   /** Gọi khi user xác nhận → điền dữ liệu vào form cha. Truyền kèm vị trí bắt đầu dãy câu hỏi và cờ lưu vào ngân hàng */
@@ -40,22 +42,38 @@ export default function AIQuestionGenerator({
   initialStart,
   section,
   subLabels,
+  actualMondaiStart,
   requiresPassage,
   onConfirm,
 }: AIQuestionGeneratorProps) {
-  // Derive display labels from the subLabels map (e.g. "8.1", "8.2")
-  const getLabel = (slotNumber: number) => subLabels[slotNumber] ?? String(slotNumber);
+  // For passage mondai (reading): display only the actual questionOrder
+  // For standalone reading: also show just the question number
+  // Don't show "54.54" format - just show the actual questionOrder number
+  const getLabel = (slotNumber: number) => {
+    if ((requiresPassage && actualMondaiStart != null) || (!requiresPassage && section === "READING")) {
+      // For passage mondai or standalone reading, slotNumber is the actual questionOrder
+      return String(slotNumber);
+    }
+    return subLabels[slotNumber] ?? String(slotNumber);
+  };
 
   const [generating, setGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<AIGeneratedQuestion[]>([]);
+  const [effectiveCount, setEffectiveCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [model, setModel] = useState("");
   const [saveToBank, setSaveToBank] = useState(false);
-  
+
   // Dải câu hỏi cần tạo
   const [startQ, setStartQ] = useState<number>(initialStart);
-  // Default to 5 questions or end of mondai, whichever is smaller. Single for reading.
-  const [endQ, setEndQ] = useState<number>(section === "READING" ? Math.min(initialStart + 2, mondaiEnd) : Math.min(initialStart + 4, mondaiEnd));
+  // For standalone READING: strictly 1 question per mondai (mondai has only 1 slot)
+  // For passage/other sections: up to 5 questions
+  const isStandaloneReading = !requiresPassage && section === "READING";
+  const [endQ, setEndQ] = useState<number>(
+    isStandaloneReading
+      ? initialStart  // Reading: exactly 1 question per mondai
+      : Math.min(initialStart + 4, mondaiEnd)  // Grammar/Vocab/L pass: up to 5 questions
+  );
 
   // Auto clamps start/end
   const handleStartChange = (val: number) => {
@@ -63,15 +81,22 @@ export default function AIQuestionGenerator({
     if (start < mondaiStart) start = mondaiStart;
     if (start > mondaiEnd) start = mondaiEnd;
     setStartQ(start);
-    if (endQ < start) setEndQ(start);
+    if (isStandaloneReading) {
+      setEndQ(start); // Reading mondai: start == end (always 1 question)
+    } else if (endQ < start) {
+      setEndQ(start);
+    }
   };
 
   const handleEndChange = (val: number) => {
     let end = val;
     if (end < mondaiStart) end = mondaiStart;
     if (end > mondaiEnd) end = mondaiEnd;
+    if (isStandaloneReading) {
+      end = startQ; // Reading mondai: end always equals start
+    }
     setEndQ(end);
-    if (startQ > end) setStartQ(end);
+    if (!isStandaloneReading && startQ > end) setStartQ(end);
   };
 
   const count = endQ - startQ + 1;
@@ -90,13 +115,16 @@ export default function AIQuestionGenerator({
     setPreviewList([]);
 
     try {
+      const isStandaloneRead = !requiresPassage && section === "READING";
+      const ec = isStandaloneRead ? 1 : count;
+      setEffectiveCount(ec);
       const res = await fetch("/api/ai/generate-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           level,
           section,
-          count,
+          count: ec,
           mondaiNumber,
           mondaiTitle,
         }),
@@ -246,7 +274,7 @@ export default function AIQuestionGenerator({
       {/* Preview List */}
       {previewList.length > 0 && (
         <div className="space-y-4">
-          {previewList.map((preview, idx) => (
+          {previewList.slice(0, effectiveCount > 0 ? effectiveCount : count).map((preview, idx) => (
             <div key={idx} className="space-y-2.5 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 p-3 relative">
               
               <div className="absolute -top-2.5 -left-2.5 bg-purple-500 text-white text-[10px] font-bold h-6 min-w-6 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 z-10">

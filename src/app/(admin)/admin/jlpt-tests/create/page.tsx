@@ -406,6 +406,7 @@ function CreateJLPTTestPageContent() {
                 count,
                 mondaiNumber: mondai.number,
                 mondaiTitle: mondai.title,
+                instruction: mondai.instruction ?? "",
                 testType,
               }),
             });

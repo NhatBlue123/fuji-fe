@@ -7,6 +7,7 @@ interface GenerateQuestionsRequest {
   count: number;
   mondaiNumber: number;
   mondaiTitle?: string;
+  instruction?: string;
   testType?: string;
   topic?: string;
 }
@@ -133,9 +134,12 @@ function getReadingPassageHint(mondaiTitle: string): string {
 }
 
 function buildPrompt(req: GenerateQuestionsRequest): string {
-  const { level, section, count, mondaiNumber, mondaiTitle, topic } = req;
+  const { level, section, count, mondaiNumber, mondaiTitle, instruction, topic } = req;
   const topicLine = topic?.trim()
     ? `- Topic/Theme: "${topic.trim()}" — All questions MUST relate to this topic.`
+    : "";
+  const instructionLine = instruction?.trim()
+    ? `- Official instruction to show above questions: "${instruction.trim()}" — include this in contentText before the question.`
     : "";
   const focus =
     MONDAI_FOCUS[level]?.[section]?.[mondaiNumber] ??
@@ -196,7 +200,7 @@ async function callGemini(apiKey: string, model: string, prompt: string) {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 16384,
         responseMimeType: "application/json",
       },
     }),

@@ -19,15 +19,24 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FUJI - Học Tiếng Nhật Online",
     description: "Chinh phục tiếng Nhật cùng FUJI",
-    url: "https://fuji.vercel.app/",
+    url: "https://fuji.io.vn/",
     siteName: "FUJI",
     locale: "vi_VN",
     type: "website",
+    images: [
+      {
+        url: "https://fuji.io.vn/images/og_image.png",
+        width: 1200,
+        height: 630,
+        alt: "FUJI - Học Tiếng Nhật Online",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FUJI - Học Tiếng Nhật Online",
     description: "Chinh phục tiếng Nhật cùng FUJI",
+    images: ["/images/og_image.png"],
   },
 };
 

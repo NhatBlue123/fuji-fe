@@ -98,6 +98,10 @@ function JLPTtestPageInner() {
   const examStructure = useMemo<SectionConfig[]>(() => {
     if (!testData?.level) return [];
 
+    // Priority: 1) localStorage overrides, 2) testData.mondaiCounts (from API/DB), 3) hardcoded defaults
+    const countMap: Record<number, number> = {};
+
+    // Step 1: Check localStorage overrides (admin-set counts, most recent)
     try {
       const raw = localStorage.getItem(`jlpt_mondai_config_${testId}`);
       if (raw) {
@@ -107,14 +111,26 @@ function JLPTtestPageInner() {
         Object.entries(overrides).forEach(([k, v]) => {
           if (v.count > 0) countMap[Number(k)] = v.count;
         });
-
-        if (Object.keys(countMap).length > 0)
-          return rebuildStructureWithCounts(
-            testData.level as JLPTLevel,
-            countMap,
-          );
       }
     } catch {}
+
+    // Step 2: Merge with testData.mondaiCounts from backend (admin-saved via API)
+    if (testData.mondaiCounts) {
+      Object.entries(testData.mondaiCounts).forEach(([k, v]) => {
+        const n = Number(k);
+        // Only override if not already set by localStorage
+        if (countMap[n] === undefined && v > 0) {
+          countMap[n] = v;
+        }
+      });
+    }
+
+    if (Object.keys(countMap).length > 0) {
+      return rebuildStructureWithCounts(
+        testData.level as JLPTLevel,
+        countMap,
+      );
+    }
 
     return JLPT_STRUCTURE[testData.level as JLPTLevel] ?? [];
   }, [testData, testId]);
@@ -244,6 +260,7 @@ function JLPTtestPageInner() {
 
   const { tabSwitchCount, activeWarning, dismissWarning } =
     useAntiCheat({
+      enabled: isAntiCheatEnabled,
       maxTabSwitches: MAX_TAB_SWITCHES,
       detectDevTools: true,
       onViolation: handleViolation,

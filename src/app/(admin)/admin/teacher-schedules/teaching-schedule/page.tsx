@@ -184,7 +184,7 @@ function ScheduleEvent({
   const isCancelled = slot.status === "CANCELLED";
   const isLockedSlot = isBooked || isCompleted || isNoShow || isCancelled;
   const canEdit =
-    !isLockedSlot && onEdit && new Date(slot.startAt) > new Date();
+    !isLockedSlot && onEdit;
   const canDelete = !isLockedSlot && onDelete;
 
   return (
@@ -533,10 +533,22 @@ export default function TeachingSchedulePage() {
       setEditTarget(null);
       toast.success("Đã lưu thay đổi lịch rảnh.");
     } catch (e: unknown) {
-      toastApiError(
-        e,
-        "Không cập nhật được. Slot phải còn trống, chưa qua giờ và không trùng lịch khác.",
-      );
+      const rawMsg =
+        typeof e === "object" && e !== null && "data" in e
+          ? (e as { data?: { message?: string } }).data?.message
+          : null;
+      const msg: string = rawMsg ?? "Không cập nhật được. Slot phải còn trống và không trùng lịch khác.";
+
+      if (msg.startsWith("Trùng lịch")) {
+        toast.error(
+          <div>
+            <p className="font-bold">Trùng lịch</p>
+            <p className="text-sm font-normal">{msg.replace("Trùng lịch với khung ", "")}</p>
+          </div>,
+        );
+      } else {
+        toast.error(msg);
+      }
     }
   };
 

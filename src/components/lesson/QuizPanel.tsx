@@ -78,10 +78,16 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
     onEnded,
   });
 
-  const { data: results } = useGetQuizResultsQuery(
+  const { data: results, refetch: refetchResults } = useGetQuizResultsQuery(
     { lessonId, quizId: activeQuizId ?? 0 },
     { skip: !isTeacher || !activeQuizId }
   );
+
+  useEffect(() => {
+    if (showResults) {
+      refetchResults();
+    }
+  }, [showResults, refetchResults]);
 
   useEffect(() => {
     if (liveQuestion?.quizId) {
@@ -455,8 +461,8 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
               results={results.submissions.map((s, idx) => ({
                 questionId: s.questionId,
                 questionText: `Câu ${idx + 1} (ID: ${s.questionId})`,
-                userAnswer: s.correct ? "Đúng" : "Sai",
-                correctAnswer: s.correct ? "Đúng" : "Sai",
+                userAnswer: s.userAnswer || (s.correct ? "Đúng" : "Sai"),
+                correctAnswer: s.correctAnswer || (s.correct ? "Đúng" : "Sai"),
                 isCorrect: s.correct,
               }))}
             />

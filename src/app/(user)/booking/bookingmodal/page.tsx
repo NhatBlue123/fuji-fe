@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import {  AlertTriangle, Ban, Clock3  } from "lucide-react";
+import { AlertTriangle, Ban, Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   useCancelBookingMutation,
@@ -84,15 +84,15 @@ export default function MySchedulePage() {
         {/* Tab Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-            {(["UPCOMING", "COMPLETED", "CANCELLED"] as BookingTab[]).map((t) => (
+            {(["UPCOMING", "COMPLETED", "CANCELLED"] as BookingTab[]).map((tabItem) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
+                key={tabItem}
+                onClick={() => setTab(tabItem)}
                 className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                  tab === t ? "bg-secondary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+                  tab === tabItem ? "bg-secondary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                {t === "UPCOMING" ? "Sắp tới" : t === "COMPLETED" ? "Đã hoàn thành" : "Đã hủy"}
+                {tabItem === "UPCOMING" ? "Sắp tới" : tabItem === "COMPLETED" ? "Đã hoàn thành" : "Đã hủy"}
               </button>
             ))}
           </div>
@@ -116,81 +116,124 @@ export default function MySchedulePage() {
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <div className="flex items-center gap-2 text-amber-200">
             <AlertTriangle className="size-4" />
-            <p className="text-sm font-bold">{t('auto.bookingModal_1')}</p>
+            <p className="text-sm font-bold">{t("auto.bookingModal_1")}</p>
           </div>
           <ul className="mt-2 space-y-1.5 text-xs text-amber-100/90">
             <li className="flex items-start gap-2">
-              <Clock3 className="mt-0.5 size-3.5 shrink-0" />{t('auto.bookingModal_2')}</li>
+              <Clock3 className="mt-0.5 size-3.5 shrink-0" />
+              {t("auto.bookingModal_2")}
+            </li>
             <li className="flex items-start gap-2">
-              <Ban className="mt-0.5 size-3.5 shrink-0" />{t('auto.bookingModal_3')}</li>
+              <Ban className="mt-0.5 size-3.5 shrink-0" />
+              {t("auto.bookingModal_3")}
+            </li>
             <li className="flex items-start gap-2">
-              <Ban className="mt-0.5 size-3.5 shrink-0" />{t('auto.bookingModal_4')}</li>
+              <Ban className="mt-0.5 size-3.5 shrink-0" />
+              {t("auto.bookingModal_4")}
+            </li>
           </ul>
         </div>
 
         {(isLoading || isFetching) && (
-          <div className="text-slate-400 animate-pulse">{t('auto.bookingModal_5')}</div>
+          <div className="text-slate-400 animate-pulse">{t("auto.bookingModal_5")}</div>
         )}
 
         {isError && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{t('auto.bookingModal_6')}</div>
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {t("auto.bookingModal_6")}
+          </div>
         )}
 
         {!isLoading && !isFetching && !isError && items.length === 0 && (
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">{t('auto.bookingModal_7')}</div>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">
+            {t("auto.bookingModal_7")}
+          </div>
         )}
 
         <div className="space-y-4">
-              {items.map((c) => (
-                <div
-                  key={c.bookingId}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
-                >
-                  <div className="flex items-center gap-4 flex-1 w-full">
-                    <img
-                      src={(c.role === "TEACHER" ? c.studentAvatarUrl : c.teacherAvatarUrl) || "/images/avt-default.jpg"}
-                      className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
-                      alt={c.role === "TEACHER" ? "Student" : "Teacher"}
-                    />
-                    <div>
-                      <h4 className="text-slate-100 font-bold">
-                        {c.role === "TEACHER" ? c.studentName : c.teacherName}
-                      </h4>
-                      <p className="text-pink-400 text-sm">{c.subject}</p>
-                      <p className="text-slate-500 text-xs">
-                        {c.role === "TEACHER" ? "Học viên" : "Giáo viên"}
-                      </p>
-                    </div>
-                  </div>
+          {items.map((c) => (
+            <div
+              key={c.bookingId}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
+            >
+              <div className="flex items-center gap-4 flex-1 w-full">
+                <img
+                  src={(c.role === "TEACHER" ? c.studentAvatarUrl : c.teacherAvatarUrl) || "/images/avt-default.jpg"}
+                  className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
+                  alt={c.role === "TEACHER" ? "Student" : "Teacher"}
+                />
+                <div>
+                  <h4 className="text-slate-100 font-bold">
+                    {c.role === "TEACHER" ? c.studentName : c.teacherName}
+                  </h4>
+                  <p className="text-pink-400 text-sm">{c.subject}</p>
+                  <p className="text-slate-500 text-xs">
+                    {c.role === "TEACHER" ? "Học viên" : "Giáo viên"}
+                  </p>
+                </div>
+              </div>
 
-                  <div className="flex items-center gap-8 px-8 border-x border-white/10">
-                    <div className="flex flex-col items-center">
-                      <p className="text-slate-500 text-xs uppercase tracking-wider">{t('auto.bookingModal_8')}</p>
-                      <p className="text-white font-bold">{formatDate(c.startAt)}</p>
-                    </div>
+              <div className="flex items-center gap-8 px-8 border-x border-white/10">
+                <div className="flex flex-col items-center">
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_8")}</p>
+                  <p className="text-white font-bold">{formatDate(c.startAt)}</p>
+                </div>
 
-                    <div className="flex flex-col items-center">
-                      <p className="text-slate-500 text-xs uppercase tracking-wider">{t('auto.bookingModal_9')}</p>
-                      <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
-                    </div>
-                  </div>
+                <div className="flex flex-col items-center">
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_9")}</p>
+                  <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
+                </div>
+              </div>
 
-                  <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                    {tab === "UPCOMING" && (
-                      <>
-                        {c.canJoinVideoCall ? (
-                          <Link href={`/learn/lesson/${c.bookingId}`}>
-                            <button className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
-                              <span className="material-symbols-outlined text-sm">videocam</span>{t('auto.bookingModal_10')}</button>
-                          </Link>
-                        ) : (
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                {tab === "UPCOMING" && (
+                  <>
+                    {c.canJoinVideoCall ? (
+                      <Link href={`/learn/lesson/${c.bookingId}`}>
+                        <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm">videocam</span>
+                          {t("auto.bookingModal_10")}
+                        </button>
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
+                        title={t("auto.bookingModal_18")}
+                      >
+                        {t("auto.bookingModal_11")}
+                      </button>
+                    )}
+                    {!isTeacher && (
+                      <button
+                        disabled={isCancelling}
+                        onClick={() => {
+                          setActionType("CANCEL");
+                          setDeletingId(c.bookingId);
+                        }}
+                        className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                      >
+                        {t("auto.bookingModal_12")}
+                      </button>
+                    )}
+                    {isTeacher && (() => {
+                      const action = getTeacherAction(c.startAt, c.endAt);
+                      if (action.canEndEarly) {
+                        return (
                           <button
-                            disabled
-                            className="flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
-                            title={t('auto.bookingModal_18')}
-                          >{t('auto.bookingModal_11')}</button>
-                        )}
-                        {!isTeacher && (
+                            disabled={isEndingEarly}
+                            onClick={() => {
+                              setActionType("END_EARLY");
+                              setDeletingId(c.bookingId);
+                            }}
+                            className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
+                          >
+                            {t("auto.bookingModal_13")}
+                          </button>
+                        );
+                      }
+                      if (action.canCancel) {
+                        return (
                           <button
                             disabled={isCancelling}
                             onClick={() => {
@@ -198,75 +241,56 @@ export default function MySchedulePage() {
                               setDeletingId(c.bookingId);
                             }}
                             className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                          >{t('auto.bookingModal_12')}</button>
-                        )}
-                        {isTeacher && (() => {
-                          const action = getTeacherAction(c.startAt, c.endAt);
-                          if (action.canEndEarly) {
-                            return (
-                              <button
-                                disabled={isEndingEarly}
-                                onClick={() => {
-                                  setActionType("END_EARLY");
-                                  setDeletingId(c.bookingId);
-                                }}
-                                className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
-                              >{t('auto.bookingModal_13')}</button>
-                            );
-                          }
-                          if (action.canCancel) {
-                            return (
-                              <button
-                                disabled={isCancelling}
-                                onClick={() => {
-                                  setActionType("CANCEL");
-                                  setDeletingId(c.bookingId);
-                                }}
-                                className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                              >{t('auto.bookingModal_14')}</button>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </>
-                    )}
+                          >
+                            {t("auto.bookingModal_14")}
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </>
+                )}
 
-                    {tab === "COMPLETED" && (
-                      <span className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">{t('auto.bookingModal_15')}</span>
-                    )}
+                {tab === "COMPLETED" && (
+                  <Link href={`/learn/session/${c.bookingId}`}>
+                    <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      {t("auto.bookingModal_19")}
+                    </button>
+                  </Link>
+                )}
 
-                    {tab === "CANCELLED" && (
-                      <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">{t('auto.bookingModal_16')}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                {tab === "CANCELLED" && (
+                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
+                    {t("auto.bookingModal_16")}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* --- MODAL XÁC NHẬN HỦY (Chỉ hiện khi deletingId khác null) --- */}
+      {/* --- MODAL XÁC NHẬN HỦY --- */}
       {deletingId !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Lớp nền mờ */}
           <div
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
             onClick={() => !isCancelling && setDeletingId(null)}
           />
-
-        {/* Nội dung Modal */}
           <div className="relative bg-[#1e293b] border border-white/10 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex flex-col items-center text-center">
               <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
 
-            <h3 className="text-xl font-bold text-white mb-2">
-              {actionType === "END_EARLY" ? "Xác nhận kết thúc sớm" : "Xác nhận hủy lớp"}
-            </h3>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {actionType === "END_EARLY" ? "Xác nhận kết thúc sớm" : "Xác nhận hủy lớp"}
+              </h3>
               <p className="text-slate-400 text-sm mb-8">
-              {actionType === "END_EARLY"
-                ? "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?"
-                : "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?"}
+                {actionType === "END_EARLY"
+                  ? "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?"
+                  : "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?"}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -274,7 +298,9 @@ export default function MySchedulePage() {
                   onClick={() => setDeletingId(null)}
                   disabled={isCancelling}
                   className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
-                >{t('auto.bookingModal_17')}</button>
+                >
+                  {t("auto.bookingModal_17")}
+                </button>
 
                 <button
                   onClick={handleConfirmCancel}

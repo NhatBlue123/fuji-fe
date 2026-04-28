@@ -11,37 +11,105 @@ interface NotesPanelProps {
 
 export function NotesPanel({ lessonId }: NotesPanelProps) {
   const { t } = useTranslation();
-  const { data: noteData, isLoading: isLoadingNote } = useGetMyNoteQuery({ lessonId });
-  const [saveNote, { isLoading: isSaving }] = useSaveMyNoteMutation();
+  const { data: noteData, isLoading: isLoadingNote } = useGetMyNoteQuery(
+    { lessonId },
+    { skip: !lessonId }
+  );
+  const [saveNote] = useSaveMyNoteMutation();
 
   const [content, setContent] = useState("");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialLoadRef = useRef(false);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevents concurrent saves — only one PUT at a time
+  const saveLockRef = useRef(false);
+  // If a save completes while another was queued, flush the latest content
+  const pendingTextRef = useRef<string | null>(null);
+  // Track initial data load per lessonId
+  const initialLoadedRef = useRef<number | null>(null);
+  // Stable refs so async callbacks always use latest values
+  const lessonIdRef = useRef(lessonId);
+  const saveNoteRef = useRef(saveNote);
+
+  useEffect(() => { lessonIdRef.current = lessonId; }, [lessonId]);
+  useEffect(() => { saveNoteRef.current = saveNote; }, [saveNote]);
+
+  // Load note from server when data arrives (only once per lessonId)
   useEffect(() => {
-    if (noteData && !initialLoadRef.current) {
+    if (noteData && initialLoadedRef.current !== lessonId) {
+      initialLoadedRef.current = lessonId;
       setContent(noteData.content || "");
-      initialLoadRef.current = true;
+      setIsDirty(false);
       if (noteData.updatedAt) {
         setLastSaved(new Date(noteData.updatedAt));
       }
     }
-  }, [noteData]);
+  }, [noteData, lessonId]);
 
-  const doSave = useCallback(
-    async (text: string) => {
-      try {
-        await saveNote({ lessonId, content: text }).unwrap();
-        setLastSaved(new Date());
-        setIsDirty(false);
-      } catch {
-        // Silent fail - will retry on next debounce
+  // Reset when lessonId changes
+  useEffect(() => {
+    initialLoadedRef.current = null;
+    saveLockRef.current = false;
+    pendingTextRef.current = null;
+    setContent("");
+    setLastSaved(null);
+    setIsDirty(false);
+    setIsSaving(false);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, [lessonId]);
+
+  // Core save — serialized via saveLockRef
+  const executeSave = useCallback(async (text: string): Promise<void> => {
+    const lid = lessonIdRef.current;
+    if (!lid) return;
+
+    setIsSaving(true);
+    saveLockRef.current = true;
+
+    try {
+      await saveNoteRef.current({ lessonId: lid, content: text }).unwrap();
+      setLastSaved(new Date());
+      setIsDirty(false);
+    } catch (err: any) {
+      if (err?.status === 409) {
+        // 409 = race condition on first insert — the note was created by a
+        // concurrent request. Our content is the latest, retry once.
+        console.warn("[Notes] 409 on first save, retrying...");
+        try {
+          await saveNoteRef.current({ lessonId: lid, content: text }).unwrap();
+          setLastSaved(new Date());
+          setIsDirty(false);
+        } catch (retryErr: any) {
+          console.error("[Notes] Retry also failed:", retryErr?.status, retryErr?.data);
+        }
+      } else if (err?.status) {
+        console.error(`[Notes] Save failed HTTP ${err.status}:`, err?.data);
+      } else {
+        console.error("[Notes] Save failed (network):", err?.error ?? err);
       }
-    },
-    [lessonId, saveNote]
-  );
+    } finally {
+      saveLockRef.current = false;
+      setIsSaving(false);
+
+      // Flush any content that arrived while we were saving
+      const pending = pendingTextRef.current;
+      if (pending !== null) {
+        pendingTextRef.current = null;
+        executeSave(pending);
+      }
+    }
+  }, []); // no deps — always uses stable refs
+
+  const doSave = useCallback((text: string) => {
+    if (saveLockRef.current) {
+      // A save is already in-flight — queue the latest content
+      pendingTextRef.current = text;
+      return;
+    }
+    executeSave(text);
+  }, [executeSave]);
 
   const handleChange = useCallback(
     (value: string) => {
@@ -51,12 +119,12 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         doSave(value);
-      }, 3000);
+      }, 1500);
     },
     [doSave]
   );
 
-  // Save on unmount if dirty
+  // Clear debounce on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -127,7 +195,7 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
       {/* Footer */}
       <div className="shrink-0 px-4 py-2 border-t border-white/[0.08]">
         <p className="text-[10px] text-[#8B8FA8]/50">
-          Tự động lưu sau 3 giây • Chỉ bạn mới xem được
+          Tự động lưu sau 1.5 giây • Chỉ bạn mới xem được
         </p>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -227,7 +227,7 @@ function TeacherSchedulePageContent() {
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
-  const groups = data?.items ?? [];
+  const groups = useMemo(() => data?.items ?? [], [data]);
 
   const slotsByDate = useMemo(() => {
     return new Map(groups.map((group) => [group.date, group.slots]));
@@ -378,7 +378,12 @@ function TeacherSchedulePageContent() {
     return [...map.values()].sort((a, b) => a.sortValue - b.sortValue);
   }, [recurringPoolAll, recurringPool, busySlotsRangeData]);
 
+  const prevTimeOptionsRef = useRef<typeof recurringTimeOptions | null>(null);
+
   useEffect(() => {
+    if (prevTimeOptionsRef.current === recurringTimeOptions) return;
+    prevTimeOptionsRef.current = recurringTimeOptions;
+
     const optionKeys = new Set(recurringTimeOptions.map((item) => item.key));
     setSelectedTimeKeys((prev) => prev.filter((item) => optionKeys.has(item)));
   }, [recurringTimeOptions]);

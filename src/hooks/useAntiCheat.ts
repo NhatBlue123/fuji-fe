@@ -8,6 +8,7 @@ export interface AntiCheatWarning {
 }
 
 interface UseAntiCheatOptions {
+  enabled?: boolean;          // bật/tắt toàn bộ anti-cheat (mặc định: true)
   maxTabSwitches?: number;
   detectDevTools?: boolean;
   // callback khi có sự kiện gian lận
@@ -24,6 +25,7 @@ interface AntiCheatState {
 const DEVTOOLS_THRESHOLD = 160; // px difference to detect devtools
 
 export function useAntiCheat({
+  enabled = true,
   maxTabSwitches = 3,
   detectDevTools = true,
   onViolation,
@@ -46,10 +48,13 @@ export function useAntiCheat({
 
   // ─── Feature 1: Tab Switching Detection ─────────────────────────────────────
   useEffect(() => {
+    if (!enabled) return;
     let lastPenaltyTime = 0;
+    let cooldownFlag = false;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
+        cooldownFlag = true;
         const now = Date.now();
         if (now - lastPenaltyTime < 1000) return;
         lastPenaltyTime = now;
@@ -71,9 +76,13 @@ export function useAntiCheat({
     };
 
     const handleBlur = () => {
+      // Skip if visibilitychange already handled this switch (cooldownFlag set)
+      if (cooldownFlag) {
+        cooldownFlag = false;
+        return;
+      }
       // window blur = switched to another app/window
       if (document.visibilityState === "visible") {
-        // Visible but blurred = another OS window (not tab switch, handled above)
         const now = Date.now();
         if (now - lastPenaltyTime < 1000) return;
         lastPenaltyTime = now;
@@ -98,10 +107,11 @@ export function useAntiCheat({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [maxTabSwitches, trigger]);
+  }, [maxTabSwitches, trigger, enabled]);
 
   // ─── Feature 2: Copy / Paste / Right-click Block ─────────────────────────────
   useEffect(() => {
+    if (!enabled) return;
     const blockEvent = (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
@@ -136,11 +146,11 @@ export function useAntiCheat({
       document.removeEventListener("contextmenu", blockEvent);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [trigger]);
+  }, [trigger, enabled]);
 
   // ─── Feature 3: DevTools Detection ───────────────────────────────────────────
   useEffect(() => {
-    if (!detectDevTools) return;
+    if (!enabled || !detectDevTools) return;
 
     const check = () => {
       // Method 1: window size difference
@@ -168,7 +178,7 @@ export function useAntiCheat({
       clearInterval(interval);
       window.removeEventListener("resize", check);
     };
-  }, [detectDevTools, trigger]);
+  }, [detectDevTools, trigger, enabled]);
 
   return { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning };
 }

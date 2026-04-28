@@ -39,10 +39,29 @@ const baseQuery = async (args: any) => {
   const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, config);
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || "Request failed");
+    let errorText = response.statusText;
+    let messageKey = "";
+    let errors: Record<string, string> = {};
+
+    try {
+      const parsed = await response.json();
+      messageKey = parsed.messageKey || parsed.message || response.statusText;
+      errors = parsed.errors || {};
+      errorText = messageKey;
+      if (Object.keys(errors).length > 0) {
+        errorText += " — " + Object.entries(errors)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("; ");
+      }
+    } catch {
+      // body is not JSON or empty
+    }
+
+    const err = new Error(errorText);
+    (err as any).status = response.status;
+    (err as any).messageKey = messageKey;
+    (err as any).errors = errors;
+    throw err;
   }
 
   const data = await response.json();
@@ -167,6 +186,7 @@ export interface JlptTestAdmin {
   createdAt: string;
   updatedAt: string;
   questions?: JlptQuestionAdmin[];
+  mondaiCounts?: Record<number, number>;
 }
 
 export interface MediaInfo {
@@ -320,6 +340,22 @@ export const adminJlptApi = createApi({
         method: "DELETE",
       }),
       invalidatesTags: ["AdminTest"],
+    }),
+
+    updateMondaiCounts: builder.mutation<
+      JlptTestAdmin,
+      { testId: number; mondaiCounts: Record<number, number> }
+    >({
+      query: ({ testId, mondaiCounts }) => ({
+        url: `/jlpt-tests/${testId}/mondai-counts`,
+        method: "PATCH",
+        body: { mondaiCounts },
+      }),
+      transformResponse: (response: ApiResponse<JlptTestAdmin>) =>
+        response.data,
+      invalidatesTags: (result, error, { testId }) => [
+        { type: "AdminTest", id: testId },
+      ],
     }),
 
     // ========================================================================
@@ -558,6 +594,7 @@ export const {
   useCreateTestMutation,
   useUpdateTestMutation,
   useDeleteTestMutation,
+  useUpdateMondaiCountsMutation,
   useAddQuestionMutation,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,

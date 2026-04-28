@@ -81,8 +81,9 @@ export default function WithdrawPage() {
       }).unwrap();
       setIsSuccess(true);
       toast.success(t("wallet.withdraw.success"));
-    } catch (error: any) {
-      toast.error(error?.data?.message || t("wallet.withdraw.failed"));
+    } catch (error: unknown) {
+      const apiError = error as { data?: { message?: string } };
+      toast.error(apiError.data?.message || t("wallet.withdraw.failed"));
     }
   };
 

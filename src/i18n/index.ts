@@ -59,6 +59,37 @@ function isMessageKey(key: string): boolean {
   return /^[a-zA-Z][a-zA-Z0-9_]*[._][a-zA-Z0-9_]+$/.test(key);
 }
 
+function normalizeMessageKey(input: unknown, seen = new WeakSet<object>()): string {
+  if (input == null) return "";
+
+  if (typeof input === "string") return input;
+  if (typeof input === "number" || typeof input === "boolean") {
+    return String(input);
+  }
+
+  if (Array.isArray(input)) {
+    return input.map((item) => normalizeMessageKey(item, seen)).filter(Boolean).join(", ");
+  }
+
+  if (typeof input !== "object") return "";
+  if (seen.has(input)) return "";
+  seen.add(input);
+
+  const payload = input as {
+    messageKey?: unknown;
+    message?: unknown;
+    code?: unknown;
+    error?: unknown;
+  };
+
+  return (
+    normalizeMessageKey(payload.messageKey, seen) ||
+    normalizeMessageKey(payload.message, seen) ||
+    normalizeMessageKey(payload.error, seen) ||
+    normalizeMessageKey(payload.code, seen)
+  );
+}
+
 /**
  * [FRONTEND I18N ROLE] Global helper for standardized translation with debugging.
  * Ensures fallback to the key itself and warns if a key is missing in development.
@@ -68,17 +99,18 @@ function isMessageKey(key: string): boolean {
  * - If key doesn't exist, return key silently (for content from backend)
  * - If key is actual content (not a messageKey), return as-is without warning
  */
-export function tMsg(key: string | undefined | null, options?: Record<string, unknown>): string {
-  if (!key) return "";
+export function tMsg(key: unknown, options?: Record<string, unknown>): string {
+  const normalizedKey = normalizeMessageKey(key);
+  if (!normalizedKey) return "";
 
   // If it doesn't look like a messageKey, return as-is (likely actual content from backend)
-  if (!isMessageKey(key)) {
-    return key;
+  if (!isMessageKey(normalizedKey)) {
+    return normalizedKey;
   }
 
   // It's a messageKey - try to translate
-  const translated = i18n.t(key, { defaultValue: key, ...options });
-  return typeof translated === "string" ? translated : key;
+  const translated = i18n.t(normalizedKey, { defaultValue: normalizedKey, ...options });
+  return typeof translated === "string" ? translated : normalizedKey;
 }
 
 /**

@@ -38,6 +38,7 @@ export const baseApi = createApi({
     "User",
     "CourseFinance",
     "AdminPlan",
+    "TopupPackage",
     "AdminRevenue",
     "SystemError",
     "SystemErrorSummary",
@@ -48,7 +49,6 @@ export const baseApi = createApi({
     "WeeklySummary",
     "TodayStats",
     "Insight",
-    "LessonNote"
   ],
   endpoints: () => ({}),
 });

@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Clock,
-  Users,
   Wallet,
   TrendingUp,
   TrendingDown,
@@ -38,7 +37,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -59,11 +58,7 @@ import {
 const TeacherDashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const { data: dashboardData, isLoading } = useGetTeacherDashboardQuery();
-
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
 
   if (isLoading) {
     return (
@@ -74,16 +69,16 @@ const TeacherDashboard: React.FC = () => {
   }
 
   const isDark = theme === "dark";
-  const gridColor = isDark
-    ? "hsl(var(--muted-foreground) / 0.1)"
-    : "hsl(var(--muted-foreground) / 0.05)";
-  const textColor = "hsl(var(--muted-foreground))";
+  const gridColor = isDark ? "#334155" : "#e2e8f0";
+  const textColor = isDark ? "#94a3b8" : "#64748b";
+  const chartStroke = isDark ? "#60a5fa" : "#2563eb";
+  const chartFillStart = isDark ? "rgba(96, 165, 250, 0.32)" : "rgba(37, 99, 235, 0.22)";
+  const chartFillEnd = isDark ? "rgba(96, 165, 250, 0.02)" : "rgba(37, 99, 235, 0.02)";
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : i18n.language, {
-      style: "currency",
-      currency: "VND",
-    }).format(val);
+    return `${new Intl.NumberFormat(
+      i18n.language === "vi" ? "vi-VN" : i18n.language,
+    ).format(val)} 🌸`;
   };
 
   return (
@@ -184,72 +179,103 @@ const TeacherDashboard: React.FC = () => {
                 </Select>
               </CardHeader>
               <CardContent className="h-[350px] pl-2 pt-4 min-h-[350px] min-w-0 w-full">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  minWidth={0}
-                  minHeight={0}
-                >
-                  <AreaChart
-                    data={dashboardData?.earningsOverTime || []}
-                    margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                {(dashboardData?.earningsOverTime?.length ?? 0) > 0 ? (
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                    minWidth={0}
+                    minHeight={0}
                   >
-                    <defs>
-                      <linearGradient
-                        id="primaryGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="hsl(var(--primary))"
-                          stopOpacity={0.2}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="hsl(var(--primary))"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke={gridColor}
-                    />
-                    <XAxis
-                      dataKey="date"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: textColor, fontSize: 11 }}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: textColor, fontSize: 11 }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--background))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="income"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#primaryGradient)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                    <AreaChart
+                      data={dashboardData?.earningsOverTime || []}
+                      margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="teacherIncomeGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor={chartFillStart}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor={chartFillEnd}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke={gridColor}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: textColor, fontSize: 11 }}
+                        tickFormatter={(value) =>
+                          new Date(value).toLocaleDateString(
+                            i18n.language === "vi" ? "vi-VN" : i18n.language,
+                            { day: "2-digit", month: "2-digit" },
+                          )
+                        }
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: textColor, fontSize: 11 }}
+                        tickFormatter={(value: number) =>
+                          new Intl.NumberFormat(
+                            i18n.language === "vi" ? "vi-VN" : i18n.language,
+                          ).format(value)
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value: number | string | undefined) => [
+                          formatCurrency(Number(value ?? 0)),
+                          t("admin.analytics.teacher.chart.title"),
+                        ]}
+                        labelFormatter={(value) =>
+                          new Date(value).toLocaleDateString(
+                            i18n.language === "vi" ? "vi-VN" : i18n.language,
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            },
+                          )
+                        }
+                        contentStyle={{
+                          backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                          borderColor: isDark ? "#334155" : "#e2e8f0",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="income"
+                        stroke={chartStroke}
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#teacherIncomeGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    {t("admin.analytics.teacher.chart.noData", {
+                      defaultValue: "Chua co du lieu bieu do",
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -446,7 +472,15 @@ const TeacherDashboard: React.FC = () => {
 };
 
 // Subcomponent for Stats Card
-const StatCard = ({ title, value, description, icon, trend }: any) => (
+type StatCardProps = {
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ReactNode;
+  trend?: "up" | "down";
+};
+
+const StatCard = ({ title, value, description, icon, trend }: StatCardProps) => (
   <Card className="shadow-sm border-muted/60 hover:shadow-md transition-shadow">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>

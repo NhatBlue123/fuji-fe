@@ -27,7 +27,7 @@ import { useTranslation } from "react-i18next";
 
 interface PaymentStatusProps {
   orderId: string;
-  amount: number;
+  amount?: number;
   transferAmountVnd?: number;
   bankId: string;
   accountNo: string;
@@ -40,6 +40,11 @@ const MAX_WAIT_TIME_MS = 300000;
 const FALLBACK_POLL_INTERVAL_MS = 3000;
 const FALLBACK_POLL_WINDOW_MS = 18000;
 
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 export default function PaymentStatus({
   orderId,
   amount,
@@ -47,7 +52,6 @@ export default function PaymentStatus({
   bankId,
   accountNo,
   accountName,
-  createdAt,
   onClose,
 }: PaymentStatusProps) {
   const router = useRouter();
@@ -227,8 +231,9 @@ export default function PaymentStatus({
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const qrAmountVnd = transferAmountVnd ?? amount * 1000;
-  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${orderId}&accountName=${accountName}`;
+  const displayAmount = toFiniteNumber(amount, 0);
+  const qrAmountVnd = toFiniteNumber(transferAmountVnd, displayAmount * 1000);
+  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(accountName)}`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
@@ -349,7 +354,7 @@ export default function PaymentStatus({
                       {t("payment.amountNeeded")}
                     </p>
                     <p className="text-2xl font-black text-white">
-                      {amount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
+                      {displayAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
                       {t("wallet.withdraw.actualReceived")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ

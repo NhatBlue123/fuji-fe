@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 // react-pdf removed — replaced with native <iframe> to avoid CORS/worker issues with Cloudinary raw URLs
 import {
   useGetMaterialsQuery,
@@ -64,7 +64,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
   const { data: materials, refetch } = useGetMaterialsQuery({ lessonId });
   const [saveMaterial] = useSaveMaterialMutation();
   const [deleteMaterial] = useDeleteMaterialMutation();
-  const { syncedPage, sendPageSync, isSyncEnabled, toggleSync } = useMaterialSync(lessonId, token);
+  const { isSyncEnabled, toggleSync } = useMaterialSync(lessonId, token);
 
   const [viewingMaterial, setViewingMaterial] = useState<{
     id: number;
@@ -76,12 +76,6 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
   const [urlInput, setUrlInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Apply synced page from peer
-  // Note: page sync for PDF/image is handled by the viewer component directly
-  // via syncedPage prop passed from parent
-
-
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {

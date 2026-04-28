@@ -5,10 +5,12 @@ import type {
   CourseFinanceCourse,
   CourseFinanceSummary,
   CreateCourseDiscountPayload,
+  CreateGlobalDiscountPayload,
   DeleteCourseDiscountPayload,
   GetCourseFinanceCoursesParams,
   UpdateCourseDiscountPayload,
   UpdateCoursePricePayload,
+  UpdateGlobalDiscountPayload,
 } from "@/types/course-finance";
 
 export const courseFinanceApi = baseApi.injectEndpoints({
@@ -117,6 +119,50 @@ export const courseFinanceApi = baseApi.injectEndpoints({
         { type: "CourseFinance", id: `COURSE_${arg.courseId}` },
       ],
     }),
+
+    getGlobalDiscounts: builder.query<CourseDiscount[], void>({
+      query: () => "/course-finance/discounts/global",
+      transformResponse: (res: ApiResponse<CourseDiscount[]>) => res.data,
+      providesTags: [{ type: "CourseFinance", id: "GLOBAL_DISCOUNTS" }],
+    }),
+
+    createGlobalDiscount: builder.mutation<CourseDiscount, CreateGlobalDiscountPayload>({
+      query: (payload) => ({
+        url: "/course-finance/discounts/global",
+        method: "POST",
+        body: payload,
+      }),
+      transformResponse: (res: ApiResponse<CourseDiscount>) => res.data,
+      invalidatesTags: [
+        { type: "CourseFinance", id: "GLOBAL_DISCOUNTS" },
+        { type: "CourseFinance", id: "SUMMARY" },
+      ],
+    }),
+
+    updateGlobalDiscount: builder.mutation<CourseDiscount, UpdateGlobalDiscountPayload>({
+      query: ({ discountId, ...payload }) => ({
+        url: `/course-finance/discounts/global/${discountId}`,
+        method: "PATCH",
+        body: payload,
+      }),
+      transformResponse: (res: ApiResponse<CourseDiscount>) => res.data,
+      invalidatesTags: [
+        { type: "CourseFinance", id: "GLOBAL_DISCOUNTS" },
+        { type: "CourseFinance", id: "SUMMARY" },
+      ],
+    }),
+
+    deleteGlobalDiscount: builder.mutation<void, number>({
+      query: (discountId) => ({
+        url: `/course-finance/discounts/global/${discountId}`,
+        method: "DELETE",
+      }),
+      transformResponse: () => undefined,
+      invalidatesTags: [
+        { type: "CourseFinance", id: "GLOBAL_DISCOUNTS" },
+        { type: "CourseFinance", id: "SUMMARY" },
+      ],
+    }),
   }),
 });
 
@@ -128,4 +174,8 @@ export const {
   useCreateCourseDiscountMutation,
   useUpdateCourseDiscountMutation,
   useDeleteCourseDiscountMutation,
+  useGetGlobalDiscountsQuery,
+  useCreateGlobalDiscountMutation,
+  useUpdateGlobalDiscountMutation,
+  useDeleteGlobalDiscountMutation,
 } = courseFinanceApi;

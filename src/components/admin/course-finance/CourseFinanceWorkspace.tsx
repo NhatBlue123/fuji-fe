@@ -9,10 +9,15 @@ import {
   useGetCourseFinanceSummaryQuery,
   useUpdateCourseDiscountMutation,
   useUpdateCourseFinancePriceMutation,
+  useGetGlobalDiscountsQuery,
+  useCreateGlobalDiscountMutation,
+  useUpdateGlobalDiscountMutation,
+  useDeleteGlobalDiscountMutation,
 } from "@/store/services/courseFinanceApi";
 import type {
   CourseDiscount,
   CourseFinanceCourse,
+  DiscountType,
 } from "@/types/course-finance";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
@@ -52,7 +57,10 @@ import {
   BookOpen,
   Pencil,
   Trash2,
+  Globe,
+  Plus,
 } from "lucide-react";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
 import { useTranslation } from "react-i18next";
@@ -162,13 +170,26 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
+  const [discountType, setDiscountType] = useState<DiscountType>("PERCENT");
   const [discountPercent, setDiscountPercent] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
   const [discountStartAt, setDiscountStartAt] = useState("");
   const [discountEndAt, setDiscountEndAt] = useState("");
   const [discountActive, setDiscountActive] = useState(true);
   const [editingDiscount, setEditingDiscount] = useState<CourseDiscount | null>(
     null,
   );
+
+  // Global discount dialog state
+  const [globalDialogOpen, setGlobalDialogOpen] = useState(false);
+  const [globalEditingDiscount, setGlobalEditingDiscount] = useState<CourseDiscount | null>(null);
+  const [globalCode, setGlobalCode] = useState("");
+  const [globalDiscountType, setGlobalDiscountType] = useState<DiscountType>("PERCENT");
+  const [globalPercent, setGlobalPercent] = useState("");
+  const [globalAmount, setGlobalAmount] = useState("");
+  const [globalStartAt, setGlobalStartAt] = useState("");
+  const [globalEndAt, setGlobalEndAt] = useState("");
+  const [globalActive, setGlobalActive] = useState(true);
 
   const {
     data: summary,
@@ -216,6 +237,19 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
     useUpdateCourseDiscountMutation();
   const [deleteDiscount, { isLoading: deletingDiscount }] =
     useDeleteCourseDiscountMutation();
+
+  const {
+    data: globalDiscounts = [],
+    isLoading: loadingGlobalDiscounts,
+    refetch: refetchGlobalDiscounts,
+  } = useGetGlobalDiscountsQuery(undefined, { skip: !isAdmin });
+
+  const [createGlobalDiscount, { isLoading: creatingGlobal }] =
+    useCreateGlobalDiscountMutation();
+  const [updateGlobalDiscount, { isLoading: updatingGlobal }] =
+    useUpdateGlobalDiscountMutation();
+  const [deleteGlobalDiscount, { isLoading: deletingGlobal }] =
+    useDeleteGlobalDiscountMutation();
 
   const totalPages = pageData?.totalPages ?? 1;
 
@@ -296,7 +330,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
     setSelectedCourse(course);
     setEditingDiscount(null);
     setDiscountCode("");
+    setDiscountType("PERCENT");
     setDiscountPercent("");
+    setDiscountAmount("");
     setDiscountStartAt("");
     setDiscountEndAt("");
     setDiscountActive(true);
@@ -306,7 +342,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
   const fillDiscountForm = (discount: CourseDiscount) => {
     setEditingDiscount(discount);
     setDiscountCode(discount.code);
-    setDiscountPercent(String(discount.discountPercent));
+    setDiscountType(discount.discountType ?? "PERCENT");
+    setDiscountPercent(discount.discountPercent != null ? String(discount.discountPercent) : "");
+    setDiscountAmount(discount.discountAmount != null ? String(discount.discountAmount) : "");
     setDiscountStartAt(toDateTimeLocalValue(discount.startAt));
     setDiscountEndAt(toDateTimeLocalValue(discount.endAt));
     setDiscountActive(discount.isActive);
@@ -315,7 +353,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
   const resetDiscountForm = () => {
     setEditingDiscount(null);
     setDiscountCode("");
+    setDiscountType("PERCENT");
     setDiscountPercent("");
+    setDiscountAmount("");
     setDiscountStartAt("");
     setDiscountEndAt("");
     setDiscountActive(true);
@@ -357,13 +397,16 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
       toast.error(t("admin.finance.toast.emptyDiscountCode"));
       return;
     }
-    const parsedPercent = Number(discountPercent);
-    if (
-      Number.isNaN(parsedPercent) ||
-      parsedPercent < 1 ||
-      parsedPercent > 100
-    ) {
+
+    const parsedPercent = discountType === "PERCENT" ? parseInt(discountPercent, 10) : null;
+    const parsedAmount = discountType === "FIXED_AMOUNT" ? parseInt(discountAmount, 10) : null;
+
+    if (discountType === "PERCENT" && (isNaN(parsedPercent!) || parsedPercent! < 1 || parsedPercent! > 100)) {
       toast.error(t("admin.finance.toast.invalidDiscountPercent"));
+      return;
+    }
+    if (discountType === "FIXED_AMOUNT" && (isNaN(parsedAmount!) || parsedAmount! <= 0)) {
+      toast.error("Số 🌸 giảm phải lớn hơn 0");
       return;
     }
 
@@ -373,7 +416,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           courseId: selectedCourse.courseId,
           discountId: editingDiscount.id,
           code: discountCode.trim().toUpperCase(),
+          discountType,
           discountPercent: parsedPercent,
+          discountAmount: parsedAmount,
           startAt: discountStartAt || undefined,
           endAt: discountEndAt || undefined,
           isActive: discountActive,
@@ -383,7 +428,9 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
         await createDiscount({
           courseId: selectedCourse.courseId,
           code: discountCode.trim().toUpperCase(),
+          discountType,
           discountPercent: parsedPercent,
+          discountAmount: parsedAmount,
           startAt: discountStartAt || undefined,
           endAt: discountEndAt || undefined,
           isActive: discountActive,
@@ -411,6 +458,91 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
       await refetchDiscounts();
     } catch (error: any) {
       toast.error(tMsg(error?.data?.messageKey) || tMsg("api.error") || "Xóa mã giảm giá thất bại");
+    }
+  };
+
+  // ── Global discount handlers ──────────────────────────────────────────────
+  const resetGlobalForm = () => {
+    setGlobalEditingDiscount(null);
+    setGlobalCode("");
+    setGlobalDiscountType("PERCENT");
+    setGlobalPercent("");
+    setGlobalAmount("");
+    setGlobalStartAt("");
+    setGlobalEndAt("");
+    setGlobalActive(true);
+  };
+
+  const openGlobalDialog = () => {
+    resetGlobalForm();
+    setGlobalDialogOpen(true);
+  };
+
+  const handleEditGlobal = (d: CourseDiscount) => {
+    setGlobalEditingDiscount(d);
+    setGlobalCode(d.code);
+    setGlobalDiscountType(d.discountType ?? "PERCENT");
+    setGlobalPercent(d.discountPercent != null ? String(d.discountPercent) : "");
+    setGlobalAmount(d.discountAmount != null ? String(d.discountAmount) : "");
+    setGlobalStartAt(toDateTimeLocalValue(d.startAt));
+    setGlobalEndAt(toDateTimeLocalValue(d.endAt));
+    setGlobalActive(d.isActive);
+  };
+
+  const handleSaveGlobal = async () => {
+    const code = globalCode.trim().toUpperCase();
+    if (!code) { toast.error("Vui lòng nhập mã giảm giá"); return; }
+
+    const parsedPercent = globalDiscountType === "PERCENT" ? parseInt(globalPercent, 10) : null;
+    const parsedAmount = globalDiscountType === "FIXED_AMOUNT" ? parseInt(globalAmount, 10) : null;
+
+    if (globalDiscountType === "PERCENT" && (isNaN(parsedPercent!) || parsedPercent! < 1 || parsedPercent! > 100)) {
+      toast.error("Phần trăm giảm phải từ 1–100"); return;
+    }
+    if (globalDiscountType === "FIXED_AMOUNT" && (isNaN(parsedAmount!) || parsedAmount! <= 0)) {
+      toast.error("Số tiền giảm phải lớn hơn 0"); return;
+    }
+
+    try {
+      if (globalEditingDiscount) {
+        await updateGlobalDiscount({
+          discountId: globalEditingDiscount.id,
+          code,
+          discountType: globalDiscountType,
+          discountPercent: parsedPercent,
+          discountAmount: parsedAmount,
+          startAt: globalStartAt || undefined,
+          endAt: globalEndAt || undefined,
+          isActive: globalActive,
+        }).unwrap();
+        toast.success("Cập nhật mã toàn sàn thành công");
+      } else {
+        await createGlobalDiscount({
+          code,
+          discountType: globalDiscountType,
+          discountPercent: parsedPercent,
+          discountAmount: parsedAmount,
+          startAt: globalStartAt || undefined,
+          endAt: globalEndAt || undefined,
+          isActive: globalActive,
+        }).unwrap();
+        toast.success("Tạo mã toàn sàn thành công");
+      }
+      resetGlobalForm();
+      refetchGlobalDiscounts();
+    } catch (error: any) {
+      toast.error(tMsg(error?.data?.messageKey) || "Lưu mã toàn sàn thất bại");
+    }
+  };
+
+  const handleDeleteGlobal = async (d: CourseDiscount) => {
+    if (!window.confirm(`Xóa mã toàn sàn ${d.code}?`)) return;
+    try {
+      await deleteGlobalDiscount(d.id).unwrap();
+      toast.success("Đã xóa mã toàn sàn");
+      refetchGlobalDiscounts();
+    } catch (error: any) {
+      toast.error(tMsg(error?.data?.messageKey) || "Xóa mã thất bại");
     }
   };
 
@@ -447,16 +579,24 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
           <p className="text-muted-foreground">{pageDescription}</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleRefresh}
-          disabled={fetchingCourses || loadingSummary}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${fetchingCourses ? "animate-spin" : ""}`}
-          />
-          {t("admin.finance.btn.refresh")}
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button variant="outline" onClick={openGlobalDialog}>
+              <Globe className="mr-2 h-4 w-4" />
+              Mã toàn sàn
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={fetchingCourses || loadingSummary}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${fetchingCourses ? "animate-spin" : ""}`}
+            />
+            {t("admin.finance.btn.refresh")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -848,32 +988,69 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
               </div>
 
               <div className="space-y-2">
-                <Label>Phần trăm giảm (%)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={discountPercent}
-                  onChange={(e) => setDiscountPercent(e.target.value)}
-                  placeholder="10"
-                />
+                <Label>Loại giảm giá</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={discountType === "PERCENT" ? "default" : "outline"}
+                    onClick={() => setDiscountType("PERCENT")}
+                    className="flex-1"
+                  >
+                    % Phần trăm
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={discountType === "FIXED_AMOUNT" ? "default" : "outline"}
+                    onClick={() => setDiscountType("FIXED_AMOUNT")}
+                    className="flex-1"
+                  >
+                    🌸 Số hoa
+                  </Button>
+                </div>
               </div>
+
+              {discountType === "PERCENT" ? (
+                <div className="space-y-2">
+                  <Label>Phần trăm giảm (1–100)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(e.target.value)}
+                    placeholder="VD: 20"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Số 🌸 giảm</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                    placeholder="VD: 500"
+                  />
+                </div>
+              )}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Bắt đầu</Label>
-                  <Input
-                    type="datetime-local"
+                  <DateTimePicker
                     value={discountStartAt}
-                    onChange={(e) => setDiscountStartAt(e.target.value)}
+                    onChange={setDiscountStartAt}
+                    placeholder="Không giới hạn"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Kết thúc</Label>
-                  <Input
-                    type="datetime-local"
+                  <DateTimePicker
                     value={discountEndAt}
-                    onChange={(e) => setDiscountEndAt(e.target.value)}
+                    onChange={setDiscountEndAt}
+                    placeholder="Không giới hạn"
                   />
                 </div>
               </div>
@@ -913,7 +1090,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Mã</TableHead>
-                      <TableHead>%</TableHead>
+                      <TableHead>Giảm</TableHead>
                       <TableHead>Trạng thái</TableHead>
                       <TableHead className="text-right">Thao tác</TableHead>
                     </TableRow>
@@ -940,7 +1117,11 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                               </p>
                             </div>
                           </TableCell>
-                          <TableCell>{item.discountPercent}%</TableCell>
+                          <TableCell>
+                            {item.discountType === "FIXED_AMOUNT"
+                              ? `${(item.discountAmount ?? 0).toLocaleString("vi-VN")} 🌸`
+                              : `${item.discountPercent ?? 0}%`}
+                          </TableCell>
                           <TableCell>
                             <Badge
                               variant={
@@ -992,6 +1173,219 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Global Discount Dialog (Admin only) ─────────────────────────── */}
+      {isAdmin && (
+        <Dialog open={globalDialogOpen} onOpenChange={(open) => { setGlobalDialogOpen(open); if (!open) resetGlobalForm(); }}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                Mã giảm giá toàn sàn
+              </DialogTitle>
+              <DialogDescription>
+                Mã áp dụng cho tất cả khóa học trên hệ thống
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Form tạo / sửa */}
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <h3 className="text-sm font-semibold">
+                {globalEditingDiscount ? "Cập nhật mã" : "Tạo mã mới"}
+              </h3>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Mã giảm giá</Label>
+                  <Input
+                    value={globalCode}
+                    onChange={(e) => setGlobalCode(e.target.value.toUpperCase())}
+                    placeholder="VD: SALE50"
+                    maxLength={50}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Loại giảm giá</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={globalDiscountType === "PERCENT" ? "default" : "outline"}
+                      onClick={() => setGlobalDiscountType("PERCENT")}
+                      className="flex-1"
+                    >
+                      % Phần trăm
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={globalDiscountType === "FIXED_AMOUNT" ? "default" : "outline"}
+                      onClick={() => setGlobalDiscountType("FIXED_AMOUNT")}
+                      className="flex-1"
+                    >
+                      🌸 Số hoa
+                    </Button>
+                  </div>
+                </div>
+
+                {globalDiscountType === "PERCENT" ? (
+                  <div className="space-y-1.5">
+                    <Label>Phần trăm giảm (1–100)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={globalPercent}
+                      onChange={(e) => setGlobalPercent(e.target.value)}
+                      placeholder="VD: 20"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label>Số 🌸 giảm</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={globalAmount}
+                      onChange={(e) => setGlobalAmount(e.target.value)}
+                      placeholder="VD: 500"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label>Bắt đầu</Label>
+                  <DateTimePicker
+                    value={globalStartAt}
+                    onChange={setGlobalStartAt}
+                    placeholder="Không giới hạn"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Kết thúc</Label>
+                  <DateTimePicker
+                    value={globalEndAt}
+                    onChange={setGlobalEndAt}
+                    placeholder="Không giới hạn"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch checked={globalActive} onCheckedChange={setGlobalActive} id="global-active" />
+                <Label htmlFor="global-active">Kích hoạt ngay</Label>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  onClick={handleSaveGlobal}
+                  disabled={creatingGlobal || updatingGlobal}
+                  className="flex-1"
+                >
+                  {creatingGlobal || updatingGlobal ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
+                  {globalEditingDiscount ? "Lưu thay đổi" : "Tạo mã"}
+                </Button>
+                {globalEditingDiscount && (
+                  <Button variant="outline" onClick={resetGlobalForm}>
+                    Hủy
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Danh sách mã toàn sàn */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Danh sách mã toàn sàn</h3>
+                <Badge variant="secondary">{globalDiscounts.length} mã</Badge>
+              </div>
+
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mã</TableHead>
+                      <TableHead>Giảm</TableHead>
+                      <TableHead>Thời hạn</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead className="w-20" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingGlobalDiscounts ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                          Đang tải...
+                        </TableCell>
+                      </TableRow>
+                    ) : globalDiscounts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                          Chưa có mã toàn sàn nào
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      globalDiscounts.map((d) => (
+                        <TableRow key={d.id}>
+                          <TableCell>
+                            <span className="font-mono font-semibold text-sm">{d.code}</span>
+                          </TableCell>
+                          <TableCell>
+                            {d.discountType === "PERCENT"
+                              ? `${d.discountPercent}%`
+                              : `${(d.discountAmount ?? 0).toLocaleString("vi-VN")} 🌸`}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {d.startAt ? formatDateTime(d.startAt, lang) : "—"}
+                            {" → "}
+                            {d.endAt ? formatDateTime(d.endAt, lang) : "∞"}
+                          </TableCell>
+                          <TableCell>
+                            {d.currentlyEffective ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-400/30 hover:bg-emerald-500/20">
+                                Hiệu lực
+                              </Badge>
+                            ) : d.isActive ? (
+                              <Badge variant="secondary">Chờ</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground">Tắt</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleEditGlobal(d)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={deletingGlobal}
+                                onClick={() => handleDeleteGlobal(d)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

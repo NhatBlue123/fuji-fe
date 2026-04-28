@@ -58,6 +58,21 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <ExtensionCleanup />
 
+        {/* Register service worker for custom offline page */}
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+                  .then(function(reg) { reg.update(); })
+                  .catch(function(){});
+              }
+            `,
+          }}
+        />
+
         <I18nProvider>
           <RtkProvider>
             <ThemeProvider

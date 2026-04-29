@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
     ],
     // Tối ưu hóa ảnh bị lỗi trên một số môi trường Windows với Turbopack -> tắt formats tạm thời hoặc giữ nguyên nếu không phải nguyên nhân
     formats: ["image/avif", "image/webp"],
+    qualities: [75, 100],
   },
 
   // ===== API PROXY (CHỈ TRONG DEVELOPMENT) =====

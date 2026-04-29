@@ -89,6 +89,7 @@ const MobieSidebar = () => {
                           height={28} 
                           quality={100} 
                           className="object-contain relative z-10" 
+                          style={{ width: "auto", height: "auto" }}
                         />
                       </div>
                       <span className="font-black text-2xl bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent">
@@ -111,6 +112,7 @@ const MobieSidebar = () => {
                         height={28} 
                         quality={100} 
                         className="object-contain relative z-10" 
+                        style={{ width: "auto", height: "auto" }}
                       />
                     </div>
                     <span className="font-black text-2xl bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent">

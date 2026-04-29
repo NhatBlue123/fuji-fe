@@ -83,6 +83,12 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://fuji.io.vn",
+    languages: {
+      "vi": "https://fuji.io.vn",
+      "en": "https://fuji.io.vn",
+      "ja": "https://fuji.io.vn",
+      "x-default": "https://fuji.io.vn",
+    },
   },
   verification: {
     google: "f1H5onmfPp81rf4x5LH08mN94015JW0XE5zlbHGRDLw",

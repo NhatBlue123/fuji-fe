@@ -51,6 +51,7 @@ const Footer = () => {
                   height={38} 
                   quality={100} 
                   className="object-contain relative z-10" 
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
               <h2 className="text-lg sm:text-xl font-black tracking-tighter bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent uppercase">

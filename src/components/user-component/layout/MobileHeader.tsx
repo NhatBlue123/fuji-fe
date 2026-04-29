@@ -36,6 +36,7 @@ const MobileHeader = () => {
   const { unreadCount, notifications, markAsRead, bellRingCount } = useNotifications();
   const [bellAnimating, setBellAnimating] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
 
   useEffect(() => {
     if (bellRingCount > 0) {
@@ -49,11 +50,42 @@ const MobileHeader = () => {
   }, [bellRingCount]);
 
   useEffect(() => {
+    const scrollRoot = document.querySelector<HTMLElement>("[data-app-main]");
+    if (!scrollRoot) return;
+
+    let lastScrollTop = scrollRoot.scrollTop;
+    let ticking = false;
+    let rafId = 0;
+
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      if (ticking) return;
+
+      ticking = true;
+      rafId = window.requestAnimationFrame(() => {
+        const currentScrollTop = scrollRoot.scrollTop;
+        const threshold = 80;
+        const delta = currentScrollTop - lastScrollTop;
+
+        setIsScrolled(currentScrollTop > 10);
+
+        if (currentScrollTop <= threshold || delta < -4) {
+          setIsHeaderHidden(false);
+        } else if (delta > 4 && currentScrollTop > threshold) {
+          setIsHeaderHidden(true);
+        }
+
+        lastScrollTop = currentScrollTop;
+        ticking = false;
+      });
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    handleScroll();
+    scrollRoot.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      scrollRoot.removeEventListener("scroll", handleScroll);
+      window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   const [mounted, setMounted] = useState(false);
@@ -77,10 +109,11 @@ const MobileHeader = () => {
   return (
     <motion.header
       initial={{ y: -100 }}
-      animate={{ y: 0 }}
+      animate={{ y: isHeaderHidden ? "-100%" : 0, opacity: isHeaderHidden ? 0 : 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "md:hidden sticky top-0 z-50 w-full transition-all duration-300",
+        "md:hidden sticky top-0 z-50 w-full transition-all duration-300 will-change-transform",
+        isHeaderHidden && "-mt-[57px] pointer-events-none",
         isScrolled 
           ? "bg-background/98 backdrop-blur-xl shadow-lg border-b border-border/50" 
           : "bg-background/80 backdrop-blur-md border-b border-border/30"

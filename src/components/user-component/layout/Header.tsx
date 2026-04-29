@@ -51,6 +51,7 @@ const Header = () => {
   const { user, isAuthenticated, roles } = useAuth();
   const { unreadCount, notifications, markAsRead, bellRingCount } = useNotifications();
   const [bellAnimating, setBellAnimating] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
 
   useEffect(() => {
     if (bellRingCount > 0) {
@@ -68,6 +69,43 @@ const Header = () => {
     const timer = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const scrollRoot = document.querySelector<HTMLElement>("[data-app-main]");
+    if (!scrollRoot) return;
+
+    let lastScrollTop = scrollRoot.scrollTop;
+    let ticking = false;
+    let rafId = 0;
+
+    const handleScroll = () => {
+      if (ticking) return;
+
+      ticking = true;
+      rafId = window.requestAnimationFrame(() => {
+        const currentScrollTop = scrollRoot.scrollTop;
+        const threshold = 80;
+        const delta = currentScrollTop - lastScrollTop;
+
+        if (currentScrollTop <= threshold || delta < -4) {
+          setIsHeaderHidden(false);
+        } else if (delta > 4 && currentScrollTop > threshold) {
+          setIsHeaderHidden(true);
+        }
+
+        lastScrollTop = currentScrollTop;
+        ticking = false;
+      });
+    };
+
+    scrollRoot.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      scrollRoot.removeEventListener("scroll", handleScroll);
+      window.cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   const canShowAuthUi = mounted && isAuthenticated;
   const { data: wallet } = useGetWalletQuery(undefined, {
     skip: !canShowAuthUi,
@@ -103,7 +141,12 @@ const Header = () => {
     <TooltipProvider delayDuration={300}>
       <header
         data-app-header
-        className="sticky top-0 z-50 h-16 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300 hidden md:flex items-center justify-between px-4 md:px-4 lg:px-6 pr-3 md:pr-3 lg:pr-4"
+        className={cn(
+          "sticky top-0 z-50 h-16 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300 ease-out hidden md:flex items-center justify-between px-4 md:px-4 lg:px-6 pr-3 md:pr-3 lg:pr-4 will-change-transform",
+          isHeaderHidden
+            ? "-mt-16 -translate-y-full opacity-0 pointer-events-none"
+            : "mt-0 translate-y-0 opacity-100"
+        )}
       >
         <div className="flex items-center gap-4"></div>
 

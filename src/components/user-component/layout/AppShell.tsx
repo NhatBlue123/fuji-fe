@@ -31,7 +31,10 @@ export default function AppShell({
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
         <MobileHeader />
-        <main className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col">
+        <main
+          data-app-main
+          className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col"
+        >
           <div className="flex-1">
             {children}
             {auth}

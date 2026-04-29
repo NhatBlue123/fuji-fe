@@ -11,7 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,7 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [tooltipReady, setTooltipReady] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -57,6 +58,11 @@ const Sidebar = () => {
       setIsCollapsed(true);
       setTooltipReady(true);
     }
+    return () => {
+      if (tooltipTimerRef.current) {
+        clearTimeout(tooltipTimerRef.current);
+      }
+    };
   }, []);
 
   const toggleSidebar = () => {
@@ -64,9 +70,12 @@ const Sidebar = () => {
     setIsCollapsed(newState);
     setTooltipReady(false); // tắt tooltip ngay khi bắt đầu transition
     localStorage.setItem("sidebar-collapsed", String(newState));
+    if (tooltipTimerRef.current) {
+      clearTimeout(tooltipTimerRef.current);
+    }
     if (newState) {
       // Chỉ bật tooltip sau khi animation collapse xong (300ms)
-      setTimeout(() => setTooltipReady(true), 320);
+      tooltipTimerRef.current = setTimeout(() => setTooltipReady(true), 320);
     }
   };
 
@@ -121,7 +130,15 @@ const Sidebar = () => {
           )}
         >
           <div className="flex-shrink-0">
-            <Image src="/images/logofuji_v1.png" alt="FUJI Logo" width={90} height={60} quality={100} className="object-contain" />
+            <Image
+              src="/images/logofuji_v1.png"
+              alt="FUJI Logo"
+              width={90}
+              height={60}
+              quality={100}
+              className="object-contain"
+              style={{ width: "auto", height: "auto" }}
+            />
           </div>
 
           {!isCollapsed && (

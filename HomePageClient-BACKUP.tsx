@@ -349,7 +349,7 @@ export default function HomePageClient() {
                     FUJI Workspace
                   </p>
                   <p className="mt-2 text-xl font-semibold leading-tight">
-                     Một hành trình học gọn hơn, ít nhiễu hơn. 
+                    Má»™t hĂ nh trĂ¬nh há»c gá»n hÆ¡n, Ă­t nhiá»…u hÆ¡n.
                   </p>
                 </div>
               </div>
@@ -363,7 +363,7 @@ export default function HomePageClient() {
               <SectionIntro
                 eyebrow="Learning tools"
                 title="Các công cụ chính"
-                description="Giữ lại đầy đủ chức năng hiện có, nhưng trình bày nhẹ hơn để người học quét nhanh và chọn đúng việc cần làm."
+                description="Giá»¯ láº¡i Ä‘áº§y Ä‘á»§ chá»©c nÄƒng hiá»‡n cĂ³, nhÆ°ng trĂ¬nh bĂ y nháº¹ hÆ¡n Ä‘á»ƒ ngÆ°á»i há»c quĂ©t nhanh vĂ  chá»n Ä‘Ăºng viá»‡c cáº§n lĂ m."
               />
               <Link href="/course" className="text-sm font-semibold text-pink-500 hover:text-pink-600">
                 {T("home.jlptSection.viewAll")}
@@ -401,7 +401,7 @@ export default function HomePageClient() {
                     {T(`home.jlptSection.levels.${item.level}`)}
                   </p>
                   <p className="mt-1 text-[11px] opacity-75">
-                    {item.tests} đề / {item.questions} câu
+                    {item.tests} Ä‘á» / {item.questions} câu
                   </p>
                 </Link>
               ))}
@@ -416,7 +416,7 @@ export default function HomePageClient() {
                     JLPT Practice
                   </p>
                   <p className="mt-2 text-2xl font-semibold">
-                    Luyện đề đều đặn, xem lại lỗi sai và tiến bộ rõ sau từng buổi học.
+                    Luyá»‡n Ä‘á» Ä‘á»u Ä‘áº·n, xem láº¡i lá»—i sai vĂ  tiáº¿n bá»™ rĂµ sau tá»«ng buá»•i há»c.
                   </p>
                 </div>
               </div>
@@ -709,3 +709,4 @@ export default function HomePageClient() {
     </div>
   );
 }
+

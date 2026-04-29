@@ -30,6 +30,7 @@ export interface JlptTest {
   attemptCount: number;
   averageScore: number;
   isPublished: boolean;
+  isAntiCheatEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   questions?: JlptQuestion[];

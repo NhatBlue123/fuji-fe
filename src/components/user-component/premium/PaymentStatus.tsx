@@ -164,27 +164,34 @@ export default function PaymentStatus({
     return () => unsubStatus();
   }, [handleStatusResult, onPaymentStatusChange, orderId]);
 
+  // CHỈ polling khi socket KHÔNG kết nối được (fallback mode)
+  // VÀ chỉ trong khoảng thời gian giới hạn (18 giây)
   useEffect(() => {
     if (handledRef.current) return;
 
-    if (!isConnected) {
-      const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
-      setPollingUntil(deadline);
-      void pollStatus("poll");
+    // Nếu socket đang hoạt động tốt, KHÔNG cần polling
+    if (isConnected) {
+      setPollingUntil(null);
       return;
     }
 
-    setPollingUntil(null);
+    // Socket không hoạt động -> bật fallback polling
+    const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
+    setPollingUntil(deadline);
+    void pollStatus("poll");
   }, [isConnected, orderId, pollStatus]);
 
+  // Effect này chỉ chạy khi pollingUntil được set (tức là socket fail)
   useEffect(() => {
     if (handledRef.current || !pollingUntil) return;
 
+    // Hết thời gian polling
     if (Date.now() >= pollingUntil) {
       setPollingUntil(null);
       return;
     }
 
+    // Polling interval - CHỈ chạy khi pollingUntil còn giá trị
     const intervalId = setInterval(() => {
       if (handledRef.current || Date.now() >= (pollingUntil || 0)) {
         clearInterval(intervalId);

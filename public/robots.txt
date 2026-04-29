@@ -1,0 +1,12 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin/
+Disallow: /api/
+Disallow: /profile/wallet
+Disallow: /profile/history-payment
+
+# Sitemap
+Sitemap: https://fuji.io.vn/sitemap.xml

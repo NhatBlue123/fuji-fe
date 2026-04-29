@@ -234,22 +234,22 @@ function FeatureCard({ feature, label }: { feature: FeatureMeta; label: (key: st
   return (
     <Link
       href={feature.href}
-      className="group flex min-h-[170px] flex-col justify-between rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-pink-300/70 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35"
+      className="group flex min-h-[140px] flex-col justify-between rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-pink-300/70 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/35 sm:min-h-[170px] sm:rounded-2xl sm:p-5"
     >
       <div>
-        <div className={cn("mb-4 flex size-10 items-center justify-center rounded-full", feature.tone)}>
-          <span className="material-symbols-outlined text-[20px]">{feature.icon}</span>
+        <div className={cn("mb-3 flex size-8 items-center justify-center rounded-full sm:mb-4 sm:size-10", feature.tone)}>
+          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">{feature.icon}</span>
         </div>
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="text-sm font-semibold text-foreground sm:text-base">
           {label(`home.cards.${feature.key}.title`)}
         </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+        <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
           {label(`home.cards.${feature.key}.desc`)}
         </p>
       </div>
-      <span className="mt-4 inline-flex items-center text-sm font-semibold text-pink-500">
+      <span className="mt-3 inline-flex items-center text-xs font-semibold text-pink-500 sm:mt-4 sm:text-sm">
         {label("home.featureMap.openFeature")}
-        <span className="material-symbols-outlined ml-1 text-[16px] transition-transform group-hover:translate-x-1">
+        <span className="material-symbols-outlined ml-1 text-[14px] transition-transform group-hover:translate-x-1 sm:text-[16px]">
           arrow_forward
         </span>
       </span>
@@ -370,7 +370,7 @@ export default function HomePage() {
               </Link>
             </div>
           </FadeUp>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {FEATURE_META.map((feature, index) => (
               <FadeUp key={feature.key} delay={index * 0.035}>
                 <FeatureCard feature={feature} label={T} />

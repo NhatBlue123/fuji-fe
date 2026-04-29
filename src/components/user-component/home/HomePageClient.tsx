@@ -637,7 +637,19 @@ export default function HomePageClient() {
         </section>
 
         <FadeUp>
-          <section className="rounded-[1.75rem] border border-border/70 bg-card p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/35 sm:p-6">
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/35 sm:p-6">
+            <Image
+              src={HOME_MEDIA.finalPoster}
+              alt=""
+              fill
+              className="scale-105 object-cover object-[center_70%] opacity-38 blur-[1px] dark:opacity-42"
+              sizes="(max-width: 768px) 100vw, 90vw"
+              loading="lazy"
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEAPwCwAB//2Q=="
+            />
+            <div className="absolute inset-0 bg-card/58 dark:bg-slate-950/52" />
+            <div className="relative z-10">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-lg font-semibold text-foreground">
                 {T("home.quickLinks.title")}
@@ -651,27 +663,18 @@ export default function HomePageClient() {
                 <Link
                   key={quick.key}
                   href={quick.href}
-                  className="rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-pink-300 hover:text-pink-500 dark:border-white/10"
+                  className="rounded-full border border-border/70 bg-background/55 px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur transition-colors hover:border-pink-300 hover:text-pink-500 dark:border-white/10 dark:bg-slate-950/45"
                 >
                   {T(`home.quickLinks.${quick.key}`)}
                 </Link>
               ))}
+            </div>
             </div>
           </section>
         </FadeUp>
 
         <FadeUp className="pb-2">
           <section className="relative min-h-[380px] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 text-white shadow-2xl">
-            <Image
-              src={HOME_MEDIA.finalPoster}
-              alt="FUJI"
-              fill
-              className="object-cover opacity-70"
-              sizes="(max-width: 768px) 100vw, 90vw"
-              loading="lazy"
-              placeholder="blur"
-              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=="
-            />
             <video
               className="absolute inset-0 size-full object-cover opacity-70"
               src={HOME_MEDIA.finalVideo}

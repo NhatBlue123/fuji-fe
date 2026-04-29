@@ -39,6 +39,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
  * - Đồng bộ Typography: Loại bỏ In nghiêng/Bold đặc biệt (matching look).
  * - Match với giao diện UserSide bằng màu Secondary (Pink).
  */
+const getSavedSidebarCollapsed = () => {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("sidebar-collapsed") === "true";
+};
+
 const Sidebar = () => {
   const pathname = usePathname();
   const { roles } = useAuth();
@@ -46,18 +51,13 @@ const Sidebar = () => {
   const { t, i18n } = useTranslation();
 
   const [isMounted, setIsMounted] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [tooltipReady, setTooltipReady] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(getSavedSidebarCollapsed);
+  const [tooltipReady, setTooltipReady] = useState(getSavedSidebarCollapsed);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved === "true") {
-      setIsCollapsed(true);
-      setTooltipReady(true);
-    }
     return () => {
       if (tooltipTimerRef.current) {
         clearTimeout(tooltipTimerRef.current);
@@ -126,25 +126,26 @@ const Sidebar = () => {
           href="/"
           className={cn(
             "flex h-16 items-center hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
-            isCollapsed ? "justify-center px-4" : "gap-2 px-3 -ml-2"
+            isCollapsed ? "justify-center px-4" : "gap-0.5 px-2 -ml-3"
           )}
         >
-          <div className="flex-shrink-0">
+          <div className={cn("flex-shrink-0", !isCollapsed && "-ml-1")}>
             <Image
               src="/images/logofuji_v1.png"
               alt="FUJI Logo"
-              width={90}
-              height={60}
+              width={70}
+              height={47}
               quality={100}
+              loading="eager"
               className="object-contain"
               style={{ width: "auto", height: "auto" }}
             />
           </div>
 
           {!isCollapsed && (
-            <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+            <div className="min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
               <h1 className="text-xl font-black text-sidebar-foreground leading-none tracking-tight">FUJI</h1>
-              <p suppressHydrationWarning className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
+              <p suppressHydrationWarning className="mt-0.5 whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground opacity-60">
                 {t("sidebar.subtitle")}
               </p>
             </div>

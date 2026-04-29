@@ -47,8 +47,8 @@ const Footer = () => {
                 <Image 
                   src="/images/logofuji_v1.png" 
                   alt="FUJI Logo" 
-                  width={56} 
-                  height={38} 
+                  width={66} 
+                  height={45} 
                   quality={100} 
                   className="object-contain relative z-10" 
                   style={{ width: "auto", height: "auto" }}

@@ -132,6 +132,8 @@ const MobileHeader = () => {
               <img 
                 src="/images/logofuji_v1.png" 
                 alt="FUJI Logo" 
+                loading="eager"
+                decoding="sync"
                 className="relative z-10 w-full h-full object-contain"
               />
             </div>
@@ -195,6 +197,13 @@ const MobileHeader = () => {
               <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
           </motion.div>
+
+          {!mounted && (
+            <div
+              className="h-9 w-9 animate-pulse rounded-full bg-muted/70"
+              aria-hidden="true"
+            />
+          )}
 
           {/* Notifications */}
           {canShowAuthUi && (

@@ -43,6 +43,16 @@ import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+function HeaderAuthSkeleton() {
+  return (
+    <div className="flex items-center gap-2" aria-hidden="true">
+      <div className="hidden h-10 w-20 animate-pulse rounded-full bg-muted/70 sm:block" />
+      <div className="h-10 w-10 animate-pulse rounded-full bg-muted/70" />
+      <div className="h-10 w-[156px] animate-pulse rounded-xl bg-muted/70" />
+    </div>
+  );
+}
+
 const Header = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -195,6 +205,8 @@ const Header = () => {
             <Moon className="absolute size-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
+
+          {!mounted && <HeaderAuthSkeleton />}
 
           {/* ICON 3: NOTIFICATION  */}
           {canShowAuthUi && (

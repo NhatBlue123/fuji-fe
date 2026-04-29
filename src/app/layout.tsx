@@ -1,6 +1,7 @@
 import type React from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
+import { cookies } from "next/headers";
 import "material-symbols/outlined.css";
 import "tldraw/tldraw.css";
 import "@/app/globals.css";
@@ -60,6 +61,7 @@ export const metadata: Metadata = {
     url: "https://fuji.io.vn",
     siteName: "FUJI",
     locale: "vi_VN",
+    alternateLocale: ["ja_JP", "en_US"],
     type: "website",
     images: [
       {
@@ -81,11 +83,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://fuji.io.vn",
-    languages: {
-      vi: "https://fuji.io.vn",
-      ja: "https://fuji.io.vn/ja",
-      en: "https://fuji.io.vn/en",
-    },
   },
   verification: {
     google: "f1H5onmfPp81rf4x5LH08mN94015JW0XE5zlbHGRDLw",
@@ -95,11 +92,18 @@ export const metadata: Metadata = {
   category: "education",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Đọc theme và language từ cookie — server render đúng ngay từ đầu, không flash
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("theme")?.value;
+  const theme = themeCookie === "dark" || themeCookie === "light" ? themeCookie : "dark";
+  const lngCookie = cookieStore.get("i18nextLng")?.value;
+  const lng = ["vi", "en", "ja"].includes(lngCookie ?? "") ? (lngCookie as string) : "vi";
+
   const fontVars = {
     "--font-inter":
       'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -109,9 +113,9 @@ export default function RootLayout({
 
   return (
     <html
-      lang="vi"
+      lang={lng}
       suppressHydrationWarning
-      className="antialiased font-display"
+      className={`antialiased font-display ${theme}`}
       style={fontVars}
     >
       <head suppressHydrationWarning>
@@ -119,125 +123,44 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.png" sizes="16x16" type="image/png" />
         <link rel="shortcut icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" sizes="180x180" />
+
+        {/* Resource hints */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://i.postimg.cc" />
+        <link rel="dns-prefetch" href="https://i.postimg.cc" />
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://lh3.googleusercontent.com" />
+        <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         
-        {/* Additional Meta Tags for Social Platforms */}
         <meta property="og:image:secure_url" content="https://fuji.io.vn/images/og_image.png" />
-        <meta property="fb:app_id" content="your-facebook-app-id" />
         <meta name="theme-color" content="#ec4899" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
-        
-        {/* Zalo specific (uses Open Graph but can add extra) */}
         <meta property="zalo:image" content="https://fuji.io.vn/images/og_image.png" />
-        
-        {/* Telegram specific */}
         <meta property="telegram:channel" content="@fuji_japan" />
-        
-        {/* LinkedIn specific (uses Open Graph) */}
         <meta property="og:see_also" content="https://linkedin.com/company/fuji-japan" />
         
-        {/* WhatsApp specific (uses Open Graph) */}
-        <meta property="og:phone_number" content="+84-xxx-xxx-xxx" />
-        
         {/* Structured Data - Organization */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "EducationalOrganization",
-              name: "FUJI",
-              description: "Nền tảng học tiếng Nhật All-in-One",
-              url: "https://fuji.io.vn",
-              logo: "https://fuji.io.vn/images/og_image.png",
-              image: "https://fuji.io.vn/images/og_image.png",
-              sameAs: [
-                "https://facebook.com/fuji.japan",
-                "https://twitter.com/fuji_japan",
-                "https://linkedin.com/company/fuji-japan",
-                "https://t.me/fuji_japan",
-              ],
-              contactPoint: {
-                "@type": "ContactPoint",
-                contactType: "Customer Service",
-                availableLanguage: ["Vietnamese", "Japanese", "English"],
-              },
-              address: {
-                "@type": "PostalAddress",
-                addressCountry: "VN",
-                addressLocality: "Ho Chi Minh City",
-              },
-            }),
-          }}
-        />
-        
-        {/* Structured Data - Website */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "FUJI",
-              url: "https://fuji.io.vn",
-              potentialAction: {
-                "@type": "SearchAction",
-                target: "https://fuji.io.vn/search?q={search_term_string}",
-                "query-input": "required name=search_term_string",
-              },
-            }),
-          }}
-        />
-        
-        {/* Structured Data - Course */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Course",
-              name: "Khóa học tiếng Nhật JLPT N5-N1",
-              description: "Học tiếng Nhật từ cơ bản đến nâng cao với FUJI",
-              provider: {
-                "@type": "Organization",
-                name: "FUJI",
-                url: "https://fuji.io.vn",
-              },
-              educationalLevel: "Beginner to Advanced",
-              inLanguage: ["vi", "ja"],
-              availableLanguage: ["Vietnamese", "Japanese", "English"],
-              coursePrerequisites: "Không yêu cầu kiến thức trước",
-              hasCourseInstance: [
-                {
-                  "@type": "CourseInstance",
-                  courseMode: "online",
-                  courseWorkload: "PT2H",
-                },
-              ],
-            }),
-          }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "EducationalOrganization", name: "FUJI", description: "Nền tảng học tiếng Nhật All-in-One", url: "https://fuji.io.vn", logo: "https://fuji.io.vn/images/og_image.png", image: "https://fuji.io.vn/images/og_image.png", sameAs: ["https://facebook.com/fuji.japan", "https://twitter.com/fuji_japan", "https://linkedin.com/company/fuji-japan", "https://t.me/fuji_japan"], contactPoint: { "@type": "ContactPoint", contactType: "Customer Service", availableLanguage: ["Vietnamese", "Japanese", "English"] }, address: { "@type": "PostalAddress", addressCountry: "VN", addressLocality: "Ho Chi Minh City" } }) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "FUJI", url: "https://fuji.io.vn", potentialAction: { "@type": "SearchAction", target: "https://fuji.io.vn/course?search={search_term_string}", "query-input": "required name=search_term_string" } }) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Course", name: "Khóa học tiếng Nhật JLPT N5-N1", description: "Học tiếng Nhật từ cơ bản đến nâng cao với FUJI", provider: { "@type": "Organization", name: "FUJI", url: "https://fuji.io.vn" }, educationalLevel: "Beginner to Advanced", inLanguage: ["vi", "ja"], availableLanguage: ["Vietnamese", "Japanese", "English"], coursePrerequisites: "Không yêu cầu kiến thức trước", hasCourseInstance: [{ "@type": "CourseInstance", courseMode: "online", courseWorkload: "PT2H" }] }) }} />
       </head>
       <body suppressHydrationWarning>
         <ExtensionCleanup />
 
-        {/* Register service worker for custom offline page */}
+        {/* Register service worker */}
         <Script
           id="sw-register"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
-                  .then(function(reg) { reg.update(); })
-                  .catch(function(){});
-              }
-            `,
+            __html: `if('serviceWorker'in navigator){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){r.update();}).catch(function(){});}`,
           }}
         />
 
-        <I18nProvider>
+        <I18nProvider initialLng={lng}>
           <RtkProvider>
             <ThemeProvider
               attribute="class"
@@ -245,11 +168,6 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <Script
-                id="theme-init"
-                src="/theme-init.js"
-                strategy="beforeInteractive"
-              />
               {children}
               <Toaster />
             </ThemeProvider>

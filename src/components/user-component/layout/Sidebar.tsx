@@ -94,7 +94,7 @@ const Sidebar = () => {
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
     { label: t("common.settings"), path: "/settings", icon: Settings },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isMounted, t, i18n.language]);
+  ], [t, i18n.language]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -127,8 +127,8 @@ const Sidebar = () => {
           {!isCollapsed && (
             <div className="animate-in fade-in slide-in-from-left-2 duration-300">
               <h1 className="text-xl font-black text-sidebar-foreground leading-none tracking-tight">FUJI</h1>
-              <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
-                {isMounted ? t("sidebar.subtitle") : "Học Tiếng Nhật"}
+              <p suppressHydrationWarning className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
+                {t("sidebar.subtitle")}
               </p>
             </div>
           )}
@@ -156,12 +156,12 @@ const Sidebar = () => {
                 )} />
 
                 {!isCollapsed && (
-                  <span className={cn(
+                  <span suppressHydrationWarning className={cn(
                       "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
                       active ? "text-white" : "group-hover:text-secondary"
                     )}
                   >
-                    {isMounted ? item.label : ""}
+                    {item.label}
                   </span>
                 )}
 
@@ -245,7 +245,7 @@ const Sidebar = () => {
                   </p>
                 </div>
                 <h3 className="font-bold text-[13px] mb-3 leading-snug tracking-tighter uppercase">
-                  {isMounted ? (t("sidebar.premiumHeading") || "Nâng cấp gói học") : "Nâng cấp gói học"}
+                  {t("sidebar.premiumHeading") || "Nâng cấp gói học"}
                 </h3>
                 <Button
                   size="sm"
@@ -253,7 +253,7 @@ const Sidebar = () => {
                   className="h-8 text-[11px] font-black w-full border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary hover:text-white transition-all active:scale-95 rounded-xl uppercase tracking-widest"
                   onClick={() => setIsPremiumModalOpen(true)}
                 >
-                  {isMounted ? (t("sidebar.viewDetails") || "Xem chi tiết") : "Xem chi tiết"}
+                  {t("sidebar.viewDetails") || "Xem chi tiết"}
                 </Button>
               </div>
             )}

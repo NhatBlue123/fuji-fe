@@ -14,7 +14,11 @@ import {
   usePurchaseCourseMutation,
   useLazyPreviewDiscountQuery,
 } from "@/store/services/courseApi";
-import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
+import type {
+  CourseResponseDTO,
+  LessonResponseDTO,
+  RatingResponseDTO,
+} from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -137,13 +141,16 @@ function LessonItem({
   index,
   courseId,
   canAccessCourse,
+  isAuthenticated,
 }: {
   lesson: LessonResponseDTO;
   index: number;
   courseId: number;
   canAccessCourse: boolean;
+  isAuthenticated: boolean;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const isVideo = lesson.lessonType === "video";
   const canAccessLesson = lesson.isPreview || canAccessCourse;
 
@@ -208,6 +215,18 @@ function LessonItem({
   );
 
   if (!canAccessLesson) {
+    // Chưa đăng nhập → click redirect về login
+    if (!isAuthenticated) {
+      return (
+        <button
+          onClick={() => router.push(`/login?redirect=/course/${courseId}`)}
+          className="w-full p-4 pl-6 md:pl-14 transition-colors flex items-center justify-between group cursor-pointer hover:bg-accent/30"
+        >
+          {lessonContent}
+        </button>
+      );
+    }
+    // Đã đăng nhập nhưng chưa mua → không click được
     return (
       <div className="p-4 pl-6 md:pl-14 transition-colors flex items-center justify-between group cursor-not-allowed opacity-80">
         {lessonContent}
@@ -339,11 +358,13 @@ function CurriculumContent({
   isLoading,
   courseId,
   canAccessCourse,
+  isAuthenticated,
 }: {
   lessons: LessonResponseDTO[];
   isLoading: boolean;
   courseId: number;
   canAccessCourse: boolean;
+  isAuthenticated: boolean;
 }) {
   const { t } = useTranslation();
   const [expandedAll, setExpandedAll] = useState(true);
@@ -445,6 +466,7 @@ function CurriculumContent({
                   index={idx}
                   courseId={courseId}
                   canAccessCourse={canAccessCourse}
+                  isAuthenticated={isAuthenticated}
                 />
               ))
             )}
@@ -802,7 +824,13 @@ function ReviewsContent({
 
 // ─── Main Component ────────────────────────────────────
 
-export default function CourseDetailView({ courseId }: { courseId: number }) {
+export default function CourseDetailView({
+  courseId,
+  initialCourse,
+}: {
+  courseId: number;
+  initialCourse?: CourseResponseDTO;
+}) {
   const { t } = useTranslation();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -828,10 +856,14 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
   const [triggerPreview, { isFetching: isValidating }] = useLazyPreviewDiscountQuery();
 
   const {
-    data: course,
-    isLoading: courseLoading,
-    error: courseError,
+    data: queriedCourse,
+    isLoading: courseQueryLoading,
+    error: courseQueryError,
   } = useGetCourseByIdQuery(courseId);
+
+  const course = queriedCourse ?? initialCourse;
+  const courseLoading = courseQueryLoading && !initialCourse;
+  const courseError = courseQueryError && !initialCourse;
 
   const { data: lessons = [], isLoading: lessonsLoading } =
     useGetLessonsByCourseQuery(courseId);
@@ -1120,6 +1152,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 isLoading={lessonsLoading}
                 courseId={courseId}
                 canAccessCourse={canAccessCourse}
+                isAuthenticated={isAuthenticated}
               />
             )}
             {activeTab === "instructor" && (

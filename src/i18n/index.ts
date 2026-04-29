@@ -19,15 +19,12 @@ const resources = {
 
 const isClient = typeof window !== "undefined";
 
-// Chỉ dùng 1 key thống nhất: 'i18nextLng'
-const LANGUAGE_KEY = "i18nextLng";
-const savedLng = isClient
-  ? (localStorage.getItem(LANGUAGE_KEY) ?? "vi")
-  : "vi";
-
+// Init với "vi" cố định — giống server render.
+// I18nProvider nhận initialLng từ server (cookie) và set đúng ngôn ngữ
+// trước khi React render bất kỳ component nào.
 const initOptions: Parameters<typeof i18n.init>[0] = {
   resources,
-  lng: savedLng,
+  lng: "vi",
   fallbackLng: "vi",
   supportedLngs: ["en", "vi", "ja"],
   load: "languageOnly",
@@ -43,12 +40,8 @@ i18n
   .use(initReactI18next)
   .init(initOptions);
 
-// Persist language choice whenever it changes
-if (isClient) {
-  i18n.on("languageChanged", (lng) => {
-    localStorage.setItem(LANGUAGE_KEY, lng);
-  });
-}
+
+
 
 /**
  * Check if a string looks like a messageKey (e.g., "notification_reminder_1", "auth.loginFail")

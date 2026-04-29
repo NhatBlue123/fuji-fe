@@ -1,4 +1,5 @@
 import AIChatShell from "@/components/user-component/ai/AIChatShell";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 type ResolvedSearchParams = {
   new?: string | string[];
@@ -18,5 +19,9 @@ function isForceNewDraft(searchParams?: ResolvedSearchParams) {
 
 export default async function AIChatPage({ searchParams }: PageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  return <AIChatShell forceNewDraft={isForceNewDraft(resolvedSearchParams)} />;
+  return (
+    <AuthGuard redirectTo="/login?redirect=/ai-chat">
+      <AIChatShell forceNewDraft={isForceNewDraft(resolvedSearchParams)} />
+    </AuthGuard>
+  );
 }

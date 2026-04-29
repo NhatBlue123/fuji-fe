@@ -19,6 +19,10 @@ import {
 import { getMockImage } from "@/lib/mockImages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  buildFlashcardDetailHref,
+  buildFlashListHref,
+} from "@/lib/flashcardSeo";
 
 type OwnershipFilter = "all" | "mine" | "community";
 const PAGE_LIMIT = 20;
@@ -312,7 +316,7 @@ export default function FlashcardsPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {cards.map((fc) => (
-                  <Link key={fc.id} href={`/flashcards/detail/${fc.id}`}>
+                  <Link key={fc.id} href={buildFlashcardDetailHref(fc)}>
                     <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full">
                       <div className="relative h-48 bg-muted overflow-hidden flex items-center justify-center">
                         <div
@@ -392,7 +396,7 @@ export default function FlashcardsPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {lists.map((fl) => (
-                  <Link key={fl.id} href={`/flashcards/sets/${fl.id}`}>
+                  <Link key={fl.id} href={buildFlashListHref(fl)}>
                     <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full cursor-pointer">
                       <div className="relative h-48 bg-muted overflow-hidden flex items-center justify-center">
                         <div

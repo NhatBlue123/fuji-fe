@@ -13,8 +13,9 @@ export const useLanguage = () => {
   const changeLanguage = async (lang: "vi" | "en" | "ja") => {
     i18n.changeLanguage(lang);
     if (typeof window !== "undefined") {
-      // Chỉ set 1 key duy nhất
       localStorage.setItem(LANGUAGE_KEY, lang);
+      // Set cookie để server render đúng ngôn ngữ lần F5 tiếp theo
+      document.cookie = `i18nextLng=${lang};path=/;max-age=31536000;SameSite=Lax`;
 
       // Đồng bộ với backend nếu đã đăng nhập
       const token = getAccessToken();

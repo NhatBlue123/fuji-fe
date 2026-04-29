@@ -4,63 +4,41 @@ import { useEffect, useState } from "react";
 import { LoadingPage } from "./LoadingPage";
 
 /**
- * Component hiển thị loading khi trang đang hydrate (lần đầu load hoặc reload)
- * Không block rendering - chỉ overlay lên trên
- * Tự động ẩn khi React đã hydrate xong và DOM đã sẵn sàng
+ * Che i18n flash (text tiếng Việt → tiếng Nhật/Anh) trong lúc i18n sync từ localStorage.
+ * Theme flash đã được xử lý bằng inline script trong <head>.
  *
- * Logic:
- * - Hiển thị ngay khi component mount (hydration phase)
- * - Ẩn sau khi React đã hydrate xong (sau 2 frame để đảm bảo DOM render)
- * - Timeout tối đa 1 giây để tránh hiển thị quá lâu
+ * Chỉ hiển thị nếu ngôn ngữ stored khác với ngôn ngữ mặc định (vi).
+ * Nếu user dùng tiếng Việt → không hiển thị gì cả.
  */
 export function InitialPageLoader() {
-  const [isHydrating, setIsHydrating] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Chờ React hydrate xong
-    // Sử dụng double requestAnimationFrame để đảm bảo DOM đã render xong
-    const handleHydrationComplete = () => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsHydrating(false);
-        });
-      });
-    };
-
-    // Nếu document đã ready, hydrate ngay
-    if (typeof window !== "undefined" && document.readyState === "complete") {
-      handleHydrationComplete();
-    } else if (typeof window !== "undefined") {
-      // Đợi load event hoặc readyState change
-      const checkReady = () => {
-        if (document.readyState === "complete") {
-          handleHydrationComplete();
-        }
-      };
-
-      window.addEventListener("load", handleHydrationComplete);
-      document.addEventListener("readystatechange", checkReady);
-
-      // Fallback: đợi tối đa 1 giây để tránh hiển thị quá lâu
-      const timeout = setTimeout(() => {
-        setIsHydrating(false);
-      }, 1000);
-
-      return () => {
-        window.removeEventListener("load", handleHydrationComplete);
-        document.removeEventListener("readystatechange", checkReady);
-        clearTimeout(timeout);
-      };
-    } else {
-      // SSR: không hiển thị
-      setIsHydrating(false);
+    // Chỉ hiện nếu ngôn ngữ khác vi (tránh flash không cần thiết)
+    const storedLang = localStorage.getItem("i18nextLng");
+    if (!storedLang || storedLang === "vi") {
+      return;
     }
+
+    // Ngôn ngữ khác vi → cần che trong lúc i18n changeLanguage
+    setVisible(true);
+
+    // i18n đã sync trong I18nProvider render phase → chỉ cần 1 frame
+    const raf = requestAnimationFrame(() => {
+      setVisible(false);
+    });
+
+    return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Chỉ hiển thị khi đang hydrate
-  if (!isHydrating) {
-    return null;
-  }
+  if (!visible) return null;
 
-  return <LoadingPage />;
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        backgroundColor: "var(--background, #0f0f0f)",
+      }}
+    />
+  );
 }

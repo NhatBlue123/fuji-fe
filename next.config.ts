@@ -47,6 +47,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Cache public course API responses for 1 hour (ISR handles revalidation)
+      {
+        source: "/api/public/courses/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
     ];
   },
 

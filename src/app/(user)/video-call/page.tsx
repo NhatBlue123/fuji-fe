@@ -19,6 +19,7 @@ import {
   PhoneOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 type JLPTLevel = "N1" | "N2" | "N3" | "N4" | "N5";
 
@@ -75,7 +76,7 @@ function SearchingDots() {
   );
 }
 
-export default function VideoCallMatchingPage() {
+function VideoCallMatchingContent() {
   const { t } = useTranslation();
   const LEVEL_LABELS: Record<JLPTLevel, string> = {
     N1: t("jlpt.levels.n1_desc"),
@@ -449,5 +450,13 @@ export default function VideoCallMatchingPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function VideoCallMatchingPage() {
+  return (
+    <AuthGuard redirectTo="/login?redirect=/video-call">
+      <VideoCallMatchingContent />
+    </AuthGuard>
   );
 }

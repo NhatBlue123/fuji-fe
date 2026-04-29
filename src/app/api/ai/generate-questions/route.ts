@@ -180,6 +180,12 @@ function buildPrompt(req: GenerateQuestionsRequest): string {
   "explanation": "Vietnamese explanation",
   "passageText": ""
 }`;
+  // IMPORTANT: distribute correct answers evenly across options 1-4.
+  // Avoid clustering correct answers on the same option (especially option 1).
+  // For every 4 questions generated, try to have roughly 1 correct answer per option.
+  // The correctOption value must be a number from 1 to 4.`;
+  const distributionRule = `- IMPORTANT: Distribute correct answers evenly across options 1, 2, 3, and 4.
+  Do NOT always put the correct answer in option 1. For every 4 questions, try to spread correct answers roughly as: 1 correct in option 1, 1 in option 2, 1 in option 3, 1 in option 4.`;
 
   if (section === "READING") {
     const sizeHint = mondaiTitle ? getReadingPassageHint(mondaiTitle) : "appropriate length";
@@ -187,6 +193,7 @@ function buildPrompt(req: GenerateQuestionsRequest): string {
 Task: ${focus}
 - Passage length: ${sizeHint}.
 ${topicLine}
+${distributionRule}
 - Generate EXACTLY ${count} questions from the passage.
 - Japanese for passage/questions/options. Vietnamese for explanations only.
 - JLPT ${level} difficulty.
@@ -199,6 +206,7 @@ ${jsonFormat}`;
     const isReorder = /文の文法②|文章の文法/.test(mondaiTitle || "");
     return `JLPT ${level} test creator. GRAMMAR Mondai ${mondaiNumber}${mondaiTitle ? `: ${mondaiTitle}` : ""}.
 Task: ${focus}
+${distributionRule}
 - Generate EXACTLY ${count} questions. Japanese for questions/options. Vietnamese for explanations.
 - JLPT ${level} difficulty. passageText MUST be "" for all.
 ${topicLine}
@@ -212,6 +220,7 @@ ${jsonFormat}`;
   const vocabFocus = MONDAI_FOCUS[level]?.VOCABULARY?.[mondaiNumber] ?? `JLPT ${level} vocabulary question`;
   return `JLPT ${level} test creator. VOCABULARY Mondai ${mondaiNumber}.
 Focus: ${vocabFocus}
+${distributionRule}
 - Generate EXACTLY ${count} questions. Japanese for questions/options. Vietnamese for explanations.
 - JLPT ${level} difficulty. passageText MUST be "" for all.
 ${topicLine}
@@ -326,10 +335,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "AI không trả về danh sách câu hỏi. Hãy thử lại." }, { status: 500 });
     }
 
-    const sanitized = questions.map((q: any, i: number) => ({
-      ...q,
-      passageText: i === 0 ? (q.passageText || "") : "",
-    }));
+    const sanitized = questions.map((q: any, i: number) => {
+      const rawCorrect = q.correctOption;
+      // Ensure correctOption is always a valid 1-4 integer (default to 1)
+      const correctOption =
+        typeof rawCorrect === "number" && rawCorrect >= 1 && rawCorrect <= 4
+          ? rawCorrect
+          : 1;
+      return {
+        ...q,
+        correctOption,
+        passageText: i === 0 ? (q.passageText || "") : "",
+      };
+    });
 
     // Only cache READING (passages are expensive to generate)
     if (body.section === "READING") {

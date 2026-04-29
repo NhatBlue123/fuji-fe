@@ -120,7 +120,7 @@ export default function ExamSidebar({
                             const isAnswered = answeredSet.has(n);
                             const isFlagged = flaggedQuestions.includes(n);
 
-                            const subLabel = (leafQ as any)?.subLabel ?? String(n);
+                            const subLabel = leafQ.subLabel ?? String(n);
 
                             return (
                               <button

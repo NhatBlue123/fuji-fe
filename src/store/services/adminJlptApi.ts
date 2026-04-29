@@ -4,8 +4,22 @@ import { getAccessToken } from "@/lib/token";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { QuestionReport } from "@/types/jlpt-review";
 
+type AdminBaseQueryArgs =
+  | string
+  | {
+      url: string;
+      method?: string;
+      body?: BodyInit | object | null;
+    };
+
+interface AdminApiError extends Error {
+  status?: number;
+  messageKey?: string;
+  errors?: Record<string, string>;
+}
+
 // Base query with authentication (same as jlptApi)
-const baseQuery = async (args: any) => {
+const baseQuery = async (args: AdminBaseQueryArgs) => {
   const {
     url,
     method = "GET",
@@ -57,10 +71,10 @@ const baseQuery = async (args: any) => {
       // body is not JSON or empty
     }
 
-    const err = new Error(errorText);
-    (err as any).status = response.status;
-    (err as any).messageKey = messageKey;
-    (err as any).errors = errors;
+    const err = new Error(errorText) as AdminApiError;
+    err.status = response.status;
+    err.messageKey = messageKey;
+    err.errors = errors;
     throw err;
   }
 
@@ -105,7 +119,7 @@ export interface CreateQuestionDTO {
   points?: number; // default 1.0
 }
 
-export interface UpdateQuestionDTO extends Partial<CreateQuestionDTO> {}
+export type UpdateQuestionDTO = Partial<CreateQuestionDTO>;
 
 // ============================================================================
 // QUESTION BANK TYPES
@@ -158,7 +172,7 @@ export interface CreateQuestionBankItemDTO {
   tags?: string;
 }
 
-export interface UpdateQuestionBankItemDTO extends Partial<CreateQuestionBankItemDTO> {}
+export type UpdateQuestionBankItemDTO = Partial<CreateQuestionBankItemDTO>;
 
 export interface AttachBankItemToTestDTO {
   bankItemId: number;
@@ -187,6 +201,7 @@ export interface JlptTestAdmin {
   updatedAt: string;
   questions?: JlptQuestionAdmin[];
   mondaiCounts?: Record<number, number>;
+  mondaiChildModes?: Record<number, boolean>;
 }
 
 export interface MediaInfo {
@@ -344,12 +359,16 @@ export const adminJlptApi = createApi({
 
     updateMondaiCounts: builder.mutation<
       JlptTestAdmin,
-      { testId: number; mondaiCounts: Record<number, number> }
+      {
+        testId: number;
+        mondaiCounts: Record<number, number>;
+        mondaiChildModes?: Record<number, boolean>;
+      }
     >({
-      query: ({ testId, mondaiCounts }) => ({
+      query: ({ testId, mondaiCounts, mondaiChildModes }) => ({
         url: `/jlpt-tests/${testId}/mondai-counts`,
         method: "PATCH",
-        body: { mondaiCounts },
+        body: { mondaiCounts, mondaiChildModes },
       }),
       transformResponse: (response: ApiResponse<JlptTestAdmin>) =>
         response.data,

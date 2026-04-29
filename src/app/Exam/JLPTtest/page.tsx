@@ -100,16 +100,17 @@ function JLPTtestPageInner() {
 
     // Priority: 1) localStorage overrides, 2) testData.mondaiCounts (from API/DB), 3) hardcoded defaults
     const countMap: Record<number, number> = {};
+    const childModeMap: Record<number, boolean> = {};
 
     // Step 1: Check localStorage overrides (admin-set counts, most recent)
     try {
       const raw = localStorage.getItem(`jlpt_mondai_config_${testId}`);
       if (raw) {
         const overrides = JSON.parse(raw) as Record<string, { count: number }>;
-        const countMap: Record<number, number> = {};
 
         Object.entries(overrides).forEach(([k, v]) => {
           if (v.count > 0) countMap[Number(k)] = v.count;
+          if ("childMode" in v) childModeMap[Number(k)] = Boolean((v as { childMode?: boolean }).childMode);
         });
       }
     } catch {}
@@ -125,11 +126,27 @@ function JLPTtestPageInner() {
         }
       });
     }
+    const backendChildModes = (testData as unknown as { mondaiChildModes?: Record<string, boolean> })?.mondaiChildModes;
+    if (backendChildModes) {
+      Object.entries(backendChildModes).forEach(([k, v]) => {
+        const n = Number(k);
+        if (childModeMap[n] === undefined) {
+          childModeMap[n] = Boolean(v);
+        }
+      });
+    }
+    testData.questions?.forEach((q) => {
+      if (q.section === "READING" && q.children && q.children.length > 0) {
+        childModeMap[q.mondaiNumber] = true;
+      }
+    });
 
-    if (Object.keys(countMap).length > 0) {
+    if (Object.keys(countMap).length > 0 || Object.keys(childModeMap).length > 0) {
       return rebuildStructureWithCounts(
         testData.level as JLPTLevel,
         countMap,
+        undefined,
+        childModeMap,
       );
     }
 
@@ -141,9 +158,14 @@ function JLPTtestPageInner() {
     const flattened: JlptQuestion[] = [];
     const seenOrders = new Set<number>();
     const mondaiPassageMap = new Map<number, boolean>();
+    const mondaiConfigMap = new Map<number, { start: number; displayStart: number }>();
     examStructure.forEach((section) => {
       section.mondai.forEach((m) => {
         mondaiPassageMap.set(m.number, Boolean(m.requires_passage));
+        mondaiConfigMap.set(m.number, {
+          start: m.start,
+          displayStart: m._displayStart ?? m.start,
+        });
       });
     });
 
@@ -155,18 +177,34 @@ function JLPTtestPageInner() {
       if (!q.children || q.children.length === 0) {
         const opts = parseOptions(q.options);
         if (opts.length > 0 && !seenOrders.has(q.questionOrder)) {
+          const cfg = mondaiConfigMap.get(q.mondaiNumber);
+          const displayOrder = cfg
+            ? cfg.displayStart + Math.max(0, q.questionOrder - cfg.start)
+            : q.questionOrder;
           seenOrders.add(q.questionOrder);
           flattened.push({
             ...q,
             options: opts,
+            subLabel: String(displayOrder),
           });
         }
       } else {
+        const cfg = mondaiConfigMap.get(q.mondaiNumber);
+        const isReadingPassage = mondaiPassageMap.get(q.mondaiNumber) === true;
+        const childrenWithLabels = [...q.children]
+          .sort((a, b) => a.questionOrder - b.questionOrder)
+          .map((child, idx) => ({
+            ...child,
+            subLabel: isReadingPassage
+              ? `${cfg?.displayStart ?? q.questionOrder}.${idx + 1}`
+              : String(child.questionOrder),
+          }));
         const parentQuestion = {
           ...q,
-          isReadingPassage: mondaiPassageMap.get(q.mondaiNumber) === true,
+          children: childrenWithLabels,
+          isReadingPassage,
         };
-        q.children.forEach((child) => {
+        childrenWithLabels.forEach((child) => {
           const opts = parseOptions(child.options);
           if (opts.length > 0 && !seenOrders.has(child.questionOrder)) {
             seenOrders.add(child.questionOrder);

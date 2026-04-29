@@ -11,6 +11,7 @@ import {
   useCreateExamFeedbackMutation,
   useGetJlptAiAssessmentQuery,
   useCreateJlptAiAssessmentMutation,
+  type JlptAiAssessment,
 } from "@/store/services/jlptApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

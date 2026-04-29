@@ -42,6 +42,7 @@ import { renderJlptText } from "@/lib/renderJlptText";
 interface MondaiOverride {
   count: number;
   instruction: string;
+  childMode?: boolean;
 }
 
 const JLPT_MONDAI_DEFAULTS: Record<string, Record<number, { count: number; instruction: string }>> = {
@@ -208,6 +209,7 @@ function SectionSidebar({
 
           {section.mondai.map((mondai) => {
             const actualStart = mondaiActualStarts[mondai.number] ?? mondai.start;
+            const displayStart = mondai._displayStart ?? actualStart;
             // Đối với passage mondai: count = số câu con (_totalCount)
             // Đối với standalone: count = end - start + 1
             const count = mondai.requires_passage 
@@ -249,7 +251,9 @@ function SectionSidebar({
                     const isCurrent = selectedQ === questionOrder;
                     const isSaved = actualQuestions.some(q => q.questionOrder === questionOrder && q.mondaiNumber === mondai.number);
 
-                    const displayLabel = String(questionOrder);
+                    const displayLabel = isPassage
+                      ? `${displayStart}.${slotIndex}`
+                      : String(displayStart + idx);
 
                     return (
                       <button
@@ -455,13 +459,35 @@ export default function AdminExamLayout() {
         merged[Number(k)] = {
           count: v,
           instruction: getMondaiInstruction(Number(k)),
+          childMode: test.mondaiChildModes?.[Number(k)] ?? false,
         };
       });
     } else {
       Object.entries(levelCounts).forEach(([k, v]) => {
-        merged[Number(k)] = { count: v, instruction: getMondaiInstruction(Number(k)) };
+        merged[Number(k)] = {
+          count: v,
+          instruction: getMondaiInstruction(Number(k)),
+          childMode: test.mondaiChildModes?.[Number(k)] ?? false,
+        };
       });
     }
+
+    if (test.mondaiChildModes && Object.keys(test.mondaiChildModes).length > 0) {
+      Object.entries(test.mondaiChildModes).forEach(([k, v]) => {
+        const key = Number(k);
+        if (!merged[key]) merged[key] = { count: levelCounts[key] ?? 1, instruction: getMondaiInstruction(key) };
+        merged[key].childMode = Boolean(v);
+      });
+    }
+
+    test.questions?.forEach((q) => {
+      if (q.section === "READING" && q.children && q.children.length > 0) {
+        const key = q.mondaiNumber;
+        if (!merged[key]) merged[key] = { count: levelCounts[key] ?? q.children.length, instruction: getMondaiInstruction(key) };
+        merged[key].childMode = true;
+        merged[key].count = Math.max(merged[key].count || 0, q.children.length);
+      }
+    });
 
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -470,6 +496,7 @@ export default function AdminExamLayout() {
         Object.entries(stored).forEach(([k, v]) => {
           if (!merged[Number(k)]) merged[Number(k)] = { count: 0, instruction: "" };
           merged[Number(k)].instruction = v.instruction ?? "";
+          merged[Number(k)].childMode = v.childMode ?? merged[Number(k)].childMode ?? false;
           if (v.count > 0) merged[Number(k)].count = v.count;
         });
       }
@@ -477,17 +504,27 @@ export default function AdminExamLayout() {
 
     setMondaiOverrides(merged);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [test?.level, test?.mondaiCounts]);
+  }, [test?.level, test?.mondaiCounts, test?.mondaiChildModes, test?.questions]);
 
-  const updateOverride = useCallback((mondaiNum: number, field: keyof MondaiOverride, value: string | number) => {
+  const updateOverride = useCallback((mondaiNum: number, field: keyof MondaiOverride, value: string | number | boolean) => {
     setMondaiOverrides((prev) => {
       const next = { ...prev, [mondaiNum]: { ...(prev[mondaiNum] ?? { count: 0, instruction: "" }), [field]: value } };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      if ((field === "count" || field === "childMode") && testId) {
+        const counts: Record<number, number> = {};
+        const childModes: Record<number, boolean> = {};
+        Object.entries(next).forEach(([k, v]) => {
+          if (v.count > 0) counts[Number(k)] = v.count;
+          childModes[Number(k)] = Boolean(v.childMode);
+        });
+        updateMondaiCounts({
+          testId,
+          mondaiCounts: counts,
+          mondaiChildModes: childModes,
+        }).catch(console.error);
+      }
       return next;
     });
-    if (field === "count" && testId && (value as number) > 0) {
-      updateMondaiCounts({ testId, mondaiCounts: { [mondaiNum]: value as number } }).catch(console.error);
-    }
   }, [STORAGE_KEY, testId, updateMondaiCounts]);
 
   // ── Form state ────────────────────────────────────────────────────────────
@@ -581,6 +618,12 @@ export default function AdminExamLayout() {
     return map;
   }, [mondaiOverrides]);
 
+  const mondaiChildModes = useMemo<Record<number, boolean>>(() => {
+    const map: Record<number, boolean> = {};
+    Object.entries(mondaiOverrides).forEach(([k, v]) => { map[Number(k)] = Boolean(v.childMode); });
+    return map;
+  }, [mondaiOverrides]);
+
   const structure = useMemo<SectionConfig[]>(() => {
     if (!test?.level) return [];
 
@@ -589,8 +632,8 @@ export default function AdminExamLayout() {
 
     // Always rebuild so slot positions are consistent between admin and exam.
     // rebuildStructureWithCounts handles the zero-count case correctly (uses hardcoded defaults).
-    return rebuildStructureWithCounts(test.level as JLPTLevel, mondaiCounts, filtered);
-  }, [test?.level, test?.testType, mondaiCounts]);
+    return rebuildStructureWithCounts(test.level as JLPTLevel, mondaiCounts, filtered, mondaiChildModes);
+  }, [test?.level, test?.testType, mondaiCounts, mondaiChildModes]);
 
   const questionsMap = useMemo<QuestionsMap>(() => {
     if (!test?.questions) return {};
@@ -603,31 +646,28 @@ export default function AdminExamLayout() {
     if (!test?.questions) return map;
     test.questions.forEach((q) => {
       map.set(q.questionOrder, q.mondaiNumber);
+      q.children?.forEach((child) => {
+        map.set(child.questionOrder, child.mondaiNumber);
+      });
     });
     return map;
   }, [test?.questions]);
 
   // ── Map from slotIndex → questionOrder for passage mondai children ───────────
   // Built from test.questions by iterating children, sorting by questionOrder within parent, mapping position
-  const slotIndexToQuestionOrder = useMemo<Map<number, number>>(() => {
-    const map = new Map<number, number>();
+  const slotIndexToQuestionOrder = useMemo<Map<string, number>>(() => {
+    const map = new Map<string, number>();
     if (!test?.questions) return map;
 
-    test.questions.forEach((q) => {
-      if (q.parentId != null) {
-        const node = questionsMap[q.mondaiNumber];
-        const parent = node?.parent;
-        if (parent) {
-          const siblings = (node?.children ? Object.values(node.children) : [])
-            .filter((c) => c.parentId === parent.id)
-            .sort((a, b) => a.questionOrder - b.questionOrder);
-          const slotIdx = siblings.findIndex((s) => s.id === q.id) + 1;
-          if (slotIdx > 0) map.set(slotIdx, q.questionOrder);
-        }
-      }
+    test.questions.forEach((parent) => {
+      const siblings = [...(parent.children ?? [])]
+        .sort((a, b) => a.questionOrder - b.questionOrder);
+      siblings.forEach((child, idx) => {
+        map.set(`${parent.mondaiNumber}:${idx + 1}`, child.questionOrder);
+      });
     });
     return map;
-  }, [test?.questions, questionsMap]);
+  }, [test?.questions]);
 
   // ── Cumulative offset (display counter start) for each passage mondai ────────
   // mondaiNumber → display counter at which this passage's FIRST slot starts (1-based)
@@ -721,7 +761,7 @@ export default function AdminExamLayout() {
 
     let existingChild: JlptQuestionAdmin | null = null;
     if (found.mondai.requires_passage && slotIdx != null) {
-      const qOrder = slotIndexToQuestionOrder.get(slotIdx);
+      const qOrder = slotIndexToQuestionOrder.get(`${found.mondai.number}:${slotIdx}`);
       if (qOrder != null) {
         existingChild = node?.children[qOrder] ?? null;
       }
@@ -804,9 +844,9 @@ export default function AdminExamLayout() {
       const node = questionsMap[found.mondai.number];
       const isPassage = found.mondai.requires_passage;
       let child: JlptQuestionAdmin | null = null;
-      let parent: JlptQuestionAdmin | null = node?.parent ?? null;
+      const parent: JlptQuestionAdmin | null = node?.parent ?? null;
       if (isPassage && effectiveSlot != null) {
-        const qOrder = slotIndexToQuestionOrder.get(effectiveSlot);
+        const qOrder = slotIndexToQuestionOrder.get(`${found.mondai.number}:${effectiveSlot}`);
         if (qOrder != null) child = node?.children[qOrder] ?? null;
       } else {
         child = node?.children[n] ?? null;
@@ -850,10 +890,10 @@ export default function AdminExamLayout() {
     const isPassage = mondaiConfig?.requires_passage ?? false;
 
     let child: JlptQuestionAdmin | null = null;
-    let parent: JlptQuestionAdmin | null = node?.parent ?? null;
+    const parent: JlptQuestionAdmin | null = node?.parent ?? null;
 
     if (isPassage && effectiveSlotIdx != null) {
-      const qOrder = slotIndexToQuestionOrder.get(effectiveSlotIdx);
+      const qOrder = slotIndexToQuestionOrder.get(`${mondaiNum}:${effectiveSlotIdx}`);
       if (qOrder != null) child = node?.children[qOrder] ?? null;
     } else {
       child = node?.children[n] ?? null;
@@ -879,7 +919,7 @@ export default function AdminExamLayout() {
     setAudioMediaId(child?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
     setAudioPreviewUrl(child?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
     setImageMediaId(child?.imageMedia?.id ?? null);
-  }, [findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai]);
+  }, [findMondaiInStructure, questionsMap, slotIndexToQuestionOrder, selectedSlotPerMondai, structure]);
 
   // ── Populate form from derived (question data) whenever reloadCounter changes ──
   // This ensures form always reads fresh data after refetch, even when handleSelectQuestion
@@ -1110,8 +1150,13 @@ export default function AdminExamLayout() {
   // ── Human-readable label for selected question ─────────────────────────────
   const selectedSubLabel = useMemo(() => {
     if (!selectedQuestionNumber) return "";
-    return String(selectedQuestionNumber);
-  }, [selectedQuestionNumber]);
+    if (!derived) return String(selectedQuestionNumber);
+    const displayStart = derived.mondai._displayStart ?? derived.mondai.start;
+    if (derived.mondai.requires_passage && derived.slotIdx != null) {
+      return `${displayStart}.${derived.slotIdx}`;
+    }
+    return String(displayStart + Math.max(0, selectedQuestionNumber - derived.mondai.start));
+  }, [derived, selectedQuestionNumber]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -1188,6 +1233,7 @@ export default function AdminExamLayout() {
               <div className="grid gap-4">
                 {section.mondai.map((mondai) => {
                   const ov = mondaiOverrides[mondai.number];
+                  const canCreateChildren = isReadingMondaiFn(mondai);
                   const defaultCount = (JLPT_STRUCTURE[test.level as JLPTLevel] ?? [])
                     .flatMap((s) => s.mondai)
                     .find((m) => m.number === mondai.number);
@@ -1201,9 +1247,9 @@ export default function AdminExamLayout() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-[120px_1fr] gap-4 items-start">
+                      <div className="grid grid-cols-[180px_1fr] gap-4 items-start">
                         <div className="space-y-1">
-                          <Label className="text-xs">Số câu hỏi</Label>
+                          <Label className="text-xs">{ov?.childMode ? "Số câu con" : "Số câu hỏi"}</Label>
                           <Input
                             type="number"
                             min={1}
@@ -1213,6 +1259,22 @@ export default function AdminExamLayout() {
                             onChange={(e) => updateOverride(mondai.number, "count", Number(e.target.value) || 0)}
                             className="h-8 text-sm"
                           />
+                          {canCreateChildren && (
+                            <label className="flex items-center gap-2 pt-2 text-xs text-muted-foreground cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(ov?.childMode)}
+                                onChange={(e) => updateOverride(mondai.number, "childMode", e.target.checked)}
+                                className="h-4 w-4 rounded border-border"
+                              />
+                              Tạo câu con
+                            </label>
+                          )}
+                          {canCreateChildren && ov?.childMode && (
+                            <p className="text-[10px] text-muted-foreground">
+                              VD: {mondai._displayStart ?? mondai.start}.1, {mondai._displayStart ?? mondai.start}.2...
+                            </p>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -1311,7 +1373,7 @@ export default function AdminExamLayout() {
                         if (section.sectionKeys.includes("LISTENING")) return "LISTENING";
                         if (section.sectionKeys.includes("VOCABULARY")) return "VOCABULARY";
                         if (section.sectionKeys.includes("GRAMMAR") && section.sectionKeys.includes("READING")) {
-                          return isReadingStandaloneAI ? "READING" : "GRAMMAR";
+                          return (isReadingStandaloneAI || isPassage) ? "READING" : "GRAMMAR";
                         }
                         if (section.sectionKeys.includes("GRAMMAR")) return "GRAMMAR";
                         return section.sectionKeys[0] as SectionKey;
@@ -1366,7 +1428,7 @@ export default function AdminExamLayout() {
                         // If firstQ has NO passageText (passage not saved), questions[0] IS the first child.
                         const hasSavedPassage = firstQ?.passageText;
                         const childStart = hasSavedPassage ? 1 : 0;
-                        let currentQNum = mondaiStart + 1;
+                        let currentQNum = mondaiStart;
 
                         for (let i = childStart; i < questions.length; i++) {
                           const q = questions[i];
@@ -1509,7 +1571,7 @@ export default function AdminExamLayout() {
                         }
                       }
 
-                      const finalQNum = isPassage ? mondaiStart + 1 : (savedCount > 0 ? startFrom + savedCount - 1 : startFrom);
+                      const finalQNum = isPassage ? mondaiStart : (savedCount > 0 ? startFrom + savedCount - 1 : startFrom);
                       const savedFinalQNum = finalQNum;
 
                       if (failedCount === 0) {

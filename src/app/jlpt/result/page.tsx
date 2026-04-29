@@ -4,9 +4,13 @@ export const dynamic = "force-dynamic";
 
 import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   useGetAttemptByIdQuery,
   useCreateExamFeedbackMutation,
+  useGetJlptAiAssessmentQuery,
+  useCreateJlptAiAssessmentMutation,
 } from "@/store/services/jlptApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +38,7 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
+  BotMessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -53,6 +58,50 @@ function JLPTResultPageInner() {
     useCreateExamFeedbackMutation();
   const [examFeedback, setExamFeedback] = React.useState("");
   const [feedbackOpen, setFeedbackOpen] = React.useState(false);
+
+  // ── AI Assessment ─────────────────────────────────────────────────────────────
+  const attemptIdNum = attemptId ? Number(attemptId) : 0;
+
+  const {
+    data: assessment,
+    isLoading: isGetLoading,
+    error: getError,
+  } = useGetJlptAiAssessmentQuery(attemptIdNum, {
+    skip: !attemptIdNum,
+  });
+
+  const [triggerAssessment, { data: mutateResult, isLoading: isMutationLoading, error: generateError }] =
+    useCreateJlptAiAssessmentMutation();
+
+  // Local state mirrors the assessment data.
+  // Updated either from the GET query cache or from the POST mutation result.
+  const [assessmentData, setAssessmentData] = React.useState<JlptAiAssessment | null>(null);
+
+  // Sync from GET query
+  React.useEffect(() => {
+    if (assessment) setAssessmentData(assessment);
+  }, [assessment]);
+
+  // Sync from POST mutation result (fires when invalidatesTags causes refetch to succeed)
+  React.useEffect(() => {
+    if (mutateResult) setAssessmentData(mutateResult);
+  }, [mutateResult]);
+
+  // Trigger POST only when GET returns 404
+  React.useEffect(() => {
+    if (!attemptIdNum || isGetLoading) return;
+    if (assessment || assessmentData) return; // already have it
+    if (getError && (getError as { status?: number }).status === 404) {
+      triggerAssessment(attemptIdNum).catch(() => {});
+    }
+  }, [attemptIdNum, isGetLoading, assessment, assessmentData, getError, triggerAssessment]);
+
+  // Loading: GET in flight, or POST triggered and not yet reflected in query cache
+  const isAiLoading = isGetLoading || (isMutationLoading && !mutateResult);
+  // Error: non-404 GET failure, or POST/generation failure (only if we have no data)
+  const aiError = (!assessmentData && !mutateResult)
+    ? ((getError && (getError as { status?: number }).status !== 404) ? getError : generateError)
+    : null;
 
   if (isLoading) {
     return (
@@ -426,6 +475,74 @@ function JLPTResultPageInner() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Assessment Card */}
+        <Card className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-slate-700/50 backdrop-blur-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b border-slate-700/40">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500/20 to-violet-500/20 border border-pink-500/30 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-pink-400" />
+              </div>
+              Sensei đánh giá bài làm
+              {assessmentData && assessmentData.modelVersion && (
+                <Badge variant="outline" className="text-xs border-slate-600 text-slate-400 ml-2">
+                  {assessmentData.modelVersion}
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isAiLoading ? (
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full border-2 border-pink-400/30 border-t-pink-400 animate-spin" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-200 font-medium">Sensei đang phân tích bài làm...</p>
+                    <p className="text-xs text-slate-500">Vui lòng chờ trong giây lát</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {[100, 80, 65, 45].map((w, i) => (
+                    <div key={i} className="h-3 bg-slate-700/50 rounded-full animate-pulse" style={{ width: `${w}%` }} />
+                  ))}
+                </div>
+              </div>
+            ) : aiError ? (
+              <div className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border border-slate-700 mb-3">
+                  <BotMessageSquare className="w-5 h-5 text-slate-500" />
+                </div>
+                <p className="text-sm text-slate-400">
+                  Chưa thể tạo đánh giá AI lúc này
+                </p>
+                <p className="text-xs text-slate-600 mt-1">
+                  Kết quả thi và gợi ý học tập vẫn hiển thị bình thường.
+                </p>
+              </div>
+            ) : assessmentData ? (
+              <div className="p-6">
+                {assessmentData.generatedAt && (
+                  <p className="text-xs text-slate-600 mb-4">
+                    Đánh giá lúc {new Date(assessmentData.generatedAt).toLocaleString("vi-VN")}
+                  </p>
+                )}
+                <div className="prose prose-invert prose-sm max-w-none
+                  prose-headings:text-slate-100 prose-p:text-slate-300
+                  prose-strong:text-slate-100 prose-strong:font-semibold
+                  prose-ul:text-slate-300 prose-li:text-slate-300
+                  prose-a:text-pink-400 prose-a:no-underline hover:prose-a:underline
+                  prose-blockquote:border-pink-400/50 prose-blockquote:text-slate-400
+                  prose-code:text-pink-300 prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-['']">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {assessmentData.markdown}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 

@@ -300,7 +300,7 @@ export const adminJlptApi = createApi({
     }),
 
     getTestById: builder.query<JlptTestAdmin, number>({
-      query: (id) => `/jlpt-tests/${id}`,
+      query: (id) => `/jlpt-tests/${id}/with-answers`,
       transformResponse: (response: ApiResponse<JlptTestAdmin>) =>
         response.data,
       providesTags: (result, error, id) => [{ type: "AdminTest", id }],

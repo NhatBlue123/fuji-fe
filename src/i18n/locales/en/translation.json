@@ -1439,7 +1439,9 @@
     "errorEnd": "Error ending lesson.",
     "confirm": {
       "endTeacher": "Are you sure you want to end this lesson? It will be marked as completed.",
-      "leaveStudent": "Are you sure you want to leave? The lesson can continue if there is remaining time."
+      "leaveStudent": "Are you sure you want to leave? The lesson can continue if there is remaining time.",
+      "leaveTitle": "Confirm leaving class",
+      "leaveConfirm": "Leave"
     },
     "report": {
       "student": "Evaluate Student",

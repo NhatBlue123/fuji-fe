@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDailyRoom } from "@/hooks/useDailyRoom";
 import { useStompChat } from "@/hooks/useStompChat";
+import { useMeetingSummary } from "@/hooks/useMeetingSummary";
 import {
   useCreateLessonRoomMutation,
   useEndLessonMutation,
@@ -24,11 +25,24 @@ import { VideoGrid } from "@/components/lesson/VideoGrid";
 import { ControlBar } from "@/components/lesson/ControlBar";
 import { LessonHeader } from "@/components/lesson/LessonHeader";
 import { SidePanel } from "@/components/lesson/SidePanel";
+import { AiSummarySettingsModal } from "@/components/meeting-summary/AiSummarySettingsModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Settings } from "lucide-react";
 import { disconnectStomp } from "@/lib/stomp";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 
 export default function LessonPage() {
   const params = useParams<{ bookingId: string }>();
@@ -46,8 +60,18 @@ export default function LessonPage() {
   const [markActive] = useMarkLessonActiveMutation();
   const autoEndedRef = useRef(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [reportRating, setReportRating] = useState(5);
   const [reportComment, setReportComment] = useState("");
+  const [aiSummarySettingsOpen, setAiSummarySettingsOpen] = useState(false);
+
+  // AI Summary hook
+  const meetingSummary = useMeetingSummary();
+
+  // Load AI summary settings on mount
+  useEffect(() => {
+    meetingSummary.loadSettings();
+  }, []);
 
   const role: "TEACHER" | "STUDENT" = useMemo(() => {
     if (!lessonData || !user) return "STUDENT";
@@ -163,20 +187,12 @@ export default function LessonPage() {
 
   const handleEndCall = useCallback(async () => {
     if (role === "TEACHER") {
-      const confirmed = window.confirm(
-        t("lesson.confirm.endTeacher")
-      );
-      if (!confirmed) return;
       setReportOpen(true);
       return;
     }
 
-    const confirmedLeave = window.confirm(
-      t("lesson.confirm.leaveStudent")
-    );
-    if (!confirmedLeave) return;
-    exitLesson();
-  }, [role, exitLesson]);
+    setLeaveConfirmOpen(true);
+  }, [role]);
 
   const handleToggleScreenShare = useCallback(() => {
     if (isScreenSharing) {
@@ -299,6 +315,24 @@ export default function LessonPage() {
         </div>
       )}
 
+      {/* Leave Confirmation Dialog for Students */}
+      <AlertDialog open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("lesson.confirm.leaveTitle") || "Xác nhận rời lớp học"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("lesson.confirm.leaveStudent") || "Bạn có chắc chắn muốn rời lớp học không?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel") || "Hủy"}</AlertDialogCancel>
+            <AlertDialogAction onClick={exitLesson}>
+              {t("lesson.confirm.leaveConfirm") || "Rời lớp"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <LessonHeader
         subject={lessonData.subject}
@@ -308,6 +342,7 @@ export default function LessonPage() {
         isConnected={isJoined && participants.filter((p) => !p.local).length > 0}
         role={role}
         onTimeUp={handleLessonTimeUp}
+        onSettingsClick={() => setAiSummarySettingsOpen(true)}
       />
 
       {/* Main content area */}
@@ -358,6 +393,17 @@ export default function LessonPage() {
         onToggleScreenShare={handleToggleScreenShare}
         onEndCall={handleEndCall}
         isTeacher={role === "TEACHER"}
+      />
+
+      {/* AI Summary Settings Modal */}
+      <AiSummarySettingsModal
+        isOpen={aiSummarySettingsOpen}
+        onClose={() => setAiSummarySettingsOpen(false)}
+        enabled={meetingSummary.settings.enabled}
+        language={meetingSummary.settings.language}
+        onToggle={meetingSummary.toggleAiSummary}
+        onLanguageChange={meetingSummary.setAiSummaryLanguage}
+        isLoading={meetingSummary.isLoading}
       />
     </div>
   );

@@ -14,6 +14,7 @@ import { getMockImage } from "@/lib/mockImages";
 import { useFlashcardPipeline } from "@/hooks/useFlashcardPipeline";
 import { resolveImage, searchImages } from "@/lib/flashcard-pipeline";
 import TermPreviewList from "@/components/user-component/flashcard/TermPreviewList";
+import { buildFlashcardDetailHref } from "@/lib/flashcardSeo";
 
 interface CardEdit {
   id?: number;
@@ -103,6 +104,9 @@ export default function FlashcardSettings({
   const { data: flashcard, isLoading } = useGetFlashCardByIdQuery(id);
   const [updateFlashCard] = useUpdateFlashCardMutation();
   const [addCardToFlashCard] = useAddCardToFlashCardMutation();
+  const detailHref = flashcard
+    ? buildFlashcardDetailHref(flashcard)
+    : `/flashcards/detail/${id}`;
 
   const [activeTab, setActiveTab] = useState<TabType>("info");
   const [addMode, setAddMode] = useState<AddModeType>("single");
@@ -412,7 +416,7 @@ export default function FlashcardSettings({
       if (onClose) {
         onClose();
       } else {
-        router.push(`/flashcards/detail/${id}`);
+        router.push(detailHref);
       }
     } catch (error) {
       console.error("Failed to save:", error);
@@ -458,7 +462,7 @@ export default function FlashcardSettings({
                 </button>
               ) : (
                 <Link
-                  href={`/flashcards/detail/${id}`}
+                  href={detailHref}
                   className="flex items-center justify-center size-10 rounded-full bg-muted hover:bg-card text-muted-foreground hover:text-foreground transition-all border border-border"
                 >
                   <span className="material-symbols-outlined text-xl">
@@ -486,7 +490,7 @@ export default function FlashcardSettings({
                 </button>
               ) : (
                 <Link
-                  href={`/flashcards/detail/${id}`}
+                  href={detailHref}
                   className="px-4 py-2 rounded-lg bg-muted hover:bg-card border border-border text-foreground font-medium transition-colors"
                 >
                   Hủy

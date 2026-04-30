@@ -13,8 +13,13 @@ import {
   useGetAllCoursesQuery,
   usePurchaseCourseMutation,
   useLazyPreviewDiscountQuery,
+  useDeleteCourseRatingMutation,
 } from "@/store/services/courseApi";
-import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
+import type {
+  CourseResponseDTO,
+  LessonResponseDTO,
+  RatingResponseDTO,
+} from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -22,6 +27,8 @@ import { useAuth, useAppDispatch } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
+import { ReviewForm } from "./ReviewForm";
+import { LikeButton } from "./LikeButton";
 
 // ─── Helpers ───────────────────────────────────────────
 
@@ -137,13 +144,16 @@ function LessonItem({
   index,
   courseId,
   canAccessCourse,
+  isAuthenticated,
 }: {
   lesson: LessonResponseDTO;
   index: number;
   courseId: number;
   canAccessCourse: boolean;
+  isAuthenticated: boolean;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const isVideo = lesson.lessonType === "video";
   const canAccessLesson = lesson.isPreview || canAccessCourse;
 
@@ -208,6 +218,18 @@ function LessonItem({
   );
 
   if (!canAccessLesson) {
+    // Chưa đăng nhập → click redirect về login
+    if (!isAuthenticated) {
+      return (
+        <button
+          onClick={() => router.push(`/login?redirect=/course/${courseId}`)}
+          className="w-full p-4 pl-6 md:pl-14 transition-colors flex items-center justify-between group cursor-pointer hover:bg-accent/30"
+        >
+          {lessonContent}
+        </button>
+      );
+    }
+    // Đã đăng nhập nhưng chưa mua → không click được
     return (
       <div className="p-4 pl-6 md:pl-14 transition-colors flex items-center justify-between group cursor-not-allowed opacity-80">
         {lessonContent}
@@ -236,9 +258,26 @@ const AVATAR_COLORS = [
   "bg-violet-600 border-violet-400",
 ];
 
-function ReviewCard({ review }: { review: RatingResponseDTO }) {
+function ReviewCard({
+  review,
+  courseId,
+  currentUserId,
+  isAuthenticated,
+  onEdit,
+  onDelete,
+  isDeleting,
+}: {
+  review: RatingResponseDTO;
+  courseId: number;
+  currentUserId?: number;
+  isAuthenticated: boolean;
+  onEdit: (review: RatingResponseDTO) => void;
+  onDelete: (review: RatingResponseDTO) => void;
+  isDeleting?: boolean;
+}) {
   const { t } = useTranslation();
   const colorClass = AVATAR_COLORS[review.user.id % AVATAR_COLORS.length];
+  const isOwnReview = isAuthenticated && currentUserId === review.user.id;
 
   return (
     <div className="bg-card/30 rounded-2xl p-6 border border-border hover:border-muted-foreground/30 transition-colors">
@@ -266,16 +305,39 @@ function ReviewCard({ review }: { review: RatingResponseDTO }) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-start mb-1">
+          <div className="flex justify-between items-start gap-3 mb-1">
             <div>
               <h4 className="font-bold text-foreground text-sm">
                 {review.user.fullName}
               </h4>
               <span className="text-xs text-secondary bg-secondary/10 px-2 py-0.5 rounded-full mt-1 inline-block border border-secondary/20">{t('auto.courseDetail_5')}</span>
             </div>
-            <span className="text-xs text-muted-foreground flex-shrink-0">
-              {timeAgo(review.createdAt)}
-            </span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {isOwnReview && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(review)}
+                    className="size-8 rounded-lg border border-border bg-background/60 text-muted-foreground hover:text-foreground hover:border-secondary/50 transition-colors flex items-center justify-center"
+                    title={t("auto.courseDetail_49")}
+                  >
+                    <span className="material-symbols-outlined text-base">edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(review)}
+                    disabled={isDeleting}
+                    className="size-8 rounded-lg border border-border bg-background/60 text-muted-foreground hover:text-red-500 hover:border-red-500/50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    title={t("auto.courseDetail_51")}
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {timeAgo(review.createdAt)}
+              </span>
+            </div>
           </div>
           <div className="flex text-yellow-500 text-sm mb-3 mt-1">
             {renderStars(review.rating)}
@@ -285,6 +347,15 @@ function ReviewCard({ review }: { review: RatingResponseDTO }) {
               {review.review}
             </p>
           )}
+          <div className="mt-4 pt-4 border-t border-border/60">
+            <LikeButton
+              courseId={courseId}
+              ratingId={review.id}
+              initialLikeCount={review.likeCount ?? 0}
+              initialIsLiked={Boolean(review.isLikedByUser)}
+              disabled={!isAuthenticated}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -339,11 +410,13 @@ function CurriculumContent({
   isLoading,
   courseId,
   canAccessCourse,
+  isAuthenticated,
 }: {
   lessons: LessonResponseDTO[];
   isLoading: boolean;
   courseId: number;
   canAccessCourse: boolean;
+  isAuthenticated: boolean;
 }) {
   const { t } = useTranslation();
   const [expandedAll, setExpandedAll] = useState(true);
@@ -445,6 +518,7 @@ function CurriculumContent({
                   index={idx}
                   courseId={courseId}
                   canAccessCourse={canAccessCourse}
+                  isAuthenticated={isAuthenticated}
                 />
               ))
             )}
@@ -550,7 +624,7 @@ function InstructorContent({
                   <span className="material-symbols-outlined text-sm text-yellow-500 filled">
                     school
                   </span>{" "}
-                  Giảng viên chuyên nghiệp
+                  {t("auto.courseDetail_41")} chuyên nghiệp
                 </span>
                 <span className="bg-muted/80 border border-border hover:border-muted-foreground/30 transition-colors text-muted-foreground text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 cursor-default">
                   <span className="material-symbols-outlined text-sm text-blue-400 filled">
@@ -677,7 +751,13 @@ function ReviewsContent({
 }) {
   const { t } = useTranslation();
   const { data: reviews, isLoading } = useGetCourseRatingsQuery(courseId);
+  const { user, isAuthenticated } = useAuth();
+  const [deleteReview, { isLoading: isDeleting }] = useDeleteCourseRatingMutation();
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const currentUserId = typeof user?.id === "number" ? user.id : undefined;
+  const myReview = reviews?.find((review) => review.user.id === currentUserId);
+  const canWriteReview = isAuthenticated && !myReview;
 
   // Calculate rating distribution from reviews
   const distribution = [0, 0, 0, 0, 0]; // index 0..4 → 1-star..5-star
@@ -701,6 +781,22 @@ function ReviewsContent({
         );
       })
     : [];
+
+  const handleDeleteReview = async (review: RatingResponseDTO) => {
+    if (!window.confirm(t("auto.courseDetail_51") + "?")) {
+      return;
+    }
+
+    try {
+      await deleteReview({ courseId, ratingId: review.id }).unwrap();
+      toast.success(t("auto.courseDetail_51"));
+      if (editingReviewId === review.id) {
+        setEditingReviewId(null);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || t("auto.courseDetail_51"));
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -757,6 +853,17 @@ function ReviewsContent({
         </div>
       </section>
 
+      {canWriteReview && (
+        <ReviewForm courseId={courseId} />
+      )}
+
+      {!isAuthenticated && (
+        <div className="rounded-2xl border border-border bg-card/40 p-5 text-sm text-muted-foreground flex items-center gap-3">
+          <span className="material-symbols-outlined text-secondary">lock</span>
+          {t("auto.courseDetail_43")} hoặc {t("auto.courseDetail_42")} của học viên khác.
+        </div>
+      )}
+
       {/* ── Comment list ── */}
       <section className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -786,7 +893,30 @@ function ReviewsContent({
         ) : (
           <div className="space-y-4">
             {sortedReviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
+              editingReviewId === review.id ? (
+                <ReviewForm
+                  key={review.id}
+                  courseId={courseId}
+                  existingReview={{
+                    id: review.id,
+                    rating: review.rating,
+                    review: review.review,
+                  }}
+                  onSuccess={() => setEditingReviewId(null)}
+                  onCancel={() => setEditingReviewId(null)}
+                />
+              ) : (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  courseId={courseId}
+                  currentUserId={currentUserId}
+                  isAuthenticated={isAuthenticated}
+                  onEdit={(item) => setEditingReviewId(item.id)}
+                  onDelete={handleDeleteReview}
+                  isDeleting={isDeleting}
+                />
+              )
             ))}
           </div>
         )}
@@ -802,7 +932,13 @@ function ReviewsContent({
 
 // ─── Main Component ────────────────────────────────────
 
-export default function CourseDetailView({ courseId }: { courseId: number }) {
+export default function CourseDetailView({
+  courseId,
+  initialCourse,
+}: {
+  courseId: number;
+  initialCourse?: CourseResponseDTO;
+}) {
   const { t } = useTranslation();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -828,10 +964,14 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
   const [triggerPreview, { isFetching: isValidating }] = useLazyPreviewDiscountQuery();
 
   const {
-    data: course,
-    isLoading: courseLoading,
-    error: courseError,
+    data: queriedCourse,
+    isLoading: courseQueryLoading,
+    error: courseQueryError,
   } = useGetCourseByIdQuery(courseId);
+
+  const course = queriedCourse ?? initialCourse;
+  const courseLoading = courseQueryLoading && !initialCourse;
+  const courseError = courseQueryError && !initialCourse;
 
   const { data: lessons = [], isLoading: lessonsLoading } =
     useGetLessonsByCourseQuery(courseId);
@@ -883,7 +1023,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
         toast.error(result.message || "Mã không hợp lệ");
       }
     } catch {
-      toast.error("Không thể kiểm tra mã giảm giá");
+      toast.error(t("auto.courseDetail_93"));
     }
   };
 
@@ -922,10 +1062,23 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
   const resumeLessonHref = resumeLessonId
     ? `/course/${courseId}/lesson/${resumeLessonId}`
     : "#";
+  const hasLessons = lessons.length > 0;
+  const accessCourseLabel =
+    course.currentLessonId || completedLessons > 0 ? "Tiếp tục học" : "Bắt đầu học";
+  const purchaseButtonLabel = isFreePrice(course.price)
+    ? "Đăng ký miễn phí"
+    : appliedCoupon?.valid
+      ? "Mua với giá ưu đãi"
+      : "Mua khóa học";
+  const purchaseButtonIcon = isFreePrice(course.price)
+    ? "how_to_reg"
+    : appliedCoupon?.valid
+      ? "sell"
+      : "shopping_cart";
 
   const handlePurchaseCourse = async () => {
     if (!isAuthenticated) {
-      toast.error(tMsg("common.pleaseLogin"));
+      toast.info("Vui lòng đăng nhập để tiếp tục.");
       router.push("/login");
       return;
     }
@@ -1044,7 +1197,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
           {/* CTA */}
           <div className="flex-shrink-0">
-            {lessons.length > 0 ? (
+            {hasLessons ? (
               canAccessCourse ? (
                 <Link
                   href={resumeLessonHref}
@@ -1053,18 +1206,25 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                   <span className="material-symbols-outlined filled">
                     play_circle
                   </span>
-                  {course.currentLessonId ? "Tiếp tục học" : "Bắt đầu học ngay"}
+                  {accessCourseLabel}
                 </Link>
               ) : (
                 <button
                   onClick={() => {
+                    if (!isAuthenticated) {
+                      toast.info("Vui lòng đăng nhập để tiếp tục.");
+                      router.push("/login");
+                      return;
+                    }
                     document
                       .getElementById("course-purchase-card")
                       ?.scrollIntoView({ behavior: "smooth", block: "center" });
                   }}
                   className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-4 px-8 rounded-xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
                 >
-                  <span className="material-symbols-outlined filled">sell</span>{t('auto.courseDetail_28')}</button>
+                  <span className="material-symbols-outlined filled">{purchaseButtonIcon}</span>
+                  {purchaseButtonLabel}
+                </button>
               )
             ) : (
               <button
@@ -1073,7 +1233,9 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
               >
                 <span className="material-symbols-outlined filled">
                   play_circle
-                </span>{t('auto.courseDetail_29')}</button>
+                </span>
+                Chưa có bài học
+              </button>
             )}
           </div>
         </div>
@@ -1120,6 +1282,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 isLoading={lessonsLoading}
                 courseId={courseId}
                 canAccessCourse={canAccessCourse}
+                isAuthenticated={isAuthenticated}
               />
             )}
             {activeTab === "instructor" && (
@@ -1171,7 +1334,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                     <div className="space-y-0.5">
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                          {appliedCoupon.finalPrice === 0 ? "Miễn phí" : `${appliedCoupon.finalPrice} 🌸`}
+                          {appliedCoupon.finalPrice === 0 ? t("auto.courseDetail_88") : `${appliedCoupon.finalPrice} 🌸`}
                         </span>
                         <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                           {appliedCoupon.discountType === "FIXED_AMOUNT"
@@ -1190,17 +1353,27 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
                 {/* Buttons */}
                 {!canAccessCourse ? (
-                  <Button
-                    onClick={handlePurchaseCourse}
-                    disabled={isPurchasing}
-                    className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base"
-                  >
-                    {isPurchasing
-                      ? "Đang xử lý..."
-                      : isFreePrice(course.price)
-                        ? t("course.detail.registerFree")
-                        : "Mua ngay"}
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handlePurchaseCourse}
+                      disabled={isPurchasing}
+                      className="w-full py-3.5 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all shadow-lg shadow-secondary/20 mb-3 text-base"
+                    >
+                      {isPurchasing ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          Đang xử lý
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="material-symbols-outlined text-xl">
+                            {purchaseButtonIcon}
+                          </span>
+                          {purchaseButtonLabel}
+                        </span>
+                      )}
+                    </Button>
+                  </>
                 ) : (
                   <Link href={resumeLessonHref} className="block">
                     <Button
@@ -1210,7 +1383,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                       <span className="material-symbols-outlined text-xl">
                         play_circle
                       </span>
-                      {resumeLessonId ? t("course.detail.startNow") : t("course.detail.noLessons")}
+                      {resumeLessonId ? accessCourseLabel : "Chưa có bài học"}
                     </Button>
                   </Link>
                 )}
@@ -1359,21 +1532,21 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                     {/* Price rows */}
                     <div className="px-3 py-2.5 space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Giá gốc</span>
+                        <span className="text-muted-foreground">{t("auto.courseDetail_67")}</span>
                         <span className="line-through text-muted-foreground">
                           {appliedCoupon.originalPrice} 🌸
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-emerald-600 dark:text-emerald-400">Giảm giá</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">{t("auto.courseDetail_68")}</span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                           −{appliedCoupon.discountAmount} 🌸
                         </span>
                       </div>
                       <div className="flex items-center justify-between border-t border-emerald-400/25 pt-1.5">
-                        <span className="font-bold text-foreground">Thành tiền</span>
+                        <span className="font-bold text-foreground">{t("auto.courseDetail_69")}</span>
                         <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                          {appliedCoupon.finalPrice === 0 ? "Miễn phí" : `${appliedCoupon.finalPrice} 🌸`}
+                          {appliedCoupon.finalPrice === 0 ? t("auto.courseDetail_88") : `${appliedCoupon.finalPrice} 🌸`}
                         </span>
                       </div>
                     </div>

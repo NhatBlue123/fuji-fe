@@ -53,6 +53,7 @@ export interface CourseUpdateDTO {
 
 export interface RatingRequestDTO {
   rating: number;
+  review?: string;
 }
 
 export interface RatingResponseDTO {
@@ -61,6 +62,8 @@ export interface RatingResponseDTO {
   rating: number;
   review: string | null;
   user: UserSummaryDTO;
+  likeCount?: number;
+  isLikedByUser?: boolean;
   createdAt: string;
   updatedAt: string;
 }

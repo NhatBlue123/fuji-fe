@@ -217,6 +217,7 @@ export const courseApi = createApi({
         response.data!,
       invalidatesTags: (_result, _error, { courseId }) => [
         { type: "Course", id: courseId },
+        { type: "Rating", id: courseId },
       ],
     }),
 
@@ -225,6 +226,63 @@ export const courseApi = createApi({
       transformResponse: (response: ApiResponse<RatingResponseDTO[]>) =>
         response.data!,
       providesTags: (_result, _error, courseId) => [
+        { type: "Rating", id: courseId },
+      ],
+    }),
+
+    updateCourseRating: builder.mutation<
+      RatingResponseDTO,
+      { courseId: number; ratingId: number; body: RatingRequestDTO }
+    >({
+      query: ({ courseId, ratingId, body }) => ({
+        url: `/courses/${courseId}/ratings/${ratingId}`,
+        method: "PUT",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<RatingResponseDTO>) =>
+        response.data!,
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Rating", id: courseId },
+        { type: "Course", id: courseId },
+      ],
+    }),
+
+    deleteCourseRating: builder.mutation<
+      void,
+      { courseId: number; ratingId: number }
+    >({
+      query: ({ courseId, ratingId }) => ({
+        url: `/courses/${courseId}/ratings/${ratingId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Rating", id: courseId },
+        { type: "Course", id: courseId },
+      ],
+    }),
+
+    likeCourseRating: builder.mutation<
+      void,
+      { courseId: number; ratingId: number }
+    >({
+      query: ({ courseId, ratingId }) => ({
+        url: `/courses/${courseId}/ratings/${ratingId}/like`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
+        { type: "Rating", id: courseId },
+      ],
+    }),
+
+    unlikeCourseRating: builder.mutation<
+      void,
+      { courseId: number; ratingId: number }
+    >({
+      query: ({ courseId, ratingId }) => ({
+        url: `/courses/${courseId}/ratings/${ratingId}/like`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { courseId }) => [
         { type: "Rating", id: courseId },
       ],
     }),
@@ -369,6 +427,10 @@ export const {
   useLazyPreviewDiscountQuery,
   useRateCourseMutation,
   useGetCourseRatingsQuery,
+  useUpdateCourseRatingMutation,
+  useDeleteCourseRatingMutation,
+  useLikeCourseRatingMutation,
+  useUnlikeCourseRatingMutation,
   useGetLessonsByCourseQuery,
   useGetLessonByIdQuery,
   useCreateLessonMutation,

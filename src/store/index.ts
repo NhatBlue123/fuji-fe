@@ -8,6 +8,7 @@ import { authListenerMiddleware } from "./middlewares/authMiddleware";
 import { baseApi } from "./services/baseApi";
 import { aiBaseApi } from "./services/aiBaseApi";
 import { jlptApi } from "./services/jlptApi";
+import { jlptAiApi } from "./services/jlptApi";
 import { adminJlptApi } from "./services/adminJlptApi";
 
 import paymentReducer from './slices/paymentSlice';
@@ -29,6 +30,7 @@ export const store = configureStore({
     [flashcardApi.reducerPath]: flashcardApi.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
     [jlptApi.reducerPath]: jlptApi.reducer,
+    [jlptAiApi.reducerPath]: jlptAiApi.reducer,
     [adminJlptApi.reducerPath]: adminJlptApi.reducer,
     [adminFlashcardApi.reducerPath]: adminFlashcardApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
@@ -41,6 +43,7 @@ export const store = configureStore({
       .concat(authApi.middleware)
       .concat(flashcardApi.middleware)
       .concat(jlptApi.middleware)
+      .concat(jlptAiApi.middleware)
       .concat(adminJlptApi.middleware)
       .concat(adminFlashcardApi.middleware)
       .concat(userApi.middleware)

@@ -100,35 +100,53 @@ function JLPTtestPageInner() {
 
     // Priority: 1) localStorage overrides, 2) testData.mondaiCounts (from API/DB), 3) hardcoded defaults
     const countMap: Record<number, number> = {};
+    const childModeMap: Record<number, boolean> = {};
 
     // Step 1: Check localStorage overrides (admin-set counts, most recent)
     try {
       const raw = localStorage.getItem(`jlpt_mondai_config_${testId}`);
       if (raw) {
         const overrides = JSON.parse(raw) as Record<string, { count: number }>;
-        const countMap: Record<number, number> = {};
 
         Object.entries(overrides).forEach(([k, v]) => {
           if (v.count > 0) countMap[Number(k)] = v.count;
+          if ("childMode" in v) childModeMap[Number(k)] = Boolean((v as { childMode?: boolean }).childMode);
         });
       }
     } catch {}
 
     // Step 2: Merge with testData.mondaiCounts from backend (admin-saved via API)
-    if (testData.mondaiCounts) {
-      Object.entries(testData.mondaiCounts).forEach(([k, v]) => {
+    const backendCounts = (testData as unknown as { mondaiCounts?: Record<string, number> })?.mondaiCounts;
+    if (backendCounts) {
+      Object.entries(backendCounts).forEach(([k, v]) => {
         const n = Number(k);
         // Only override if not already set by localStorage
-        if (countMap[n] === undefined && v > 0) {
+        if (countMap[n] === undefined && typeof v === 'number' && v > 0) {
           countMap[n] = v;
         }
       });
     }
+    const backendChildModes = (testData as unknown as { mondaiChildModes?: Record<string, boolean> })?.mondaiChildModes;
+    if (backendChildModes) {
+      Object.entries(backendChildModes).forEach(([k, v]) => {
+        const n = Number(k);
+        if (childModeMap[n] === undefined) {
+          childModeMap[n] = Boolean(v);
+        }
+      });
+    }
+    testData.questions?.forEach((q) => {
+      if (q.section === "READING" && q.children && q.children.length > 0) {
+        childModeMap[q.mondaiNumber] = true;
+      }
+    });
 
-    if (Object.keys(countMap).length > 0) {
+    if (Object.keys(countMap).length > 0 || Object.keys(childModeMap).length > 0) {
       return rebuildStructureWithCounts(
         testData.level as JLPTLevel,
         countMap,
+        undefined,
+        childModeMap,
       );
     }
 
@@ -138,10 +156,16 @@ function JLPTtestPageInner() {
   /* ===== FLATTEN QUESTIONS ===== */
   const leafQuestions = useMemo(() => {
     const flattened: JlptQuestion[] = [];
+    const seenOrders = new Set<number>();
     const mondaiPassageMap = new Map<number, boolean>();
+    const mondaiConfigMap = new Map<number, { start: number; displayStart: number }>();
     examStructure.forEach((section) => {
       section.mondai.forEach((m) => {
         mondaiPassageMap.set(m.number, Boolean(m.requires_passage));
+        mondaiConfigMap.set(m.number, {
+          start: m.start,
+          displayStart: m._displayStart ?? m.start,
+        });
       });
     });
 
@@ -152,20 +176,38 @@ function JLPTtestPageInner() {
     sortedQ.forEach((q) => {
       if (!q.children || q.children.length === 0) {
         const opts = parseOptions(q.options);
-        if (opts.length > 0) {
+        if (opts.length > 0 && !seenOrders.has(q.questionOrder)) {
+          const cfg = mondaiConfigMap.get(q.mondaiNumber);
+          const displayOrder = cfg
+            ? cfg.displayStart + Math.max(0, q.questionOrder - cfg.start)
+            : q.questionOrder;
+          seenOrders.add(q.questionOrder);
           flattened.push({
             ...q,
             options: opts,
+            subLabel: String(displayOrder),
           });
         }
       } else {
+        const cfg = mondaiConfigMap.get(q.mondaiNumber);
+        const isReadingPassage = mondaiPassageMap.get(q.mondaiNumber) === true;
+        const childrenWithLabels = [...q.children]
+          .sort((a, b) => a.questionOrder - b.questionOrder)
+          .map((child, idx) => ({
+            ...child,
+            subLabel: isReadingPassage
+              ? `${cfg?.displayStart ?? q.questionOrder}.${idx + 1}`
+              : String(child.questionOrder),
+          }));
         const parentQuestion = {
           ...q,
-          isReadingPassage: mondaiPassageMap.get(q.mondaiNumber) === true,
+          children: childrenWithLabels,
+          isReadingPassage,
         };
-        q.children.forEach((child) => {
+        childrenWithLabels.forEach((child) => {
           const opts = parseOptions(child.options);
-          if (opts.length > 0) {
+          if (opts.length > 0 && !seenOrders.has(child.questionOrder)) {
+            seenOrders.add(child.questionOrder);
             flattened.push({
               ...child,
               options: opts,
@@ -214,7 +256,7 @@ function JLPTtestPageInner() {
         return;
       }
 
-      alert("Không thể nộp bài!");
+      alert("提出できません！");
       setIsSubmitting(false);
     }
   }, [answers, submitTest, router, testId]);
@@ -229,7 +271,9 @@ function JLPTtestPageInner() {
   const { timeLeft } = useCountdown({
     duration: duration * 60,
     paused: false,
-    onFiveMinutesLeft: () => alert("⚠️ Còn 5 phút!"),
+    onFiveMinutesLeft: () => {
+      toast.warning("⚠️ 残り5分 — 試験を完了してください！");
+    },
     onTimeUp: handleAutoSubmit,
   });
 
@@ -252,7 +296,7 @@ function JLPTtestPageInner() {
         warning.count &&
         warning.count >= MAX_TAB_SWITCHES
       ) {
-        alert("Bạn đã vi phạm rời trang thi quá 5 lần. Hệ thống tự động nộp bài!");
+        toast.error("タブ切り替え过多 — 自動的に提出されます。");
         submitExam();
       }
     },
@@ -271,22 +315,31 @@ function JLPTtestPageInner() {
 
   if (isLoading)
     return (
-      <div className="h-screen flex items-center justify-center text-white">
-        Đang tải đề...
+      <div className="h-screen flex items-center justify-center bg-exam-dark text-washi-paper/60">
+        <div className="text-center animate-pulse">
+          <span className="material-symbols-outlined text-5xl mb-3 text-shun-nuri/40">school</span>
+          <p className="font-jp text-sm tracking-wider">問題を読み込んでいます...</p>
+        </div>
       </div>
     );
 
   if (error || !testData)
     return (
-      <div className="h-screen flex items-center justify-center text-white">
-        Không tải được đề
+      <div className="h-screen flex items-center justify-center bg-exam-dark text-washi-paper/60">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-5xl mb-3 text-shun-nuri/40">error</span>
+          <p className="font-jp text-sm">問題がありません</p>
+        </div>
       </div>
     );
 
   if (isSubmitting)
     return (
-      <div className="h-screen flex items-center justify-center text-white">
-        Đang nộp bài...
+      <div className="h-screen flex items-center justify-center bg-exam-dark text-washi-paper/60">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-5xl mb-3 text-shun-nuri/60 animate-pulse">send</span>
+          <p className="font-jp text-sm tracking-wider">提出中...</p>
+        </div>
       </div>
     );
 
@@ -303,7 +356,7 @@ function JLPTtestPageInner() {
   };
 
   return (
-    <div className="h-screen flex flex-col text-white bg-[#0B1120]">
+    <div className="h-screen flex flex-col text-white bg-exam-dark">
       <ExamHeader
         timeLeft={timeLeft}
         formatTime={formatTime}
@@ -324,18 +377,31 @@ function JLPTtestPageInner() {
 
       {/* CONFIRM DIALOG */}
       {showConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/70">
-          <div className="bg-[#1a2540] p-6 rounded-xl text-center">
-            <p>Bạn chắc chắn muốn nộp bài?</p>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50">
+          <div className="confirm-dialog p-8 text-center max-w-md w-full mx-4 animate-slide-up">
+            <div className="size-14 rounded-sm bg-shun-nuri/10 border border-shun-nuri/20 flex items-center justify-center mx-auto mb-6">
+              <span className="material-symbols-outlined text-shun-nuri text-2xl">send</span>
+            </div>
+            <h3 className="text-lg font-semibold text-washi-paper mb-2 font-jp">
+              試験を提出しますか？
+            </h3>
+            <p className="text-sm text-washi-paper/50 font-jp mb-8">
+              解答済み: <span className="text-shun-nuri">{answeredCount}</span> / {totalQuestions} 問題
+            </p>
 
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setShowConfirm(false)}>Hủy</button>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-6 py-2.5 rounded-sm border border-washi-paper/20 text-washi-paper/70 font-jp text-sm hover:bg-charcoal/50 transition-colors"
+              >
+                キャンセル
+              </button>
 
               <button
                 onClick={submitExam}
-                className="bg-red-500 px-4 py-2 rounded"
+                className="btn-submit-jlpt"
               >
-                Nộp bài
+                提出する
               </button>
             </div>
           </div>
@@ -357,7 +423,7 @@ function JLPTtestPageInner() {
           structure={examStructure}
           currentQ={leafQuestions[currentQuestion]?.questionOrder ?? 0}
           answers={answers}
-          questions={allQuestions}
+          leafQuestions={leafQuestions}
           onSelect={(order) => {
             const idx = leafQuestions.findIndex(
               (q) => q.questionOrder === order,

@@ -24,6 +24,8 @@ interface MeetingSummaryModalProps {
   isGenerating?: boolean;
   error?: string | null;
   onRetry?: () => void;
+  /** Hide retry button when there's no transcript data */
+  isNoDataError?: boolean;
 }
 
 export function MeetingSummaryModal({
@@ -34,6 +36,7 @@ export function MeetingSummaryModal({
   isGenerating = false,
   error = null,
   onRetry,
+  isNoDataError = false,
 }: MeetingSummaryModalProps) {
   const { t } = useTranslation();
   const [completedActions, setCompletedActions] = useState<Set<number>>(new Set());
@@ -181,7 +184,7 @@ Model: ${summary.modelUsed || "AI"}
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <AlertCircle className="h-8 w-8 text-red-400" />
               <p className="text-red-400 text-sm text-center">{error}</p>
-              {onRetry && (
+              {onRetry && !isNoDataError && (
                 <Button
                   onClick={onRetry}
                   className="bg-secondary hover:bg-secondary/90"

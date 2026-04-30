@@ -9,7 +9,6 @@ import {
   Monitor,
   MonitorOff,
   PhoneOff,
-  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,16 +63,6 @@ export function ControlBar({
         tooltip={isScreenSharing ? "Dừng chia sẻ" : "Chia sẻ màn hình"}
         highlight={isScreenSharing}
       />
-
-      <div className="w-px h-8 bg-white/10 mx-2" />
-
-      {/* Settings placeholder for future phases */}
-      <button
-        className="w-12 h-12 rounded-full flex items-center justify-center text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.06] transition-all"
-        title={t('auto.lesson_control_1')}
-      >
-        <Settings className="h-5 w-5" />
-      </button>
 
       <div className="w-px h-8 bg-white/10 mx-2" />
 

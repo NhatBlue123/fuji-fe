@@ -1465,7 +1465,9 @@
     "errorEnd": "レッスンの終了に失敗しました。",
     "confirm": {
       "endTeacher": "レッスンを終了してもよろしいですか？完了として記録されます。",
-      "leaveStudent": "退出してもよろしいですか？残り時間がある場合は再開可能です。"
+      "leaveStudent": "退出してもよろしいですか？残り時間がある場合は再開可能です。",
+      "leaveTitle": "退出の確認",
+      "leaveConfirm": "退出する"
     },
     "report": {
       "student": "学生を評価する",

@@ -95,14 +95,14 @@ export function AiSummarySettingsModal({
               onClick={() => setLocalEnabled(!localEnabled)}
               disabled={isLoading}
               className={cn(
-                "relative w-12 h-6 rounded-full transition-colors",
+                "relative w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/50",
                 localEnabled ? "bg-secondary" : "bg-[#3a3f4a]"
               )}
             >
               <span
                 className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
-                  localEnabled ? "translate-x-7" : "translate-x-1"
+                  "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200",
+                  localEnabled && "translate-x-6"
                 )}
               />
             </button>

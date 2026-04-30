@@ -30,7 +30,7 @@ interface FeatureMeta {
 
 const FEATURE_META: FeatureMeta[] = [
   { key: "course", href: "/course", icon: "school", tone: "text-sky-600 bg-sky-50 dark:bg-sky-500/10 dark:text-sky-300" },
-  { key: "jlpt", href: "/JLPT_Practice", icon: "flag", tone: "text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-300" },
+  { key: "jlpt", href: "/jlpt-practice", icon: "flag", tone: "text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-300" },
   { key: "booking", href: "/booking", icon: "calendar_month", tone: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-300" },
   { key: "aiChat", href: "/ai-chat", icon: "smart_toy", tone: "text-cyan-600 bg-cyan-50 dark:bg-cyan-500/10 dark:text-cyan-300" },
   { key: "videoCall", href: "/video-call", icon: "videocam", tone: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-300" },
@@ -54,7 +54,7 @@ const SCENARIO_META: Record<
   },
   exam: {
     icon: "quiz",
-    primaryHref: "/JLPT_Practice",
+    primaryHref: "/jlpt-practice",
     secondaryHref: "/course",
     image: "/images/home/scenario-jlpt.webp",
   },
@@ -74,7 +74,7 @@ interface MissionMeta {
 
 const MISSIONS_META: MissionMeta[] = [
   { key: "flashcardsMission", href: "/flashcards", progress: 68 },
-  { key: "jlptMission", href: "/JLPT_Practice", progress: 40 },
+  { key: "jlptMission", href: "/jlpt-practice", progress: 40 },
   { key: "bookingMission", href: "/booking", progress: 85 },
   { key: "aiMission", href: "/ai-chat", progress: 20 },
 ];
@@ -390,7 +390,7 @@ export default function HomePageClient() {
               {JLPT_META.map((item) => (
                 <Link
                   key={item.level}
-                  href="/JLPT_Practice"
+                  href="/jlpt-practice"
                   className={cn(
                     "rounded-2xl border p-4 text-center transition-all hover:-translate-y-1 hover:shadow-md",
                     item.tone,

@@ -1,7 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
-import { cookies } from "next/headers";
 import "material-symbols/outlined.css";
 import "tldraw/tldraw.css";
 import "@/app/globals.css";
@@ -103,12 +102,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Đọc theme và language từ cookie — server render đúng ngay từ đầu, không flash
-  const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("theme")?.value;
-  const theme = themeCookie === "dark" || themeCookie === "light" ? themeCookie : "dark";
-  const lngCookie = cookieStore.get("i18nextLng")?.value;
-  const lng = ["vi", "en", "ja"].includes(lngCookie ?? "") ? (lngCookie as string) : "vi";
+  // Keep the root layout static-friendly. Theme/language are finalized on the
+  // client by ThemeProvider/I18nProvider; reading cookies here forces every
+  // public ISR route into dynamic server usage.
+  const theme = "dark";
+  const lng = "vi";
 
   const fontVars = {
     "--font-inter":
@@ -140,12 +138,10 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://lh3.googleusercontent.com" />
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         
-        <meta property="og:image:secure_url" content="https://fuji.io.vn/images/og_image.png" />
         <meta name="theme-color" content="#ec4899" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
-        <meta property="zalo:image" content="https://fuji.io.vn/images/og_image.png" />
         <meta property="telegram:channel" content="@fuji_japan" />
         <meta property="og:see_also" content="https://linkedin.com/company/fuji-japan" />
         

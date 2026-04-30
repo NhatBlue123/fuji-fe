@@ -8,16 +8,29 @@ import type { NextRequest } from "next/server";
  * via Next.js metadata exports in each route's layout.tsx.
  */
 const PRIVATE_PATHS = [
+  "/api",
   "/admin",
+  "/booking",
   "/profile",
   "/settings",
   "/notifications",
   "/withdraw",
   "/learn",
   "/video-call",
+  "/reports",
   "/oauth2",
   "/offline",
   "/payment",
+  "/premium/success",
+  "/course/*/lesson",
+  "/flashcards/detail/*/settings",
+  "/flashcards/learn",
+  "/flashcards/exercise",
+  "/jlpt/result",
+  "/jlpt-test",
+  "/Exam",
+  "/login",
+  "/register",
 ];
 
 /**
@@ -131,7 +144,29 @@ async function fetchFlashList(
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (PRIVATE_PATHS.some((path) => pathname.startsWith(path))) {
+  if (pathname === "/JLPT_Practice" || pathname.startsWith("/JLPT_Practice/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/JLPT_Practice/, "/jlpt-practice");
+    return NextResponse.redirect(url, { status: 301 });
+  }
+
+  if (pathname === "/Exam/JLPTtest" || pathname.startsWith("/Exam/JLPTtest/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/Exam\/JLPTtest/, "/jlpt-test");
+    return NextResponse.redirect(url, { status: 301 });
+  }
+
+  const isPrivatePath = PRIVATE_PATHS.some((path) => {
+    if (path.includes("*")) {
+      const pattern = new RegExp(
+        `^${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace("\\*", "[^/]+")}(?:/|$)`,
+      );
+      return pattern.test(pathname);
+    }
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
+
+  if (isPrivatePath) {
     const response = NextResponse.next();
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;

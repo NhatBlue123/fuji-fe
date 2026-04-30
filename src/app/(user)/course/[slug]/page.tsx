@@ -6,6 +6,11 @@ import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import CourseDetailView from "@/components/user-component/course/CourseDetailView";
 import type { CourseResponseDTO, UserSummaryDTO } from "@/types/course";
 
+export const revalidate = 3600;
+
+const BASE_URL = "https://fuji.io.vn";
+const DEFAULT_OG_IMAGE = "/images/og_image.png";
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -26,6 +31,12 @@ function extractCourseId(slug: string): number | null {
 
 function getCourseUrlSegment(course: { slug: string | null; id: number }) {
   return course.slug ? `${course.slug}-${course.id}` : String(course.id);
+}
+
+function resolvePublicImageUrl(url: string | null | undefined) {
+  if (!url) return `${BASE_URL}${DEFAULT_OG_IMAGE}`;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
 function toInitialCourse(course: PublicCourseDto): CourseResponseDTO {
@@ -77,16 +88,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const canonicalUrl =
     course.canonicalUrl ??
-    `https://fuji.io.vn/course/${getCourseUrlSegment(course)}`;
+    `${BASE_URL}/course/${getCourseUrlSegment(course)}`;
 
-  const ogImage = course.thumbnailUrl
-    ? {
-        url: course.thumbnailUrl,
-        width: 1200,
-        height: 630,
-        alt: course.thumbnailAlt ?? course.title,
-      }
-    : undefined;
+  const ogImage = {
+    url: resolvePublicImageUrl(course.thumbnailUrl),
+    width: 1200,
+    height: 630,
+    alt: course.thumbnailAlt ?? course.title,
+  };
 
   return {
     title,
@@ -100,15 +109,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: canonicalUrl,
       locale: "vi_VN",
-      ...(ogImage ? { images: [ogImage] } : {}),
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      ...(ogImage ? { images: [ogImage.url] } : {}),
+      images: [ogImage.url],
     },
   };
+}
+
+export async function generateStaticParams() {
+  const courses = await import("@/lib/publicApi").then((mod) =>
+    mod.fetchPublishedCourses({ size: 1000 }),
+  );
+
+  return courses.map((course) => ({
+    slug: getCourseUrlSegment(course),
+  }));
 }
 
 /**

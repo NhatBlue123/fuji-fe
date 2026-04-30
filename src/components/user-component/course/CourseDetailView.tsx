@@ -107,11 +107,11 @@ function timeAgo(dateStr: string): string {
 
 type TabId = "overview" | "curriculum" | "instructor" | "reviews";
 
-const TABS: { id: TabId; labelKey: string; fallback: string }[] = [
-  { id: "overview", labelKey: "auto.courseDetail_39", fallback: "Tổng quan" },
-  { id: "curriculum", labelKey: "auto.courseDetail_40", fallback: "Chương trình" },
-  { id: "instructor", labelKey: "auto.courseDetail_41", fallback: "Giảng viên" },
-  { id: "reviews", labelKey: "auto.courseDetail_42", fallback: "Đánh giá" },
+const TABS: { id: TabId; label: string }[] = [
+  { id: "overview", label: "Tổng quan" },
+  { id: "curriculum", label: "Chương trình" },
+  { id: "instructor", label: "Giảng viên" },
+  { id: "reviews", label: "Đánh giá" },
 ];
 
 // ─── Skeleton ──────────────────────────────────────────
@@ -1258,7 +1258,7 @@ export default function CourseDetailView({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {t(tab.labelKey, { defaultValue: tab.fallback })}
+                {tab.label}
               </button>
             ))}
           </nav>

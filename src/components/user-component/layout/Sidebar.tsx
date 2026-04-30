@@ -96,7 +96,7 @@ const Sidebar = () => {
   const menuItems = useMemo(() => [
     { label: t("common.home"), path: "/", icon: Home },
     { label: t("common.course"), path: "/course", icon: BookOpen },
-    { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
+    { label: t("common.jlptPractice"), path: "/jlpt-practice", icon: FileCheck },
     { label: t("common.booking"), path: "/booking", icon: Calendar },
     { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
     { label: t("sidebar.videoCall"), path: "/video-call", icon: Video },

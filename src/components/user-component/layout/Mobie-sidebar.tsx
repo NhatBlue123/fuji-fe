@@ -22,7 +22,7 @@ const MobieSidebar = () => {
   const menuItems = [
     { icon: "home", label: t("sidebar.home") || "Trang chủ", href: "/" },
     { icon: "school", label: t("sidebar.courses") || "Khóa học", href: "/course" },
-    { icon: "quiz", label: "JLPT", href: "/JLPT_Practice" },
+    { icon: "quiz", label: "JLPT", href: "/jlpt-practice" },
     { icon: "style", label: t("sidebar.flashcards") || "Flashcards", href: "/flashcards" },
     { icon: "smart_toy", label: "AI Chat", href: "/ai-chat" },
     { icon: "videocam", label: t("sidebar.videoCall") || "Video Call", href: "/video-call" },

@@ -20,7 +20,7 @@ function getCourseUrlSegment(course: PublicCourseDto): string {
  * Hierarchy:
  *   Home → Courses → [JLPT Level (optional)] → Course Title
  *
- * Phase 1/2: JLPT breadcrumb links to /JLPT_Practice?level={level}
+ * Phase 1/2: JLPT breadcrumb links to /jlpt-practice?level={level}
  * Phase 3: Update to /jlpt/{level} when landing pages are created.
  *
  * Schema: https://schema.org/BreadcrumbList
@@ -41,7 +41,7 @@ export function BreadcrumbJsonLd({ course }: BreadcrumbJsonLdProps) {
     items.push({
       position: 3,
       name: `JLPT ${course.jlptLevel}`,
-      item: `https://fuji.io.vn/JLPT_Practice?level=${course.jlptLevel.toLowerCase()}`,
+      item: `https://fuji.io.vn/jlpt-practice?level=${course.jlptLevel.toLowerCase()}`,
     });
     items.push({
       position: 4,

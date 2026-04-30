@@ -3,6 +3,9 @@ import { fetchPublishedCourses } from "@/lib/publicApi";
 import { CourseListServer } from "@/components/seo/CourseListServer";
 import CourseListClient from "@/components/user-component/course/CourseListClient";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 interface SearchParams {
   level?: string;
   search?: string;
@@ -10,25 +13,13 @@ interface SearchParams {
 }
 
 export async function generateMetadata({
-  searchParams,
+  searchParams: _searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }): Promise<Metadata> {
-  const { level, search } = await searchParams;
-
-  let title = "Khóa học tiếng Nhật | FUJI";
-  let description =
+  const title = "Khóa học tiếng Nhật | FUJI";
+  const description =
     "Khám phá các khóa học tiếng Nhật từ N5 đến N1 trên FUJI. Học online với giáo viên chuyên nghiệp, luyện đề JLPT, AI Chat 24/7.";
-
-  if (level && level !== "all") {
-    title = `Khóa học JLPT ${level.toUpperCase()} | FUJI`;
-    description = `Các khóa học tiếng Nhật cấp độ JLPT ${level.toUpperCase()} trên FUJI. Luyện thi JLPT ${level.toUpperCase()} hiệu quả với giáo viên chuyên nghiệp.`;
-  }
-
-  if (search) {
-    title = `Kết quả tìm kiếm: "${search}" | FUJI`;
-    description = `Tìm kiếm khóa học tiếng Nhật "${search}" trên FUJI.`;
-  }
 
   return {
     title,
@@ -61,16 +52,12 @@ export async function generateMetadata({
  * the URL. The server component then renders the matching course list.
  */
 export default async function CoursePage({
-  searchParams,
+  searchParams: _searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { level, search, category } = await searchParams;
-
-  // Fetch initial courses server-side for SSR
+  // Fetch initial courses with ISR so /course remains a public SEO page.
   const initialCourses = await fetchPublishedCourses({
-    level: level && level !== "all" ? level : undefined,
-    search,
     size: 9,
   });
 
@@ -101,9 +88,9 @@ export default async function CoursePage({
 
       {/* Filter controls update the URL; the course grid below is rendered server-side. */}
       <CourseListClient
-        initialLevel={level}
-        initialSearch={search}
-        initialCategory={category}
+        initialLevel="all"
+        initialSearch=""
+        initialCategory="all"
       />
 
       <CourseListServer courses={initialCourses} />

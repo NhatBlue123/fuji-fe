@@ -53,8 +53,6 @@ const setupTokenRefresh = (dispatch: AppDispatch) => {
       dispatch(tokenRefreshed({ accessToken: newAccessToken }));
       // Schedule next refresh
       setupTokenRefresh(dispatch);
-    } else {
-      dispatch(logout());
     }
   });
 };

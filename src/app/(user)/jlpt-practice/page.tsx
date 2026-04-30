@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import CourseHeader from "./CourseHeader";
-import CourseFilters from "./CourseFilter";
-import ExamCard from "./ExamCard";
+import CourseHeader from "@/app/(user)/JLPT_Practice/CourseHeader";
+import CourseFilters from "@/app/(user)/JLPT_Practice/CourseFilter";
+import ExamCard from "@/app/(user)/JLPT_Practice/ExamCard";
 import { Button } from "@/components/ui/button";
 import PaywallPopup from "@/components/common/PaywallPopup";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";

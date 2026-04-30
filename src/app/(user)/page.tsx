@@ -10,6 +10,8 @@
 import type { Metadata } from "next";
 import HomePageClient from "@/components/user-component/home/HomePageClient";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: "FUJI - Nền tảng học tiếng Nhật All-in-One",
   description:

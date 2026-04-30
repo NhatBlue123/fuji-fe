@@ -9,8 +9,26 @@ import {
   setInitialized,
 } from "../store/slices/authSlice";
 import type { RootState, AppDispatch } from "../store";
-import { getAccessToken } from "@/lib/token";
+import { getAccessToken, setAccessToken } from "@/lib/token";
 import type { User } from "@/types/auth";
+import { API_CONFIG } from "@/config/api";
+
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+
+    if (!response.ok) return null;
+
+    const json = await response.json();
+    return json?.data?.accessToken || json?.accessToken || null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Hook để khôi phục authentication state khi app khởi động.
@@ -28,11 +46,16 @@ export const useAuthInit = () => {
     if (isInitialized) return;
 
     const restoreSession = async () => {
-      const initialToken = getAccessToken();
+      let initialToken = getAccessToken();
 
       if (!initialToken) {
-        dispatch(setInitialized());
-        return;
+        initialToken = await refreshAccessToken();
+        if (initialToken) {
+          setAccessToken(initialToken);
+        } else {
+          dispatch(logout());
+          return;
+        }
       }
 
       try {
@@ -83,7 +106,18 @@ export const useAuthInit = () => {
           dispatch(logout());
         }
       } catch (error) {
-        dispatch(logout());
+        const refreshedToken = await refreshAccessToken();
+        if (!refreshedToken) {
+          dispatch(logout());
+          return;
+        }
+
+        setAccessToken(refreshedToken);
+        try {
+          await triggerGetCurrentUser(undefined, true).unwrap();
+        } catch {
+          dispatch(logout());
+        }
       }
     };
 

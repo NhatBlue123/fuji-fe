@@ -7,11 +7,20 @@ import {
 } from "@/lib/flashcardSeo";
 
 const BASE_URL = "https://fuji.io.vn";
+const DEFAULT_OG_IMAGE = "/images/og_image.png";
+
+export const revalidate = 3600;
 
 interface LayoutProps {
   children: React.ReactNode;
   settings: React.ReactNode;
   params: Promise<{ slug: string }>;
+}
+
+function resolvePublicImageUrl(url: string | null | undefined) {
+  if (!url) return `${BASE_URL}${DEFAULT_OG_IMAGE}`;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
 export async function generateMetadata({
@@ -35,6 +44,12 @@ export async function generateMetadata({
     flashcard.description?.slice(0, 160) ||
     `Học bộ từ vựng tiếng Nhật${level} ${flashcard.name} với flashcard, luyện ghi nhớ và bài tập trên FUJI.`;
   const canonical = `${BASE_URL}${buildFlashcardDetailHref(flashcard)}`;
+  const ogImage = {
+    url: resolvePublicImageUrl(flashcard.thumbnailUrl),
+    width: 1200,
+    height: 630,
+    alt: flashcard.name,
+  };
 
   return {
     title: title.length > 60 ? `${title.slice(0, 57)}...` : title,
@@ -53,17 +68,25 @@ export async function generateMetadata({
       url: canonical,
       type: "website",
       locale: "vi_VN",
-      images: flashcard.thumbnailUrl
-        ? [{ url: flashcard.thumbnailUrl, width: 1200, height: 630, alt: flashcard.name }]
-        : undefined,
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: flashcard.thumbnailUrl ? [flashcard.thumbnailUrl] : undefined,
+      images: [ogImage.url],
     },
   };
+}
+
+export async function generateStaticParams() {
+  const flashcards = await import("@/lib/publicFlashcardApi").then((mod) =>
+    mod.fetchPublicFlashcards({ limit: 1000 }),
+  );
+
+  return flashcards.map((flashcard) => ({
+    slug: buildFlashcardSlug(flashcard),
+  }));
 }
 
 export default function Layout({

@@ -187,7 +187,7 @@ export function CourseDetailServerView({ course }: CourseDetailServerViewProps) 
           <>
             <span className="material-symbols-outlined text-sm">chevron_right</span>
             <Link
-              href={`/JLPT_Practice?level=${course.jlptLevel.toLowerCase()}`}
+              href={`/jlpt-practice?level=${course.jlptLevel.toLowerCase()}`}
               className="hover:text-foreground transition-colors"
             >
               JLPT {course.jlptLevel}

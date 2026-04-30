@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 
-export const dynamic = "force-static";
-
 export const metadata: Metadata = {
   robots: {
     index: false,
     follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
   },
 };
 
-export default function SettingsLayout({
+export default function BookingLayout({
   children,
 }: {
   children: React.ReactNode;

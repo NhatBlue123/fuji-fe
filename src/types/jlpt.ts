@@ -34,7 +34,6 @@ export interface JlptTest {
   createdAt: string;
   updatedAt: string;
   mondaiCounts?: Record<number, number>;
-  mondaiChildModes?: Record<number, boolean>;
   questions?: JlptQuestion[];
 }
 

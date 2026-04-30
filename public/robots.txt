@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /booking/
+Disallow: /profile/
+Disallow: /settings/
+Disallow: /notifications/
+Disallow: /withdraw/
+Disallow: /learn/
+Disallow: /video-call/
+Disallow: /reports/
+Disallow: /oauth2/
+Disallow: /offline/
+Disallow: /payment/
+Disallow: /premium/success/
+Disallow: /course/*/lesson/
+Disallow: /flashcards/learn/
+Disallow: /flashcards/exercise/
+Disallow: /flashcards/detail/*/settings/
+Disallow: /jlpt/result/
+Disallow: /jlpt-test/
+Disallow: /Exam/
+Disallow: /login/
+Disallow: /register/
+
+Sitemap: https://fuji.io.vn/sitemap.xml

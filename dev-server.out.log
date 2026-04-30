@@ -1,0 +1,31 @@
+
+> fuji-fe@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://169.254.241.4:3000
+- Environments: .env.local, .env
+✓ Ready in 691ms
+- Experiments (use with caution):
+  · optimizePackageImports
+
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+ GET /flashcards 200 in 3.1s (next.js: 1813ms, proxy.ts: 244ms, application-code: 1026ms)
+ GET /flashcards/detail/tu-vung-n5-test-7 200 in 2.3s (next.js: 1951ms, proxy.ts: 63ms, application-code: 281ms)
+ GET /video-call 200 in 227ms (next.js: 43ms, proxy.ts: 7ms, application-code: 177ms)
+ GET /flashcards/detail/tu-vung-n5-test-7 200 in 345ms (next.js: 22ms, proxy.ts: 49ms, application-code: 274ms)
+ GET /video-call 200 in 172ms (next.js: 6ms, proxy.ts: 6ms, application-code: 160ms)
+ GET /login?redirect=%2Fvideo-call 200 in 128ms (next.js: 44ms, proxy.ts: 9ms, application-code: 75ms)
+ GET /flashcards/detail/tu-vung-n5-test-7 200 in 338ms (next.js: 37ms, proxy.ts: 62ms, application-code: 239ms)
+ GET / 200 in 91ms (next.js: 26ms, proxy.ts: 6ms, application-code: 58ms)
+ GET /images/home/fuji-home-closing-poster.webp 404 in 321ms (next.js: 48ms, application-code: 274ms)
+ GET /login?redirect=%2Fvideo-call 200 in 77ms (next.js: 12ms, proxy.ts: 7ms, application-code: 59ms)
+ GET /login?redirect=%2Fvideo-call 200 in 92ms (next.js: 12ms, proxy.ts: 8ms, application-code: 72ms)
+ GET /login?redirect=%2Fvideo-call 200 in 78ms (next.js: 9ms, proxy.ts: 8ms, application-code: 61ms)
+ GET /login?redirect=/video-call 200 in 2.2s (next.js: 1951ms, proxy.ts: 8ms, application-code: 200ms)
+ GET /flashcards/detail/tu-vung-n5-tu-vung-n3-bai-1-11 200 in 351ms (next.js: 24ms, proxy.ts: 62ms, application-code: 265ms)
+ GET /flashcards/detail/tu-vung-n5-tu-vung-n3-bai-1-11 200 in 197ms (next.js: 25ms, proxy.ts: 119ms, application-code: 53ms)
+ GET /flashcards/learn/tu-vung-n5-tu-vung-n3-bai-1-11 200 in 1580ms (next.js: 1478ms, proxy.ts: 35ms, application-code: 67ms)
+ GET /flashcards/learn/tu-vung-n5-tu-vung-n3-bai-1-11 200 in 118ms (next.js: 21ms, proxy.ts: 49ms, application-code: 48ms)
+[?25h

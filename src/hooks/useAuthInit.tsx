@@ -9,8 +9,26 @@ import {
   setInitialized,
 } from "../store/slices/authSlice";
 import type { RootState, AppDispatch } from "../store";
-import { getAccessToken } from "@/lib/token";
+import { getAccessToken, setAccessToken } from "@/lib/token";
 import type { User } from "@/types/auth";
+import { API_CONFIG } from "@/config/api";
+
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+
+    if (!response.ok) return null;
+
+    const json = await response.json();
+    return json?.data?.accessToken || json?.accessToken || null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Hook để khôi phục authentication state khi app khởi động.
@@ -28,22 +46,22 @@ export const useAuthInit = () => {
     if (isInitialized) return;
 
     const restoreSession = async () => {
-      const initialToken = getAccessToken();
+      let initialToken = getAccessToken();
 
       if (!initialToken) {
-        dispatch(setInitialized());
-        return;
+        initialToken = await refreshAccessToken();
+        if (initialToken) {
+          setAccessToken(initialToken);
+        } else {
+          dispatch(logout());
+          return;
+        }
       }
 
       try {
-        console.log("📡 useAuthInit: Fetching current user from API...");
         const result = await triggerGetCurrentUser(undefined, false).unwrap();
 
         if (result) {
-          // Re-read token after API call — baseQueryWithReauth may have
-          // refreshed it during 401 recovery, replacing the expired JWT
-          // with a fresh one in the cookie. Using the stale `initialToken`
-          // would overwrite the fresh token and break every subsequent request.
           const currentToken = getAccessToken();
           if (!currentToken) {
             dispatch(logout());
@@ -51,7 +69,6 @@ export const useAuthInit = () => {
           }
 
           const backendUser = result as unknown as Record<string, unknown>;
-          // Map backend UserDTO to frontend User type
           const user: User = {
             _id: String(backendUser.id || ""),
             id: backendUser.id as number,
@@ -79,9 +96,6 @@ export const useAuthInit = () => {
             createdAt: backendUser.createdAt as string,
             updatedAt: backendUser.updatedAt as string,
           };
-          console.log("✅ useAuthInit: User fetched successfully:", user.username);
-          console.log("👤 useAuthInit: fullName =", user.fullName);
-          console.log("💾 useAuthInit: Dispatching loginSuccess...");
           dispatch(
             loginSuccess({
               user,
@@ -89,13 +103,21 @@ export const useAuthInit = () => {
             }),
           );
         } else {
-          console.log("❌ useAuthInit: No user data in response, logging out");
           dispatch(logout());
         }
       } catch (error) {
-        // Token hết hạn hoặc không hợp lệ
-        console.error("❌ useAuthInit: Error fetching user, logging out:", error);
-        dispatch(logout());
+        const refreshedToken = await refreshAccessToken();
+        if (!refreshedToken) {
+          dispatch(logout());
+          return;
+        }
+
+        setAccessToken(refreshedToken);
+        try {
+          await triggerGetCurrentUser(undefined, true).unwrap();
+        } catch {
+          dispatch(logout());
+        }
       }
     };
 

@@ -13,6 +13,9 @@ import {
 type CourseCategoryFilter = "all" | "free" | "paid" | "mine";
 
 interface FilterProps {
+  initialSearch?: string;
+  initialLevel?: string;
+  initialCategory?: string;
   onFilterChange?: (filters: {
     search: string;
     level: string;
@@ -20,12 +23,21 @@ interface FilterProps {
   }) => void;
 }
 
-export default function Filter({ onFilterChange }: FilterProps) {
+export default function Filter({
+  initialSearch = "",
+  initialLevel = "all",
+  initialCategory = "all",
+  onFilterChange,
+}: FilterProps) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState("");
-  const [selectedLevel, setSelectedLevel] = useState("all");
+  const [search, setSearch] = useState(initialSearch);
+  const [selectedLevel, setSelectedLevel] = useState(initialLevel);
   const [selectedCategory, setSelectedCategory] =
-    useState<CourseCategoryFilter>("all");
+    useState<CourseCategoryFilter>(
+      ["all", "free", "paid", "mine"].includes(initialCategory)
+        ? (initialCategory as CourseCategoryFilter)
+        : "all"
+    );
 
   const LEVELS = useMemo(() => [
     { id: "all", label: t("course.filter.all") },

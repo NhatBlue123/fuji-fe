@@ -125,7 +125,7 @@ function JLPTResultPageInner() {
             Vui lòng kiểm tra lại hoặc liên hệ hỗ trợ
           </p>
           <Button
-            onClick={() => router.push("/JLPT_Practice")}
+            onClick={() => router.push("/jlpt-practice")}
             className="mt-6 bg-pink-600 hover:bg-pink-700"
           >
             Quay lại danh sách
@@ -157,7 +157,7 @@ function JLPTResultPageInner() {
       toast.success("Đã gửi phản hồi. Cảm ơn bạn!");
       setExamFeedback("");
       setFeedbackOpen(false);
-      router.push("/JLPT_Practice");
+      router.push("/jlpt-practice");
     } catch (e) {
       console.error(e);
       toast.error("Gửi phản hồi thất bại, hãy thử lại.");
@@ -179,7 +179,7 @@ function JLPTResultPageInner() {
         title: "Xuất sắc!",
         desc: "Bạn đã vượt qua tất cả các phần. Hãy tiếp tục luyện tập để duy trì phong độ!",
         resources: [
-          { text: "Luyện đề Nâng cao", href: "/JLPT_Practice" },
+          { text: "Luyện đề Nâng cao", href: "/jlpt-practice" },
           { text: "Học từ vựng N1/N2", href: "/flashcards" },
         ]
       };
@@ -204,7 +204,7 @@ function JLPTResultPageInner() {
         title: "Cải thiện Đọc hiểu",
         desc: `Phần đọc hiểu cần thêm ${(passThreshold - weakest.score).toFixed(1)} điểm. Hãy luyện đọc các bài văn ngắn.`,
         resources: [
-          { text: "Luyện đọc JLPT", href: "/JLPT_Practice" },
+          { text: "Luyện đọc JLPT", href: "/jlpt-practice" },
           { text: "Chat AI hỗ trợ", href: "/ai-chat" },
         ]
       };
@@ -214,7 +214,7 @@ function JLPTResultPageInner() {
       title: "Cải thiện Nghe hiểu",
       desc: `Bạn cần thêm ${(passThreshold - weakest.score).toFixed(1)} điểm. Hãy luyện nghe mỗi ngày.`,
       resources: [
-        { text: "Luyện nghe JLPT", href: "/JLPT_Practice" },
+        { text: "Luyện nghe JLPT", href: "/jlpt-practice" },
         { text: "Video call với giáo viên", href: "/video-call" },
       ]
     };
@@ -550,7 +550,7 @@ function JLPTResultPageInner() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
-            onClick={() => router.push("/JLPT_Practice")}
+            onClick={() => router.push("/jlpt-practice")}
             variant="outline"
             className="border-slate-600 text-white hover:bg-slate-800"
           >
@@ -559,7 +559,7 @@ function JLPTResultPageInner() {
           {!attempt.isPassed && (
             <Button
               onClick={() =>
-                router.push(`/Exam/JLPTtest?testId=${attempt.testId}`)
+                router.push(`/jlpt-test?testId=${attempt.testId}`)
               }
               className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 shadow-lg shadow-pink-500/25"
             >
@@ -569,7 +569,7 @@ function JLPTResultPageInner() {
           )}
           {attempt.isPassed && (
             <Button
-              onClick={() => router.push("/JLPT_Practice")}
+              onClick={() => router.push("/jlpt-practice")}
               className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/25"
             >
               <Trophy className="w-4 h-4 mr-2" />
@@ -611,3 +611,4 @@ export default function JLPTResultPage() {
     </Suspense>
   );
 }
+

@@ -2,28 +2,32 @@
 
 export function LoadingPage() {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background text-foreground z-50">
-      {/* Vòng tròn loading */}
-      <div className="relative flex items-center justify-center w-32 h-32 mb-6">
-        {/* Vòng tròn ngoài */}
-        <div className="absolute w-full h-full rounded-full border-4 border-muted animate-spin" />
-
-        {/* Vòng tròn trong - xoay chậm hơn */}
+    <div
+      style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 9999, backgroundColor: "var(--background, #0f0f0f)" }}
+      className="bg-background"
+    >
+      {/* Spinner */}
+      <div style={{ position: "relative", width: 80, height: 80, marginBottom: 16 }}>
         <div
-          className="absolute w-24 h-24 rounded-full border-4 border-primary"
           style={{
-            animation: "spin 4s linear infinite",
+            position: "absolute", inset: 0, borderRadius: "50%",
+            border: "3px solid transparent",
+            borderTopColor: "#ec4899",
+            animation: "spin 0.8s linear infinite",
           }}
         />
-
-        {/* Logo ở giữa */}
-        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold shadow-lg">
+        <div style={{
+          position: "absolute", inset: 8, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#ec4899", color: "#fff",
+          fontSize: 22, fontWeight: 900, letterSpacing: "-0.05em",
+        }}>
           F
         </div>
       </div>
-
-      {/* Tên web */}
-      <h1 className="text-2xl font-bold text-foreground">FUJI</h1>
+      <span style={{ color: "#ec4899", fontWeight: 700, fontSize: 18, letterSpacing: "0.1em" }}>
+        FUJI
+      </span>
     </div>
   );
 }

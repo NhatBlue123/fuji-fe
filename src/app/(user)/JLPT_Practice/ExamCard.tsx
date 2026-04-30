@@ -92,7 +92,7 @@ export default function ExamCard({
     const href =
       status === "done" && attemptId
         ? `/jlpt/result?attemptId=${attemptId}`
-        : `/Exam/JLPTtest?testId=${testId}`;
+        : `/jlpt-test?testId=${testId}`;
 
     return (
       <Link

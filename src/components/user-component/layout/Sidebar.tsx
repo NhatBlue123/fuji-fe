@@ -11,7 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
  * - Đồng bộ Typography: Loại bỏ In nghiêng/Bold đặc biệt (matching look).
  * - Match với giao diện UserSide bằng màu Secondary (Pink).
  */
+const getSavedSidebarCollapsed = () => {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("sidebar-collapsed") === "true";
+};
+
 const Sidebar = () => {
   const pathname = usePathname();
   const { roles } = useAuth();
@@ -46,17 +51,18 @@ const Sidebar = () => {
   const { t, i18n } = useTranslation();
 
   const [isMounted, setIsMounted] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [tooltipReady, setTooltipReady] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(getSavedSidebarCollapsed);
+  const [tooltipReady, setTooltipReady] = useState(getSavedSidebarCollapsed);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved === "true") {
-      setIsCollapsed(true);
-      setTooltipReady(true);
-    }
+    return () => {
+      if (tooltipTimerRef.current) {
+        clearTimeout(tooltipTimerRef.current);
+      }
+    };
   }, []);
 
   const toggleSidebar = () => {
@@ -64,9 +70,12 @@ const Sidebar = () => {
     setIsCollapsed(newState);
     setTooltipReady(false); // tắt tooltip ngay khi bắt đầu transition
     localStorage.setItem("sidebar-collapsed", String(newState));
+    if (tooltipTimerRef.current) {
+      clearTimeout(tooltipTimerRef.current);
+    }
     if (newState) {
       // Chỉ bật tooltip sau khi animation collapse xong (300ms)
-      setTimeout(() => setTooltipReady(true), 320);
+      tooltipTimerRef.current = setTimeout(() => setTooltipReady(true), 320);
     }
   };
 
@@ -87,14 +96,14 @@ const Sidebar = () => {
   const menuItems = useMemo(() => [
     { label: t("common.home"), path: "/", icon: Home },
     { label: t("common.course"), path: "/course", icon: BookOpen },
-    { label: t("common.jlptPractice"), path: "/JLPT_Practice", icon: FileCheck },
+    { label: t("common.jlptPractice"), path: "/jlpt-practice", icon: FileCheck },
     { label: t("common.booking"), path: "/booking", icon: Calendar },
     { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
     { label: t("sidebar.videoCall"), path: "/video-call", icon: Video },
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
     { label: t("common.settings"), path: "/settings", icon: Settings },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isMounted, t, i18n.language]);
+  ], [t, i18n.language]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -117,18 +126,27 @@ const Sidebar = () => {
           href="/"
           className={cn(
             "flex h-16 items-center hover:bg-sidebar-accent/50 transition border-b border-sidebar-border overflow-hidden",
-            isCollapsed ? "justify-center px-4" : "gap-2 px-3 -ml-2"
+            isCollapsed ? "justify-center px-4" : "gap-0.5 px-2 -ml-3"
           )}
         >
-          <div className="flex-shrink-0">
-            <Image src="/images/logofuji_v1.png" alt="FUJI Logo" width={90} height={60} quality={100} className="object-contain" />
+          <div className={cn("flex-shrink-0", !isCollapsed && "-ml-1")}>
+            <Image
+              src="/images/logofuji_v1.png"
+              alt="FUJI Logo"
+              width={70}
+              height={47}
+              quality={100}
+              loading="eager"
+              className="object-contain"
+              style={{ width: "auto", height: "auto" }}
+            />
           </div>
 
           {!isCollapsed && (
-            <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+            <div className="min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
               <h1 className="text-xl font-black text-sidebar-foreground leading-none tracking-tight">FUJI</h1>
-              <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
-                {isMounted ? t("sidebar.subtitle") : "Học Tiếng Nhật"}
+              <p suppressHydrationWarning className="mt-0.5 whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground opacity-60">
+                {t("sidebar.subtitle")}
               </p>
             </div>
           )}
@@ -146,7 +164,7 @@ const Sidebar = () => {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
                   active
-                    ? "bg-secondary text-white font-black shadow-[inset_0_3px_12px_rgba(0,0,0,0.4),inset_0_-1px_4px_rgba(255,255,255,0.1)] hover:text-white"
+                    ? "bg-secondary text-white font-black shadow-[inset_0_1px_4px_rgba(0,0,0,0.2),inset_0_-1px_2px_rgba(255,255,255,0.05)] hover:text-white"
                     : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
                 )}
               >
@@ -156,12 +174,12 @@ const Sidebar = () => {
                 )} />
 
                 {!isCollapsed && (
-                  <span className={cn(
+                  <span suppressHydrationWarning className={cn(
                       "text-[13px] font-bold tracking-tight truncate transition-colors duration-200",
                       active ? "text-white" : "group-hover:text-secondary"
                     )}
                   >
-                    {isMounted ? item.label : ""}
+                    {item.label}
                   </span>
                 )}
 
@@ -245,7 +263,7 @@ const Sidebar = () => {
                   </p>
                 </div>
                 <h3 className="font-bold text-[13px] mb-3 leading-snug tracking-tighter uppercase">
-                  {isMounted ? (t("sidebar.premiumHeading") || "Nâng cấp gói học") : "Nâng cấp gói học"}
+                  {t("sidebar.premiumHeading") || "Nâng cấp gói học"}
                 </h3>
                 <Button
                   size="sm"
@@ -253,7 +271,7 @@ const Sidebar = () => {
                   className="h-8 text-[11px] font-black w-full border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary hover:text-white transition-all active:scale-95 rounded-xl uppercase tracking-widest"
                   onClick={() => setIsPremiumModalOpen(true)}
                 >
-                  {isMounted ? (t("sidebar.viewDetails") || "Xem chi tiết") : "Xem chi tiết"}
+                  {t("sidebar.viewDetails") || "Xem chi tiết"}
                 </Button>
               </div>
             )}

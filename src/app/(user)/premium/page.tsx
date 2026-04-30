@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import React, { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";

@@ -2091,5 +2091,37 @@
     "desc": "This feature is only available for upgraded accounts. Please upgrade to enjoy the best experience.",
     "btnUpgrade": "Upgrade {{tier}}",
     "btnLater": "Maybe later"
+  },
+  "meetingSummary": {
+    "title": "Meeting Summary",
+    "summary": "Summary",
+    "keyPoints": "Key Points",
+    "actionItems": "Action Items",
+    "generatedAt": "Generated at",
+    "words": "Words",
+    "loading": "Loading summary...",
+    "generating": "AI is generating summary...",
+    "generatingHint": "This may take a few seconds",
+    "retry": "Retry",
+    "download": "Download",
+    "viewSummary": "View Summary",
+    "noSummary": "No summary available",
+    "noSummaryHint": "Summary will be generated after the meeting ends",
+    "error": "An error occurred while generating summary",
+    "success": "Summary generated successfully!",
+    "teacher": "Teacher",
+    "student": "Student",
+    "both": "Both",
+    "completed": "Completed",
+    "pending": "Pending",
+    "settings": {
+      "title": "AI Summary Settings",
+      "subtitle": "Customize your meeting summary preferences",
+      "enable": "Enable AI Summary",
+      "enableDesc": "Automatically generate summary after meetings",
+      "language": "Summary Language",
+      "languageDesc": "Language for AI-generated summary",
+      "info": "AI Summary uses speech-to-text to transcribe your meetings and generates a summary using AI. Both participants can view the summary after the meeting."
+    }
   }
 }

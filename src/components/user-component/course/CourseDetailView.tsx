@@ -12,6 +12,7 @@ import {
   useGetCourseRatingsQuery,
   useGetAllCoursesQuery,
   usePurchaseCourseMutation,
+  useLazyPreviewDiscountQuery,
 } from "@/store/services/courseApi";
 import type { LessonResponseDTO, RatingResponseDTO } from "@/types/course";
 import { Button } from "@/components/ui/button";
@@ -808,12 +809,23 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("curriculum");
   const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    originalPrice: number;
+    discountAmount: number;
+    finalPrice: number;
+    discountType: "PERCENT" | "FIXED_AMOUNT" | null;
+    discountPercent: number | null;
+    valid: boolean;
+    message: string;
+  } | null>(null);
   const [isPurchased, setIsPurchased] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
   const { isPremium } = useFeatureAccess();
   const [purchaseCourse, { isLoading: isPurchasing }] =
     usePurchaseCourseMutation();
+  const [triggerPreview, { isFetching: isValidating }] = useLazyPreviewDiscountQuery();
 
   const {
     data: course,
@@ -828,13 +840,6 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
     (a, b) => a.lessonOrder - b.lessonOrder,
   );
   const firstLesson = sortedLessons[0];
-  const resumeLessonId = course?.currentLessonId ?? firstLesson?.id;
-  const firstLessonHref = firstLesson
-    ? `/course/${courseId}/lesson/${firstLesson.id}`
-    : "#";
-  const resumeLessonHref = resumeLessonId
-    ? `/course/${courseId}/lesson/${resumeLessonId}`
-    : "#";
 
   // Sticky detection
   useEffect(() => {
@@ -859,15 +864,32 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
     }
   }, []);
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     const normalizedCode = couponCode.trim().toUpperCase();
     if (!normalizedCode) {
       toast.info("Vui lòng nhập mã ưu đãi.");
       return;
     }
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để áp dụng mã.");
+      return;
+    }
+    try {
+      const result = await triggerPreview({ courseId, code: normalizedCode }).unwrap();
+      setAppliedCoupon(result);
+      if (result.valid) {
+        toast.success(`✅ Áp dụng mã ${normalizedCode} thành công!`);
+      } else {
+        toast.error(result.message || "Mã không hợp lệ");
+      }
+    } catch {
+      toast.error("Không thể kiểm tra mã giảm giá");
+    }
+  };
 
-    setCouponCode(normalizedCode);
-    toast.success(`Đã áp dụng mã ${normalizedCode}.`);
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
   };
 
   if (courseLoading) return <DetailSkeleton />;
@@ -890,8 +912,16 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
 
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
   const completedLessons = lessons.filter((l) => l.userCompleted).length;
-  const canAccessCourse =
-    isPremium || isPurchased || Boolean(course.isEnrolled);
+  const isEnrolled = Boolean(course.isEnrolled);
+  const canAccessCourse = isAuthenticated && (isPremium || isPurchased || isEnrolled);
+
+  // resumeLessonId chỉ dùng khi đã có quyền truy cập
+  const resumeLessonId = canAccessCourse
+    ? (course?.currentLessonId ?? firstLesson?.id)
+    : undefined;
+  const resumeLessonHref = resumeLessonId
+    ? `/course/${courseId}/lesson/${resumeLessonId}`
+    : "#";
 
   const handlePurchaseCourse = async () => {
     if (!isAuthenticated) {
@@ -901,7 +931,7 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
     }
 
     try {
-      const discountCode = couponCode.trim();
+      const discountCode = appliedCoupon?.valid ? appliedCoupon.code : couponCode.trim();
       await purchaseCourse({
         courseId,
         discountCode: discountCode || undefined,
@@ -1134,11 +1164,27 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
                 </div>
 
                 {/* Price */}
-                <div className="text-3xl font-black text-foreground mb-2">
+                <div className="mb-2">
                   {isFreePrice(course.price) ? (
-                    <span className="text-secondary">{t('auto.courseDetail_30')}</span>
+                    <div className="text-3xl font-black text-secondary">{t('auto.courseDetail_30')}</div>
+                  ) : appliedCoupon?.valid ? (
+                    <div className="space-y-0.5">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                          {appliedCoupon.finalPrice === 0 ? "Miễn phí" : `${appliedCoupon.finalPrice} 🌸`}
+                        </span>
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                          {appliedCoupon.discountType === "FIXED_AMOUNT"
+                            ? `−${appliedCoupon.discountAmount} 🌸`
+                            : `−${appliedCoupon.discountPercent}%`}
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground line-through">
+                        {formatPrice(course.price)}
+                      </div>
+                    </div>
                   ) : (
-                    formatPrice(course.price)
+                    <div className="text-3xl font-black text-foreground">{formatPrice(course.price)}</div>
                   )}
                 </div>
 
@@ -1246,22 +1292,93 @@ export default function CourseDetailView({ courseId }: { courseId: number }) {
               </div>
 
               {/* Coupon */}
-              <div className="bg-card rounded-2xl p-6 border border-border">
-                <h3 className="text-foreground font-bold text-sm mb-4">{t('auto.courseDetail_35')}</h3>
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="glass-input rounded-lg text-sm text-foreground px-3 py-2 w-full focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
-                    placeholder={t('auto.courseDetail_38')}
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleApplyCoupon}
-                    className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors"
-                  >{t('auto.courseDetail_36')}</Button>
-                </div>
+              <div className="bg-card rounded-2xl p-6 border border-border space-y-3">
+                <h3 className="text-foreground font-bold text-sm">{t('auto.courseDetail_35')}</h3>
+
+                {/* Input row */}
+                {!appliedCoupon?.valid && (
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setAppliedCoupon(null); }}
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                      className="glass-input rounded-lg text-sm text-foreground px-3 py-2 w-full focus:ring-1 focus:ring-secondary focus:border-secondary transition-all uppercase"
+                      placeholder={t('auto.courseDetail_38')}
+                      disabled={isValidating}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={isValidating || !couponCode.trim()}
+                      className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-bold transition-colors shrink-0"
+                    >
+                      {isValidating ? (
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      ) : t('auto.courseDetail_36')}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Invalid coupon feedback */}
+                {appliedCoupon && !appliedCoupon.valid && (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-3 py-2.5 flex items-start gap-2">
+                    <span className="material-symbols-outlined text-destructive text-base mt-0.5">error</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-destructive">{appliedCoupon.message}</p>
+                      <button onClick={handleRemoveCoupon} className="mt-1 text-[11px] text-muted-foreground underline">Thử mã khác</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Valid coupon - price breakdown */}
+                {appliedCoupon?.valid && (
+                  <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/8 overflow-hidden">
+                    {/* Applied badge */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-emerald-500/12 border-b border-emerald-400/25">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          {appliedCoupon.code}
+                        </span>
+                        <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                          {appliedCoupon.discountType === "FIXED_AMOUNT"
+                            ? `−${appliedCoupon.discountAmount} 🌸`
+                            : `−${appliedCoupon.discountPercent}%`}
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title="Xóa mã"
+                      >
+                        <span className="material-symbols-outlined text-base">close</span>
+                      </button>
+                    </div>
+
+                    {/* Price rows */}
+                    <div className="px-3 py-2.5 space-y-1.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Giá gốc</span>
+                        <span className="line-through text-muted-foreground">
+                          {appliedCoupon.originalPrice} 🌸
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-emerald-600 dark:text-emerald-400">Giảm giá</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          −{appliedCoupon.discountAmount} 🌸
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-emerald-400/25 pt-1.5">
+                        <span className="font-bold text-foreground">Thành tiền</span>
+                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          {appliedCoupon.finalPrice === 0 ? "Miễn phí" : `${appliedCoupon.finalPrice} 🌸`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Instructor mini */}

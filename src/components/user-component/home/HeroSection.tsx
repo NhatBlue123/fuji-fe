@@ -20,12 +20,15 @@ export function HeroSection() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountTimer = window.setTimeout(() => setIsMounted(true), 0);
     initParticlesEngine(async (engine) => {
       await loadSlim(engine);
     }).then(() => {
       setInit(true);
     });
+    return () => {
+      window.clearTimeout(mountTimer);
+    };
   }, []);
 
   // Lấy text từ i18n — fallback về tiếng Việt có dấu khi chưa mount
@@ -63,7 +66,7 @@ export function HeroSection() {
       {/* Background & overlays */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c"
+          src="/images/home/bg_image.webp"
           alt="Japanese learning hero background"
           fill
           priority

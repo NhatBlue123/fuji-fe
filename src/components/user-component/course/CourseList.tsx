@@ -64,14 +64,16 @@ function UserCourseCard({
   course,
   onRegister,
   registeringCourseId,
+  isAuthenticated,
 }: {
   course: CourseResponseDTO;
   onRegister: (course: CourseResponseDTO) => void;
   registeringCourseId: number | null;
+  isAuthenticated: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
-  const isEnrolled = Boolean(course.isEnrolled);
+  const isEnrolled = isAuthenticated && Boolean(course.isEnrolled);
   const isRegistering = registeringCourseId === course.id;
   const freeCourse = isFreePrice(course.price);
 
@@ -274,7 +276,7 @@ export default function CourseList({
   };
 
   const handleRegister = async (course: CourseResponseDTO) => {
-    const isEnrolled = Boolean(course.isEnrolled);
+    const isEnrolled = isAuthenticated && Boolean(course.isEnrolled);
 
     if (isEnrolled) {
       if (course.currentLessonId) {
@@ -371,6 +373,7 @@ export default function CourseList({
               course={course}
               onRegister={handleRegister}
               registeringCourseId={registeringCourseId}
+              isAuthenticated={isAuthenticated}
             />
           ))
         )}

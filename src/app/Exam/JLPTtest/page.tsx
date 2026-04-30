@@ -235,6 +235,7 @@ function JLPTtestPageInner() {
 
   /* ===== ANTI CHEAT ===== */
   const MAX_TAB_SWITCHES = 5;
+  const isAntiCheatEnabled = true;
 
   const handleViolation = useCallback(
     (warning: import("@/hooks/useAntiCheat").AntiCheatWarning) => {

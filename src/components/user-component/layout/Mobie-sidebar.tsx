@@ -22,7 +22,7 @@ const MobieSidebar = () => {
   const menuItems = [
     { icon: "home", label: t("sidebar.home") || "Trang chủ", href: "/" },
     { icon: "school", label: t("sidebar.courses") || "Khóa học", href: "/course" },
-    { icon: "quiz", label: "JLPT", href: "/JLPT_Practice" },
+    { icon: "quiz", label: "JLPT", href: "/jlpt-practice" },
     { icon: "style", label: t("sidebar.flashcards") || "Flashcards", href: "/flashcards" },
     { icon: "smart_toy", label: "AI Chat", href: "/ai-chat" },
     { icon: "videocam", label: t("sidebar.videoCall") || "Video Call", href: "/video-call" },
@@ -89,6 +89,7 @@ const MobieSidebar = () => {
                           height={28} 
                           quality={100} 
                           className="object-contain relative z-10" 
+                          style={{ width: "auto", height: "auto" }}
                         />
                       </div>
                       <span className="font-black text-2xl bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent">
@@ -111,6 +112,7 @@ const MobieSidebar = () => {
                         height={28} 
                         quality={100} 
                         className="object-contain relative z-10" 
+                        style={{ width: "auto", height: "auto" }}
                       />
                     </div>
                     <span className="font-black text-2xl bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent">

@@ -47,10 +47,11 @@ const Footer = () => {
                 <Image 
                   src="/images/logofuji_v1.png" 
                   alt="FUJI Logo" 
-                  width={56} 
-                  height={38} 
+                  width={66} 
+                  height={45} 
                   quality={100} 
                   className="object-contain relative z-10" 
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
               <h2 className="text-lg sm:text-xl font-black tracking-tighter bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent uppercase">

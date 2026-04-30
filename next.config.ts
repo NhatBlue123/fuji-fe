@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
     ],
     // Tối ưu hóa ảnh bị lỗi trên một số môi trường Windows với Turbopack -> tắt formats tạm thời hoặc giữ nguyên nếu không phải nguyên nhân
     formats: ["image/avif", "image/webp"],
+    qualities: [75, 100],
   },
 
   // ===== API PROXY (CHỈ TRONG DEVELOPMENT) =====
@@ -44,6 +45,16 @@ const nextConfig: NextConfig = {
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Cache public course API responses for 1 hour (ISR handles revalidation)
+      {
+        source: "/api/public/courses/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, stale-while-revalidate=86400",
           },
         ],
       },

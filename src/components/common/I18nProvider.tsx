@@ -1,39 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { I18nextProvider } from "react-i18next";
 import i18n from "@/i18n";
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-    const [isMounted, setIsMounted] = useState(false);
-    const [lang, setLang] = useState(i18n.language);
+interface I18nProviderProps {
+  children: React.ReactNode;
+  initialLng: string;
+}
 
-    useEffect(() => {
-        const storedLang = localStorage.getItem("i18nextLng");
-        if (storedLang && storedLang !== i18n.language) {
-            i18n.changeLanguage(storedLang);
-        }
+export function I18nProvider({ initialLng, children }: I18nProviderProps) {
+  // Set ngôn ngữ đúng ngay trong render phase — trước khi React commit bất kỳ DOM nào.
+  // initialLng đến từ server (đọc cookie), nên server và client render giống nhau.
+  if (i18n.language !== initialLng) {
+    i18n.changeLanguage(initialLng);
+  }
 
-        setIsMounted(true);
+  useEffect(() => {
+    // Đảm bảo cookie luôn tồn tại cho server render lần sau
+    const lang = localStorage.getItem("i18nextLng") ?? initialLng;
+    document.cookie = `i18nextLng=${lang};path=/;max-age=31536000;SameSite=Lax`;
+  }, [initialLng]);
 
-        const handleLanguageChange = (l: string) => {
-            localStorage.setItem("i18nextLng", l);
-            setLang(l);
-        };
-
-        i18n.on("languageChanged", handleLanguageChange);
-        return () => {
-            i18n.off("languageChanged", handleLanguageChange);
-        };
-    }, []);
-
-    // suppressHydrationWarning cho phép i18n text thay đổi sau mount
-    // mà không throw hydration error (React sẽ bỏ qua diff này)
-    return (
-        <I18nextProvider i18n={i18n} key={lang}>
-            <div suppressHydrationWarning style={{ visibility: isMounted ? "visible" : "hidden" }} className="contents">
-                {children}
-            </div>
-        </I18nextProvider>
-    );
+  return (
+    <I18nextProvider i18n={i18n}>
+      {children}
+    </I18nextProvider>
+  );
 }

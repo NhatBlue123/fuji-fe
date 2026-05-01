@@ -26,6 +26,7 @@ import type {
   VoiceTopic,
 } from "@/types/voice";
 import { toast } from "sonner";
+import AiAvatar from "@/components/chatdock/AiAvatar";
 import {
   FuriganaDisplay,
   RightSidebar,
@@ -690,12 +691,8 @@ export default function SenseiPanel() {
 
                     return msg.role === "ai" ? (
                       <div key={msg.id} className="flex gap-4">
-                        <div className="shrink-0 size-8 rounded-full bg-gradient-to-br from-secondary to-purple-600 p-0.5 mt-1">
-                          <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                            <span className="material-symbols-outlined text-sm text-secondary">
-                              smart_toy
-                            </span>
-                          </div>
+                        <div className="shrink-0 size-8 rounded-full bg-gradient-to-br from-secondary to-purple-600 p-1 mt-1">
+                          <AiAvatar className="w-full h-full" />
                         </div>
                         <div className="space-y-1 flex-1 min-w-0">
                           {msg.furigana?.segments ? (
@@ -918,11 +915,7 @@ export default function SenseiPanel() {
                             }`}
                           >
                             {transcriptItem.role === "assistant" ? (
-                              <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                                <span className="material-symbols-outlined text-sm text-secondary">
-                                  smart_toy
-                                </span>
-                              </div>
+                              <AiAvatar className="w-full h-full" />
                             ) : (
                               <span className="material-symbols-outlined text-sm text-muted-foreground">
                                 person

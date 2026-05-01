@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
+import AiAvatar from "@/components/chatdock/AiAvatar";
 
 // Lazy load Particles component — tránh load ~200KB tsparticles khi khởi động
 const Particles = dynamic(() => import("@tsparticles/react").then(m => m.default), {
@@ -108,10 +109,10 @@ export function HeroSection() {
           <Button
             asChild
             variant="ghost"
-            className="h-[52px] bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 hover:border-white/40"
+            className="h-[52px] bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 hover:border-white/40"
           >
-            <Link href="/ai-chat">
-              <span className="material-symbols-outlined">smart_toy</span>
+            <Link href="/ai-chat" className="flex items-center gap-3">
+              <AiAvatar className="w-9 h-9" />
               {continueBtn}
             </Link>
           </Button>

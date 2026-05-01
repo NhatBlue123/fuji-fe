@@ -8,6 +8,7 @@ import { motion, useInView } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import IconRenderer from "@/components/common/IconRenderer";
 import { HeroSection } from "@/components/user-component/home/HeroSection";
 import { StatsSection } from "@/components/user-component/home/StatsSection";
 
@@ -238,7 +239,7 @@ function FeatureCard({ feature, label }: { feature: FeatureMeta; label: (key: st
     >
       <div>
         <div className={cn("mb-3 flex size-8 items-center justify-center rounded-full sm:mb-4 sm:size-10", feature.tone)}>
-          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">{feature.icon}</span>
+          <IconRenderer icon={feature.icon} className="text-[18px] sm:text-[20px]" />
         </div>
         <h3 className="text-sm font-semibold text-foreground sm:text-base">
           {label(`home.cards.${feature.key}.title`)}
@@ -463,8 +464,8 @@ export default function HomePageClient() {
                 </div>
                 <MediaSurface src={currentScenario.image} className="min-h-[300px] rounded-none border-0 shadow-none">
                   <div className="flex h-full items-start justify-end p-6">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-sm">
-                      <span className="material-symbols-outlined">{currentScenario.icon}</span>
+                    <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-sm p-2">
+                      <IconRenderer icon={currentScenario.icon} />
                     </div>
                   </div>
                 </MediaSurface>

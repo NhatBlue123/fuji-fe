@@ -179,6 +179,9 @@ export const courseApi = createApi({
       invalidatesTags: (_result, _error, { courseId }) => [
         { type: "Course", id: courseId },
         { type: "Course", id: "LIST" },
+        { type: "Lesson", id: "LIST" }, // Invalidate lessons to refresh access status
+        "Wallet",
+        "Payment",
       ],
     }),
 

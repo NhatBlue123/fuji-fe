@@ -13,7 +13,6 @@ import {
   useTrackLessonProgressMutation,
   useCompleteLessonMutation,
 } from "@/store/services/courseApi";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth } from "@/store/hooks";
 import type { LessonResponseDTO, TaskType } from "@/types/course";
 import {
@@ -475,7 +474,6 @@ export default function LessonView({
 }) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { isPremium } = useFeatureAccess();
   const { isAuthenticated } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "qa" | "notes">(
     "overview",
@@ -504,7 +502,9 @@ export default function LessonView({
   );
   const currentLessonMeta = sortedLessons.find((l) => l.id === lessonId);
 
-  const canAccessCourse = isAuthenticated && (isPremium || Boolean(course?.isEnrolled));
+  // IMPORTANT: Only check isEnrolled, NOT isPremium
+  // Premium subscription does NOT grant free access to all courses
+  const canAccessCourse = isAuthenticated && Boolean(course?.isEnrolled);
 
   // Khi chưa enroll: không unlock bài nào theo sequential (chỉ preview mới qua được)
   const firstIncompleteIndex = sortedLessons.findIndex((l) => !l.userCompleted);

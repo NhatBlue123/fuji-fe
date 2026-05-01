@@ -22,7 +22,6 @@ import type {
 } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth, useAppDispatch } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 import { toast } from "sonner";
@@ -958,7 +957,6 @@ export default function CourseDetailView({
   const [isPurchased, setIsPurchased] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
-  const { isPremium } = useFeatureAccess();
   const [purchaseCourse, { isLoading: isPurchasing }] =
     usePurchaseCourseMutation();
   const [triggerPreview, { isFetching: isValidating }] = useLazyPreviewDiscountQuery();
@@ -1053,7 +1051,9 @@ export default function CourseDetailView({
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
   const completedLessons = lessons.filter((l) => l.userCompleted).length;
   const isEnrolled = Boolean(course.isEnrolled);
-  const canAccessCourse = isAuthenticated && (isPremium || isPurchased || isEnrolled);
+  // IMPORTANT: Only check isEnrolled, NOT isPremium
+  // Premium subscription does NOT grant free access to all courses
+  const canAccessCourse = isAuthenticated && (isPurchased || isEnrolled);
 
   // resumeLessonId chỉ dùng khi đã có quyền truy cập
   const resumeLessonId = canAccessCourse
@@ -1092,11 +1092,8 @@ export default function CourseDetailView({
 
       setIsPurchased(true);
       dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
-      toast.success(
-        isFreePrice(course.price)
-          ? t("course.buySuccess")
-          : t("course.buySuccess"),
-      );
+      
+      // Backend will send notification, no need for toast here
 
       if (resumeLessonId) {
         router.push(resumeLessonHref);

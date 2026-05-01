@@ -301,7 +301,7 @@ export default function CourseList({
     try {
       setRegisteringCourseId(course.id);
       await purchaseCourse({ courseId: course.id }).unwrap();
-      toast.success(tMsg("course.buySuccess"));
+      // Backend will send notification, no need for toast here
     } catch (error: any) {
       const msg = tMsg(error?.data?.messageKey) || tMsg("api.error");
       toast.error(msg);

@@ -59,7 +59,7 @@ export default function CourseCardActions({
     try {
       setIsRegistering(true);
       await purchaseCourse({ courseId }).unwrap();
-      toast.success(tMsg("course.buySuccess"));
+      // Backend will send notification, no need for toast here
       router.push(resumeHref);
     } catch (error: any) {
       const msg = tMsg(error?.data?.messageKey) || tMsg("api.error");

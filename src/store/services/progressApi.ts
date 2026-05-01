@@ -1,18 +1,18 @@
 import { baseApi } from "./baseApi";
 
+// ============================================
+// NEW SIMPLE STREAK SYSTEM
+// ============================================
 export interface UserStreakResponse {
-  id: number;
   userId: number;
-  currentStreak: number;
-  longestStreak: number;
-  lastStudyDate: string | null;
-  freezeCount: number;
-  totalStudyDays: number;
-  studiedToday: boolean;
-  createdAt: string;
-  updatedAt: string;
+  streakCount: number;
+  lastLoginDate: string | null;
+  loggedInToday: boolean;
 }
 
+// ============================================
+// DEPRECATED - Will be removed
+// ============================================
 export interface DailyStatsResponse {
   id: number;
   userId: number;
@@ -87,14 +87,20 @@ export interface StreakProgressResponse {
 
 export const progressApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getProgressOverview: builder.query<UserProgressOverviewResponse, void>({
-      query: () => "/progress/overview",
-      providesTags: ["Progress"],
-    }),
-
+    // ============================================
+    // ACTIVE ENDPOINTS
+    // ============================================
     getStreak: builder.query<UserStreakResponse, void>({
       query: () => "/progress/streak",
       providesTags: ["Streak"],
+    }),
+
+    // ============================================
+    // DEPRECATED ENDPOINTS - Will be removed
+    // ============================================
+    getProgressOverview: builder.query<UserProgressOverviewResponse, void>({
+      query: () => "/progress/overview",
+      providesTags: ["Progress"],
     }),
 
     getStreakProgress: builder.query<StreakProgressResponse, void>({

@@ -162,7 +162,7 @@ const Header = () => {
 
         <div className="flex items-center gap-1 md:gap-2">
           {/* Streak Indicator */}
-          {canShowAuthUi && streak && streak.currentStreak > 0 && (
+          {canShowAuthUi && streak && streak.streakCount > 0 && (
             <div
               className={cn(
                 "flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-bold",
@@ -171,7 +171,7 @@ const Header = () => {
               )}
             >
               <Flame className="size-4 text-orange-500 animate-pulse" />
-              <span>{streak.currentStreak}</span>
+              <span>{streak.streakCount}</span>
               <span className="text-xs text-orange-400/70 hidden sm:inline">ngày</span>
             </div>
           )}

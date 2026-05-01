@@ -32,6 +32,7 @@ import {
   UserMessageBubble,
 } from "./assistant/MessageBubbles";
 import ConversationSidebar from "./assistant/ConversationSidebar";
+import AiAvatar from "@/components/chatdock/AiAvatar";
 import type {
   AssistantConversationSnapshot,
   RouterThinkingItem,
@@ -1073,12 +1074,8 @@ export default function AssistantPanel({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
-                <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20 dark:from-blue-500 dark:to-blue-700 dark:shadow-blue-500/30">
-                  <div className="w-full h-full rounded-full bg-card flex items-center justify-center dark:bg-slate-800">
-                    <span className="material-symbols-outlined text-primary text-2xl dark:text-blue-400">
-                      smart_toy
-                    </span>
-                  </div>
+                <div className="size-20 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-2 shadow-lg shadow-primary/20 dark:from-blue-500 dark:to-blue-700 dark:shadow-blue-500/30">
+                  <AiAvatar className="w-full h-full" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-1 dark:text-slate-100">

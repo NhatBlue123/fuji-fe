@@ -48,7 +48,7 @@ const SCENARIO_META: Record<
 > = {
   speak: {
     icon: "record_voice_over",
-    primaryHref: "/ai-chat",
+    primaryHref: "/sensei",
     secondaryHref: "/video-call",
     image: "/images/home/scenario-speaking.webp",
   },

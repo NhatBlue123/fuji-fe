@@ -1,12 +1,12 @@
 /**
- * Layout riêng cho trang AI Chat.
+ * Layout riêng cho trang AI Sensei.
  * - Ẩn header của app
  * - Ẩn footer (không cần thanh cuộn toàn trang)
  * - Ghi đè overflow của thẻ main từ parent layout
  * - Socket provider đã được wrap ở AppShell (layout chính)
  */
 
-export default function AIChatLayout({
+export default function SenseiLayout({
   children,
 }: {
   children: React.ReactNode;

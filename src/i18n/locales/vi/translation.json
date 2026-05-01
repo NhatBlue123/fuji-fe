@@ -84,7 +84,8 @@
     "logoutSuccess": "Đăng xuất thành công!",
     "logoutFailed": "Đăng xuất thất bại",
     "logout": "Đăng xuất",
-    "videoCall": "Video Call"
+    "videoCall": "Video Call",
+    "sensei": "Nói với Sensei"
   },
   "languageSwitcher": {
     "title": "Cài đặt ngôn ngữ",

@@ -83,7 +83,8 @@
     "logoutSuccess": "Logged out successfully!",
     "logoutFailed": "Logout failed",
     "logout": "Logout",
-    "videoCall": "Video Call"
+    "videoCall": "Video Call",
+    "sensei": "Talk with Sensei"
   },
   "languageSwitcher": {
     "title": "Language Settings",

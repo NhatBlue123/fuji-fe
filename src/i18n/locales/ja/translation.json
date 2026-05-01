@@ -83,7 +83,8 @@
     "logoutSuccess": "ログアウトしました！",
     "logoutFailed": "ログアウトに失敗しました",
     "logout": "Đăng xuất",
-    "videoCall": "ビデオ通話"
+    "videoCall": "ビデオ通話",
+    "sensei": "先生と話す"
   },
   "languageSwitcher": {
     "title": "言語設定",

@@ -122,6 +122,16 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
 
     try {
       await createCourse({ course: formData }).unwrap();
+      
+      // Revalidate ISR pages
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "course", action: "create" }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success("Tạo khóa học thành công!");
       resetForm();
       onOpenChange(false);

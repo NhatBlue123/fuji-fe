@@ -268,6 +268,14 @@ export default function CreateFlashcardModal({
           },
           thumbnail: listThumbnailFileRef.current || undefined,
         }).unwrap();
+        
+        // Revalidate ISR pages
+        fetch("/api/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "flashcard", action: "create" }),
+        }).catch(() => {});
+        
       } else {
         if (!cardName.trim()) {
           setError(t("flashcard.validate.nameRequired"));
@@ -288,6 +296,13 @@ export default function CreateFlashcardModal({
           },
           thumbnail: cardThumbnailFileRef.current || undefined,
         }).unwrap();
+        
+        // Revalidate ISR pages
+        fetch("/api/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "flashcard", action: "create" }),
+        }).catch(() => {});
       }
       resetForm();
       onOpenChange(false);

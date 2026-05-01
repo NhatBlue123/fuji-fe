@@ -223,6 +223,16 @@ export default function CoursesPage() {
     if (!deleteTarget) return;
     try {
       await deleteCourse(deleteTarget.id).unwrap();
+      
+      // Revalidate ISR pages
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "course", action: "delete" }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success("Xóa khóa học thành công!");
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
@@ -264,6 +274,20 @@ export default function CoursesPage() {
       );
 
       await updateCourse({ id: course.id, course: formData }).unwrap();
+      
+      // Revalidate ISR pages when publishing/unpublishing
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "course", 
+          action: course.isPublished ? "unpublish" : "publish",
+          id: course.id 
+        }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success(
         course.isPublished ? "Đã chuyển về bản nháp" : "Đã xuất bản khóa học",
       );

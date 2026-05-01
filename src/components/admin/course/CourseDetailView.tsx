@@ -143,6 +143,16 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   const handleDeleteCourse = async () => {
     try {
       await deleteCourse(courseId).unwrap();
+      
+      // Revalidate ISR pages
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "course", action: "delete" }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success("Xóa khóa học thành công!");
       router.push("/admin/courses");
     } catch {
@@ -175,6 +185,16 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
       );
 
       await updateCourse({ id: courseId, course: formData }).unwrap();
+      
+      // Revalidate ISR pages
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "course", action: "update", id: courseId }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success("Cập nhật khóa học thành công!");
       setEditCourseDialog(false);
       router.replace(`/admin/courses/${courseId}`);

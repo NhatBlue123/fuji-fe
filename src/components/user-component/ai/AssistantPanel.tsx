@@ -1158,7 +1158,7 @@ export default function AssistantPanel({
           input={input}
           onInputChange={setInput}
           onSend={handleSend}
-          chips={shouldShowInputChips ? ASSISTANT_CHIPS : []}
+          chips={[]}
           placeholder="Hỏi bất kỳ điều gì về tiếng Nhật..."
         />
       </div>

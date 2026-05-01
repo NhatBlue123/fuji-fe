@@ -18,6 +18,7 @@ import MobileHeader from "./MobileHeader";
 import Footer from "./Footer";
 import MobieSidebar from "./Mobie-sidebar";
 import { AIChatSocketProvider } from "@/providers/AIChatSocketProvider";
+import ChatDock from "@/components/chatdock/ChatDock";
 
 export default function AppShell({
   children,
@@ -45,6 +46,7 @@ export default function AppShell({
           </main>
         </div>
         <MobieSidebar />
+        <ChatDock />
       </div>
     </AIChatSocketProvider>
   );

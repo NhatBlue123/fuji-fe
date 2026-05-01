@@ -28,10 +28,6 @@ export async function POST(request: NextRequest) {
         await handleFlashcardRevalidation(action, id);
         break;
       
-      case "homepage":
-        await handleHomepageRevalidation();
-        break;
-      
       default:
         return NextResponse.json(
           { error: "Invalid type" },
@@ -60,14 +56,12 @@ async function handleCourseRevalidation(action: string, id?: number) {
     case "delete":
       // Revalidate course list page
       revalidatePath("/course");
-      revalidatePath("/");
       console.log("[Revalidate] Course list revalidated");
       break;
 
     case "update":
       if (id) {
         // Revalidate specific course detail page
-        // Note: We need to revalidate by tag or path pattern
         revalidatePath(`/course/[slug]`, "page");
         revalidatePath("/course");
         console.log(`[Revalidate] Course ${id} revalidated`);
@@ -79,7 +73,6 @@ async function handleCourseRevalidation(action: string, id?: number) {
       // Revalidate both list and detail
       revalidatePath("/course");
       revalidatePath(`/course/[slug]`, "page");
-      revalidatePath("/");
       console.log("[Revalidate] Course published/unpublished");
       break;
 
@@ -93,18 +86,12 @@ async function handleFlashcardRevalidation(action: string, id?: number) {
     case "create":
     case "delete":
     case "update":
-      // Revalidate flashcard list page and homepage (shows flashcards)
+      // Revalidate flashcard list page
       revalidatePath("/flashcards");
-      revalidatePath("/");
       console.log("[Revalidate] Flashcard pages revalidated");
       break;
 
     default:
       console.warn(`[Revalidate] Unknown action: ${action}`);
   }
-}
-
-async function handleHomepageRevalidation() {
-  revalidatePath("/");
-  console.log("[Revalidate] Homepage revalidated");
 }

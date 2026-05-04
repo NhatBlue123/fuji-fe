@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import IconRenderer from "@/components/common/IconRenderer";
 import { HeroSection } from "@/components/user-component/home/HeroSection";
 import { StatsSection } from "@/components/user-component/home/StatsSection";
+import { useGetWeakCardReviewSetQuery } from "@/store/services/flashcardApi";
+import { useAuth } from "@/store/hooks";
 
 type CardKey =
   | "course"
@@ -260,6 +262,10 @@ function FeatureCard({ feature, label }: { feature: FeatureMeta; label: (key: st
 
 export default function HomePageClient() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
+  const { data: weakReviewData } = useGetWeakCardReviewSetQuery(undefined, {
+    skip: !isAuthenticated,
+  });
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const currentId = SCENARIO_IDS[scenarioIdx];
   const aiVideoRef = useRef<HTMLVideoElement>(null);
@@ -316,6 +322,23 @@ export default function HomePageClient() {
     <div className="flex-1 bg-background pb-16 dark:bg-[#0f172a]">
       <HeroSection />
       <StatsSection />
+      {weakReviewData && weakReviewData.totalWeak > 0 && (
+        <div className="mx-auto mt-8 w-full max-w-[1480px] px-4 sm:px-6 lg:px-10 xl:px-16">
+          <Link
+            href="/flashcards/review/personal"
+            className="block rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-slate-950/35"
+          >
+            <p className="text-sm font-semibold text-foreground">Ôn tập cá nhân</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {weakReviewData.totalWeak} từ cần ôn · {weakReviewData.veryHardCount} từ rất khó nhớ
+            </p>
+            <p className="mt-3 inline-flex items-center text-sm font-semibold text-pink-500">
+              Bắt đầu ôn 20 thẻ
+              <span className="material-symbols-outlined ml-1 text-base">arrow_forward</span>
+            </p>
+          </Link>
+        </div>
+      )}
 
       <div className="mx-auto mt-14 w-full max-w-[1480px] space-y-20 px-4 sm:px-6 lg:px-10 xl:px-16">
         <section className="grid gap-8 lg:grid-cols-[0.95fr_1.35fr] lg:items-end">

@@ -167,6 +167,23 @@ function TermCard({
           </p>
         )}
 
+      {(term.pronunciation || term.exampleSentence) && (
+        <div className="mt-2 ml-6 space-y-1 text-[11px] text-gray-400">
+          {term.pronunciation && (
+            <p>
+              <span className="text-gray-500">Cách đọc:</span>{" "}
+              {term.pronunciation}
+            </p>
+          )}
+          {term.exampleSentence && (
+            <p className="line-clamp-2">
+              <span className="text-gray-500">Ví dụ:</span>{" "}
+              {term.exampleSentence}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Error message */}
       {term.status === "error" && term.errorMessage && (
         <p className="text-[11px] text-red-400 mt-1.5 ml-6">

@@ -19,6 +19,9 @@ import type {
   RatingRequestDTO,
   CardDTO,
   UserStudyProgressDTO,
+  WeakCardsAddPayload,
+  WeakCardMarkMasteredPayload,
+  WeakCardReviewSetResponse,
 } from "@/types/flashcard";
 
 // ─── Response wrapper ──────────────────────────────────
@@ -98,7 +101,7 @@ const baseQueryWithReauth: BaseQueryFn<
 
 // ─── Helper: build query string ────────────────────────
 
-function toQueryString(params: Record<string, any>): string {
+function toQueryString(params: Record<string, unknown>): string {
   const parts: string[] = [];
   for (const [key, val] of Object.entries(params)) {
     if (val !== undefined && val !== null && val !== "") {
@@ -115,7 +118,7 @@ function toQueryString(params: Record<string, any>): string {
 export const flashcardApi = createApi({
   reducerPath: "flashcardApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["FlashCard", "FlashList"],
+  tagTypes: ["FlashCard", "FlashList", "WeakCards"],
   endpoints: (builder) => ({
     // ═══════════════════ FlashCard endpoints ═══════════════════
 
@@ -256,7 +259,7 @@ export const flashcardApi = createApi({
     // Search flashcards
     searchFlashCards: builder.query<FlashCardSearchResult, SearchParams>({
       query: (params) => {
-        const qs = toQueryString(params);
+        const qs = toQueryString(params as Record<string, unknown>);
         return `${API_ENDPOINTS.FLASHCARDS.SEARCH}${qs}`;
       },
       transformResponse: (response: ApiResponse<FlashCardSearchResult>) => {
@@ -311,6 +314,31 @@ export const flashcardApi = createApi({
           totalCount,
         },
       }),
+    }),
+
+    addWeakCards: builder.mutation<void, WeakCardsAddPayload>({
+      query: ({ flashcardIds, deckSlug, source }) => ({
+        url: API_ENDPOINTS.WEAK_CARDS.ADD,
+        method: "POST",
+        body: { flashcardIds, deckSlug, source },
+      }),
+      invalidatesTags: [{ type: "WeakCards", id: "REVIEW_SET" }],
+    }),
+
+    markWeakCardMastered: builder.mutation<void, WeakCardMarkMasteredPayload>({
+      query: ({ flashcardId }) => ({
+        url: API_ENDPOINTS.WEAK_CARDS.MARK_MASTERED,
+        method: "POST",
+        body: { flashcardId },
+      }),
+      invalidatesTags: [{ type: "WeakCards", id: "REVIEW_SET" }],
+    }),
+
+    getWeakCardReviewSet: builder.query<WeakCardReviewSetResponse, void>({
+      query: () => API_ENDPOINTS.WEAK_CARDS.REVIEW_SET,
+      transformResponse: (response: ApiResponse<WeakCardReviewSetResponse>) =>
+        response.data || { cards: [], totalWeak: 0, totalMastered: 0, veryHardCount: 0 },
+      providesTags: [{ type: "WeakCards", id: "REVIEW_SET" }],
     }),
 
     // ═══════════════════ FlashList endpoints ═══════════════════
@@ -476,7 +504,7 @@ export const flashcardApi = createApi({
     // Search flashlists
     searchFlashLists: builder.query<FlashListSearchResult, SearchParams>({
       query: (params) => {
-        const qs = toQueryString(params);
+        const qs = toQueryString(params as Record<string, unknown>);
         return `${API_ENDPOINTS.FLASHLISTS.SEARCH}${qs}`;
       },
       transformResponse: (response: ApiResponse<FlashListSearchResult>) => {
@@ -514,6 +542,9 @@ export const {
   useSearchFlashCardsQuery,
   useStartLearningMutation,
   useSubmitExerciseResultMutation,
+  useAddWeakCardsMutation,
+  useMarkWeakCardMasteredMutation,
+  useGetWeakCardReviewSetQuery,
   // FlashList
   useGetFlashListsQuery,
   useGetFlashListByIdQuery,

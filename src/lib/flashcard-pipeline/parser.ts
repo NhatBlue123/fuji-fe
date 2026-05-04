@@ -3,6 +3,9 @@
  *
  * Supported formats:
  *   "vocabulary - meaning"
+ *   "vocabulary - meaning - pronunciation"
+ *   "vocabulary - meaning - pronunciation - example sentence"
+ *   "vocabulary | meaning | pronunciation | example sentence"
  *   "vocabulary: meaning"
  *   "vocabulary"  (meaning left empty)
  *
@@ -12,6 +15,8 @@
 export interface ParsedTerm {
   vocabulary: string;
   meaning: string;
+  pronunciation: string;
+  exampleSentence: string;
 }
 
 /**
@@ -30,16 +35,16 @@ export function parseTerms(input: string): ParsedTerm[] {
 
 /**
  * Parse a single line into a ParsedTerm.
- * Tries separators in order:  " - ", ": ", ":"
+ * Tries separators in order: "|", " - ", ": ", ":"
  */
 function parseSingleLine(line: string): ParsedTerm {
+  if (line.includes("|")) {
+    return buildParsedTerm(line.split("|"));
+  }
+
   // Try " - " first (most explicit)
-  const dashIdx = line.indexOf(" - ");
-  if (dashIdx !== -1) {
-    return {
-      vocabulary: cleanToken(line.substring(0, dashIdx)),
-      meaning: cleanToken(line.substring(dashIdx + 3)),
-    };
+  if (line.includes(" - ")) {
+    return buildParsedTerm(line.split(" - "));
   }
 
   // Try ": " (colon-space)
@@ -48,6 +53,8 @@ function parseSingleLine(line: string): ParsedTerm {
     return {
       vocabulary: cleanToken(line.substring(0, colonSpaceIdx)),
       meaning: cleanToken(line.substring(colonSpaceIdx + 2)),
+      pronunciation: "",
+      exampleSentence: "",
     };
   }
 
@@ -57,6 +64,8 @@ function parseSingleLine(line: string): ParsedTerm {
     return {
       vocabulary: cleanToken(line.substring(0, colonIdx)),
       meaning: cleanToken(line.substring(colonIdx + 1)),
+      pronunciation: "",
+      exampleSentence: "",
     };
   }
 
@@ -64,6 +73,20 @@ function parseSingleLine(line: string): ParsedTerm {
   return {
     vocabulary: cleanToken(line),
     meaning: "",
+    pronunciation: "",
+    exampleSentence: "",
+  };
+}
+
+function buildParsedTerm(parts: string[]): ParsedTerm {
+  const [vocabulary = "", meaning = "", pronunciation = "", ...exampleParts] =
+    parts;
+
+  return {
+    vocabulary: cleanToken(vocabulary),
+    meaning: cleanToken(meaning),
+    pronunciation: cleanToken(pronunciation),
+    exampleSentence: cleanToken(exampleParts.join(" - ")),
   };
 }
 

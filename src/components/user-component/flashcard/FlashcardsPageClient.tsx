@@ -15,6 +15,7 @@ import styles from "@/app/(user)/flashcards/page.module.css";
 import {
   useGetFlashCardsQuery,
   useGetFlashListsQuery,
+  useGetWeakCardReviewSetQuery,
 } from "@/store/services/flashcardApi";
 import { getMockImage } from "@/lib/mockImages";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   buildFlashcardDetailHref,
   buildFlashListHref,
 } from "@/lib/flashcardSeo";
+import { useAuth } from "@/store/hooks";
 
 type OwnershipFilter = "all" | "mine" | "community";
 const PAGE_LIMIT = 20;
@@ -71,6 +73,7 @@ function PaginationControls({
 
 export default function FlashcardsPage() {
   const { t } = useTranslation();
+  const { isAuthenticated, isInitialized } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"cards" | "lists">("cards");
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,11 +117,19 @@ export default function FlashcardsPage() {
     level: levelParam,
     select: selectParam,
   });
+  const { data: weakReviewData, isFetching: isFetchingWeakReview } =
+    useGetWeakCardReviewSetQuery(undefined, {
+    skip: !isInitialized || !isAuthenticated,
+  });
 
   const isLoading = viewMode === "cards" ? isLoadingCards : isLoadingLists;
   const activeError = viewMode === "cards" ? cardsError : listsError;
 
   const cards = flashCardsData?.flashCards || [];
+  const personalReviewCount = weakReviewData?.totalWeak ?? 0;
+  const personalVeryHardCount = weakReviewData?.veryHardCount ?? 0;
+  const showPersonalReviewDeck = isInitialized && isAuthenticated;
+  const hasPersonalReviewQueue = personalReviewCount > 0;
   const allLists = [
     ...(flashListsData?.myLists || []),
     ...(flashListsData?.publicLists || []),
@@ -134,6 +145,7 @@ export default function FlashcardsPage() {
 
   const cardsPagination = flashCardsData?.pagination;
   const cardsTotal = cardsPagination?.totalElements ?? cards.length;
+  const displayedCardsTotal = cardsTotal + (showPersonalReviewDeck ? 1 : 0);
   const cardsCurrentPage = cardsPagination?.page ?? cardsPage;
   const cardsTotalPages = Math.max(cardsPagination?.totalPages ?? 1, 1);
   const cardsHasPrevious = cardsPagination?.hasPrevious ?? cardsCurrentPage > 0;
@@ -303,10 +315,10 @@ export default function FlashcardsPage() {
               <span className="w-1 h-8 bg-secondary rounded-full"></span>
               {t("flashcards.page.cards")}
               <span className="text-sm font-normal text-muted-foreground">
-                ({cardsTotal})
+                ({displayedCardsTotal})
               </span>
             </h2>
-            {cards.length === 0 ? (
+            {cards.length === 0 && !showPersonalReviewDeck ? (
               <div className="text-center py-16 text-muted-foreground">
                 <span className="material-symbols-outlined text-6xl mb-4 block">
                   style
@@ -315,6 +327,56 @@ export default function FlashcardsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {showPersonalReviewDeck && (
+                  <Link href="/flashcards/review/personal">
+                    <article className="bg-card border border-amber-500/30 rounded-2xl overflow-hidden hover:border-amber-400/60 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full">
+                      <div className="relative h-48 overflow-hidden flex items-center justify-center bg-gradient-to-br from-amber-500/15 via-card to-primary/15">
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(245,158,11,0.18)_0%,transparent_34%,rgba(236,72,153,0.12)_66%,transparent_100%)]" />
+                        <div className="relative flex size-20 items-center justify-center rounded-2xl border border-amber-300/30 bg-background/65 text-amber-300 backdrop-blur">
+                          <span className="material-symbols-outlined text-5xl">psychology</span>
+                        </div>
+                        <div className="absolute top-3 left-3 bg-background/80 backdrop-blur text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                          Cá nhân
+                        </div>
+                        <div className="absolute top-3 right-3 bg-background/80 backdrop-blur text-foreground border border-border text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                          Ưu tiên
+                        </div>
+                      </div>
+                      <div className="p-5 flex flex-col flex-1">
+                        <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-amber-300 transition-colors truncate">
+                          Ôn tập cá nhân
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
+                          {isFetchingWeakReview
+                            ? "Đang tính danh sách cần ôn..."
+                            : hasPersonalReviewQueue
+                              ? `${personalReviewCount} từ cần ôn · ${personalVeryHardCount} từ rất khó nhớ`
+                              : "Bạn đã thuộc hết rồi!"}
+                        </p>
+                        <div className="mt-auto pt-4 border-t border-border">
+                          <div className="flex items-center justify-between mb-4 text-xs text-muted-foreground font-medium">
+                            <div className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-sm">style</span>
+                              <span>
+                                {hasPersonalReviewQueue ? "20 thẻ gợi ý" : "Sẵn sàng khi có từ khó"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`w-full py-2.5 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-lg ${
+                            hasPersonalReviewQueue
+                              ? "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20 group-hover:shadow-amber-500/35"
+                              : "bg-muted text-muted-foreground shadow-transparent"
+                          }`}>
+                            <span className="material-symbols-outlined text-lg">
+                              {hasPersonalReviewQueue ? "play_arrow" : "check_circle"}
+                            </span>
+                            {hasPersonalReviewQueue ? "Bắt đầu ôn 20 thẻ" : "Chưa có thẻ cần ôn"}
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                )}
                 {cards.map((fc) => (
                   <Link key={fc.id} href={buildFlashcardDetailHref(fc)}>
                     <article className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 flex flex-col h-full">

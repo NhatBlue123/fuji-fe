@@ -5,6 +5,7 @@ import { use, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  useAddWeakCardsMutation,
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
 } from "@/store/services/flashcardApi";
@@ -16,16 +17,59 @@ import {
 } from "@/lib/flashcardSeo";
 import { getMockImage } from "@/lib/mockImages";
 import { useAuth } from "@/store/hooks";
+import type { CardResponseDTO } from "@/types/flashcard";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface MultipleChoiceQuestion {
   id: number;
+  flashcardId: number;
   type: "vocab_to_meaning" | "meaning_to_vocab";
   question: string;
   answer: string;
   options: string[];
   hint: string;
-  previewUrl?: string;
+  previewUrl?: string | null;
+}
+
+function buildMultipleChoiceQuestions(cards: CardResponseDTO[]): MultipleChoiceQuestion[] {
+  if (!cards || cards.length < 4) return [];
+  const picked = shuffle(cards).slice(0, Math.min(10, cards.length));
+
+  return picked.map((card, idx) => {
+    const isV2M = Math.random() > 0.5;
+    if (isV2M) {
+      const wrong = shuffle(
+        cards
+          .filter((c) => c.id !== card.id && c.meaning !== card.meaning)
+          .map((c) => c.meaning),
+      ).slice(0, 3);
+      return {
+        id: idx,
+        flashcardId: Number(card.id),
+        type: "vocab_to_meaning" as const,
+        question: card.vocabulary || "",
+        answer: card.meaning || "",
+        options: shuffle([card.meaning || "", ...wrong]),
+        hint: card.pronunciation || "",
+        previewUrl: card.previewUrl || null,
+      };
+    }
+    const wrong = shuffle(
+      cards
+        .filter((c) => c.id !== card.id && c.vocabulary !== card.vocabulary)
+        .map((c) => c.vocabulary),
+    ).slice(0, 3);
+    return {
+      id: idx,
+      flashcardId: Number(card.id),
+      type: "meaning_to_vocab" as const,
+      question: card.meaning || "",
+      answer: card.vocabulary || "",
+      options: shuffle([card.vocabulary || "", ...wrong]),
+      hint: card.pronunciation || "",
+      previewUrl: card.previewUrl || null,
+    };
+  });
 }
 
 type AnswerRecord = { selected: string; correct: boolean };
@@ -63,12 +107,13 @@ export default function MultipleChoiceExercisePage({
     skip: !isAuthenticated,
   });
   const [submitResult] = useSubmitExerciseResultMutation();
+  const [addWeakCards] = useAddWeakCardsMutation();
 
   useEffect(() => {
     if (isInitialized && !isAuthenticated) router.replace("/login");
   }, [isInitialized, isAuthenticated, router]);
 
-  const [questions, setQuestions] = useState<MultipleChoiceQuestion[]>([]);
+  const [questionSeed, setQuestionSeed] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<number, AnswerRecord>>({});
@@ -76,48 +121,20 @@ export default function MultipleChoiceExercisePage({
   const [shakeOption, setShakeOption] = useState<string | null>(null);
 
   const generateQuestions = useCallback(() => {
-    if (!flashcard?.cards || flashcard.cards.length < 4) return;
-    const cards = flashcard.cards;
-    const picked = shuffle(cards).slice(0, Math.min(10, cards.length));
-
-    const qs: MultipleChoiceQuestion[] = picked.map((card: any, idx) => {
-      const isV2M = Math.random() > 0.5;
-      if (isV2M) {
-        const wrong = shuffle(
-          cards.filter((c: any) => c.meaning !== card.meaning).map((c: any) => c.meaning),
-        ).slice(0, 3);
-        return {
-          id: idx,
-          type: "vocab_to_meaning",
-          question: card.vocabulary || "",
-          answer: card.meaning || "",
-          options: shuffle([card.meaning || "", ...wrong]),
-          hint: card.pronunciation || "",
-          previewUrl: card.previewUrl || null,
-        };
-      }
-      const wrong = shuffle(
-        cards.filter((c: any) => c.vocabulary !== card.vocabulary).map((c: any) => c.vocabulary),
-      ).slice(0, 3);
-      return {
-        id: idx,
-        type: "meaning_to_vocab",
-        question: card.meaning || "",
-        answer: card.vocabulary || "",
-        options: shuffle([card.vocabulary || "", ...wrong]),
-        hint: card.pronunciation || "",
-        previewUrl: card.previewUrl || null,
-      };
-    });
-
-    setQuestions(qs);
+    setQuestionSeed((seed) => seed + 1);
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setAnswers({});
     setShowResults(false);
-  }, [flashcard]);
+  }, []);
 
-  useEffect(() => { generateQuestions(); }, [generateQuestions]);
+  const questions = useMemo(
+    () => {
+      void questionSeed;
+      return buildMultipleChoiceQuestions(flashcard?.cards || []);
+    },
+    [flashcard?.cards, questionSeed],
+  );
 
   const currentQ = questions[currentIndex];
   const isAnswered = selectedAnswer !== null;
@@ -172,8 +189,24 @@ export default function MultipleChoiceExercisePage({
         correctCount,
         totalCount: questions.length,
       }).catch(console.error);
+
+      const wrongCardIds = Array.from(
+        new Set(
+          questions
+            .filter((q) => answers[q.id] && !answers[q.id].correct)
+            .map((q) => q.flashcardId),
+        ),
+      );
+
+      if (wrongCardIds.length > 0) {
+        void addWeakCards({
+          flashcardIds: wrongCardIds,
+          deckSlug: slug,
+          source: "multiple-choice",
+        }).unwrap().catch(console.error);
+      }
     }
-  }, [currentIndex, questions, correctCount, id, submitResult]);
+  }, [currentIndex, questions, correctCount, id, submitResult, answers, addWeakCards, slug]);
 
   /* ─── Loading ─────────────────────────────────────── */
   if (isLoading) {

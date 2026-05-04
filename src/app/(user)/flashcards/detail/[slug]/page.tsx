@@ -1,586 +1,618 @@
 "use client";
 
-import { useTranslation } from "react-i18next";
-
-import { use, useState, useEffect } from "react";
+import { use, useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import styles from "./page.module.css";
-import { useGetFlashCardByIdQuery } from "@/store/services/flashcardApi";
-import { fetchPublicFlashcard } from "@/lib/publicFlashcardApi";
-import { getMockImage } from "@/lib/mockImages";
-import type { CardResponseDTO, FlashCardResponseDTO } from "@/types/flashcard";
-import { Button } from "@/components/ui/button";
+
 import {
+  buildFlashcardExerciseHref,
   buildFlashcardLearnHref,
   buildFlashcardSettingsHref,
   extractTrailingId,
 } from "@/lib/flashcardSeo";
+import { fetchPublicFlashcard } from "@/lib/publicFlashcardApi";
 import { useAuth } from "@/store/hooks";
+import { useGetFlashCardByIdQuery } from "@/store/services/flashcardApi";
+import type { CardResponseDTO, FlashCardResponseDTO } from "@/types/flashcard";
+
+const LEVEL_LABELS: Record<string, string> = {
+  N5: "Cơ bản",
+  N4: "Sơ cấp",
+  N3: "Trung cấp",
+  N2: "Cao cấp",
+  N1: "Nâng cao",
+};
+
+function clampPercent(value?: number | null) {
+  if (typeof value !== "number" || Number.isNaN(value)) return 0;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function formatRelativeDate(dateStr?: string | null) {
+  if (!dateStr) return "Chưa có dữ liệu";
+
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "Chưa có dữ liệu";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return date.toLocaleDateString("vi-VN");
+  if (diffDays === 0) return "Hôm nay";
+  if (diffDays === 1) return "Hôm qua";
+  if (diffDays < 30) return `${diffDays} ngày trước`;
+  return date.toLocaleDateString("vi-VN");
+}
+
+function formatNextReview(dateStr?: string | null) {
+  if (!dateStr) return "Chưa lên lịch";
+
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "Chưa lên lịch";
+
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "Đang đến hạn";
+  if (diffDays === 0) return "Hôm nay";
+  if (diffDays === 1) return "Ngày mai";
+  if (diffDays < 7) return `${diffDays} ngày nữa`;
+  return date.toLocaleDateString("vi-VN");
+}
+
+function formatNumber(value?: number | null) {
+  return new Intl.NumberFormat("vi-VN").format(value ?? 0);
+}
+
+function getInitials(name?: string | null) {
+  const source = name?.trim();
+  if (!source) return "F";
+  const parts = source.split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
+  return `${first}${last}`.toUpperCase();
+}
+
+function speakText(text: string) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ja-JP";
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+}
+
+function matchesSearch(card: CardResponseDTO, query: string) {
+  if (!query) return true;
+  const normalized = query.toLowerCase();
+  return [card.vocabulary, card.meaning, card.pronunciation, card.exampleSentence]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(normalized));
+}
 
 export default function FlashcardSetDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { t } = useTranslation();
   const { slug } = use(params);
   const id = extractTrailingId(slug);
   const router = useRouter();
   const { isAuthenticated, isInitialized } = useAuth();
 
-  // Authenticated users use RTK Query (with token, includes userProgress)
-  const { data: authedFlashcard, isLoading: authedLoading, error: authedError } =
-    useGetFlashCardByIdQuery(id, { skip: !isAuthenticated });
+  const {
+    data: authedFlashcard,
+    isLoading: authedLoading,
+    error: authedError,
+  } = useGetFlashCardByIdQuery(id, {
+    skip: !isInitialized || !isAuthenticated,
+  });
 
-  // Unauthenticated users use public fetch (no token required)
-  const [publicFlashcard, setPublicFlashcard] = useState<FlashCardResponseDTO | null>(null);
-  const [publicLoading, setPublicLoading] = useState(false);
-  const [publicError, setPublicError] = useState(false);
+  const [publicState, setPublicState] = useState<{
+    id: string;
+    data: FlashCardResponseDTO | null;
+    error: boolean;
+  }>({ id: "", data: null, error: false });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [imageOnly, setImageOnly] = useState(false);
 
   useEffect(() => {
     if (!isInitialized || isAuthenticated) return;
-    setPublicLoading(true);
+
+    let cancelled = false;
+
     fetchPublicFlashcard(id)
       .then((data) => {
-        if (data) setPublicFlashcard(data);
-        else setPublicError(true);
+        if (cancelled) return;
+        setPublicState({ id, data: data ?? null, error: !data });
       })
-      .catch(() => setPublicError(true))
-      .finally(() => setPublicLoading(false));
+      .catch(() => {
+        if (!cancelled) setPublicState({ id, data: null, error: true });
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, isAuthenticated, isInitialized]);
 
-  const flashcard = isAuthenticated ? authedFlashcard : publicFlashcard;
-  const isLoading = isAuthenticated ? authedLoading : publicLoading || !isInitialized;
-  const error = isAuthenticated ? authedError : publicError ? true : null;
+  const currentPublicState =
+    publicState.id === id ? publicState : { id, data: null, error: false };
+  const flashcard = isAuthenticated ? authedFlashcard : currentPublicState.data;
+  const isLoading = isAuthenticated
+    ? authedLoading
+    : (!currentPublicState.data && !currentPublicState.error) || !isInitialized;
+  const hasError = isAuthenticated
+    ? Boolean(authedError)
+    : currentPublicState.error;
 
-  // Handler for actions that require login
-  const requireLogin = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const cards = useMemo(() => flashcard?.cards ?? [], [flashcard?.cards]);
+  const filteredCards = useMemo(
+    () =>
+      cards.filter((card) => {
+        if (imageOnly && !card.previewUrl) return false;
+        return matchesSearch(card, searchTerm.trim());
+      }),
+    [cards, imageOnly, searchTerm],
+  );
+
+  const cardCount = flashcard?.cardCount || cards.length;
+  const imageCount = cards.filter((card) => Boolean(card.previewUrl)).length;
+  const exampleCount = cards.filter((card) =>
+    Boolean(card.exampleSentence),
+  ).length;
+  const studyMinutes = Math.max(1, Math.ceil(cardCount * 0.35));
+  const progressPercent = clampPercent(
+    flashcard?.userProgress?.progressPercentage,
+  );
+  const rememberedCount = flashcard?.userProgress?.rememberedCount ?? 0;
+  const studiedCards = flashcard?.userProgress?.studiedCards ?? 0;
+  const creatorName =
+    flashcard?.user?.fullName || flashcard?.user?.username || "FUJI";
+
+  const learnHref = flashcard ? buildFlashcardLearnHref(flashcard) : "#";
+  const settingsHref = flashcard ? buildFlashcardSettingsHref(flashcard) : "#";
+  const multipleChoiceHref = flashcard
+    ? buildFlashcardExerciseHref(flashcard, "multiple-choice")
+    : "#";
+  const fillBlankHref = flashcard
+    ? buildFlashcardExerciseHref(flashcard, "fill-blank")
+    : "#";
+
+  const requireLogin = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
     router.push("/login");
   };
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Wait for auth to initialize before rendering to avoid flicker
-  if (!isInitialized) {
+  if (!isInitialized || isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
-        <span className="material-symbols-outlined text-5xl text-primary animate-spin">
+      <main className="flex min-h-screen flex-1 items-center justify-center bg-background">
+        <span className="material-symbols-outlined animate-spin text-5xl text-primary">
           progress_activity
         </span>
-      </div>
+      </main>
     );
   }
 
-  if (isLoading) {
+  if (hasError || !flashcard) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
-        <span className="material-symbols-outlined text-5xl text-primary animate-spin">
-          progress_activity
-        </span>
-      </div>
-    );
-  }
-
-  if (error || !flashcard) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background gap-4">
+      <main className="flex min-h-screen flex-1 flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <span className="material-symbols-outlined text-6xl text-red-400">
           error
         </span>
-        <p className="text-muted-foreground">{t('auto._id__page_1')}</p>
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">
+            Không tìm thấy bộ thẻ
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Bộ thẻ này có thể đã bị xoá hoặc không còn công khai.
+          </p>
+        </div>
         <Link
           href="/flashcards"
-          className="text-secondary hover:underline flex items-center gap-1"
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
         >
-          <span className="material-symbols-outlined text-sm">arrow_back</span>
-          Quay lại
+          <span className="material-symbols-outlined text-base">arrow_back</span>
+          Quay lại danh sách
         </Link>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen flex-1 overflow-y-auto bg-background text-foreground">
+      <section className="border-b border-border bg-card">
+        <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_340px] md:px-8 lg:px-10">
+          <div className="flex min-w-0 flex-col gap-6">
+            <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Link
+                href="/flashcards"
+                className="inline-flex items-center gap-1 font-medium transition-colors hover:text-foreground"
+              >
+                <span className="material-symbols-outlined text-base">
+                  arrow_back
+                </span>
+                Flashcard
+              </Link>
+              <span>/</span>
+              <span className="truncate text-foreground">{flashcard.name}</span>
+            </nav>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {flashcard.level && (
+                  <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
+                    {flashcard.level} ·{" "}
+                    {LEVEL_LABELS[String(flashcard.level)] ?? "Tổng hợp"}
+                  </span>
+                )}
+                <span className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600 dark:text-sky-300">
+                  {flashcard.isPublic ? "Công khai" : "Riêng tư"}
+                </span>
+                <span className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                  {formatNumber(cardCount)} thẻ
+                </span>
+              </div>
+
+              <div>
+                <h1 className="text-3xl font-bold leading-tight text-foreground md:text-5xl">
+                  {flashcard.name}
+                </h1>
+                <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
+                  {flashcard.description?.trim() || "Bộ thẻ chưa có mô tả."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-rose-500">
+                    schedule
+                  </span>
+                  Khoảng {studyMinutes} phút
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-emerald-500">
+                    image
+                  </span>
+                  {formatNumber(imageCount)} thẻ có ảnh
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-amber-500">
+                    edit_note
+                  </span>
+                  {formatNumber(exampleCount)} câu ví dụ
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-sky-500">
+                    update
+                  </span>
+                  Cập nhật {formatRelativeDate(flashcard.updatedAt)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    href={learnHref}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      play_circle
+                    </span>
+                    Bắt đầu học
+                  </Link>
+                  <Link
+                    href={multipleChoiceHref}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      quiz
+                    </span>
+                    Trắc nghiệm
+                  </Link>
+                  <Link
+                    href={fillBlankHref}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      edit
+                    </span>
+                    Điền từ
+                  </Link>
+                  <Link
+                    href={settingsHref}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      tune
+                    </span>
+                    Cài đặt
+                  </Link>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={requireLogin}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                >
+                  <span className="material-symbols-outlined text-xl">lock</span>
+                  Đăng nhập để học
+                </button>
+              )}
+            </div>
+          </div>
+
+          <aside className="grid gap-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-background">
+              {flashcard.thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={flashcard.thumbnailUrl}
+                  alt={flashcard.name}
+                  className="aspect-video w-full object-cover"
+                />
+              ) : (
+                <div className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.18),transparent_28%),radial-gradient(circle_at_80%_30%,rgba(244,63,94,0.14),transparent_30%),linear-gradient(135deg,hsl(var(--muted)),hsl(var(--background)))]">
+                  <div className="flex size-20 items-center justify-center rounded-lg border border-border bg-card text-3xl font-bold">
+                    {getInitials(flashcard.name)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border bg-background p-4">
+              <div className="flex items-center gap-3">
+                {flashcard.user?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={flashcard.user.avatarUrl}
+                    alt={creatorName}
+                    className="size-11 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex size-11 items-center justify-center rounded-lg bg-muted text-sm font-bold">
+                    {getInitials(creatorName)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {creatorName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Người tạo bộ thẻ
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-6 md:grid-cols-3 md:px-8 lg:px-10">
+        <MetricPanel
+          icon="trending_up"
+          label="Tiến độ"
+          value={`${progressPercent}%`}
+          detail={
+            isAuthenticated
+              ? flashcard.userProgress?.isCompleted
+                ? "Đã hoàn thành"
+                : flashcard.userProgress
+                  ? "Đang học"
+                  : "Chưa bắt đầu"
+              : "Đăng nhập để lưu tiến độ"
+          }
+          accent="rose"
+        />
+        <MetricPanel
+          icon="psychology"
+          label="Đã thuộc"
+          value={`${formatNumber(rememberedCount)}/${formatNumber(cardCount)}`}
+          detail={
+            studiedCards > 0
+              ? `${formatNumber(studiedCards)} thẻ đã học`
+              : "Chưa có lượt học"
+          }
+          accent="emerald"
+        />
+        <MetricPanel
+          icon="event_upcoming"
+          label="Ôn tiếp"
+          value={formatNextReview(flashcard.userProgress?.nextReviewAt)}
+          detail={`Học gần nhất: ${formatRelativeDate(
+            flashcard.userProgress?.lastStudiedAt,
+          )}`}
+          accent="sky"
+        />
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-5 pb-16 md:px-8 lg:px-10">
+        <div className="mb-5 flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Danh sách từ vựng</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Hiển thị {formatNumber(filteredCards.length)} /{" "}
+              {formatNumber(cards.length)} thẻ trong bộ này.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="relative min-w-[260px]">
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-muted-foreground">
+                search
+              </span>
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Tìm từ, nghĩa, cách đọc..."
+                className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setImageOnly((current) => !current)}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors ${
+                imageOnly
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                  : "border-border hover:bg-muted"
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">image</span>
+              Có ảnh
+            </button>
+          </div>
+        </div>
+
+        {filteredCards.length === 0 ? (
+          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-lg border border-dashed border-border text-center">
+            <span className="material-symbols-outlined text-5xl text-muted-foreground">
+              style
+            </span>
+            <p className="mt-3 font-semibold">Không có thẻ phù hợp</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Thử đổi từ khóa tìm kiếm hoặc bỏ bộ lọc ảnh.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[920px] border-collapse text-sm">
+                <thead className="bg-muted/60 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="w-16 px-4 py-3">STT</th>
+                    <th className="w-20 px-3 py-3">Ảnh</th>
+                    <th className="px-3 py-3">Từ vựng</th>
+                    <th className="px-3 py-3">Cách đọc</th>
+                    <th className="px-3 py-3">Nghĩa</th>
+                    <th className="px-3 py-3">Ví dụ</th>
+                    <th className="w-16 px-4 py-3 text-right">Nghe</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredCards.map((card, index) => (
+                    <VocabularyRow key={card.id} card={card} index={index} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function MetricPanel({
+  icon,
+  label,
+  value,
+  detail,
+  accent,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  detail: string;
+  accent: "rose" | "emerald" | "sky";
+}) {
+  const accentClass = {
+    rose: "bg-rose-500/10 text-rose-600 dark:text-rose-300",
+    emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+    sky: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
+  }[accent];
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-5">
+      <div className="flex items-center gap-4">
+        <div className={`flex size-12 items-center justify-center rounded-lg ${accentClass}`}>
+          <span className="material-symbols-outlined text-2xl">{icon}</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="mt-1 truncate text-2xl font-bold">{value}</p>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{detail}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VocabularyRow({
+  card,
+  index,
+}: {
+  card: CardResponseDTO;
+  index: number;
+}) {
+  const order =
+    typeof card.cardOrder === "number" ? card.cardOrder + 1 : index + 1;
+
+  return (
+    <tr className="transition-colors hover:bg-muted/35">
+      <td className="px-4 py-2 align-middle text-sm font-semibold text-muted-foreground">
+        {order}
+      </td>
+      <td className="px-3 py-2 align-middle">
+        <CardImage card={card} />
+      </td>
+      <td className="max-w-[220px] px-3 py-2 align-middle">
+        <div className="truncate text-base font-semibold text-foreground">
+          {card.vocabulary}
+        </div>
+      </td>
+      <td className="max-w-[180px] px-3 py-2 align-middle text-muted-foreground">
+        <span className="truncate block">
+          {card.pronunciation || "—"}
+        </span>
+      </td>
+      <td className="max-w-[240px] px-3 py-2 align-middle">
+        <span className="block truncate font-medium">{card.meaning}</span>
+      </td>
+      <td className="max-w-[360px] px-3 py-2 align-middle text-muted-foreground">
+        <span className="block truncate">
+          {card.exampleSentence || "—"}
+        </span>
+      </td>
+      <td className="px-4 py-2 align-middle text-right">
+        <button
+          type="button"
+          onClick={() => speakText(card.vocabulary)}
+          className="inline-flex size-9 items-center justify-center rounded-lg border border-border transition-colors hover:bg-muted"
+          aria-label={`Nghe phát âm ${card.vocabulary}`}
+        >
+          <span className="material-symbols-outlined text-lg">volume_up</span>
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function CardImage({ card }: { card: CardResponseDTO }) {
+  const sizeClass = "size-12";
+
+  if (!card.previewUrl) {
+    return (
+      <div
+        className={`${sizeClass} flex items-center justify-center rounded-lg bg-muted text-muted-foreground`}
+      >
+        <span className="material-symbols-outlined text-3xl">image_not_supported</span>
       </div>
     );
   }
 
-  const cards = flashcard.cards || [];
-  const cardCount = flashcard.cardCount || cards.length;
-  const studyCount = flashcard.studyCount || 0;
-  const userProgress = flashcard.userProgress;
-  const learnHref = buildFlashcardLearnHref(flashcard);
-  const settingsHref = buildFlashcardSettingsHref(flashcard);
-
-  // Format date
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return "Hôm nay";
-    if (diffDays === 1) return "Hôm qua";
-    if (diffDays < 30) return `${diffDays} ngày trước`;
-    return date.toLocaleDateString("vi-VN");
-  };
-
-  // Format next review date
-  const formatNextReview = (dateStr?: string | null) => {
-    if (!dateStr) return "Chưa xác định";
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Hôm nay";
-    if (diffDays === 1) return "Ngày mai";
-    if (diffDays < 0) return "Đã quá hạn";
-    if (diffDays < 7) return `${diffDays} ngày`;
-
-    return date.toLocaleDateString("vi-VN");
-  };
-
-  // Format study count (e.g., 1200 -> 1.2k)
-  const formatStudyCount = (count: number) => {
-    if (count >= 1000) {
-      return (count / 1000).toFixed(1).replace(/\.0$/, "") + "k";
-    }
-    return count.toString();
-  };
-
-  // Get level badge color
-  const getLevelBadgeColor = (level: string | null) => {
-    switch (level) {
-      case "N5":
-        return "bg-pink-500/20 text-pink-300 border-pink-500/30";
-      case "N4":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
-      case "N3":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
-      case "N2":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
-      case "N1":
-        return "bg-red-500/20 text-red-300 border-red-500/30";
-      default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
-    }
-  };
-
-  // Calculate study time estimate (1 card ~ 20 seconds)
-  const studyTimeMinutes = Math.ceil(cardCount * 0.3);
-
   return (
-    <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background">
-      <div className="w-full relative">
-        {/* Banner */}
-        <section className="relative h-[450px] w-full overflow-hidden group">
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[20s] ease-linear group-hover:scale-110"
-            style={{
-              backgroundImage: `url('${flashcard.thumbnailUrl || getMockImage(flashcard.id)}')`,
-            }}
-          ></div>
-          <div className="absolute inset-0 bg-linear-to-t from-background via-background/60 to-transparent"></div>
-          <div
-            className="absolute inset-0 opacity-10 pointer-events-none"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle, #fff 1px, transparent 1px)",
-              backgroundSize: "20px 20px",
-            }}
-          ></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-blue-900/20 mix-blend-overlay"></div>
-
-          {/* Breadcrumb */}
-          <div className="absolute top-6 left-6 md:left-10 z-10 flex items-center gap-2 text-sm font-medium text-foreground/70">
-            <Link
-              href="/flashcards"
-              className="hover:text-white transition-colors flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-lg">
-                arrow_back
-              </span>
-              Quay lại
-            </Link>
-            <span className="opacity-50">/</span>
-            <Link
-              href="/flashcards"
-              className="hover:text-white transition-colors"
-            >
-              Flashsets
-            </Link>
-            <span className="opacity-50">/</span>
-            <span className="text-white">{flashcard.name}</span>
-          </div>
-
-          {/* Banner Content */}
-          <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-10 flex flex-col md:flex-row items-end justify-between gap-6">
-            <div className="flex flex-col gap-4 max-w-3xl">
-              <div className="flex items-center gap-3">
-                {flashcard.level && (
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md border ${getLevelBadgeColor(flashcard.level)}`}
-                  >
-                    Level {flashcard.level}
-                  </span>
-                )}
-                <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                  Sơ cấp
-                </span>
-                <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                  Từ vựng
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-lg tracking-tight">
-                {flashcard.name}
-              </h1>
-              <div className="flex flex-wrap items-center gap-6 text-foreground/70 font-medium text-sm md:text-base mt-2">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary">
-                    style
-                  </span>
-                  <span>{cardCount} thẻ</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary">
-                    schedule
-                  </span>
-                  <span>{studyTimeMinutes} phút học</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary">
-                    update
-                  </span>
-                  <span>
-                    Cập nhật{" "}
-                    {formatDate(
-                      flashcard.updatedAt ||
-                        flashcard.createdAt ||
-                        new Date().toISOString(),
-                    )}
-                  </span>
-                </div>
-                {studyCount > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex -space-x-2">
-                      <img
-                        alt="User"
-                        className="w-6 h-6 rounded-full border border-white/20"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfFl_pOyFigGwfLtmeb6LniwUCm0yBud_fv-LOAt4SoJGaT1pzBnvbOgHz5kbgBJOB_ssp423Jkd3U7soqab37_QOtQjp5mQW96CfW95qvn9FSRNVuMMNXx7T7vxkuG7ZnHbevTkCEnYHd7eRQX_QSbjeoZteLQeY9ag0vm-wqmhxamd3eiryL-cOTWrKLJp4fETdKaaaZEcH--J8xyVwIDsYlZdYp_zX6qbEXJOIXInVkVVBxP_D4xyoF96BL9Zpu4P_AZlntpRY"
-                      />
-                      <img
-                        alt="User"
-                        className="w-6 h-6 rounded-full border border-white/20"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTyfbd-hnxHrIXJ1Sy5_LzcWGbNso2IRzDE8u7Ney3n-lLtyXDklyJSmjt_Apo6CkvtqT4SCwD5DRyuKYSHpPD9anvAN9NYmwVHzTbhQZpZChwHJdhcsYvy_yjA7m4vHEglPugU7e12CdtvLtnOevbiyOs4d6M9L-KmcnQ2NTd24cg0Wl_GYeBrvJotem__c2-28i9FpzraK6gQpJZ4uNRGdzEwSuhQAt-K4Wo56q-xYjnxenMeHSOxjtt7q5jGrqyRCIITNP1e9c"
-                      />
-                      <img
-                        alt="User"
-                        className="w-6 h-6 rounded-full border border-white/20"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD53X8X3vIHM6x4BdBWvXcxV0ZWZZbN6qNiyqaXSWW8V2Edb90Dn4wMoiUzbhq7FzLv54fNLw3w5FYSAy3FG41Vh8ND4aQb_5PRhiN_xRtEsB16gM65h2EQS10lFctFnpioUFnvoTG23tbdSIsWjRriHWmt6ouUMFWadHjNWNXU8ZTSxhGff_ecnBpgtJKbOgxO18VbWJGCjfBYg9uQy1TZokDW_3M05cj6_xiGpWym3q_X55FA2lySz_1ldI9lZIy8982TaSoLK04"
-                      />
-                    </div>
-                    <span>+{formatStudyCount(studyCount)} người học</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="shrink-0">
-              {isAuthenticated ? (
-              <Link
-                href={learnHref}
-                className="group relative px-8 py-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-2xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all duration-300 overflow-hidden transform hover:-translate-y-1 inline-flex"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                <span className="relative flex items-center gap-3 text-lg">
-                  <span className="material-symbols-outlined filled animate-pulse-slow">
-                    play_circle
-                  </span>
-                  Bắt đầu học ngay
-                </span>
-              </Link>
-              ) : (
-              <button
-                onClick={requireLogin}
-                className="group relative px-8 py-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-2xl shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all duration-300 overflow-hidden transform hover:-translate-y-1 inline-flex"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                <span className="relative flex items-center gap-3 text-lg">
-                  <span className="material-symbols-outlined filled animate-pulse-slow">
-                    lock
-                  </span>
-                  Đăng nhập để học
-                </span>
-              </button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Cards — only shown to authenticated users */}
-        {isAuthenticated && (
-        <section className="max-w-[1600px] mx-auto w-full px-6 md:px-10 pt-6 md:pt-10 -mt-10 relative z-20 flex flex-col gap-10">
-          <div className="glass-panel rounded-2xl p-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-border shadow-xl">
-            {/* Progress */}
-            <div className="flex-1 p-6 flex items-center gap-4">
-              <div className="relative size-16 shrink-0">
-                <svg className="size-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-border"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  ></path>
-                  <path
-                    className="text-secondary drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeDasharray={`${userProgress?.progressPercentage || 0}, 100`}
-                    strokeWidth="3"
-                  ></path>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
-                  {userProgress?.progressPercentage || 0}%
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
-                  Tiến độ
-                </span>
-                <span className="text-xl font-bold text-foreground">
-                  {userProgress?.isCompleted
-                    ? "Hoàn thành"
-                    : userProgress
-                      ? "Đang học"
-                      : "Chưa bắt đầu"}
-                </span>
-                <span className="text-xs text-secondary mt-1">
-                  {userProgress ? "Tiếp tục cố gắng nhé!" : "Hãy bắt đầu ngay!"}
-                </span>
-              </div>
-            </div>
-
-            {/* Remembered */}
-            <div className="flex-1 p-6 flex items-center gap-4">
-              <div className="size-16 rounded-2xl bg-linear-to-br from-blue-900/50 to-blue-800/20 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-blue-400 text-3xl">
-                  psychology
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
-                  Đã nhớ
-                </span>
-                <span className="text-xl font-bold text-foreground">
-                  {userProgress?.rememberedCount || 0}{" "}
-                  <span className="text-sm text-muted-foreground font-normal">
-                    / {cardCount} thẻ
-                  </span>
-                </span>
-                <span className="text-xs text-blue-300 mt-1">
-                  {userProgress && (userProgress.rememberedCount || 0) > 0
-                    ? `+${userProgress.rememberedCount || 0} thẻ hôm nay`
-                    : "Chưa có thẻ nào"}
-                </span>
-              </div>
-            </div>
-
-            {/* Next Review */}
-            <div className="flex-1 p-6 flex items-center gap-4">
-              <div className="size-16 rounded-2xl bg-linear-to-br from-purple-900/50 to-purple-800/20 border border-purple-500/20 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-purple-400 text-3xl">
-                  event_upcoming
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
-                  Ôn tập tiếp theo
-                </span>
-                <span className="text-xl font-bold text-foreground">
-                  {userProgress
-                    ? formatNextReview(userProgress.nextReviewAt || null)
-                    : "Sẵn sàng"}
-                </span>
-                <span className="text-xs text-purple-300 mt-1">
-                  {userProgress?.nextReviewAt
-                    ? `Lúc ${new Date(
-                        userProgress.nextReviewAt,
-                      ).toLocaleTimeString("vi-VN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}`
-                    : "Bấm để bắt đầu học"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-4">
-            <Button className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group">
-              <span className="material-symbols-outlined text-muted-foreground group-hover:text-foreground transition-colors">
-                shuffle
-              </span>
-              Trộn thẻ
-            </Button>
-            <Button className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group">
-              <span className="material-symbols-outlined text-muted-foreground group-hover:text-foreground transition-colors">
-                quiz
-              </span>
-              Chế độ thi thử
-            </Button>
-            <Link
-              href={settingsHref}
-              className="px-5 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border text-foreground font-medium transition-all flex items-center gap-2 group"
-            >
-              <span className="material-symbols-outlined text-muted-foreground group-hover:text-foreground transition-colors">
-                tune
-              </span>
-              Cài đặt bộ thẻ
-            </Link>
-          </div>
-        </section>
-        )}
-
-        {/* Login prompt for unauthenticated users */}
-        {!isAuthenticated && (
-        <section className="max-w-[1600px] mx-auto w-full px-6 md:px-10 pt-8 relative z-20">
-          <div className="glass-panel rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4 border border-secondary/20 bg-secondary/5">
-            <span className="material-symbols-outlined text-secondary text-4xl shrink-0">lock</span>
-            <div className="flex-1 text-center sm:text-left">
-              <p className="font-bold text-foreground">Đăng nhập để theo dõi tiến độ học tập</p>
-              <p className="text-sm text-muted-foreground mt-1">Lật thẻ, làm bài tập và lưu kết quả học tập của bạn.</p>
-            </div>
-            <button
-              onClick={requireLogin}
-              className="shrink-0 px-6 py-2.5 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-xl transition-all"
-            >
-              Đăng nhập ngay
-            </button>
-          </div>
-        </section>
-        )}
-
-        {/* Card list — visible to everyone */}
-        <section className="max-w-[1600px] mx-auto w-full p-6 md:p-10 relative z-20">
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                <span className="w-1 h-8 bg-secondary rounded-full"></span>
-                Danh sách thẻ
-              </h2>
-              <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
-                <Button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded ${
-                    viewMode === "grid"
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm">
-                    grid_view
-                  </span>
-                </Button>
-                <Button
-                  onClick={() => setViewMode("list")}
-                  className={`p-2 rounded ${
-                    viewMode === "list"
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm">
-                    view_list
-                  </span>
-                </Button>
-              </div>
-            </div>
-
-            {cards.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
-                <span className="material-symbols-outlined text-6xl mb-4 block">
-                  style
-                </span>
-                <p className="text-muted-foreground">
-                  Bộ flashcard này chưa có thẻ nào.
-                </p>
-              </div>
-            ) : (
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
-                    : "flex flex-col gap-4"
-                }
-              >
-                {cards.map((card: CardResponseDTO, index) => {
-                  // Use real data from card or fallback
-                  const hasPreviewImage =
-                    card.exampleSentence && card.exampleSentence.length > 0;
-
-                  return (
-                    <article
-                      key={card.id}
-                      className="group relative bg-card border border-border rounded-2xl p-6 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 flex flex-col gap-4"
-                    >
-                      <div className="flex justify-between items-start">
-                        <span
-                          className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase ${
-                            hasPreviewImage
-                              ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"
-                              : "bg-muted text-muted-foreground border-border"
-                          }`}
-                        >
-                          {hasPreviewImage ? "Đã thuộc" : "Chưa thuộc"}
-                        </span>
-                        <Button className="text-muted-foreground hover:text-secondary transition-colors">
-                          {hasPreviewImage ? (
-                            <span className="material-symbols-outlined text-lg">
-                              star
-                            </span>
-                          ) : (
-                            <span className="material-symbols-outlined text-lg">
-                              star_border
-                            </span>
-                          )}
-                        </Button>
-                      </div>
-                      <div className="flex flex-col items-center justify-center py-4">
-                        <h3 className="text-4xl font-black text-foreground mb-2 group-hover:text-secondary/80 transition-colors">
-                          {card.vocabulary}
-                        </h3>
-                        {card.pronunciation && (
-                          <p className="text-sm text-muted-foreground font-medium">
-                            {card.pronunciation}
-                          </p>
-                        )}
-                      </div>
-                      <div className="mt-auto pt-4 border-t border-border/50 flex items-center gap-3">
-                        <div
-                          className="size-10 rounded-lg bg-muted bg-cover bg-center shrink-0 border border-border"
-                          style={{
-                            backgroundImage: `url('${card.previewUrl || getMockImage(card.id)}')`,
-                          }}
-                        ></div>
-                        <div className="flex flex-col min-w-0">
-                          <p className="text-sm font-bold text-foreground truncate">
-                            {card.meaning}
-                          </p>
-                          {card.exampleSentence && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {card.exampleSentence}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <div className="h-20"></div>
+    <div className={`${sizeClass} overflow-hidden rounded-lg bg-muted`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={card.previewUrl}
+        alt={card.vocabulary}
+        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        loading="lazy"
+      />
     </div>
   );
 }

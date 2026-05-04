@@ -11,6 +11,15 @@ import type { Metadata } from "next";
 import HomePageClient from "@/components/user-component/home/HomePageClient";
 
 export const dynamic = "force-static";
+export const revalidate = 3600;
+
+const DEFAULT_OG_IMAGE = {
+  url: "https://fuji.io.vn/images/og_image.png",
+  width: 1200,
+  height: 630,
+  alt: "FUJI - Nền tảng học tiếng Nhật All-in-One",
+  type: "image/png",
+};
 
 export const metadata: Metadata = {
   title: "FUJI - Nền tảng học tiếng Nhật All-in-One",
@@ -24,7 +33,17 @@ export const metadata: Metadata = {
     description:
       "Học tiếng Nhật từ N5 đến N1 với FUJI. Luyện đề JLPT, AI Chat 24/7, Video Call 1-1 với giáo viên.",
     url: "https://fuji.io.vn",
+    siteName: "FUJI",
+    locale: "vi_VN",
     type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FUJI - Nền tảng học tiếng Nhật All-in-One",
+    description:
+      "Học tiếng Nhật từ N5 đến N1 với FUJI. Luyện đề JLPT, AI Chat 24/7, Video Call 1-1 với giáo viên.",
+    images: [DEFAULT_OG_IMAGE.url],
   },
 };
 

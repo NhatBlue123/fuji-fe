@@ -33,6 +33,7 @@
     "save": "Save Changes",
     "delete": "Delete",
     "loading": "Loading...",
+    "goBack": "Go Back",
     "success": "Success",
     "error": "Error",
     "pleaseLogin": "Please log in to proceed!",
@@ -385,6 +386,44 @@
       "addCardNow": "Add card now",
       "editCardIndex": "Edit card #{{index}}",
       "addSingleCard": "Add single card"
+    },
+    "learn": {
+      "imageMode": "Display mode",
+      "imageFront": "Image on front",
+      "imageBack": "Image on back",
+      "imageBoth": "Both sides",
+      "imageNone": "No image",
+      "autoRead": "Auto-read on card flip",
+      "shuffle": "Shuffle",
+      "flipAll": "Flip all",
+      "exercise": "Exercise",
+      "chooseExercise": "Choose exercise",
+      "exerciseDesc": "Select an exercise to practice vocabulary",
+      "prevCard": "Previous card",
+      "nextCard": "Next card"
+    },
+    "exercise": {
+      "needMinCards": "Need at least 4 cards to practice.",
+      "loadError": "Could not load flashcard set.",
+      "perfect": "Perfect!",
+      "greatJob": "Great job!",
+      "keepTrying": "Keep practicing!",
+      "scoreDesc": "You answered {{correct}}/{{total}} correctly",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "wrongAnswers": "Wrong answers:",
+      "yourAnswer": "Your answer",
+      "correctAnswer": "Answer",
+      "retry": "Retry",
+      "fillBlank": "Fill Blank",
+      "multipleChoice": "Multiple Choice",
+      "pickMeaning": "Choose the correct meaning",
+      "pickVocab": "Choose the correct word",
+      "correctFeedback": "Correct! 🎉",
+      "incorrectFeedback": "Not quite",
+      "answerIs": "Answer",
+      "viewResults": "View Results",
+      "next": "Next"
     }
   },
   "flashcards": {
@@ -407,6 +446,13 @@
       "lists": "Flash Lists",
       "noDesc": "No description",
       "setCount": "{{count}} sets"
+    },
+    "create": {
+      "modalTitle": "Create New Flashcard",
+      "listTab": "Create Flash List",
+      "cardTab": "Create Flash Card",
+      "public": "Public",
+      "private": "Private"
     }
   },
   "home": {
@@ -828,6 +874,7 @@
   },
   "premium": {
     "whyPremium": "Why choose Premium?",
+    "viewSuitablePlan": "View suitable plan",
     "subscribeSuccess": "Upgrade to {{name}} successful!",
     "inUse": "In Use",
     "default": "Default",
@@ -1310,15 +1357,15 @@
     "ai_sensei_1": "Đã hoàn thành!",
     "ai_assistant_1": "Hỏi bất kỳ điều gì về tiếng Nhật...",
     "ai_assistant_2": "Sao chép",
-    "jlpt_practice_1": "Loading đề thi...",
-    "jlpt_practice_2": "Chưa có đề thi nào",
-    "jlpt_practice_3": "Hệ thống đang cập nhật đề thi mới",
-    "jlpt_filter_1": "Search đề thi JLPT (VD: N3 đề thi thử, N2...)",
-    "jlpt_history_1": "History làm bài",
-    "jlpt_history_page_1": "Loading lịch sử...",
-    "jlpt_history_page_2": "No thể tải dữ liệu",
-    "jlpt_history_page_3": "Danh sách lần thi",
-    "jlpt_history_page_4": "No kết quả nào phù hợp",
+    "jlpt_practice_1": "Loading exams...",
+    "jlpt_practice_2": "No exams available",
+    "jlpt_practice_3": "The system is updating with new exams",
+    "jlpt_filter_1": "Search JLPT exams (e.g. N3 mock test, N2...)",
+    "jlpt_history_1": "Test History",
+    "jlpt_history_page_1": "Loading history...",
+    "jlpt_history_page_2": "Failed to load data",
+    "jlpt_history_page_3": "Attempt List",
+    "jlpt_history_page_4": "No matching results",
     "video_call_main_1": "Đang bật camera...",
     "video_call_main_2": "Camera: TẮT",
     "video_call_room_1": "Nhắn tin... (Ctrl+Space để gợi ý)",
@@ -1454,6 +1501,43 @@
       "n3_desc": "Intermediate",
       "n4_desc": "Upper Beginner",
       "n5_desc": "Beginner"
+    },
+    "filter": {
+      "all": "All",
+      "fullTest": "Full Test",
+      "vocabularyGrammar": "Vocabulary & Grammar",
+      "reading": "Reading",
+      "listening": "Listening",
+      "searchButton": "Search",
+      "levelLabel": "Level:",
+      "categoryLabel": "Category:"
+    },
+    "examCard": {
+      "badgeNew": "New",
+      "badgeDoing": "In Progress",
+      "badgeDone": "Completed",
+      "badgeLocked": "Top Up",
+      "btnStart": "Start Exam",
+      "btnContinue": "Continue",
+      "btnViewResult": "View Result",
+      "info": "{{questions}} questions - {{duration}} min"
+    },
+    "history": {
+      "recentResults": "Recent results",
+      "viewAll": "View All",
+      "monthAbbr": "M{{month}}",
+      "minutes": "{{count}} min",
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "practice": {
+      "headerTitle": "Practice",
+      "headerSubtitle": "Mock exams that closely simulate the real test. Conquer JLPT from N5 to N1.",
+      "historyButton": "Test History"
+    },
+    "topup": {
+      "title": "You have used up your JLPT attempts",
+      "message": "Please upgrade your plan or purchase more to continue taking JLPT exams."
     }
   },
   "video_call": {

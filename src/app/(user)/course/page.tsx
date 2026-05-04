@@ -6,6 +6,14 @@ import CourseListClient from "@/components/user-component/course/CourseListClien
 export const dynamic = "force-static";
 export const revalidate = 3600;
 
+const DEFAULT_OG_IMAGE = {
+  url: "https://fuji.io.vn/images/og_image.png",
+  width: 1200,
+  height: 630,
+  alt: "Khóa học tiếng Nhật | FUJI",
+  type: "image/png",
+};
+
 interface SearchParams {
   level?: string;
   search?: string;
@@ -31,12 +39,16 @@ export async function generateMetadata({
       title,
       description,
       url: "https://fuji.io.vn/course",
+      siteName: "FUJI",
+      locale: "vi_VN",
       type: "website",
+      images: [DEFAULT_OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [DEFAULT_OG_IMAGE.url],
     },
   };
 }

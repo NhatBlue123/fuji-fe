@@ -18,6 +18,27 @@ export interface VideoCallMatchPreferences {
   matchMode: VideoCallMatchMode;
 }
 
+export type ChatMessageItem = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  timestamp: number;
+  isLocal: boolean;
+  isViolation?: boolean;
+  status?: "sending" | "sent" | "failed";
+};
+
+export type VideoCallChatMessage = {
+  type: "chat_message";
+  messageId: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  timestamp: number;
+  isViolation?: boolean;
+};
+
 export type VideoCallSignalMessage =
   | ({ type: "ready_for_peer" } & VideoCallMatchPreferences)
   | { type: "initiateOffer" }
@@ -26,7 +47,8 @@ export type VideoCallSignalMessage =
   | { type: "answer"; answer: RTCSessionDescriptionInit }
   | { type: "ice"; candidate: RTCIceCandidateInit | null }
   | { type: "media_status"; kind: "audio" | "video"; enabled: boolean }
-  | { type: "leave"; reason?: string };
+  | { type: "leave"; reason?: string }
+  | VideoCallChatMessage;
 
 export interface RemoteMediaStatus {
   audio: boolean;

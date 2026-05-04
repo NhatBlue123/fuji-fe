@@ -65,6 +65,9 @@ export default function CreateFlashcardModal({
   const [selectedTermImages, setSelectedTermImages] = useState<
     Record<string, string>
   >({});
+  const [resolvedTermImages, setResolvedTermImages] = useState<
+    Record<string, string>
+  >({});
 
   // Pipeline for real-time term parsing + translation (no auto image search)
   const {
@@ -82,31 +85,40 @@ export default function CreateFlashcardModal({
   >({});
 
   const handleTermImageSelect = (termKey: string, imageUrl: string) => {
-    setSelectedTermImages((prev) => {
-      // Toggle: click same image again to deselect
-      if (prev[termKey] === imageUrl) {
+    // Toggle: click same image again to deselect
+    if (selectedTermImages[termKey] === imageUrl) {
+      setSelectedTermImages((prev) => {
         const next = { ...prev };
         delete next[termKey];
         return next;
-      }
-      return { ...prev, [termKey]: imageUrl };
-    });
+      });
+      setResolvedTermImages((prev) => {
+        const next = { ...prev };
+        delete next[termKey];
+        return next;
+      });
+      return;
+    }
 
-    // If deselecting (same image clicked), don't resolve
-    if (selectedTermImages[termKey] === imageUrl) return;
+    // Select: store source URL for UI consistency
+    setSelectedTermImages((prev) => ({ ...prev, [termKey]: imageUrl }));
 
     // Resolve: upload to Cloudinary (or get cached URL)
     setResolvingImages((prev) => ({ ...prev, [termKey]: true }));
     resolveImage(imageUrl)
       .then((resolved) => {
-        setSelectedTermImages((prev) => ({
+        setResolvedTermImages((prev) => ({
           ...prev,
           [termKey]: resolved.cloudinaryUrl,
         }));
       })
       .catch((err) => {
         console.error("Failed to resolve image:", err);
-        // Keep the raw URL as fallback (already set above)
+        // Fall back to source URL
+        setResolvedTermImages((prev) => ({
+          ...prev,
+          [termKey]: imageUrl,
+        }));
       })
       .finally(() => {
         setResolvingImages((prev) => ({ ...prev, [termKey]: false }));
@@ -208,7 +220,7 @@ export default function CreateFlashcardModal({
         }
         // Get selected image for this term (using index-based key matching)
         const termKey = `term-${index}`;
-        const previewUrl = selectedTermImages[termKey] || null;
+        const previewUrl = resolvedTermImages[termKey] || selectedTermImages[termKey] || null;
         return { vocabulary, meaning, previewUrl };
       });
   };
@@ -226,6 +238,7 @@ export default function CreateFlashcardModal({
     setCardThumbnail(null);
     cardThumbnailFileRef.current = null;
     setSelectedTermImages({});
+    setResolvedTermImages({});
     setIsPublic(false);
     setLevel("N5");
     setError(null);

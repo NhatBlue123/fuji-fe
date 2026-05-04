@@ -1,15 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
+import type { ChatViolationType } from "@/types/chat-moderation";
 import {
   fetchVideoCallIceServers,
   getRandomVideoCallWsUrl,
 } from "../api/videoCallTransport";
 import type {
+  VideoCallChatMessage,
   VideoCallMatchPreferences,
   RemoteMediaStatus,
   VideoCallSignalMessage,
   VideoCallStatus,
+  ChatMessageItem,
 } from "../types";
 
 interface UseRandomVideoCallOptions {
@@ -22,6 +27,56 @@ const DEFAULT_MATCH_PREFERENCES: VideoCallMatchPreferences = {
   matchMode: "same_level",
 };
 
+type ApiResponse<T> = {
+  success: boolean;
+  message?: string;
+  code?: string;
+  data?: T;
+};
+
+type BanStatusResponse = {
+  banned: boolean;
+  type?: string | null;
+  until?: string | null;
+  violationCount: number;
+};
+
+const JAPANESE_CHAR_REGEX = /[ぁ-んァ-ン一-龯]/;
+const LATIN_CHAR_REGEX = /[A-Za-zÀ-ỹ]/;
+const VIETNAMESE_DIACRITIC_REGEX = /[À-ỹ]/;
+
+function createMessageId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `msg_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+}
+
+function getStoredUser(): { id: string; name: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("auth_state");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const user = parsed?.user ?? parsed?.userInfo ?? parsed?.profile;
+    const id = user?.id;
+    if (id == null) return null;
+    const name =
+      user?.username || user?.fullName || user?.name || user?.email || `User#${id}`;
+    return { id: String(id), name };
+  } catch {
+    return null;
+  }
+}
+
+function classifyViolationType(message: string): ChatViolationType | null {
+  if (JAPANESE_CHAR_REGEX.test(message)) return null;
+  if (!LATIN_CHAR_REGEX.test(message)) return null;
+  if (VIETNAMESE_DIACRITIC_REGEX.test(message)) return "VIETNAMESE";
+  if (/[A-Za-z]/.test(message)) return "ENGLISH";
+  return "OTHER";
+}
+
 export function useRandomVideoCall({
   autoStart = false,
   initialPreferences = DEFAULT_MATCH_PREFERENCES,
@@ -32,6 +87,7 @@ export function useRandomVideoCall({
   const localMediaPromiseRef = useRef<Promise<MediaStream> | null>(null);
   const queuedRemoteIceRef = useRef<RTCIceCandidateInit[]>([]);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoStartRef = useRef(autoStart);
   const matchPreferencesRef =
     useRef<VideoCallMatchPreferences>(initialPreferences);
@@ -46,6 +102,74 @@ export function useRandomVideoCall({
     audio: true,
     video: true,
   });
+  const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
+  const [violationCount, setViolationCount] = useState(0);
+  const [isChatBanned, setIsChatBanned] = useState(false);
+  const [chatBanUntil, setChatBanUntil] = useState<Date | null>(null);
+  const [showWarning, setShowWarning] = useState(false);
+
+  const applyBanStatus = useCallback((status?: BanStatusResponse | null) => {
+    if (!status) return;
+    setViolationCount(status.violationCount ?? 0);
+
+    if (status.banned) {
+      setIsChatBanned(true);
+      setChatBanUntil(status.until ? new Date(status.until) : null);
+      setShowWarning(false);
+      return;
+    }
+
+    setIsChatBanned(false);
+    setChatBanUntil(null);
+  }, []);
+
+  // Auto-unban timer
+  useEffect(() => {
+    if (!isChatBanned || !chatBanUntil) return;
+
+    const checkBanStatus = () => {
+      const now = new Date();
+      if (chatBanUntil <= now) {
+        setIsChatBanned(false);
+        setChatBanUntil(null);
+        setViolationCount(0);
+      }
+    };
+
+    const interval = setInterval(checkBanStatus, 1000);
+    return () => clearInterval(interval);
+  }, [isChatBanned, chatBanUntil]);
+
+  useEffect(() => {
+    const user = getStoredUser();
+    if (!user) return;
+
+    const token = getAccessToken();
+    const headers: HeadersInit = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, "");
+    fetch(`${baseUrl}/chat/ban-status/${user.id}`, {
+      headers,
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((result: ApiResponse<BanStatusResponse>) => {
+        applyBanStatus(result?.data);
+      })
+      .catch((error) => {
+        console.warn("[VideoCall] Failed to fetch ban status.", error);
+      });
+  }, [applyBanStatus]);
+
+  useEffect(() => () => {
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+      warningTimerRef.current = null;
+    }
+  }, []);
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -171,6 +295,7 @@ export function useRandomVideoCall({
 
   const resetAndSearch = useCallback(() => {
     closePeerConnection();
+    setChatMessages([]);
     if (wsRef.current?.readyState === WebSocket.OPEN && autoStartRef.current) {
       startSearch(matchPreferencesRef.current);
     }
@@ -251,11 +376,138 @@ export function useRandomVideoCall({
     sendSignal,
   ]);
 
+  const sendChatMessage = useCallback(
+    async (messageText: string) => {
+      const user = getStoredUser();
+      if (!user) {
+        console.warn("[VideoCall] Cannot send chat: user not found");
+        return;
+      }
+
+      if (isChatBanned) {
+        console.warn("[VideoCall] Chat is currently banned.");
+        return;
+      }
+
+      const violationType = classifyViolationType(messageText);
+      const isViolation = violationType !== null;
+      const messageId = createMessageId();
+      const timestamp = Date.now();
+
+      // Add to local UI immediately
+      const localMessage: ChatMessageItem = {
+        id: messageId,
+        senderId: user.id,
+        senderName: user.name,
+        message: messageText,
+        timestamp,
+        isLocal: true,
+        isViolation,
+        status: "sending",
+      };
+      setChatMessages((prev) => [...prev, localMessage]);
+
+      // Send via WebSocket
+      const chatPayload: VideoCallChatMessage = {
+        type: "chat_message",
+        messageId,
+        senderId: user.id,
+        senderName: user.name,
+        message: messageText,
+        timestamp,
+        isViolation,
+      };
+
+      const sent = sendSignal(chatPayload);
+      if (sent) {
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, status: "sent" as const } : m
+          )
+        );
+      } else {
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, status: "failed" as const } : m
+          )
+        );
+      }
+
+      // Report violation to backend
+      if (sent && isViolation && violationType) {
+        try {
+          const token = getAccessToken();
+          const baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, "");
+          const headers: HeadersInit = {
+            "Content-Type": "application/json",
+          };
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`${baseUrl}/chat/violation`, {
+            method: "POST",
+            headers,
+            credentials: "include",
+            body: JSON.stringify({
+              userId: user.id,
+              sessionId: wsRef.current?.url ?? "random-video-call",
+              violationType,
+              messageContent: messageText,
+            }),
+          });
+
+          const result = (await response.json().catch(() => null)) as
+            | ApiResponse<BanStatusResponse>
+            | null;
+
+          applyBanStatus(result?.data);
+
+          if (result?.code === "VIOLATION_WARNING") {
+            setShowWarning(true);
+            if (warningTimerRef.current) {
+              clearTimeout(warningTimerRef.current);
+            }
+            warningTimerRef.current = setTimeout(() => {
+              setShowWarning(false);
+            }, 6000);
+          }
+          if (result?.data?.banned) {
+            setShowWarning(false);
+          }
+        } catch (error) {
+          console.error("[VideoCall] Failed to report violation:", error);
+        }
+      }
+    },
+    [applyBanStatus, isChatBanned, sendSignal]
+  );
+
   const handleSignalMessage = useCallback(
     async (message: MessageEvent<string>) => {
       const data = JSON.parse(message.data) as VideoCallSignalMessage;
 
       switch (data.type) {
+        case "chat_message": {
+          const chatMsg = data as VideoCallChatMessage;
+          const user = getStoredUser();
+          const isLocal = user?.id === chatMsg.senderId;
+
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: chatMsg.messageId,
+              senderId: chatMsg.senderId,
+              senderName: chatMsg.senderName,
+              message: chatMsg.message,
+              timestamp: chatMsg.timestamp,
+              isLocal,
+              isViolation: chatMsg.isViolation,
+              status: "sent",
+            },
+          ]);
+          break;
+        }
         case "initiateOffer": {
           setStatus("matched");
           setNotice("Đã tìm thấy bạn học. Đang gọi...");
@@ -369,6 +621,7 @@ export function useRandomVideoCall({
     autoStartRef.current = false;
     sendSignal({ type: "leave" });
     closePeerConnection();
+    setChatMessages([]);
     setStatus("closed");
     setNotice("Đã dừng tìm kiếm.");
   }, [closePeerConnection, sendSignal]);
@@ -457,5 +710,11 @@ export function useRandomVideoCall({
     startSearch,
     nextPeer,
     endCall,
+    chatMessages,
+    sendChatMessage,
+    violationCount,
+    isChatBanned,
+    chatBanUntil,
+    showWarning,
   };
 }

@@ -34,6 +34,7 @@
     "save": "Lưu thay đổi",
     "delete": "Xóa",
     "loading": "Đang tải...",
+    "goBack": "Quay lại",
     "success": "Thành công",
     "error": "Lỗi",
     "pleaseLogin": "Vui lòng đăng nhập để thao tác!",
@@ -383,6 +384,44 @@
       "addCardNow": "Thêm thẻ ngay",
       "editCardIndex": "Chỉnh sửa thẻ #{{index}}",
       "addSingleCard": "Thêm thẻ đơn"
+    },
+    "learn": {
+      "imageMode": "Chế độ hiển thị",
+      "imageFront": "Hình ảnh mặt trước",
+      "imageBack": "Hình ảnh mặt sau",
+      "imageBoth": "Cả hai mặt",
+      "imageNone": "Không hình ảnh",
+      "autoRead": "Tự động phát âm khi lật thẻ",
+      "shuffle": "Xáo trộn",
+      "flipAll": "Lật tất cả",
+      "exercise": "Bài tập",
+      "chooseExercise": "Chọn bài tập",
+      "exerciseDesc": "Lựa chọn bài tập phù hợp để ôn luyện từ vựng",
+      "prevCard": "Thẻ trước",
+      "nextCard": "Thẻ tiếp theo"
+    },
+    "exercise": {
+      "needMinCards": "Cần ít nhất 4 thẻ để làm bài tập.",
+      "loadError": "Không thể tải bộ flashcard.",
+      "perfect": "Hoàn hảo!",
+      "greatJob": "Làm tốt lắm!",
+      "keepTrying": "Cố gắng thêm nhé!",
+      "scoreDesc": "Bạn trả lời đúng {{correct}}/{{total}} câu",
+      "correct": "Đúng",
+      "incorrect": "Sai",
+      "wrongAnswers": "Câu trả lời sai:",
+      "yourAnswer": "Bạn chọn",
+      "correctAnswer": "Đáp án",
+      "retry": "Làm lại",
+      "fillBlank": "Điền từ",
+      "multipleChoice": "Trắc nghiệm",
+      "pickMeaning": "Chọn nghĩa đúng của từ",
+      "pickVocab": "Chọn từ vựng đúng cho nghĩa",
+      "correctFeedback": "Chính xác! 🎉",
+      "incorrectFeedback": "Chưa đúng",
+      "answerIs": "Đáp án",
+      "viewResults": "Xem kết quả",
+      "next": "Tiếp theo"
     }
   },
   "flashcards": {
@@ -405,6 +444,13 @@
       "lists": "Flash Lists",
       "noDesc": "Không có mô tả",
       "setCount": "{{count}} bộ thẻ"
+    },
+    "create": {
+      "modalTitle": "Tạo Flashcard mới",
+      "listTab": "Tạo Flash List",
+      "cardTab": "Tạo Flash Card",
+      "public": "Công khai",
+      "private": "Riêng tư"
     }
   },
   "home": {
@@ -826,6 +872,7 @@
   },
   "premium": {
     "whyPremium": "Tại sao nên chọn Premium?",
+    "viewSuitablePlan": "Xem gói phù hợp",
     "subscribeSuccess": "Nâng cấp {{name}} thành công!",
     "inUse": "Đang sử dụng",
     "default": "Mặc định",
@@ -1452,6 +1499,43 @@
       "n3_desc": "Trung cấp",
       "n4_desc": "Sơ cấp cao",
       "n5_desc": "Sơ cấp"
+    },
+    "filter": {
+      "all": "Tất cả",
+      "fullTest": "Đề full",
+      "vocabularyGrammar": "Từ vựng & Ngữ pháp",
+      "reading": "Đọc hiểu",
+      "listening": "Nghe hiểu",
+      "searchButton": "Tìm kiếm",
+      "levelLabel": "Trình độ:",
+      "categoryLabel": "Danh mục:"
+    },
+    "examCard": {
+      "badgeNew": "Chưa làm",
+      "badgeDoing": "Đang làm",
+      "badgeDone": "Đã xong",
+      "badgeLocked": "Topup",
+      "btnStart": "Bắt đầu làm bài",
+      "btnContinue": "Tiếp tục",
+      "btnViewResult": "Xem kết quả",
+      "info": "{{questions}} câu hỏi - {{duration}} phút"
+    },
+    "history": {
+      "recentResults": "Kết quả gần đây nhất",
+      "viewAll": "Xem tất cả",
+      "monthAbbr": "Th{{month}}",
+      "minutes": "{{count}} phút",
+      "passed": "Đã Đậu",
+      "failed": "Chưa Đậu"
+    },
+    "practice": {
+      "headerTitle": "Luyện thi",
+      "headerSubtitle": "Đề thi mô phỏng sát kỳ thi thật. Chinh phục JLPT từ N5 đến N1.",
+      "historyButton": "Lịch sử thi"
+    },
+    "topup": {
+      "title": "Bạn đã dùng hết lượt thi JLPT",
+      "message": "Hãy nâng cấp gói hoặc mua thêm để tiếp tục làm bài thi JLPT."
     }
   },
   "video_call": {

@@ -15,11 +15,11 @@ import {
 } from "@/store/services/jlptApi";
 import type { JLPTLevel, TestAttemptResult } from "@/types/jlpt";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  full_test: "De full",
-  vocabulary_grammar: "Tu vung va Ngu phap",
-  reading: "Doc hieu",
-  listening: "Nghe hieu",
+const CATEGORY_KEY_MAP: Record<string, string> = {
+  full_test: "jlpt.filter.fullTest",
+  vocabulary_grammar: "jlpt.filter.vocabularyGrammar",
+  reading: "jlpt.filter.reading",
+  listening: "jlpt.filter.listening",
 };
 
 const DEFAULT_IMAGE =
@@ -91,16 +91,16 @@ export default function JlptPracticePage() {
   const upgradePath = getJlptTopupPath(jlptTopupType, jlptRecommendedPlan);
   const topupTitle =
     jlptTopupTitle ||
-    t("jlpt.topup.title", { defaultValue: "Ban da dung het luot thi JLPT" });
+    t("jlpt.topup.title", { defaultValue: "Bạn đã dùng hết lượt thi JLPT" });
   const topupMessage =
     jlptTopupMessage ||
     t("jlpt.topup.message", {
       defaultValue:
-        "Hay nang cap goi hoac mua them de tiep tuc lam bai thi JLPT.",
+        "Hãy nâng cấp gói hoặc mua thêm để tiếp tục làm bài thi JLPT.",
     });
   const actionLabel = jlptRecommendedPlan
     ? t("paywall.btnUpgrade", { tier: jlptRecommendedPlan })
-    : t("premium.viewSuitablePlan", { defaultValue: "Xem goi phu hop" });
+    : t("premium.viewSuitablePlan", { defaultValue: "Xem gói phù hợp" });
 
   return (
     <div className="relative min-h-screen flex-1 overflow-y-auto scroll-smooth bg-background">
@@ -156,7 +156,7 @@ export default function JlptPracticePage() {
             <span className="material-symbols-outlined mb-4 text-6xl">error</span>
             <p className="text-lg font-semibold">{t("api.error")}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {t("common.tryAgainLater", { defaultValue: "Vui long thu lai sau" })}
+              {t("common.tryAgainLater", { defaultValue: "Vui lòng thử lại sau" })}
             </p>
           </div>
         )}
@@ -182,7 +182,7 @@ export default function JlptPracticePage() {
               }
 
               const categoryLabel =
-                CATEGORY_LABELS[test.testType ?? "full_test"] ?? test.testType;
+                t(CATEGORY_KEY_MAP[test.testType ?? "full_test"] ?? test.testType);
 
               return (
                 <ExamCard
@@ -193,7 +193,11 @@ export default function JlptPracticePage() {
                   title={test.title}
                   image={DEFAULT_IMAGE}
                   tag={`${test.level} - ${categoryLabel}`}
-                  info={`${test.totalQuestions} cau hoi - ${test.duration} phut`}
+                  info={t("jlpt.examCard.info", {
+                    questions: test.totalQuestions,
+                    duration: test.duration,
+                    defaultValue: `${test.totalQuestions} câu hỏi - ${test.duration} phút`,
+                  })}
                   colorTheme="pink-400"
                   lockedTitle={topupTitle}
                   lockedButtonLabel={actionLabel}

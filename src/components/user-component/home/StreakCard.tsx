@@ -6,9 +6,10 @@ import { useGetStreakQuery } from "@/store/services/progressApi";
 
 interface StreakCardProps {
   className?: string;
+  hideMessage?: boolean;
 }
 
-export function StreakCard({ className }: StreakCardProps) {
+export function StreakCard({ className, hideMessage = false }: StreakCardProps) {
   const { data: streak, isLoading, isError } = useGetStreakQuery();
 
   if (isLoading) {
@@ -92,16 +93,18 @@ export function StreakCard({ className }: StreakCardProps) {
         </div>
 
         {/* Status Message */}
-        <div className="text-center">
-          <p className="text-sm text-white/90 font-medium">
-            {getStreakMessage()}
-          </p>
-          {streak.loggedInToday && (
-            <p className="text-xs text-white/60 mt-1">
-              ✓ Đã đăng nhập hôm nay
+        {!hideMessage && (
+          <div className="text-center">
+            <p className="text-sm text-white/90 font-medium">
+              {getStreakMessage()}
             </p>
-          )}
-        </div>
+            {streak.loggedInToday && (
+              <p className="text-xs text-white/60 mt-1">
+                ✓ Đã đăng nhập hôm nay
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

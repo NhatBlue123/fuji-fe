@@ -99,7 +99,7 @@ function toQueryString(params: Record<string, unknown>): string {
 export const courseApi = createApi({
   reducerPath: "courseApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Course", "Lesson", "Rating"],
+  tagTypes: ["Course", "Lesson", "Rating", "Wallet", "Payment"],
   endpoints: (builder) => ({
     // ==================== COURSE CRUD ====================
 

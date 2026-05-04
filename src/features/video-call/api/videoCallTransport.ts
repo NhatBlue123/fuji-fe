@@ -13,11 +13,35 @@ function getApiOrigin(): URL {
 
 export function getRandomVideoCallWsUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_VIDEO_CALL_WS_URL?.trim();
-  if (explicit) return explicit;
+  if (explicit) {
+    // Add userId to explicit URL if not already present
+    return addUserIdToWsUrl(explicit);
+  }
 
   const apiUrl = getApiOrigin();
   const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${apiUrl.host}/ws-video-call`;
+  const baseUrl = `${protocol}//${apiUrl.host}/ws-video-call`;
+  return addUserIdToWsUrl(baseUrl);
+}
+
+function addUserIdToWsUrl(baseUrl: string): string {
+  if (typeof window === "undefined") return baseUrl;
+  
+  try {
+    const authState = localStorage.getItem("auth_state");
+    if (!authState) return baseUrl;
+    
+    const parsed = JSON.parse(authState);
+    const user = parsed?.user ?? parsed?.userInfo ?? parsed?.profile;
+    const userId = user?.id;
+    
+    if (!userId) return baseUrl;
+    
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${separator}userId=${encodeURIComponent(userId)}`;
+  } catch {
+    return baseUrl;
+  }
 }
 
 export async function fetchVideoCallIceServers(): Promise<RTCIceServer[]> {

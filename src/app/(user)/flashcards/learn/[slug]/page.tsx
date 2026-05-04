@@ -56,6 +56,7 @@ export default function FlashcardStudyPage({
   const [imageMode, setImageMode] = useState<
     "front" | "back" | "both" | "none"
   >("front");
+  const [autoRead, setAutoRead] = useState(false);
   const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
   const [sessionStartTime] = useState(Date.now());
   const [hasRecordedActivity, setHasRecordedActivity] = useState(false);
@@ -189,11 +190,22 @@ export default function FlashcardStudyPage({
 
   const handlePlayAudio = useCallback(() => {
     if (currentCard?.vocabulary) {
+      speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(currentCard.vocabulary);
       utterance.lang = "ja-JP";
       speechSynthesis.speak(utterance);
     }
   }, [currentCard]);
+
+  // Auto-read when card changes or flips
+  useEffect(() => {
+    if (autoRead && currentCard?.vocabulary) {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentCard.vocabulary);
+      utterance.lang = "ja-JP";
+      speechSynthesis.speak(utterance);
+    }
+  }, [currentIndex, isFlipped, autoRead, currentCard?.vocabulary]);
 
   if (isLoading) {
     return (
@@ -279,22 +291,33 @@ export default function FlashcardStudyPage({
               setImageMode(value)
             }
           >
-            <SelectTrigger className="w-[140px] h-8 text-xs border-border/40 bg-card/40">
-              <SelectValue placeholder={t('auto._id__page_6')} />
+            <SelectTrigger className="w-[150px] h-8 text-xs border-border/40 bg-card/40">
+              <SelectValue placeholder={t("flashcard.learn.imageMode", { defaultValue: "Chế độ hiển thị" })} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="front">{t('auto._id__page_1')}</SelectItem>
-              <SelectItem value="back">{t('auto._id__page_2')}</SelectItem>
-              <SelectItem value="both">{t('auto._id__page_3')}</SelectItem>
-              <SelectItem value="none">{t('auto._id__page_4')}</SelectItem>
+              <SelectItem value="front">{t("flashcard.learn.imageFront", { defaultValue: "Hình ảnh mặt trước" })}</SelectItem>
+              <SelectItem value="back">{t("flashcard.learn.imageBack", { defaultValue: "Hình ảnh mặt sau" })}</SelectItem>
+              <SelectItem value="both">{t("flashcard.learn.imageBoth", { defaultValue: "Cả hai mặt" })}</SelectItem>
+              <SelectItem value="none">{t("flashcard.learn.imageNone", { defaultValue: "Không hình ảnh" })}</SelectItem>
             </SelectContent>
           </Select>
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setAutoRead(!autoRead)}
+            className={`rounded-full ${autoRead ? "text-secondary bg-secondary/10" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}`}
+            title={t("flashcard.learn.autoRead", { defaultValue: "Tự động phát âm" })}
+          >
+            <span className="material-symbols-outlined text-xl">
+              {autoRead ? "volume_up" : "volume_off"}
+            </span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleShuffle}
             className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-            title={t('auto._id__page_7')}
+            title={t("flashcard.learn.shuffle", { defaultValue: "Xáo trộn" })}
           >
             <span className="material-symbols-outlined text-xl">shuffle</span>
           </Button>
@@ -303,7 +326,7 @@ export default function FlashcardStudyPage({
             size="icon"
             onClick={handleFlipAll}
             className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-            title={t('auto._id__page_8')}
+            title={t("flashcard.learn.flipAll", { defaultValue: "Lật tất cả" })}
           >
             <span className="material-symbols-outlined text-xl">flip</span>
           </Button>
@@ -315,16 +338,16 @@ export default function FlashcardStudyPage({
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-foreground hover:bg-card/40 rounded-full"
-                title={t('auto._id__page_9')}
+                title={t("flashcard.learn.exercise", { defaultValue: "Bài tập" })}
               >
                 <span className="material-symbols-outlined text-xl">quiz</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>{t('auto._id__page_5')}</DialogTitle>
+                <DialogTitle>{t("flashcard.learn.chooseExercise", { defaultValue: "Chọn bài tập" })}</DialogTitle>
                 <DialogDescription>
-                  Lựa chọn bài tập phù hợp để ôn luyện từ vựng
+                  {t("flashcard.learn.exerciseDesc", { defaultValue: "Lựa chọn bài tập phù hợp để ôn luyện từ vựng" })}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -515,7 +538,7 @@ export default function FlashcardStudyPage({
             className={`size-10 rounded-xl bg-card/50 border-border/40 ${
               currentIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            title={t('auto._id__page_10')}
+            title={t("flashcard.learn.prevCard", { defaultValue: "Thẻ trước" })}
           >
             <span className="material-symbols-outlined text-xl">
               arrow_back
@@ -534,7 +557,7 @@ export default function FlashcardStudyPage({
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
-            title={t('auto._id__page_11')}
+            title={t("flashcard.learn.nextCard", { defaultValue: "Thẻ tiếp theo" })}
           >
             <span className="material-symbols-outlined text-xl">
               arrow_forward

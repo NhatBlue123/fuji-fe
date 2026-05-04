@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRandomVideoCall } from "../hooks/useRandomVideoCall";
 import type { JLPTLevel, VideoCallMatchMode } from "../types";
+import { ChatBox } from "./ChatBox";
 
 const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];
 
@@ -80,13 +81,16 @@ export default function RandomVideoCallExperience() {
 
   return (
     <div
-      className="relative flex flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50"
+      className="relative flex overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50"
       style={{ height: "calc(100vh - 64px)" }}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.15),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.10),transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.16),transparent_34%)]" />
 
       <main className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <section className="grid min-h-0 flex-1 grid-cols-1 gap-4 bg-slate-100 p-4 dark:bg-slate-950 lg:grid-cols-2">
+        <section className={cn(
+          "grid min-h-0 flex-1 gap-4 bg-slate-100 p-4 dark:bg-slate-950",
+          isConnected ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-2"
+        )}>
           <div className="relative min-h-[340px] overflow-hidden rounded-2xl border-4 border-sky-500/80 bg-slate-100 shadow-2xl dark:border-white/90 dark:bg-slate-950">
             <video
               ref={localVideoRef}
@@ -323,6 +327,20 @@ export default function RandomVideoCallExperience() {
           </Button>
         </footer>
       </main>
+
+      {/* Chat Box - Right Side */}
+      {isConnected && (
+        <div className="relative z-10 w-80 flex-shrink-0 h-full">
+          <ChatBox
+            messages={call.chatMessages}
+            onSendMessage={call.sendChatMessage}
+            isBanned={call.isChatBanned}
+            banUntil={call.chatBanUntil}
+            violationCount={call.violationCount}
+            showWarning={call.showWarning}
+          />
+        </div>
+      )}
     </div>
   );
 }

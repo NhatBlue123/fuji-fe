@@ -25,7 +25,6 @@ import { Input } from "@/components/ui/input";
 import { useAuth, useAppDispatch } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 import { toast } from "sonner";
-import { tMsg } from "@/i18n";
 import { ReviewForm } from "./ReviewForm";
 import { LikeButton } from "./LikeButton";
 
@@ -792,8 +791,12 @@ function ReviewsContent({
       if (editingReviewId === review.id) {
         setEditingReviewId(null);
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || t("auto.courseDetail_51"));
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "data" in error
+          ? (error as { data?: { message?: string } }).data?.message
+          : undefined;
+      toast.error(message || t("auto.courseDetail_51"));
     }
   };
 
@@ -1018,7 +1021,7 @@ export default function CourseDetailView({
       if (result.valid) {
         toast.success(`✅ Áp dụng mã ${normalizedCode} thành công!`);
       } else {
-        toast.error(result.message || "Mã không hợp lệ");
+        toast.error(result.message || t("monetization.messages.invalidDiscountCode"));
       }
     } catch {
       toast.error(t("auto.courseDetail_93"));
@@ -1496,7 +1499,7 @@ export default function CourseDetailView({
                     <span className="material-symbols-outlined text-destructive text-base mt-0.5">error</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-destructive">{appliedCoupon.message}</p>
-                      <button onClick={handleRemoveCoupon} className="mt-1 text-[11px] text-muted-foreground underline">Thử mã khác</button>
+                      <button onClick={handleRemoveCoupon} className="mt-1 text-[11px] text-muted-foreground underline">{t("monetization.actions.tryAnotherCode")}</button>
                     </div>
                   </div>
                 )}
@@ -1520,7 +1523,7 @@ export default function CourseDetailView({
                       <button
                         onClick={handleRemoveCoupon}
                         className="text-muted-foreground hover:text-foreground transition-colors"
-                        title="Xóa mã"
+                        title={t("monetization.actions.removeCodeTitle")}
                       >
                         <span className="material-symbols-outlined text-base">close</span>
                       </button>

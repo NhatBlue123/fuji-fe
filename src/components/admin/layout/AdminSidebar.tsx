@@ -78,12 +78,12 @@ export function AdminSidebar() {
       label: t("admin.sidebar.groups.overview"),
       items: [
         {
-          title: "Dashboard",
+          title: "Bảng điều khiển",
           href: "/admin",
           icon: LayoutDashboard,
         },
         {
-          title: "Teacher Dashboard",
+          title: "Bảng giáo viên",
           href: "/admin/teacher-dashboard",
           icon: FileText,
         },
@@ -97,7 +97,7 @@ export function AdminSidebar() {
               href: "/admin/analytics/teachers",
             },
             {
-              title: "Admin",
+              title: "Quản trị",
               href: "/admin/analytics/admin",
             },
           ],
@@ -125,6 +125,29 @@ export function AdminSidebar() {
           adminOnly: true,
         },
         {
+          title: "Gói hệ thống",
+          href: "/admin/packages",
+          icon: Package,
+          adminOnly: true,
+          children: [
+            {
+              title: "Danh sách gói",
+              href: "/admin/packages",
+              adminOnly: true,
+            },
+            {
+              title: "Người dùng",
+              href: "/admin/packages/users",
+              adminOnly: true,
+            },
+            {
+              title: "Lịch sử mua",
+              href: "/admin/packages/purchases",
+              adminOnly: true,
+            },
+          ],
+        },
+        {
           title: t("admin.sidebar.items.courses"),
           href: "/admin/courses",
           icon: BookOpen,
@@ -148,11 +171,33 @@ export function AdminSidebar() {
           title: t("admin.sidebar.items.schedules"),
           href: "/admin/teacher-schedules",
           icon: CalendarDays,
+          children: [
+            {
+              title: t("admin.sidebar.items.schedules"),
+              href: "/admin/teacher-schedules",
+            },
+            {
+              title: "Chính sách đặt lịch",
+              href: "/admin/bookings/policy",
+              adminOnly: true,
+            },
+          ],
         },
         {
-          title: "Flashcard",
+          title: "Thẻ ghi nhớ",
           href: "/admin/flashcard",
           icon: Layers,
+          children: [
+            {
+              title: "Quản lý thẻ ghi nhớ",
+              href: "/admin/flashcard",
+            },
+            {
+              title: "Giá và quota ảnh",
+              href: "/admin/flashcard/pricing",
+              adminOnly: true,
+            },
+          ],
         },
         {
           title: t("admin.sidebar.items.tests"),
@@ -181,7 +226,7 @@ export function AdminSidebar() {
           adminOnly: true,
         },
         {
-          title: "Chat Moderation",
+          title: "Kiểm duyệt chat",
           href: "/admin/chat-moderation",
           icon: MessageSquare,
         },
@@ -190,6 +235,39 @@ export function AdminSidebar() {
           href: "/admin/rag-management",
           icon: Brain,
           adminOnly: true,
+        },
+        {
+          title: "AI và quota",
+          href: "/admin/ai-usage",
+          icon: Brain,
+          adminOnly: true,
+          children: [
+            {
+              title: "Tổng quan",
+              href: "/admin/ai-usage",
+              adminOnly: true,
+            },
+            {
+              title: "Chatbot",
+              href: "/admin/ai-usage/chatbot",
+              adminOnly: true,
+            },
+            {
+              title: "AI Sensei",
+              href: "/admin/ai-usage/sensei",
+              adminOnly: true,
+            },
+            {
+              title: "Gói AI mua thêm",
+              href: "/admin/ai-usage/packs",
+              adminOnly: true,
+            },
+            {
+              title: "Lịch sử sử dụng",
+              href: "/admin/ai-usage/logs",
+              adminOnly: true,
+            },
+          ],
         },
         {
           title: t("admin.sidebar.items.notifications"),

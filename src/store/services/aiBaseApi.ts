@@ -17,5 +17,6 @@ export const aiBaseApi = createApi({
       return headers;
     },
   }),
+  tagTypes: ["AiQuota"],
   endpoints: () => ({}),
 });

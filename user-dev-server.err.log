@@ -1,0 +1,8 @@
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          11684
+- Dir:          D:\FUJI\fuji-fe
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 11684 /F to stop it.

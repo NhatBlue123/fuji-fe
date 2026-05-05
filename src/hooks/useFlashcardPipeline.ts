@@ -28,9 +28,9 @@ export interface UseFlashcardPipelineReturn {
   /** Manually trigger processing for the current input */
   processNow: () => void;
   /** Search images for a single term by its key */
-  searchImagesForTerm: (termKey: string) => void;
+  searchImagesForTerm: (termKey: string) => Promise<void>;
   /** Search images for all terms in "ready" state */
-  searchAllImages: () => void;
+  searchAllImages: () => Promise<void>;
   /** Reset all state */
   reset: () => void;
 }
@@ -78,16 +78,17 @@ export function useFlashcardPipeline(
 
   const searchImagesForTerm = useCallback((termKey: string) => {
     const pipeline = pipelineRef.current;
-    if (!pipeline) return;
+    if (!pipeline) return Promise.resolve();
     const terms = pipeline.getTerms();
     const index = terms.findIndex((t) => t.key === termKey);
     if (index >= 0) {
-      pipeline.searchImagesForTerm(index);
+      return pipeline.searchImagesForTerm(index);
     }
+    return Promise.resolve();
   }, []);
 
   const searchAllImages = useCallback(() => {
-    pipelineRef.current?.searchAllImages();
+    return pipelineRef.current?.searchAllImages() ?? Promise.resolve();
   }, []);
 
   const reset = useCallback(() => {

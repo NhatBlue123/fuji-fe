@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Flame,
+  Ticket,
 } from "lucide-react";
 import { useTheme } from "@/components/common";
 import { useAuth, useAppDispatch } from "@/store/hooks";
@@ -42,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useMyMonetizationSummary } from "@/hooks/useMyMonetizationSummary";
 
 function HeaderAuthSkeleton() {
   return (
@@ -51,6 +53,12 @@ function HeaderAuthSkeleton() {
       <div className="h-10 w-[156px] animate-pulse rounded-xl bg-muted/70" />
     </div>
   );
+}
+
+function quotaTextClass(status: "normal" | "warning" | "empty") {
+  if (status === "empty") return "text-red-500 dark:text-red-400";
+  if (status === "warning") return "text-amber-600 dark:text-amber-400";
+  return "text-muted-foreground";
 }
 
 const Header = () => {
@@ -127,6 +135,15 @@ const Header = () => {
   const { data: streak } = useGetStreakQuery(undefined, {
     skip: !canShowAuthUi,
   });
+  const monetization = useMyMonetizationSummary({ skip: !canShowAuthUi });
+  const currentPackageName =
+    monetization.package?.packageName ||
+    monetization.package?.packageCode ||
+    user?.subscriptionTier ||
+    "BASIC";
+  const packageExpiry = monetization.package?.expiresAt
+    ? new Date(monetization.package.expiresAt)
+    : null;
 
   const getRoleLabel = () => {
     if (!roles) return t("common.roles.student");
@@ -347,7 +364,7 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-64 p-2 rounded-2xl shadow-2xl border border-secondary/10 bg-popover text-popover-foreground"
+                className="w-80 p-2 rounded-2xl shadow-2xl border border-secondary/10 bg-popover text-popover-foreground"
                 align="end"
               >
                 <div className="flex items-center gap-3 p-3">
@@ -373,6 +390,81 @@ const Header = () => {
                   </div>
                 </div>
                 <DropdownMenuSeparator className="opacity-50" />
+                <div className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        {t("monetization.terms.currentPackage")}
+                      </p>
+                      <p className="text-sm font-black uppercase tracking-tight text-foreground">
+                        {currentPackageName}
+                      </p>
+                    </div>
+                    {packageExpiry && (
+                      <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                          {t("monetization.terms.expiresAt")}
+                        </p>
+                        <p className="text-xs font-bold text-foreground">
+                          {packageExpiry.toLocaleDateString("vi-VN")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="my-3 h-px bg-border" />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        {t("monetization.terms.todayUsage")}
+                      </p>
+                      {monetization.hasError && (
+                        <span className="text-[10px] font-bold text-red-500">
+                          {t("monetization.messages.quotaLoadFailedShort")}
+                        </span>
+                      )}
+                    </div>
+                    {monetization.quotaLines.length === 0 && !monetization.hasError ? (
+                      <div className="space-y-1">
+                        {[0, 1, 2, 3].map((item) => (
+                          <div
+                            key={item}
+                            className="h-4 animate-pulse rounded bg-muted"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      monetization.quotaLines.map((line) => (
+                        <div
+                          key={line.featureKey}
+                          className="flex items-center justify-between gap-3 text-xs"
+                        >
+                          <span className="font-medium text-foreground">
+                            {line.label}
+                          </span>
+                          <span className={`font-bold ${quotaTextClass(line.status)}`}>
+                            {line.totalRemaining}/{line.quota}
+                            {line.packRemaining > 0 ? ` +${line.packRemaining}` : ""}{" "}
+                            {line.unit}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="my-3 h-px bg-border" />
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">
+                      {t("monetization.terms.availableDiscountCodes")}
+                    </span>
+                    <span className="font-black text-secondary">
+                      {monetization.activeCoupons.length}
+                    </span>
+                  </div>
+                </div>
+                <DropdownMenuSeparator className="opacity-50" />
                 <div className="px-1 py-1 space-y-0.5">
                   <DropdownMenuItem
                     asChild
@@ -385,6 +477,34 @@ const Header = () => {
                       <User className="size-4 text-secondary" />
                       <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">
                         {t("common.profile") || "Hồ sơ cá nhân"}
+                      </span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    asChild
+                    className="rounded-xl cursor-pointer py-3 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800 transition-colors"
+                  >
+                    <Link
+                      href="/packages"
+                      className="flex items-center gap-3 w-full"
+                    >
+                      <Sparkles className="size-4 text-secondary" />
+                      <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">
+                        {t("monetization.actions.managePackage")}
+                      </span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    asChild
+                    className="rounded-xl cursor-pointer py-3 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800 transition-colors"
+                  >
+                    <Link
+                      href="/profile/coupons"
+                      className="flex items-center gap-3 w-full"
+                    >
+                      <Ticket className="size-4 text-secondary" />
+                      <span className="text-sm font-medium font-sans text-slate-700 dark:text-slate-200">
+                        {t("monetization.actions.openDiscountWallet")}
                       </span>
                     </Link>
                   </DropdownMenuItem>

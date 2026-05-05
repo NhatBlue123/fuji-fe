@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar,
-  Zap
+  Zap, Sparkles, Ticket
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -23,6 +23,7 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { QuotaOverview } from "@/components/user-component/monetization/QuotaOverview";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -30,7 +31,10 @@ export default function ProfilePage() {
   const [openLogout, setOpenLogout] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const { data: user, isLoading, error, isUninitialized } = useGetCurrentUserQuery();
   const { data: mySub, isLoading: isSubLoading } = useGetMySubscriptionQuery(undefined, {
@@ -140,7 +144,7 @@ export default function ProfilePage() {
               </div>
 
               <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm leading-relaxed italic border-l-2 border-pink-500/30 pl-4 py-1">
-                "{user.bio || t("profile.bio.empty")}"
+                &ldquo;{user.bio || t("profile.bio.empty")}&rdquo;
               </p>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
@@ -162,6 +166,8 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <QuotaOverview />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
   {/* Left Column - Details */}
@@ -191,6 +197,20 @@ export default function ProfilePage() {
 
   {/* Right Column - Actions */}
   <div className="lg:col-span-1 space-y-6 grid gap-2">
+    <ActionCard 
+      href="/packages"
+      icon={<Sparkles size={24} />}
+      title={t("monetization.terms.systemPackages")}
+      desc={t("monetization.messages.systemPackageDescription")}
+      color="pink bg-secondary hover:bg-secondary/90"
+    />
+    <ActionCard 
+      href="/profile/coupons"
+      icon={<Ticket size={24} />}
+      title={t("monetization.terms.discountCodeWallet")}
+      desc={t("monetization.terms.availableDiscountCodes")}
+      color="amber bg-secondary hover:bg-secondary/90"
+    />
     <ActionCard 
       href="/profile/change-password"
       icon={<Key size={24} />}

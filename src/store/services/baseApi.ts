@@ -50,6 +50,10 @@ export const baseApi = createApi({
     "TodayStats",
     "Insight",
     "LessonNote",
+    "SystemPackage",
+    "FlashcardImageBilling",
+    "BookingPolicy",
+    "UserMonetization",
   ],
   endpoints: () => ({}),
 });

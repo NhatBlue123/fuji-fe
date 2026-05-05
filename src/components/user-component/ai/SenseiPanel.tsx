@@ -9,9 +9,11 @@
 
 import { useTranslation } from "react-i18next";
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
+import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
+import { useGetMyAiQuotaQuery } from "@/store/services/aiQuotaApi";
 import {
   useGetVoiceSessionsQuery,
   useGetVoiceSessionDetailQuery,
@@ -221,6 +223,18 @@ const ChromaKeyVideo = memo(function ChromaKeyVideo({
 export default function SenseiPanel() {
   const { t } = useTranslation();
   const [showHistory, setShowHistory] = useState(true);
+  const {
+    data: aiQuota = [],
+    refetch: refetchAiQuota,
+  } = useGetMyAiQuotaQuery();
+  const senseiQuota = useMemo(
+    () => aiQuota.find((quota) => quota.featureKey === "AI_SENSEI_SESSION"),
+    [aiQuota],
+  );
+  const senseiRemaining = senseiQuota
+    ? Number(senseiQuota.totalRemaining ?? 0)
+    : null;
+  const isSenseiQuotaEmpty = senseiRemaining !== null && senseiRemaining <= 0;
 
   // Sensei feedback state - lưu nhận xét sau khi kết thúc phiên
   const [feedback, setFeedback] = useState<SenseiFeedback | null>(null);
@@ -315,13 +329,17 @@ export default function SenseiPanel() {
   const isRecording = state.status === "recording";
   const isProcessing = state.status === "processing";
 
-  const handleStartSession = useCallback(() => {
+  const handleStartSession = useCallback(async () => {
     if (!selectedTopic || !selectedScenario) return;
+    if (isSenseiQuotaEmpty) {
+      toast.error("Bạn đã hết buổi Sensei hôm nay.");
+      return;
+    }
     setSelectedSessionCode(null);
     setFeedback(null);
     setEvaluationError(null);
     setIsEvaluationWaitingState(false);
-    startSession({
+    await startSession({
       level: selectedScenario.level,
       context: `${t("ai.sensei.topic")}${selectedTopic.title}. ${t("ai.sensei.situation")}${selectedScenario.situation}. ${t("ai.sensei.role")}${selectedScenario.aiRole}. ${t("ai.sensei.personality")}${selectedScenario.aiPersonality || t("ai.sensei.defaultPersonality")}. ${t("ai.sensei.sample")}\n${selectedScenario.sampleConversation || ""}`,
       goals: t("ai.sensei.defaultGoals"),
@@ -330,7 +348,8 @@ export default function SenseiPanel() {
       scenarioId: selectedScenario.id,
       openingLine: selectedScenario.openingLine || undefined,
     });
-  }, [startSession, selectedScenario, selectedTopic]);
+    refetchAiQuota();
+  }, [isSenseiQuotaEmpty, refetchAiQuota, startSession, selectedScenario, selectedTopic, t]);
 
   const handleStopSession = useCallback(async () => {
     setIsEndingSession(true);
@@ -368,7 +387,7 @@ export default function SenseiPanel() {
     } finally {
       setIsEndingSession(false);
     }
-  }, [stopSession, showSessionList, refetchSessions]);
+  }, [stopSession, showSessionList, refetchSessions, t]);
 
   useEffect(() => {
     if (!selectedSessionCode) return;
@@ -394,17 +413,18 @@ export default function SenseiPanel() {
     if (!isLoadingDetail && sessionDetail) {
       setIsEvaluationWaitingState(false);
     }
-  }, [selectedSessionCode, sessionDetail, isLoadingDetail]);
+  }, [selectedSessionCode, sessionDetail, isLoadingDetail, t]);
 
   const handleMicDown = useCallback(() => {
     if (!isSessionActive || isProcessing || isPlaying) return;
     startRecording();
   }, [isSessionActive, isProcessing, isPlaying, startRecording]);
 
-  const handleMicUp = useCallback(() => {
+  const handleMicUp = useCallback(async () => {
     if (!isRecording) return;
-    stopRecording();
-  }, [isRecording, stopRecording]);
+    await stopRecording();
+    refetchAiQuota();
+  }, [isRecording, refetchAiQuota, stopRecording]);
 
   // Transcript messages
   const displayMessages: SenseiMessage[] = useMemo(() => {
@@ -529,15 +549,37 @@ export default function SenseiPanel() {
           {/* Session start/stop + mic buttons */}
           <div className="relative z-20 mb-6 flex flex-col items-center gap-3">
             {!isSessionActive ? (
-              <Button
-                onClick={handleStartSession}
-                className="px-6 py-3 rounded-full bg-gradient-to-br from-secondary to-purple-600 text-white font-bold text-sm shadow-lg shadow-secondary/30 hover:shadow-xl hover:scale-105 transition-all"
-              >
-                <span className="material-symbols-outlined mr-2">
-                  play_arrow
-                </span>
-                {t("ai.sensei.btn.start")}
-              </Button>
+              <>
+                <div className={`rounded-full border px-4 py-2 text-xs font-bold ${
+                  isSenseiQuotaEmpty
+                    ? "border-red-500/30 bg-red-500/10 text-red-500"
+                    : "border-secondary/20 bg-secondary/10 text-secondary"
+                  }`}>
+                  {senseiRemaining === null
+                    ? t("monetization.messages.senseiLoading")
+                    : t("monetization.messages.senseiRemaining", {
+                        count: senseiRemaining,
+                      })}
+                </div>
+                {isSenseiQuotaEmpty && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-red-500">
+                    <span>{t("monetization.messages.senseiEmpty")}</span>
+                    <Link href="/packages" className="font-bold underline">
+                      {t("monetization.actions.upgradePackage")}
+                    </Link>
+                  </div>
+                )}
+                <Button
+                  onClick={handleStartSession}
+                  disabled={isSenseiQuotaEmpty || !selectedTopic || !selectedScenario}
+                  className="px-6 py-3 rounded-full bg-gradient-to-br from-secondary to-purple-600 text-white font-bold text-sm shadow-lg shadow-secondary/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  <span className="material-symbols-outlined mr-2">
+                    play_arrow
+                  </span>
+                  {t("ai.sensei.btn.start")}
+                </Button>
+              </>
             ) : (
               <>
                 {/* Push-to-talk mic button */}

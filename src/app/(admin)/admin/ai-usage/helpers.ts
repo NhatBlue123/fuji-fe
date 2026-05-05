@@ -1,6 +1,6 @@
 export const AI_FEATURE_OPTIONS = [
   { value: "AI_CHAT_BASIC", label: "Trò chuyện AI" },
-  { value: "AI_CHAT_DEEP", label: "Giải thích chuyên sâu" },
+  { value: "AI_CHAT_DEEP", label: "Suy luận" },
   { value: "AI_SENSEI_SESSION", label: "Buổi Sensei" },
 ] as const;
 

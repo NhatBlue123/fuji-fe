@@ -19,9 +19,11 @@ import { useTheme } from "@/components/common";
 import { useAuth, useAppDispatch } from "@/store/hooks";
 import { logoutThunk } from "@/store/slices/authSlice";
 import { useNotifications } from "@/providers/NotificationProvider";
+import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import { useGetStreakQuery } from "@/store/services/progressApi";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { FramedAvatar } from "@/components/common/FramedAvatar";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -31,7 +33,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -44,6 +45,8 @@ import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useMyMonetizationSummary } from "@/hooks/useMyMonetizationSummary";
+import { useAvatarFrames } from "@/hooks/useAvatarFrames";
+import { getUsableAvatarFrame, hasAnyAvatarFramePackage } from "@/lib/avatar-frames";
 
 function HeaderAuthSkeleton() {
   return (
@@ -67,6 +70,11 @@ const Header = () => {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, roles } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  const canFetchCurrentUser = mounted && isAuthenticated;
+  const { data: currentUser } = useGetCurrentUserQuery(undefined, {
+    skip: !canFetchCurrentUser,
+  });
   const { unreadCount, notifications, markAsRead, bellRingCount } = useNotifications();
   const [bellAnimating, setBellAnimating] = useState(false);
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
@@ -82,7 +90,6 @@ const Header = () => {
     }
   }, [bellRingCount]);
 
-  const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(timer);
@@ -125,6 +132,21 @@ const Header = () => {
   }, []);
 
   const canShowAuthUi = mounted && isAuthenticated;
+  const displayUser = currentUser
+    ? {
+        ...(user ?? {}),
+        id: currentUser.id,
+        email: currentUser.email,
+        username: currentUser.username,
+        fullname: currentUser.fullName,
+        fullName: currentUser.fullName,
+        avatar: currentUser.avatarUrl || "",
+        avatarUrl: currentUser.avatarUrl || "",
+        avatarFrameUrl: currentUser.avatarFrameUrl || null,
+        role: currentUser.role,
+        subscriptionTier: currentUser.subscriptionTier,
+      }
+    : user;
   const { data: wallet } = useGetWalletQuery(undefined, {
     skip: !canShowAuthUi,
     refetchOnFocus: true,
@@ -136,14 +158,29 @@ const Header = () => {
     skip: !canShowAuthUi,
   });
   const monetization = useMyMonetizationSummary({ skip: !canShowAuthUi });
+  const { frames: avatarFrames } = useAvatarFrames();
   const currentPackageName =
     monetization.package?.packageName ||
     monetization.package?.packageCode ||
-    user?.subscriptionTier ||
+    displayUser?.subscriptionTier ||
     "BASIC";
   const packageExpiry = monetization.package?.expiresAt
     ? new Date(monetization.package.expiresAt)
     : null;
+  const avatarSrc =
+    displayUser?.avatar ||
+    displayUser?.avatarUrl ||
+    "/images/avt-default.jpg";
+  const hasUnlockedAvatarFrames = hasAnyAvatarFramePackage(
+    monetization.package,
+    displayUser?.subscriptionTier,
+  );
+  const avatarFrameSrc = getUsableAvatarFrame(
+    displayUser?.avatarFrameUrl,
+    avatarFrames,
+    hasUnlockedAvatarFrames,
+  );
+  const avatarFallback = displayUser?.username?.charAt(0).toUpperCase() || "U";
 
   const getRoleLabel = () => {
     if (!roles) return t("common.roles.student");
@@ -339,25 +376,22 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-10 gap-2 px-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all rounded-xl active:scale-95 active:translate-y-[1px] group"
+                  className="h-14 select-none gap-2 px-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all rounded-xl active:scale-95 active:translate-y-[1px] group focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-slate-800"
                 >
-                  <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-secondary/30 transition-all ring-offset-background">
-                    <AvatarImage
-                      src={
-                        user?.avatar ||
-                        user?.avatarUrl ||
-                        "/images/avt-default.jpg"
-                      }
-                    />
-                    <AvatarFallback className="bg-secondary text-white font-sans">
-                      {user?.username?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="hidden flex-col items-start px-2 text-left md:flex w-[120px]">
-                    <span className="text-[13px] font-bold leading-none truncate w-full tracking-tight group-hover:text-secondary transition-colors font-sans">
-                      {user?.fullname || user?.fullName || user?.username}
+                  <FramedAvatar
+                    src={avatarSrc}
+                    frameSrc={avatarFrameSrc}
+                    fallback={avatarFallback}
+                    className="h-[52px] w-[52px]"
+                    avatarClassName="bg-secondary"
+                    fallbackClassName="text-sm text-white"
+                    sizes="64px"
+                  />
+                  <div className="hidden select-none flex-col items-start px-2 text-left md:flex w-[120px]">
+                    <span className="text-[13px] font-bold leading-none truncate w-full tracking-tight group-hover:text-secondary transition-colors font-sans select-none">
+                      {displayUser?.fullname || displayUser?.fullName || displayUser?.username}
                     </span>
-                    <span className="text-[9px] font-bold text-muted-foreground mt-1 tracking-widest opacity-60 font-sans truncate w-full">
+                    <span className="text-[9px] font-bold text-muted-foreground mt-1 tracking-widest opacity-60 font-sans truncate w-full select-none">
                       {getRoleLabel()}
                     </span>
                   </div>
@@ -368,24 +402,21 @@ const Header = () => {
                 align="end"
               >
                 <div className="flex items-center gap-3 p-3">
-                  <Avatar className="h-10 w-10 border border-border pb-1">
-                    <AvatarImage
-                      src={
-                        user?.avatar ||
-                        user?.avatarUrl ||
-                        "/images/avt-default.jpg"
-                      }
-                    />
-                    <AvatarFallback className="bg-secondary text-white font-sans">
-                      {user?.username?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col overflow-hidden">
-                    <p className="text-sm font-bold truncate font-sans">
-                      {user?.fullname || user?.fullName || user?.username}
+                  <FramedAvatar
+                    src={avatarSrc}
+                    frameSrc={avatarFrameSrc}
+                    fallback={avatarFallback}
+                    className="h-16 w-16"
+                    avatarClassName="border border-border bg-secondary"
+                    fallbackClassName="text-sm text-white"
+                    sizes="72px"
+                  />
+                  <div className="flex select-none flex-col overflow-hidden">
+                    <p className="text-sm font-bold truncate font-sans select-none">
+                      {displayUser?.fullname || displayUser?.fullName || displayUser?.username}
                     </p>
-                    <p className="text-[11px] font-medium text-muted-foreground truncate font-sans">
-                      {user?.email}
+                    <p className="text-[11px] font-medium text-muted-foreground truncate font-sans select-none">
+                      {displayUser?.email}
                     </p>
                   </div>
                 </div>

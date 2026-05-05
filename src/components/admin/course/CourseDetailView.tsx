@@ -50,6 +50,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DeleteCourseDialog } from "@/components/admin/course/DeleteCourseDialog";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/store/hooks";
 import {
   ArrowLeft,
   Plus,
@@ -92,6 +94,11 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const shouldOpenEdit = searchParams.get("edit") !== null;
+  const { user } = useAuth();
+  const { hasPermission, isAdmin } = usePermissions();
+  const canEdit = hasPermission("COURSE_EDIT");
+  const canDelete = hasPermission("COURSE_DELETE");
+  const currentUserId = Number(user?.id);
 
   const {
     data: course,
@@ -112,7 +119,9 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     null,
   );
   const [deleteCourseDialog, setDeleteCourseDialog] = useState(false);
-  const [editCourseDialog, setEditCourseDialog] = useState(shouldOpenEdit);
+  const [editCourseDialog, setEditCourseDialog] = useState(
+    shouldOpenEdit && canEdit,
+  );
 
   const [editTitle, setEditTitle] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState<string | null>(null);
@@ -121,7 +130,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   const [editPublished, setEditPublished] = useState<boolean | null>(null);
 
   const openEditCourseDialog = () => {
-    if (!course) return;
+    if (!course || !canEdit) return;
     setEditTitle(course.title || "");
     setEditDescription(course.description || "");
     setEditPrice(String(course.price ?? 0));
@@ -131,6 +140,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   };
 
   const handleDeleteLesson = async (lessonId: number) => {
+    if (!canEdit) return;
     try {
       await deleteLesson({ lessonId, courseId }).unwrap();
       toast.success("Xóa bài học thành công!");
@@ -141,6 +151,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   };
 
   const handleDeleteCourse = async () => {
+    if (!canDelete) return;
     try {
       await deleteCourse(courseId).unwrap();
       
@@ -162,6 +173,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
 
   const handleUpdateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
 
     if (!course?.instructor?.id) {
       toast.error("Khóa học chưa có giảng viên, không thể cập nhật");
@@ -204,14 +216,17 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   };
 
   const openEditLesson = (lessonId: number) => {
+    if (!canEdit) return;
     router.push(`/admin/courses/${courseId}/lessons/${lessonId}/edit`);
   };
 
   const openCreateLesson = () => {
+    if (!canEdit) return;
     router.push(`/admin/courses/${courseId}/lessons/new`);
   };
 
   const handleTogglePreview = async (lessonId: number, currentPreview: boolean) => {
+    if (!canEdit) return;
     try {
       const lesson = sortedLessons.find(l => l.id === lessonId);
       if (!lesson) return;
@@ -261,6 +276,23 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     );
   }
 
+  const ownsCourse = course.instructor?.id === currentUserId;
+  if (!isAdmin && !ownsCourse) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">
+          Bạn chỉ có thể quản lý khóa học của chính mình
+        </p>
+        <Button variant="outline" asChild>
+          <Link href="/admin/courses">
+            <ArrowLeft className="mr-2 size-4" />
+            Quay lại
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   const sortedLessons = lessons
     ? [...lessons].sort((a, b) => a.lessonOrder - b.lessonOrder)
     : [];
@@ -279,20 +311,26 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
             Chi tiết khóa học và quản lý bài học
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={openEditCourseDialog}>
-            <Pencil className="mr-1 size-4" />
-            Chỉnh sửa
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setDeleteCourseDialog(true)}
-          >
-            <Trash2 className="mr-1 size-4" />
-            Xóa
-          </Button>
-        </div>
+        {(canEdit || canDelete) && (
+          <div className="ml-auto flex items-center gap-2">
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={openEditCourseDialog}>
+                <Pencil className="mr-1 size-4" />
+                Chỉnh sửa
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteCourseDialog(true)}
+              >
+                <Trash2 className="mr-1 size-4" />
+                Xóa
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -434,10 +472,12 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                 {sortedLessons.length} bài học trong khóa học này
               </CardDescription>
             </div>
-            <Button size="sm" onClick={openCreateLesson}>
-              <Plus className="mr-2 size-4" />
-              Thêm bài học
-            </Button>
+            {canEdit && (
+              <Button size="sm" onClick={openCreateLesson}>
+                <Plus className="mr-2 size-4" />
+                Thêm bài học
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -503,7 +543,8 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                     <TableCell>
                       <button
                         onClick={() => handleTogglePreview(lesson.id, lesson.isPreview)}
-                        className="transition-all hover:scale-105"
+                        className="transition-all hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        disabled={!canEdit}
                       >
                         {lesson.isPreview ? (
                           <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer">
@@ -525,24 +566,30 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
                       {new Date(lesson.createdAt).toLocaleDateString("vi-VN")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditLesson(lesson.id)}
-                        >
-                          <Pencil className="mr-1 size-4" />
-                          Sửa
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeleteLessonDialog(lesson.id)}
-                        >
-                          <Trash2 className="mr-1 size-4" />
-                          Xóa
-                        </Button>
-                      </div>
+                      {canEdit ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditLesson(lesson.id)}
+                          >
+                            <Pencil className="mr-1 size-4" />
+                            Sửa
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeleteLessonDialog(lesson.id)}
+                          >
+                            <Trash2 className="mr-1 size-4" />
+                            Xóa
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Chỉ xem
+                        </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -9,9 +9,12 @@ import {
 import { useTranslation } from "react-i18next";
 import { useUpdateProfileMutation } from "@/store/services/user/userApi";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
+import { useGetMySystemPackageQuery } from "@/store/services/userMonetizationApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FramedAvatar } from "@/components/common/FramedAvatar";
+import { AvatarFramePicker } from "@/components/user-component/profile/AvatarFramePicker";
 import {
   Select,
   SelectContent,
@@ -28,13 +31,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import { hasAnyAvatarFramePackage } from "@/lib/avatar-frames";
 
 export default function EditProfilePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const [updateProfile] = useUpdateProfileMutation();
   const { data: user, isLoading, isUninitialized } = useGetCurrentUserQuery();
+  const { data: userPackage } = useGetMySystemPackageQuery(undefined, {
+    skip: isLoading || !user,
+  });
 
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -49,7 +55,13 @@ export default function EditProfilePage() {
     gender: "MALE",
     jlptLevel: "",
     bio: "",
+    avatarFrameUrl: "",
   });
+
+  const hasUnlockedAvatarFrames = hasAnyAvatarFramePackage(
+    userPackage,
+    user?.subscriptionTier,
+  );
 
   useEffect(() => setMounted(true), []);
 
@@ -61,6 +73,7 @@ export default function EditProfilePage() {
         gender: user.gender || "MALE",
         jlptLevel: user.jlptLevel || "",
         bio: user.bio || "",
+        avatarFrameUrl: user.avatarFrameUrl || "",
       });
       setAvatarPreview(user.avatarUrl || null);
     }
@@ -84,6 +97,10 @@ export default function EditProfilePage() {
     try {
       const profileData: any = {};
       Object.entries(form).forEach(([key, value]) => {
+        if (key === "avatarFrameUrl") {
+          profileData.avatarFrameUrl = value || "";
+          return;
+        }
         if (value !== null && value !== undefined && value !== "") {
           profileData[key] = value;
         }
@@ -157,13 +174,13 @@ export default function EditProfilePage() {
                     {/* Premium Avatar Container */}
                     <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-500 shadow-2xl transition-all duration-500 group-hover:scale-105 active:scale-95 group-hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
                       <div className="w-full h-full rounded-[1.4rem] bg-[#0B1120] overflow-hidden relative flex items-center justify-center border-4 border-[#0B1120]">
-                        {avatarPreview ? (
-                          <Image src={avatarPreview} alt="avatar" className="object-cover" fill sizes="160px" />
-                        ) : (
-                          <span className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-pink-400 to-cyan-400">
-                            {getInitials(form.fullName)}
-                          </span>
-                        )}
+                        <FramedAvatar
+                          src={avatarPreview}
+                          frameSrc={form.avatarFrameUrl}
+                          fallback={getInitials(form.fullName)}
+                          className="h-full w-full"
+                          fallbackClassName="text-5xl"
+                        />
 
                         {/* Hover Overlay */}
                         <div className="absolute inset-0 bg-pink-500/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
@@ -190,6 +207,15 @@ export default function EditProfilePage() {
                     <CardTitle className="text-xl font-bold uppercase tracking-tight text-foreground dark:text-white">{t('auto.profileEdit_6')}</CardTitle>
                     <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1 text-muted-foreground">{t('auto.profileEdit_7')}</CardDescription>
                   </div>
+                  <AvatarFramePicker
+                    value={form.avatarFrameUrl}
+                    onChange={(avatarFrameUrl) =>
+                      setForm((current) => ({ ...current, avatarFrameUrl }))
+                    }
+                    hasAnyPackage={hasUnlockedAvatarFrames}
+                    avatarSrc={avatarPreview}
+                    fallback={getInitials(form.fullName)}
+                  />
                 </div>
               </CardHeader>
 

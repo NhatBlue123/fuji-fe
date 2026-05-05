@@ -8,6 +8,7 @@ export interface User {
   fullName?: string; // Backend returns fullName (camelCase)
   avatar?: string;
   avatarUrl?: string; // Backend returns avatarUrl
+  avatarFrameUrl?: string | null;
   bio?: string;
   phone?: string;
   address?: string;

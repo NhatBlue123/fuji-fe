@@ -23,7 +23,7 @@ const packageStatusLabel = (status: string) => {
 
 const featureLabel = (featureKey: string) => {
   if (featureKey === "AI_CHAT_BASIC") return "Trò chuyện AI";
-  if (featureKey === "AI_CHAT_DEEP") return "Giải thích chuyên sâu";
+  if (featureKey === "AI_CHAT_DEEP") return "Suy luận";
   if (featureKey === "AI_SENSEI_SESSION") return "Buổi Sensei";
   if (featureKey === "FLASHCARD_IMAGE_OPERATION") return "Ảnh thẻ ghi nhớ";
   return featureKey;

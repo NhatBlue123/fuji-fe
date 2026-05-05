@@ -16,6 +16,17 @@ import type {
   ApiResponse,
 } from "@/types/course";
 
+interface DiscountPreviewDTO {
+  code: string;
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  discountType: "PERCENT" | "FIXED_AMOUNT" | null;
+  discountPercent: number | null;
+  valid: boolean;
+  message: string;
+}
+
 // ─── Base query with auth ──────────────────────────────
 
 let isRefreshing = false;
@@ -124,6 +135,27 @@ export const courseApi = createApi({
           : [{ type: "Course", id: "LIST" }],
     }),
 
+    getCoursesByInstructor: builder.query<
+      PageResponse<CourseResponseDTO>,
+      { instructorId: number; page?: number; size?: number }
+    >({
+      query: ({ instructorId, page = 0, size = 10 }) =>
+        `/courses/instructor${toQueryString({ instructorId, page, size })}`,
+      transformResponse: (
+        response: ApiResponse<PageResponse<CourseResponseDTO>>,
+      ) => response.data!,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.content.map(({ id }) => ({
+                type: "Course" as const,
+                id,
+              })),
+              { type: "Course", id: "LIST" },
+            ]
+          : [{ type: "Course", id: "LIST" }],
+    }),
+
     getCourseById: builder.query<CourseResponseDTO, number>({
       query: (id) => `/courses/${id}`,
       transformResponse: (response: ApiResponse<CourseResponseDTO>) =>
@@ -185,24 +217,12 @@ export const courseApi = createApi({
       ],
     }),
 
-    previewDiscount: builder.query<
-      {
-        code: string;
-        originalPrice: number;
-        discountAmount: number;
-        finalPrice: number;
-        discountType: "PERCENT" | "FIXED_AMOUNT" | null;
-        discountPercent: number | null;
-        valid: boolean;
-        message: string;
-      },
-      { courseId: number; code: string }
-    >({
+    previewDiscount: builder.query<DiscountPreviewDTO, { courseId: number; code: string }>({
       query: ({ courseId, code }) => ({
         url: `/courses/${courseId}/preview-discount`,
         params: { code },
       }),
-      transformResponse: (res: ApiResponse<any>) => res.data,
+      transformResponse: (res: ApiResponse<DiscountPreviewDTO>) => res.data!,
     }),
 
     // ==================== RATING ====================
@@ -421,6 +441,7 @@ export const courseApi = createApi({
 
 export const {
   useGetAllCoursesQuery,
+  useGetCoursesByInstructorQuery,
   useGetCourseByIdQuery,
   useCreateCourseMutation,
   useUpdateCourseMutation,

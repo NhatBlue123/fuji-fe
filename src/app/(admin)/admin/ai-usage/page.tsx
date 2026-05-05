@@ -27,7 +27,7 @@ const chartKeyByFeature: Record<string, string> = {
 
 const chartLabelByKey: Record<string, string> = {
   chat: "Trò chuyện AI",
-  deep: "Giải thích sâu",
+  deep: "Suy luận",
   sensei: "Sensei",
 };
 
@@ -122,7 +122,7 @@ export default function AiUsageOverviewPage() {
                     <Tooltip />
                     <Legend formatter={(value) => chartLabelByKey[String(value)] ?? value} />
                     <Bar dataKey="chat" stackId="ai" fill="#2563eb" name="chat" />
-                    <Bar dataKey="deep" stackId="ai" fill="#7c3aed" name="deep" />
+                    <Bar dataKey="deep" stackId="ai" fill="#7c3aed" name="Suy luận" />
                     <Bar dataKey="sensei" stackId="ai" fill="#059669" name="sensei" />
                   </BarChart>
                 </ResponsiveContainer>

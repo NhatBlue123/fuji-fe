@@ -81,7 +81,7 @@ function intentToLabel(intent?: string) {
   if (intent === "guide") return "Huong dan";
   if (intent === "general_reject") return "Tu choi";
   if (intent === "grammar_qa") return "Ngu phap";
-  if (intent === "deep_help") return "Giải thích chuyên sâu";
+  if (intent === "reasoning" || intent === "deep_help") return "Suy luận";
   if (intent === "product_info") return "Khoa hoc";
   if (intent === "general_chat") return "Hoi dap";
   if (intent === "out_of_scope") return "Ngoai pham vi";
@@ -1029,7 +1029,7 @@ export default function AssistantPanel({
       {
         sessionId: sessionIdRef.current,
         message: trimmed,
-        mode: useDeepHelp ? "deep_help" : "basic",
+        mode: useDeepHelp ? "reasoning" : "basic",
         deepHelp: useDeepHelp,
       },
       (ack: { 

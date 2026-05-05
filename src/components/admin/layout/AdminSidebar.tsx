@@ -81,6 +81,7 @@ export function AdminSidebar() {
           title: "Bảng điều khiển",
           href: "/admin",
           icon: LayoutDashboard,
+          adminOnly: true,
         },
         {
           title: "Bảng giáo viên",
@@ -117,6 +118,16 @@ export function AdminSidebar() {
           href: "/admin/withdraw",
           icon: Wallet,
           adminOnly: true,
+        },
+        {
+          title: "Ví của tôi",
+          href: "/profile/wallet",
+          icon: Wallet,
+        },
+        {
+          title: "Rút tiền của tôi",
+          href: "/withdraw",
+          icon: Wallet,
         },
         {
           title: "Gói nạp",

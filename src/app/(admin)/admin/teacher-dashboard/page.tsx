@@ -1,6 +1,16 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import {
+  BarChart3,
+  BookOpen,
+  CalendarCheck,
+  Loader2,
+  RefreshCw,
+  Star,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -10,350 +20,308 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useGetTeacherDashboardQuery } from "@/store/services/teacherApi";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-const stats = [
-  {
-    title: "Lịch dạy hôm nay",
-    value: "6",
-    hint: "+2 so với hôm qua",
-    icon: "event",
-  },
-  {
-    title: "Học viên đang theo",
-    value: "48",
-    hint: "12 học viên mới tuần này",
-    icon: "groups",
-  },
-  {
-    title: "Giờ dạy tháng này",
-    value: "72h",
-    hint: "Đạt 90% mục tiêu",
-    icon: "schedule",
-  },
-  {
-    title: "Đánh giá trung bình",
-    value: "4.9",
-    hint: "124 lượt đánh giá",
-    icon: "star",
-  },
-];
+const formatNumber = (value?: number | null) =>
+  new Intl.NumberFormat("vi-VN").format(value || 0);
 
-const todayClasses = [
-  {
-    time: "08:30",
-    student: "Nguyễn Minh Anh",
-    level: "N3",
-    topic: "Kaiwa: Job Interview",
-  },
-  {
-    time: "10:00",
-    student: "Trần Quốc Bảo",
-    level: "N4",
-    topic: "Nghe hiểu JLPT",
-  },
-  {
-    time: "14:00",
-    student: "Lê Hoàng Phúc",
-    level: "N2",
-    topic: "Bunpo nâng cao",
-  },
-  {
-    time: "19:30",
-    student: "Phạm Thu Trang",
-    level: "N5",
-    topic: "Kana + goi y hoc tap",
-  },
-];
+const formatBlossom = (value?: number | null) =>
+  `${formatNumber(value)} hoa`;
 
-const pendingTasks = [
-  "Chấm 8 bài tập viết",
-  "Duyệt 3 yêu cầu đổi lịch",
-  "Cập nhật tài liệu cho lớp N3",
-  "Gửi feedback tuần cho 5 học viên",
-];
+const formatPercent = (value?: number | null) =>
+  `${(value || 0).toFixed(1)}%`;
 
-const revenueTrend = [
-  { week: "T1", revenue: 8200000 },
-  { week: "T2", revenue: 9400000 },
-  { week: "T3", revenue: 10100000 },
-  { week: "T4", revenue: 11200000 },
-  { week: "T5", revenue: 10600000 },
-  { week: "T6", revenue: 12400000 },
-];
-
-const classTrend = [
-  { week: "T1", filledRate: 74 },
-  { week: "T2", filledRate: 77 },
-  { week: "T3", filledRate: 81 },
-  { week: "T4", filledRate: 79 },
-  { week: "T5", filledRate: 84 },
-  { week: "T6", filledRate: 88 },
-];
-
-const revenueIdeas = [
-  "Mở gói học theo cụm 10 buổi để tăng tỉ lệ giữ chân.",
-  "Khung giờ tối ưu (19:00 - 21:00) có thể áp dụng phụ phí nhẹ.",
-  "Đề xuất combo luyện thi ngắn hạn N3/N2 trước kỳ thi.",
-];
-
-const formatVnd = (value: number) =>
-  new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value);
-
-const iconStrongClass =
-  "material-symbols-outlined filled text-[20px] leading-none align-middle text-primary";
-const iconChipClass =
-  "material-symbols-outlined filled text-[18px] leading-none align-middle text-primary";
+const formatChartDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+};
 
 export default function TeacherDashboardPage() {
+  const { data, isLoading, isError, isFetching, refetch } =
+    useGetTeacherDashboardQuery();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[55vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="flex min-h-[55vh] flex-col items-center justify-center gap-4 text-center">
+        <div className="rounded-full bg-destructive/10 p-3">
+          <BarChart3 className="size-6 text-destructive" />
+        </div>
+        <div>
+          <p className="font-semibold">Không thể tải dashboard giảng viên</p>
+          <p className="text-sm text-muted-foreground">
+            Vui lòng thử lại sau khi kiểm tra phiên đăng nhập.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => refetch()}>
+          <RefreshCw className="mr-2 size-4" />
+          Tải lại
+        </Button>
+      </div>
+    );
+  }
+
+  const chartData = data.earningsOverTime ?? [];
+  const topStudents = data.topStudents ?? [];
+  const courseRevenue = data.courseRevenueList ?? [];
+
+  const stats = [
+    {
+      title: "Tổng thu nhập",
+      value: formatBlossom(data.lifetimeEarnings),
+      hint: `Tháng này ${formatBlossom(data.currentMonthEarnings)}`,
+      icon: Wallet,
+    },
+    {
+      title: "Buổi đã dạy",
+      value: formatNumber(data.totalSessions),
+      hint: `${formatNumber(data.totalHoursTaught)} giờ đã ghi nhận`,
+      icon: CalendarCheck,
+    },
+    {
+      title: "Thu nhập / giờ",
+      value: formatBlossom(data.averageEarningsPerHour),
+      hint: `${formatPercent(data.monthOverMonthGrowth)} so với tháng trước`,
+      icon: TrendingUp,
+    },
+    {
+      title: "Đánh giá",
+      value: `${(data.averageRating || 0).toFixed(1)} / 5`,
+      hint: `Hoàn thành ${formatPercent(data.bookingSuccessRate)}`,
+      icon: Star,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Teacher Workspace
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
-          Dashboard giảng viên
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tổng quan lớp học, lịch dạy và hiệu suất cá nhân trong ngày.
-        </p>
-
-        <div className="mt-4 flex gap-3">
-          <Button className="rounded-xl font-bold">Tạo lớp học</Button>
-          <Button variant="outline" className="rounded-xl font-bold">
-            Xuất báo cáo
-          </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Dashboard giảng viên
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tổng quan lịch dạy, doanh thu, ví và hiệu suất của chính bạn.
+          </p>
         </div>
+        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 size-4" />
+          )}
+          Làm mới
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((item) => (
-          <div
-            key={item.title}
-            className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <p className="text-sm font-semibold text-muted-foreground">
-                {item.title}
-              </p>
-              <span className="rounded-lg border border-secondary/30 bg-secondary/20 px-2 py-1">
-                <span className={iconChipClass}>{item.icon}</span>
-              </span>
-            </div>
-            <p className="text-3xl font-black text-foreground">{item.value}</p>
-            <p className="mt-2 text-xs font-medium text-muted-foreground">
-              {item.hint}
-            </p>
-          </div>
-        ))}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.title}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardDescription>{item.title}</CardDescription>
+                <Icon className="size-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardTitle className="text-2xl">{item.value}</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">{item.hint}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <section className="xl:col-span-2 rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-black text-foreground">
-              Lịch dạy hôm nay
-            </h2>
-            <Button
-              variant="default"
-              className="h-10 rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-sm hover:brightness-110"
-            >
-              <span className="material-symbols-outlined mr-1 text-[18px]">
-                calendar_month
-              </span>
-              Xem toàn bộ
-            </Button>
-          </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Số dư khả dụng</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CardTitle>{formatBlossom(data.availableBalance)}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Đang chờ rút</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CardTitle>{formatBlossom(data.pendingPayouts)}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Đã rút</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CardTitle>{formatBlossom(data.totalWithdrawn)}</CardTitle>
+          </CardContent>
+        </Card>
+      </div>
 
-          <div className="space-y-3">
-            {todayClasses.map((cls) => (
-              <div
-                key={`${cls.time}-${cls.student}`}
-                className="flex flex-col gap-3 rounded-xl border border-border/80 bg-background/70 p-4 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="rounded-xl bg-secondary/20 px-3 py-2 text-sm font-black text-foreground">
-                    {cls.time}
-                  </div>
-                  <div>
-                    <p className="font-bold text-foreground">{cls.student}</p>
-                    <p className="text-xs text-muted-foreground">{cls.topic}</p>
-                  </div>
+      <div className="grid gap-6 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>Doanh thu 30 ngày</CardTitle>
+            <CardDescription>Thu nhập booking theo ngày</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-72 min-h-[288px]">
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={formatChartDate}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => formatNumber(Number(value))}
+                    />
+                    <Tooltip
+                      labelFormatter={(value) => formatChartDate(String(value))}
+                      formatter={(value) => formatBlossom(Number(value))}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="income"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-lg border bg-muted/30 text-sm text-muted-foreground">
+                  Chưa có dữ liệu doanh thu trong khoảng thời gian này
                 </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-                <span className="w-fit rounded-full border border-border bg-card px-3 py-1 text-xs font-bold text-muted-foreground">
-                  {cls.level}
-                </span>
+        <Card>
+          <CardHeader>
+            <CardTitle>Hiệu suất booking</CardTitle>
+            <CardDescription>Tỉ lệ hoàn thành và hủy lịch</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Hoàn thành</span>
+                <Badge variant="secondary">{formatPercent(data.bookingSuccessRate)}</Badge>
               </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-black text-foreground">
-              Việc cần xử lý
-            </h2>
-            <span className="inline-flex items-center gap-1 rounded-full border border-secondary/35 bg-secondary/20 px-2 py-1 text-xs font-bold text-foreground">
-              <span className={iconChipClass}>smart_toy</span>
-              AI Agent
-            </span>
-          </div>
-
-          <ul className="space-y-2">
-            {pendingTasks.map((task) => (
-              <li
-                key={task}
-                className="flex items-center gap-3 rounded-lg bg-background/70 px-3 py-2 text-sm text-foreground"
-              >
-                <span className={iconStrongClass}>check_circle</span>
-                {task}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-6 rounded-xl border border-border/80 bg-background/70 p-4">
-            <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
-              Doanh thu ước tính
-            </p>
-            <p className="mt-2 text-2xl font-black text-foreground">
-              {formatVnd(12800000)}
-            </p>
-            <p className="mt-1 text-xs text-emerald-600">
-              +12% so với tuần trước
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Tập trung số liệu tổng quan, chi tiết nằm ở trang báo cáo chuyên
-              sâu.
-            </p>
-          </div>
-        </section>
+              <div className="mt-3 h-2 rounded-full bg-muted">
+                <div
+                  className="h-2 rounded-full bg-emerald-500"
+                  style={{ width: `${Math.min(data.bookingSuccessRate || 0, 100)}%` }}
+                />
+              </div>
+            </div>
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Hủy lịch</span>
+                <Badge variant="outline">{formatPercent(data.cancellationRate)}</Badge>
+              </div>
+              <div className="mt-3 h-2 rounded-full bg-muted">
+                <div
+                  className="h-2 rounded-full bg-amber-500"
+                  style={{ width: `${Math.min(data.cancellationRate || 0, 100)}%` }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-xl font-black text-foreground">
-              Xu hướng doanh thu (VNĐ)
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Biểu đồ đường 6 tuần gần nhất, chỉ để theo dõi nhịp tăng trưởng.
-            </p>
-          </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="size-5" />
+              Học viên đóng góp cao
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topStudents.length > 0 ? (
+              <div className="space-y-3">
+                {topStudents.map((student) => (
+                  <div
+                    key={`${student.studentId}-${student.studentName}`}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div>
+                      <p className="font-medium">{student.studentName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatNumber(student.bookingCount)} booking
+                      </p>
+                    </div>
+                    <p className="font-semibold">{formatBlossom(student.spentAmount)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+                Chưa có dữ liệu học viên
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          <div className="h-72 min-h-[288px] min-w-0">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-              minWidth={0}
-              minHeight={0}
-            >
-              <LineChart data={revenueTrend}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-border"
-                />
-                <XAxis dataKey="week" tickLine={false} axisLine={false} />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `${Math.round(value / 1000000)}tr`}
-                />
-                <Tooltip
-                  formatter={(value) =>
-                    typeof value === "number"
-                      ? formatVnd(value)
-                      : String(value ?? "")
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={3}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-xl font-black text-foreground">
-              Tỉ lệ lấp lịch theo tuần
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Theo dõi mức độ kín lịch để cân đối thời gian và ưu tiên khung giờ
-              tốt.
-            </p>
-          </div>
-
-          <div className="h-72 min-h-[288px] min-w-0">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-              minWidth={0}
-              minHeight={0}
-            >
-              <LineChart data={classTrend}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-border"
-                />
-                <XAxis dataKey="week" tickLine={false} axisLine={false} />
-                <YAxis
-                  domain={[60, 100]}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `${value}%`}
-                />
-                <Tooltip
-                  formatter={(value) =>
-                    typeof value === "number"
-                      ? `${value}%`
-                      : String(value ?? "")
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="filledRate"
-                  stroke="hsl(var(--secondary))"
-                  strokeWidth={3}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="size-5" />
+              Doanh thu khóa học
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {courseRevenue.length > 0 ? (
+              <div className="space-y-3">
+                {courseRevenue.map((course) => (
+                  <div
+                    key={course.courseId}
+                    className="flex items-center justify-between gap-4 rounded-lg border p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{course.courseTitle}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatNumber(course.studentCount)} học viên
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-semibold">{formatBlossom(course.revenue)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+                Chưa có doanh thu khóa học
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-xl font-black text-foreground">
-          Ý tưởng doanh thu (tổng quan)
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Các gợi ý nhanh để tối ưu doanh thu, không đi sâu vận hành chi tiết.
-        </p>
-
-        <ul className="mt-4 space-y-2">
-          {revenueIdeas.map((idea) => (
-            <li
-              key={idea}
-              className="flex items-start gap-3 rounded-lg bg-background/70 px-3 py-2 text-sm text-foreground"
-            >
-              <span className={iconStrongClass}>trending_up</span>
-              {idea}
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }

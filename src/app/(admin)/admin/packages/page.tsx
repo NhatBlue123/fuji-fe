@@ -234,7 +234,7 @@ export default function AdminPackagesPage() {
                 </TableCell>
                 <TableCell>{pkg.priceHoa.toLocaleString()} hoa / {pkg.durationDays} ngày</TableCell>
                 <TableCell className="text-xs">
-                  Trò chuyện {featureValue(pkg, "AI_CHAT_BASIC")} | Giải thích sâu {featureValue(pkg, "AI_CHAT_DEEP")} | Sensei {featureValue(pkg, "AI_SENSEI_SESSION")} | Ảnh {featureValue(pkg, "FLASHCARD_IMAGE_OPERATION")}
+                  Trò chuyện {featureValue(pkg, "AI_CHAT_BASIC")} | Suy luận {featureValue(pkg, "AI_CHAT_DEEP")} | Sensei {featureValue(pkg, "AI_SENSEI_SESSION")} | Ảnh {featureValue(pkg, "FLASHCARD_IMAGE_OPERATION")}
                 </TableCell>
                 <TableCell>
                   {pkg.couponRules.length ? <Badge>{pkg.couponRules.length} quy tắc</Badge> : <Badge variant="secondary">Không</Badge>}
@@ -274,7 +274,7 @@ export default function AdminPackagesPage() {
             <div className="space-y-2"><Label>Giá hoa</Label><Input type="number" value={form.priceHoa} onChange={(e) => setForm({ ...form, priceHoa: Number(e.target.value) })} /></div>
             <div className="space-y-2"><Label>Thời hạn (ngày)</Label><Input type="number" value={form.durationDays} onChange={(e) => setForm({ ...form, durationDays: Number(e.target.value) })} /></div>
             <div className="space-y-2"><Label>Trò chuyện AI/ngày</Label><Input type="number" value={form.aiBasic} onChange={(e) => setForm({ ...form, aiBasic: Number(e.target.value) })} /></div>
-            <div className="space-y-2"><Label>Giải thích sâu/ngày</Label><Input type="number" value={form.aiDeep} onChange={(e) => setForm({ ...form, aiDeep: Number(e.target.value) })} /></div>
+            <div className="space-y-2"><Label>Suy luận/ngày</Label><Input type="number" value={form.aiDeep} onChange={(e) => setForm({ ...form, aiDeep: Number(e.target.value) })} /></div>
             <div className="space-y-2"><Label>Buổi Sensei/ngày</Label><Input type="number" value={form.sensei} onChange={(e) => setForm({ ...form, sensei: Number(e.target.value) })} /></div>
             <div className="space-y-2"><Label>Ảnh thẻ ghi nhớ/ngày</Label><Input type="number" value={form.flashcardImages} onChange={(e) => setForm({ ...form, flashcardImages: Number(e.target.value) })} /></div>
           </div>

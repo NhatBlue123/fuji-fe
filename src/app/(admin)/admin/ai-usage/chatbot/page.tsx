@@ -98,7 +98,7 @@ export default function AiChatbotQuotaPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Quota chatbot AI</h1>
           <p className="text-sm text-muted-foreground">
-            Quản lý lượt chat thường và lượt giải thích chuyên sâu theo từng hạng gói.
+            Quản lý lượt chat thường và lượt suy luận theo từng hạng gói.
           </p>
         </div>
         <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
@@ -116,7 +116,7 @@ export default function AiChatbotQuotaPage() {
       )}
 
       <Card>
-        <CardHeader><CardTitle>Trò chuyện thường và giải thích chuyên sâu</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Trò chuyện thường và suy luận</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader>

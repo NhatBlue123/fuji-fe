@@ -154,7 +154,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
   const { isAdmin, hasPermission } = usePermissions();
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const canView = isAdmin || hasPermission("COURSE_VIEW");
+  const canView = isAdmin || hasPermission("COURSE_FINANCE_VIEW");
   const canEdit = isAdmin || hasPermission("COURSE_EDIT");
 
   const isAdminPage = mode === "admin";

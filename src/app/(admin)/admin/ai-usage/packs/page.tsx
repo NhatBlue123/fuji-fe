@@ -186,7 +186,7 @@ export default function AiPacksPage() {
                 <TableHead>Tên gói</TableHead>
                 <TableHead>Loại</TableHead>
                 <TableHead className="text-right">Chat thường</TableHead>
-                <TableHead className="text-right">Giải thích sâu</TableHead>
+                <TableHead className="text-right">Suy luận</TableHead>
                 <TableHead className="text-right">Buổi Sensei</TableHead>
                 <TableHead className="text-right">Giá hoa</TableHead>
                 <TableHead>Trạng thái</TableHead>
@@ -295,7 +295,7 @@ export default function AiPacksPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ai-pack-deep">Lượt giải thích sâu</Label>
+                <Label htmlFor="ai-pack-deep">Lượt suy luận</Label>
                 <Input
                   id="ai-pack-deep"
                   min={0}

@@ -20,15 +20,18 @@ import { useAuth } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 
 export interface PaymentStatusChangeEvent {
+  transactionId?: string;
   userId: number;
   transactionType: "TOPUP" | "PAYOUT";
   orderId?: string;
   withdrawRequestId?: number;
-  oldStatus: string;
-  newStatus: string;
+  status?: "PENDING" | "SUCCESS" | "FAILED" | string;
+  oldStatus?: string;
+  newStatus?: string;
   amount: number;
   walletBalance: number;
-  message: string;
+  timestamp?: string;
+  message?: string;
 }
 
 type StatusChangeCallback = (data: PaymentStatusChangeEvent) => void;
@@ -36,7 +39,7 @@ type StatusChangeCallback = (data: PaymentStatusChangeEvent) => void;
 type PaymentSocketContextValue = {
   socket: Socket | null;
   isConnected: boolean;
-  joinPaymentRoom: () => void;
+  joinPaymentRoom: (orderId?: string) => void;
   onPaymentStatusChange: (cb: StatusChangeCallback) => () => void;
 };
 
@@ -62,12 +65,13 @@ export function PaymentSocketProvider({
     };
   }, []);
 
-  const joinPaymentRoom = useCallback(() => {
+  const joinPaymentRoom = useCallback((orderId?: string) => {
     if (!user || !socket?.connected) return;
 
-    socket.emit("join-payment-room", { userId: user.id });
+    socket.emit("join-payment-room", { userId: user.id, orderId });
     console.info("[payment] join-payment-room emitted", {
       userId: user.id,
+      orderId,
       socketId: socket.id,
       receivedAt: new Date().toISOString(),
     });
@@ -114,13 +118,15 @@ export function PaymentSocketProvider({
         receivedAt: new Date().toISOString(),
       });
 
+      const eventStatus = data.status || data.newStatus;
+
       // [FRONTEND I18N ROLE] Resolve messageKey ONLY at UI Layer (Toasts)
-      if (data.newStatus === "SUCCESS") {
+      if (eventStatus === "SUCCESS") {
         toast.success(tMsg(data.message) || tMsg("payment.status.success"));
         if (data.transactionType === "TOPUP" && pathname !== "/premium/success") {
           setTimeout(() => router.push("/premium/success"), 1000);
         }
-      } else if (data.newStatus === "FAILED") {
+      } else if (eventStatus === "FAILED") {
         toast.error(tMsg(data.message) || tMsg("payment.status.failed"));
       } else {
         toast.info(tMsg(data.message) || tMsg("payment.status.unknown"));

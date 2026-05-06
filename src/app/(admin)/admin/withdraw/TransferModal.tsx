@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { Copy, CheckCircle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ export function TransferModal({
   const { t, i18n } = useTranslation();
   const [payoutOrderId, setPayoutOrderId] = useState<string | null>(null);
   const [socketHandled, setSocketHandled] = useState(false);
+  const fallbackTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const hasSeenConnectedRef = useRef(false);
 
   const [createPayout, { isLoading: isCreatingPayout }] =
     useCreatePayoutMutation();
@@ -49,61 +51,95 @@ export function TransferModal({
   });
 
   // ── Socket.IO realtime: payment-status-change ─────────────────────
-  const { onPaymentStatusChange } = usePaymentSocket();
+  const { isConnected, joinPaymentRoom, onPaymentStatusChange } = usePaymentSocket();
 
   useEffect(() => {
     const unsub = onPaymentStatusChange((data) => {
       // Match by withdrawRequestId với request hiện tại
       if (request && data.withdrawRequestId === request.id) {
-        if (data.newStatus === "SUCCESS") {
+        const eventStatus = data.status || data.newStatus;
+        if (eventStatus === "SUCCESS") {
           setSocketHandled(true);
           setPayoutOrderId(null);
+          fallbackTimersRef.current.forEach(clearTimeout);
+          fallbackTimersRef.current = [];
           toast.success(data.message || t("admin.withdraw.modal.payoutSuccess"));
           onSuccess();
-        } else if (data.newStatus === "FAILED") {
+        } else if (eventStatus === "FAILED") {
           setSocketHandled(true);
           setPayoutOrderId(null);
+          fallbackTimersRef.current.forEach(clearTimeout);
+          fallbackTimersRef.current = [];
           toast.error(data.message || t("admin.withdraw.modal.payoutFailed"));
         }
       }
     });
     return () => unsub();
-  }, [request, onPaymentStatusChange, onSuccess]);
+  }, [request, onPaymentStatusChange, onSuccess, t]);
 
-  // Fallback Check (Phụ thuộc API - Không SetInterval)
-  useEffect(() => {
+  const syncPayoutStatusOnce = useCallback(async () => {
     if (!payoutOrderId || socketHandled) return;
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        const result = await refetchPayoutStatus();
-        const status = result.data?.data?.status;
-        if (status === "SUCCESS" || status === "COMPLETED") {
-          setSocketHandled(true);
-          setPayoutOrderId(null);
-          toast.success(t("admin.withdraw.modal.payoutSuccess"));
-          onSuccess();
-        } else if (status === "FAILED") {
-          setSocketHandled(true);
-          setPayoutOrderId(null);
-          toast.error(result.data?.data?.message || t("admin.withdraw.modal.payoutFailed"));
-        } else {
-          // Giao dịch có thể thật sự bị delay từ Ngân hàng / XGate
-          toast.info(t("admin.withdraw.modal.payoutPending"));
-        }
-      } catch (error) {
-        console.error("Fallback check error:", error);
+    try {
+      const result = await refetchPayoutStatus();
+      const status = result.data?.data?.status;
+      if (status === "SUCCESS" || status === "COMPLETED") {
+        setSocketHandled(true);
+        setPayoutOrderId(null);
+        fallbackTimersRef.current.forEach(clearTimeout);
+        fallbackTimersRef.current = [];
+        toast.success(t("admin.withdraw.modal.payoutSuccess"));
+        onSuccess();
+      } else if (status === "FAILED") {
+        setSocketHandled(true);
+        setPayoutOrderId(null);
+        fallbackTimersRef.current.forEach(clearTimeout);
+        fallbackTimersRef.current = [];
+        toast.error(result.data?.data?.message || t("admin.withdraw.modal.payoutFailed"));
       }
-    }, 20000); // Fallback 20s (đủ cho 1 chu kỳ polling 15s + margin)
+    } catch (error) {
+      console.error("Fallback payout sync failed:", error);
+    }
+  }, [onSuccess, payoutOrderId, refetchPayoutStatus, socketHandled, t]);
 
-    return () => clearTimeout(timeoutId);
-  }, [payoutOrderId, socketHandled, refetchPayoutStatus, onSuccess]);
+  useEffect(() => {
+    fallbackTimersRef.current.forEach(clearTimeout);
+    fallbackTimersRef.current = [];
 
+    if (!payoutOrderId || socketHandled) return;
+
+    joinPaymentRoom(payoutOrderId);
+    fallbackTimersRef.current = [10000, 30000, 70000, 120000].map((delay) =>
+      setTimeout(() => {
+        void syncPayoutStatusOnce();
+      }, delay),
+    );
+
+    return () => {
+      fallbackTimersRef.current.forEach(clearTimeout);
+      fallbackTimersRef.current = [];
+    };
+  }, [joinPaymentRoom, payoutOrderId, socketHandled, syncPayoutStatusOnce]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    if (payoutOrderId) {
+      joinPaymentRoom(payoutOrderId);
+    }
+    if (hasSeenConnectedRef.current && payoutOrderId && !socketHandled) {
+      window.setTimeout(() => {
+        void syncPayoutStatusOnce();
+      }, 0);
+    }
+    hasSeenConnectedRef.current = true;
+  }, [isConnected, joinPaymentRoom, payoutOrderId, socketHandled, syncPayoutStatusOnce]);
   const handleAutoPayout = async () => {
     try {
       const res = await createPayout(request!.id).unwrap();
       if (res.data?.orderId) {
         setPayoutOrderId(res.data.orderId);
+        joinPaymentRoom(res.data.orderId);
         onPayoutCreated?.();
         toast.info(t("admin.withdraw.modal.payoutProcessing"));
       } else {

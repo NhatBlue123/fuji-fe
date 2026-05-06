@@ -166,6 +166,33 @@
     @apply bg-background text-foreground;
   }
 
+  body.withdraw-dark-page {
+    background: #070b14 !important;
+    color: #e2e8f0;
+  }
+
+  body.withdraw-dark-page [data-app-main],
+  body.withdraw-dark-page [data-app-main] > div {
+    background: #070b14 !important;
+  }
+
+  body.withdraw-dark-page footer {
+    background: #0b1120 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .withdraw-amount-input {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .withdraw-amount-input::-webkit-outer-spin-button,
+  .withdraw-amount-input::-webkit-inner-spin-button {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   /* Custom Scrollbar from HTML */
   ::-webkit-scrollbar {
     width: 8px;

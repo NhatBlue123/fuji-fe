@@ -47,6 +47,9 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+const isTopupTransaction = (tx: Transaction) =>
+  tx.type === "TOPUP" || tx.type === "DEPOSIT" || tx.amount > 0;
+
 export default function FujiWallet() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -72,20 +75,25 @@ export default function FujiWallet() {
     useGetWalletHistoryQuery({ page, size });
 
   const balance = wallet?.balance || 0;
-  const transactions = historyData?.content || [];
+  const transactions = (historyData?.content || []).filter((tx) => {
+    if (filter === "ALL") return true;
+    if (filter === "DEPOSIT") return isTopupTransaction(tx);
+    if (filter === "WITHDRAW") return !isTopupTransaction(tx);
+    return tx.type === filter;
+  });
   const totalPages = historyData?.totalPages || 0;
 
   if (!mounted) return null;
   if (isWalletLoading || isHistoryLoading) return <LoadingState />;
 
   return (
-    <main className="flex-1 flex flex-col px-6 overflow-hidden relative selection:bg-pink-500/30">
+    <main className="relative isolate -mb-px flex min-h-[calc(100vh-4rem)] flex-col overflow-hidden bg-slate-50 px-6 text-slate-950 selection:bg-pink-500/30 dark:bg-[#070b14] dark:text-slate-100">
       {/* Background Decor */}
-      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="pointer-events-none absolute right-0 top-0 z-0 h-[500px] w-[500px] rounded-full bg-pink-500/10 blur-[120px] dark:bg-pink-500/15" />
+      <div className="pointer-events-none absolute bottom-0 left-0 z-0 h-[300px] w-[300px] rounded-full bg-purple-500/10 blur-[100px] dark:bg-purple-500/15" />
 
       {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-8 py-6 border-b dark:border-white/5 bg-background/50 backdrop-blur-md">
+      <header className="relative z-10 flex flex-col justify-between gap-6 border-b border-slate-200/70 bg-slate-50/75 px-8 py-6 backdrop-blur-md dark:border-white/5 dark:bg-[#070b14]/85 md:flex-row md:items-center">
         <div className="space-y-1">
           <button
             type="button"
@@ -106,105 +114,153 @@ export default function FujiWallet() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in duration-500">
+      <div className="relative z-10 flex-1 space-y-8 overflow-y-auto p-8 animate-in fade-in duration-500">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Wallet Card */}
-          <Card className="lg:col-span-8 overflow-hidden border-none bg-gradient-to-br from-[#0B1120] via-[#111827] to-[#0a0c10] text-white relative shadow-2xl rounded-[2.5rem]">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          <Card className="lg:col-span-8 overflow-hidden border-none 
+bg-white text-gray-900 
+dark:bg-gradient-to-br dark:from-[#0B1120] dark:via-[#111827] dark:to-[#0a0c10] 
+dark:text-white 
+relative shadow-2xl rounded-[2.5rem]">
 
-            <CardHeader className="relative z-10 pt-6 px-10">
-              <div className="flex items-center gap-2 text-white/60">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-inner">
-                   <Wallet size={18} className="text-pink-400" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-100/70">
-                  {t("wallet.availableBalance")}
-                </span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info
-                        size={12}
-                        className="opacity-40 hover:opacity-100 text-pink-400"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">
-                      {t("wallet.balanceDescription")}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </CardHeader>
+  {/* Glow Effects */}
+  <div className="absolute top-0 right-0 w-[400px] h-[400px] 
+  bg-pink-500/5 dark:bg-pink-500/10 
+  rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-            <CardContent className="relative z-10 px-10 pb-6 pt-4">
-              <div className="flex items-baseline gap-4">
-                <span className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                  {balance.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
-                </span>
-                <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">
-                  🌸
-                </span>
-              </div>
+  <div className="absolute bottom-0 left-0 w-[300px] h-[300px] 
+  bg-purple-500/5 dark:bg-purple-500/10 
+  rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-              <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center gap-8 justify-between">
-                <div className="flex items-center gap-4 group cursor-help">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-purple-500 flex items-center justify-center font-black text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-500">
-                    🌸
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-pink-100/50 font-black uppercase tracking-widest">
-                      {t("wallet.exchangeVND")}
-                    </div>
-                    <div className="text-xl font-black text-white">
-                      {(balance * 1000).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{" "}
-                      <span className="text-[10px] text-pink-100/30 ml-1">
-                        VND
-                      </span>
-                    </div>
-                  </div>
+  {/* Header */}
+  <CardHeader className="relative z-10 pt-6 px-10">
+    <div className="flex items-center gap-2 text-gray-500 dark:text-white/60">
+      <div className="p-2.5 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10 shadow-inner">
+        <Wallet size={18} className="text-pink-400" />
+      </div>
 
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info
-                          size={14}
-                          className="opacity-40 hover:opacity-100 text-pink-400"
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-[#111827] border border-pink-500/20 text-[10px] text-pink-100 backdrop-blur-xl">
-                        {t("wallet.balanceDescription")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-500/70 dark:text-pink-100/70">
+        {t("wallet.availableBalance")}
+      </span>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-4 flex-1 md:flex-none md:w-auto">
-                  <Button
-                    onClick={() => router.push("/premium?tab=topup")}
-                    size="lg"
-                    className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
-                  >
-                    <Plus className="mr-2" size={18} strokeWidth={3} /> {t("wallet.deposit")}
-                  </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Info
+              size={12}
+              className="opacity-40 hover:opacity-100 text-pink-400"
+            />
+          </TooltipTrigger>
 
-                  <Button
-                    onClick={() => router.push("/withdraw")}
-                    size="lg"
-                    className="flex-1 md:flex-none bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-2 rounded-xl transition"
-                  >
-                    <ArrowUpRight className="mr-2" size={18} strokeWidth={3} />{" "}
-                    {t("wallet.withdraw.title").split(" ")[0]}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TooltipContent className="
+          bg-white text-gray-900 border border-gray-200
+          dark:bg-[#111827] dark:text-pink-100 dark:border-pink-500/20
+          text-[10px] backdrop-blur-xl">
+            {t("wallet.balanceDescription")}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  </CardHeader>
+
+  {/* Content */}
+  <CardContent className="relative z-10 px-10 pb-6 pt-4">
+    
+    {/* Balance */}
+    <div className="flex items-baseline gap-4">
+      <span className="text-2xl md:text-4xl font-black tracking-tighter 
+      text-gray-900 dark:text-white 
+      drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+        {balance.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+      </span>
+
+      <span className="text-3xl font-black text-pink-500/40 uppercase tracking-tighter">
+        🌸
+      </span>
+    </div>
+
+    {/* Bottom Section */}
+    <div className="mt-12 pt-8 border-t border-gray-200 dark:border-white/5 
+    flex flex-wrap items-center gap-8 justify-between">
+
+      {/* Exchange */}
+      <div className="flex items-center gap-4 group cursor-help">
+        <div className="w-12 h-12 rounded-full 
+        bg-gradient-to-tr from-pink-400 to-purple-500 
+        flex items-center justify-center font-black text-white 
+        shadow-lg shadow-pink-500/20 
+        group-hover:scale-110 transition-transform duration-500">
+          🌸
+        </div>
+
+        <div>
+          <div className="text-[10px] text-pink-500/60 dark:text-pink-100/50 
+          font-black uppercase tracking-widest">
+            {t("wallet.exchangeVND")}
+          </div>
+
+          <div className="text-xl font-black text-gray-900 dark:text-white">
+            {(balance * 1000).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+            <span className="text-[10px] text-gray-400 dark:text-pink-100/30 ml-1">
+              VND
+            </span>
+          </div>
+        </div>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Info
+                size={14}
+                className="opacity-40 hover:opacity-100 text-pink-400"
+              />
+            </TooltipTrigger>
+
+            <TooltipContent className="
+            bg-white text-gray-900 border border-gray-200
+            dark:bg-[#111827] dark:text-pink-100 dark:border-pink-500/20
+            text-[10px] backdrop-blur-xl">
+              {t("wallet.balanceDescription")}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex items-center gap-4 flex-1 md:flex-none md:w-auto">
+
+        <Button
+          onClick={() => router.push("/premium?tab=topup")}
+          size="lg"
+          className="
+          flex-1 md:flex-none 
+          bg-gray-900 text-white hover:bg-gray-800
+          dark:bg-secondary dark:hover:bg-secondary/90
+          font-bold px-6 py-2 rounded-xl transition">
+          <Plus className="mr-2" size={18} strokeWidth={3} />
+          {t("wallet.deposit")}
+        </Button>
+
+        <Button
+          onClick={() => router.push("/withdraw")}
+          size="lg"
+          className="
+          flex-1 md:flex-none 
+          bg-gray-900 text-white hover:bg-gray-800
+          dark:bg-secondary dark:hover:bg-secondary/90
+          font-bold px-6 py-2 rounded-xl transition">
+          <ArrowUpRight className="mr-2" size={18} strokeWidth={3} />
+          {t("wallet.withdraw.title").split(" ")[0]}
+        </Button>
+
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
           {/* Side Stats */}
           <div className="lg:col-span-4 space-y-4">
-            <Card className="border-pink-500/20 bg-pink-500/5 shadow-xl shadow-pink-500/5 group overflow-hidden h-[180px] relative transition-all hover:-translate-y-1 rounded-[2rem]">
+            <Card className="group relative h-[180px] overflow-hidden rounded-[2rem] border-pink-500/20 bg-pink-500/5 shadow-xl shadow-pink-500/5 transition-all hover:-translate-y-1 dark:bg-pink-500/10 dark:shadow-black/20">
               <TrendingUp className="absolute -right-4 -bottom-4 w-32 h-32 text-pink-500/10 -rotate-12 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
               <CardHeader className="pb-2">
                 <CardDescription className="text-pink-500/70 font-black uppercase tracking-[0.2em] text-[10px]">
@@ -221,7 +277,7 @@ export default function FujiWallet() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-xl shadow-black/5 border-muted/60 dark:border-white/5 h-[100px] flex items-center justify-between px-8 transition-transform hover:-translate-y-1 rounded-[1.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl">
+            <Card className="flex h-[100px] items-center justify-between rounded-[1.5rem] border-muted/60 px-8 shadow-xl shadow-black/5 transition-transform hover:-translate-y-1 dark:border-white/5 dark:bg-[#0B1120]/80 dark:shadow-black/20 dark:backdrop-blur-xl">
               <div>
                 <p className="text-[10px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-[0.2em] mb-1">
                   {t("wallet.membershipLevel")}
@@ -238,7 +294,7 @@ export default function FujiWallet() {
         </div>
 
         {/* Transaction Section */}
-        <Card className="shadow-2xl shadow-black/5 border-muted/60 dark:border-white/5 overflow-hidden rounded-[2.5rem] dark:bg-[#0B1120]/60 dark:backdrop-blur-xl">
+        <Card className="overflow-hidden rounded-[2.5rem] border-muted/60 shadow-2xl shadow-black/5 dark:border-white/5 dark:bg-[#0B1120]/80 dark:shadow-black/20 dark:backdrop-blur-xl">
           <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b dark:border-white/5 px-10 pt-8">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-pink-500/10 rounded-2xl text-pink-500 dark:text-pink-400 border border-pink-500/20 shadow-inner">
@@ -312,12 +368,12 @@ export default function FujiWallet() {
                         <div
                           className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center border transition-transform group-hover:scale-110 shadow-inner",
-                            tx.type === "DEPOSIT" || tx.amount > 0
+                            isTopupTransaction(tx)
                               ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : "bg-pink-500/10 text-pink-500 border-pink-500/20",
                           )}
                         >
-                          {tx.type === "DEPOSIT" || tx.amount > 0 ? (
+                          {isTopupTransaction(tx) ? (
                             <ArrowUpRight size={18} />
                           ) : (
                             <ArrowDownLeft size={18} />
@@ -344,17 +400,17 @@ export default function FujiWallet() {
                       </div>
                     </TableCell>
                     <TableCell className="px-8 py-6 font-bold text-[10px] uppercase tracking-wider text-muted-foreground dark:text-slate-500 whitespace-nowrap">
-                      {tx.type === "DEPOSIT" 
+                      {isTopupTransaction(tx)
                         ? t("wallet.types.deposit") 
                         : t("wallet.types.spending")}
                     </TableCell>
                     <TableCell
                       className={cn(
                         "px-8 py-6 text-right font-black text-xl tracking-tighter whitespace-nowrap",
-                        (tx.type === "DEPOSIT" || tx.amount > 0) ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"
+                        isTopupTransaction(tx) ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"
                       )}
                     >
-                      {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : "-"}
+                      {isTopupTransaction(tx) ? "+" : "-"}
                       {Math.abs(tx.amount).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
                       <span className="text-[10px] ml-1 opacity-70">🌸</span>
                     </TableCell>

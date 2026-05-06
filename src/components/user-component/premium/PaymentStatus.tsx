@@ -37,8 +37,7 @@ interface PaymentStatusProps {
 }
 
 const MAX_WAIT_TIME_MS = 300000;
-const FALLBACK_POLL_INTERVAL_MS = 3000;
-const FALLBACK_POLL_WINDOW_MS = 18000;
+const FALLBACK_SYNC_DELAYS_MS = [10000, 30000, 70000, 120000] as const;
 
 const toFiniteNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value);
@@ -59,43 +58,43 @@ export default function PaymentStatus({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
+
   const [isConfirming, setIsConfirming] = useState(false);
-  const [resolvedBy, setResolvedBy] = useState<"socket" | "poll" | null>(null);
-  const [pollingUntil, setPollingUntil] = useState<number | null>(null);
+  const [resolvedBy, setResolvedBy] = useState<"socket" | "fallback" | null>(null);
   const handledRef = useRef(false);
+  const fallbackTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const hasSeenConnectedRef = useRef(false);
 
   const [getPaymentStatus, { isFetching: isStatusLoading }] =
     useLazyGetPaymentStatusQuery();
 
-  const { isConnected, onPaymentStatusChange } = usePaymentSocket();
+  const { isConnected, joinPaymentRoom, onPaymentStatusChange } = usePaymentSocket();
 
   const invalidateWalletAndPayment = useCallback(() => {
     store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
   }, []);
 
   const finalizeSuccess = useCallback(
-    (source: "socket" | "poll") => {
+    (source: "socket" | "fallback") => {
       handledRef.current = true;
+      fallbackTimersRef.current.forEach(clearTimeout);
+      fallbackTimersRef.current = [];
       setResolvedBy(source);
-      setPollingUntil(null);
       invalidateWalletAndPayment();
-      if (source === "poll") {
-        toast.success(tMsg("payment.status.success"));
-      }
-      setTimeout(() => router.push("/premium/success"), 1000);
+      toast.success(tMsg("payment.status.success"));
+      setTimeout(() => router.push("/premium/success"), 2000);
     },
     [invalidateWalletAndPayment, router],
   );
 
   const finalizeFailure = useCallback(
-    (source: "socket" | "poll", messageKey?: string) => {
+    (source: "socket" | "fallback", messageKey?: string) => {
       handledRef.current = true;
+      fallbackTimersRef.current.forEach(clearTimeout);
+      fallbackTimersRef.current = [];
       setResolvedBy(source);
-      setPollingUntil(null);
       invalidateWalletAndPayment();
-      if (source === "poll") {
-        toast.error(tMsg(messageKey) || tMsg("payment.status.failed"));
-      }
+      toast.error(messageKey || tMsg("payment.status.failed"));
       onClose();
     },
     [invalidateWalletAndPayment, onClose],
@@ -104,7 +103,7 @@ export default function PaymentStatus({
   const handleStatusResult = useCallback(
     (
       status: PaymentStatusResponse["status"] | string | undefined,
-      source: "socket" | "poll",
+      source: "socket" | "fallback",
       messageKey?: string,
     ) => {
       if (!status || handledRef.current) return;
@@ -122,7 +121,7 @@ export default function PaymentStatus({
   );
 
   const pollStatus = useCallback(
-    async (source: "poll") => {
+    async (source: "fallback") => {
       if (handledRef.current) return;
 
       try {
@@ -154,55 +153,44 @@ export default function PaymentStatus({
   }, [onClose]);
 
   useEffect(() => {
+    joinPaymentRoom(orderId);
+  }, [isConnected, joinPaymentRoom, orderId]);
+
+  useEffect(() => {
     const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
       if (handledRef.current) return;
       if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
 
-      handleStatusResult(data.newStatus, "socket", data.message);
+      handleStatusResult(data.status || data.newStatus, "socket", data.message);
     });
 
     return () => unsubStatus();
   }, [handleStatusResult, onPaymentStatusChange, orderId]);
 
-  // CHỈ polling khi socket KHÔNG kết nối được (fallback mode)
-  // VÀ chỉ trong khoảng thời gian giới hạn (18 giây)
   useEffect(() => {
-    if (handledRef.current) return;
+    fallbackTimersRef.current.forEach(clearTimeout);
+    fallbackTimersRef.current = FALLBACK_SYNC_DELAYS_MS.map((delay) =>
+      setTimeout(() => {
+        void pollStatus("fallback");
+      }, delay),
+    );
 
-    // Nếu socket đang hoạt động tốt, KHÔNG cần polling
-    if (isConnected) {
-      setPollingUntil(null);
-      return;
-    }
+    return () => {
+      fallbackTimersRef.current.forEach(clearTimeout);
+      fallbackTimersRef.current = [];
+    };
+  }, [orderId, pollStatus]);
 
-    // Socket không hoạt động -> bật fallback polling
-    const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
-    setPollingUntil(deadline);
-    void pollStatus("poll");
-  }, [isConnected, orderId, pollStatus]);
-
-  // Effect này chỉ chạy khi pollingUntil được set (tức là socket fail)
   useEffect(() => {
-    if (handledRef.current || !pollingUntil) return;
+    if (!isConnected) return;
 
-    // Hết thời gian polling
-    if (Date.now() >= pollingUntil) {
-      setPollingUntil(null);
-      return;
+    joinPaymentRoom(orderId);
+    if (hasSeenConnectedRef.current && !handledRef.current) {
+      void pollStatus("fallback");
     }
+    hasSeenConnectedRef.current = true;
+  }, [isConnected, joinPaymentRoom, orderId, pollStatus]);
 
-    // Polling interval - CHỈ chạy khi pollingUntil còn giá trị
-    const intervalId = setInterval(() => {
-      if (handledRef.current || Date.now() >= (pollingUntil || 0)) {
-        clearInterval(intervalId);
-        setPollingUntil(null);
-        return;
-      }
-      void pollStatus("poll");
-    }, FALLBACK_POLL_INTERVAL_MS);
-
-    return () => clearInterval(intervalId);
-  }, [pollStatus, pollingUntil]);
 
   const handleManualCheck = async () => {
     if (handledRef.current || isManualChecking) return;
@@ -218,7 +206,7 @@ export default function PaymentStatus({
 
     try {
       const result = await getPaymentStatus(orderId, true);
-      handleStatusResult(result.data?.status, "poll", result.data?.message);
+      handleStatusResult(result.data?.status, "fallback", result.data?.message);
     } catch {
       toast.error(tMsg("api.error"));
     } finally {

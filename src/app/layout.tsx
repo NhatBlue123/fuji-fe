@@ -105,7 +105,6 @@ export default async function RootLayout({
   // Keep the root layout static-friendly. Theme/language are finalized on the
   // client by ThemeProvider/I18nProvider; reading cookies here forces every
   // public ISR route into dynamic server usage.
-  const theme = "dark";
   const lng = "vi";
 
   const fontVars = {
@@ -119,7 +118,7 @@ export default async function RootLayout({
     <html
       lang={lng}
       suppressHydrationWarning
-      className={`antialiased font-display ${theme}`}
+      className="antialiased font-display"
       style={fontVars}
     >
       <head suppressHydrationWarning>
@@ -127,6 +126,13 @@ export default async function RootLayout({
         <link rel="icon" href="/favicon.png" sizes="16x16" type="image/png" />
         <link rel="shortcut icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" sizes="180x180" />
+
+        {/* Theme initialization script - must run before React hydration to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var stored=localStorage.getItem('theme');var theme=stored;if(!theme||theme==='system'){theme=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(theme)}catch(e){}})()`,
+          }}
+        />
 
         {/* Resource hints */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
@@ -165,7 +171,6 @@ export default async function RootLayout({
         <I18nProvider initialLng={lng}>
           <RtkProvider>
             <ThemeProvider
-              attribute="class"
               defaultTheme="system"
               enableSystem
               disableTransitionOnChange

@@ -19,6 +19,8 @@ import Footer from "./Footer";
 import MobieSidebar from "./Mobie-sidebar";
 import { AIChatSocketProvider } from "@/providers/AIChatSocketProvider";
 import ChatDock from "@/components/chatdock/ChatDock";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function AppShell({
   children,
@@ -27,18 +29,39 @@ export default function AppShell({
   children: React.ReactNode;
   auth?: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const usesFinancePageBackground =
+    pathname === "/profile/wallet" || pathname === "/withdraw";
+  const usesAlwaysDarkFinanceBackground = pathname === "/withdraw";
+
   return (
     <AIChatSocketProvider>
-      <div suppressHydrationWarning className="flex h-screen w-full overflow-hidden bg-background">
+      <div
+        suppressHydrationWarning
+        className={cn(
+          "flex h-screen w-full overflow-hidden bg-background",
+          usesAlwaysDarkFinanceBackground && "dark",
+        )}
+      >
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
           <MobileHeader />
           <main
             data-app-main
-            className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col"
+            className={cn(
+              "relative flex flex-1 flex-col overflow-y-auto scroll-smooth bg-background pt-0 font-sans",
+              usesFinancePageBackground && "bg-slate-50 dark:bg-[#070b14]",
+              usesAlwaysDarkFinanceBackground && "bg-[#070b14]",
+            )}
           >
-            <div className="flex-1">
+            <div
+              className={cn(
+                "flex-1",
+                usesFinancePageBackground && "bg-slate-50 dark:bg-[#070b14]",
+                usesAlwaysDarkFinanceBackground && "bg-[#070b14]",
+              )}
+            >
               {children}
               {auth}
             </div>

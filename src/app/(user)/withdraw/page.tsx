@@ -91,17 +91,18 @@ export default function WithdrawPage() {
     return <SuccessState onBack={() => router.push("/profile/wallet")} />;
 
   return (
-    <main className="min-h-screen bg-transparent text-slate-900 dark:text-slate-200 pb-20">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-pink-500/5 blur-[120px] rounded-full" />
+    <main className="withdraw-page-surface relative isolate -mb-px min-h-[calc(100vh-4rem)] bg-[#070b14] pb-20 text-slate-200">
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute right-[-5%] top-[-10%] h-[50%] w-[50%] rounded-full bg-pink-500/15 blur-[120px]" />
+        <div className="absolute bottom-[-15%] left-[-8%] h-[45%] w-[45%] rounded-full bg-purple-500/15 blur-[120px]" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-4 pt-10 space-y-10">
-        <header className="flex items-end justify-between border-b border-slate-200 dark:border-white/5 pb-6">
+        <header className="flex items-end justify-between border-b border-white/5 pb-6">
           <div className="space-y-4">
             <button
               onClick={() => router.push("/profile/wallet")}
-              className="flex items-center gap-2 text-slate-500 hover:text-pink-500 transition-colors text-xs font-bold uppercase tracking-widest"
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 transition-colors hover:text-pink-400"
             >
               <ArrowLeft size={16} /> {t("wallet.back")}
             </button>
@@ -109,9 +110,9 @@ export default function WithdrawPage() {
               {t("wallet.withdraw.title").split(" ")[0]} <span className="text-pink-500">{t("wallet.withdraw.title").split(" ")[1] || ""}</span>
             </h2>
           </div>
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-full border border-slate-200 dark:border-white/10">
+          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 md:flex">
             <ShieldCheck size={14} className="text-pink-500" />
-            <span className="text-[10px] font-bold uppercase tracking-tight text-slate-500">
+            <span className="text-[10px] font-bold uppercase tracking-tight text-slate-400">
               {t("wallet.withdraw.secureTransaction")}
             </span>
           </div>
@@ -131,19 +132,19 @@ export default function WithdrawPage() {
                     {t("wallet.withdraw.inputAmount")}
                   </span>
                 </div>
-                <div className="relative group border-b-2 border-slate-200 dark:border-white/10 focus-within:border-pink-500 transition-all pb-2">
+                <div className="relative group border-b-2 border-white/10 pb-2 transition-all focus-within:border-pink-500">
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent text-5xl font-black outline-none placeholder:text-slate-300 dark:placeholder:text-white/5"
+                    className="withdraw-amount-input w-full bg-transparent pr-10 text-5xl font-black text-white outline-none placeholder:text-white/10"
                   />
-                  <span className="absolute right-0 bottom-4 font-black text-slate-400">
+                  <span className="absolute bottom-4 right-0 font-black text-slate-400">
                     🌸
                   </span>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   {t("wallet.withdraw.expectedVnd")}{" "}
                   <span className="font-bold text-pink-500">
                     {payoutAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}đ
@@ -163,7 +164,7 @@ export default function WithdrawPage() {
                         key={val}
                         type="button"
                         onClick={() => setAmount(val.toString())}
-                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-pink-500 hover:text-white transition-all text-xs font-bold border border-transparent"
+                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-300 transition-all hover:bg-pink-500 hover:text-white"
                       >
                         {val.toLocaleString()}
                       </button>
@@ -174,7 +175,9 @@ export default function WithdrawPage() {
                       onClick={() => setShowNote(!showNote)}
                       className={cn(
                         "px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2",
-                        showNote ? "border-pink-500 text-pink-500" : "border-slate-200 dark:border-white/10 text-slate-500"
+                        showNote
+                          ? "border-pink-500 text-pink-500"
+                          : "border-white/10 text-slate-400 hover:border-pink-500/40 hover:text-pink-400",
                       )}
                     >
                       <HelpCircle size={14} /> {t("wallet.withdraw.limits")}
@@ -183,7 +186,7 @@ export default function WithdrawPage() {
                 </div>
 
                 {showNote && (
-                  <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 text-[11px] font-medium leading-relaxed text-slate-500">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-[11px] font-medium leading-relaxed text-slate-400">
                     {t("wallet.withdraw.minLimit")} <br />
                     {t("wallet.withdraw.maxLimit")}
                   </div>
@@ -205,7 +208,7 @@ export default function WithdrawPage() {
                     <input
                       list="bank-list"
                       placeholder={t("wallet.withdraw.selectBank")}
-                      className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-bold outline-none transition-all"
+                      className="h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white outline-none transition-all placeholder:text-slate-500 focus:border-pink-500/50"
                       onChange={(e) =>
                         setBankInfo({ ...bankInfo, bankName: e.target.value })
                       }
@@ -215,6 +218,11 @@ export default function WithdrawPage() {
                       <option value="MB Bank" />
                       <option value="Vietcombank" />
                       <option value="Techcombank" />
+                      <option value="BIDV" />
+                      <option value="Agribank" />
+                      <option value="ACB" />
+                      <option value="VPBank" />
+                      <option value="Sacombank" />
                     </datalist>
                   </div>
                   <div className="space-y-2">
@@ -224,7 +232,7 @@ export default function WithdrawPage() {
                     <input
                       type="text"
                       placeholder={t("wallet.withdraw.inputAccountNumber")}
-                      className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-mono font-bold outline-none transition-all"
+                      className="h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 font-mono text-sm font-bold text-white outline-none transition-all placeholder:text-slate-500 focus:border-pink-500/50"
                       onChange={(e) =>
                         setBankInfo({
                           ...bankInfo,
@@ -241,7 +249,7 @@ export default function WithdrawPage() {
                     <input
                       type="text"
                       placeholder={t("wallet.withdraw.accountHolderPlaceholder")}
-                      className="w-full h-12 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-pink-500/50 rounded-xl px-4 text-sm font-bold uppercase outline-none transition-all"
+                      className="h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold uppercase text-white outline-none transition-all placeholder:text-slate-500 focus:border-pink-500/50"
                       onChange={(e) =>
                         setBankInfo({
                           ...bankInfo,
@@ -258,7 +266,7 @@ export default function WithdrawPage() {
 
           <aside className="lg:col-span-5">
             <div className="sticky top-8 space-y-6">
-              <div className="bg-slate-900 text-white dark:bg-white/5 dark:text-white p-8 rounded-[2.5rem] shadow-2xl space-y-8 relative overflow-hidden">
+              <div className="relative space-y-8 overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#0B1120]/90 p-8 text-white shadow-2xl shadow-black/20">
                 <div className="relative z-10 flex flex-col gap-1">
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
                     {t("wallet.availableBalance")}
@@ -315,7 +323,7 @@ export default function WithdrawPage() {
       </div>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent className="rounded-[2rem] p-8">
+        <DialogContent className="rounded-[2rem] border-white/10 bg-[#0B1120] p-8 text-slate-100">
           <DialogHeader className="text-center">
             <div className="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center text-pink-500 mx-auto mb-4">
               <AlertCircle size={24} />
@@ -327,7 +335,7 @@ export default function WithdrawPage() {
               {t("wallet.withdraw.confirmDesc")}
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-2xl space-y-4 my-4">
+          <div className="my-4 space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 {t("wallet.withdraw.blossomsToExchange")}
@@ -393,8 +401,8 @@ export default function WithdrawPage() {
 function SuccessState({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0c10] flex items-center justify-center p-6">
-      <div className="max-w-sm w-full bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-white/5 rounded-[3rem] p-10 text-center space-y-8 shadow-2xl">
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#070b14] p-6 text-slate-100">
+      <div className="w-full max-w-sm space-y-8 rounded-[3rem] border border-white/5 bg-[#0B1120] p-10 text-center shadow-2xl shadow-black/20">
         <div className="w-20 h-20 bg-pink-500/10 text-pink-500 rounded-3xl flex items-center justify-center mx-auto rotate-12">
           <CheckCircle2 size={40} />
         </div>
@@ -408,7 +416,7 @@ function SuccessState({ onBack }: { onBack: () => void }) {
         </div>
         <Button
           onClick={onBack}
-          className="w-full h-14 bg-slate-900 dark:bg-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest"
+          className="h-14 w-full rounded-2xl bg-white text-[10px] font-black uppercase tracking-widest text-slate-950 hover:bg-slate-100"
         >
           {t("wallet.backToWallet")}
         </Button>

@@ -13,10 +13,12 @@ import {
   Search,
   ArrowLeft,
   Download,
-  Filter,
   CheckCircle2,
  } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+const isTopupTransaction = (tx: Transaction) =>
+  tx.type === "TOPUP" || tx.type === "DEPOSIT" || tx.amount > 0;
 
 export default function TransactionHistory() {
   const { t } = useTranslation();
@@ -26,9 +28,12 @@ export default function TransactionHistory() {
   const size = 10;
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const rafId = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(rafId);
+  }, []);
 
-  const { data, isLoading, isError } = useGetWalletHistoryQuery({ page, size });
+  const { data, isLoading } = useGetWalletHistoryQuery({ page, size });
 
   const transactions = data?.content || [];
   const totalPages = data?.totalPages || 0;
@@ -36,6 +41,8 @@ export default function TransactionHistory() {
   // Lọc dữ liệu client-side (Nếu API chưa hỗ trợ lọc)
   const filteredTransactions = transactions.filter((tx) => {
     if (filter === "ALL") return true;
+    if (filter === "DEPOSIT") return isTopupTransaction(tx);
+    if (filter === "WITHDRAW") return !isTopupTransaction(tx);
     return tx.type === filter;
   });
 
@@ -139,7 +146,7 @@ export default function TransactionHistory() {
 
               <tbody className="divide-y divide-white/5">
                 {filteredTransactions.map((tx: Transaction) => {
-                  const isDeposit = tx.type === "DEPOSIT" || tx.amount > 0;
+                  const isDeposit = isTopupTransaction(tx);
                   return (
                     <tr key={tx.id} className="hover:bg-white/[0.02] transition-all group border-l-2 border-transparent hover:border-pink-500">
                       <td className="p-6">

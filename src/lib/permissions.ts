@@ -12,25 +12,24 @@ export interface PermissionDef {
 
 export const PERMISSION_GROUPS = [
   { key: "general", label: "Tổng quan" },
+  { key: "booking", label: "Booking & lịch dạy" },
   { key: "course", label: "Khóa học" },
-  { key: "flashcard", label: "Flashcard" },
-  { key: "jlpt", label: "Đề thi JLPT" },
-  { key: "notification", label: "Thông báo" },
+  { key: "finance", label: "Doanh thu & ví" },
 ] as const;
 
 export const PERMISSIONS: PermissionDef[] = [
   // General
   {
     key: "DASHBOARD_VIEW",
-    label: "Xem Dashboard",
-    description: "Truy cập trang tổng quan admin",
+    label: "Xem dashboard",
+    description: "Truy cập dashboard giảng viên",
     group: "general",
   },
   {
-    key: "ANALYTICS_VIEW",
-    label: "Xem thống kê",
-    description: "Truy cập trang thống kê và phân tích",
-    group: "general",
+    key: "BOOKING_VIEW",
+    label: "Xem booking",
+    description: "Truy cập lịch dạy và booking của chính mình",
+    group: "booking",
   },
   // Course
   {
@@ -57,62 +56,17 @@ export const PERMISSIONS: PermissionDef[] = [
     description: "Xóa khóa học khỏi hệ thống",
     group: "course",
   },
-  // Flashcard
   {
-    key: "FLASHCARD_VIEW",
-    label: "Xem flashcard",
-    description: "Xem danh sách và chi tiết flashcard",
-    group: "flashcard",
+    key: "COURSE_FINANCE_VIEW",
+    label: "Xem doanh thu khóa học",
+    description: "Xem doanh thu khóa học của chính mình",
+    group: "finance",
   },
   {
-    key: "FLASHCARD_CREATE",
-    label: "Tạo flashcard",
-    description: "Tạo flashcard mới",
-    group: "flashcard",
-  },
-  {
-    key: "FLASHCARD_EDIT",
-    label: "Sửa flashcard",
-    description: "Chỉnh sửa flashcard",
-    group: "flashcard",
-  },
-  {
-    key: "FLASHCARD_DELETE",
-    label: "Xóa flashcard",
-    description: "Xóa flashcard khỏi hệ thống",
-    group: "flashcard",
-  },
-  // JLPT
-  {
-    key: "JLPT_VIEW",
-    label: "Xem đề thi",
-    description: "Xem danh sách và chi tiết đề thi JLPT",
-    group: "jlpt",
-  },
-  {
-    key: "JLPT_CREATE",
-    label: "Tạo đề thi",
-    description: "Tạo đề thi JLPT mới",
-    group: "jlpt",
-  },
-  {
-    key: "JLPT_EDIT",
-    label: "Sửa đề thi",
-    description: "Chỉnh sửa đề thi JLPT",
-    group: "jlpt",
-  },
-  {
-    key: "JLPT_DELETE",
-    label: "Xóa đề thi",
-    description: "Xóa đề thi JLPT",
-    group: "jlpt",
-  },
-  // Notification
-  {
-    key: "NOTIFICATION_VIEW",
-    label: "Xem thông báo",
-    description: "Truy cập trang quản lý thông báo",
-    group: "notification",
+    key: "WALLET_VIEW",
+    label: "Xem ví",
+    description: "Truy cập ví và yêu cầu rút tiền của chính mình",
+    group: "finance",
   },
 ];
 
@@ -120,30 +74,26 @@ export const PERMISSIONS: PermissionDef[] = [
  * Map permission key -> sidebar route
  */
 export const PERMISSION_ROUTE_MAP: Record<string, string> = {
-  DASHBOARD_VIEW: "/admin",
-  ANALYTICS_VIEW: "/admin/analytics",
+  DASHBOARD_VIEW: "/admin/teacher-dashboard",
+  BOOKING_VIEW: "/admin/teacher-schedules",
   COURSE_VIEW: "/admin/courses",
-  FLASHCARD_VIEW: "/admin/flashcard",
-  JLPT_VIEW: "/admin/jlpt-tests",
-  NOTIFICATION_VIEW: "/admin/notifications",
+  COURSE_FINANCE_VIEW: "/admin/courses/finance/teacher",
+  WALLET_VIEW: "/profile/wallet",
 };
 
 /**
  * Map route -> required VIEW permission
  */
 export const ROUTE_PERMISSION_MAP: Record<string, string> = {
-  "/admin": "DASHBOARD_VIEW",
   "/admin/teacher-dashboard": "DASHBOARD_VIEW",
-  "/admin/analytics": "ANALYTICS_VIEW",
+  "/admin/teacher-schedules": "BOOKING_VIEW",
+  "/admin/teacher-schedules/teaching-schedule": "BOOKING_VIEW",
+  "/admin/teacher-schedules/create-slot": "BOOKING_VIEW",
   "/admin/courses": "COURSE_VIEW",
-  "/admin/courses/finance": "COURSE_VIEW",
-  "/admin/courses/finance/teacher": "COURSE_VIEW",
-  "/admin/teacher-schedules": "DASHBOARD_VIEW",
-  "/admin/teacher-schedules/teaching-schedule": "DASHBOARD_VIEW",
-  "/admin/teacher-schedules/create-slot": "DASHBOARD_VIEW",
-  "/admin/flashcard": "FLASHCARD_VIEW",
-  "/admin/jlpt-tests": "JLPT_VIEW",
-  "/admin/notifications": "NOTIFICATION_VIEW",
+  "/admin/courses/finance": "ADMIN_ONLY",
+  "/admin/courses/finance/teacher": "COURSE_FINANCE_VIEW",
+  "/profile/wallet": "WALLET_VIEW",
+  "/withdraw": "WALLET_VIEW",
 };
 
 export function getPermissionsByGroup(group: string): PermissionDef[] {

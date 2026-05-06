@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -24,10 +24,27 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
   fallback,
 }) => {
   const { isAuthenticated, isInitialized, isAdmin } = useAuth();
-  const { hasAnyAdminAccess, isLoading: permLoading } = usePermissions();
+  const {
+    hasAnyAdminAccess,
+    canAccessRoute,
+    isInstructor,
+    isLoading: permLoading,
+  } = usePermissions();
   const router = useRouter();
+  const pathname = usePathname();
 
-  const canAccess = isAdmin || hasAnyAdminAccess;
+  const instructorFallback = React.useMemo(() => {
+    const candidates = [
+      "/admin/teacher-dashboard",
+      "/admin/teacher-schedules",
+      "/admin/courses",
+      "/admin/courses/finance/teacher",
+    ];
+    return candidates.find((route) => canAccessRoute(route)) ?? redirectTo;
+  }, [canAccessRoute, redirectTo]);
+
+  const canAccess =
+    isAdmin || (hasAnyAdminAccess && canAccessRoute(pathname || ""));
   const isReady = isInitialized && !permLoading;
 
   React.useEffect(() => {
@@ -39,9 +56,17 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
     }
 
     if (!canAccess) {
-      router.replace(redirectTo);
+      router.replace(isInstructor ? instructorFallback : redirectTo);
     }
-  }, [isReady, isAuthenticated, canAccess, router, redirectTo]);
+  }, [
+    isReady,
+    isAuthenticated,
+    canAccess,
+    router,
+    redirectTo,
+    isInstructor,
+    instructorFallback,
+  ]);
 
   // Đang kiểm tra auth hoặc permissions
   if (!isReady) {

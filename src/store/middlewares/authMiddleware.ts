@@ -65,15 +65,12 @@ export const authListenerMiddleware = createListenerMiddleware();
 authListenerMiddleware.startListening({
   matcher: authApi.endpoints.login.matchFulfilled,
   effect: async (action, listenerApi) => {
-    console.log("🔐 Middleware: Login successful, processing...");
     const { accessToken } = action.payload;
     if (!accessToken) {
-      console.error("❌ Middleware: No accessToken in login response!");
       return;
     }
 
     // Lưu access token vào cookie
-    console.log("💾 Middleware: Saving access token to cookie...");
     setAccessToken(accessToken);
 
     // Fetch user profile từ /users/me
@@ -98,6 +95,7 @@ authListenerMiddleware.startListening({
           fullName: authUser.fullName || "",
           avatar: authUser.avatarUrl || "",
           avatarUrl: authUser.avatarUrl || "",
+          avatarFrameUrl: authUser.avatarFrameUrl || null,
           gender: authUser.gender || "",
           role: resolvedRole,
           level: (authUser.jlptLevel || "N5") as User["level"],
@@ -111,10 +109,6 @@ authListenerMiddleware.startListening({
           createdAt: authUser.createdAt || new Date().toISOString(),
           updatedAt: authUser.createdAt || new Date().toISOString(),
         };
-        console.log(
-          "✅ Middleware: Dispatching loginSuccess with user:",
-          user.username,
-        );
         listenerApi.dispatch(loginSuccess({ user, accessToken }));
       } else {
         // Fallback minimal user
@@ -163,7 +157,6 @@ authListenerMiddleware.startListening({
 authListenerMiddleware.startListening({
   matcher: authApi.endpoints.getCurrentUser.matchFulfilled,
   effect: async (action, listenerApi) => {
-    console.log("👤 Middleware: getCurrentUser fulfilled, processing...");
     // After transformResponse, payload is directly the AuthUser object
     const authUser = action.payload;
     const accessToken = getAccessToken();
@@ -180,6 +173,7 @@ authListenerMiddleware.startListening({
         fullName: authUser.fullName || "",
         avatar: authUser.avatarUrl || "",
         avatarUrl: authUser.avatarUrl || "",
+        avatarFrameUrl: authUser.avatarFrameUrl || null,
         gender: authUser.gender || "",
         role: resolvedRole,
         level: (authUser.jlptLevel || "N5") as User["level"],
@@ -193,8 +187,6 @@ authListenerMiddleware.startListening({
         createdAt: authUser.createdAt || new Date().toISOString(),
         updatedAt: authUser.createdAt || new Date().toISOString(),
       };
-      console.log("✅ Middleware: Dispatching updateUser with:", user.username);
-      console.log("🔄 Middleware: isAuthenticated should now be TRUE");
       listenerApi.dispatch(updateUser(user));
       setupTokenRefresh(listenerApi.dispatch as AppDispatch);
     }

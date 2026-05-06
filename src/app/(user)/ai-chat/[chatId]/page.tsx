@@ -1,4 +1,4 @@
-import AIChatShell from "@/components/user-component/ai/AIChatShell";
+import AssistantPanel from "@/components/user-component/ai/AssistantPanel";
 
 type PageProps = {
   params: Promise<{
@@ -16,9 +16,11 @@ export default async function AIChatConversationPage({ params }: PageProps) {
   const initialConversationId = parseConversationId(chatId);
 
   return (
-    <AIChatShell
-      initialConversationId={initialConversationId}
-      forceNewDraft={!initialConversationId}
-    />
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <AssistantPanel
+        initialConversationId={initialConversationId}
+        forceNewDraft={!initialConversationId}
+      />
+    </div>
   );
 }

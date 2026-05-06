@@ -12,6 +12,7 @@
  */
 
 import type { ImageResult } from "./types";
+import { getAccessToken } from "@/lib/token";
 
 // Backend API base URL
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8181/api";
@@ -84,6 +85,8 @@ async function fetchFromProxy(
   });
 
   const res = await fetch(`${API_BASE}/media/image-search?${params}`, {
+    headers: authHeaders(),
+    credentials: "include",
     signal,
   });
 
@@ -168,7 +171,8 @@ export async function resolveImage(
 ): Promise<ResolvedImage> {
   const res = await fetch(`${API_BASE}/media/resolve-image`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
     body: JSON.stringify({ sourceUrl }),
     signal,
   });
@@ -187,4 +191,9 @@ export async function resolveImage(
     sourceUrl: data.sourceUrl || sourceUrl,
     cacheHit: data.cacheHit ?? false,
   };
+}
+
+function authHeaders(): HeadersInit {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }

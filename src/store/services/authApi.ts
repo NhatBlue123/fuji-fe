@@ -283,6 +283,7 @@ export const authApi = createApi({
           role: userData.role || "STUDENT",
           fullName: userData.fullName || userData.username || "User",
           avatarUrl: userData.avatarUrl || null,
+          avatarFrameUrl: userData.avatarFrameUrl || null,
           bio: userData.bio || null,
           gender: userData.gender || "male",
           phone: userData.phone || null,

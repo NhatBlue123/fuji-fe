@@ -166,6 +166,35 @@ export interface SearchParams {
   limit?: number;
 }
 
+export interface WeakCardsAddPayload {
+  flashcardIds: Array<number | string>;
+  deckSlug: string;
+  source?: string;
+}
+
+export interface WeakCardMarkMasteredPayload {
+  flashcardId: number | string;
+}
+
+export interface WeakReviewCard {
+  id: number;
+  vocabulary: string;
+  meaning: string;
+  pronunciation?: string;
+  previewUrl?: string | null;
+  exampleSentence?: string;
+  deckSlug: string;
+  struggleCount: number;
+  lastStruggleAt: string;
+}
+
+export interface WeakCardReviewSetResponse {
+  cards: WeakReviewCard[];
+  totalWeak: number;
+  totalMastered: number;
+  veryHardCount: number;
+}
+
 export function buildFlashcardFormData(
   payload: CreateFlashcardPayload,
   thumbnail?: File,

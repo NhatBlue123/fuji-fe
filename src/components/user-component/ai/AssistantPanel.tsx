@@ -6,10 +6,14 @@ import {
   useEffect,
   useCallback,
   useLayoutEffect,
+  useMemo,
 } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
+import { useGetMyAiQuotaQuery } from "@/store/services/aiQuotaApi";
 import {
   useCreateAiConversationMutation,
   useCreateAiMessageMutation,
@@ -32,6 +36,7 @@ import {
   UserMessageBubble,
 } from "./assistant/MessageBubbles";
 import ConversationSidebar from "./assistant/ConversationSidebar";
+import AiAvatar from "@/components/chatdock/AiAvatar";
 import type {
   AssistantConversationSnapshot,
   RouterThinkingItem,
@@ -76,6 +81,7 @@ function intentToLabel(intent?: string) {
   if (intent === "guide") return "Huong dan";
   if (intent === "general_reject") return "Tu choi";
   if (intent === "grammar_qa") return "Ngu phap";
+  if (intent === "reasoning" || intent === "deep_help") return "Suy luận";
   if (intent === "product_info") return "Khoa hoc";
   if (intent === "general_chat") return "Hoi dap";
   if (intent === "out_of_scope") return "Ngoai pham vi";
@@ -117,7 +123,36 @@ export default function AssistantPanel({
 }: AssistantPanelProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslation();
   const { socket, isConnected } = useAIChatSocket();
+  const {
+    data: aiQuota = [],
+    refetch: refetchAiQuota,
+  } = useGetMyAiQuotaQuery();
+  const basicChatQuota = useMemo(
+    () => aiQuota.find((quota) => quota.featureKey === "AI_CHAT_BASIC"),
+    [aiQuota],
+  );
+  const deepChatQuota = useMemo(
+    () => aiQuota.find((quota) => quota.featureKey === "AI_CHAT_DEEP"),
+    [aiQuota],
+  );
+  const basicChatRemaining = basicChatQuota
+    ? Number(basicChatQuota.totalRemaining ?? 0)
+    : null;
+  const deepChatRemaining = deepChatQuota
+    ? Number(deepChatQuota.totalRemaining ?? 0)
+    : null;
+  const isBasicChatQuotaEmpty =
+    basicChatRemaining !== null && basicChatRemaining <= 0;
+  const isDeepChatQuotaEmpty =
+    deepChatRemaining !== null && deepChatRemaining <= 0;
+  const isBasicChatQuotaLow =
+    basicChatQuota &&
+    !isBasicChatQuotaEmpty &&
+    Number(basicChatQuota.dailyQuota ?? 0) > 0 &&
+    basicChatRemaining !== null &&
+    basicChatRemaining / Number(basicChatQuota.dailyQuota ?? 1) <= 0.2;
   const {
     data: conversations = [],
     isFetching: isLoadingConversations,
@@ -142,6 +177,7 @@ export default function AssistantPanel({
     useState(false);
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [input, setInput] = useState("");
+  const [deepHelpEnabled, setDeepHelpEnabled] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [queuedInfo, setQueuedInfo] = useState<{
@@ -171,15 +207,14 @@ export default function AssistantPanel({
   const lastStreamEventRef = useRef<number>(0); // ✅ Track last event time
   const routerThinkingRef = useRef<RouterThinkingItem[]>([]);
   const typingStartedAtRef = useRef<number | null>(null);
-  const currentSocketIdRef = useRef<string | null>(null); // ✅ Track socket ID
 
   const resolveResponseTimeMs = useCallback(() => {
     const startedAt = typingStartedAtRef.current;
     if (!startedAt) {
-      return Math.max(0, Math.round(elapsedMs));
+      return 0;
     }
     return Math.max(0, Math.round(Date.now() - startedAt));
-  }, [elapsedMs]);
+  }, []);
 
   const forceFinishStreaming = useCallback(
     (fallbackMessage: string) => {
@@ -870,6 +905,9 @@ export default function AssistantPanel({
         }
 
         streamBufferRef.current = "";
+        if (content.trim()) {
+          refetchAiQuota();
+        }
       }
     };
 
@@ -890,7 +928,14 @@ export default function AssistantPanel({
       socket.off("chat:queued", handleQueued);
       socket.off("chat:stream", handleStream);
     };
-  }, [socket, createAiMessage, refetchConversations, armWatchdog]);
+  }, [
+    socket,
+    createAiMessage,
+    refetchConversations,
+    refetchAiQuota,
+    armWatchdog,
+    resolveResponseTimeMs,
+  ]);
 
   const ensureConversationId = useCallback(
     async (firstMessage: string) => {
@@ -928,6 +973,18 @@ export default function AssistantPanel({
     
     if (!isConnected) {
       alert("Kết nối socket chưa sẵn sàng. Vui lòng đợi một chút...");
+      return;
+    }
+
+    const useDeepHelp = deepHelpEnabled;
+
+    if (useDeepHelp && isDeepChatQuotaEmpty) {
+      alert(t("monetization.messages.advancedHelpEmpty"));
+      return;
+    }
+
+    if (!useDeepHelp && isBasicChatQuotaEmpty) {
+      alert(t("monetization.messages.chatEmpty"));
       return;
     }
 
@@ -969,7 +1026,12 @@ export default function AssistantPanel({
     // Emit to socket
     socket.emit(
       "chat:send",
-      { sessionId: sessionIdRef.current, message: trimmed },
+      {
+        sessionId: sessionIdRef.current,
+        message: trimmed,
+        mode: useDeepHelp ? "reasoning" : "basic",
+        deepHelp: useDeepHelp,
+      },
       (ack: { 
         ok: boolean; 
         error?: string; 
@@ -978,18 +1040,36 @@ export default function AssistantPanel({
         jobId?: string;
       }) => {
         if (!ack?.ok && !ack?.intent) {
+          const errorText = ack?.error || "";
+          if (errorText.toLowerCase().includes("quota")) {
+            forceFinishStreaming(
+              useDeepHelp
+                ? t("monetization.messages.advancedHelpEmpty")
+                : t("monetization.messages.chatEmpty"),
+            );
+            refetchAiQuota();
+            return;
+          }
           forceFinishStreaming("⚠️ Không thể kết nối. Vui lòng thử lại sau.");
         }
       },
     );
+    if (useDeepHelp) {
+      setDeepHelpEnabled(false);
+    }
   }, [
     input,
     socket,
     isConnected,
+    deepHelpEnabled,
+    isBasicChatQuotaEmpty,
+    isDeepChatQuotaEmpty,
     ensureConversationId,
     createAiMessage,
     armWatchdog,
     forceFinishStreaming,
+    refetchAiQuota,
+    t,
   ]);
 
   const handleStartNewConversation = useCallback(() => {
@@ -1045,8 +1125,19 @@ export default function AssistantPanel({
 
   const isLoadingMessages =
     isLoadingInitialMessages || (isFetchingMessages && messages.length === 0);
-  const shouldShowInputChips =
-    messages.length === 0 && !isTyping && !isLoadingMessages;
+  const isCurrentModeQuotaEmpty = deepHelpEnabled
+    ? isDeepChatQuotaEmpty
+    : isBasicChatQuotaEmpty;
+  const isAllChatQuotaEmpty = isBasicChatQuotaEmpty && isDeepChatQuotaEmpty;
+  const chatPlaceholder = deepHelpEnabled
+    ? isDeepChatQuotaEmpty
+      ? t("monetization.messages.advancedHelpEmpty")
+      : t("monetization.messages.advancedHelpPlaceholder")
+    : isBasicChatQuotaEmpty
+      ? deepChatRemaining !== null && deepChatRemaining > 0
+        ? t("monetization.messages.advancedHelpSwitchPlaceholder")
+        : t("monetization.messages.chatEmptyPlaceholder")
+      : t("monetization.messages.chatPlaceholder");
 
   return (
     <div className="flex flex-1 overflow-hidden bg-background/40 dark:bg-slate-950/95">
@@ -1056,6 +1147,27 @@ export default function AssistantPanel({
             <div className="flex items-center gap-2">
               <Loader2 className="size-4 animate-spin" />
               <span>Mất kết nối socket chatbot. Đang thử kết nối lại...</span>
+            </div>
+          </div>
+        )}
+
+        {(isBasicChatQuotaLow || isBasicChatQuotaEmpty) && (
+          <div className={`mx-6 mt-4 rounded-lg border px-3 py-2 text-sm ${
+            isBasicChatQuotaEmpty
+              ? "border-red-400/40 bg-red-500/10 text-red-700 dark:border-red-500/30 dark:text-red-400"
+              : "border-amber-400/40 bg-amber-500/10 text-amber-700 dark:border-amber-500/30 dark:text-amber-300"
+          }`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span>
+                {isBasicChatQuotaEmpty
+                  ? t("monetization.messages.chatEmpty")
+                  : t("monetization.messages.chatLow", {
+                      count: basicChatRemaining,
+                    })}
+              </span>
+              <Link href="/packages" className="font-bold underline">
+                {t("monetization.actions.upgradePackage")}
+              </Link>
             </div>
           </div>
         )}
@@ -1073,12 +1185,8 @@ export default function AssistantPanel({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
-                <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-0.5 shadow-lg shadow-primary/20 dark:from-blue-500 dark:to-blue-700 dark:shadow-blue-500/30">
-                  <div className="w-full h-full rounded-full bg-card flex items-center justify-center dark:bg-slate-800">
-                    <span className="material-symbols-outlined text-primary text-2xl dark:text-blue-400">
-                      smart_toy
-                    </span>
-                  </div>
+                <div className="size-20 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-2 shadow-lg shadow-primary/20 dark:from-blue-500 dark:to-blue-700 dark:shadow-blue-500/30">
+                  <AiAvatar className="w-full h-full" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-1 dark:text-slate-100">
@@ -1154,12 +1262,48 @@ export default function AssistantPanel({
           )}
         </div>
 
+        <div className="shrink-0 bg-white/45 px-6 py-3 backdrop-blur-md dark:bg-slate-950/55">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDeepHelpEnabled((current) => !current)}
+                disabled={isDeepChatQuotaEmpty}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 font-semibold transition-colors ${
+                  deepHelpEnabled
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-foreground hover:border-primary/45 hover:text-primary"
+                } disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
+              >
+                <span className="material-symbols-outlined text-[17px]">
+                  psychology
+                </span>
+                {t("monetization.actions.useAdvancedHelp")}
+              </button>
+              <span>
+                {deepChatRemaining === null
+                  ? t("monetization.messages.advancedHelpLoading")
+                  : t("monetization.messages.advancedHelpRemaining", {
+                      count: deepChatRemaining,
+                    })}
+              </span>
+            </div>
+            {isDeepChatQuotaEmpty && (
+              <Link href="/packages" className="font-semibold text-primary underline">
+                {t("monetization.actions.upgradePackage")}
+              </Link>
+            )}
+          </div>
+        </div>
+
         <ChatInputArea
           input={input}
           onInputChange={setInput}
           onSend={handleSend}
-          chips={shouldShowInputChips ? ASSISTANT_CHIPS : []}
-          placeholder="Hỏi bất kỳ điều gì về tiếng Nhật..."
+          chips={[]}
+          placeholder={chatPlaceholder}
+          inputDisabled={isAllChatQuotaEmpty}
+          sendDisabled={isCurrentModeQuotaEmpty}
         />
       </div>
 

@@ -23,15 +23,19 @@ interface TermPreviewListProps {
   doneCount: number;
   totalCount: number;
   /** Called when user clicks search button for a specific term */
-  onSearchImages?: (termKey: string) => void;
+  onSearchImages?: (termKey: string) => void | Promise<void>;
   /** Called when user clicks "Search all" */
-  onSearchAllImages?: () => void;
+  onSearchAllImages?: () => void | Promise<void>;
+  imageSearchDisabled?: boolean;
+  imageSearchDisabledMessage?: string;
   /** Number of terms ready for image search */
   readyCount?: number;
   /** Called when user selects an image for a term */
   onImageSelect?: (termKey: string, imageUrl: string) => void;
   /** Currently selected images per term key */
   selectedImages?: Record<string, string>;
+  /** Image resolve/upload state per term key */
+  resolvingImages?: Record<string, boolean>;
 }
 
 export default function TermPreviewList({
@@ -41,9 +45,12 @@ export default function TermPreviewList({
   totalCount,
   onSearchImages,
   onSearchAllImages,
+  imageSearchDisabled = false,
+  imageSearchDisabledMessage,
   readyCount = 0,
   onImageSelect,
   selectedImages = {},
+  resolvingImages = {},
 }: TermPreviewListProps) {
   if (terms.length === 0) {
     return null;
@@ -69,13 +76,20 @@ export default function TermPreviewList({
             <button
               type="button"
               onClick={onSearchAllImages}
-              className="px-2 py-0.5 text-[10px] font-medium bg-pink-500/20 text-pink-400 rounded-full hover:bg-pink-500/30 transition-colors"
+              disabled={imageSearchDisabled}
+              className="px-2 py-0.5 text-[10px] font-medium bg-pink-500/20 text-pink-400 rounded-full hover:bg-pink-500/30 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               Tìm ảnh tất cả ({readyCount})
             </button>
           )}
         </div>
       </div>
+
+      {imageSearchDisabled && imageSearchDisabledMessage && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          {imageSearchDisabledMessage}
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="h-1 bg-white/5 rounded-full overflow-hidden">
@@ -94,12 +108,14 @@ export default function TermPreviewList({
             key={term.key}
             term={term}
             selectedImage={selectedImages[term.key]}
+            resolvingImage={resolvingImages[term.key] ?? false}
             onImageSelect={
               onImageSelect ? (url) => onImageSelect(term.key, url) : undefined
             }
             onSearchImages={
               onSearchImages ? () => onSearchImages(term.key) : undefined
             }
+            imageSearchDisabled={imageSearchDisabled}
           />
         ))}
       </div>
@@ -112,15 +128,19 @@ export default function TermPreviewList({
 interface TermCardProps {
   term: TermState;
   selectedImage?: string;
+  resolvingImage?: boolean;
   onImageSelect?: (url: string) => void;
-  onSearchImages?: () => void;
+  onSearchImages?: () => void | Promise<void>;
+  imageSearchDisabled?: boolean;
 }
 
 function TermCard({
   term,
   selectedImage,
+  resolvingImage = false,
   onImageSelect,
   onSearchImages,
+  imageSearchDisabled = false,
 }: TermCardProps) {
   const [showAllImages, setShowAllImages] = useState(false);
   const visibleImages = showAllImages ? term.images : term.images.slice(0, 4);
@@ -167,6 +187,23 @@ function TermCard({
           </p>
         )}
 
+      {(term.pronunciation || term.exampleSentence) && (
+        <div className="mt-2 ml-6 space-y-1 text-[11px] text-gray-400">
+          {term.pronunciation && (
+            <p>
+              <span className="text-gray-500">Cách đọc:</span>{" "}
+              {term.pronunciation}
+            </p>
+          )}
+          {term.exampleSentence && (
+            <p className="line-clamp-2">
+              <span className="text-gray-500">Ví dụ:</span>{" "}
+              {term.exampleSentence}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Error message */}
       {term.status === "error" && term.errorMessage && (
         <p className="text-[11px] text-red-400 mt-1.5 ml-6">
@@ -184,7 +221,8 @@ function TermCard({
             <button
               type="button"
               onClick={onSearchImages}
-              className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded-full hover:bg-yellow-500/20 transition-colors"
+              disabled={imageSearchDisabled}
+              className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded-full hover:bg-yellow-500/20 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               Thử lại
             </button>
@@ -198,7 +236,8 @@ function TermCard({
           <button
             type="button"
             onClick={onSearchImages}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-pink-500/10 text-pink-400 rounded-lg hover:bg-pink-500/20 border border-pink-500/20 hover:border-pink-500/30 transition-all"
+            disabled={imageSearchDisabled}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-pink-500/10 text-pink-400 rounded-lg hover:bg-pink-500/20 border border-pink-500/20 hover:border-pink-500/30 transition-all disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">
               image_search
@@ -218,8 +257,9 @@ function TermCard({
                 <button
                   key={i}
                   type="button"
+                  disabled={resolvingImage}
                   onClick={() => handleImageClick(img.url)}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 disabled:hover:scale-100 disabled:cursor-wait ${
                     isSelected
                       ? "border-pink-500 ring-1 ring-pink-500/50"
                       : "border-transparent hover:border-white/20"
@@ -237,6 +277,13 @@ function TermCard({
                     <div className="absolute inset-0 bg-pink-500/20 flex items-center justify-center">
                       <span className="material-symbols-outlined text-white text-lg drop-shadow">
                         check_circle
+                      </span>
+                    </div>
+                  )}
+                  {resolvingImage && isSelected && (
+                    <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-lg animate-spin drop-shadow">
+                        progress_activity
                       </span>
                     </div>
                   )}

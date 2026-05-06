@@ -36,16 +36,20 @@ export interface TeacherDashboardData {
   totalSessions: number;
   averageEarningsPerHour: number;
   averageRating: number;
+  bookingSuccessRate: number;
+  cancellationRate: number;
   availableBalance: number;
   pendingPayouts: number;
   totalWithdrawn: number;
   earningsOverTime: { date: string; income: number }[];
   topStudents: { 
+    studentId: number;
     studentName: string; 
-    spentAmount: number; // Matches the refined plan
+    spentAmount: number;
     bookingCount: number; 
   }[];
   courseRevenueList: { 
+    courseId: number;
     courseTitle: string; 
     revenue: number; 
     studentCount: number; 

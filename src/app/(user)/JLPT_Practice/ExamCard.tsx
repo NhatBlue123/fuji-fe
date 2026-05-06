@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface ExamCardProps {
   testId: number;
@@ -25,36 +26,38 @@ export default function ExamCard({
   tag,
   info,
   attemptId,
-  lockedTitle = "Het luot JLPT",
-  lockedButtonLabel = "Nang cap ngay",
+  lockedTitle = "Hết lượt JLPT",
+  lockedButtonLabel = "Nâng cấp ngay",
   onLockedClick,
 }: ExamCardProps) {
+  const { t } = useTranslation();
+
   const renderBadge = () => {
     switch (status) {
       case "new":
         return (
           <span className="absolute top-3 right-3 rounded-md border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold text-slate-300 backdrop-blur-sm">
-            Chua lam
+            {t("jlpt.examCard.badgeNew", { defaultValue: "Chưa làm" })}
           </span>
         );
       case "doing":
         return (
           <span className="absolute top-3 right-3 rounded-md border border-blue-500/20 bg-blue-500/20 px-2.5 py-1 text-[10px] font-bold text-blue-400 backdrop-blur-sm">
-            Dang lam
+            {t("jlpt.examCard.badgeDoing", { defaultValue: "Đang làm" })}
           </span>
         );
       case "done":
         return (
           <span className="absolute top-3 right-3 flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold text-emerald-400 backdrop-blur-sm">
             <span className="material-symbols-outlined text-[12px]">check</span>
-            Da xong
+            {t("jlpt.examCard.badgeDone", { defaultValue: "Đã xong" })}
           </span>
         );
       case "locked":
         return (
           <span className="absolute top-3 right-3 flex items-center gap-1 rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-[10px] font-bold text-yellow-300 backdrop-blur-sm">
             <span className="material-symbols-outlined text-[12px]">lock</span>
-            Topup
+            {t("jlpt.examCard.badgeLocked", { defaultValue: "Topup" })}
           </span>
         );
     }
@@ -78,15 +81,15 @@ export default function ExamCard({
 
     if (status === "new") {
       btnClass = "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-500/20";
-      btnText = "Bat dau lam bai";
+      btnText = t("jlpt.examCard.btnStart", { defaultValue: "Bắt đầu làm bài" });
     } else if (status === "doing") {
       btnClass =
         "border-slate-600 bg-slate-700 text-white hover:border-blue-500 hover:bg-blue-600";
-      btnText = "Tiep tuc";
+      btnText = t("jlpt.examCard.btnContinue", { defaultValue: "Tiếp tục" });
     } else if (status === "done") {
       btnClass =
         "border-slate-600 bg-slate-700 text-white hover:border-blue-500 hover:bg-blue-600";
-      btnText = "Xem ket qua";
+      btnText = t("jlpt.examCard.btnViewResult", { defaultValue: "Xem kết quả" });
     }
 
     const href =

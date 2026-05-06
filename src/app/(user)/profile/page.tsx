@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import {
   Edit, Key, LogOut, Mail, Phone, User, BookOpen, Calendar,
-  Zap
+  Zap, Sparkles, Ticket
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -12,7 +11,9 @@ import { useTranslation } from "react-i18next";
 import { logout } from "@/lib/auth";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { useGetMySubscriptionQuery } from "@/store/services/subscriptionApi";
+import { useGetMySystemPackageQuery } from "@/store/services/userMonetizationApi";
 import { Button } from "@/components/ui/button";
+import { FramedAvatar } from "@/components/common/FramedAvatar";
 import { StreakCard } from "@/components/user-component/home/StreakCard";
 import { 
   Card, 
@@ -23,6 +24,9 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { QuotaOverview } from "@/components/user-component/monetization/QuotaOverview";
+import { useAvatarFrames } from "@/hooks/useAvatarFrames";
+import { getUsableAvatarFrame, hasAnyAvatarFramePackage } from "@/lib/avatar-frames";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -30,15 +34,28 @@ export default function ProfilePage() {
   const [openLogout, setOpenLogout] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const { data: user, isLoading, error, isUninitialized } = useGetCurrentUserQuery();
   const { data: mySub, isLoading: isSubLoading } = useGetMySubscriptionQuery(undefined, {
     skip: isLoading || !user,
   });
+  const { data: userPackage } = useGetMySystemPackageQuery(undefined, {
+    skip: isLoading || !user,
+  });
+  const { frames: avatarFrames } = useAvatarFrames();
 
   // Prefer subscription API tier, fallback to user profile tier, then BASIC
   const displayTier = mySub?.tier || user?.subscriptionTier || 'BASIC';
+  const hasUnlockedAvatarFrames = hasAnyAvatarFramePackage(userPackage, displayTier);
+  const avatarFrameSrc = getUsableAvatarFrame(
+    user?.avatarFrameUrl,
+    avatarFrames,
+    hasUnlockedAvatarFrames,
+  );
 
   if (!mounted || isLoading || isUninitialized || isSubLoading) {
     return (
@@ -99,17 +116,14 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
             {/* Avatar Section */}
             <div className="relative group shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-500 shadow-2xl">
-                <div className="w-full h-full rounded-[1.4rem] bg-background dark:bg-[#0B1120] overflow-hidden relative border-4 border-background dark:border-[#0B1120]">
-                  {user.avatarUrl ? (
-                    <Image src={user.avatarUrl} alt="avatar" className="object-cover" fill sizes="160px" />
-                  ) : (
-                    <span className="flex items-center justify-center w-full h-full text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-pink-400 to-cyan-400">
-                      {getInitials(user.fullName)}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <FramedAvatar
+                src={user.avatarUrl}
+                frameSrc={avatarFrameSrc}
+                fallback={getInitials(user.fullName)}
+                className="h-32 w-32 drop-shadow-2xl md:h-40 md:w-40"
+                avatarClassName="border-4 border-background dark:border-[#0B1120]"
+                fallbackClassName="text-5xl"
+              />
               <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 border-4 border-background dark:border-[#0B1120] rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] ring-1 ring-white/10 dark:ring-white/10" />
             </div>
 
@@ -140,7 +154,7 @@ export default function ProfilePage() {
               </div>
 
               <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm leading-relaxed italic border-l-2 border-pink-500/30 pl-4 py-1">
-                "{user.bio || t("profile.bio.empty")}"
+                &ldquo;{user.bio || t("profile.bio.empty")}&rdquo;
               </p>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
@@ -162,6 +176,8 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <QuotaOverview />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
   {/* Left Column - Details */}
@@ -191,6 +207,20 @@ export default function ProfilePage() {
 
   {/* Right Column - Actions */}
   <div className="lg:col-span-1 space-y-6 grid gap-2">
+    <ActionCard 
+      href="/packages"
+      icon={<Sparkles size={24} />}
+      title={t("monetization.terms.systemPackages")}
+      desc={t("monetization.messages.systemPackageDescription")}
+      color="pink bg-secondary hover:bg-secondary/90"
+    />
+    <ActionCard 
+      href="/profile/coupons"
+      icon={<Ticket size={24} />}
+      title={t("monetization.terms.discountCodeWallet")}
+      desc={t("monetization.terms.availableDiscountCodes")}
+      color="amber bg-secondary hover:bg-secondary/90"
+    />
     <ActionCard 
       href="/profile/change-password"
       icon={<Key size={24} />}

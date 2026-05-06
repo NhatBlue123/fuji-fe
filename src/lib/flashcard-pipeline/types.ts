@@ -44,6 +44,10 @@ export interface TermState {
   vocabulary: string;
   /** Parsed meaning if user provided (back of card) */
   meaning: string;
+  /** Optional reading/pronunciation supplied by the user */
+  pronunciation: string;
+  /** Optional example sentence supplied by the user */
+  exampleSentence: string;
   /** Current processing status */
   status: TermStatus;
   /** Detected language */

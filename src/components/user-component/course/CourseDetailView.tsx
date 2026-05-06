@@ -22,11 +22,9 @@ import type {
 } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth, useAppDispatch } from "@/store/hooks";
 import { baseApi } from "@/store/services/baseApi";
 import { toast } from "sonner";
-import { tMsg } from "@/i18n";
 import { ReviewForm } from "./ReviewForm";
 import { LikeButton } from "./LikeButton";
 
@@ -793,8 +791,12 @@ function ReviewsContent({
       if (editingReviewId === review.id) {
         setEditingReviewId(null);
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || t("auto.courseDetail_51"));
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "data" in error
+          ? (error as { data?: { message?: string } }).data?.message
+          : undefined;
+      toast.error(message || t("auto.courseDetail_51"));
     }
   };
 
@@ -958,7 +960,6 @@ export default function CourseDetailView({
   const [isPurchased, setIsPurchased] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
-  const { isPremium } = useFeatureAccess();
   const [purchaseCourse, { isLoading: isPurchasing }] =
     usePurchaseCourseMutation();
   const [triggerPreview, { isFetching: isValidating }] = useLazyPreviewDiscountQuery();
@@ -1020,7 +1021,7 @@ export default function CourseDetailView({
       if (result.valid) {
         toast.success(`✅ Áp dụng mã ${normalizedCode} thành công!`);
       } else {
-        toast.error(result.message || "Mã không hợp lệ");
+        toast.error(result.message || t("monetization.messages.invalidDiscountCode"));
       }
     } catch {
       toast.error(t("auto.courseDetail_93"));
@@ -1053,7 +1054,9 @@ export default function CourseDetailView({
   const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
   const completedLessons = lessons.filter((l) => l.userCompleted).length;
   const isEnrolled = Boolean(course.isEnrolled);
-  const canAccessCourse = isAuthenticated && (isPremium || isPurchased || isEnrolled);
+  // IMPORTANT: Only check isEnrolled, NOT isPremium
+  // Premium subscription does NOT grant free access to all courses
+  const canAccessCourse = isAuthenticated && (isPurchased || isEnrolled);
 
   // resumeLessonId chỉ dùng khi đã có quyền truy cập
   const resumeLessonId = canAccessCourse
@@ -1092,11 +1095,8 @@ export default function CourseDetailView({
 
       setIsPurchased(true);
       dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
-      toast.success(
-        isFreePrice(course.price)
-          ? t("course.buySuccess")
-          : t("course.buySuccess"),
-      );
+      
+      // Backend will send notification, no need for toast here
 
       if (resumeLessonId) {
         router.push(resumeLessonHref);
@@ -1499,7 +1499,7 @@ export default function CourseDetailView({
                     <span className="material-symbols-outlined text-destructive text-base mt-0.5">error</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-destructive">{appliedCoupon.message}</p>
-                      <button onClick={handleRemoveCoupon} className="mt-1 text-[11px] text-muted-foreground underline">Thử mã khác</button>
+                      <button onClick={handleRemoveCoupon} className="mt-1 text-[11px] text-muted-foreground underline">{t("monetization.actions.tryAnotherCode")}</button>
                     </div>
                   </div>
                 )}
@@ -1523,7 +1523,7 @@ export default function CourseDetailView({
                       <button
                         onClick={handleRemoveCoupon}
                         className="text-muted-foreground hover:text-foreground transition-colors"
-                        title="Xóa mã"
+                        title={t("monetization.actions.removeCodeTitle")}
                       >
                         <span className="material-symbols-outlined text-base">close</span>
                       </button>

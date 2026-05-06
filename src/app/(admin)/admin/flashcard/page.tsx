@@ -130,6 +130,14 @@ export default function FlashcardPage() {
     if (!deleteSetTarget) return;
     try {
         await deleteSet(deleteSetTarget.id).unwrap();
+        
+        // Revalidate ISR pages
+        fetch("/api/revalidate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "flashcard", action: "delete" }),
+        }).catch(() => {});
+        
         toast.success("Xóa bộ thẻ thành công!");
         setDeleteSetTarget(null);
         refetch();

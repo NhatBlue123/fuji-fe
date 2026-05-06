@@ -85,7 +85,6 @@ export const FuriganaDisplay = memo(function FuriganaDisplay({
   furigana: FuriganaData;
   highlightIndex: number;
 }) {
-  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       {/* Main line: kanji + furigana */}
@@ -218,6 +217,9 @@ export const ChatInputArea = memo(function ChatInputArea({
   placeholder,
   showEmoji = false,
   showMic = false,
+  disabled = false,
+  inputDisabled,
+  sendDisabled,
 }: {
   input: string;
   onInputChange: (v: string) => void;
@@ -226,7 +228,13 @@ export const ChatInputArea = memo(function ChatInputArea({
   placeholder: string;
   showEmoji?: boolean;
   showMic?: boolean;
+  disabled?: boolean;
+  inputDisabled?: boolean;
+  sendDisabled?: boolean;
 }) {
+  const isInputDisabled = inputDisabled ?? disabled;
+  const isSendDisabled = sendDisabled ?? disabled;
+
   return (
     <div className="shrink-0 border-t border-border/60 bg-gradient-to-b from-white/28 to-white/8 p-6 backdrop-blur-md dark:from-slate-900/24 dark:to-slate-900/6">
       {chips.length > 0 && (
@@ -256,10 +264,13 @@ export const ChatInputArea = memo(function ChatInputArea({
             <Input
               value={input}
               onChange={(e) => onInputChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSend()}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !isSendDisabled && onSend()
+              }
               className="h-8 w-full rounded-xl border-input bg-background/90 py-1.5 pl-4 pr-12 text-sm text-foreground shadow-none transition-colors placeholder:text-muted-foreground/90 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-0"
               placeholder={placeholder}
               type="text"
+              disabled={isInputDisabled}
             />
             {showEmoji && (
               <Button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground">
@@ -278,7 +289,7 @@ export const ChatInputArea = memo(function ChatInputArea({
           )}
           <Button
             onClick={onSend}
-            disabled={!input.trim()}
+            disabled={isSendDisabled || !input.trim()}
             className="group flex items-center justify-center rounded-lg border border-white/60 bg-gradient-to-r from-primary to-blue-500 p-2 text-primary-foreground shadow-[0_18px_30px_-20px_rgba(37,99,235,0.75)] transition-all hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-0.5">

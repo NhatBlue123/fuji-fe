@@ -99,6 +99,12 @@ export const API_ENDPOINTS = {
     SEARCH: "/flashlists/search",
   },
 
+  WEAK_CARDS: {
+    ADD: "/weak-cards/add",
+    MARK_MASTERED: "/weak-cards/mark-mastered",
+    REVIEW_SET: "/weak-cards/review-set",
+  },
+
   // Voice Chat (Non-Realtime)
   VOICE: {
     CHAT: "/voice/chat",

@@ -16,6 +16,7 @@ import {
   StructuredLoadingCard,
 } from "./StructuredCards";
 import type { AssistantQueuedInfo, ParseAssistantContentFn } from "./types";
+import AiAvatar from "@/components/chatdock/AiAvatar";
 
 type AiMessageBubbleProps = {
   msg: AssistantMessage;
@@ -51,10 +52,8 @@ export function AiMessageBubble({
         className="size-10 shrink-0 rounded-full"
       >
         <div className="size-10 rounded-full border border-white/65 bg-gradient-to-br from-white/85 to-sky-100/55 p-0.5 shadow-[0_16px_28px_-20px_rgba(37,99,235,0.55)] dark:border-blue-500/30 dark:from-blue-500/20 dark:to-blue-600/15 dark:shadow-[0_16px_28px_-20px_rgba(59,130,246,0.4)]">
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-card/70 backdrop-blur-sm dark:bg-slate-800/90">
-            <span className="material-symbols-outlined text-base text-primary dark:text-blue-400">
-              smart_toy
-            </span>
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-card/70 backdrop-blur-sm dark:bg-slate-800/90 p-1.5">
+            <AiAvatar className="w-full h-full" />
           </div>
         </div>
       </LiquidGlass>

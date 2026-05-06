@@ -8,8 +8,11 @@ import { motion, useInView } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import IconRenderer from "@/components/common/IconRenderer";
 import { HeroSection } from "@/components/user-component/home/HeroSection";
 import { StatsSection } from "@/components/user-component/home/StatsSection";
+import { useGetWeakCardReviewSetQuery } from "@/store/services/flashcardApi";
+import { useAuth } from "@/store/hooks";
 
 type CardKey =
   | "course"
@@ -48,7 +51,7 @@ const SCENARIO_META: Record<
 > = {
   speak: {
     icon: "record_voice_over",
-    primaryHref: "/ai-chat",
+    primaryHref: "/sensei",
     secondaryHref: "/video-call",
     image: "/images/home/scenario-speaking.webp",
   },
@@ -238,7 +241,7 @@ function FeatureCard({ feature, label }: { feature: FeatureMeta; label: (key: st
     >
       <div>
         <div className={cn("mb-3 flex size-8 items-center justify-center rounded-full sm:mb-4 sm:size-10", feature.tone)}>
-          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">{feature.icon}</span>
+          <IconRenderer icon={feature.icon} className="text-[18px] sm:text-[20px]" />
         </div>
         <h3 className="text-sm font-semibold text-foreground sm:text-base">
           {label(`home.cards.${feature.key}.title`)}
@@ -259,6 +262,10 @@ function FeatureCard({ feature, label }: { feature: FeatureMeta; label: (key: st
 
 export default function HomePageClient() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
+  const { data: weakReviewData } = useGetWeakCardReviewSetQuery(undefined, {
+    skip: !isAuthenticated,
+  });
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const currentId = SCENARIO_IDS[scenarioIdx];
   const aiVideoRef = useRef<HTMLVideoElement>(null);
@@ -315,6 +322,23 @@ export default function HomePageClient() {
     <div className="flex-1 bg-background pb-16 dark:bg-[#0f172a]">
       <HeroSection />
       <StatsSection />
+      {weakReviewData && weakReviewData.totalWeak > 0 && (
+        <div className="mx-auto mt-8 w-full max-w-[1480px] px-4 sm:px-6 lg:px-10 xl:px-16">
+          <Link
+            href="/flashcards/review/personal"
+            className="block rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-slate-950/35"
+          >
+            <p className="text-sm font-semibold text-foreground">Ôn tập cá nhân</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {weakReviewData.totalWeak} từ cần ôn · {weakReviewData.veryHardCount} từ rất khó nhớ
+            </p>
+            <p className="mt-3 inline-flex items-center text-sm font-semibold text-pink-500">
+              Bắt đầu ôn 20 thẻ
+              <span className="material-symbols-outlined ml-1 text-base">arrow_forward</span>
+            </p>
+          </Link>
+        </div>
+      )}
 
       <div className="mx-auto mt-14 w-full max-w-[1480px] space-y-20 px-4 sm:px-6 lg:px-10 xl:px-16">
         <section className="grid gap-8 lg:grid-cols-[0.95fr_1.35fr] lg:items-end">
@@ -463,8 +487,8 @@ export default function HomePageClient() {
                 </div>
                 <MediaSurface src={currentScenario.image} className="min-h-[300px] rounded-none border-0 shadow-none">
                   <div className="flex h-full items-start justify-end p-6">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-sm">
-                      <span className="material-symbols-outlined">{currentScenario.icon}</span>
+                    <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-sm p-2">
+                      <IconRenderer icon={currentScenario.icon} />
                     </div>
                   </div>
                 </MediaSurface>

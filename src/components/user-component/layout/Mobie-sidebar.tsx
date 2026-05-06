@@ -25,6 +25,7 @@ const MobieSidebar = () => {
     { icon: "quiz", label: "JLPT", href: "/jlpt-practice" },
     { icon: "style", label: t("sidebar.flashcards") || "Flashcards", href: "/flashcards" },
     { icon: "smart_toy", label: "AI Chat", href: "/ai-chat" },
+    { icon: "record_voice_over", label: t("sidebar.sensei") || "Nói với Sensei", href: "/sensei" },
     { icon: "videocam", label: t("sidebar.videoCall") || "Video Call", href: "/video-call" },
     { icon: "calendar_month", label: t("sidebar.booking") || "Đặt lịch", href: "/booking" },
     { icon: "workspace_premium", label: "Premium", href: "/premium" },

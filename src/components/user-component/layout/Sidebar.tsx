@@ -24,9 +24,9 @@ import {
   Bot,
   Video,
   Layers,
-  Settings,
   ShieldCheck,
-  Zap
+  Zap,
+  Mic
 } from "lucide-react";
 import TopupModal from "@/components/user-component/premium/TopupModal";
 import { useNotifications } from "@/providers/NotificationProvider";
@@ -99,9 +99,9 @@ const Sidebar = () => {
     { label: t("common.jlptPractice"), path: "/jlpt-practice", icon: FileCheck },
     { label: t("common.booking"), path: "/booking", icon: Calendar },
     { label: t("common.aiPractice"), path: "/ai-chat", icon: Bot },
+    { label: t("sidebar.sensei"), path: "/sensei", icon: Mic },
     { label: t("sidebar.videoCall"), path: "/video-call", icon: Video },
     { label: t("common.flashcard"), path: "/flashcards", icon: Layers },
-    { label: t("common.settings"), path: "/settings", icon: Settings },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [t, i18n.language]);
 

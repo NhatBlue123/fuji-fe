@@ -6,6 +6,7 @@ import { use, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  useAddWeakCardsMutation,
   useGetFlashCardByIdQuery,
   useSubmitExerciseResultMutation,
 } from "@/store/services/flashcardApi";
@@ -17,10 +18,12 @@ import {
   extractTrailingId,
 } from "@/lib/flashcardSeo";
 import { useAuth } from "@/store/hooks";
+import type { CardResponseDTO } from "@/types/flashcard";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface ExerciseQuestion {
   id: number;
+  flashcardId: number;
   type: "fill_vocab" | "fill_meaning";
   question: string;
   answer: string;
@@ -56,6 +59,7 @@ export default function FillBlankExercisePage({
     skip: !isAuthenticated,
   });
   const [submitResult] = useSubmitExerciseResultMutation();
+  const [addWeakCards] = useAddWeakCardsMutation();
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -78,16 +82,18 @@ export default function FillBlankExercisePage({
     const shuffled = shuffle(cards);
     const half = Math.ceil(shuffled.length / 2);
 
-    const vocabQs = shuffled.slice(0, half).map((card: any, idx) => ({
+    const vocabQs = shuffled.slice(0, half).map((card: CardResponseDTO, idx) => ({
       id: idx,
+      flashcardId: Number(card.id),
       type: "fill_vocab" as const,
       question: card.meaning || "",
       answer: card.vocabulary || "",
       hint: card.pronunciation || "",
     }));
 
-    const meaningQs = shuffled.slice(half).map((card: any, idx) => ({
+    const meaningQs = shuffled.slice(half).map((card: CardResponseDTO, idx) => ({
       id: idx + half,
+      flashcardId: Number(card.id),
       type: "fill_meaning" as const,
       question: card.vocabulary || "",
       answer: card.meaning || "",
@@ -175,6 +181,17 @@ export default function FillBlankExercisePage({
 
   const handleSubmit = useCallback(async () => {
     setShowResults(true);
+    const wrongCardIds = Array.from(
+      new Set(
+        questions
+          .filter(
+            (q) =>
+              normalizeAnswer(answers[q.id] || "") !== normalizeAnswer(q.answer),
+          )
+          .map((q) => q.flashcardId),
+      ),
+    );
+
     try {
       await submitResult({
         flashcardId: id,
@@ -185,7 +202,19 @@ export default function FillBlankExercisePage({
     } catch (err) {
       console.error("Failed to submit:", err);
     }
-  }, [id, score.correct, score.total, submitResult]);
+
+    try {
+      if (wrongCardIds.length > 0) {
+        await addWeakCards({
+          flashcardIds: wrongCardIds,
+          deckSlug: slug,
+          source: "fill-blank",
+        }).unwrap();
+      }
+    } catch (err) {
+      console.error("Failed to save weak cards:", err);
+    }
+  }, [id, score.correct, score.total, submitResult, questions, answers, addWeakCards, slug]);
 
   /* ─── Loading / Error ──────────────────────────────── */
   if (isLoading) {

@@ -17,6 +17,8 @@ import Header from "./Header";
 import MobileHeader from "./MobileHeader";
 import Footer from "./Footer";
 import MobieSidebar from "./Mobie-sidebar";
+import { AIChatSocketProvider } from "@/providers/AIChatSocketProvider";
+import ChatDock from "@/components/chatdock/ChatDock";
 
 export default function AppShell({
   children,
@@ -26,23 +28,26 @@ export default function AppShell({
   auth?: React.ReactNode;
 }) {
   return (
-    <div suppressHydrationWarning className="flex h-screen w-full overflow-hidden bg-background">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <MobileHeader />
-        <main
-          data-app-main
-          className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col"
-        >
-          <div className="flex-1">
-            {children}
-            {auth}
-          </div>
-          <Footer />
-        </main>
+    <AIChatSocketProvider>
+      <div suppressHydrationWarning className="flex h-screen w-full overflow-hidden bg-background">
+        <Sidebar />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Header />
+          <MobileHeader />
+          <main
+            data-app-main
+            className="flex-1 overflow-y-auto relative scroll-smooth bg-background pt-0 font-sans flex flex-col"
+          >
+            <div className="flex-1">
+              {children}
+              {auth}
+            </div>
+            <Footer />
+          </main>
+        </div>
+        <MobieSidebar />
+        <ChatDock />
       </div>
-      <MobieSidebar />
-    </div>
+    </AIChatSocketProvider>
   );
 }

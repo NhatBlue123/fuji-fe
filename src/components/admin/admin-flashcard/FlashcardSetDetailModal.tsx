@@ -93,6 +93,14 @@ export const FlashcardSetDetailModal = ({
         if (!deleteCardTarget) return;
         try {
             await deleteCard(deleteCardTarget.id).unwrap();
+            
+            // Revalidate ISR pages
+            fetch("/api/revalidate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "flashcard", action: "update" }),
+            }).catch(() => {});
+            
             toast.success("Xóa thẻ thành công!");
             setDeleteCardTarget(null);
         } catch (error: any) {

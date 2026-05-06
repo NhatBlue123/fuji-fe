@@ -146,7 +146,7 @@ const MobileHeader = () => {
         {/* Right: Actions */}
         <div className="flex items-center gap-1">
           {/* Streak */}
-          {canShowAuthUi && streak && streak.currentStreak > 0 && (
+          {canShowAuthUi && streak && streak.streakCount > 0 && (
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -158,7 +158,7 @@ const MobileHeader = () => {
               )}
             >
               <Flame className="size-3.5 text-orange-500 animate-pulse" />
-              <span>{streak.currentStreak}</span>
+              <span>{streak.streakCount}</span>
             </motion.div>
           )}
 

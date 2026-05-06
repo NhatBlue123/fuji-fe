@@ -23,10 +23,11 @@ import {
 import { useAuth } from "@/store/hooks";
 import { getMockImage } from "@/lib/mockImages";
 import { useFlashcardPipeline } from "@/hooks/useFlashcardPipeline";
-import { resolveImage } from "@/lib/flashcard-pipeline";
+import { parseTerms, resolveImage } from "@/lib/flashcard-pipeline";
 import TermPreviewList from "@/components/user-component/flashcard/TermPreviewList";
 import type { CardDTO, FlashCardResponseDTO } from "@/types/flashcard";
 import { useTranslation } from "react-i18next";
+import { isKana, toHiragana } from "wanakana";
 
 interface CreateFlashcardModalProps {
   open: boolean;
@@ -34,6 +35,60 @@ interface CreateFlashcardModalProps {
 }
 
 type TabType = "list" | "card";
+
+const LATIN_RE = /[A-Za-z]/;
+const BRACKETED_READING_RE = /[（(]([^（）()]+)[）)]/;
+
+function normalizePronunciation(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const hiragana = toHiragana(trimmed);
+  return LATIN_RE.test(hiragana) ? trimmed : hiragana;
+}
+
+function inferPronunciation(vocabulary: string): string {
+  const bracketedReading = vocabulary.match(BRACKETED_READING_RE)?.[1];
+  if (bracketedReading) {
+    return normalizePronunciation(bracketedReading);
+  }
+
+  const compact = vocabulary.trim();
+  if (!compact) return "";
+  if (isKana(compact)) return toHiragana(compact);
+
+  const hiragana = toHiragana(compact);
+  if (hiragana !== compact && !LATIN_RE.test(hiragana)) {
+    return hiragana;
+  }
+
+  return "";
+}
+
+function buildContentWithAutoPronunciations(content: string): {
+  nextContent: string;
+  filledCount: number;
+} {
+  const parsedTerms = parseTerms(content);
+  let filledCount = 0;
+
+  const nextContent = parsedTerms
+    .map((term) => {
+      const inferred = inferPronunciation(term.vocabulary);
+      const pronunciation = term.pronunciation || inferred;
+      if (!term.pronunciation && inferred) {
+        filledCount += 1;
+      }
+
+      const fields = [term.vocabulary, term.meaning];
+      if (pronunciation || term.exampleSentence) fields.push(pronunciation);
+      if (term.exampleSentence) fields.push(term.exampleSentence);
+      return fields.join(" | ");
+    })
+    .join("\n");
+
+  return { nextContent, filledCount };
+}
 
 export default function CreateFlashcardModal({
   open,
@@ -60,9 +115,13 @@ export default function CreateFlashcardModal({
   const [cardContent, setCardContent] = useState("");
   const [cardThumbnail, setCardThumbnail] = useState<string | null>(null);
   const cardThumbnailFileRef = useRef<File | null>(null);
+  const [pronunciationMessage, setPronunciationMessage] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [selectedTermImages, setSelectedTermImages] = useState<
+    Record<string, string>
+  >({});
+  const [resolvedTermImages, setResolvedTermImages] = useState<
     Record<string, string>
   >({});
 
@@ -77,36 +136,43 @@ export default function CreateFlashcardModal({
     searchAllImages,
   } = useFlashcardPipeline(activeTab === "card" ? cardContent : "");
 
-  const [resolvingImages, setResolvingImages] = useState<
-    Record<string, boolean>
-  >({});
+  const [, setResolvingImages] = useState<Record<string, boolean>>({});
 
   const handleTermImageSelect = (termKey: string, imageUrl: string) => {
-    setSelectedTermImages((prev) => {
-      // Toggle: click same image again to deselect
-      if (prev[termKey] === imageUrl) {
+    // Toggle: click same image again to deselect
+    if (selectedTermImages[termKey] === imageUrl) {
+      setSelectedTermImages((prev) => {
         const next = { ...prev };
         delete next[termKey];
         return next;
-      }
-      return { ...prev, [termKey]: imageUrl };
-    });
+      });
+      setResolvedTermImages((prev) => {
+        const next = { ...prev };
+        delete next[termKey];
+        return next;
+      });
+      return;
+    }
 
-    // If deselecting (same image clicked), don't resolve
-    if (selectedTermImages[termKey] === imageUrl) return;
+    // Select: store source URL for UI consistency
+    setSelectedTermImages((prev) => ({ ...prev, [termKey]: imageUrl }));
 
     // Resolve: upload to Cloudinary (or get cached URL)
     setResolvingImages((prev) => ({ ...prev, [termKey]: true }));
     resolveImage(imageUrl)
       .then((resolved) => {
-        setSelectedTermImages((prev) => ({
+        setResolvedTermImages((prev) => ({
           ...prev,
           [termKey]: resolved.cloudinaryUrl,
         }));
       })
       .catch((err) => {
         console.error("Failed to resolve image:", err);
-        // Keep the raw URL as fallback (already set above)
+        // Fall back to source URL
+        setResolvedTermImages((prev) => ({
+          ...prev,
+          [termKey]: imageUrl,
+        }));
       })
       .finally(() => {
         setResolvingImages((prev) => ({ ...prev, [termKey]: false }));
@@ -186,31 +252,44 @@ export default function CreateFlashcardModal({
 
   /**
    * Parse card content text into CardDTO[]
-   * Format: each line = "vocabulary - meaning"
-   * Enriches with pipeline translations when meaning is missing.
-   * Includes previewUrl from selected images.
+   * Formats:
+   * - "vocabulary - meaning"
+   * - "vocabulary - meaning - pronunciation - example sentence"
+   * - "vocabulary | meaning | pronunciation | example sentence"
    */
   const parseCardContent = (content: string): CardDTO[] => {
-    const lines = content.split("\n");
-    return lines
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .map((line, index) => {
-        const sepIdx = line.indexOf(" - ");
-        let vocabulary: string;
-        let meaning: string;
-        if (sepIdx === -1) {
-          vocabulary = line;
-          meaning = "";
-        } else {
-          vocabulary = line.substring(0, sepIdx).trim();
-          meaning = line.substring(sepIdx + 3).trim();
-        }
-        // Get selected image for this term (using index-based key matching)
-        const termKey = `term-${index}`;
-        const previewUrl = selectedTermImages[termKey] || null;
-        return { vocabulary, meaning, previewUrl };
-      });
+    return parseTerms(content).map((term, index) => {
+      // Get selected image for this term (using index-based key matching)
+      const termKey = `term-${index}`;
+      const previewUrl =
+        resolvedTermImages[termKey] || selectedTermImages[termKey] || null;
+      const pronunciation = normalizePronunciation(term.pronunciation);
+
+      return {
+        vocabulary: term.vocabulary,
+        meaning: term.meaning,
+        pronunciation: pronunciation || undefined,
+        exampleSentence: term.exampleSentence || undefined,
+        previewUrl,
+      };
+    });
+  };
+
+  const handleAutoFillPronunciation = () => {
+    const { nextContent, filledCount } =
+      buildContentWithAutoPronunciations(cardContent);
+
+    if (!nextContent) {
+      setPronunciationMessage("Nhập từ vựng trước rồi mới tự điền cách đọc.");
+      return;
+    }
+
+    setCardContent(nextContent);
+    setPronunciationMessage(
+      filledCount > 0
+        ? `Đã tự điền cách đọc cho ${filledCount} thẻ. Kanji chưa có kana/romaji vẫn cần nhập thủ công.`
+        : "Chưa suy ra được cách đọc mới. Với kanji, hãy nhập cột cách đọc thủ công.",
+    );
   };
 
   const resetForm = () => {
@@ -225,7 +304,9 @@ export default function CreateFlashcardModal({
     setCardContent("");
     setCardThumbnail(null);
     cardThumbnailFileRef.current = null;
+    setPronunciationMessage("");
     setSelectedTermImages({});
+    setResolvedTermImages({});
     setIsPublic(false);
     setLevel("N5");
     setError(null);
@@ -268,6 +349,14 @@ export default function CreateFlashcardModal({
           },
           thumbnail: listThumbnailFileRef.current || undefined,
         }).unwrap();
+        
+        // Revalidate ISR pages
+        fetch("/api/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "flashcard", action: "create" }),
+        }).catch(() => {});
+        
       } else {
         if (!cardName.trim()) {
           setError(t("flashcard.validate.nameRequired"));
@@ -288,6 +377,13 @@ export default function CreateFlashcardModal({
           },
           thumbnail: cardThumbnailFileRef.current || undefined,
         }).unwrap();
+        
+        // Revalidate ISR pages
+        fetch("/api/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "flashcard", action: "create" }),
+        }).catch(() => {});
       }
       resetForm();
       onOpenChange(false);
@@ -580,22 +676,50 @@ export default function CreateFlashcardModal({
                   </label>
                   <textarea
                     value={cardContent}
-                    onChange={(e) => setCardContent(e.target.value)}
-                    rows={6}
+                    onChange={(e) => {
+                      setCardContent(e.target.value);
+                      setPronunciationMessage("");
+                    }}
+                    rows={7}
                     className="w-full px-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none font-mono text-sm"
-                    placeholder={t("flashcard.contentPlaceholder")}
+                    placeholder={
+                      "犬 | chó | いぬ | 犬が好きです。\n猫 | mèo | ねこ | 猫が寝ています。\nさくら | hoa anh đào | | さくらがきれいです。"
+                    }
                   />
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAutoFillPronunciation}
+                      disabled={!cardContent.trim()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-xs font-medium text-primary hover:bg-primary/15 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        auto_fix_high
+                      </span>
+                      Tự điền cách đọc
+                    </button>
+                    <span className="text-[11px] text-muted-foreground">
+                      Hỗ trợ kana/romaji; kanji vẫn nên nhập cách đọc thủ công.
+                    </span>
+                  </div>
+                  {pronunciationMessage && (
+                    <p className="mt-1.5 text-[11px] text-primary">
+                      {pronunciationMessage}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-2">
                     <span className="font-semibold">{t("flashcard.guideTitle")}</span>
                     <br />
                     {t("flashcard.guideLine1")}
                     <br />
-                    {t("flashcard.guideLine2")}
+                    Mỗi dòng có thể nhập: từ | nghĩa | cách đọc | ví dụ
+                    <br />
+                    Cách đọc và ví dụ đều có thể để trống. Dòng cũ dạng “từ - nghĩa” vẫn dùng được.
                     <br />
                     <span className="text-muted-foreground/80">{t("flashcard.guideExample")}</span>
-                    <br />• hello - xin chào
-                    <br />• goodbye - tạm biệt
-                    <br />• thanks - cảm ơn
+                    <br />• 犬 | chó | いぬ | 犬が好きです。
+                    <br />• neko - mèo - ねこ - 猫が寝ています。
+                    <br />• さくら | hoa anh đào | | さくらがきれいです。
                   </p>
                 </div>
               </>

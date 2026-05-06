@@ -33,13 +33,13 @@ export default function HistoryCard({ attempts }: HistoryCardProps) {
           <div>
             <h3 className="text-xl font-bold text-white">{t('auto.jlpt_history_1')}</h3>
             <p className="text-xs text-slate-400 font-medium">
-              Kết quả gần đây nhất
+              {t("jlpt.history.recentResults", { defaultValue: "Kết quả gần đây nhất" })}
             </p>
           </div>
         </div>
         {attempts.length > 3 && (
           <Button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700">
-            Xem tất cả
+            {t("jlpt.history.viewAll", { defaultValue: "Xem tất cả" })}
           </Button>
         )}
       </div>
@@ -58,7 +58,7 @@ export default function HistoryCard({ attempts }: HistoryCardProps) {
               <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-slate-700/50 text-slate-300 font-bold text-xs border border-white/5">
                 <span className="text-sm">{day}</span>
                 <span className="text-[10px] uppercase opacity-60">
-                  Th{month}
+                  {t("jlpt.history.monthAbbr", { month, defaultValue: `Th${month}` })}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
@@ -80,12 +80,14 @@ export default function HistoryCard({ attempts }: HistoryCardProps) {
                   <span className="material-symbols-outlined text-[12px]">
                     schedule
                   </span>
-                  <span>{durationMinutes} phút</span>
+                  <span>{t("jlpt.history.minutes", { count: durationMinutes, defaultValue: `${durationMinutes} phút` })}</span>
                   <span className="w-1 h-1 rounded-full bg-slate-600"></span>
                   <span
                     className={`font-medium ${attempt.isPassed ? "text-emerald-400" : "text-red-400"}`}
                   >
-                    {attempt.isPassed ? "Đã Đậu" : "Chưa Đậu"}
+                    {attempt.isPassed
+                      ? t("jlpt.history.passed", { defaultValue: "Đã Đậu" })
+                      : t("jlpt.history.failed", { defaultValue: "Chưa Đậu" })}
                   </span>
                 </div>
               </div>

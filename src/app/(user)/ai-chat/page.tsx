@@ -1,4 +1,4 @@
-import AIChatShell from "@/components/user-component/ai/AIChatShell";
+import AssistantPanel from "@/components/user-component/ai/AssistantPanel";
 import AuthGuard from "@/components/auth/AuthGuard";
 
 type ResolvedSearchParams = {
@@ -21,7 +21,9 @@ export default async function AIChatPage({ searchParams }: PageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   return (
     <AuthGuard redirectTo="/login?redirect=/ai-chat">
-      <AIChatShell forceNewDraft={isForceNewDraft(resolvedSearchParams)} />
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <AssistantPanel forceNewDraft={isForceNewDraft(resolvedSearchParams)} />
+      </div>
     </AuthGuard>
   );
 }

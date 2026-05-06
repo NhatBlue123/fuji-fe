@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 
 
 export function AdminHeader() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -36,22 +36,32 @@ export function AdminHeader() {
   const [mounted, setMounted] = React.useState(false);
 
   const pageTitles: Record<string, string> = React.useMemo(() => ({
-    "/admin": "Dashboard",
+    "/admin": "Bảng điều khiển",
     "/admin/analytics": t("admin.sidebar.items.analytics"),
     "/admin/users": t("admin.sidebar.items.users"),
     "/admin/courses": t("admin.sidebar.items.courses"),
     "/admin/courses/finance": t("admin.sidebar.items.coursesFinanceAdmin"),
     "/admin/courses/finance/teacher": t("admin.sidebar.items.coursesFinanceTeacher"),
+    "/admin/packages": "Gói hệ thống",
+    "/admin/packages/users": "Người dùng gói hệ thống",
+    "/admin/packages/purchases": "Lịch sử mua gói",
     "/admin/teacher-schedules": t("admin.sidebar.items.schedules"),
     "/admin/teacher-schedules/teaching-schedule": t("admin.sidebar.items.schedules"),
     "/admin/teacher-schedules/create-slot": t("booking.createTitle"),
-    "/admin/flashcard": t("common.flashcard"),
+    "/admin/bookings/policy": "Chính sách đặt lịch",
+    "/admin/flashcard": "Thẻ ghi nhớ",
+    "/admin/flashcard/pricing": "Giá và quota ảnh thẻ ghi nhớ",
+    "/admin/ai-usage": "AI và quota",
+    "/admin/ai-usage/chatbot": "Quota chatbot AI",
+    "/admin/ai-usage/sensei": "Quota Sensei",
+    "/admin/ai-usage/packs": "Gói AI mua thêm",
+    "/admin/ai-usage/logs": "Lịch sử sử dụng AI",
     "/admin/posts": t("admin.sidebar.items.posts"),
     "/admin/jlpt-tests": t("admin.sidebar.items.tests"),
     "/admin/notifications": t("admin.sidebar.items.notifications"),
     "/admin/roles": t("admin.sidebar.items.roles"),
     "/admin/settings": t("common.settings"),
-  }), [t, i18n.language]);
+  }), [t]);
 
   React.useEffect(() => {
     setMounted(true);

@@ -84,6 +84,14 @@ export const CreateFlashcardSetModal: React.FC<CreateFlashcardSetModalProps> = (
                         isPublic: isPublic
                     }
                 }).unwrap();
+                
+                // Revalidate ISR pages
+                fetch("/api/revalidate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "flashcard", action: "update" }),
+                }).catch(() => {});
+                
                 toast.success("Cập nhật bộ thẻ thành công!");
             } else {
                 await createSet({
@@ -93,6 +101,14 @@ export const CreateFlashcardSetModal: React.FC<CreateFlashcardSetModalProps> = (
                     status: "Active",
                     isPublic: isPublic
                 }).unwrap();
+                
+                // Revalidate ISR pages
+                fetch("/api/revalidate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "flashcard", action: "create" }),
+                }).catch(() => {});
+                
                 toast.success("Tạo bộ thẻ thành công!");
             }
 

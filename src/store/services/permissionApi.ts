@@ -16,6 +16,25 @@ export interface TeacherWithPermissions {
   permissions: string[];
 }
 
+interface AdminUserListItem {
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+  role: string;
+  isActive: boolean;
+}
+
+interface AdminUserPage {
+  content: AdminUserListItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}
+
 export const permissionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Admin: lấy tất cả teachers kèm permissions
@@ -81,6 +100,23 @@ export const permissionApi = baseApi.injectEndpoints({
       ],
     }),
 
+    // Admin: cập nhật role trực tiếp (dùng cho nâng cấp ADMIN)
+    updateUserRole: builder.mutation<
+      void,
+      { userId: number; role: "STUDENT" | "INSTRUCTOR" | "ADMIN" }
+    >({
+      query: ({ userId, role }) => ({
+        url: `/users/me/${userId}`,
+        method: "PUT",
+        body: { role },
+      }),
+      transformResponse: () => undefined,
+      invalidatesTags: [
+        { type: "AdminUser", id: "LIST" },
+        { type: "AdminUser", id: "TEACHERS" },
+      ],
+    }),
+
     // User-facing: lấy permissions của chính mình
     getMyPermissions: builder.query<string[], void>({
       query: () => "/permissions/me",
@@ -90,22 +126,7 @@ export const permissionApi = baseApi.injectEndpoints({
 
     // Admin: lấy tất cả users để promote
     getAdminAllUsers: builder.query<
-      {
-        content: {
-          id: number;
-          username: string;
-          email: string;
-          fullName: string;
-          avatarUrl: string | null;
-          role: string;
-          isActive: boolean;
-        }[];
-        totalElements: number;
-        totalPages: number;
-        number: number;
-        first: boolean;
-        last: boolean;
-      },
+      AdminUserPage,
       { page?: number; size?: number } | void
     >({
       query: (params) => {
@@ -116,7 +137,7 @@ export const permissionApi = baseApi.injectEndpoints({
         const q = qs.toString();
         return `/users/me/all${q ? `?${q}` : ""}`;
       },
-      transformResponse: (response: ApiResponse<any>) => response.data,
+      transformResponse: (response: ApiResponse<AdminUserPage>) => response.data,
       providesTags: [{ type: "AdminUser", id: "LIST" }],
     }),
   }),
@@ -128,6 +149,7 @@ export const {
   useUpdateTeacherPermissionsMutation,
   usePromoteToTeacherMutation,
   useDemoteToStudentMutation,
+  useUpdateUserRoleMutation,
   useGetMyPermissionsQuery,
   useGetAdminAllUsersQuery,
 } = permissionApi;

@@ -20,7 +20,7 @@ export function usePermissions() {
   const { data: permissions = [], isLoading } = useGetMyPermissionsQuery(
     undefined,
     {
-      skip: !isInstructor, // Chỉ fetch khi là INSTRUCTOR
+      skip: !isInstructor || isAdmin, // Admin bypass bằng role, không cần permission giảng viên
     },
   );
 
@@ -40,12 +40,19 @@ export function usePermissions() {
     if (isAdmin) return true;
     if (!isInstructor) return false;
 
+    if (/^\/admin\/courses\/[^/]+\/lessons\/(new|[^/]+\/edit)$/.test(route)) {
+      return permissions.includes("COURSE_EDIT");
+    }
+
     // Kiểm tra exact match
     const permKey = ROUTE_PERMISSION_MAP[route];
     if (permKey) return permissions.includes(permKey);
 
-    // Kiểm tra parent route (e.g., /admin/courses/123 → /admin/courses)
-    for (const [routePattern, perm] of Object.entries(ROUTE_PERMISSION_MAP)) {
+    // Kiểm tra parent route dài nhất trước (vd: finance/teacher trước courses)
+    const routeEntries = Object.entries(ROUTE_PERMISSION_MAP).sort(
+      ([a], [b]) => b.length - a.length,
+    );
+    for (const [routePattern, perm] of routeEntries) {
       if (route.startsWith(routePattern + "/")) {
         return permissions.includes(perm);
       }

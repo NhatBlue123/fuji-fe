@@ -1,7 +1,10 @@
 import React from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 
 export default function CourseHeader() {
+  const { t } = useTranslation();
+
   return (
     <div className="relative w-full h-[320px] flex flex-col justify-center overflow-hidden rounded-b-[2.5rem] shadow-2xl shadow-secondary/10">
       {/* Background overlay */}
@@ -22,11 +25,11 @@ export default function CourseHeader() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-3">
-              Luyện thi{" "}
+              {t("jlpt.practice.headerTitle", { defaultValue: "Luy\u1EC7n thi" })}{" "}
               <span className="text-secondary text-glow">JLPT</span>
             </h1>
             <p className="text-white/80 text-lg md:text-xl font-medium max-w-xl leading-relaxed">
-              Đề thi mô phỏng sát kỳ thi thật. Chinh phục JLPT từ N5 đến N1.
+              {t("jlpt.practice.headerSubtitle", { defaultValue: "\u0110\u1EC1 thi m\u00F4 ph\u1ECFng s\u00E1t k\u1EF3 thi th\u1EADt. Chinh ph\u1EE5c JLPT t\u1EEB N5 \u0111\u1EBFn N1." })}
             </p>
           </div>
 
@@ -41,7 +44,7 @@ export default function CourseHeader() {
             >
               history_edu
             </span>
-            Lịch sử thi
+            {t("jlpt.practice.historyButton", { defaultValue: "L\u1ECBch s\u1EED thi" })}
           </Link>
         </div>
       </div>

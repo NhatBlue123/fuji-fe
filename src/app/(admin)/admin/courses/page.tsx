@@ -10,6 +10,7 @@ import { CreateCourseModal } from "@/components/admin/course/CreateCourseModal";
 import { DeleteCourseDialog } from "@/components/admin/course/DeleteCourseDialog";
 import {
   useGetAllCoursesQuery,
+  useGetCoursesByInstructorQuery,
   useDeleteCourseMutation,
   useUpdateCourseMutation,
 } from "@/store/services/courseApi";
@@ -44,7 +45,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/store/hooks";
 
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
@@ -101,20 +102,35 @@ export default function CoursesPage() {
     title: string;
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const { hasPermission } = usePermissions();
+  const { user } = useAuth();
+  const { hasPermission, isAdmin } = usePermissions();
   const PAGE_SIZE = 10;
+  const currentUserId = Number(user?.id);
 
   const canCreate = hasPermission("COURSE_CREATE");
   const canEdit = hasPermission("COURSE_EDIT");
   const canDelete = hasPermission("COURSE_DELETE");
   const canToggleStatus = hasPermission("COURSE_EDIT");
 
-  const { data, isLoading, isError, refetch } = useGetAllCoursesQuery({
-    page: currentPage - 1,
-    size: PAGE_SIZE,
-    sortBy: "createdAt",
-    sortDir: "desc",
-  });
+  const allCoursesQuery = useGetAllCoursesQuery(
+    {
+      page: currentPage - 1,
+      size: PAGE_SIZE,
+      sortBy: "createdAt",
+      sortDir: "desc",
+    },
+    { skip: !isAdmin },
+  );
+  const ownCoursesQuery = useGetCoursesByInstructorQuery(
+    {
+      instructorId: currentUserId,
+      page: currentPage - 1,
+      size: PAGE_SIZE,
+    },
+    { skip: isAdmin || !currentUserId },
+  );
+  const activeCoursesQuery = isAdmin ? allCoursesQuery : ownCoursesQuery;
+  const { data, isLoading, isError, refetch } = activeCoursesQuery;
 
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
   const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation();
@@ -223,6 +239,16 @@ export default function CoursesPage() {
     if (!deleteTarget) return;
     try {
       await deleteCourse(deleteTarget.id).unwrap();
+      
+      // Revalidate ISR pages
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "course", action: "delete" }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success("Xóa khóa học thành công!");
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
@@ -264,6 +290,20 @@ export default function CoursesPage() {
       );
 
       await updateCourse({ id: course.id, course: formData }).unwrap();
+      
+      // Revalidate ISR pages when publishing/unpublishing
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "course", 
+          action: course.isPublished ? "unpublish" : "publish",
+          id: course.id 
+        }),
+      }).catch(() => {
+        // Silent fail - revalidation is not critical
+      });
+      
       toast.success(
         course.isPublished ? "Đã chuyển về bản nháp" : "Đã xuất bản khóa học",
       );
@@ -281,9 +321,14 @@ export default function CoursesPage() {
     try {
       const res = await ingestCoursesRag().unwrap();
       toast.success(res?.message || "Đã reset và ingest lại RAG khóa học");
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e as {
+        data?: { error?: { message?: string }; message?: string };
+      };
       const message =
-        e?.data?.error?.message || e?.data?.message || "Reset RAG thất bại";
+        error?.data?.error?.message ||
+        error?.data?.message ||
+        "Reset RAG thất bại";
       toast.error(message);
     }
   };
@@ -295,20 +340,22 @@ export default function CoursesPage() {
         totalCourses={data?.totalElements}
       />
 
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleResetRag}
-          disabled={isResettingRag}
-        >
-          {isResettingRag && <Loader2 className="mr-2 size-4 animate-spin" />}
-          Reset RAG Khóa học
-        </Button>
-        <p className="text-sm text-muted-foreground">
-          Đẩy lại courses, lessons và subscription plans hiện tại lên RAG.
-        </p>
-      </div>
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResetRag}
+            disabled={isResettingRag}
+          >
+            {isResettingRag && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Reset RAG Khóa học
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Đẩy lại courses, lessons và subscription plans hiện tại lên RAG.
+          </p>
+        </div>
+      )}
 
       {/* Overview cards - neutral palette */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -320,7 +367,7 @@ export default function CoursesPage() {
           <CardContent>
             <CardTitle className="text-3xl">{overview.totalCourses}</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Toàn bộ trong hệ thống
+              {isAdmin ? "Toàn bộ trong hệ thống" : "Khóa học của bạn"}
             </p>
           </CardContent>
         </Card>

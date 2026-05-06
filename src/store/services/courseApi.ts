@@ -16,6 +16,17 @@ import type {
   ApiResponse,
 } from "@/types/course";
 
+interface DiscountPreviewDTO {
+  code: string;
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  discountType: "PERCENT" | "FIXED_AMOUNT" | null;
+  discountPercent: number | null;
+  valid: boolean;
+  message: string;
+}
+
 // ─── Base query with auth ──────────────────────────────
 
 let isRefreshing = false;
@@ -99,7 +110,7 @@ function toQueryString(params: Record<string, unknown>): string {
 export const courseApi = createApi({
   reducerPath: "courseApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Course", "Lesson", "Rating"],
+  tagTypes: ["Course", "Lesson", "Rating", "Wallet", "Payment"],
   endpoints: (builder) => ({
     // ==================== COURSE CRUD ====================
 
@@ -109,6 +120,27 @@ export const courseApi = createApi({
     >({
       query: (params) =>
         `/courses${toQueryString((params as Record<string, unknown>) || {})}`,
+      transformResponse: (
+        response: ApiResponse<PageResponse<CourseResponseDTO>>,
+      ) => response.data!,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.content.map(({ id }) => ({
+                type: "Course" as const,
+                id,
+              })),
+              { type: "Course", id: "LIST" },
+            ]
+          : [{ type: "Course", id: "LIST" }],
+    }),
+
+    getCoursesByInstructor: builder.query<
+      PageResponse<CourseResponseDTO>,
+      { instructorId: number; page?: number; size?: number }
+    >({
+      query: ({ instructorId, page = 0, size = 10 }) =>
+        `/courses/instructor${toQueryString({ instructorId, page, size })}`,
       transformResponse: (
         response: ApiResponse<PageResponse<CourseResponseDTO>>,
       ) => response.data!,
@@ -179,27 +211,18 @@ export const courseApi = createApi({
       invalidatesTags: (_result, _error, { courseId }) => [
         { type: "Course", id: courseId },
         { type: "Course", id: "LIST" },
+        { type: "Lesson", id: "LIST" }, // Invalidate lessons to refresh access status
+        "Wallet",
+        "Payment",
       ],
     }),
 
-    previewDiscount: builder.query<
-      {
-        code: string;
-        originalPrice: number;
-        discountAmount: number;
-        finalPrice: number;
-        discountType: "PERCENT" | "FIXED_AMOUNT" | null;
-        discountPercent: number | null;
-        valid: boolean;
-        message: string;
-      },
-      { courseId: number; code: string }
-    >({
+    previewDiscount: builder.query<DiscountPreviewDTO, { courseId: number; code: string }>({
       query: ({ courseId, code }) => ({
         url: `/courses/${courseId}/preview-discount`,
         params: { code },
       }),
-      transformResponse: (res: ApiResponse<any>) => res.data,
+      transformResponse: (res: ApiResponse<DiscountPreviewDTO>) => res.data!,
     }),
 
     // ==================== RATING ====================
@@ -418,6 +441,7 @@ export const courseApi = createApi({
 
 export const {
   useGetAllCoursesQuery,
+  useGetCoursesByInstructorQuery,
   useGetCourseByIdQuery,
   useCreateCourseMutation,
   useUpdateCourseMutation,

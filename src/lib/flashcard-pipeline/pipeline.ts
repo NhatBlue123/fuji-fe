@@ -191,17 +191,29 @@ export class FlashcardPipeline {
     const newTerms: TermState[] = parsed.map((p, i) => {
       const key = `term-${i}`;
       const existing = this.terms.find(
-        (t) => t.key === key && t.vocabulary === p.vocabulary,
+        (t) =>
+          t.key === key &&
+          t.vocabulary === p.vocabulary &&
+          t.meaning === p.meaning &&
+          t.pronunciation === p.pronunciation &&
+          t.exampleSentence === p.exampleSentence,
       );
       if (existing && existing.status === "done") {
         // Term hasn't changed and was already processed — keep it
         return existing;
       }
+      const rawDetails = [
+        p.meaning,
+        p.pronunciation,
+        p.exampleSentence,
+      ].filter(Boolean);
       return {
         key,
-        raw: `${p.vocabulary}${p.meaning ? ` - ${p.meaning}` : ""}`,
+        raw: `${p.vocabulary}${rawDetails.length ? ` - ${rawDetails.join(" - ")}` : ""}`,
         vocabulary: p.vocabulary,
         meaning: p.meaning,
+        pronunciation: p.pronunciation,
+        exampleSentence: p.exampleSentence,
         status: "parsing" as const,
         language: null,
         imageQuery: null,

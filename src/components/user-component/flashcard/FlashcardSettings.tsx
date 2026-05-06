@@ -5,11 +5,17 @@ import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   useGetFlashCardByIdQuery,
   useUpdateFlashCardMutation,
   useAddCardToFlashCardMutation,
 } from "@/store/services/flashcardApi";
+import {
+  useGetActiveFlashcardImagePacksQuery,
+  useGetFlashcardImageQuotaQuery,
+  usePurchaseFlashcardImagePackMutation,
+} from "@/store/services/userMonetizationApi";
 import { getMockImage } from "@/lib/mockImages";
 import { useFlashcardPipeline } from "@/hooks/useFlashcardPipeline";
 import { resolveImage, searchImages } from "@/lib/flashcard-pipeline";
@@ -104,6 +110,18 @@ export default function FlashcardSettings({
   const { data: flashcard, isLoading } = useGetFlashCardByIdQuery(id);
   const [updateFlashCard] = useUpdateFlashCardMutation();
   const [addCardToFlashCard] = useAddCardToFlashCardMutation();
+  const {
+    data: imageQuota,
+    isFetching: isImageQuotaFetching,
+    refetch: refetchImageQuota,
+  } = useGetFlashcardImageQuotaQuery();
+  const [showImagePackModal, setShowImagePackModal] = useState(false);
+  const { data: imagePacks = [], isFetching: isFetchingImagePacks } =
+    useGetActiveFlashcardImagePacksQuery(undefined, {
+      skip: !showImagePackModal,
+    });
+  const [purchaseImagePack, purchaseImagePackState] =
+    usePurchaseFlashcardImagePackMutation();
   const detailHref = flashcard
     ? buildFlashcardDetailHref(flashcard)
     : `/flashcards/detail/${id}`;
@@ -133,10 +151,36 @@ export default function FlashcardSettings({
     { url: string; title: string }[]
   >([]);
   const [singleSearching, setSingleSearching] = useState(false);
+  const [singleImageError, setSingleImageError] = useState("");
 
   const [singleResolving, setSingleResolving] = useState(false);
+  const imageQuotaRemaining = Number(imageQuota?.totalRemaining ?? 0);
+  const imageQuotaDaily = Number(imageQuota?.dailyQuota ?? 0);
+  const isImageQuotaEmpty = Boolean(imageQuota) && imageQuotaRemaining <= 0;
+  const imageQuotaPercent =
+    imageQuotaDaily > 0 ? imageQuotaRemaining / imageQuotaDaily : 1;
+  const imageQuotaTone =
+    isImageQuotaEmpty ? "text-red-400" : imageQuotaPercent <= 0.2 ? "text-amber-400" : "text-muted-foreground";
+  const imageQuotaExhaustedMessage =
+    t("monetization.messages.imageUsageExhausted");
+
+  const handlePurchaseImagePack = async (packId: number) => {
+    try {
+      await purchaseImagePack(packId).unwrap();
+      toast.success(t("monetization.messages.buyImageBundleSuccess"));
+      setShowImagePackModal(false);
+      refetchImageQuota();
+    } catch {
+      toast.error(t("monetization.messages.buyImageBundleFailed"));
+    }
+  };
 
   const handleSingleImageSelect = (imageUrl: string) => {
+    if (isImageQuotaEmpty) {
+      setSingleImageError(imageQuotaExhaustedMessage);
+      return;
+    }
+    setSingleImageError("");
     // Immediately show the raw URL as preview
     setSinglePreviewUrl(imageUrl);
     // Resolve to Cloudinary URL in background
@@ -147,15 +191,18 @@ export default function FlashcardSettings({
       })
       .catch((err) => {
         console.error("Failed to resolve single image:", err);
+        setSingleImageError(err instanceof Error ? err.message : "Không thể lưu ảnh đã chọn.");
         // Keep the raw URL as fallback
       })
       .finally(() => {
         setSingleResolving(false);
+        refetchImageQuota();
       });
   };
 
   // Multi-add state
   const [multiContent, setMultiContent] = useState("");
+  const [multiImageWarning, setMultiImageWarning] = useState("");
   const [selectedTermImages, setSelectedTermImages] = useState<
     Record<string, string>
   >({});
@@ -189,7 +236,7 @@ export default function FlashcardSettings({
         })),
       );
     }
-  }, [flashcard]);
+  }, [flashcard, cards.length]);
 
   const [resolvingImages, setResolvingImages] = useState<
     Record<string, boolean>
@@ -200,6 +247,12 @@ export default function FlashcardSettings({
   >({});
 
   const handleTermImageSelect = (termKey: string, imageUrl: string) => {
+    if (selectedTermImages[termKey] !== imageUrl && isImageQuotaEmpty) {
+      setMultiImageWarning(imageQuotaExhaustedMessage);
+      return;
+    }
+    setMultiImageWarning("");
+
     // Toggle: if same raw URL, deselect
     setSelectedTermImages((prev) => {
       if (prev[termKey] === imageUrl) {
@@ -235,7 +288,37 @@ export default function FlashcardSettings({
       })
       .finally(() => {
         setResolvingImages((prev) => ({ ...prev, [termKey]: false }));
+        refetchImageQuota();
       });
+  };
+
+  const handlePipelineSearchImagesForTerm = async (termKey: string) => {
+    if (isImageQuotaEmpty) {
+      setMultiImageWarning(imageQuotaExhaustedMessage);
+      return;
+    }
+    setMultiImageWarning("");
+    await searchImagesForTerm(termKey);
+    refetchImageQuota();
+  };
+
+  const handlePipelineSearchAllImages = async () => {
+    if (isImageQuotaEmpty) {
+      setMultiImageWarning(imageQuotaExhaustedMessage);
+      return;
+    }
+    if (imageQuota && pipelineReadyCount > imageQuotaRemaining) {
+      setMultiImageWarning(
+        t("monetization.messages.imageSearchOverflow", {
+          remaining: imageQuotaRemaining,
+          readyCount: pipelineReadyCount,
+        }),
+      );
+    } else {
+      setMultiImageWarning("");
+    }
+    await searchAllImages();
+    refetchImageQuota();
   };
 
   // Drag and drop handlers for reordering
@@ -306,6 +389,7 @@ export default function FlashcardSettings({
     setSingleExample("");
     setSinglePreviewUrl("");
     setSingleSearchResults([]);
+    setSingleImageError("");
 
     setActiveTab("cards");
   };
@@ -314,7 +398,12 @@ export default function FlashcardSettings({
   const handleSingleImageSearch = async () => {
     const query = singleVocab.trim();
     if (!query) return;
+    if (isImageQuotaEmpty) {
+      setSingleImageError(imageQuotaExhaustedMessage);
+      return;
+    }
     setSingleSearching(true);
+    setSingleImageError("");
     try {
       const results = await searchImages(query, { maxResults: 10 });
       setSingleSearchResults(
@@ -323,10 +412,12 @@ export default function FlashcardSettings({
           title: r.title || query,
         })),
       );
-    } catch {
+    } catch (error) {
       setSingleSearchResults([]);
+      setSingleImageError(error instanceof Error ? error.message : "Không thể tìm ảnh lúc này.");
     } finally {
       setSingleSearching(false);
+      refetchImageQuota();
     }
   };
 
@@ -412,6 +503,13 @@ export default function FlashcardSettings({
           },
         }).unwrap();
       }
+
+      // Revalidate ISR pages
+      fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "flashcard", action: "update" }),
+      }).catch(() => {});
 
       if (onClose) {
         onClose();
@@ -975,12 +1073,21 @@ export default function FlashcardSettings({
                   {/* Image Section — auto-search from vocabulary, no URL shown */}
                   <div className="space-y-3 mb-6 p-4 bg-muted/10 border border-border rounded-xl">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Hình ảnh
-                      </label>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Hình ảnh
+                        </label>
+                        <p className={`mt-1 text-xs font-medium ${imageQuotaTone}`}>
+                          {isImageQuotaFetching && !imageQuota
+                            ? t("monetization.messages.loadingImageUsage")
+                            : t("monetization.messages.flashcardImageRemaining", {
+                                count: imageQuotaRemaining.toLocaleString("vi-VN"),
+                              })}
+                        </p>
+                      </div>
                       <button
                         onClick={handleSingleImageSearch}
-                        disabled={singleSearching || !singleVocab.trim()}
+                        disabled={singleSearching || !singleVocab.trim() || isImageQuotaEmpty}
                         className="px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium"
                       >
                         <span className="material-symbols-outlined text-sm">
@@ -993,6 +1100,26 @@ export default function FlashcardSettings({
                           : `Tìm ảnh "${singleVocab.trim() || "..."}"`}
                       </button>
                     </div>
+                    {isImageQuotaEmpty && (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                        <span>{imageQuotaExhaustedMessage}</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowImagePackModal(true)}
+                          className="font-bold text-red-200 underline"
+                        >
+                          {t("monetization.actions.buyImageBundle")}
+                        </button>
+                        <Link href="/packages" className="font-bold text-red-200 underline">
+                          {t("monetization.actions.upgradePackage")}
+                        </Link>
+                      </div>
+                    )}
+                    {singleImageError && (
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                        {singleImageError}
+                      </div>
+                    )}
                     {/* Search results grid */}
                     {singleSearchResults.length > 0 && (
                       <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
@@ -1000,12 +1127,14 @@ export default function FlashcardSettings({
                           <button
                             key={idx}
                             onClick={() => handleSingleImageSelect(img.url)}
+                            disabled={singleResolving || isImageQuotaEmpty}
                             className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
                               singlePreviewUrl === img.url
                                 ? "border-primary ring-2 ring-primary/30"
                                 : "border-border hover:border-primary/40"
                             }`}
                           >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={img.url}
                               alt={img.title}
@@ -1018,6 +1147,7 @@ export default function FlashcardSettings({
                     {/* Preview selected image (no URL shown) */}
                     {singlePreviewUrl && (
                       <div className="flex items-center gap-3 mt-2 p-2 bg-card border border-border rounded-lg">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={singlePreviewUrl}
                           alt="Preview"
@@ -1134,9 +1264,36 @@ export default function FlashcardSettings({
 
                     {/* Right Column: Preview & Image Search */}
                     <div className="space-y-4">
-                      <label className="block text-sm text-muted-foreground font-medium">
-                        Xem trước từ vựng
-                      </label>
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <label className="block text-sm text-muted-foreground font-medium">
+                          Xem trước từ vựng
+                        </label>
+                        <span className={`text-xs font-medium ${imageQuotaTone}`}>
+                          {t("monetization.messages.imageRemainingToday", {
+                            count: imageQuotaRemaining.toLocaleString("vi-VN"),
+                          })}
+                        </span>
+                      </div>
+                      {multiImageWarning && (
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                          {multiImageWarning}
+                        </div>
+                      )}
+                      {isImageQuotaEmpty && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                          <span>{imageQuotaExhaustedMessage}</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowImagePackModal(true)}
+                            className="font-bold text-red-200 underline"
+                          >
+                            {t("monetization.actions.buyImageBundle")}
+                          </button>
+                          <Link href="/packages" className="font-bold text-red-200 underline">
+                            {t("monetization.actions.upgradePackage")}
+                          </Link>
+                        </div>
+                      )}
                       <div className="bg-muted/10 border border-border rounded-xl p-4 min-h-[400px]">
                         {pipelineTerms.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 pt-10">
@@ -1154,10 +1311,13 @@ export default function FlashcardSettings({
                             doneCount={pipelineDoneCount}
                             totalCount={pipelineTotalCount}
                             readyCount={pipelineReadyCount}
-                            onSearchImages={searchImagesForTerm}
-                            onSearchAllImages={searchAllImages}
+                            onSearchImages={handlePipelineSearchImagesForTerm}
+                            onSearchAllImages={handlePipelineSearchAllImages}
                             onImageSelect={handleTermImageSelect}
                             selectedImages={selectedTermImages}
+                            resolvingImages={resolvingImages}
+                            imageSearchDisabled={isImageQuotaEmpty}
+                            imageSearchDisabledMessage={imageQuotaExhaustedMessage}
                           />
                         )}
                       </div>
@@ -1230,6 +1390,71 @@ export default function FlashcardSettings({
           )}
         </main>
       </div>
+      {showImagePackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                  {t("monetization.terms.imageBundle")}
+                </p>
+                <h3 className="mt-1 text-xl font-black text-foreground">
+                  {t("monetization.actions.buyImageBundle")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("monetization.messages.imageBundleDescription")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImagePackModal(false)}
+                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            {isFetchingImagePacks ? (
+              <div className="space-y-3">
+                {[0, 1, 2].map((item) => (
+                  <div key={item} className="h-20 animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+            ) : imagePacks.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                {t("monetization.messages.imageBundleUnavailable")}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {imagePacks.map((pack) => (
+                  <div
+                    key={pack.id}
+                    className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 p-4"
+                  >
+                    <div>
+                      <p className="font-black text-foreground">{pack.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("monetization.messages.imageRemainingToday", {
+                          count: pack.operationAmount.toLocaleString("vi-VN"),
+                        })}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePurchaseImagePack(pack.id)}
+                      disabled={purchaseImagePackState.isLoading}
+                      className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {pack.priceHoa.toLocaleString("vi-VN")}{" "}
+                      {t("monetization.terms.blossom")}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

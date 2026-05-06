@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useTranslation } from "react-i18next";
 import { Suspense, useEffect, useMemo, useState, useRef } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Ticket } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,10 @@ import {
   useGetBookingQuoteQuery,
   useGetBulkBookingQuoteMutation,
 } from "@/store/services/bookingApi";
+import {
+  useGetMyCouponsQuery,
+  type UserCoupon,
+} from "@/store/services/userMonetizationApi";
 
 type ApiErrorWithMessage = {
   data?: {
@@ -36,6 +40,42 @@ function formatTimeRange(startAt: string, endAt: string) {
   const hhmm = (d: Date) =>
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return `${hhmm(s)} - ${hhmm(e)}`;
+}
+
+function formatCouponDiscount(
+  coupon: UserCoupon,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  if (coupon.discountType === "PERCENT") {
+    return t("monetization.messages.discountPercent", {
+      value: coupon.discountValue,
+    });
+  }
+  return t("monetization.messages.discountBlossom", {
+    value: Number(coupon.discountValue || 0).toLocaleString("vi-VN"),
+  });
+}
+
+function formatCouponExpiry(
+  coupon: UserCoupon,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  if (!coupon.expiresAt) return t("monetization.messages.noExpiry");
+  return t("monetization.messages.expiresOn", {
+    date: new Date(coupon.expiresAt).toLocaleDateString("vi-VN"),
+  });
+}
+
+function isActiveBookingCoupon(coupon: UserCoupon) {
+  const scope = String(coupon.scope || "").toUpperCase();
+  const status = String(coupon.status || "").toUpperCase();
+  const expiresAt = coupon.expiresAt ? new Date(coupon.expiresAt).getTime() : null;
+  return (
+    status === "ACTIVE" &&
+    (scope === "BOOKING" || scope === "BOTH") &&
+    Number(coupon.usageRemaining ?? 0) > 0 &&
+    (!expiresAt || expiresAt > Date.now())
+  );
 }
 
 function PaymentPageContent() {
@@ -62,6 +102,14 @@ function PaymentPageContent() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCouponCode, setAppliedCouponCode] = useState("");
+  const { data: myCoupons = [], isFetching: isFetchingCoupons } =
+    useGetMyCouponsQuery(undefined, { skip: !isSingleMode });
+  const bookingCoupons = useMemo(
+    () => myCoupons.filter(isActiveBookingCoupon),
+    [myCoupons],
+  );
 
   const {
     data: singleQuote,
@@ -69,7 +117,10 @@ function PaymentPageContent() {
     isFetching,
     isError: isSingleQuoteError,
     error: singleQuoteError,
-  } = useGetBookingQuoteQuery({ timeSlotId }, { skip: !isSingleMode });
+  } = useGetBookingQuoteQuery(
+    { timeSlotId, couponCode: appliedCouponCode || undefined },
+    { skip: !isSingleMode },
+  );
 
   const [
     getBulkQuote,
@@ -99,7 +150,10 @@ function PaymentPageContent() {
 
   const isCreating = isCreatingSingle || isCreatingBulk;
   const quote = isSingleMode ? singleQuote : bulkQuote;
-  const canConfirm = !!quote && quote.canPay;
+  const canConfirm =
+    !!quote &&
+    quote.canPay &&
+    !(isSingleMode && Boolean(appliedCouponCode) && "couponValid" in quote && quote.couponValid === false);
   const isQuoteError = isSingleMode ? isSingleQuoteError : isBulkQuoteError;
   const quoteErrorMessage =
     extractApiErrorMessage(
@@ -112,7 +166,10 @@ function PaymentPageContent() {
 
     try {
       if (isSingleMode) {
-        await createBooking({ timeSlotId }).unwrap();
+        await createBooking({
+          timeSlotId,
+          couponCode: appliedCouponCode || undefined,
+        }).unwrap();
       } else if (isBulkMode) {
         await createBulkBooking({
           teacherId,
@@ -133,6 +190,23 @@ function PaymentPageContent() {
       description: t("booking.successMessage") || "Bạn đã đặt lịch học thành công.",
       duration: 5000,
     });
+  };
+
+  const applyCoupon = () => {
+    setErrorMsg("");
+    setAppliedCouponCode(couponCode.trim().toUpperCase());
+  };
+
+  const selectCoupon = (coupon: UserCoupon) => {
+    setErrorMsg("");
+    const code = coupon.code.trim().toUpperCase();
+    setCouponCode(code);
+    setAppliedCouponCode(code);
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setAppliedCouponCode("");
   };
 
   return (
@@ -274,6 +348,17 @@ function PaymentPageContent() {
                     <span>{t('auto.booking_appointment_6')}</span>
                     <span>{quote.serviceFeeBlossom} 🌸</span>
                   </div>
+                  {(quote.discountBlossom ?? 0) > 0 && (
+                    <div className="flex justify-between text-emerald-300 text-sm">
+                      <span>{t("monetization.terms.discountCode")} {quote.couponCode}</span>
+                      <span>-{quote.discountBlossom} 🌸</span>
+                    </div>
+                  )}
+                  {quote.adminCommissionWaived && (quote.discountBlossom ?? 0) > 0 && (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                      {t("monetization.messages.bookingDiscountApplied")}
+                    </div>
+                  )}
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>{t('auto.booking_appointment_7')}</span>
                     <span className="text-pink-500">
@@ -281,12 +366,102 @@ function PaymentPageContent() {
                     </span>
                   </div>
                 </div>
+
+                <div className="rounded-xl border border-slate-800 bg-white/5 p-4">
+                  <p className="mb-3 text-sm font-semibold text-slate-200">
+                    {t("monetization.messages.bookingDiscountTitle")}
+                  </p>
+                  {isFetchingCoupons && (
+                    <p className="mb-3 text-xs text-slate-400">
+                      {t("monetization.messages.loadingYourDiscountCodes")}
+                    </p>
+                  )}
+                  {bookingCoupons.length > 0 && (
+                    <div className="mb-4 grid gap-2">
+                      {bookingCoupons.map((coupon) => {
+                        const selected =
+                          appliedCouponCode === coupon.code.trim().toUpperCase();
+                        return (
+                          <button
+                            key={coupon.id}
+                            type="button"
+                            onClick={() => selectCoupon(coupon)}
+                            className={`rounded-xl border p-3 text-left transition-all ${
+                              selected
+                                ? "border-emerald-400/60 bg-emerald-500/10"
+                                : "border-slate-800 bg-slate-950/60 hover:border-pink-500/40"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-100">
+                                <Ticket className="size-4 text-pink-400" />
+                                {coupon.code}
+                              </span>
+                              <span className="text-xs font-bold text-emerald-300">
+                                {formatCouponDiscount(coupon, t)}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400">
+                              <span>
+                                {t("monetization.messages.remainingSingleUsage", {
+                                  remaining: coupon.usageRemaining,
+                                })}
+                              </span>
+                              <span>{formatCouponExpiry(coupon, t)}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      value={couponCode}
+                      onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                      disabled={Boolean(appliedCouponCode)}
+                      placeholder={t("monetization.messages.enterDiscountCode")}
+                      className="min-h-11 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-pink-500 disabled:opacity-60"
+                    />
+                    {appliedCouponCode ? (
+                      <button
+                        type="button"
+                        onClick={removeCoupon}
+                        className="min-h-11 rounded-lg border border-slate-700 px-4 text-sm font-bold text-slate-200 hover:bg-slate-800"
+                      >
+                        {t("monetization.actions.removeCode")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={applyCoupon}
+                        disabled={!couponCode.trim()}
+                        className="min-h-11 rounded-lg bg-pink-600 px-4 text-sm font-bold text-white hover:bg-pink-500 disabled:opacity-50"
+                      >
+                        {t("monetization.actions.applyCode")}
+                      </button>
+                    )}
+                  </div>
+                  {appliedCouponCode && quote.couponValid === false && (
+                    <p className="mt-2 text-xs text-red-300">{quote.couponMessage}</p>
+                  )}
+                  {appliedCouponCode && quote.couponValid && (
+                    <p className="mt-2 text-xs text-emerald-300">
+                      {t("monetization.messages.discountAppliedToTotal")}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
             {!quote.canPay && (
               <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 mt-6">
                 {quote.message}
+              </div>
+            )}
+
+            {quote.canPay && (
+              <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100 mt-6">
+                {t("monetization.messages.bookingHoldPolicy")}
               </div>
             )}
 
@@ -301,7 +476,7 @@ function PaymentPageContent() {
               disabled={!canConfirm || isCreating}
               className="w-full mt-6 py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl shadow-lg shadow-secondary/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
-              {isCreating ? "Đang xử lý..." : "Xác nhận thanh toán"}
+              {isCreating ? t("common.processing") : t("monetization.messages.confirmPayment")}
             </button>
           </div>
         )}

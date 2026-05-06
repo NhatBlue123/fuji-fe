@@ -81,6 +81,7 @@ export const useAuthInit = () => {
             fullName: (backendUser.fullName as string) || "",
             avatar: (backendUser.avatarUrl as string) || "",
             avatarUrl: (backendUser.avatarUrl as string) || "",
+            avatarFrameUrl: (backendUser.avatarFrameUrl as string) || null,
             gender: (backendUser.gender as string) || "",
             role: (backendUser.role as string) || "STUDENT",
             level: (backendUser.jlptLevel ||

@@ -55,10 +55,17 @@ export const bookingApi = baseApi.injectEndpoints({
       providesTags: [{ type: "Booking", id: "MY_TEACHER_SCHEDULE" }],
     }),
 
-    getBookingQuote: builder.query<BookingQuote, { timeSlotId: number }>({
-      query: ({ timeSlotId }) => `/bookings/quote?timeSlotId=${timeSlotId}`,
+    getBookingQuote: builder.query<BookingQuote, { timeSlotId: number; couponCode?: string }>({
+      query: ({ timeSlotId, couponCode }) => {
+        const qs = new URLSearchParams();
+        qs.set("timeSlotId", String(timeSlotId));
+        if (couponCode) qs.set("couponCode", couponCode);
+        return `/bookings/quote?${qs.toString()}`;
+      },
       transformResponse: (res: ApiEnvelope<BookingQuote>) => res.data,
-      providesTags: (_r, _e, arg) => [{ type: "Booking", id: `QUOTE_${arg.timeSlotId}` }],
+      providesTags: (_r, _e, arg) => [
+        { type: "Booking", id: `QUOTE_${arg.timeSlotId}_${arg.couponCode || "NO_COUPON"}` },
+      ],
     }),
 
     getBulkBookingQuote: builder.mutation<
@@ -83,6 +90,7 @@ export const bookingApi = baseApi.injectEndpoints({
       invalidatesTags: [
         { type: "Booking", id: "DISCOVERY" },
         { type: "Booking", id: "MY_BOOKINGS" },
+        "UserMonetization",
       ],
     }),
 
@@ -99,6 +107,7 @@ export const bookingApi = baseApi.injectEndpoints({
       invalidatesTags: [
         { type: "Booking", id: "DISCOVERY" },
         { type: "Booking", id: "MY_BOOKINGS" },
+        "UserMonetization",
       ],
     }),
 
@@ -119,6 +128,7 @@ export const bookingApi = baseApi.injectEndpoints({
       invalidatesTags: [
         { type: "Booking", id: "DISCOVERY" },
         { type: "Booking", id: "MY_BOOKINGS" },
+        "UserMonetization",
       ],
     }),
 
@@ -133,6 +143,7 @@ export const bookingApi = baseApi.injectEndpoints({
       invalidatesTags: [
         { type: "Booking", id: "DISCOVERY" },
         { type: "Booking", id: "MY_BOOKINGS" },
+        "UserMonetization",
       ],
     }),
 
@@ -205,6 +216,7 @@ export const bookingApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<StudentBusySlot[]>) => res.data,
     }),
   }),
+  overrideExisting: true,
 });
 
 export const {

@@ -271,7 +271,7 @@ export function NotificationProvider({
   useEffect(() => {
     if (!aiSocket || !isAuthenticated || !isInitialized) return;
 
-    const isAiChatPage = pathname?.includes("/ai-chat");
+    const isAiChatPage = pathname?.includes("/ai-chat") || pathname?.includes("/sensei");
 
     const onVoiceEvaluationCompleted = (payload: {
       sessionCode?: string;
@@ -286,8 +286,8 @@ export function NotificationProvider({
             ? tMsg("ai.sessionHasNewFeedback", { code: payload.sessionCode }) || `Phiên ${payload.sessionCode} đã có nhận xét mới.`
             : tMsg("ai.genericFeedbackReceived") || "Bạn đã có nhận xét mới từ Sensei."),
         action: {
-          label: tMsg("ai.openChat") || "Mở AI Chat",
-          onClick: () => router.push("/ai-chat"),
+          label: tMsg("ai.openSensei") || "Mở AI Sensei",
+          onClick: () => router.push("/sensei"),
         },
       });
     };
@@ -303,8 +303,8 @@ export function NotificationProvider({
           ? `Phiên ${payload.sessionCode}`
           : undefined,
         action: {
-          label: "Mở AI Chat",
-          onClick: () => router.push("/ai-chat"),
+          label: "Mở AI Sensei",
+          onClick: () => router.push("/sensei"),
         },
       });
     };

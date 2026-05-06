@@ -6,6 +6,7 @@ export interface AuthUser {
 
   fullName: string;
   avatarUrl?: string | null;
+  avatarFrameUrl?: string | null;
   bio?: string | null;
   gender?: string | null;
   phone?: string | null;

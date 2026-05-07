@@ -107,7 +107,7 @@ export function AIChatSocketProvider({
       if (!mountedRef.current) return;
       console.log(`[AI Socket] 🔄 Reconnect attempt #${attemptNumber}`);
       setConnectionAttempts(attemptNumber);
-    };
+    };  
 
     const handleReconnectFailed = () => {
       if (!mountedRef.current) return;

@@ -74,6 +74,10 @@ export default function FujiWallet() {
   const balance = wallet?.balance || 0;
   const transactions = historyData?.content || [];
   const totalPages = historyData?.totalPages || 0;
+  const filteredTransactions = transactions.filter((tx) => {
+    if (filter === "ALL") return true;
+    return tx.type === filter;
+  });
 
   if (!mounted) return null;
   if (isWalletLoading || isHistoryLoading) return <LoadingState />;
@@ -256,7 +260,11 @@ export default function FujiWallet() {
 
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex p-1 bg-muted dark:bg-black/20 border dark:border-white/5 rounded-xl shadow-inner">
-                {["ALL", "DEPOSIT", "WITHDRAW"].map((type) => (
+                {[
+                  { type: "ALL", label: t("wallet.filter.all") },
+                  { type: "TOPUP", label: t("wallet.filter.deposit") },
+                  { type: "PAYOUT", label: t("wallet.types.withdraw") },
+                ].map(({ type, label }) => (
                   <button
                     key={type}
                     onClick={() => setFilter(type)} // Filter currently handled by local state if implemented, or query params
@@ -267,7 +275,7 @@ export default function FujiWallet() {
                         : "text-muted-foreground dark:text-slate-500 hover:text-foreground hover:bg-white/5",
                     )}
                   >
-                    {t(`wallet.filter.${type.toLowerCase()}`)}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -302,22 +310,25 @@ export default function FujiWallet() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((tx: Transaction) => (
-                  <TableRow
-                    key={tx.id}
-                    className="hover:bg-muted/10 dark:hover:bg-white/[0.02] transition-colors group border-b dark:border-white/5 last:border-0"
-                  >
+                {filteredTransactions.map((tx: Transaction) => {
+                  const isTopup = tx.type === "TOPUP" || tx.type === "DEPOSIT" || tx.amount > 0;
+
+                  return (
+                    <TableRow
+                      key={tx.id}
+                      className="hover:bg-muted/10 dark:hover:bg-white/[0.02] transition-colors group border-b dark:border-white/5 last:border-0"
+                    >
                     <TableCell className="px-10 py-6">
                       <div className="flex items-center gap-4">
                         <div
                           className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center border transition-transform group-hover:scale-110 shadow-inner",
-                            tx.type === "DEPOSIT" || tx.amount > 0
+                            isTopup
                               ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : "bg-pink-500/10 text-pink-500 border-pink-500/20",
                           )}
                         >
-                          {tx.type === "DEPOSIT" || tx.amount > 0 ? (
+                          {isTopup ? (
                             <ArrowUpRight size={18} />
                           ) : (
                             <ArrowDownLeft size={18} />
@@ -344,17 +355,17 @@ export default function FujiWallet() {
                       </div>
                     </TableCell>
                     <TableCell className="px-8 py-6 font-bold text-[10px] uppercase tracking-wider text-muted-foreground dark:text-slate-500 whitespace-nowrap">
-                      {tx.type === "DEPOSIT" 
+                      {isTopup
                         ? t("wallet.types.deposit") 
                         : t("wallet.types.spending")}
                     </TableCell>
                     <TableCell
                       className={cn(
                         "px-8 py-6 text-right font-black text-xl tracking-tighter whitespace-nowrap",
-                        (tx.type === "DEPOSIT" || tx.amount > 0) ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"
+                        isTopup ? "text-emerald-500 dark:text-emerald-400" : "text-foreground dark:text-white"
                       )}
                     >
-                      {tx.type === "DEPOSIT" || tx.amount > 0 ? "+" : "-"}
+                      {isTopup ? "+" : "-"}
                       {Math.abs(tx.amount).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
                       <span className="text-[10px] ml-1 opacity-70">🌸</span>
                     </TableCell>
@@ -372,9 +383,10 @@ export default function FujiWallet() {
                         {t("wallet.status.success")}
                       </Badge>
                     </TableCell>
-                  </TableRow>
-                ))}
-                {transactions.length === 0 && (
+                    </TableRow>
+                  );
+                })}
+                {filteredTransactions.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="py-24 text-center">
                       <div className="flex flex-col items-center gap-4 text-muted-foreground">

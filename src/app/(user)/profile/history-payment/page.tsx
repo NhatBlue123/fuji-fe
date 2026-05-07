@@ -13,7 +13,6 @@ import {
   Search,
   ArrowLeft,
   Download,
-  Filter,
   CheckCircle2,
  } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -22,13 +21,16 @@ export default function TransactionHistory() {
   const { t } = useTranslation();
   const router = useRouter();
   const [page, setPage] = useState(0);
-  const [filter, setFilter] = useState<string>("ALL"); // ALL, DEPOSIT, WITHDRAW
+  const [filter, setFilter] = useState<string>("ALL"); // ALL, TOPUP, PAYOUT
   const size = 10;
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const rafId = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(rafId);
+  }, []);
 
-  const { data, isLoading, isError } = useGetWalletHistoryQuery({ page, size });
+  const { data, isLoading } = useGetWalletHistoryQuery({ page, size });
 
   const transactions = data?.content || [];
   const totalPages = data?.totalPages || 0;
@@ -94,8 +96,8 @@ export default function TransactionHistory() {
             <div className="flex p-1.5 bg-white/5 border border-white/10 rounded-2xl">
               {[
                 { label: "Tất cả", value: "ALL" },
-                { label: "Nạp tiền", value: "DEPOSIT" },
-                { label: "Thanh toán", value: "WITHDRAW" },
+                { label: "Nạp tiền", value: "TOPUP" },
+                { label: "Rút tiền", value: "PAYOUT" },
               ].map((item) => (
                 <button
                   key={item.value}
@@ -139,7 +141,7 @@ export default function TransactionHistory() {
 
               <tbody className="divide-y divide-white/5">
                 {filteredTransactions.map((tx: Transaction) => {
-                  const isDeposit = tx.type === "DEPOSIT" || tx.amount > 0;
+                  const isDeposit = tx.type === "TOPUP" || tx.type === "DEPOSIT" || tx.amount > 0;
                   return (
                     <tr key={tx.id} className="hover:bg-white/[0.02] transition-all group border-l-2 border-transparent hover:border-pink-500">
                       <td className="p-6">

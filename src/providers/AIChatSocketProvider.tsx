@@ -54,15 +54,21 @@ export function AIChatSocketProvider({
     if (!isAuthenticated) {
       console.log("[AI Socket] Not authenticated, disconnecting");
       disconnectAISocket();
-      setSocket(null);
-      setIsConnected(false);
-      setConnectionAttempts(0);
+      queueMicrotask(() => {
+        if (!mountedRef.current) return;
+        setSocket(null);
+        setIsConnected(false);
+        setConnectionAttempts(0);
+      });
       return;
     }
 
     console.log("[AI Socket] Initializing connection...");
     const s = connectAISocket(accessToken ?? undefined);
-    setSocket(s as Socket);
+    queueMicrotask(() => {
+      if (!mountedRef.current) return;
+      setSocket(s as Socket);
+    });
 
     // ✅ FIX 1: Không set isConnected ngay, đợi event "connect"
     // setIsConnected(Boolean(s.connected)); // ❌ REMOVED
@@ -98,7 +104,7 @@ export function AIChatSocketProvider({
     // ✅ FIX 3: Thêm error handlers
     const handleConnectError = (error: Error) => {
       if (!mountedRef.current) return;
-      console.error("[AI Socket] ⚠️ Connection error:", error.message);
+      console.warn("[AI Socket] Connection error:", error.message);
       setIsConnected(false);
       setConnectionAttempts((prev) => prev + 1);
     };
@@ -111,7 +117,7 @@ export function AIChatSocketProvider({
 
     const handleReconnectFailed = () => {
       if (!mountedRef.current) return;
-      console.error("[AI Socket] ❌ Reconnection failed after all attempts");
+      console.warn("[AI Socket] Reconnection failed after all attempts");
       setIsConnected(false);
     };
 

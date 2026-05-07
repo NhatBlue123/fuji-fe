@@ -417,7 +417,7 @@
     "adminConfirmSuccess": "Admin đã xác nhận thanh toán thành công",
     "fetchHistorySuccess": "Lấy lịch sử giao dịch thành công",
     "invalidAmount": "Số hoa nạp phải lớn hơn 0",
-    "topupSuccessTitle": "Nạp hoa thành công",
+    "topupSuccessTitle": "Nạp tiền thành công",
     "topupSuccessContent": "Bạn vừa nạp thành công hoa vào ví.",
     "topupSuccessTitleAdmin": "Nạp hoa thành công (Admin)",
     "topupSuccessContentAdmin": "Admin đã xác nhận nạp thành công hoa vào ví của bạn.",

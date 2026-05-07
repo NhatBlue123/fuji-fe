@@ -3,6 +3,12 @@ import { getAccessToken } from "@/lib/token";
 import { getSignalingUrl } from "@/lib/video-call-urls";
 
 function getPaymentUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_PAYMENT_SOCKET_URL?.trim();
+  if (explicit) {
+    const base = explicit.replace(/\/$/, "");
+    return base.endsWith("/payment") ? base : `${base}/payment`;
+  }
+
   const base = getSignalingUrl().replace(/\/$/, "");
   return `${base}/payment`;
 }

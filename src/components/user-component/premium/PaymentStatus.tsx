@@ -81,7 +81,7 @@ export default function PaymentStatus({
       fallbackTimersRef.current = [];
       setResolvedBy(source);
       invalidateWalletAndPayment();
-      toast.success(tMsg("payment.status.success"));
+      toast.success(tMsg("payment.topupSuccessTitle"));
       setTimeout(() => router.push("/premium/success"), 2000);
     },
     [invalidateWalletAndPayment, router],

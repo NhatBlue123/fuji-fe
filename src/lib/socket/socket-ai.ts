@@ -32,7 +32,8 @@ export function connectAISocket(token?: string | null): Socket {
   if (!aiSocket) {
     aiSocket = io(resolveAiSocketUrl(), {
       path: "/socket.io",
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
+      upgrade: true,
       withCredentials: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

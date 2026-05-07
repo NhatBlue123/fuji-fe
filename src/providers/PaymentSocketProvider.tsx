@@ -34,6 +34,14 @@ export interface PaymentStatusChangeEvent {
   message?: string;
 }
 
+export interface TopupSuccessEvent {
+  userId: number;
+  orderId: string;
+  amount: number;
+  walletBalance: number;
+  message?: string;
+}
+
 type StatusChangeCallback = (data: PaymentStatusChangeEvent) => void;
 
 type PaymentSocketContextValue = {
@@ -44,6 +52,7 @@ type PaymentSocketContextValue = {
 };
 
 const PaymentSocketContext = createContext<PaymentSocketContextValue | null>(null);
+const DUPLICATE_EVENT_WINDOW_MS = 5000;
 
 export function PaymentSocketProvider({
   children,
@@ -56,6 +65,7 @@ export function PaymentSocketProvider({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const statusChangeCallbacks = useRef<Set<StatusChangeCallback>>(new Set());
+  const recentEventKeys = useRef<Map<string, number>>(new Map());
 
   const onPaymentStatusChange = useCallback((cb: StatusChangeCallback) => {
     statusChangeCallbacks.current.add(cb);
@@ -112,17 +122,70 @@ export function PaymentSocketProvider({
       });
     };
 
-    const handlePaymentStatusChange = (data: PaymentStatusChangeEvent) => {
-      console.info("[payment] payment-status-change received", {
+    const normalizeTopupSuccess = (data: TopupSuccessEvent): PaymentStatusChangeEvent => ({
+      userId: data.userId,
+      orderId: data.orderId,
+      transactionType: "TOPUP",
+      oldStatus: "PENDING",
+      newStatus: "SUCCESS",
+      status: "SUCCESS",
+      amount: data.amount,
+      walletBalance: data.walletBalance,
+      message: data.message,
+    });
+
+    const shouldSkipDuplicateEvent = (data: PaymentStatusChangeEvent) => {
+      const eventStatus = data.status || data.newStatus || "UNKNOWN";
+      const subjectId =
+        data.orderId || data.withdrawRequestId?.toString() || data.transactionId || "global";
+      const key = `${data.transactionType}:${subjectId}:${eventStatus}`;
+      const now = Date.now();
+
+      recentEventKeys.current.forEach((seenAt, seenKey) => {
+        if (now - seenAt > DUPLICATE_EVENT_WINDOW_MS) {
+          recentEventKeys.current.delete(seenKey);
+        }
+      });
+
+      const lastSeenAt = recentEventKeys.current.get(key);
+      if (lastSeenAt && now - lastSeenAt <= DUPLICATE_EVENT_WINDOW_MS) {
+        return true;
+      }
+
+      recentEventKeys.current.set(key, now);
+      return false;
+    };
+
+    const handlePaymentEvent = (
+      data: PaymentStatusChangeEvent,
+      eventName: "payment-status-change" | "topup-success",
+    ) => {
+      console.info(`[payment] ${eventName} received`, {
         ...data,
         receivedAt: new Date().toISOString(),
       });
+
+      if (shouldSkipDuplicateEvent(data)) {
+        console.info("[payment] duplicate payment event skipped", {
+          eventName,
+          transactionType: data.transactionType,
+          orderId: data.orderId,
+          withdrawRequestId: data.withdrawRequestId,
+          status: data.status || data.newStatus,
+        });
+        return;
+      }
 
       const eventStatus = data.status || data.newStatus;
 
       // [FRONTEND I18N ROLE] Resolve messageKey ONLY at UI Layer (Toasts)
       if (eventStatus === "SUCCESS") {
-        toast.success(tMsg(data.message) || tMsg("payment.status.success"));
+        const successMessage =
+          data.transactionType === "TOPUP"
+            ? tMsg("payment.topupSuccessTitle")
+            : tMsg(data.message) || tMsg("payment.status.success");
+
+        toast.success(successMessage);
         if (data.transactionType === "TOPUP" && pathname !== "/premium/success") {
           setTimeout(() => router.push("/premium/success"), 1000);
         }
@@ -138,11 +201,18 @@ export function PaymentSocketProvider({
       statusChangeCallbacks.current.forEach((cb) => cb(data));
     };
 
+    const handlePaymentStatusChange = (data: PaymentStatusChangeEvent) => {
+      handlePaymentEvent(data, "payment-status-change");
+    };
+
+    const handleTopupSuccess = (data: TopupSuccessEvent) => {
+      handlePaymentEvent(normalizeTopupSuccess(data), "topup-success");
+    };
+
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("payment-status-change", handlePaymentStatusChange);
-    // topup-success is handled exclusively by PaymentStatus via payment-status-change;
-    // no duplicate toast needed here.
+    s.on("topup-success", handleTopupSuccess);
 
     if (s.connected) {
       queueMicrotask(handleConnect);
@@ -152,6 +222,7 @@ export function PaymentSocketProvider({
       s.off("connect", handleConnect);
       s.off("disconnect", handleDisconnect);
       s.off("payment-status-change", handlePaymentStatusChange);
+      s.off("topup-success", handleTopupSuccess);
       queueMicrotask(() => {
         setSocket((current) => (current === s ? null : current));
       });

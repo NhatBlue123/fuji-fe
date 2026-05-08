@@ -79,6 +79,7 @@ function intentToLabel(intent?: string) {
   if (intent === "grammar") return "Ngu phap";
   if (intent === "product") return "Khoa hoc";
   if (intent === "guide") return "Huong dan";
+  if (intent === "orchestrator" || intent === "routing") return "Dang dieu phoi";
   if (intent === "general_reject") return "Tu choi";
   if (intent === "grammar_qa") return "Ngu phap";
   if (intent === "reasoning" || intent === "deep_help") return "Suy luận";

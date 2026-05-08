@@ -389,7 +389,12 @@ export default function MySchedulePage() {
         isGenerating={summaryLoading}
         error={summaryError}
         onRetry={handleRetrySummary}
-        isNoDataError={summaryError?.includes("không có dữ liệu") || summaryError?.includes("no data")}
+        isNoDataError={
+          summaryError?.toLowerCase().includes("không có dữ liệu") ||
+          summaryError?.toLowerCase().includes("no data") ||
+          summaryError?.toLowerCase().includes("no transcripts") ||
+          summaryError?.toLowerCase().includes("transcript")
+        }
       />
 
       {/* --- MODAL XÁC NHẬN HỦY --- */}

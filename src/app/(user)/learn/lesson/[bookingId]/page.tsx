@@ -12,6 +12,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useDailyRoom } from "@/hooks/useDailyRoom";
 import { useStompChat } from "@/hooks/useStompChat";
 import { useMeetingSummary } from "@/hooks/useMeetingSummary";
+import { useTranscriptSync } from "@/hooks/useTranscriptSync";
+import { useVoiceTranscript } from "@/hooks/useVoiceTranscript";
 import {
   useCreateLessonRoomMutation,
   useEndLessonMutation,
@@ -73,6 +75,7 @@ export default function LessonPage() {
     meetingSummary.loadSettings();
   }, []);
 
+
   const role: "TEACHER" | "STUDENT" = useMemo(() => {
     if (!lessonData || !user) return "STUDENT";
     return lessonData.teacherName === user.fullName ? "TEACHER" : "STUDENT";
@@ -102,6 +105,17 @@ export default function LessonPage() {
     }
   );
 
+  // Transcript sync hook — auto-saves TEXT chat messages as transcripts for AI Summary
+  // Placed here to ensure liveMessages and role are already defined
+  const { flushAll: flushTranscripts } = useTranscriptSync(liveMessages, {
+    lessonId: lessonData?.lessonId ?? null,
+    role,
+    userId: Number(user?.id ?? 0),
+    userName: user?.fullName ?? "Unknown",
+    accessToken: accessToken ?? null,
+    enabled: meetingSummary.settings.enabled,
+  });
+
   // Daily.co room connection
   const {
     participants,
@@ -118,6 +132,18 @@ export default function LessonPage() {
     stopScreenShare,
     leave,
   } = useDailyRoom(lessonData?.roomUrl ?? null, lessonData?.token ?? null);
+
+  // Voice transcript — streams mic audio to AssemblyAI realtime, saves final turns as transcripts
+  // Starts automatically when mic is on, pauses when mic is off
+  useVoiceTranscript({
+    lessonId: lessonData?.lessonId ?? null,
+    role,
+    userId: Number(user?.id ?? 0),
+    userName: user?.fullName ?? "Unknown",
+    accessToken: accessToken ?? null,
+    isMicOn,
+    enabled: meetingSummary.settings.enabled,
+  });
 
   // Screen share participant
   const screenShareParticipant = useMemo(
@@ -177,13 +203,15 @@ export default function LessonPage() {
   const endSessionOnly = useCallback(async () => {
     if (lessonData) {
       try {
+        // Flush any un-synced transcripts before ending so AI Summary has all data
+        await flushTranscripts(liveMessages);
         await endLesson({ lessonId: lessonData.lessonId }).unwrap();
         toast.success(t("lesson.ended"));
       } catch {
         toast.error(t("lesson.errorEnd"));
       }
     }
-  }, [lessonData, endLesson]);
+  }, [lessonData, endLesson, flushTranscripts, liveMessages]);
 
   const handleEndCall = useCallback(async () => {
     if (role === "TEACHER") {

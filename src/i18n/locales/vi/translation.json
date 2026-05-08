@@ -452,7 +452,9 @@
     "socketFallback": "Đang kiểm tra trạng thái (polling)...",
     "cancelTransaction": "Hủy giao dịch",
     "bank": "Ngân hàng",
+    "accountHolder": "Chủ tài khoản",
     "amountNeeded": "Số hoa cần nạp",
+    "actualTransferAmount": "Số tiền chuyển",
     "successPopupKicker": "Đã xác nhận tự động",
     "successPopupTitle": "Thanh toán thành công",
     "successPopupDesc": "Hoa đã được cộng vào ví. Bạn vẫn ở trang hiện tại để tiếp tục thao tác.",
@@ -673,7 +675,7 @@
       "videoCall": { "title": "Video Call học trực tiếp", "desc": "Vào phòng học online để luyện nghe nói theo thời gian thực cùng giáo viên bản ngữ.", "badge": "Realtime" },
       "flashcards2": { "title": "Flashcards thông minh", "desc": "Ôn từ vựng bằng bộ thẻ SRS, luyện bài tập fill-blank và trắc nghiệm mỗi ngày.", "badge": "SRS" },
       "premium2": { "title": "Premium và gói học", "desc": "Xem gói nâng cấp, lịch sử sử dụng và ưu đãi đang áp dụng cho tài khoản của bạn.", "badge": "Upgrade" },
-      "wallet": { "title": "Ví, nạp rút & thanh toán", "desc": "Quản lý số dư, rút tiền, lịch sử giao dịch và thông tin thanh toán an toàn.", "badge": "Finance" }
+      "wallet": { "title": "Ví và lịch sử thanh toán", "desc": "Xem số dư ví, lịch sử nạp và lịch sử chi tiêu của tài khoản.", "badge": "Finance" }
     },
     "jlptSection": {
       "badge": "Luyện thi JLPT",

@@ -39,6 +39,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
       "/admin/teacher-schedules",
       "/admin/courses",
       "/admin/courses/finance/teacher",
+      "/admin/my-wallet",
     ];
     return candidates.find((route) => canAccessRoute(route)) ?? redirectTo;
   }, [canAccessRoute, redirectTo]);

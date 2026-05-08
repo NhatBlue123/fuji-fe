@@ -451,7 +451,9 @@
     "socketFallback": "Checking status (polling)...",
     "cancelTransaction": "Cancel Transaction",
     "bank": "Bank",
+    "accountHolder": "Account holder",
     "amountNeeded": "Blossom amount",
+    "actualTransferAmount": "Transfer amount",
     "successPopupKicker": "Auto confirmed",
     "successPopupTitle": "Payment successful",
     "successPopupDesc": "Blossoms have been added to your wallet. You can keep working on this page.",
@@ -675,7 +677,7 @@
       "videoCall": { "title": "Live video classes", "desc": "Join an online classroom and practice listening and speaking in real time with teachers.", "badge": "Realtime" },
       "flashcards2": { "title": "Smart flashcards", "desc": "Review vocabulary with SRS cards, fill-blank drills, and multiple-choice practice.", "badge": "SRS" },
       "premium2": { "title": "Premium plans", "desc": "View upgrades, usage history, and benefits available for your account.", "badge": "Upgrade" },
-      "wallet": { "title": "Wallet and payments", "desc": "Manage balance, withdrawals, transaction history, and secure payment details.", "badge": "Finance" }
+      "wallet": { "title": "Wallet and payment history", "desc": "View wallet balance, top-up history, and spending history for your account.", "badge": "Finance" }
     },
     "jlptSection": {
       "badge": "JLPT training",

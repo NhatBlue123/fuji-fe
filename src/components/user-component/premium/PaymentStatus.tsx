@@ -448,7 +448,7 @@ export default function PaymentStatus({
                   onCopy={() => copyToClipboard(accountNo, t("wallet.table.id"))}
                   isBold
                 />
-                <InfoRow label={t("wallet.withdraw.accountHolder")} value={accountName} />
+                <InfoRow label={t("payment.accountHolder")} value={accountName} />
                 <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase text-pink-400 tracking-widest">
@@ -458,7 +458,7 @@ export default function PaymentStatus({
                       {displayAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      {t("wallet.withdraw.actualReceived")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
+                      {t("payment.actualTransferAmount")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
                     </p>
                   </div>
                   <div className="p-2 bg-pink-500 rounded-xl">

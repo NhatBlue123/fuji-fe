@@ -493,7 +493,7 @@
       "videoCall": { "title": "ライブビデオ授業", "desc": "オンライン教室でネイティブ教師とリアルタイムで練習できます。", "badge": "Realtime" },
       "flashcards2": { "title": "スマートフラッシュカード", "desc": "SRSシステムで単語を復習し、穴埋めや選択問題も毎日練習。", "badge": "SRS" },
       "premium2": { "title": "プレミアム・プラン", "desc": "アップグレードプランと現在適用中の特典をご確認ください。", "badge": "Upgrade" },
-      "wallet": { "title": "ウォレット・決済管理", "desc": "残高管理、出金、取引履歴、安全な決済情報の確認。", "badge": "Finance" }
+      "wallet": { "title": "ウォレットと決済履歴", "desc": "ウォレット残高、チャージ履歴、利用履歴を確認できます。", "badge": "Finance" }
     },
     "jlptSection": {
       "badge": "JLPT 練習",
@@ -788,7 +788,9 @@
     "socketFallback": "ステータスを確認中（ポーリング）...",
     "cancelTransaction": "取引をキャンセル",
     "bank": "銀行",
+    "accountHolder": "口座名義",
     "amountNeeded": "チャージ額",
+    "actualTransferAmount": "振込金額",
     "successPopupKicker": "自動確認済み",
     "successPopupTitle": "支払いが完了しました",
     "successPopupDesc": "Blossomがウォレットに追加されました。このページのまま操作を続けられます。",

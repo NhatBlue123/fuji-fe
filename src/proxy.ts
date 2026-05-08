@@ -14,7 +14,6 @@ const PRIVATE_PATHS = [
   "/profile",
   "/settings",
   "/notifications",
-  "/withdraw",
   "/learn",
   "/video-call",
   "/reports",

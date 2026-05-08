@@ -121,12 +121,12 @@ export function AdminSidebar() {
         },
         {
           title: "Ví của tôi",
-          href: "/profile/wallet",
+          href: "/admin/my-wallet",
           icon: Wallet,
         },
         {
           title: "Rút tiền của tôi",
-          href: "/withdraw",
+          href: "/admin/my-withdraw",
           icon: Wallet,
         },
         {

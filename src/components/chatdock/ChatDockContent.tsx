@@ -11,7 +11,6 @@ import { Loader2 } from "lucide-react";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import {
   useCreateAiConversationMutation,
-  useCreateAiMessageMutation,
 } from "@/store/services/aiChatHistoryApi";
 import {
   parseResponse,
@@ -61,10 +60,14 @@ function formatThinkingItems(items: RouterThinkingItem[]) {
     .join("\n");
 }
 
+function createClientMessageId() {
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `chat_${Date.now().toString(36)}_${randomPart}`;
+}
+
 export default function ChatDockContent() {
   const { socket, isConnected } = useAIChatSocket();
   const [createAiConversation] = useCreateAiConversationMutation();
-  const [createAiMessage] = useCreateAiMessageMutation();
 
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
@@ -408,18 +411,6 @@ export default function ChatDockContent() {
           return prev;
         });
 
-        const conversationId = activeConversationRef.current;
-        if (conversationId && content.trim()) {
-          createAiMessage({
-            conversationId,
-            role: "assistant",
-            content,
-            modelVersion: "gpt-5.4-mini",
-          })
-            .unwrap()
-            .catch(() => {});
-        }
-
         streamBufferRef.current = "";
       }
     };
@@ -441,7 +432,7 @@ export default function ChatDockContent() {
       socket.off("chat:queued", handleQueued);
       socket.off("chat:stream", handleStream);
     };
-  }, [socket, armWatchdog, resolveResponseTimeMs, createAiMessage]);
+  }, [socket, armWatchdog, resolveResponseTimeMs]);
 
   const ensureConversationId = useCallback(async (firstMessage: string) => {
     if (activeConversationRef.current) return activeConversationRef.current;
@@ -468,12 +459,6 @@ export default function ChatDockContent() {
     activeConversationRef.current = conversationId;
     sessionIdRef.current = `conv_${conversationId}`;
 
-    await createAiMessage({
-      conversationId,
-      role: "user",
-      content: trimmed,
-    }).unwrap().catch(() => {});
-
     streamBufferRef.current = "";
     setMessages((prev) => [
       ...prev,
@@ -487,6 +472,7 @@ export default function ChatDockContent() {
     setRouterThinking([]);
     routerThinkingRef.current = [];
     typingStartedAtRef.current = Date.now();
+    const clientMessageId = createClientMessageId();
 
     socket.emit(
       "chat:send",
@@ -495,6 +481,7 @@ export default function ChatDockContent() {
         message: trimmed,
         mode: "basic",
         deepHelp: false,
+        clientMessageId,
       },
       (ack: {
         ok: boolean;
@@ -521,7 +508,6 @@ export default function ChatDockContent() {
     socket,
     isConnected,
     ensureConversationId,
-    createAiMessage,
     armWatchdog,
     finishStreamingWithError,
   ]);

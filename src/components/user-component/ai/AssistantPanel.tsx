@@ -16,7 +16,6 @@ import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import { useGetMyAiQuotaQuery } from "@/store/services/aiQuotaApi";
 import {
   useCreateAiConversationMutation,
-  useCreateAiMessageMutation,
   useDeleteAiConversationMutation,
   useGetAiConversationsQuery,
   useLazyGetAiMessagesQuery,
@@ -97,6 +96,11 @@ function formatThinkingItems(items: RouterThinkingItem[]) {
     .join("\n");
 }
 
+function createClientMessageId() {
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `chat_${Date.now().toString(36)}_${randomPart}`;
+}
+
 function mapMessagesToAssistantMessages(list: AiMessage[]): AssistantMessage[] {
   return list.map((m) => {
     if (m.role === "assistant") {
@@ -168,7 +172,6 @@ export default function AssistantPanel({
     Boolean(forceNewDraft),
   );
   const [createAiConversation] = useCreateAiConversationMutation();
-  const [createAiMessage] = useCreateAiMessageMutation();
   const [deleteAiConversation] = useDeleteAiConversationMutation();
 
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
@@ -890,23 +893,9 @@ export default function AssistantPanel({
           return prev;
         });
 
-        const conversationId = activeConversationRef.current;
-        if (conversationId && content.trim()) {
-          createAiMessage({
-            conversationId,
-            role: "assistant",
-            content,
-            modelVersion: "gpt-5.4-mini",
-          })
-            .unwrap()
-            .then(() => {
-              refetchConversations();
-            })
-            .catch(() => {});
-        }
-
         streamBufferRef.current = "";
         if (content.trim()) {
+          refetchConversations();
           refetchAiQuota();
         }
       }
@@ -931,7 +920,6 @@ export default function AssistantPanel({
     };
   }, [
     socket,
-    createAiMessage,
     refetchConversations,
     refetchAiQuota,
     armWatchdog,
@@ -998,14 +986,6 @@ export default function AssistantPanel({
     sessionIdRef.current = `conv_${conversationId}`;
     optimisticConversationRef.current = conversationId;
 
-    await createAiMessage({
-      conversationId,
-      role: "user",
-      content: trimmed,
-    })
-      .unwrap()
-      .catch(() => {});
-
     // Add local user + placeholder assistant messages for streaming UX
     streamBufferRef.current = "";
     pendingBottomScrollBehaviorRef.current = "smooth";
@@ -1023,6 +1003,7 @@ export default function AssistantPanel({
     setRouterThinking([]);
     routerThinkingRef.current = [];
     armWatchdog();
+    const clientMessageId = createClientMessageId();
 
     // Emit to socket
     socket.emit(
@@ -1032,6 +1013,7 @@ export default function AssistantPanel({
         message: trimmed,
         mode: useDeepHelp ? "reasoning" : "basic",
         deepHelp: useDeepHelp,
+        clientMessageId,
       },
       (ack: { 
         ok: boolean; 
@@ -1066,7 +1048,6 @@ export default function AssistantPanel({
     isBasicChatQuotaEmpty,
     isDeepChatQuotaEmpty,
     ensureConversationId,
-    createAiMessage,
     armWatchdog,
     forceFinishStreaming,
     refetchAiQuota,

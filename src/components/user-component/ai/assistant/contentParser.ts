@@ -717,6 +717,98 @@ function findBalancedJsonEnd(source: string, start: number): number {
   return -1;
 }
 
+function expandLooseJsonFromPlainText(text: string): AssistantContentSegment[] {
+  const segments: AssistantContentSegment[] = [];
+  let cursor = 0;
+  let searchFrom = 0;
+
+  while (searchFrom < text.length) {
+    const nextArray = text.indexOf("[", searchFrom);
+    const nextObject = text.indexOf("{", searchFrom);
+
+    let start = -1;
+    if (nextArray === -1) {
+      start = nextObject;
+    } else if (nextObject === -1) {
+      start = nextArray;
+    } else {
+      start = Math.min(nextArray, nextObject);
+    }
+
+    if (start === -1) {
+      break;
+    }
+
+    const end = findBalancedJsonEnd(text, start);
+    if (end === -1) {
+      searchFrom = start + 1;
+      continue;
+    }
+
+    const jsonCandidate = text.slice(start, end + 1).trim();
+    const parsed = tryParseJsonValue(jsonCandidate);
+    let structured: AssistantContentSegment | null = null;
+
+    const previewItems = sanitizeCoursePreviewItems(parsed);
+    if (previewItems.length > 0) {
+      structured = { kind: "course-preview", items: previewItems };
+    } else {
+      const comparePayload = sanitizeCourseComparePayload(parsed);
+      if (comparePayload) {
+        structured = { kind: "course-compare", payload: comparePayload };
+      } else {
+        const nextStepsPayload = sanitizeNextStepsPayload(parsed);
+        if (nextStepsPayload) {
+          structured = { kind: "next-steps", payload: nextStepsPayload };
+        } else {
+          const paymentPayload = sanitizePaymentActionPayload(parsed);
+          if (paymentPayload) {
+            structured = { kind: "payment-action", payload: paymentPayload };
+          } else {
+            const purchaseSummary = sanitizePurchaseSummaryPayload(parsed);
+            if (purchaseSummary) {
+              structured = {
+                kind: "purchase-summary",
+                payload: purchaseSummary,
+              };
+            } else {
+              const quickFacts = sanitizeQuickFactsPayload(parsed);
+              if (quickFacts.length > 0) {
+                structured = { kind: "quick-facts", facts: quickFacts };
+              } else {
+                const actionLinks = sanitizeActionLinksPayload(parsed);
+                if (actionLinks.length > 0) {
+                  structured = { kind: "action-links", links: actionLinks };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (structured) {
+      const before = text.slice(cursor, start).trim();
+      if (before) {
+        segments.push({ kind: "markdown", content: before });
+      }
+      segments.push(structured);
+      cursor = end + 1;
+      searchFrom = end + 1;
+      continue;
+    }
+
+    searchFrom = start + 1;
+  }
+
+  const tail = text.slice(cursor).trim();
+  if (tail) {
+    segments.push({ kind: "markdown", content: tail });
+  }
+
+  return segments.length > 0 ? segments : [{ kind: "markdown", content: text }];
+}
+
 function splitLooseJsonFromMarkdown(
   markdown: string,
 ): AssistantContentSegment[] {
@@ -737,95 +829,33 @@ function splitLooseJsonFromMarkdown(
     const text = String(markerSegment.content || "");
     if (!text.trim()) continue;
 
-    const segments: AssistantContentSegment[] = [];
+    const codeFenceRe = /```[\s\S]*?```/g;
     let cursor = 0;
-    let searchFrom = 0;
+    let foundCodeFence = false;
+    let match: RegExpExecArray | null;
 
-    while (searchFrom < text.length) {
-      const nextArray = text.indexOf("[", searchFrom);
-      const nextObject = text.indexOf("{", searchFrom);
-
-      let start = -1;
-      if (nextArray === -1) {
-        start = nextObject;
-      } else if (nextObject === -1) {
-        start = nextArray;
-      } else {
-        start = Math.min(nextArray, nextObject);
+    while ((match = codeFenceRe.exec(text))) {
+      foundCodeFence = true;
+      const before = text.slice(cursor, match.index);
+      if (before.trim()) {
+        finalSegments.push(...expandLooseJsonFromPlainText(before));
       }
 
-      if (start === -1) {
-        break;
+      const codeBlock = match[0].trim();
+      if (codeBlock) {
+        finalSegments.push({ kind: "markdown", content: codeBlock });
       }
 
-      const end = findBalancedJsonEnd(text, start);
-      if (end === -1) {
-        searchFrom = start + 1;
-        continue;
-      }
-
-      const jsonCandidate = text.slice(start, end + 1).trim();
-      const parsed = tryParseJsonValue(jsonCandidate);
-      let structured: AssistantContentSegment | null = null;
-
-      const previewItems = sanitizeCoursePreviewItems(parsed);
-      if (previewItems.length > 0) {
-        structured = { kind: "course-preview", items: previewItems };
-      } else {
-        const comparePayload = sanitizeCourseComparePayload(parsed);
-        if (comparePayload) {
-          structured = { kind: "course-compare", payload: comparePayload };
-        } else {
-          const nextStepsPayload = sanitizeNextStepsPayload(parsed);
-          if (nextStepsPayload) {
-            structured = { kind: "next-steps", payload: nextStepsPayload };
-          } else {
-            const paymentPayload = sanitizePaymentActionPayload(parsed);
-            if (paymentPayload) {
-              structured = { kind: "payment-action", payload: paymentPayload };
-            } else {
-              const purchaseSummary = sanitizePurchaseSummaryPayload(parsed);
-              if (purchaseSummary) {
-                structured = { kind: "purchase-summary", payload: purchaseSummary };
-              } else {
-                const quickFacts = sanitizeQuickFactsPayload(parsed);
-                if (quickFacts.length > 0) {
-                  structured = { kind: "quick-facts", facts: quickFacts };
-                } else {
-                  const actionLinks = sanitizeActionLinksPayload(parsed);
-                  if (actionLinks.length > 0) {
-                    structured = { kind: "action-links", links: actionLinks };
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (structured) {
-        const before = text.slice(cursor, start).trim();
-        if (before) {
-          segments.push({ kind: "markdown", content: before });
-        }
-        segments.push(structured);
-        cursor = end + 1;
-        searchFrom = end + 1;
-        continue;
-      }
-
-      searchFrom = start + 1;
+      cursor = codeFenceRe.lastIndex;
     }
 
-    const tail = text.slice(cursor).trim();
-    if (tail) {
-      segments.push({ kind: "markdown", content: tail });
+    const tail = text.slice(cursor);
+    if (tail.trim()) {
+      finalSegments.push(...expandLooseJsonFromPlainText(tail));
     }
 
-    if (segments.length === 0) {
+    if (!foundCodeFence && !tail.trim()) {
       finalSegments.push({ kind: "markdown", content: text });
-    } else {
-      finalSegments.push(...segments);
     }
   }
 

@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
+type CouponDiscountType = "PERCENT" | "FIXED_AMOUNT";
+
 interface PackageForm {
   code: string;
   name: string;
@@ -50,7 +52,8 @@ interface PackageForm {
   sensei: number;
   flashcardImages: number;
   couponEnabled: boolean;
-  couponDiscountPercent: number;
+  couponDiscountType: CouponDiscountType;
+  couponDiscountValue: number;
   couponCount: number;
   couponUses: number;
   couponExpiresDays: number;
@@ -71,7 +74,8 @@ const emptyForm: PackageForm = {
   sensei: 1,
   flashcardImages: 10,
   couponEnabled: false,
-  couponDiscountPercent: 10,
+  couponDiscountType: "FIXED_AMOUNT",
+  couponDiscountValue: 10,
   couponCount: 1,
   couponUses: 1,
   couponExpiresDays: 30,
@@ -88,8 +92,18 @@ const errorMessage = (error: unknown, fallback: string) => {
 const featureValue = (pkg: SystemPackage, key: string) =>
   pkg.features.find((item) => item.featureKey === key)?.quotaAmount ?? 0;
 
+const bookingCouponRule = (pkg: SystemPackage) =>
+  pkg.couponRules.find((item) => item.couponScope === "BOOKING");
+
+const couponDiscountLabel = (rule: SystemPackage["couponRules"][number]) =>
+  rule.discountType === "PERCENT"
+    ? `Giảm ${rule.discountValue}%`
+    : `Giảm ${Number(rule.discountValue || 0).toLocaleString()} hoa`;
+
 const toForm = (pkg: SystemPackage): PackageForm => {
-  const coupon = pkg.couponRules.find((item) => item.couponScope === "BOOKING");
+  const coupon = bookingCouponRule(pkg);
+  const couponDiscountType: CouponDiscountType =
+    coupon?.discountType === "PERCENT" ? "PERCENT" : "FIXED_AMOUNT";
   return {
     code: pkg.code,
     name: pkg.name,
@@ -105,7 +119,8 @@ const toForm = (pkg: SystemPackage): PackageForm => {
     sensei: featureValue(pkg, "AI_SENSEI_SESSION"),
     flashcardImages: featureValue(pkg, "FLASHCARD_IMAGE_OPERATION"),
     couponEnabled: Boolean(coupon),
-    couponDiscountPercent: coupon?.discountValue ?? 10,
+    couponDiscountType,
+    couponDiscountValue: coupon?.discountValue ?? 10,
     couponCount: coupon?.generatedCouponCount ?? 1,
     couponUses: coupon?.usageLimitPerCoupon ?? 1,
     couponExpiresDays: coupon?.expiresAfterDays ?? 30,
@@ -131,8 +146,8 @@ const toPayload = (form: PackageForm): SystemPackagePayload => ({
   couponRules: form.couponEnabled
     ? [{
         couponScope: "BOOKING",
-        discountType: "PERCENT",
-        discountValue: Number(form.couponDiscountPercent) || 0,
+        discountType: form.couponDiscountType,
+        discountValue: Number(form.couponDiscountValue) || 0,
         generatedCouponCount: Number(form.couponCount) || 1,
         usageLimitPerCoupon: Number(form.couponUses) || 1,
         usageLimitPerUser: Number(form.couponUses) || 1,
@@ -175,6 +190,23 @@ export default function AdminPackagesPage() {
     if (!editing && form.active && activeCount >= 3) {
       toast.error("Chỉ được mở bán tối đa 3 gói cùng lúc");
       return;
+    }
+    if (form.couponEnabled) {
+      const discountValue = Number(form.couponDiscountValue);
+      if (
+        form.couponDiscountType === "PERCENT" &&
+        (!Number.isFinite(discountValue) || discountValue < 1 || discountValue > 100)
+      ) {
+        toast.error("Phần trăm giảm phải nằm trong khoảng 1-100");
+        return;
+      }
+      if (
+        form.couponDiscountType === "FIXED_AMOUNT" &&
+        (!Number.isFinite(discountValue) || discountValue <= 0)
+      ) {
+        toast.error("Số hoa giảm phải lớn hơn 0");
+        return;
+      }
     }
     try {
       const payload = toPayload(form);
@@ -226,38 +258,50 @@ export default function AdminPackagesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {packages.map((pkg) => (
-              <TableRow key={pkg.id}>
-                <TableCell>
-                  <div className="font-semibold">{pkg.name}</div>
-                  <div className="text-xs text-muted-foreground">{pkg.code}</div>
-                </TableCell>
-                <TableCell>{pkg.priceHoa.toLocaleString()} hoa / {pkg.durationDays} ngày</TableCell>
-                <TableCell className="text-xs">
-                  Trò chuyện {featureValue(pkg, "AI_CHAT_BASIC")} | Suy luận {featureValue(pkg, "AI_CHAT_DEEP")} | Sensei {featureValue(pkg, "AI_SENSEI_SESSION")} | Ảnh {featureValue(pkg, "FLASHCARD_IMAGE_OPERATION")}
-                </TableCell>
-                <TableCell>
-                  {pkg.couponRules.length ? <Badge>{pkg.couponRules.length} quy tắc</Badge> : <Badge variant="secondary">Không</Badge>}
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={pkg.active}
-                    disabled={!pkg.active && activeCount >= 3}
-                    onCheckedChange={async (active) => {
-                      try {
-                        await setActive({ id: pkg.id, active }).unwrap();
-                      } catch (error: unknown) {
-                        toast.error(errorMessage(error, "Không thể đổi trạng thái"));
-                      }
-                    }}
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(pkg)}><Edit3 className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => duplicatePackage(pkg.id)}><Copy className="h-4 w-4" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {packages.map((pkg) => {
+              const bookingCoupon = bookingCouponRule(pkg);
+              return (
+                <TableRow key={pkg.id}>
+                  <TableCell>
+                    <div className="font-semibold">{pkg.name}</div>
+                    <div className="text-xs text-muted-foreground">{pkg.code}</div>
+                  </TableCell>
+                  <TableCell>{pkg.priceHoa.toLocaleString()} hoa / {pkg.durationDays} ngày</TableCell>
+                  <TableCell className="text-xs">
+                    Trò chuyện {featureValue(pkg, "AI_CHAT_BASIC")} | Suy luận {featureValue(pkg, "AI_CHAT_DEEP")} | Sensei {featureValue(pkg, "AI_SENSEI_SESSION")} | Ảnh {featureValue(pkg, "FLASHCARD_IMAGE_OPERATION")}
+                  </TableCell>
+                  <TableCell>
+                    {bookingCoupon ? (
+                      <div className="space-y-1">
+                        <Badge>{couponDiscountLabel(bookingCoupon)}</Badge>
+                        <div className="text-xs text-muted-foreground">
+                          {bookingCoupon.generatedCouponCount} mã · {bookingCoupon.usageLimitPerCoupon} lượt/mã
+                        </div>
+                      </div>
+                    ) : (
+                      <Badge variant="secondary">Không</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={pkg.active}
+                      disabled={!pkg.active && activeCount >= 3}
+                      onCheckedChange={async (active) => {
+                        try {
+                          await setActive({ id: pkg.id, active }).unwrap();
+                        } catch (error: unknown) {
+                          toast.error(errorMessage(error, "Không thể đổi trạng thái"));
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(pkg)}><Edit3 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => duplicatePackage(pkg.id)}><Copy className="h-4 w-4" /></Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -285,8 +329,34 @@ export default function AdminPackagesPage() {
             <label className="flex items-center gap-2 text-sm"><Switch checked={form.couponEnabled} onCheckedChange={(couponEnabled) => setForm({ ...form, couponEnabled })} /> Tặng mã đặt lịch</label>
           </div>
           {form.couponEnabled && (
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2"><Label>Giảm %</Label><Input type="number" value={form.couponDiscountPercent} onChange={(e) => setForm({ ...form, couponDiscountPercent: Number(e.target.value) })} /></div>
+            <div className="grid gap-4 md:grid-cols-6">
+              <div className="space-y-2 md:col-span-2">
+                <Label>Loại giảm</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={form.couponDiscountType === "FIXED_AMOUNT" ? "default" : "outline"}
+                    onClick={() => setForm({ ...form, couponDiscountType: "FIXED_AMOUNT" })}
+                  >
+                    Hoa
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={form.couponDiscountType === "PERCENT" ? "default" : "outline"}
+                    onClick={() => setForm({ ...form, couponDiscountType: "PERCENT" })}
+                  >
+                    %
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{form.couponDiscountType === "FIXED_AMOUNT" ? "Giảm hoa" : "Giảm %"}</Label>
+                <Input
+                  type="number"
+                  value={form.couponDiscountValue}
+                  onChange={(e) => setForm({ ...form, couponDiscountValue: Number(e.target.value) })}
+                />
+              </div>
               <div className="space-y-2"><Label>Số mã</Label><Input type="number" value={form.couponCount} onChange={(e) => setForm({ ...form, couponCount: Number(e.target.value) })} /></div>
               <div className="space-y-2"><Label>Lượt/mã</Label><Input type="number" value={form.couponUses} onChange={(e) => setForm({ ...form, couponUses: Number(e.target.value) })} /></div>
               <div className="space-y-2"><Label>Hạn ngày</Label><Input type="number" value={form.couponExpiresDays} onChange={(e) => setForm({ ...form, couponExpiresDays: Number(e.target.value) })} /></div>

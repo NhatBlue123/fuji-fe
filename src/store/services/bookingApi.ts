@@ -70,7 +70,7 @@ export const bookingApi = baseApi.injectEndpoints({
 
     getBulkBookingQuote: builder.mutation<
       BulkBookingQuote,
-      { teacherId: number; timeSlotIds: number[] }
+      { teacherId: number; timeSlotIds: number[]; couponCode?: string }
     >({
       query: (body) => ({
         url: "/bookings/quote-bulk",

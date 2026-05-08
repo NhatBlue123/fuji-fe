@@ -143,6 +143,7 @@ export interface MonthlyFinancialSummary {
   teacherGrossIncomeHoa: number;
   bookingGrossHoa: number;
   courseGrossHoa: number;
+  withdrawalFeeHoa?: number;
 }
 
 export interface FinancialPeriodSummary {
@@ -160,6 +161,7 @@ export interface FinancialPeriodSummary {
   teacherGrossIncomeHoa: number;
   bookingGrossHoa: number;
   courseGrossHoa: number;
+  withdrawalFeeHoa?: number;
 }
 
 export interface PaymentPeriodStatus {

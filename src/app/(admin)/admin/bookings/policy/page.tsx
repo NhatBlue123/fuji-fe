@@ -19,6 +19,9 @@ const defaults: BookingPolicy = {
   defaultServiceFeeBps: 500,
   proServiceFeeBps: null,
   premiumServiceFeeBps: null,
+  courseDefaultPlatformFeeBps: 0,
+  courseProPlatformFeeBps: null,
+  coursePremiumPlatformFeeBps: null,
   normalCancelPenaltyBps: 5000,
   lateCancelPenaltyBps: 10000,
   lateCancelThresholdHours: 2,
@@ -58,12 +61,13 @@ export default function BookingPolicyPage() {
 
   const sampleTuition = 100;
   const fee = Math.floor((sampleTuition * form.defaultServiceFeeBps) / 10000);
+  const courseFee = Math.floor((sampleTuition * (form.courseDefaultPlatformFeeBps ?? 0)) / 10000);
 
   const save = async () => {
     try {
       await updatePolicy(form).unwrap();
       setDraft(null);
-      toast.success("Đã lưu chính sách đặt lịch");
+      toast.success("Đã lưu chính sách doanh thu");
     } catch (error: unknown) {
       toast.error(errorMessage(error, "Không thể lưu chính sách"));
     }
@@ -72,16 +76,19 @@ export default function BookingPolicyPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Chính sách đặt lịch</h1>
-        <p className="text-sm text-muted-foreground">Quản lý phí nền tảng, phí phạt hủy lịch và quy trình giữ/thu tiền.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Chính sách doanh thu</h1>
+        <p className="text-sm text-muted-foreground">Quản lý phí nền tảng cho booking, khóa học, phí phạt hủy lịch và quy trình giữ/thu tiền.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Phí & hủy lịch</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Phí booking & khóa học</CardTitle></CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2"><Label>Phí nền tảng mặc định (%)</Label><Input value={bpsToPercent(form.defaultServiceFeeBps)} onChange={(e) => setForm({ defaultServiceFeeBps: percentToBps(e.target.value) || 0 })} /></div>
-          <div className="space-y-2"><Label>Phí nền tảng PRO (%)</Label><Input value={bpsToPercent(form.proServiceFeeBps)} onChange={(e) => setForm({ proServiceFeeBps: percentToBps(e.target.value) })} /></div>
-          <div className="space-y-2"><Label>Phí nền tảng PREMIUM (%)</Label><Input value={bpsToPercent(form.premiumServiceFeeBps)} onChange={(e) => setForm({ premiumServiceFeeBps: percentToBps(e.target.value) })} /></div>
+          <div className="space-y-2"><Label>Booking mặc định (%)</Label><Input value={bpsToPercent(form.defaultServiceFeeBps)} onChange={(e) => setForm({ defaultServiceFeeBps: percentToBps(e.target.value) || 0 })} /></div>
+          <div className="space-y-2"><Label>Booking PRO (%)</Label><Input value={bpsToPercent(form.proServiceFeeBps)} onChange={(e) => setForm({ proServiceFeeBps: percentToBps(e.target.value) })} /></div>
+          <div className="space-y-2"><Label>Booking PREMIUM (%)</Label><Input value={bpsToPercent(form.premiumServiceFeeBps)} onChange={(e) => setForm({ premiumServiceFeeBps: percentToBps(e.target.value) })} /></div>
+          <div className="space-y-2"><Label>Khóa học mặc định (%)</Label><Input value={bpsToPercent(form.courseDefaultPlatformFeeBps)} onChange={(e) => setForm({ courseDefaultPlatformFeeBps: percentToBps(e.target.value) || 0 })} /></div>
+          <div className="space-y-2"><Label>Khóa học PRO (%)</Label><Input value={bpsToPercent(form.courseProPlatformFeeBps)} onChange={(e) => setForm({ courseProPlatformFeeBps: percentToBps(e.target.value) })} /></div>
+          <div className="space-y-2"><Label>Khóa học PREMIUM (%)</Label><Input value={bpsToPercent(form.coursePremiumPlatformFeeBps)} onChange={(e) => setForm({ coursePremiumPlatformFeeBps: percentToBps(e.target.value) })} /></div>
           <div className="space-y-2"><Label>Phí phạt hủy thường (%)</Label><Input value={bpsToPercent(form.normalCancelPenaltyBps)} onChange={(e) => setForm({ normalCancelPenaltyBps: percentToBps(e.target.value) || 0 })} /></div>
           <div className="space-y-2"><Label>Phí phạt hủy muộn (%)</Label><Input value={bpsToPercent(form.lateCancelPenaltyBps)} onChange={(e) => setForm({ lateCancelPenaltyBps: percentToBps(e.target.value) || 0 })} /></div>
           <div className="space-y-2"><Label>Ngưỡng hủy muộn giờ</Label><Input type="number" value={form.lateCancelThresholdHours} onChange={(e) => setForm({ lateCancelThresholdHours: Number(e.target.value) })} /></div>
@@ -91,8 +98,13 @@ export default function BookingPolicyPage() {
 
       <Card>
         <CardHeader><CardTitle>Mô phỏng</CardTitle></CardHeader>
-        <CardContent className="text-sm">
-          Với học phí {sampleTuition} hoa: học sinh trả {sampleTuition + fee} hoa, giáo viên nhận {sampleTuition} hoa, nền tảng nhận {fee} hoa.
+        <CardContent className="grid gap-3 text-sm md:grid-cols-2">
+          <div>
+            Booking {sampleTuition} hoa: học sinh trả {sampleTuition + fee} hoa, giáo viên nhận {sampleTuition} hoa, nền tảng nhận {fee} hoa.
+          </div>
+          <div>
+            Khóa học {sampleTuition} hoa: học viên trả {sampleTuition} hoa, giáo viên nhận {sampleTuition - courseFee} hoa, nền tảng nhận {courseFee} hoa.
+          </div>
         </CardContent>
       </Card>
 

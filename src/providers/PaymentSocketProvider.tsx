@@ -11,7 +11,6 @@ import {
 } from "react";
 import type { Socket } from "socket.io-client";
 import { toast } from "sonner";
-import { usePathname, useRouter } from "next/navigation";
 import { tMsg } from "@/i18n";
 
 import { connectPaymentSocket, disconnectPaymentSocket } from "@/lib/socket/socket-payment";
@@ -47,8 +46,6 @@ export function PaymentSocketProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const { accessToken, isAuthenticated, user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -116,12 +113,14 @@ export function PaymentSocketProvider({
 
       // [FRONTEND I18N ROLE] Resolve messageKey ONLY at UI Layer (Toasts)
       if (data.newStatus === "SUCCESS") {
-        toast.success(tMsg(data.message) || tMsg("payment.status.success"));
-        if (data.transactionType === "TOPUP" && pathname !== "/premium/success") {
-          setTimeout(() => router.push("/premium/success"), 1000);
+        if (data.transactionType !== "TOPUP") {
+          toast.success(tMsg(data.message) || tMsg("payment.status.success"));
         }
-      } else if (data.newStatus === "FAILED") {
-        toast.error(tMsg(data.message) || tMsg("payment.status.failed"));
+      } else if (data.newStatus === "FAILED" || data.newStatus === "CANCELLED") {
+        toast.error(
+          tMsg(data.message) ||
+            tMsg(data.newStatus === "CANCELLED" ? "payment.status.cancelled" : "payment.status.failed"),
+        );
       } else {
         toast.info(tMsg(data.message) || tMsg("payment.status.unknown"));
       }
@@ -151,7 +150,7 @@ export function PaymentSocketProvider({
       });
       disconnectPaymentSocket();
     };
-  }, [accessToken, isAuthenticated, pathname, router, user]);
+  }, [accessToken, isAuthenticated, user]);
 
   const value = useMemo(
     () => ({

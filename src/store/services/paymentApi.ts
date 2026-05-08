@@ -23,7 +23,7 @@ export interface CreatePaymentResponse {
 
 export interface PaymentStatusResponse {
   orderId: string;
-  status: "PENDING" | "SUCCESS" | "FAILED";
+  status: "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
   // Canonical app unit
   amount: number;
   currency?: "BLOSSOM" | string;

@@ -21,7 +21,6 @@ const PRIVATE_PATHS = [
   "/oauth2",
   "/offline",
   "/payment",
-  "/premium/success",
   "/course/*/lesson",
   "/flashcards/detail/*/settings",
   "/flashcards/learn",

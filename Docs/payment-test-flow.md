@@ -12,9 +12,9 @@ Body: { amount: 1000000 }
 Response: {
   orderId: "ORDER_xxx",
   amount: 1000000,
-  bankId: "MB",
-  accountNo: "0916146446",
-  accountName: "NHo huy"
+  bankId: "<from XGATE_BANK_ID>",
+  accountNo: "<from XGATE_ACCOUNT_NO>",
+  accountName: "<from XGATE_ACCOUNT_NAME>"
 }
 ```
 

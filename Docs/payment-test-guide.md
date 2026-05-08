@@ -337,13 +337,12 @@ fuji-fe/
 
 ## ⚙️ Configuration
 
-### Environment Variables (Optional)
+### Environment Variables
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8181/api
-NEXT_PUBLIC_BANK_ID=MB
-NEXT_PUBLIC_ACCOUNT_NO=0916146446
-NEXT_PUBLIC_ACCOUNT_NAME=NHo huy
 ```
+
+Thông tin tài khoản nhận tiền do backend trả về từ `XGATE_BANK_ID`, `XGATE_ACCOUNT_NO`, `XGATE_ACCOUNT_NAME`.
 
 ### Development Mode
 - Test flow chỉ hiển thị khi `NODE_ENV === 'development'`

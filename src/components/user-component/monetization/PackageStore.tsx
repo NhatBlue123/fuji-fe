@@ -15,13 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { tMsg } from "@/i18n";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import {
   useGetActiveSystemPackagesQuery,
+  useGetMySystemPackageQuery,
   usePurchaseSystemPackageMutation,
   type PackageCouponRule,
   type PackageFeature,
   type SystemPackage,
+  type UserPackage,
 } from "@/store/services/userMonetizationApi";
 
 const FEATURE_LABEL_KEYS: Record<string, string> = {
@@ -33,6 +36,70 @@ const FEATURE_LABEL_KEYS: Record<string, string> = {
   VIDEO_CALL_ENABLED: "monetization.terms.videoCall",
   FLASHCARD_CREATE_PUBLIC_DECK: "monetization.terms.publicFlashcardDeck",
 };
+
+const UPGRADE_CREDIT_DAYS = 15;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type PackageActionState = "buy" | "upgrade" | "current" | "blocked";
+
+type PurchasePreview = {
+  chargeHoa: number;
+  upgradeCreditHoa: number;
+  isUpgrade: boolean;
+  qualifiesForCredit: boolean;
+  usedDays: number;
+};
+
+function isActiveUserPackage(userPackage?: UserPackage | null) {
+  if (!userPackage) return false;
+  const status = userPackage.status?.toUpperCase();
+  if (status !== "ACTIVE" && status !== "PENDING_SYNC") return false;
+
+  const startsAt = Date.parse(userPackage.startsAt);
+  const expiresAt = Date.parse(userPackage.expiresAt);
+  const now = Date.now();
+  if (Number.isFinite(startsAt) && startsAt > now) return false;
+  return !Number.isFinite(expiresAt) || expiresAt > now;
+}
+
+function getCurrentPackagePrice(currentPackage: UserPackage | null, packages: SystemPackage[]) {
+  if (!currentPackage) return 0;
+  const matched = packages.find((pack) => pack.id === currentPackage.packageId);
+  return Number(currentPackage.priceHoa ?? matched?.priceHoa ?? 0);
+}
+
+function getPurchasePreview(
+  selectedPackage: SystemPackage | null,
+  currentPackage: UserPackage | null,
+  packages: SystemPackage[],
+): PurchasePreview {
+  if (!selectedPackage || !currentPackage || selectedPackage.id === currentPackage.packageId) {
+    return {
+      chargeHoa: Number(selectedPackage?.priceHoa ?? 0),
+      upgradeCreditHoa: 0,
+      isUpgrade: false,
+      qualifiesForCredit: false,
+      usedDays: 0,
+    };
+  }
+
+  const currentPrice = getCurrentPackagePrice(currentPackage, packages);
+  const selectedPrice = Number(selectedPackage.priceHoa ?? 0);
+  const startsAt = Date.parse(currentPackage.startsAt);
+  const usedMs = Number.isFinite(startsAt) ? Math.max(0, Date.now() - startsAt) : 0;
+  const usedDays = Math.floor(usedMs / DAY_MS);
+  const qualifiesForCredit = usedMs < UPGRADE_CREDIT_DAYS * DAY_MS;
+  const upgradeCreditHoa =
+    selectedPrice > currentPrice && qualifiesForCredit ? Math.floor(currentPrice / 2) : 0;
+
+  return {
+    chargeHoa: Math.max(selectedPrice - upgradeCreditHoa, 0),
+    upgradeCreditHoa,
+    isUpgrade: selectedPrice > currentPrice,
+    qualifiesForCredit,
+    usedDays,
+  };
+}
 
 function featureLabel(
   feature: PackageFeature,
@@ -82,16 +149,27 @@ function couponLabel(
 function PackageCard({
   pack,
   onBuy,
+  actionState,
   t,
   locale,
 }: {
   pack: SystemPackage;
   onBuy: (pack: SystemPackage) => void;
+  actionState: PackageActionState;
   t: (key: string, options?: Record<string, unknown>) => string;
   locale: string;
 }) {
   const enabledFeatures = pack.features.filter((item) => item.enabled);
   const activeCoupons = pack.couponRules.filter((item) => item.active);
+  const isBlocked = actionState === "blocked" || actionState === "current";
+  const buttonLabel =
+    actionState === "current"
+      ? t("monetization.terms.currentPackage")
+      : actionState === "blocked"
+        ? t("monetization.actions.unavailablePackage")
+        : actionState === "upgrade"
+          ? t("monetization.actions.upgradePackage")
+          : t("monetization.actions.buyPackage");
 
   return (
     <Card className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border-muted/60 bg-white/80 shadow-xl shadow-black/5 dark:border-white/5 dark:bg-[#0B1120]/80">
@@ -156,11 +234,22 @@ function PackageCard({
         <Button
           type="button"
           className="mt-auto rounded-xl"
+          variant={isBlocked ? "outline" : "default"}
+          disabled={isBlocked}
           onClick={() => onBuy(pack)}
         >
-          <Sparkles className="mr-2 size-4" />
-          {t("monetization.actions.buyPackage")}
+          {actionState === "current" ? (
+            <CheckCircle2 className="mr-2 size-4" />
+          ) : (
+            <Sparkles className="mr-2 size-4" />
+          )}
+          {buttonLabel}
         </Button>
+        {actionState === "blocked" && (
+          <p className="text-center text-xs font-semibold text-muted-foreground">
+            {t("monetization.messages.downgradeBlockedShort")}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -169,13 +258,20 @@ function PackageCard({
 export function PackageStore() {
   const { t, i18n } = useTranslation();
   const { data: packages = [], isLoading } = useGetActiveSystemPackagesQuery();
+  const { data: currentPackageData } = useGetMySystemPackageQuery();
   const { data: wallet } = useGetWalletQuery();
   const [purchasePackage, purchaseState] = usePurchaseSystemPackageMutation();
   const [selectedPackage, setSelectedPackage] = useState<SystemPackage | null>(null);
-  const walletBalance = Number(wallet?.balance ?? 0);
-  const walletAfter = selectedPackage
-    ? walletBalance - Number(selectedPackage.priceHoa ?? 0)
-    : walletBalance;
+  const currentPackage = useMemo(
+    () => (isActiveUserPackage(currentPackageData) ? currentPackageData ?? null : null),
+    [currentPackageData],
+  );
+  const walletBalance = Number(wallet?.availableBalance ?? wallet?.balance ?? 0);
+  const purchasePreview = useMemo(
+    () => getPurchasePreview(selectedPackage, currentPackage, packages),
+    [selectedPackage, currentPackage, packages],
+  );
+  const walletAfter = walletBalance - purchasePreview.chargeHoa;
   const canPay = !selectedPackage || walletAfter >= 0;
   const locale =
     i18n.language === "vi" ? "vi-VN" : i18n.language === "ja" ? "ja-JP" : "en-US";
@@ -185,13 +281,29 @@ export function PackageStore() {
     [packages],
   );
 
+  const getActionState = (pack: SystemPackage): PackageActionState => {
+    if (!currentPackage) return "buy";
+    if (pack.id === currentPackage.packageId) return "current";
+
+    const currentPrice = getCurrentPackagePrice(currentPackage, packages);
+    const packagePrice = Number(pack.priceHoa ?? 0);
+    if (packagePrice <= currentPrice) return "blocked";
+    return "upgrade";
+  };
+
   const handleConfirmPurchase = async () => {
     if (!selectedPackage || !canPay) return;
     try {
       const result = await purchasePackage(selectedPackage.id).unwrap();
-      toast.success(t("monetization.messages.packagePurchaseSuccess", {
-        name: result.packageName,
-      }));
+      toast.success(t(
+        result.upgraded
+          ? "monetization.messages.packageUpgradeSuccess"
+          : "monetization.messages.packagePurchaseSuccess",
+        {
+          name: result.packageName,
+          from: result.upgradeFromPackageName || currentPackage?.packageName || "",
+        },
+      ));
       if (result.generatedCoupons?.length) {
         toast.success(t("monetization.messages.discountCodesReceived", {
           count: result.generatedCoupons.length,
@@ -201,8 +313,12 @@ export function PackageStore() {
         toast.message(t("monetization.messages.aiSyncPending"));
       }
       setSelectedPackage(null);
-    } catch {
-      toast.error(t("monetization.messages.packagePurchaseFailed"));
+    } catch (err) {
+      const apiError = err as { data?: { messageKey?: string; message?: string; error?: string } };
+      toast.error(
+        tMsg(apiError.data?.messageKey || apiError.data?.message || apiError.data?.error)
+          || t("monetization.messages.packagePurchaseFailed"),
+      );
     }
   };
 
@@ -252,6 +368,7 @@ export function PackageStore() {
                 key={pack.id}
                 pack={pack}
                 onBuy={setSelectedPackage}
+                actionState={getActionState(pack)}
                 t={t}
                 locale={locale}
               />
@@ -266,14 +383,25 @@ export function PackageStore() {
             <>
               <DialogHeader>
                 <DialogTitle>
-                  {t("monetization.actions.buyPackage")} {selectedPackage.name}
+                  {purchasePreview.isUpgrade
+                    ? t("monetization.actions.upgradePackage")
+                    : t("monetization.actions.buyPackage")}{" "}
+                  {selectedPackage.name}
                 </DialogTitle>
                 <DialogDescription>
-                  {t("monetization.messages.reviewBeforeConfirm")}
+                  {purchasePreview.isUpgrade
+                    ? t("monetization.messages.upgradeReviewBeforeConfirm")
+                    : t("monetization.messages.reviewBeforeConfirm")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="rounded-2xl border border-border p-4">
+                  {purchasePreview.isUpgrade && currentPackage && (
+                    <div className="mb-2 flex justify-between gap-4 text-sm">
+                      <span>{t("monetization.terms.currentPackage")}</span>
+                      <strong className="text-right">{currentPackage.packageName}</strong>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span>{t("monetization.messages.packagePrice")}</span>
                     <strong>
@@ -281,6 +409,34 @@ export function PackageStore() {
                       {t("monetization.terms.blossom")}
                     </strong>
                   </div>
+                  {purchasePreview.isUpgrade && (
+                    <>
+                      <div className="mt-2 flex justify-between text-sm">
+                        <span>{t("monetization.messages.upgradeCredit")}</span>
+                        <strong className={purchasePreview.upgradeCreditHoa > 0 ? "text-emerald-600" : "text-muted-foreground"}>
+                          -{purchasePreview.upgradeCreditHoa.toLocaleString(locale)}{" "}
+                          {t("monetization.terms.blossom")}
+                        </strong>
+                      </div>
+                      <div className="mt-2 flex justify-between text-sm">
+                        <span>{t("monetization.messages.amountToPay")}</span>
+                        <strong>
+                          {purchasePreview.chargeHoa.toLocaleString(locale)}{" "}
+                          {t("monetization.terms.blossom")}
+                        </strong>
+                      </div>
+                      <p className="mt-3 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+                        {purchasePreview.qualifiesForCredit
+                          ? t("monetization.messages.upgradeCreditPolicyApplied", {
+                              days: UPGRADE_CREDIT_DAYS,
+                            })
+                          : t("monetization.messages.upgradeCreditPolicyExpired", {
+                              days: UPGRADE_CREDIT_DAYS,
+                              usedDays: purchasePreview.usedDays,
+                            })}
+                      </p>
+                    </>
+                  )}
                   <div className="mt-2 flex justify-between text-sm">
                     <span>{t("monetization.terms.currentWallet")}</span>
                     <strong>

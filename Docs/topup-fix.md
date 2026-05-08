@@ -13,11 +13,11 @@
 ## Giải Pháp
 Đã update `TopupContent.tsx` với 3 giải pháp:
 
-### 1. **Fallback Values từ Environment Variables**
+### 1. **Không dùng fallback ở frontend**
 ```typescript
-const bankId = orderData.bankId || process.env.NEXT_PUBLIC_BANK_ID || "VietComBank"
-const accountNo = orderData.accountNo || process.env.NEXT_PUBLIC_ACCOUNT_NO || ""
-const accountName = orderData.accountName || process.env.NEXT_PUBLIC_ACCOUNT_NAME || "FUJI PLATFORM"
+const bankId = orderData.bankId?.trim()
+const accountNo = orderData.accountNo?.trim()
+const accountName = orderData.accountName?.trim()
 ```
 
 ### 2. **Validate Chi Tiết Hơn**
@@ -29,10 +29,8 @@ const accountName = orderData.accountName || process.env.NEXT_PUBLIC_ACCOUNT_NAM
 # Copy .env.example thành .env.local
 cp .env.example .env.local
 
-# Sau đó cập nhật các giá trị thực từ admin/backend
-NEXT_PUBLIC_BANK_ID=VietComBank
-NEXT_PUBLIC_ACCOUNT_NO=1234567890
-NEXT_PUBLIC_ACCOUNT_NAME=FUJI PLATFORM
+# Tài khoản nhận tiền cấu hình ở backend:
+# XGATE_BANK_ID, XGATE_ACCOUNT_NO, XGATE_ACCOUNT_NAME
 ```
 
 ## Các Bước Cần Làm

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Maximize2, Minimize2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatDockContent from "./ChatDockContent";
-import AiAvatar from "./AiAvatar";
+import FramedAiAvatar from "./FramedAiAvatar";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 
@@ -80,10 +80,10 @@ export default function ChatDock() {
             >
               <Button
                 onClick={handleToggle}
-                className="relative h-16 w-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white shadow-2xl shadow-primary/50 hover:shadow-primary/70 transition-all overflow-visible p-0"
+                className="relative h-16 w-16 overflow-visible rounded-full border-0 bg-transparent p-0 text-white shadow-none hover:bg-transparent"
               >
-                <div className="absolute inset-0 flex items-center justify-center scale-[2.5]">
-                  <AiAvatar className="w-full h-full" />
+                <div className="absolute inset-0 z-10 flex items-center justify-center">
+                  <FramedAiAvatar className="h-24 w-24" />
                 </div>
                 
                 {/* Unread Badge */}
@@ -91,7 +91,7 @@ export default function ChatDock() {
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg"
+                    className="absolute -right-1 -top-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg"
                   >
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </motion.div>
@@ -99,10 +99,10 @@ export default function ChatDock() {
 
                 {/* Pulse Animation */}
                 <motion.span
-                  className="absolute inset-0 rounded-full bg-primary/30"
+                  className="absolute inset-0 rounded-full border border-pink-300/35"
                   animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 0, 0.5],
+                    scale: [1, 1.28, 1],
+                    opacity: [0.45, 0, 0.45],
                   }}
                   transition={{
                     duration: 2,
@@ -154,17 +154,21 @@ export default function ChatDock() {
               }}
               exit={{ opacity: 0, scale: 0.8, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed bottom-6 right-6 z-50 flex flex-col bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
+              className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-[1.35rem] border border-white/55 bg-white/82 shadow-[0_30px_90px_-34px_rgba(15,23,42,0.65)] backdrop-blur-2xl dark:border-blue-300/15 dark:bg-slate-950/94 dark:shadow-[0_30px_90px_-34px_rgba(37,99,235,0.55)]"
               style={{
-                width: isMinimized ? "400px" : "min(450px, calc(100vw - 3rem))",
-                height: isMinimized ? "auto" : "min(85vh, calc(100vh - 3rem))",
+                width: isMinimized
+                  ? "min(400px, calc(100vw - 3rem))"
+                  : "min(450px, calc(100vw - 3rem))",
+                height: isMinimized
+                  ? "auto"
+                  : "min(720px, 85vh, calc(100vh - 3rem))",
               }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/10 to-indigo-600/10 border-b border-border backdrop-blur-xl shrink-0">
+              <div className="flex items-center justify-between border-b border-white/45 bg-gradient-to-r from-white/72 via-sky-50/64 to-blue-100/54 px-4 py-3 backdrop-blur-xl shrink-0 dark:border-blue-300/10 dark:from-blue-950/70 dark:via-slate-950/92 dark:to-slate-900/90">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-1.5 shadow-lg shadow-primary/20 shrink-0">
-                    <AiAvatar className="w-full h-full" />
+                  <div className="h-12 w-12 shrink-0">
+                    <FramedAiAvatar className="h-full w-full" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-sm font-bold text-foreground truncate">Trợ giảng AI FUJI</h3>
@@ -177,7 +181,7 @@ export default function ChatDock() {
                     variant="ghost"
                     size="icon"
                     onClick={handleOpenFullPage}
-                    className="h-8 w-8 rounded-lg hover:bg-muted"
+                    className="h-8 w-8 rounded-lg hover:bg-white/55 dark:hover:bg-white/10"
                     title="Mở trang đầy đủ"
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -186,7 +190,7 @@ export default function ChatDock() {
                     variant="ghost"
                     size="icon"
                     onClick={handleMinimize}
-                    className="h-8 w-8 rounded-lg hover:bg-muted"
+                    className="h-8 w-8 rounded-lg hover:bg-white/55 dark:hover:bg-white/10"
                     title={isMinimized ? "Mở rộng" : "Thu gọn"}
                   >
                     {isMinimized ? (
@@ -199,7 +203,7 @@ export default function ChatDock() {
                     variant="ghost"
                     size="icon"
                     onClick={handleToggle}
-                    className="h-8 w-8 rounded-lg hover:bg-muted"
+                    className="h-8 w-8 rounded-lg hover:bg-white/55 dark:hover:bg-white/10"
                     title="Đóng"
                   >
                     <X className="h-4 w-4" />

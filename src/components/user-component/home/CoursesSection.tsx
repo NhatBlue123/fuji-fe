@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { FEATURED_COURSES } from "@/types/course";
 import { CourseCard } from "@/components/user-component/course/CourseCard";
 import { useTranslation } from "react-i18next";
@@ -26,7 +27,7 @@ export function CoursesSection() {
             {isMounted ? t("home.coursesSection.subtitle") : t("home.coursesSection.subtitle", { lng: 'vi' })}
           </p>
         </div>
-        <a
+        <Link
           className="hidden md:flex items-center gap-1 text-primary dark:text-blue-400 font-bold hover:text-blue-300 transition-colors"
           href="/course"
         >
@@ -34,7 +35,7 @@ export function CoursesSection() {
           <span className="material-symbols-outlined text-sm">
             arrow_forward
           </span>
-        </a>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

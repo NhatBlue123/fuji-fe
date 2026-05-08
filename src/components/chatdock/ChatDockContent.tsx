@@ -83,7 +83,8 @@ export default function ChatDockContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamBufferRef = useRef<string>("");
-  const sessionIdRef = useRef<string>(`draft_${Date.now()}`);
+  const [draftSessionId] = useState(() => `draft_${Date.now()}`);
+  const sessionIdRef = useRef<string>(draftSessionId);
   const activeConversationRef = useRef<number | null>(null);
   const streamWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);

@@ -804,7 +804,7 @@ export default function AdminExamLayout() {
       const node = questionsMap[found.mondai.number];
       const isPassage = found.mondai.requires_passage;
       let child: JlptQuestionAdmin | null = null;
-      let parent: JlptQuestionAdmin | null = node?.parent ?? null;
+      const parent: JlptQuestionAdmin | null = node?.parent ?? null;
       if (isPassage && effectiveSlot != null) {
         const qOrder = slotIndexToQuestionOrder.get(effectiveSlot);
         if (qOrder != null) child = node?.children[qOrder] ?? null;
@@ -850,7 +850,7 @@ export default function AdminExamLayout() {
     const isPassage = mondaiConfig?.requires_passage ?? false;
 
     let child: JlptQuestionAdmin | null = null;
-    let parent: JlptQuestionAdmin | null = node?.parent ?? null;
+    const parent: JlptQuestionAdmin | null = node?.parent ?? null;
 
     if (isPassage && effectiveSlotIdx != null) {
       const qOrder = slotIndexToQuestionOrder.get(effectiveSlotIdx);

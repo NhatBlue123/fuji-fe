@@ -304,6 +304,8 @@ function TeacherSchedulePageContent() {
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [groups, selectedIds]);
 
+  const [renderedAtMs] = useState(() => Date.now());
+
   const recurringPoolAll = useMemo(() => {
     if (!validRecurringRange) return [];
 
@@ -313,11 +315,11 @@ function TeacherSchedulePageContent() {
         if (!isAvailable(slot)) return false;
         const slotDate = slot.startAt.slice(0, 10);
         if (slotDate < rangeStart || slotDate > rangeEnd) return false;
-        if (new Date(slot.startAt).getTime() <= Date.now()) return false;
+        if (new Date(slot.startAt).getTime() <= renderedAtMs) return false;
         return true;
       })
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-  }, [groups, validRecurringRange, rangeStart, rangeEnd]);
+  }, [groups, validRecurringRange, rangeStart, rangeEnd, renderedAtMs]);
 
   const recurringPool = useMemo(() => {
     if (!validRecurringRange || !busySlotsRangeData?.length) return recurringPoolAll;

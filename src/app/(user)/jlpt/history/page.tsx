@@ -81,10 +81,10 @@ export default function JlptHistoryPage() {
   );
   const [sortField, setSortField] = useState<"date" | "score">("date");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [renderedAtMs] = useState(() => Date.now());
 
   // ── Filtering & sorting ────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    const now = Date.now();
     const dayMs = 86400_000;
     const cutoffs: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
 
@@ -93,7 +93,7 @@ export default function JlptHistoryPage() {
         if (selectedLevel !== "Tất cả" && a.test?.level !== selectedLevel)
           return false;
         if (selectedTime !== "all") {
-          const cutoff = now - cutoffs[selectedTime] * dayMs;
+          const cutoff = renderedAtMs - cutoffs[selectedTime] * dayMs;
           if (new Date(a.startedAt).getTime() < cutoff) return false;
         }
         if (filterResult === "passed" && !a.isPassed) return false;
@@ -110,7 +110,7 @@ export default function JlptHistoryPage() {
           return sortDir === "desc" ? diff : -diff;
         }
       });
-  }, [attempts, selectedLevel, selectedTime, filterResult, sortField, sortDir]);
+  }, [attempts, selectedLevel, selectedTime, filterResult, sortField, sortDir, renderedAtMs]);
 
   // ── Summary stats ──────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -151,7 +151,7 @@ export default function JlptHistoryPage() {
     }
   };
 
-  const SortIcon = ({ field }: { field: "date" | "score" }) =>
+  const renderSortIcon = (field: "date" | "score") =>
     sortField !== field ? (
       <span className="material-symbols-outlined text-[14px] opacity-30">
         swap_vert
@@ -438,7 +438,7 @@ export default function JlptHistoryPage() {
                       onClick={() => toggleSort("score")}
                     >
                       <span className="inline-flex items-center gap-1">
-                        Tổng điểm <SortIcon field="score" />
+                        Tổng điểm {renderSortIcon("score")}
                       </span>
                     </th>
                     <th className="text-center px-4 py-3 font-semibold hidden lg:table-cell">
@@ -458,7 +458,7 @@ export default function JlptHistoryPage() {
                       onClick={() => toggleSort("date")}
                     >
                       <span className="inline-flex items-center gap-1">
-                        Ngày thi <SortIcon field="date" />
+                        Ngày thi {renderSortIcon("date")}
                       </span>
                     </th>
                     <th className="text-center px-4 py-3 font-semibold">

@@ -7,7 +7,7 @@ import {
 } from "@/lib/flashcardSeo";
 
 const BASE_URL = "https://fuji.io.vn";
-const DEFAULT_OG_IMAGE = "/images/og_image.png";
+const DEFAULT_OG_IMAGE = "/images/og-image.jpg";
 
 export const revalidate = 3600;
 

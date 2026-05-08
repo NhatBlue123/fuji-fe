@@ -1,8 +1,18 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Edit3, Plus, RefreshCw, Save } from "lucide-react";
+import { Edit3, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +39,7 @@ import {
   type AiPack,
   type AiPackPayload,
   useCreateAiPackMutation,
+  useDeleteAiPackMutation,
   useGetAiPacksQuery,
   useUpdateAiPackMutation,
 } from "@/store/services/admin/aiQuotaAdminApi";
@@ -94,8 +105,10 @@ export default function AiPacksPage() {
   const { data: packs = [], isFetching, isLoading, isError, refetch } = useGetAiPacksQuery();
   const [createPack, { isLoading: isCreating }] = useCreateAiPackMutation();
   const [updatePack, { isLoading: isUpdating }] = useUpdateAiPackMutation();
+  const [deletePack, { isLoading: isDeleting }] = useDeleteAiPackMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPack, setEditingPack] = useState<AiPack | null>(null);
+  const [deletingPack, setDeletingPack] = useState<AiPack | null>(null);
   const [form, setForm] = useState<PackFormState>(emptyForm);
   const isSaving = isCreating || isUpdating;
 
@@ -139,6 +152,17 @@ export default function AiPacksPage() {
       setDialogOpen(false);
     } catch (error) {
       toast.error(errorMessage(error, "Không thể lưu gói AI."));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingPack) return;
+    try {
+      await deletePack(deletingPack.id).unwrap();
+      toast.success("Đã xóa gói AI");
+      setDeletingPack(null);
+    } catch (error) {
+      toast.error(errorMessage(error, "Không thể xóa gói AI."));
     }
   };
 
@@ -211,10 +235,16 @@ export default function AiPacksPage() {
                   </TableCell>
                   <TableCell className="text-right">{Number(pack.sortOrder || 0).toLocaleString("vi-VN")}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => openEditDialog(pack)}>
-                      <Edit3 className="mr-2 h-4 w-4" />
-                      Sửa
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEditDialog(pack)}>
+                        <Edit3 className="mr-2 h-4 w-4" />
+                        Sửa
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setDeletingPack(pack)}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Xóa
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -345,6 +375,23 @@ export default function AiPacksPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(deletingPack)} onOpenChange={(open) => !open && setDeletingPack(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa gói AI?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Gói {deletingPack?.name || deletingPack?.code || ""} sẽ bị xóa khỏi danh sách bán. Log sử dụng và số dư đã cấp cho người dùng không bị xóa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Đang xóa..." : "Xóa"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

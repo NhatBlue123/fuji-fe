@@ -11,6 +11,12 @@ export const QUOTA_SOURCE_OPTIONS = [
   { value: "FREE_TRIAL", label: "Dùng thử" },
 ] as const;
 
+export const AI_TIER_OPTIONS = [
+  { value: "BASIC", label: "BASIC" },
+  { value: "PRO", label: "PRO" },
+  { value: "PREMIUM", label: "PREMIUM" },
+] as const;
+
 export const featureLabel = (featureKey: string) =>
   AI_FEATURE_OPTIONS.find((item) => item.value === featureKey)?.label ?? featureKey;
 
@@ -32,3 +38,26 @@ export const formatDateTime = (value?: string | null) =>
 
 export const formatDate = (value?: string | null) =>
   value ? new Date(value).toLocaleDateString("vi-VN") : "-";
+
+export const formatNumber = (value?: number | string | null) =>
+  Number(value || 0).toLocaleString("vi-VN");
+
+export const formatUsd = (value?: number | string | null) =>
+  `$${Number(value || 0).toLocaleString("vi-VN", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 6,
+  })}`;
+
+export const userDisplayName = (user?: {
+  fullName?: string | null;
+  username?: string | null;
+  email?: string | null;
+  userId?: number;
+}) => user?.fullName || user?.username || user?.email || (user?.userId ? `#${user.userId}` : "Người dùng");
+
+export const userInitial = (user?: {
+  fullName?: string | null;
+  username?: string | null;
+  email?: string | null;
+  userId?: number;
+}) => userDisplayName(user).charAt(0).toUpperCase();

@@ -17,6 +17,10 @@ export interface WithdrawRequestData {
   createdAt: string;
   userId: number;
   fullName: string;
+  platformFeeBps?: number;
+  platformFeeAmount?: number;
+  netPayoutAmount?: number;
+  netPayoutVnd?: number;
 }
 
 export interface ApiResponse<T> {

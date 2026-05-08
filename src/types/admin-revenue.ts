@@ -82,21 +82,6 @@ export interface WithdrawalStatusStats {
   rejectedAmount: number;
 }
 
-export interface CashflowSummary {
-  recognizedRevenue: number;
-  topupVolumeBlossoms: number;
-  estimatedTopupVolumeVnd: number;
-  actualTopupVolumeVnd: number;
-  completedPayouts: number;
-  pendingPayouts: number;
-  processingPayouts: number;
-  netAfterCompletedPayouts: number;
-  projectedNetAfterPendingPayouts: number;
-  platformFeeRevenue: number;
-  courseRevenue: number;
-  withdrawalFeeRevenue: number;
-}
-
 export interface CashRevenueSummary {
   grossTopupVnd: number;
   pendingExpectedTopupVnd: number;
@@ -104,32 +89,49 @@ export interface CashRevenueSummary {
   bankOutVnd: number;
   netCashVnd: number;
   creditedBlossoms: number;
+  topupSuccessCount?: number;
+  payoutSuccessCount?: number;
+  payoutSuccessVnd?: number;
+  completedWithdrawalFallbackVnd?: number;
+  usingWithdrawalFallback?: boolean;
+  ignoredInCount?: number;
+  ignoredInVnd?: number;
+  ignoredOutCount?: number;
+  ignoredOutVnd?: number;
 }
 
-export interface ProfitSummary {
-  totalProfitHoa: number;
-  totalProfitVndEquivalent: number;
-  bookingPlatformFeeHoa: number;
-  adminBookingProfitHoa: number;
-  coursePlatformFeeHoa: number;
-  adminCourseProfitHoa: number;
-  packageProfitHoa: number;
-  subscriptionProfitHoa: number;
-  cancellationPenaltyProfitHoa: number;
-  legacyCourseProfitHoa: number;
+export interface WalletPositionSummary {
+  totalBalanceHoa: number;
+  totalFrozenHoa: number;
+  totalAvailableHoa: number;
+  adminBalanceHoa: number;
+  adminFrozenHoa: number;
+  adminAvailableHoa: number;
+  instructorBalanceHoa: number;
+  instructorFrozenHoa: number;
+  instructorAvailableHoa: number;
+  userBalanceHoa: number;
+  userFrozenHoa: number;
+  userAvailableHoa: number;
+  adminWalletCount: number;
+  instructorWalletCount: number;
+  userWalletCount: number;
 }
 
-export interface TeacherLiabilitySummary {
-  totalTeacherLiabilityHoa: number;
-  totalTeacherLiabilityVndEquivalent: number;
-  bookingTeacherIncomeHoa: number;
-  courseTeacherIncomeHoa: number;
-  completedWithdrawalHoa: number;
-  pendingWithdrawalHoa: number;
-  processingWithdrawalHoa: number;
-  completedPayoutVnd: number;
-  pendingPayoutVnd: number;
-  processingPayoutVnd: number;
+export interface LiabilityEstimateSummary {
+  teacherOwnedHoa: number;
+  teacherWithdrawableHoa: number;
+  teacherFrozenHoa: number;
+  teacherEstimatedDebtVnd: number;
+  teacherEstimatedNetDebtVnd?: number;
+  teacherEstimatedPlatformFeeVnd?: number;
+  platformFeeBps?: number;
+  userPrepaidHoa: number;
+  userPrepaidVndEquivalent: number;
+  adminInternalHoa: number;
+  adminInternalVndEquivalent: number;
+  pendingWithdrawalVnd: number;
+  processingWithdrawalVnd: number;
 }
 
 export interface MonthlyFinancialSummary {
@@ -137,12 +139,10 @@ export interface MonthlyFinancialSummary {
   month: number;
   bankInVnd: number;
   bankOutVnd: number;
-  profitHoa: number;
-  teacherLiabilityHoa: number;
-  bookingProfitHoa: number;
-  courseProfitHoa: number;
-  packageProfitHoa: number;
-  subscriptionProfitHoa: number;
+  cashNetHoa: number;
+  teacherGrossIncomeHoa: number;
+  bookingGrossHoa: number;
+  courseGrossHoa: number;
 }
 
 export interface FinancialPeriodSummary {
@@ -156,12 +156,10 @@ export interface FinancialPeriodSummary {
   endDate?: string;
   bankInVnd: number;
   bankOutVnd: number;
-  profitHoa: number;
-  teacherLiabilityHoa: number;
-  bookingProfitHoa: number;
-  courseProfitHoa: number;
-  packageProfitHoa: number;
-  subscriptionProfitHoa: number;
+  cashNetHoa: number;
+  teacherGrossIncomeHoa: number;
+  bookingGrossHoa: number;
+  courseGrossHoa: number;
 }
 
 export interface PaymentPeriodStatus {
@@ -183,13 +181,6 @@ export interface PaymentPeriodStatus {
   cancelledAmount: number;
 }
 
-export interface SourceBreakdownItem {
-  key: string;
-  label: string;
-  amountHoa: number;
-  amountVnd: number;
-}
-
 export interface AdminRevenueRecentTransaction {
   id: number;
   type: string;
@@ -197,6 +188,10 @@ export interface AdminRevenueRecentTransaction {
   description: string;
   referenceId: string;
   createdAt: string;
+  userId?: number;
+  userName?: string;
+  userEmail?: string;
+  userAvatarUrl?: string;
 }
 
 export interface BankTransferRecord {
@@ -216,6 +211,7 @@ export interface BankTransferRecord {
   matchedUserId?: number;
   matchedUserName?: string;
   matchedUserEmail?: string;
+  matchedUserAvatarUrl?: string;
   creditedBlossoms?: number;
 }
 
@@ -239,17 +235,14 @@ export interface AdminRevenueStatsResponse {
 
   paymentStatusStats: PaymentStatusStats;
   withdrawalStatusStats: WithdrawalStatusStats;
-  cashflowSummary: CashflowSummary;
   cashRevenue?: CashRevenueSummary;
-  profitSummary?: ProfitSummary;
-  teacherLiabilitySummary?: TeacherLiabilitySummary;
+  walletPositionSummary?: WalletPositionSummary;
+  liabilityEstimateSummary?: LiabilityEstimateSummary;
   monthlyFinancialSummaries?: MonthlyFinancialSummary[];
   weeklyFinancialSummaries?: FinancialPeriodSummary[];
   yearlyFinancialSummaries?: FinancialPeriodSummary[];
   weeklyPaymentStatuses?: PaymentPeriodStatus[];
   yearlyPaymentStatuses?: PaymentPeriodStatus[];
-  profitBreakdown?: SourceBreakdownItem[];
-  liabilityBreakdown?: SourceBreakdownItem[];
 }
 
 // Just in case income is separated

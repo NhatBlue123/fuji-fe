@@ -17,6 +17,7 @@ export interface BookingPolicy {
   courseDefaultPlatformFeeBps: number;
   courseProPlatformFeeBps?: number | null;
   coursePremiumPlatformFeeBps?: number | null;
+  withdrawPlatformFeeBps?: number | null;
   normalCancelPenaltyBps: number;
   lateCancelPenaltyBps: number;
   lateCancelThresholdHours: number;

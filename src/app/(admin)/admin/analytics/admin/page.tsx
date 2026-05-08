@@ -9,14 +9,16 @@ import {
   ArrowUpRight,
   Banknote,
   CalendarIcon,
-  CheckCircle2,
   Clock3,
   Download,
+  Filter,
   Landmark,
   LineChart as LineChartIcon,
+  Percent,
   ReceiptText,
   RefreshCcw,
   ShieldCheck,
+  SlidersHorizontal,
   Wallet,
   X,
 } from "lucide-react";
@@ -25,8 +27,8 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
   Legend,
   ResponsiveContainer,
   Tooltip,
@@ -35,6 +37,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -45,6 +48,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -57,29 +61,94 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  useGetBookingPolicyQuery,
+  useUpdateBookingPolicyMutation,
+} from "@/store/services/admin/bookingPolicyApi";
 import { useGetRevenueStatsQuery } from "@/store/services/adminRevenueApi";
 import type {
   AdminRevenueRecentTransaction,
   AdminRevenueStatsResponse,
   BankTransferRecord,
   CashRevenueSummary,
-  CashflowSummary,
   FinancialPeriodSummary,
+  LiabilityEstimateSummary,
   MonthlyFinancialSummary,
   MonthlyPaymentStatus,
-  PaymentStatusStats,
   PaymentPeriodStatus,
-  ProfitSummary,
-  SourceBreakdownItem,
-  TeacherLiabilitySummary,
+  PaymentStatusStats,
+  WalletPositionSummary,
   WithdrawalStatusStats,
 } from "@/types/admin-revenue";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 const HOA_TO_VND = 1000;
+const DEFAULT_PLATFORM_FEE_PERCENT = 30;
 
 type TimeRangeMode = "day" | "week" | "month" | "year";
+type XGateRecordFilter = "all" | "success" | "ignored";
+type TransactionTypeFilter =
+  | "ALL"
+  | "TOPUP"
+  | "WITHDRAW"
+  | "COURSE"
+  | "BOOKING"
+  | "SUBSCRIPTION"
+  | "PACKAGE"
+  | "OTHER";
+
+type DateBounds = {
+  from: Date;
+  to: Date;
+};
+
+type FinancialChartRow = {
+  label: string;
+  sortKey: number;
+  start?: Date;
+  end?: Date;
+  revenueVnd: number;
+  withdrawnVnd: number;
+  teacherDebtVnd: number;
+  estimatedProfitVnd: number;
+  grossTradingVnd: number;
+  bookingVnd: number;
+  courseVnd: number;
+};
+
+type PeriodSourceRow = {
+  label: string;
+  sortKey: number;
+  start?: Date;
+  end?: Date;
+  bankInVnd: number;
+  bankOutVnd: number;
+  teacherGrossIncomeHoa: number;
+  bookingGrossHoa: number;
+  courseGrossHoa: number;
+};
+
+type OverallFinance = {
+  cashInVnd: number;
+  cashOutVnd: number;
+  cashOnHandVnd: number;
+  teacherGrossDebtVnd: number;
+  teacherNetDebtVnd: number;
+  platformFeeReserveVnd: number;
+  estimatedProfitVnd: number;
+  userPrepaidVnd: number;
+  adminHoaVnd: number;
+  pendingWithdrawVnd: number;
+  processingWithdrawVnd: number;
+};
 
 const EMPTY_PAYMENT_STATS: PaymentStatusStats = {
   totalCount: 0,
@@ -115,21 +184,6 @@ const EMPTY_WITHDRAWAL_STATS: WithdrawalStatusStats = {
   rejectedAmount: 0,
 };
 
-const EMPTY_CASHFLOW: CashflowSummary = {
-  recognizedRevenue: 0,
-  topupVolumeBlossoms: 0,
-  estimatedTopupVolumeVnd: 0,
-  actualTopupVolumeVnd: 0,
-  completedPayouts: 0,
-  pendingPayouts: 0,
-  processingPayouts: 0,
-  netAfterCompletedPayouts: 0,
-  projectedNetAfterPendingPayouts: 0,
-  platformFeeRevenue: 0,
-  courseRevenue: 0,
-  withdrawalFeeRevenue: 0,
-};
-
 const EMPTY_CASH_REVENUE: CashRevenueSummary = {
   grossTopupVnd: 0,
   pendingExpectedTopupVnd: 0,
@@ -139,67 +193,38 @@ const EMPTY_CASH_REVENUE: CashRevenueSummary = {
   creditedBlossoms: 0,
 };
 
-const EMPTY_PROFIT: ProfitSummary = {
-  totalProfitHoa: 0,
-  totalProfitVndEquivalent: 0,
-  bookingPlatformFeeHoa: 0,
-  adminBookingProfitHoa: 0,
-  coursePlatformFeeHoa: 0,
-  adminCourseProfitHoa: 0,
-  packageProfitHoa: 0,
-  subscriptionProfitHoa: 0,
-  cancellationPenaltyProfitHoa: 0,
-  legacyCourseProfitHoa: 0,
+const EMPTY_WALLET_POSITION: WalletPositionSummary = {
+  totalBalanceHoa: 0,
+  totalFrozenHoa: 0,
+  totalAvailableHoa: 0,
+  adminBalanceHoa: 0,
+  adminFrozenHoa: 0,
+  adminAvailableHoa: 0,
+  instructorBalanceHoa: 0,
+  instructorFrozenHoa: 0,
+  instructorAvailableHoa: 0,
+  userBalanceHoa: 0,
+  userFrozenHoa: 0,
+  userAvailableHoa: 0,
+  adminWalletCount: 0,
+  instructorWalletCount: 0,
+  userWalletCount: 0,
 };
 
-const EMPTY_TEACHER_LIABILITY: TeacherLiabilitySummary = {
-  totalTeacherLiabilityHoa: 0,
-  totalTeacherLiabilityVndEquivalent: 0,
-  bookingTeacherIncomeHoa: 0,
-  courseTeacherIncomeHoa: 0,
-  completedWithdrawalHoa: 0,
-  pendingWithdrawalHoa: 0,
-  processingWithdrawalHoa: 0,
-  completedPayoutVnd: 0,
-  pendingPayoutVnd: 0,
-  processingPayoutVnd: 0,
-};
-
-type FinancialChartRow = {
-  date: string;
-  sortKey: number;
-  "Tiền nạp vào": number;
-  "Tiền chuyển ra": number;
-  "Lợi nhuận tiền mặt": number;
-  "Phải trả giáo viên": number;
-};
-
-type PaymentChartRow = {
-  date: string;
-  sortKey: number;
-  "Hoàn thành": number;
-  "Đang chờ": number;
-  "Thất bại": number;
-  "Đã hủy": number;
-};
-
-type DateBounds = {
-  from: Date;
-  to: Date;
-};
-
-type DateRangeSummary = {
-  bankInVnd: number;
-  bankOutVnd: number;
-  profitHoa: number;
-  teacherLiabilityHoa: number;
-  bookingProfitHoa: number;
-  courseProfitHoa: number;
-  packageProfitHoa: number;
-  subscriptionProfitHoa: number;
-  transferCount: number;
-  matchedTransferCount: number;
-  transactionCount: number;
+const EMPTY_LIABILITY_ESTIMATE: LiabilityEstimateSummary = {
+  teacherOwnedHoa: 0,
+  teacherWithdrawableHoa: 0,
+  teacherFrozenHoa: 0,
+  teacherEstimatedDebtVnd: 0,
+  teacherEstimatedNetDebtVnd: 0,
+  teacherEstimatedPlatformFeeVnd: 0,
+  platformFeeBps: DEFAULT_PLATFORM_FEE_PERCENT * 100,
+  userPrepaidHoa: 0,
+  userPrepaidVndEquivalent: 0,
+  adminInternalHoa: 0,
+  adminInternalVndEquivalent: 0,
+  pendingWithdrawalVnd: 0,
+  processingWithdrawalVnd: 0,
 };
 
 export default function AdminRevenuePage() {
@@ -210,64 +235,44 @@ export default function AdminRevenuePage() {
     refetch,
     isFetching,
   } = useGetRevenueStatsQuery();
+  const { data: bookingPolicy } = useGetBookingPolicyQuery();
+  const [updateBookingPolicy, { isLoading: isSavingPlatformFee }] =
+    useUpdateBookingPolicyMutation();
+
   const [selectedYear, setSelectedYear] = useState(String(CURRENT_YEAR));
   const [timeRangeMode, setTimeRangeMode] = useState<TimeRangeMode>("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [xgateRecordFilter, setXgateRecordFilter] =
+    useState<XGateRecordFilter>("all");
+  const [transactionTypeFilter, setTransactionTypeFilter] =
+    useState<TransactionTypeFilter>("ALL");
+  const [platformFeeDraft, setPlatformFeeDraft] = useState<number | null>(null);
 
   const paymentStats = stats?.paymentStatusStats ?? EMPTY_PAYMENT_STATS;
   const withdrawalStats = stats?.withdrawalStatusStats ?? EMPTY_WITHDRAWAL_STATS;
-  const cashflow = stats?.cashflowSummary ?? EMPTY_CASHFLOW;
-  const serverCashRevenue = stats?.cashRevenue;
-  const serverProfitSummary = stats?.profitSummary;
-  const serverTeacherLiability = stats?.teacherLiabilitySummary;
+  const cashRevenue = stats?.cashRevenue ?? EMPTY_CASH_REVENUE;
+  const walletPosition = stats?.walletPositionSummary ?? EMPTY_WALLET_POSITION;
+  const liabilityEstimate =
+    stats?.liabilityEstimateSummary ?? EMPTY_LIABILITY_ESTIMATE;
+  const serverPlatformFeePercent = bpsToPercent(
+    bookingPolicy?.withdrawPlatformFeeBps ??
+      liabilityEstimate.platformFeeBps ??
+      DEFAULT_PLATFORM_FEE_PERCENT * 100,
+  );
+  const platformFeePercent = platformFeeDraft ?? serverPlatformFeePercent;
   const monthlyPaymentStatuses = useMemo(
     () => stats?.monthlyPaymentStatuses ?? [],
     [stats?.monthlyPaymentStatuses],
   );
-  const serverProfitBreakdown = stats?.profitBreakdown;
-  const serverLiabilityBreakdown = stats?.liabilityBreakdown;
-  const cashRevenue = useMemo(
-    () =>
-      serverCashRevenue ?? {
-        ...EMPTY_CASH_REVENUE,
-        grossTopupVnd:
-          paymentStats.actualSuccessVnd ?? paymentStats.estimatedSuccessVnd ?? 0,
-        pendingExpectedTopupVnd:
-          paymentStats.expectedPendingVnd ?? paymentStats.estimatedPendingVnd ?? 0,
-        failedExpectedTopupVnd: paymentStats.expectedFailedVnd ?? 0,
-        bankOutVnd: hoaToVnd(withdrawalStats.completedAmount),
-        netCashVnd:
-          (paymentStats.actualSuccessVnd ?? paymentStats.estimatedSuccessVnd ?? 0) -
-          hoaToVnd(withdrawalStats.completedAmount),
-        creditedBlossoms: paymentStats.successAmount ?? 0,
-      },
-    [paymentStats, serverCashRevenue, withdrawalStats],
+  const weeklyPaymentStatuses = useMemo(
+    () => stats?.weeklyPaymentStatuses ?? [],
+    [stats?.weeklyPaymentStatuses],
   );
-  const profitSummary = useMemo(
-    () =>
-      serverProfitSummary ?? {
-        ...EMPTY_PROFIT,
-        totalProfitHoa: vndToHoaEquivalent(cashRevenue.netCashVnd),
-        totalProfitVndEquivalent: cashRevenue.netCashVnd,
-        bookingPlatformFeeHoa: cashflow.platformFeeRevenue ?? 0,
-        coursePlatformFeeHoa: cashflow.courseRevenue ?? 0,
-      },
-    [cashRevenue.netCashVnd, cashflow, serverProfitSummary],
+  const yearlyPaymentStatuses = useMemo(
+    () => stats?.yearlyPaymentStatuses ?? [],
+    [stats?.yearlyPaymentStatuses],
   );
-  const teacherLiability = useMemo(
-    () =>
-      serverTeacherLiability ?? {
-      ...EMPTY_TEACHER_LIABILITY,
-      completedWithdrawalHoa: withdrawalStats.completedAmount ?? 0,
-      pendingWithdrawalHoa: withdrawalStats.pendingAmount ?? 0,
-      processingWithdrawalHoa: withdrawalStats.processingAmount ?? 0,
-      completedPayoutVnd: hoaToVnd(withdrawalStats.completedAmount ?? 0),
-      pendingPayoutVnd: hoaToVnd(withdrawalStats.pendingAmount ?? 0),
-      processingPayoutVnd: hoaToVnd(withdrawalStats.processingAmount ?? 0),
-    },
-    [serverTeacherLiability, withdrawalStats],
-  );
-  const financialMonths = useMemo(
+  const monthlyFinancial = useMemo(
     () => stats?.monthlyFinancialSummaries ?? [],
     [stats?.monthlyFinancialSummaries],
   );
@@ -279,24 +284,18 @@ export default function AdminRevenuePage() {
     () => stats?.yearlyFinancialSummaries ?? [],
     [stats?.yearlyFinancialSummaries],
   );
-  const weeklyPaymentStatuses = useMemo(
-    () => stats?.weeklyPaymentStatuses ?? [],
-    [stats?.weeklyPaymentStatuses],
-  );
-  const yearlyPaymentStatuses = useMemo(
-    () => stats?.yearlyPaymentStatuses ?? [],
-    [stats?.yearlyPaymentStatuses],
+  const bankTransferRecords = useMemo(
+    () => stats?.bankTransferRecords ?? [],
+    [stats?.bankTransferRecords],
   );
   const recentTransactions = useMemo(
     () => stats?.recentTransactions ?? [],
     [stats?.recentTransactions],
   );
-  const bankTransferRecords = useMemo(
-    () => stats?.bankTransferRecords ?? [],
-    [stats?.bankTransferRecords],
-  );
-  const selectedYearNumber = Number(selectedYear);
+
   const dateBounds = useMemo(() => normalizeDateBounds(dateRange), [dateRange]);
+  const selectedYearNumber = Number(selectedYear);
+
   const dailyFinancial = useMemo(
     () => buildDailyFinancialSummaries(bankTransferRecords, recentTransactions),
     [bankTransferRecords, recentTransactions],
@@ -305,38 +304,20 @@ export default function AdminRevenuePage() {
     () => buildDailyPaymentStatuses(bankTransferRecords),
     [bankTransferRecords],
   );
-  const visibleBankTransferRecords = useMemo(
-    () => filterBankTransferRecordsByDate(bankTransferRecords, dateBounds),
-    [bankTransferRecords, dateBounds],
-  );
-  const visibleRecentTransactions = useMemo(
-    () => filterTransactionsByDate(recentTransactions, dateBounds),
-    [dateBounds, recentTransactions],
-  );
-  const dateRangeSummary = useMemo(
-    () =>
-      buildDateRangeSummary(
-        visibleBankTransferRecords,
-        visibleRecentTransactions,
-      ),
-    [visibleBankTransferRecords, visibleRecentTransactions],
-  );
 
   const availableYears = useMemo(() => {
     const years = new Set<number>([CURRENT_YEAR]);
-    financialMonths.forEach((item) => years.add(item.year));
-    dailyFinancial.forEach((item) => item.year && years.add(item.year));
+    monthlyFinancial.forEach((item) => years.add(item.year));
     weeklyFinancial.forEach((item) => item.year && years.add(item.year));
     yearlyFinancial.forEach((item) => item.year && years.add(item.year));
+    dailyFinancial.forEach((item) => item.start && years.add(item.start.getFullYear()));
     monthlyPaymentStatuses.forEach((item) => years.add(item.year));
-    dailyPaymentStatuses.forEach((item) => item.year && years.add(item.year));
     weeklyPaymentStatuses.forEach((item) => item.year && years.add(item.year));
     yearlyPaymentStatuses.forEach((item) => item.year && years.add(item.year));
     return Array.from(years).sort((a, b) => b - a);
   }, [
     dailyFinancial,
-    dailyPaymentStatuses,
-    financialMonths,
+    monthlyFinancial,
     monthlyPaymentStatuses,
     weeklyFinancial,
     weeklyPaymentStatuses,
@@ -349,16 +330,18 @@ export default function AdminRevenuePage() {
       buildFinancialChartData({
         mode: timeRangeMode,
         selectedYear: selectedYearNumber,
-        monthly: financialMonths,
+        dateBounds,
+        platformFeePercent,
         daily: dailyFinancial,
+        monthly: monthlyFinancial,
         weekly: weeklyFinancial,
         yearly: yearlyFinancial,
-        dateBounds,
       }),
     [
       dailyFinancial,
       dateBounds,
-      financialMonths,
+      monthlyFinancial,
+      platformFeePercent,
       selectedYearNumber,
       timeRangeMode,
       weeklyFinancial,
@@ -371,11 +354,11 @@ export default function AdminRevenuePage() {
       buildPaymentChartData({
         mode: timeRangeMode,
         selectedYear: selectedYearNumber,
-        monthly: monthlyPaymentStatuses,
+        dateBounds,
         daily: dailyPaymentStatuses,
+        monthly: monthlyPaymentStatuses,
         weekly: weeklyPaymentStatuses,
         yearly: yearlyPaymentStatuses,
-        dateBounds,
       }),
     [
       dailyPaymentStatuses,
@@ -388,34 +371,64 @@ export default function AdminRevenuePage() {
     ],
   );
 
-  const profitBreakdown = useMemo(
-    () =>
-      (serverProfitBreakdown?.length
-        ? serverProfitBreakdown
-        : fallbackProfitBreakdown(profitSummary)
-      ).filter((item) => (item.amountHoa ?? 0) > 0),
-    [profitSummary, serverProfitBreakdown],
+  const visibleBankTransferRecords = useMemo(
+    () => filterBankTransferRecordsByDate(bankTransferRecords, dateBounds),
+    [bankTransferRecords, dateBounds],
   );
-  const recoveredDiscountHoa = useMemo(
-    () => profitBreakdown.reduce((sum, item) => sum + (item.amountHoa ?? 0), 0),
-    [profitBreakdown],
+  const filteredBankTransferRecords = useMemo(
+    () => filterXGateRecords(visibleBankTransferRecords, xgateRecordFilter),
+    [visibleBankTransferRecords, xgateRecordFilter],
+  );
+  const visibleRecentTransactions = useMemo(
+    () => filterTransactionsByDate(recentTransactions, dateBounds),
+    [dateBounds, recentTransactions],
+  );
+  const filteredRecentTransactions = useMemo(
+    () =>
+      filterTransactionsByType(visibleRecentTransactions, transactionTypeFilter),
+    [transactionTypeFilter, visibleRecentTransactions],
   );
 
-  const liabilityBreakdown = useMemo(
+  const overallFinance = useMemo(
     () =>
-      (serverLiabilityBreakdown?.length
-        ? serverLiabilityBreakdown
-        : fallbackLiabilityBreakdown(teacherLiability)
-      ).filter((item) => (item.amountHoa ?? 0) > 0),
-    [serverLiabilityBreakdown, teacherLiability],
+      buildOverallFinance({
+        cashRevenue,
+        liabilityEstimate,
+        platformFeePercent,
+      }),
+    [cashRevenue, liabilityEstimate, platformFeePercent],
+  );
+
+  const chartTotals = useMemo(
+    () => summarizeFinancialRows(financialChartData),
+    [financialChartData],
   );
 
   const handleRefresh = async () => {
     try {
       await refetch().unwrap();
-      toast.success("Dữ liệu phân tích đã được cập nhật");
+      toast.success("Dữ liệu tài chính đã được cập nhật");
     } catch {
-      toast.error("Không thể cập nhật dữ liệu phân tích");
+      toast.error("Không thể cập nhật dữ liệu tài chính");
+    }
+  };
+
+  const handleSavePlatformFee = async () => {
+    if (!bookingPolicy) {
+      toast.error("Chưa tải được policy phí sàn");
+      return;
+    }
+
+    try {
+      await updateBookingPolicy({
+        ...bookingPolicy,
+        withdrawPlatformFeeBps: percentToBps(platformFeePercent),
+      }).unwrap();
+      setPlatformFeeDraft(null);
+      await refetch().unwrap();
+      toast.success("Đã lưu phí sàn rút tiền");
+    } catch {
+      toast.error("Không thể lưu phí sàn rút tiền");
     }
   };
 
@@ -424,7 +437,12 @@ export default function AdminRevenuePage() {
       toast.error("Chưa có dữ liệu để xuất báo cáo");
       return;
     }
-    exportAdminAnalyticsCsv(stats);
+    exportAdminAnalyticsCsv({
+      stats,
+      platformFeePercent,
+      overallFinance,
+      financialChartData,
+    });
     toast.success("Đã xuất báo cáo analytics");
   };
 
@@ -438,407 +456,138 @@ export default function AdminRevenuePage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className="rounded-full border-pink-200 bg-pink-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-pink-600 dark:border-pink-500/30 dark:bg-pink-500/10 dark:text-pink-300"
-            >
-              Quản trị tài chính
-            </Badge>
-            <Badge variant="secondary" className="rounded-full px-3 py-1">
-              {timeRangeLabel(timeRangeMode)}
-            </Badge>
+      <header className="space-y-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-950 dark:bg-white dark:text-slate-950">
+                Tài chính giao dịch
+              </Badge>
+              <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+                {timeRangeLabel(timeRangeMode)}
+              </Badge>
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight md:text-3xl">
+                Báo cáo tài chính FUJI
+              </h1>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                Lợi nhuận ước tính = tổng nạp thành công - công nợ giáo viên sau phí sàn - tiền đã rút của giáo viên.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">
-              Báo cáo tài chính hệ thống
-            </h1>
-            <p className="mt-1 max-w-4xl text-sm text-muted-foreground">
-              Lợi nhuận tiền mặt = tiền người dùng nạp vào ngân hàng trừ tiền đã chuyển ra cho giáo viên.
-              Booking và khóa học chỉ phát sinh hoa khấu chi hoặc hoa chiết khấu đã thu hồi.
-            </p>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Select value={timeRangeMode} onValueChange={(value) => setTimeRangeMode(value as TimeRangeMode)}>
-            <SelectTrigger className="h-10 w-full rounded-full sm:w-[144px]">
-              <SelectValue placeholder="Kỳ xem" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Theo ngày</SelectItem>
-              <SelectItem value="week">Theo tuần</SelectItem>
-              <SelectItem value="month">Theo tháng</SelectItem>
-              <SelectItem value="year">Theo năm</SelectItem>
-            </SelectContent>
-          </Select>
-          {timeRangeMode !== "year" ? (
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="h-10 w-full rounded-full sm:w-[132px]">
-                <SelectValue placeholder="Năm" />
+          <div className="flex flex-col gap-2 rounded-xl border bg-background p-2 shadow-sm lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
+            <Select
+              value={timeRangeMode}
+              onValueChange={(value) => setTimeRangeMode(value as TimeRangeMode)}
+            >
+              <SelectTrigger className="h-9 w-full rounded-lg border-0 bg-muted/40 shadow-none lg:w-[132px]">
+                <SelectValue placeholder="Kỳ xem" />
               </SelectTrigger>
               <SelectContent>
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {year}
-                  </SelectItem>
-                ))}
+                <SelectItem value="day">Theo ngày</SelectItem>
+                <SelectItem value="week">Theo tuần</SelectItem>
+                <SelectItem value="month">Theo tháng</SelectItem>
+                <SelectItem value="year">Theo năm</SelectItem>
               </SelectContent>
             </Select>
-          ) : null}
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            onClear={() => setDateRange(undefined)}
-          />
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={isFetching}
-            className="h-10 rounded-full font-semibold"
-          >
-            <RefreshCcw
-              className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+
+            {timeRangeMode !== "year" ? (
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="h-9 w-full rounded-lg border-0 bg-muted/40 shadow-none lg:w-[108px]">
+                  <SelectValue placeholder="Năm" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              onClear={() => setDateRange(undefined)}
             />
-            Cập nhật
-          </Button>
-          <Button onClick={handleExport} className="h-10 rounded-full font-semibold">
-            <Download className="mr-2 h-4 w-4" />
-            Xuất báo cáo
-          </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={isFetching}
+              className="h-9 rounded-lg border-0 bg-muted/40 px-3 font-semibold shadow-none"
+            >
+              <RefreshCcw
+                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+              Cập nhật
+            </Button>
+            <Button onClick={handleExport} className="h-9 rounded-lg px-3 font-semibold">
+              <Download className="mr-2 h-4 w-4" />
+              Xuất CSV
+            </Button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          title="Tiền người dùng đã nạp"
-          value={formatVND(cashRevenue.grossTopupVnd)}
-          description={`${formatHoa(cashRevenue.creditedBlossoms)} đã cộng ví, không suy ngược bonus`}
-          icon={<Landmark className="h-5 w-5" />}
-          tone="emerald"
-        />
-        <MetricCard
-          title="Lợi nhuận hệ thống"
-          value={formatVND(profitSummary.totalProfitVndEquivalent)}
-          description="Tiền nạp vào trừ tiền đã chuyển ra"
-          icon={<LineChartIcon className="h-5 w-5" />}
-          tone="blue"
-        />
-        <MetricCard
-          title="Khấu chi giáo viên"
-          value={formatHoa(teacherLiability.totalTeacherLiabilityHoa)}
-          description={`≈ ${formatVND(teacherLiability.totalTeacherLiabilityVndEquivalent)} nghĩa vụ đã phát sinh`}
-          icon={<Wallet className="h-5 w-5" />}
-          tone="amber"
-        />
-        <MetricCard
-          title="Đã chuyển cho giáo viên"
-          value={formatVND(cashRevenue.bankOutVnd)}
-          description={`${formatHoa(teacherLiability.completedWithdrawalHoa)} đã chi trả hoàn tất`}
-          icon={<ArrowDownRight className="h-5 w-5" />}
-          tone="rose"
-        />
-        <MetricCard
-          title="Chờ chuyển khoản"
-          value={formatVND(cashRevenue.pendingExpectedTopupVnd)}
-          description={`${formatNumber(paymentStats.pendingCount)} lệnh nạp đang chờ`}
-          icon={<Clock3 className="h-5 w-5" />}
-          tone="slate"
+      <div className="grid items-start gap-4 xl:grid-cols-[1fr_360px]">
+        <KpiGrid overallFinance={overallFinance} />
+        <PlatformFeeControl
+          value={platformFeePercent}
+          serverValue={serverPlatformFeePercent}
+          onChange={setPlatformFeeDraft}
+          onSave={handleSavePlatformFee}
+          isSaving={isSavingPlatformFee}
+          canSave={Boolean(bookingPolicy)}
+          grossDebtVnd={overallFinance.teacherGrossDebtVnd}
+          feeReserveVnd={overallFinance.platformFeeReserveVnd}
         />
       </div>
 
-      <DateRangeQueryCard
-        bounds={dateBounds}
-        summary={dateRangeSummary}
-        transactions={visibleRecentTransactions}
-        transfers={visibleBankTransferRecords}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_0.9fr]">
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-col gap-3 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Dòng tiền & lợi nhuận {timeRangeLabel(timeRangeMode).toLowerCase()}
-              </CardTitle>
-              <CardDescription>
-                Lợi nhuận là VND thật: tiền nạp vào trừ tiền chuyển ra.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              <LegendDot className="bg-emerald-500" label="Tiền nạp" />
-              <LegendDot className="bg-rose-500" label="Tiền chuyển ra" />
-              <LegendDot className="bg-blue-500" label="Lợi nhuận" />
-              <LegendDot className="bg-amber-500" label="Phải trả giáo viên" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-[360px] w-full pt-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={financialChartData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="bankInGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.22} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.08} />
-                  <XAxis
-                    dataKey="date"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
-                    dy={10}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
-                    tickFormatter={(value) => compactMoney(Number(value))}
-                  />
-                  <Tooltip content={<MoneyTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="Tiền nạp vào"
-                    stroke="#10b981"
-                    strokeWidth={3}
-                    fill="url(#bankInGradient)"
-                    dot={false}
-                    activeDot={{ r: 5, strokeWidth: 0, fill: "#10b981" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Lợi nhuận tiền mặt"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    fill="url(#profitGradient)"
-                    dot={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Phải trả giáo viên"
-                    stroke="#f59e0b"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    fill="transparent"
-                    dot={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Tiền chuyển ra"
-                    stroke="#f43f5e"
-                    strokeWidth={2}
-                    strokeDasharray="3 4"
-                    fill="transparent"
-                    dot={false}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="border-b px-6 py-4">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Tình trạng nạp hoa
-            </CardTitle>
-            <CardDescription>
-              Trạng thái lệnh nạp và backlog cần đối soát.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5 p-6">
-            <StatusProgress
-              label="Hoàn thành"
-              value={paymentStats.successCount}
-              total={paymentStats.totalCount}
-              color="bg-emerald-500"
-              helper={`${formatPercent(paymentStats.successRate)} giao dịch`}
-            />
-            <StatusProgress
-              label="Đang chờ"
-              value={paymentStats.pendingCount}
-              total={paymentStats.totalCount}
-              color="bg-amber-500"
-              helper={`${formatVND(cashRevenue.pendingExpectedTopupVnd)} giá trị lệnh chờ`}
-            />
-            <StatusProgress
-              label="Thất bại"
-              value={paymentStats.failedCount}
-              total={paymentStats.totalCount}
-              color="bg-rose-500"
-              helper={`${formatPercent(paymentStats.failureRate)} giao dịch`}
-            />
-            <StatusProgress
-              label="Đã hủy"
-              value={paymentStats.cancelledCount ?? 0}
-              total={paymentStats.totalCount}
-              color="bg-slate-500"
-              helper={`${formatPercent(paymentStats.cancellationRate ?? 0)} hết hạn chờ chuyển khoản`}
-            />
-            <div className="rounded-2xl border bg-muted/20 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">Tổng lệnh nạp</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatNumber(paymentStats.totalCount)} giao dịch qua XGate
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="border-b px-6 py-4">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Báo cáo thu chi
-            </CardTitle>
-            <CardDescription>
-              Tách riêng tiền nạp ngân hàng, tiền chuyển ra và hoa phải trả giáo viên.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
-            <CashflowLine
-              icon={<ArrowUpRight className="h-4 w-4" />}
-              label="Tiền người dùng nạp"
-              value={formatVND(cashRevenue.grossTopupVnd)}
-              description="Số tiền thật XGate ghi nhận nạp thành công"
-              tone="text-emerald-600"
-            />
-            <CashflowLine
-              icon={<LineChartIcon className="h-4 w-4" />}
-              label="Lợi nhuận tiền mặt"
-              value={formatVND(profitSummary.totalProfitVndEquivalent)}
-              description="Tiền nạp vào trừ tiền đã chuyển ra"
-              tone="text-blue-600"
-            />
-            <CashflowLine
-              icon={<Wallet className="h-4 w-4" />}
-              label="Phải trả giáo viên"
-              value={formatHoa(teacherLiability.totalTeacherLiabilityHoa)}
-              description="Thu nhập giáo viên phát sinh từ lịch học và khóa học"
-              tone="text-amber-600"
-            />
-            <CashflowLine
-              icon={<Banknote className="h-4 w-4" />}
-              label="Đã chuyển cho giáo viên"
-              value={formatVND(cashRevenue.bankOutVnd)}
-              description="XGate ghi nhận chuyển ra hoặc yêu cầu rút đã hoàn tất"
-              tone="text-rose-600"
-            />
-            <CashflowLine
-              icon={<CheckCircle2 className="h-4 w-4" />}
-              label="Tiền ròng trong ngân hàng"
-              value={formatVND(cashRevenue.netCashVnd)}
-              description="Tiền đã nạp trừ tiền đã chuyển ra"
-              tone={cashRevenue.netCashVnd >= 0 ? "text-emerald-600" : "text-rose-600"}
-            />
-            <CashflowLine
-              icon={<Clock3 className="h-4 w-4" />}
-              label="Chi trả đang chờ"
-              value={formatVND(
-                teacherLiability.pendingPayoutVnd +
-                  teacherLiability.processingPayoutVnd,
-              )}
-              description="Đang chờ duyệt hoặc đang chuyển, chưa trừ khỏi ngân hàng nếu chưa hoàn tất"
-              tone="text-amber-600"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="border-b px-6 py-4">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Trạng thái rút tiền
-            </CardTitle>
-            <CardDescription>
-              Theo dõi luồng chi trả cho giáo viên.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 p-6">
-            <WithdrawalTile
-              label="Chờ duyệt"
-              count={withdrawalStats.pendingCount}
-              amountHoa={withdrawalStats.pendingAmount}
-              className="bg-amber-500/10 text-amber-700 dark:text-amber-300"
-            />
-            <WithdrawalTile
-              label="Đang chuyển"
-              count={withdrawalStats.processingCount}
-              amountHoa={withdrawalStats.processingAmount}
-              className="bg-blue-500/10 text-blue-700 dark:text-blue-300"
-            />
-            <WithdrawalTile
-              label="Đã hoàn tất"
-              count={withdrawalStats.completedCount}
-              amountHoa={withdrawalStats.completedAmount}
-              className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-            />
-            <WithdrawalTile
-              label="Đã từ chối"
-              count={withdrawalStats.rejectedCount}
-              amountHoa={withdrawalStats.rejectedAmount}
-              className="bg-rose-500/10 text-rose-700 dark:text-rose-300"
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <BreakdownCard
-          title="Hoa chiết khấu được thu hồi"
-          description="Hoa giữ lại từ booking/khóa học để đối soát, không cộng vào lợi nhuận tiền mặt."
-          rows={profitBreakdown}
-          totalHoa={recoveredDiscountHoa}
-          emptyLabel="Chưa có hoa chiết khấu được thu hồi"
-          palette={["bg-blue-500", "bg-emerald-500", "bg-violet-500", "bg-pink-500", "bg-slate-500"]}
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <FormulaCard
+          overallFinance={overallFinance}
+          platformFeePercent={platformFeePercent}
+          cashRevenue={cashRevenue}
         />
-        <BreakdownCard
-          title="Cơ cấu khấu chi giáo viên"
-          description="Thu nhập giáo viên phát sinh và các khoản chi trả liên quan."
-          rows={liabilityBreakdown}
-          totalHoa={
-            teacherLiability.totalTeacherLiabilityHoa +
-            teacherLiability.completedWithdrawalHoa +
-            teacherLiability.processingWithdrawalHoa +
-            teacherLiability.pendingWithdrawalHoa
-          }
-          emptyLabel="Chưa có khấu chi giáo viên"
-          palette={["bg-amber-500", "bg-orange-500", "bg-blue-500", "bg-emerald-500", "bg-slate-500"]}
+        <WalletInventoryCard walletPosition={walletPosition} />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.6fr_0.9fr]">
+        <FinancialChartCard
+          rows={financialChartData}
+          chartTotals={chartTotals}
+          platformFeePercent={platformFeePercent}
+          mode={timeRangeMode}
+        />
+        <OperationsPanel
+          paymentStats={paymentStats}
+          withdrawalStats={withdrawalStats}
+          cashRevenue={cashRevenue}
+          liabilityEstimate={liabilityEstimate}
+          overallFinance={overallFinance}
         />
       </div>
 
       <Card>
         <CardHeader className="border-b px-6 py-4">
           <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Lệnh nạp hoa {timeRangeLabel(timeRangeMode).toLowerCase()}
+            Lệnh nạp theo {timeRangeLabel(timeRangeMode).toLowerCase()}
           </CardTitle>
           <CardDescription>
-            Số lượng lệnh nạp hoàn thành, đang chờ, thất bại và đã hủy do hết hạn.
+            Chỉ biểu diễn trạng thái lệnh nạp. Số tiền lợi nhuận dùng các khoản nạp đã ghi nhận từ XGate ở biểu đồ chính.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="h-[300px] w-full">
+          <div className="h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={paymentChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.08} />
+              <ComposedChart data={paymentChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                 <XAxis
-                  dataKey="date"
+                  dataKey="label"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
@@ -848,45 +597,106 @@ export default function AdminRevenuePage() {
                   tickLine={false}
                   tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
                 />
-                <Tooltip content={<CountTooltip />} />
+                <Tooltip content={<PaymentTooltip />} />
                 <Legend />
-                <Bar dataKey="Hoàn thành" fill="#10b981" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Đang chờ" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Thất bại" fill="#f43f5e" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Đã hủy" fill="#64748b" radius={[6, 6, 0, 0]} />
-              </BarChart>
+                <Bar dataKey="success" name="Hoàn thành" fill="#10b981" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="pending" name="Đang chờ" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="failed" name="Thất bại" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="cancelled" name="Đã hủy" fill="#64748b" radius={[6, 6, 0, 0]} />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="border-b px-6 py-4">
-          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Lịch sử chuyển khoản XGate
-          </CardTitle>
-          <CardDescription>
-            Số tiền thật, nội dung chuyển khoản, tài khoản nhận và user/order đã khớp để đối soát.
-            {dateBounds ? " Bảng đang lọc theo khoảng ngày đã chọn." : ""}
-          </CardDescription>
+      <ReconciliationTabs
+        xgateRecordFilter={xgateRecordFilter}
+        onXgateRecordFilterChange={setXgateRecordFilter}
+        transactionTypeFilter={transactionTypeFilter}
+        onTransactionTypeFilterChange={setTransactionTypeFilter}
+        bankTransferRecords={filteredBankTransferRecords}
+        recentTransactions={filteredRecentTransactions}
+      />
+    </div>
+  );
+}
+
+function ReconciliationTabs({
+  xgateRecordFilter,
+  onXgateRecordFilterChange,
+  transactionTypeFilter,
+  onTransactionTypeFilterChange,
+  bankTransferRecords,
+  recentTransactions,
+}: {
+  xgateRecordFilter: XGateRecordFilter;
+  onXgateRecordFilterChange: (value: XGateRecordFilter) => void;
+  transactionTypeFilter: TransactionTypeFilter;
+  onTransactionTypeFilterChange: (value: TransactionTypeFilter) => void;
+  bankTransferRecords: BankTransferRecord[];
+  recentTransactions: AdminRevenueRecentTransaction[];
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <Tabs defaultValue="xgate">
+        <CardHeader className="flex flex-col gap-4 border-b px-6 py-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              Đối soát giao dịch
+            </CardTitle>
+            <CardDescription>
+              Dùng lịch sử ngân hàng để đối soát tiền thật, dùng sổ cái hoa để truy vết biến động ví nội bộ.
+            </CardDescription>
+          </div>
+          <TabsList className="grid h-10 w-full grid-cols-2 rounded-lg lg:w-[360px]">
+            <TabsTrigger value="xgate" className="rounded-md text-xs font-bold">
+              Lịch sử ngân hàng
+            </TabsTrigger>
+            <TabsTrigger value="ledger" className="rounded-md text-xs font-bold">
+              Sổ cái hoa
+            </TabsTrigger>
+          </TabsList>
         </CardHeader>
-        <CardContent className="p-0">
-          {visibleBankTransferRecords.length > 0 ? (
+
+        <TabsContent value="xgate" className="m-0">
+          <div className="flex flex-col gap-3 border-b bg-muted/10 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-black">Dòng tiền qua ngân hàng</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Chỉ các khoản nạp đã ghi nhận và chi tiền giáo viên đã chuyển mới được đưa vào công thức lợi nhuận.
+                Giao dịch chưa hạch toán chỉ dùng để đối soát.
+              </p>
+            </div>
+            <Select
+              value={xgateRecordFilter}
+              onValueChange={(value) => onXgateRecordFilterChange(value as XGateRecordFilter)}
+            >
+              <SelectTrigger className="h-9 w-full rounded-lg lg:w-[220px]">
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Bộ lọc ngân hàng" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả giao dịch</SelectItem>
+                <SelectItem value="success">Chỉ đã ghi nhận</SelectItem>
+                <SelectItem value="ignored">Chỉ cần đối soát</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {bankTransferRecords.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1120px] text-sm">
+              <table className="w-full min-w-[980px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30 text-left text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                    <th className="px-6 py-3">XGate</th>
+                    <th className="px-6 py-3">Ngân hàng</th>
+                    <th className="px-6 py-3">Giao dịch</th>
                     <th className="px-6 py-3 text-right">Số tiền</th>
-                    <th className="px-6 py-3">Nội dung</th>
-                    <th className="px-6 py-3">Trạng thái</th>
-                    <th className="px-6 py-3">Người dùng khớp</th>
-                    <th className="px-6 py-3">Tài khoản nhận</th>
+                    <th className="px-6 py-3">Kết quả</th>
+                    <th className="px-6 py-3">Người dùng</th>
                     <th className="px-6 py-3 text-right">Thời gian</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {visibleBankTransferRecords.map((record) => (
+                  {bankTransferRecords.map((record) => (
                     <BankTransferRow key={record.id} record={record} />
                   ))}
                 </tbody>
@@ -895,38 +705,54 @@ export default function AdminRevenuePage() {
           ) : (
             <EmptyState
               icon={<Landmark className="h-9 w-9 opacity-30" />}
-              title="Chưa có lịch sử chuyển khoản XGate"
-              description="Khi cron hoặc webhook XGate chạy, hệ thống sẽ lưu số tiền thật, nội dung chuyển khoản, tài khoản nhận và mã ORDER khớp người dùng."
+              title="Không có giao dịch ngân hàng trong bộ lọc này"
+              description="Thử đổi khoảng ngày hoặc bộ lọc trạng thái."
             />
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      <Card>
-        <CardHeader className="border-b px-6 py-4">
-          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Lịch sử hạch toán gần đây
-          </CardTitle>
-          <CardDescription>
-            Giao dịch phát sinh lợi nhuận hoặc khoản phải trả giáo viên trong hệ thống.
-            {dateBounds ? " Bảng đang lọc theo khoảng ngày đã chọn." : ""}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {visibleRecentTransactions.length ? (
+        <TabsContent value="ledger" className="m-0">
+          <div className="flex flex-col gap-3 border-b bg-muted/10 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-black">Sổ cái hoa nội bộ</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Ghi nhận biến động hoa trong ví: nạp hoa, giữ/rút hoa, mua khóa học, đặt lịch, mua gói và thuê bao.
+              </p>
+            </div>
+            <Select
+              value={transactionTypeFilter}
+              onValueChange={(value) => onTransactionTypeFilterChange(value as TransactionTypeFilter)}
+            >
+              <SelectTrigger className="h-9 w-full rounded-lg lg:w-[230px]">
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Loại hạch toán" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tất cả hạch toán</SelectItem>
+                <SelectItem value="TOPUP">Nạp hoa</SelectItem>
+                <SelectItem value="WITHDRAW">Rút hoa giáo viên</SelectItem>
+                <SelectItem value="COURSE">Khóa học</SelectItem>
+                <SelectItem value="BOOKING">Đặt lịch học</SelectItem>
+                <SelectItem value="SUBSCRIPTION">Gói thành viên</SelectItem>
+                <SelectItem value="PACKAGE">Gói hệ thống</SelectItem>
+                <SelectItem value="OTHER">Nghiệp vụ khác</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {recentTransactions.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
+              <table className="w-full min-w-[920px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30 text-left text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                    <th className="px-6 py-3">Mã</th>
-                    <th className="px-6 py-3">Loại</th>
-                    <th className="px-6 py-3">Mô tả</th>
+                    <th className="px-6 py-3">Người dùng</th>
+                    <th className="px-6 py-3">Nghiệp vụ</th>
+                    <th className="px-6 py-3">Mã tham chiếu</th>
                     <th className="px-6 py-3 text-right">Số hoa</th>
                     <th className="px-6 py-3 text-right">Thời gian</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {visibleRecentTransactions.map((transaction, index) => (
+                  {recentTransactions.map((transaction, index) => (
                     <TransactionRow
                       key={transaction.id ?? index}
                       transaction={transaction}
@@ -938,10 +764,534 @@ export default function AdminRevenuePage() {
           ) : (
             <EmptyState
               icon={<ReceiptText className="h-9 w-9 opacity-30" />}
-              title="Chưa có giao dịch gần đây"
-              description="Lịch sử hạch toán sẽ xuất hiện khi có lịch học, mua khóa học, mua gói hoặc chi trả giáo viên."
+              title="Không có hạch toán hoa trong bộ lọc này"
+              description="Sổ cái sẽ hiện khi có phát sinh nạp hoa, rút hoa, khóa học, đặt lịch, thuê bao hoặc mua gói."
             />
           )}
+        </TabsContent>
+      </Tabs>
+    </Card>
+  );
+}
+
+function KpiGrid({ overallFinance }: { overallFinance: OverallFinance }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <KpiCard
+        icon={<ArrowUpRight className="h-4 w-4" />}
+        label="Tổng nạp thành công"
+        value={formatVND(overallFinance.cashInVnd)}
+        helper="Dòng tiền vào đã ghi nhận"
+        tone="emerald"
+      />
+      <KpiCard
+        icon={<ArrowDownRight className="h-4 w-4" />}
+        label="Đã rút giáo viên"
+        value={formatVND(overallFinance.cashOutVnd)}
+        helper="Dòng tiền ra đã chuyển"
+        tone="rose"
+      />
+      <KpiCard
+        icon={<Wallet className="h-4 w-4" />}
+        label="Công nợ GV sau phí"
+        value={formatVND(overallFinance.teacherNetDebtVnd)}
+        helper={`Trước phí ${formatVND(overallFinance.teacherGrossDebtVnd)}`}
+        tone="amber"
+      />
+      <KpiCard
+        icon={<LineChartIcon className="h-4 w-4" />}
+        label="Lợi nhuận ước tính"
+        value={formatVND(overallFinance.estimatedProfitVnd)}
+        helper="Nạp - công nợ - đã rút"
+        tone={overallFinance.estimatedProfitVnd >= 0 ? "blue" : "rose"}
+      />
+    </div>
+  );
+}
+
+function KpiCard({
+  icon,
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  helper: string;
+  tone: "emerald" | "rose" | "amber" | "blue";
+}) {
+  const toneClass = {
+    emerald: "text-emerald-600 bg-emerald-500/10",
+    rose: "text-rose-600 bg-rose-500/10",
+    amber: "text-amber-600 bg-amber-500/10",
+    blue: "text-blue-600 bg-blue-500/10",
+  }[tone];
+
+  return (
+    <Card className="overflow-hidden border-slate-200 shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="min-h-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              {label}
+            </p>
+            <p className="mt-1 whitespace-nowrap text-2xl font-black tracking-tight">{value}</p>
+            <p className="mt-1 truncate text-xs font-semibold text-muted-foreground">{helper}</p>
+          </div>
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${toneClass}`}>
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PlatformFeeControl({
+  value,
+  serverValue,
+  onChange,
+  onSave,
+  isSaving,
+  canSave,
+  grossDebtVnd,
+  feeReserveVnd,
+}: {
+  value: number;
+  serverValue: number;
+  onChange: (value: number) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  canSave: boolean;
+  grossDebtVnd: number;
+  feeReserveVnd: number;
+}) {
+  const isDirty = value !== serverValue;
+
+  return (
+    <Card className="overflow-hidden border-slate-200 shadow-sm">
+      <CardHeader className="border-b px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+              Phí sàn rút tiền
+            </CardTitle>
+            <CardDescription className="mt-1 text-xs">
+              Áp dụng một lần khi ước tính công nợ giáo viên.
+            </CardDescription>
+          </div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+            <Percent className="h-4 w-4" />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-center gap-3">
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={value}
+            onChange={(event) => onChange(clampPercent(Number(event.target.value)))}
+            className="h-9 w-20 rounded-lg text-base font-black"
+          />
+          <span className="text-base font-black">%</span>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onChange(DEFAULT_PLATFORM_FEE_PERCENT)}
+            className="ml-auto h-8 rounded-lg px-3 text-xs font-bold"
+          >
+            Reset 30%
+          </Button>
+        </div>
+        <Slider
+          value={[value]}
+          min={0}
+          max={70}
+          step={1}
+          onValueChange={(next) => onChange(clampPercent(next[0] ?? value))}
+        />
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <MiniMetric label="Nợ GV trước phí" value={formatVND(grossDebtVnd)} />
+          <MiniMetric label="Phí sàn giữ lại" value={formatVND(feeReserveVnd)} />
+        </div>
+        <Button
+          type="button"
+          onClick={onSave}
+          disabled={!canSave || !isDirty || isSaving}
+          className="h-9 w-full rounded-lg font-bold"
+        >
+          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          {isSaving ? "Đang lưu" : "Lưu phí sàn"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FormulaCard({
+  overallFinance,
+  platformFeePercent,
+  cashRevenue,
+}: {
+  overallFinance: OverallFinance;
+  platformFeePercent: number;
+  cashRevenue: CashRevenueSummary;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="border-b px-6 py-4">
+        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          Công thức lợi nhuận
+        </CardTitle>
+        <CardDescription>
+          Công nợ không lấy từ chiết khấu booking/course nữa, mà lấy từ hoa giáo viên đang sở hữu sau phí sàn.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 p-6">
+        <div className="grid gap-3 md:grid-cols-4">
+          <FormulaStep
+            label="Tổng nạp"
+            value={formatVND(overallFinance.cashInVnd)}
+            tone="text-emerald-600"
+          />
+          <FormulaStep
+            label="Trừ công nợ"
+            value={formatVND(overallFinance.teacherNetDebtVnd)}
+            tone="text-amber-600"
+          />
+          <FormulaStep
+            label="Trừ đã rút"
+            value={formatVND(overallFinance.cashOutVnd)}
+            tone="text-rose-600"
+          />
+          <FormulaStep
+            label="Lợi nhuận"
+            value={formatVND(overallFinance.estimatedProfitVnd)}
+            tone={overallFinance.estimatedProfitVnd >= 0 ? "text-blue-600" : "text-rose-600"}
+          />
+        </div>
+
+        <div className="rounded-lg border bg-muted/20 p-4 text-sm">
+          <div className="grid gap-3 md:grid-cols-3">
+            <MiniMetric
+              label="Tiền thật còn trong bank"
+              value={formatVND(overallFinance.cashOnHandVnd)}
+            />
+            <MiniMetric
+              label={`Công nợ sau phí ${formatPercent(platformFeePercent)}`}
+              value={formatVND(overallFinance.teacherNetDebtVnd)}
+            />
+            <MiniMetric
+              label="Dư hoa học viên"
+              value={formatVND(overallFinance.userPrepaidVnd)}
+            />
+          </div>
+        </div>
+
+        {(cashRevenue.ignoredInCount ?? 0) > 0 || (cashRevenue.ignoredOutCount ?? 0) > 0 ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-black">Cần đối soát giao dịch chưa hạch toán</p>
+                <p className="mt-1 text-xs font-semibold">
+                  Tiền vào: {formatNumber(cashRevenue.ignoredInCount ?? 0)} giao dịch ({formatVND(cashRevenue.ignoredInVnd ?? 0)}) · Tiền ra: {formatNumber(cashRevenue.ignoredOutCount ?? 0)} giao dịch ({formatVND(cashRevenue.ignoredOutVnd ?? 0)})
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function WalletInventoryCard({
+  walletPosition,
+}: {
+  walletPosition: WalletPositionSummary;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="border-b px-6 py-4">
+        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          Hoa tồn đọng
+        </CardTitle>
+        <CardDescription>
+          Admin, giáo viên và user đều được hiển thị rõ trong tổng hoa hệ thống.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 p-6">
+        <InventoryRow
+          label="Tổng hệ thống"
+          balance={walletPosition.totalBalanceHoa}
+          frozen={walletPosition.totalFrozenHoa}
+          tone="bg-slate-950"
+        />
+        <InventoryRow
+          label="Giáo viên"
+          balance={walletPosition.instructorBalanceHoa}
+          frozen={walletPosition.instructorFrozenHoa}
+          tone="bg-amber-500"
+        />
+        <InventoryRow
+          label="User / học viên"
+          balance={walletPosition.userBalanceHoa}
+          frozen={walletPosition.userFrozenHoa}
+          tone="bg-blue-500"
+        />
+        <InventoryRow
+          label="Admin"
+          balance={walletPosition.adminBalanceHoa}
+          frozen={walletPosition.adminFrozenHoa}
+          tone="bg-violet-500"
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function FinancialChartCard({
+  rows,
+  chartTotals,
+  platformFeePercent,
+  mode,
+}: {
+  rows: FinancialChartRow[];
+  chartTotals: OverallFinance & { grossTradingVnd: number };
+  platformFeePercent: number;
+  mode: TimeRangeMode;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-col gap-4 border-b px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Doanh thu & lợi nhuận {timeRangeLabel(mode).toLowerCase()}
+          </CardTitle>
+          <CardDescription>
+            Biểu đồ dùng cùng công thức: nạp - đã rút - công nợ sau phí sàn {formatPercent(platformFeePercent)}.
+          </CardDescription>
+        </div>
+        <div className="flex w-full flex-wrap gap-2 xl:w-auto xl:justify-end">
+          <ChartMetricPill label="Nạp" value={formatVND(chartTotals.cashInVnd)} tone="emerald" />
+          <ChartMetricPill label="Rút" value={formatVND(chartTotals.cashOutVnd)} tone="rose" />
+          <ChartMetricPill label="Nợ GV" value={formatVND(chartTotals.teacherNetDebtVnd)} tone="amber" />
+          <ChartMetricPill label="Profit" value={formatVND(chartTotals.estimatedProfitVnd)} tone="blue" />
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="h-[350px] w-full pt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={rows} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="adminRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="adminProfitGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.16} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} />
+              <XAxis
+                dataKey="label"
+                axisLine
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 600 }}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value) => compactMoney(Number(value))}
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 600 }}
+              />
+              <Tooltip content={<FinancialTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="revenueVnd"
+                name="Doanh thu nạp"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#3b82f6" }}
+                fill="url(#adminRevenueGradient)"
+                fillOpacity={1}
+              />
+              <Area
+                type="monotone"
+                dataKey="estimatedProfitVnd"
+                name="Lợi nhuận"
+                stroke="#10b981"
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#10b981" }}
+                fill="url(#adminProfitGradient)"
+                fillOpacity={1}
+              />
+              <Area
+                type="monotone"
+                dataKey="withdrawnVnd"
+                name="Đã rút GV"
+                stroke="#f43f5e"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                activeDot={{ r: 3, strokeWidth: 0, fill: "#f43f5e" }}
+                fill="transparent"
+              />
+              <Area
+                type="monotone"
+                dataKey="teacherDebtVnd"
+                name="Công nợ sau phí"
+                stroke="#f59e0b"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                activeDot={{ r: 3, strokeWidth: 0, fill: "#f59e0b" }}
+                fill="transparent"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pb-2">
+          <ChartLegendItem label="Doanh thu nạp" color="border-blue-500" />
+          <ChartLegendItem label="Lợi nhuận" color="border-emerald-500" />
+          <ChartLegendItem label="Đã rút GV" color="border-rose-500" dashed />
+          <ChartLegendItem label="Công nợ sau phí" color="border-amber-500" dashed />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChartMetricPill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "emerald" | "rose" | "amber" | "blue";
+}) {
+  const toneClass = {
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+  }[tone];
+
+  return (
+    <div className={`min-w-[132px] rounded-lg border px-3 py-2 ${toneClass}`}>
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{label}</p>
+      <p className="mt-1 whitespace-nowrap text-sm font-black">{value}</p>
+    </div>
+  );
+}
+
+function ChartLegendItem({
+  label,
+  color,
+  dashed,
+}: {
+  label: string;
+  color: string;
+  dashed?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`h-0 w-6 border-t-2 ${color} ${dashed ? "border-dashed" : "border-solid"}`} />
+      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function OperationsPanel({
+  paymentStats,
+  withdrawalStats,
+  cashRevenue,
+  liabilityEstimate,
+  overallFinance,
+}: {
+  paymentStats: PaymentStatusStats;
+  withdrawalStats: WithdrawalStatusStats;
+  cashRevenue: CashRevenueSummary;
+  liabilityEstimate: LiabilityEstimateSummary;
+  overallFinance: OverallFinance;
+}) {
+  return (
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader className="border-b px-6 py-4">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Trạng thái tiền thật
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 p-6">
+          <StatusProgress
+            label="Nạp tiền đã ghi nhận"
+            value={cashRevenue.topupSuccessCount ?? paymentStats.successCount}
+            total={Math.max(paymentStats.totalCount, cashRevenue.topupSuccessCount ?? 0)}
+            color="bg-emerald-500"
+            helper={formatVND(cashRevenue.grossTopupVnd)}
+          />
+          <StatusProgress
+            label="Chi tiền giáo viên đã chuyển"
+            value={cashRevenue.payoutSuccessCount ?? withdrawalStats.completedCount}
+            total={Math.max(withdrawalStats.totalCount, cashRevenue.payoutSuccessCount ?? 0)}
+            color="bg-rose-500"
+            helper={formatVND(cashRevenue.bankOutVnd)}
+          />
+          <StatusProgress
+            label="Lệnh rút đang xử lý"
+            value={withdrawalStats.pendingCount + withdrawalStats.processingCount}
+            total={Math.max(withdrawalStats.totalCount, withdrawalStats.pendingCount + withdrawalStats.processingCount)}
+            color="bg-amber-500"
+            helper={formatVND(overallFinance.pendingWithdrawVnd + overallFinance.processingWithdrawVnd)}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b px-6 py-4">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Nghĩa vụ hiện tại
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 p-6">
+          <CompactLine
+            icon={<Wallet className="h-4 w-4" />}
+            label="Hoa GV có thể rút"
+            value={formatHoa(liabilityEstimate.teacherWithdrawableHoa)}
+            helper={formatVND(hoaToVnd(liabilityEstimate.teacherWithdrawableHoa))}
+          />
+          <CompactLine
+            icon={<Clock3 className="h-4 w-4" />}
+            label="Hoa GV đang giữ"
+            value={formatHoa(liabilityEstimate.teacherFrozenHoa)}
+            helper="Đang bị giữ bởi nghiệp vụ rút hoặc xử lý liên quan"
+          />
+          <CompactLine
+            icon={<ShieldCheck className="h-4 w-4" />}
+            label="Dư hoa học viên"
+            value={formatHoa(liabilityEstimate.userPrepaidHoa)}
+            helper="Nợ dịch vụ, không phải tiền mặt trả ngay"
+          />
+          <CompactLine
+            icon={<Banknote className="h-4 w-4" />}
+            label="Hoa admin"
+            value={formatHoa(liabilityEstimate.adminInternalHoa)}
+            helper={formatVND(liabilityEstimate.adminInternalVndEquivalent)}
+          />
         </CardContent>
       </Card>
     </div>
@@ -983,11 +1333,11 @@ function DateRangePicker({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 w-full justify-start rounded-full text-left font-semibold sm:w-[170px]"
+            className="h-9 w-full justify-start rounded-lg border-0 bg-muted/40 text-left font-semibold shadow-none sm:w-[142px]"
           >
-            <CalendarIcon className="mr-2 h-4 w-4 text-pink-500" />
+            <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
             <span className="truncate">
-              {fromDate ? formatShortDate(fromDate) : "Ngày bắt đầu"}
+              {fromDate ? formatShortDate(fromDate) : "Từ ngày"}
             </span>
           </Button>
         </PopoverTrigger>
@@ -1006,19 +1356,15 @@ function DateRangePicker({
         </PopoverContent>
       </Popover>
 
-      <span className="hidden text-xs font-bold uppercase tracking-widest text-muted-foreground sm:inline">
-        đến
-      </span>
-
       <Popover open={toOpen} onOpenChange={setToOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 w-full justify-start rounded-full text-left font-semibold sm:w-[170px]"
+            className="h-9 w-full justify-start rounded-lg border-0 bg-muted/40 text-left font-semibold shadow-none sm:w-[142px]"
           >
-            <CalendarIcon className="mr-2 h-4 w-4 text-pink-500" />
+            <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
             <span className="truncate">
-              {toDate ? formatShortDate(toDate) : "Ngày kết thúc"}
+              {toDate ? formatShortDate(toDate) : "Đến ngày"}
             </span>
           </Button>
         </PopoverTrigger>
@@ -1047,146 +1393,76 @@ function DateRangePicker({
             setFromOpen(false);
             setToOpen(false);
           }}
-          className="h-10 rounded-full px-3 text-xs text-muted-foreground"
+          className="h-9 rounded-lg px-3 text-xs text-muted-foreground"
         >
           <X className="mr-1 h-3.5 w-3.5" />
-          Xóa lọc
+          Xóa
         </Button>
       ) : null}
     </div>
   );
 }
 
-function DateRangeQueryCard({
-  bounds,
-  summary,
-  transactions,
-  transfers,
-}: {
-  bounds?: DateBounds;
-  summary: DateRangeSummary;
-  transactions: AdminRevenueRecentTransaction[];
-  transfers: BankTransferRecord[];
-}) {
-  const rangeLabel = bounds
-    ? `${formatShortDate(bounds.from)} - ${formatShortDate(bounds.to)}`
-    : "Toàn bộ dữ liệu đang tải trên trang";
-
-  return (
-    <Card className="overflow-hidden border-pink-100/80 bg-pink-50/20 dark:border-pink-500/20 dark:bg-pink-500/5">
-      <CardHeader className="border-b px-6 py-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Truy vấn dòng tiền theo ngày
-            </CardTitle>
-            <CardDescription>
-              Khoảng đang xem: {rangeLabel}. Chọn ngày ở bộ lọc phía trên để lọc bảng chuyển khoản và hạch toán.
-            </CardDescription>
-          </div>
-          <Badge
-            variant="outline"
-            className="w-fit rounded-full border-pink-200 bg-white px-3 py-1 text-pink-600 dark:border-pink-500/30 dark:bg-background"
-          >
-            {formatNumber(summary.transactionCount)} hạch toán · {formatNumber(summary.transferCount)} chuyển khoản
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-3 p-6 md:grid-cols-2 xl:grid-cols-4">
-        <QueryMetric
-          label="Tiền bank ghi nhận"
-          value={formatVND(summary.bankInVnd)}
-          helper={`${formatNumber(summary.matchedTransferCount)} lệnh đã khớp cộng ví`}
-          tone="text-emerald-600"
-        />
-        <QueryMetric
-          label="Lợi nhuận tiền mặt"
-          value={formatVND(summary.bankInVnd - summary.bankOutVnd)}
-          helper="Tiền bank ghi nhận trừ tiền chuyển ra"
-          tone="text-blue-600"
-        />
-        <QueryMetric
-          label="Phải trả giáo viên"
-          value={formatHoa(summary.teacherLiabilityHoa)}
-          helper={`≈ ${formatVND(hoaToVnd(summary.teacherLiabilityHoa))}`}
-          tone="text-amber-600"
-        />
-        <QueryMetric
-          label="Giao dịch trong bảng"
-          value={formatNumber(transactions.length + transfers.length)}
-          helper={`${formatNumber(transactions.length)} hạch toán, ${formatNumber(transfers.length)} chuyển khoản`}
-          tone="text-pink-600"
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-function QueryMetric({
+function FormulaStep({
   label,
   value,
-  helper,
   tone,
 }: {
   label: string;
   value: string;
-  helper: string;
   tone: string;
 }) {
   return (
-    <div className="rounded-2xl border bg-background/80 p-4 shadow-sm">
+    <div className="rounded-lg border bg-background p-4">
       <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
         {label}
       </p>
       <p className={`mt-2 text-xl font-black ${tone}`}>{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
     </div>
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  description,
-  icon,
+function InventoryRow({
+  label,
+  balance,
+  frozen,
   tone,
 }: {
-  title: string;
-  value: string;
-  description: string;
-  icon: React.ReactNode;
-  tone: "emerald" | "blue" | "rose" | "amber" | "slate";
+  label: string;
+  balance: number;
+  frozen: number;
+  tone: string;
 }) {
-  const toneClass = {
-    emerald:
-      "from-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300",
-    blue: "from-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-300",
-    rose: "from-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-300",
-    amber:
-      "from-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-300",
-    slate:
-      "from-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-300",
-  }[tone];
-
+  const available = balance - frozen;
   return (
-    <Card className={`overflow-hidden bg-gradient-to-br ${toneClass} via-background to-background`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-          {title}
-        </CardTitle>
-        <div className="rounded-2xl bg-white/70 p-2 shadow-sm dark:bg-white/5">
-          {icon}
+    <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="flex items-center gap-3">
+        <span className={`h-3 w-3 rounded-full ${tone}`} />
+        <div>
+          <p className="text-sm font-black">{label}</p>
+          <p className="text-xs text-muted-foreground">
+            Khả dụng {formatHoa(available)} · Đang giữ {formatHoa(frozen)}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-black tracking-tight text-foreground">
-          {value}
-        </div>
-        <p className="mt-1 text-xs font-medium text-muted-foreground">
-          {description}
+      </div>
+      <div className="text-left sm:text-right">
+        <p className="text-lg font-black">{formatHoa(balance)}</p>
+        <p className="text-xs font-semibold text-muted-foreground">
+          ≈ {formatVND(hoaToVnd(balance))}
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-background/80 p-3">
+      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-black">{value}</p>
+    </div>
   );
 }
 
@@ -1204,7 +1480,6 @@ function StatusProgress({
   helper: string;
 }) {
   const percent = total > 0 ? Math.min(100, (value / total) * 100) : 0;
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -1221,202 +1496,104 @@ function StatusProgress({
   );
 }
 
-function CashflowLine({
+function CompactLine({
   icon,
   label,
   value,
-  description,
-  tone,
+  helper,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  description: string;
-  tone: string;
+  helper: string;
 }) {
   return (
-    <div className="rounded-2xl border bg-muted/10 p-4">
-      <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-muted ${tone}`}>
+    <div className="flex items-start gap-3 rounded-lg border p-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         {icon}
       </div>
-      <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-        {label}
-      </p>
-      <p className={`mt-1 text-xl font-black ${tone}`}>{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
-function WithdrawalTile({
-  label,
-  count,
-  amountHoa,
-  className,
-}: {
-  label: string;
-  count: number;
-  amountHoa: number;
-  className: string;
-}) {
-  return (
-    <div className={`rounded-2xl p-4 ${className}`}>
-      <p className="text-[11px] font-black uppercase tracking-widest opacity-75">
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-black">{formatNumber(count)}</p>
-      <p className="mt-1 text-xs font-bold opacity-80">
-        {formatHoa(amountHoa)} · ≈ {formatVND(hoaToVnd(amountHoa))}
-      </p>
-    </div>
-  );
-}
-
-function BreakdownCard({
-  title,
-  description,
-  rows,
-  totalHoa,
-  emptyLabel,
-  palette,
-}: {
-  title: string;
-  description: string;
-  rows: SourceBreakdownItem[];
-  totalHoa: number;
-  emptyLabel: string;
-  palette: string[];
-}) {
-  return (
-    <Card>
-      <CardHeader className="border-b px-6 py-4">
-        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5 p-6">
-        {rows.length ? (
-          rows.map((row, index) => (
-            <BreakdownRow
-              key={row.key || row.label}
-              label={row.label}
-              valueHoa={row.amountHoa}
-              valueVnd={row.amountVnd}
-              totalHoa={totalHoa}
-              color={palette[index % palette.length]}
-            />
-          ))
-        ) : (
-          <div className="rounded-2xl border border-dashed p-8 text-center text-sm font-semibold text-muted-foreground">
-            {emptyLabel}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function BreakdownRow({
-  label,
-  valueHoa,
-  valueVnd,
-  totalHoa,
-  color,
-}: {
-  label: string;
-  valueHoa: number;
-  valueVnd: number;
-  totalHoa: number;
-  color: string;
-}) {
-  const percent = totalHoa > 0 ? Math.min(100, (valueHoa / totalHoa) * 100) : 0;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-bold">{label}</p>
-        <div className="text-right">
-          <p className="text-sm font-black">{formatHoa(valueHoa)}</p>
-          <p className="text-[11px] text-muted-foreground">≈ {formatVND(valueVnd)}</p>
-        </div>
+        <p className="text-xs text-muted-foreground">{helper}</p>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
-      </div>
-      <p className="text-xs text-muted-foreground">{percent.toFixed(1)}% tổng nhóm</p>
+      <p className="shrink-0 text-sm font-black">{value}</p>
     </div>
-  );
-}
-
-function LegendDot({ className, label }: { className: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${className}`} />
-      {label}
-    </span>
   );
 }
 
 function BankTransferRow({ record }: { record: BankTransferRecord }) {
-  const matchedUser =
-    record.matchedUserName || record.matchedUserEmail || "Chưa khớp user";
-  const receiverInfo = [
-    record.receiverBankName?.toUpperCase(),
-    record.receiverAccount,
-  ]
-    .filter(Boolean)
-    .join(" - ");
-
+  const isIn = record.type === "in";
+  const source = record.source ?? "XGate";
+  const bank = bankBrand(record.receiverBankName || record.currency || "");
+  const matchedUserName = record.matchedUserName || record.matchedUserEmail || "Chưa khớp";
   return (
-    <tr className="transition-colors hover:bg-muted/30">
+    <tr className="hover:bg-muted/20">
       <td className="px-6 py-4">
-        <div className="font-mono text-xs font-bold">
-          {shortTransferId(record.xgateTransactionId)}
-        </div>
-        <div className="mt-1 text-[11px] font-medium text-muted-foreground">
-          {record.currency || "VND"} · {record.source || "XGate"}
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10 rounded-lg border bg-white p-1">
+            <AvatarImage
+              src={bank.logoUrl}
+              alt={bank.name}
+              className="object-contain"
+            />
+            <AvatarFallback className="rounded-lg text-[10px] font-black">
+              {bank.code}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{bank.shortName}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {record.receiverAccount || "-"}
+            </p>
+          </div>
         </div>
       </td>
-      <td className="px-6 py-4 text-right font-black text-emerald-600">
-        {formatVND(record.amountVnd)}
+      <td className="max-w-[330px] px-6 py-4">
+        <div className="flex items-center gap-2">
+          <Badge variant={isIn ? "default" : "secondary"} className="rounded-md px-2 py-0.5">
+            {isIn ? "Tiền vào" : "Tiền ra"}
+          </Badge>
+        </div>
+        <p className="mt-1 truncate text-xs font-semibold text-muted-foreground">
+          {record.content || "Không có nội dung"}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {record.matchedOrderId || "Chưa khớp lệnh"} · {xgateSourceLabel(source)}
+        </p>
       </td>
-      <td className="max-w-[280px] px-6 py-4">
-        <div className="truncate font-mono text-xs font-bold">
-          {record.content || "-"}
-        </div>
-        <div className="mt-1 text-[11px] text-muted-foreground">
-          {record.matchedOrderId || "Không có mã ORDER"}
-        </div>
+      <td className={`px-6 py-4 text-right font-black ${isIn ? "text-emerald-600" : "text-rose-600"}`}>
+        {formatVND(record.amountVnd ?? 0)}
       </td>
       <td className="px-6 py-4">
-        <Badge
-          variant="outline"
-          className={`${xgateResultClass(record.processingResult)} rounded-full px-2.5 py-1 text-[10px] font-bold uppercase`}
-        >
-          {xgateResultLabel(record.processingResult)}
-        </Badge>
+        <ResultBadge result={record.processingResult} />
       </td>
       <td className="px-6 py-4">
-        <div className="max-w-[220px] truncate text-sm font-bold">
-          {matchedUser}
-        </div>
-        <div className="mt-1 text-[11px] text-muted-foreground">
-          {record.creditedBlossoms
-            ? `${formatHoa(record.creditedBlossoms)} đã cộng ví`
-            : "Chưa có ghi nhận cộng ví"}
-        </div>
+        {record.matchedUserName || record.matchedUserEmail ? (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9 rounded-lg">
+              <AvatarImage src={record.matchedUserAvatarUrl || ""} alt={matchedUserName} />
+              <AvatarFallback className="rounded-lg text-xs font-black">
+                {userInitials(matchedUserName)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{matchedUserName}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {record.matchedUserEmail || `#${record.matchedUserId ?? record.id}`}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Avatar className="h-9 w-9 rounded-lg">
+              <AvatarFallback className="rounded-lg text-xs font-black">?</AvatarFallback>
+            </Avatar>
+            <span className="text-xs font-semibold">Chưa khớp</span>
+          </div>
+        )}
       </td>
-      <td className="px-6 py-4">
-        <div className="max-w-[180px] truncate font-mono text-xs font-bold">
-          {receiverInfo || "-"}
-        </div>
-        <div className="mt-1 text-[11px] text-muted-foreground">
-          Tài khoản nhận từ XGate
-        </div>
-      </td>
-      <td className="px-6 py-4 text-right text-xs font-medium text-muted-foreground">
-        {formatDateTime(record.transactionDate || record.createdAt)}
+      <td className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground">
+        {formatRecordDate(record.transactionDate ?? record.createdAt)}
       </td>
     </tr>
   );
@@ -1427,37 +1604,282 @@ function TransactionRow({
 }: {
   transaction: AdminRevenueRecentTransaction;
 }) {
-  const isOutflow = isOutflowType(transaction.type);
-
+  const amount = transaction.amount ?? 0;
+  const userName = transaction.userName || transaction.userEmail || "Không rõ người dùng";
   return (
-    <tr className="transition-colors hover:bg-muted/30">
-      <td className="px-6 py-4 font-mono text-xs font-bold">
-        #{transaction.referenceId || transaction.id}
+    <tr className="hover:bg-muted/20">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9 rounded-lg">
+            <AvatarImage src={transaction.userAvatarUrl || ""} alt={userName} />
+            <AvatarFallback className="rounded-lg text-xs font-black">
+              {userInitials(userName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{userName}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {transaction.userEmail || `#${transaction.userId ?? transaction.id}`}
+            </p>
+          </div>
+        </div>
       </td>
       <td className="px-6 py-4">
-        <Badge
-          variant="outline"
-          className={`${transactionTypeClass(transaction.type)} rounded-full px-2.5 py-1 text-[10px] font-bold uppercase`}
-        >
-          {transactionTypeLabel(transaction.type)}
-        </Badge>
+        <LedgerTypeBadge type={transaction.type} />
       </td>
-      <td className="max-w-[360px] truncate px-6 py-4 text-muted-foreground">
-        {transaction.description || "Giao dịch hệ thống"}
+      <td className="px-6 py-4 text-xs font-semibold text-muted-foreground">
+        {transaction.referenceId || "-"}
       </td>
-      <td
-        className={`px-6 py-4 text-right font-black ${
-          isOutflow ? "text-rose-600" : "text-emerald-600"
-        }`}
-      >
-        {isOutflow ? "-" : "+"}
-        {formatHoa(Math.abs(transaction.amount || 0))}
+      <td className={`px-6 py-4 text-right font-black ${amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+        {amount >= 0 ? "+" : ""}
+        {formatHoa(amount)}
       </td>
-      <td className="px-6 py-4 text-right text-xs font-medium text-muted-foreground">
-        {formatDateTime(transaction.createdAt)}
+      <td className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground">
+        {formatRecordDate(transaction.createdAt)}
       </td>
     </tr>
   );
+}
+
+function ResultBadge({ result }: { result?: string }) {
+  const value = result || "UNKNOWN";
+  const className = isRecordedXGateResult(value)
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : value === "IGNORED"
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : "border-slate-200 bg-slate-50 text-slate-700";
+  return (
+    <Badge
+      variant="outline"
+      className={`rounded-md font-black ${className}`}
+    >
+      {xgateResultLabel(result)}
+    </Badge>
+  );
+}
+
+function LedgerTypeBadge({ type }: { type?: string }) {
+  const value = type || "UNKNOWN";
+  const className = value.startsWith("TOPUP")
+    ? "bg-emerald-500/10 text-emerald-700"
+    : value.startsWith("WITHDRAW")
+      ? "bg-rose-500/10 text-rose-700"
+      : value.startsWith("BOOKING")
+        ? "bg-amber-500/10 text-amber-700"
+        : value.startsWith("COURSE")
+          ? "bg-blue-500/10 text-blue-700"
+          : "bg-slate-500/10 text-slate-700";
+  return (
+    <span
+      className={`inline-flex rounded-md px-2 py-1 text-[11px] font-black tracking-wide ${className}`}
+    >
+      {ledgerTypeLabel(type)}
+    </span>
+  );
+}
+
+function isRecordedXGateResult(result?: string) {
+  return result === "TOPUP_SUCCESS" || result === "PAYOUT_SUCCESS";
+}
+
+function xgateResultLabel(result?: string) {
+  switch (result) {
+    case "TOPUP_SUCCESS":
+      return "Nạp tiền đã ghi nhận";
+    case "PAYOUT_SUCCESS":
+      return "Chi tiền đã chuyển";
+    case "IGNORED":
+      return "Cần đối soát";
+    case undefined:
+    case "":
+    case "UNKNOWN":
+      return "Chưa xác định";
+    default:
+      return result.includes("SUCCESS") ? "Đã ghi nhận" : "Trạng thái khác";
+  }
+}
+
+function xgateSourceLabel(source?: string) {
+  switch (source?.toUpperCase()) {
+    case "POLLING":
+      return "Đồng bộ tự động";
+    case "WEBHOOK":
+      return "Webhook ngân hàng";
+    case "MANUAL":
+      return "Nhập tay";
+    case "XGATE":
+      return "XGate";
+    case undefined:
+    case "":
+      return "XGate";
+    default:
+      return "Nguồn ngân hàng khác";
+  }
+}
+
+const BANK_BRANDS = [
+  {
+    code: "MB",
+    shortName: "MBBank",
+    name: "Ngân hàng TMCP Quân đội",
+    logoUrl: "https://api.vietqr.io/img/MB.png",
+    aliases: ["MB", "MBBANK", "MBB"],
+  },
+  {
+    code: "VCB",
+    shortName: "Vietcombank",
+    name: "Ngân hàng TMCP Ngoại thương Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/VCB.png",
+    aliases: ["VCB", "VIETCOMBANK", "VIETCOMM", "VIETCOM"],
+  },
+  {
+    code: "TCB",
+    shortName: "Techcombank",
+    name: "Ngân hàng TMCP Kỹ thương Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/TCB.png",
+    aliases: ["TCB", "TECHCOMBANK"],
+  },
+  {
+    code: "BIDV",
+    shortName: "BIDV",
+    name: "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/BIDV.png",
+    aliases: ["BIDV"],
+  },
+  {
+    code: "ICB",
+    shortName: "VietinBank",
+    name: "Ngân hàng TMCP Công thương Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/ICB.png",
+    aliases: ["ICB", "VIETINBANK", "VIETIN"],
+  },
+  {
+    code: "VPB",
+    shortName: "VPBank",
+    name: "Ngân hàng TMCP Việt Nam Thịnh Vượng",
+    logoUrl: "https://api.vietqr.io/img/VPB.png",
+    aliases: ["VPB", "VPBANK"],
+  },
+  {
+    code: "ACB",
+    shortName: "ACB",
+    name: "Ngân hàng TMCP Á Châu",
+    logoUrl: "https://api.vietqr.io/img/ACB.png",
+    aliases: ["ACB"],
+  },
+  {
+    code: "TPB",
+    shortName: "TPBank",
+    name: "Ngân hàng TMCP Tiên Phong",
+    logoUrl: "https://api.vietqr.io/img/TPB.png",
+    aliases: ["TPB", "TPBANK"],
+  },
+  {
+    code: "STB",
+    shortName: "Sacombank",
+    name: "Ngân hàng TMCP Sài Gòn Thương Tín",
+    logoUrl: "https://api.vietqr.io/img/STB.png",
+    aliases: ["STB", "SACOMBANK"],
+  },
+  {
+    code: "VIB",
+    shortName: "VIB",
+    name: "Ngân hàng TMCP Quốc tế Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/VIB.png",
+    aliases: ["VIB"],
+  },
+] as const;
+
+function bankBrand(value?: string) {
+  const normalized = normalizeBankText(value);
+  const brand = BANK_BRANDS.find((item) =>
+    item.aliases.some((alias) => normalized.includes(alias)),
+  );
+
+  return (
+    brand ?? {
+      code: "BANK",
+      shortName: value || "Ngân hàng",
+      name: value || "Ngân hàng",
+      logoUrl: "",
+      aliases: [],
+    }
+  );
+}
+
+function normalizeBankText(value?: string) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
+function ledgerTypeLabel(type?: string) {
+  switch (type) {
+    case "TOPUP":
+      return "Nạp hoa";
+    case "WITHDRAW":
+    case "WITHDRAW_PAYOUT":
+      return "Rút tiền giáo viên";
+    case "WITHDRAW_HOLD":
+      return "Phong tỏa chờ rút";
+    case "WITHDRAW_REFUND":
+      return "Hoàn phong tỏa rút";
+    case "WITHDRAWAL_FEE":
+      return "Phí rút tiền";
+    case "COURSE_PAYMENT":
+      return "Thanh toán khóa học";
+    case "COURSE_INCOME":
+      return "Doanh thu giáo viên từ khóa học";
+    case "COURSE_PLATFORM_FEE":
+      return "Phí sàn khóa học";
+    case "COURSE_ADMIN_PROFIT":
+      return "Doanh thu khóa học admin";
+    case "BOOKING_HOLD":
+      return "Tạm giữ tiền booking";
+    case "BOOKING_CAPTURE":
+      return "Ghi nhận tiền booking";
+    case "BOOKING_INCOME":
+    case "BOOKING_PAYMENT":
+      return "Doanh thu giáo viên từ booking";
+    case "BOOKING_RELEASE":
+      return "Giải tỏa tiền booking";
+    case "BOOKING_CANCEL_REFUND":
+      return "Hoàn tiền hủy booking";
+    case "BOOKING_CANCEL_PENALTY":
+      return "Phí phạt hủy booking";
+    case "SUBSCRIPTION":
+    case "SUBSCRIPTION_RENEW":
+      return "Gói thành viên";
+    case "PACKAGE_PURCHASE":
+      return "Mua gói hệ thống";
+    case "FLASHCARD_IMAGE_PACK":
+      return "Gói ảnh flashcard";
+    case "PLATFORM_FEE":
+      return "Phí sàn booking";
+    case undefined:
+    case "":
+      return "Chưa phân loại";
+    default:
+      if (type.startsWith("TOPUP")) return "Nạp hoa";
+      if (type.startsWith("WITHDRAW")) return "Rút tiền giáo viên";
+      if (type.startsWith("COURSE")) return "Nghiệp vụ khóa học";
+      if (type.startsWith("BOOKING")) return "Nghiệp vụ booking";
+      if (type.startsWith("SUBSCRIPTION")) return "Gói thành viên";
+      return "Nghiệp vụ khác";
+  }
+}
+
+function userInitials(value?: string) {
+  const parts = (value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 function EmptyState({
@@ -1470,544 +1892,479 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-14 text-center text-muted-foreground">
-      {icon}
-      <p className="text-sm font-semibold">{title}</p>
-      <p className="max-w-xl text-xs">{description}</p>
+    <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 p-8 text-center">
+      <div className="text-muted-foreground">{icon}</div>
+      <div>
+        <p className="font-black">{title}</p>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
+      </div>
     </div>
   );
 }
 
 function AnalyticsLoadingState() {
   return (
-    <div className="space-y-6">
-      <div className="h-24 animate-pulse rounded-3xl bg-muted/60" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="h-32 animate-pulse rounded-2xl bg-muted/60" />
+    <div className="space-y-6 animate-pulse">
+      <div className="h-24 rounded-lg bg-muted" />
+      <div className="grid gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-36 rounded-lg bg-muted" />
         ))}
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.55fr_0.95fr]">
-        <div className="h-[460px] animate-pulse rounded-2xl bg-muted/60" />
-        <div className="h-[460px] animate-pulse rounded-2xl bg-muted/60" />
-      </div>
+      <div className="h-[420px] rounded-lg bg-muted" />
     </div>
   );
 }
 
 function AnalyticsErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="flex max-w-md flex-col items-center gap-4 rounded-3xl border border-dashed bg-muted/20 p-8 text-center">
-        <AlertTriangle className="h-12 w-12 text-destructive/70" />
+    <Card className="border-rose-200">
+      <CardContent className="flex min-h-[360px] flex-col items-center justify-center gap-4 p-8 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
+          <AlertTriangle className="h-6 w-6" />
+        </div>
         <div>
-          <h3 className="text-lg font-bold">Không thể tải báo cáo admin</h3>
+          <p className="text-lg font-black">Không tải được dashboard tài chính</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Dịch vụ thống kê đang bận hoặc kết nối tới backend bị lỗi.
+            Kiểm tra backend hoặc quyền admin rồi thử cập nhật lại.
           </p>
         </div>
-        <Button onClick={onRetry} variant="outline" className="rounded-full">
+        <Button onClick={onRetry} className="rounded-lg font-semibold">
           <RefreshCcw className="mr-2 h-4 w-4" />
           Thử lại
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function MoneyTooltip({
+function FinancialTooltip({
   active,
   payload,
   label,
 }: {
   active?: boolean;
-  payload?: Array<{ name?: string; value?: number; color?: string }>;
+  payload?: Array<{ dataKey?: string; value?: number; name?: string; color?: string }>;
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border bg-background p-3 shadow-lg">
-      <p className="mb-2 text-xs font-black">{label}</p>
-      <div className="space-y-1">
-        {payload.map((item) => (
-          <div key={item.name} className="flex min-w-[180px] items-center justify-between gap-4 text-xs">
-            <span className="font-semibold" style={{ color: item.color }}>
-              {item.name}
-            </span>
-            <span className="font-black">{formatVND(Number(item.value ?? 0))}</span>
-          </div>
-        ))}
-      </div>
+    <div className="rounded-lg border bg-background p-3 text-xs shadow-lg">
+      <p className="mb-2 font-black">{label}</p>
+      {payload.map((item) => (
+        <div key={String(item.dataKey)} className="flex min-w-[210px] items-center justify-between gap-4 py-1">
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+            {item.name}
+          </span>
+          <span className="font-black">{formatVND(Number(item.value ?? 0))}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-function CountTooltip({
+function PaymentTooltip({
   active,
   payload,
   label,
 }: {
   active?: boolean;
-  payload?: Array<{ name?: string; value?: number; color?: string }>;
+  payload?: Array<{ dataKey?: string; value?: number; name?: string; color?: string }>;
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border bg-background p-3 shadow-lg">
-      <p className="mb-2 text-xs font-black">{label}</p>
-      <div className="space-y-1">
-        {payload.map((item) => (
-          <div key={item.name} className="flex min-w-[160px] items-center justify-between gap-4 text-xs">
-            <span className="font-semibold" style={{ color: item.color }}>
-              {item.name}
-            </span>
-            <span className="font-black">{formatNumber(Number(item.value ?? 0))}</span>
-          </div>
-        ))}
-      </div>
+    <div className="rounded-lg border bg-background p-3 text-xs shadow-lg">
+      <p className="mb-2 font-black">{label}</p>
+      {payload.map((item) => (
+        <div key={String(item.dataKey)} className="flex min-w-[180px] items-center justify-between gap-4 py-1">
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+            {item.name}
+          </span>
+          <span className="font-black">{formatNumber(Number(item.value ?? 0))}</span>
+        </div>
+      ))}
     </div>
   );
+}
+
+function buildOverallFinance({
+  cashRevenue,
+  liabilityEstimate,
+  platformFeePercent,
+}: {
+  cashRevenue: CashRevenueSummary;
+  liabilityEstimate: LiabilityEstimateSummary;
+  platformFeePercent: number;
+}): OverallFinance {
+  const teacherGrossDebtVnd = hoaToVnd(liabilityEstimate.teacherOwnedHoa ?? 0);
+  const teacherNetDebtVnd = applyPlatformFee(teacherGrossDebtVnd, platformFeePercent);
+  const platformFeeReserveVnd = teacherGrossDebtVnd - teacherNetDebtVnd;
+  const cashInVnd = cashRevenue.grossTopupVnd ?? 0;
+  const cashOutVnd = cashRevenue.bankOutVnd ?? 0;
+  return {
+    cashInVnd,
+    cashOutVnd,
+    cashOnHandVnd: cashInVnd - cashOutVnd,
+    teacherGrossDebtVnd,
+    teacherNetDebtVnd,
+    platformFeeReserveVnd,
+    estimatedProfitVnd: cashInVnd - teacherNetDebtVnd - cashOutVnd,
+    userPrepaidVnd: liabilityEstimate.userPrepaidVndEquivalent ?? 0,
+    adminHoaVnd: liabilityEstimate.adminInternalVndEquivalent ?? 0,
+    pendingWithdrawVnd: liabilityEstimate.pendingWithdrawalVnd ?? 0,
+    processingWithdrawVnd: liabilityEstimate.processingWithdrawalVnd ?? 0,
+  };
 }
 
 function buildFinancialChartData({
   mode,
   selectedYear,
-  monthly,
+  dateBounds,
+  platformFeePercent,
   daily,
+  monthly,
   weekly,
   yearly,
-  dateBounds,
 }: {
   mode: TimeRangeMode;
   selectedYear: number;
+  dateBounds?: DateBounds;
+  platformFeePercent: number;
+  daily: PeriodSourceRow[];
   monthly: MonthlyFinancialSummary[];
-  daily: FinancialPeriodSummary[];
   weekly: FinancialPeriodSummary[];
   yearly: FinancialPeriodSummary[];
-  dateBounds?: DateBounds;
 }): FinancialChartRow[] {
-  if (mode === "year") {
-    return (yearly.length ? yearly : [])
-      .filter((item) => periodIntersectsDateBounds(item, dateBounds))
-      .slice()
-      .sort((a, b) => (a.year ?? 0) - (b.year ?? 0))
-      .map((item) => financialPeriodRow(item, item.year ?? 0));
-  }
+  let rows: PeriodSourceRow[] = [];
 
   if (mode === "day") {
-    return daily
-      .filter((item) => item.year === selectedYear)
-      .filter((item) => periodIntersectsDateBounds(item, dateBounds))
-      .slice()
-      .sort((a, b) => a.periodKey.localeCompare(b.periodKey))
-      .map((item) => financialPeriodRow(item, dateSortKey(item.periodKey)));
+    rows = daily
+      .filter((item) => item.start?.getFullYear() === selectedYear)
+      .sort((a, b) => a.sortKey - b.sortKey);
   }
 
   if (mode === "week") {
-    return weekly
+    rows = weekly
       .filter((item) => item.year === selectedYear)
-      .filter((item) => periodIntersectsDateBounds(item, dateBounds))
-      .slice()
-      .sort((a, b) => (a.week ?? 0) - (b.week ?? 0))
-      .map((item) => financialPeriodRow(item, item.week ?? 0));
+      .map(periodToSourceRow)
+      .sort((a, b) => a.sortKey - b.sortKey);
   }
 
-  const byKey = new Map(
-    monthly.map((item) => [`${item.year}-${item.month}`, item]),
-  );
+  if (mode === "month") {
+    const byMonth = new Map(monthly.map((item) => [`${item.year}-${item.month}`, item]));
+    rows = MONTHS.map((month) => {
+      const item = byMonth.get(`${selectedYear}-${month}`);
+      const start = new Date(selectedYear, month - 1, 1);
+      return {
+        label: `T${month}`,
+        sortKey: selectedYear * 100 + month,
+        start,
+        end: endOfDay(new Date(selectedYear, month, 0)),
+        bankInVnd: item?.bankInVnd ?? 0,
+        bankOutVnd: item?.bankOutVnd ?? 0,
+        teacherGrossIncomeHoa: item?.teacherGrossIncomeHoa ?? 0,
+        bookingGrossHoa: item?.bookingGrossHoa ?? 0,
+        courseGrossHoa: item?.courseGrossHoa ?? 0,
+      };
+    });
+  }
 
-  return MONTHS.filter((month) =>
-    monthIntersectsDateBounds(selectedYear, month, dateBounds),
-  ).map((month) => {
-    const current = byKey.get(`${selectedYear}-${month}`);
-    const bankInVnd = current?.bankInVnd ?? 0;
-    const bankOutVnd = current?.bankOutVnd ?? 0;
-
-    return {
-      date: `T${month}`,
-      sortKey: month,
-      "Tiền nạp vào": bankInVnd,
-      "Tiền chuyển ra": bankOutVnd,
-      "Lợi nhuận tiền mặt": bankInVnd - bankOutVnd,
-      "Phải trả giáo viên": hoaToVnd(current?.teacherLiabilityHoa ?? 0),
-    };
-  });
-}
-
-function financialPeriodRow(
-  item: FinancialPeriodSummary,
-  sortKey: number,
-): FinancialChartRow {
-  const bankInVnd = item.bankInVnd ?? 0;
-  const bankOutVnd = item.bankOutVnd ?? 0;
-
-  return {
-    date: item.label,
-    sortKey,
-    "Tiền nạp vào": bankInVnd,
-    "Tiền chuyển ra": bankOutVnd,
-    "Lợi nhuận tiền mặt": bankInVnd - bankOutVnd,
-    "Phải trả giáo viên": hoaToVnd(item.teacherLiabilityHoa ?? 0),
-  };
-}
-
-function buildPaymentChartData({
-  mode,
-  selectedYear,
-  monthly,
-  daily,
-  weekly,
-  yearly,
-  dateBounds,
-}: {
-  mode: TimeRangeMode;
-  selectedYear: number;
-  monthly: MonthlyPaymentStatus[];
-  daily: PaymentPeriodStatus[];
-  weekly: PaymentPeriodStatus[];
-  yearly: PaymentPeriodStatus[];
-  dateBounds?: DateBounds;
-}): PaymentChartRow[] {
   if (mode === "year") {
-    return yearly
-      .filter((item) => periodIntersectsDateBounds(item, dateBounds))
-      .slice()
-      .sort((a, b) => (a.year ?? 0) - (b.year ?? 0))
-      .map((item) => paymentPeriodRow(item, item.year ?? 0));
+    rows = yearly.map(periodToSourceRow).sort((a, b) => a.sortKey - b.sortKey);
   }
 
-  if (mode === "day") {
-    return daily
-      .filter((item) => item.year === selectedYear)
-      .filter((item) => periodIntersectsDateBounds(item, dateBounds))
-      .slice()
-      .sort((a, b) => a.periodKey.localeCompare(b.periodKey))
-      .map((item) => paymentPeriodRow(item, dateSortKey(item.periodKey)));
-  }
-
-  if (mode === "week") {
-    return weekly
-      .filter((item) => item.year === selectedYear)
-      .filter((item) => periodIntersectsDateBounds(item, dateBounds))
-      .slice()
-      .sort((a, b) => (a.week ?? 0) - (b.week ?? 0))
-      .map((item) => paymentPeriodRow(item, item.week ?? 0));
-  }
-
-  const byKey = new Map(
-    monthly.map((item) => [`${item.year}-${item.month}`, item]),
-  );
-
-  return MONTHS.filter((month) =>
-    monthIntersectsDateBounds(selectedYear, month, dateBounds),
-  ).map((month) => {
-    const current = byKey.get(`${selectedYear}-${month}`);
-
-    return {
-      date: `T${month}`,
-      sortKey: month,
-      "Hoàn thành": current?.successCount ?? 0,
-      "Đang chờ": current?.pendingCount ?? 0,
-      "Thất bại": current?.failedCount ?? 0,
-      "Đã hủy": current?.cancelledCount ?? 0,
-    };
-  });
-}
-
-function paymentPeriodRow(
-  item: PaymentPeriodStatus,
-  sortKey: number,
-): PaymentChartRow {
-  return {
-    date: item.label,
-    sortKey,
-    "Hoàn thành": item.successCount ?? 0,
-    "Đang chờ": item.pendingCount ?? 0,
-    "Thất bại": item.failedCount ?? 0,
-    "Đã hủy": item.cancelledCount ?? 0,
-  };
+  return rows
+    .filter((item) => periodOverlapsDateBounds(item, dateBounds))
+    .map((item) => {
+      const teacherDebtVnd = applyPlatformFee(
+        hoaToVnd(item.teacherGrossIncomeHoa),
+        platformFeePercent,
+      );
+      const bookingVnd = hoaToVnd(item.bookingGrossHoa);
+      const courseVnd = hoaToVnd(item.courseGrossHoa);
+      return {
+        label: item.label,
+        sortKey: item.sortKey,
+        start: item.start,
+        end: item.end,
+        revenueVnd: item.bankInVnd,
+        withdrawnVnd: item.bankOutVnd,
+        teacherDebtVnd,
+        estimatedProfitVnd: item.bankInVnd - item.bankOutVnd - teacherDebtVnd,
+        grossTradingVnd: bookingVnd + courseVnd,
+        bookingVnd,
+        courseVnd,
+      };
+    });
 }
 
 function buildDailyFinancialSummaries(
-  bankTransfers: BankTransferRecord[],
-  transactions: AdminRevenueRecentTransaction[],
-): FinancialPeriodSummary[] {
-  const dailyMap = new Map<
-    string,
-    {
-      date: Date;
-      bankInVnd: number;
-      bankOutVnd: number;
-      profitHoa: number;
-      teacherLiabilityHoa: number;
-      bookingProfitHoa: number;
-      courseProfitHoa: number;
-      packageProfitHoa: number;
-      subscriptionProfitHoa: number;
-    }
-  >();
+  bankTransferRecords: BankTransferRecord[],
+  recentTransactions: AdminRevenueRecentTransaction[],
+): PeriodSourceRow[] {
+  const rows = new Map<string, PeriodSourceRow>();
 
-  bankTransfers.forEach((record) => {
-    const date = parseRecordDate(record.transactionDate, record.createdAt);
+  const getRow = (date: Date): PeriodSourceRow => {
+    const key = formatDateKey(date);
+    const current = rows.get(key);
+    if (current) return current;
+    const row: PeriodSourceRow = {
+      label: format(date, "dd/MM", { locale: vi }),
+      sortKey: Number(format(date, "yyyyMMdd")),
+      start: startOfDay(date),
+      end: endOfDay(date),
+      bankInVnd: 0,
+      bankOutVnd: 0,
+      teacherGrossIncomeHoa: 0,
+      bookingGrossHoa: 0,
+      courseGrossHoa: 0,
+    };
+    rows.set(key, row);
+    return row;
+  };
+
+  bankTransferRecords.forEach((record) => {
+    const date = parseRecordDate(record.transactionDate ?? record.createdAt);
     if (!date) return;
-    const accumulator = dailyFinancialAccumulator(dailyMap, date);
-    if (record.type === "out") {
-      accumulator.bankOutVnd += record.amountVnd ?? 0;
-    } else if (record.type === "in") {
-      accumulator.bankInVnd += record.amountVnd ?? 0;
+    const row = getRow(date);
+    if (record.type === "in" && record.processingResult === "TOPUP_SUCCESS") {
+      row.bankInVnd += record.amountVnd ?? 0;
+    }
+    if (record.type === "out" && record.processingResult === "PAYOUT_SUCCESS") {
+      row.bankOutVnd += record.amountVnd ?? 0;
     }
   });
 
-  transactions.forEach((transaction) => {
+  const courseSplitReferences = new Set(
+    recentTransactions
+      .filter((item) =>
+        ["COURSE_INCOME", "COURSE_PLATFORM_FEE", "COURSE_ADMIN_PROFIT"].includes(item.type),
+      )
+      .map((item) => item.referenceId)
+      .filter(Boolean),
+  );
+
+  recentTransactions.forEach((transaction) => {
     const date = parseRecordDate(transaction.createdAt);
     if (!date) return;
-    const effect = transactionFinancialEffect(transaction);
-    const accumulator = dailyFinancialAccumulator(dailyMap, date);
-    accumulator.teacherLiabilityHoa += effect.teacherLiabilityHoa;
-    accumulator.bookingProfitHoa += effect.bookingProfitHoa;
-    accumulator.courseProfitHoa += effect.courseProfitHoa;
-    accumulator.packageProfitHoa += effect.packageProfitHoa;
-    accumulator.subscriptionProfitHoa += effect.subscriptionProfitHoa;
+    const row = getRow(date);
+    const effect = transactionLedgerEffect(transaction, courseSplitReferences);
+    row.teacherGrossIncomeHoa += effect.teacherGrossIncomeHoa;
+    row.bookingGrossHoa += effect.bookingGrossHoa;
+    row.courseGrossHoa += effect.courseGrossHoa;
   });
 
-  dailyMap.forEach((item) => {
-    item.profitHoa = vndToHoaEquivalent(item.bankInVnd - item.bankOutVnd);
-  });
-
-  return Array.from(dailyMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([periodKey, item]) => ({
-      periodType: "DAY",
-      periodKey,
-      label: formatShortDate(item.date),
-      year: item.date.getFullYear(),
-      month: item.date.getMonth() + 1,
-      week: null,
-      startDate: periodKey,
-      endDate: periodKey,
-      bankInVnd: item.bankInVnd,
-      bankOutVnd: item.bankOutVnd,
-      profitHoa: item.profitHoa,
-      teacherLiabilityHoa: item.teacherLiabilityHoa,
-      bookingProfitHoa: item.bookingProfitHoa,
-      courseProfitHoa: item.courseProfitHoa,
-      packageProfitHoa: item.packageProfitHoa,
-      subscriptionProfitHoa: item.subscriptionProfitHoa,
-    }));
+  return Array.from(rows.values()).sort((a, b) => a.sortKey - b.sortKey);
 }
 
-function buildDailyPaymentStatuses(
-  bankTransfers: BankTransferRecord[],
-): PaymentPeriodStatus[] {
-  const dailyMap = new Map<
-    string,
-    {
-      date: Date;
-      successCount: number;
-      pendingCount: number;
-      failedCount: number;
-      cancelledCount: number;
-      successAmount: number;
-      pendingAmount: number;
-      failedAmount: number;
-      cancelledAmount: number;
-    }
-  >();
-
-  bankTransfers.forEach((record) => {
-    if (record.type !== "in") return;
-    const date = parseRecordDate(record.transactionDate, record.createdAt);
-    if (!date) return;
-    const amountHoa = record.creditedBlossoms ?? Math.round((record.amountVnd ?? 0) / HOA_TO_VND);
-    const key = formatDateKey(date);
-    const accumulator =
-      dailyMap.get(key) ??
-      {
-        date: startOfDay(date),
-        successCount: 0,
-        pendingCount: 0,
-        failedCount: 0,
-        cancelledCount: 0,
-        successAmount: 0,
-        pendingAmount: 0,
-        failedAmount: 0,
-        cancelledAmount: 0,
-      };
-
-    if (record.processingResult === "TOPUP_SUCCESS") {
-      accumulator.successCount += 1;
-      accumulator.successAmount += amountHoa;
-    } else if (record.processingResult === "ERROR" || record.processingResult === "IGNORED") {
-      accumulator.failedCount += 1;
-      accumulator.failedAmount += amountHoa;
-    } else {
-      accumulator.pendingCount += 1;
-      accumulator.pendingAmount += amountHoa;
-    }
-
-    dailyMap.set(key, accumulator);
-  });
-
-  return Array.from(dailyMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([periodKey, item]) => ({
-      periodType: "DAY",
-      periodKey,
-      label: formatShortDate(item.date),
-      year: item.date.getFullYear(),
-      month: item.date.getMonth() + 1,
-      week: null,
-      startDate: periodKey,
-      endDate: periodKey,
-      successCount: item.successCount,
-      pendingCount: item.pendingCount,
-      failedCount: item.failedCount,
-      cancelledCount: item.cancelledCount,
-      successAmount: item.successAmount,
-      pendingAmount: item.pendingAmount,
-      failedAmount: item.failedAmount,
-      cancelledAmount: item.cancelledAmount,
-    }));
-}
-
-function dailyFinancialAccumulator(
-  dailyMap: Map<
-    string,
-    {
-      date: Date;
-      bankInVnd: number;
-      bankOutVnd: number;
-      profitHoa: number;
-      teacherLiabilityHoa: number;
-      bookingProfitHoa: number;
-      courseProfitHoa: number;
-      packageProfitHoa: number;
-      subscriptionProfitHoa: number;
-    }
-  >,
-  date: Date,
+function transactionLedgerEffect(
+  transaction: AdminRevenueRecentTransaction,
+  courseSplitReferences: Set<string | undefined>,
 ) {
-  const key = formatDateKey(date);
-  const current = dailyMap.get(key);
-  if (current) return current;
-
-  const next = {
-    date: startOfDay(date),
-    bankInVnd: 0,
-    bankOutVnd: 0,
-    profitHoa: 0,
-    teacherLiabilityHoa: 0,
-    bookingProfitHoa: 0,
-    courseProfitHoa: 0,
-    packageProfitHoa: 0,
-    subscriptionProfitHoa: 0,
-  };
-  dailyMap.set(key, next);
-  return next;
-}
-
-function buildDateRangeSummary(
-  bankTransfers: BankTransferRecord[],
-  transactions: AdminRevenueRecentTransaction[],
-): DateRangeSummary {
-  const summary: DateRangeSummary = {
-    bankInVnd: 0,
-    bankOutVnd: 0,
-    profitHoa: 0,
-    teacherLiabilityHoa: 0,
-    bookingProfitHoa: 0,
-    courseProfitHoa: 0,
-    packageProfitHoa: 0,
-    subscriptionProfitHoa: 0,
-    transferCount: bankTransfers.length,
-    matchedTransferCount: 0,
-    transactionCount: transactions.length,
-  };
-
-  bankTransfers.forEach((record) => {
-    if (record.type === "out") {
-      summary.bankOutVnd += record.amountVnd ?? 0;
-    } else if (record.type === "in") {
-      summary.bankInVnd += record.amountVnd ?? 0;
-    }
-    if (record.processingResult === "TOPUP_SUCCESS") {
-      summary.matchedTransferCount += 1;
-    }
-  });
-
-  transactions.forEach((transaction) => {
-    const effect = transactionFinancialEffect(transaction);
-    summary.teacherLiabilityHoa += effect.teacherLiabilityHoa;
-    summary.bookingProfitHoa += effect.bookingProfitHoa;
-    summary.courseProfitHoa += effect.courseProfitHoa;
-    summary.packageProfitHoa += effect.packageProfitHoa;
-    summary.subscriptionProfitHoa += effect.subscriptionProfitHoa;
-  });
-
-  summary.profitHoa = vndToHoaEquivalent(summary.bankInVnd - summary.bankOutVnd);
-
-  return summary;
-}
-
-function transactionFinancialEffect(transaction: AdminRevenueRecentTransaction) {
-  const effect = {
-    profitHoa: 0,
-    teacherLiabilityHoa: 0,
-    bookingProfitHoa: 0,
-    courseProfitHoa: 0,
-    packageProfitHoa: 0,
-    subscriptionProfitHoa: 0,
-  };
-
-  if (isStatisticsSeedTransaction(transaction)) {
-    return effect;
-  }
-
+  const type = transaction.type;
   const amount = transaction.amount ?? 0;
-  const spentAmount = spendAmount(amount);
   const positiveAmount = Math.max(amount, 0);
+  const spentAmount = amount < 0 ? -amount : 0;
+  const effect = {
+    teacherGrossIncomeHoa: 0,
+    bookingGrossHoa: 0,
+    courseGrossHoa: 0,
+  };
 
-  switch (transaction.type) {
-    case "PLATFORM_FEE":
-      effect.bookingProfitHoa = positiveAmount;
-      break;
-    case "COURSE_PLATFORM_FEE":
-    case "COURSE_ADMIN_PROFIT":
-      effect.courseProfitHoa = positiveAmount;
-      break;
-    case "COURSE_PAYMENT":
-      effect.courseProfitHoa = spentAmount;
-      break;
-    case "COURSE_INCOME":
-      effect.teacherLiabilityHoa = positiveAmount;
-      break;
-    case "BOOKING_INCOME":
-    case "BOOKING_PAYMENT":
-      effect.teacherLiabilityHoa = positiveAmount;
-      break;
-    case "PACKAGE_PURCHASE":
-      break;
-    case "SUBSCRIPTION":
-    case "SUBSCRIPTION_RENEW":
-      break;
-    case "BOOKING_CANCEL_PENALTY":
-      effect.bookingProfitHoa = spentAmount;
-      break;
-    case "WITHDRAWAL_FEE":
-      break;
-    default:
-      break;
+  if (type === "PLATFORM_FEE") {
+    effect.bookingGrossHoa = positiveAmount;
+  }
+  if (type === "BOOKING_INCOME" || type === "BOOKING_PAYMENT") {
+    effect.bookingGrossHoa = positiveAmount;
+    effect.teacherGrossIncomeHoa = positiveAmount;
+  }
+  if (type === "BOOKING_CANCEL_PENALTY") {
+    effect.bookingGrossHoa = spentAmount;
+  }
+  if (type === "COURSE_INCOME") {
+    effect.courseGrossHoa = positiveAmount;
+    effect.teacherGrossIncomeHoa = positiveAmount;
+  }
+  if (type === "COURSE_PLATFORM_FEE" || type === "COURSE_ADMIN_PROFIT") {
+    effect.courseGrossHoa = positiveAmount;
+  }
+  if (type === "COURSE_PAYMENT" && amount < 0 && !courseSplitReferences.has(transaction.referenceId)) {
+    effect.courseGrossHoa = spentAmount;
   }
 
   return effect;
 }
 
-function isStatisticsSeedTransaction(transaction: AdminRevenueRecentTransaction) {
-  const description = transaction.description ?? "";
-  return (
-    description.startsWith("Thanh toán booking ") ||
-    description.startsWith("Thu nhập từ booking ") ||
-    description.startsWith("Phí nền tảng booking ")
+function buildPaymentChartData({
+  mode,
+  selectedYear,
+  dateBounds,
+  daily,
+  monthly,
+  weekly,
+  yearly,
+}: {
+  mode: TimeRangeMode;
+  selectedYear: number;
+  dateBounds?: DateBounds;
+  daily: Array<{
+    label: string;
+    sortKey: number;
+    start?: Date;
+    end?: Date;
+    success: number;
+    pending: number;
+    failed: number;
+    cancelled: number;
+  }>;
+  monthly: MonthlyPaymentStatus[];
+  weekly: PaymentPeriodStatus[];
+  yearly: PaymentPeriodStatus[];
+}) {
+  if (mode === "day") {
+    return daily
+      .filter((item) => item.start?.getFullYear() === selectedYear)
+      .filter((item) => periodOverlapsDateBounds(item, dateBounds))
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }
+
+  if (mode === "week") {
+    return weekly
+      .filter((item) => item.year === selectedYear)
+      .map(paymentPeriodToRow)
+      .filter((item) => periodOverlapsDateBounds(item, dateBounds))
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }
+
+  if (mode === "year") {
+    return yearly
+      .map(paymentPeriodToRow)
+      .filter((item) => periodOverlapsDateBounds(item, dateBounds))
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }
+
+  const byMonth = new Map(monthly.map((item) => [`${item.year}-${item.month}`, item]));
+  return MONTHS.map((month) => {
+    const item = byMonth.get(`${selectedYear}-${month}`);
+    return {
+      label: `T${month}`,
+      sortKey: selectedYear * 100 + month,
+      start: new Date(selectedYear, month - 1, 1),
+      end: endOfDay(new Date(selectedYear, month, 0)),
+      success: item?.successCount ?? 0,
+      pending: item?.pendingCount ?? 0,
+      failed: item?.failedCount ?? 0,
+      cancelled: item?.cancelledCount ?? 0,
+    };
+  }).filter((item) => periodOverlapsDateBounds(item, dateBounds));
+}
+
+function buildDailyPaymentStatuses(bankTransferRecords: BankTransferRecord[]) {
+  const rows = new Map<string, {
+    label: string;
+    sortKey: number;
+    start?: Date;
+    end?: Date;
+    success: number;
+    pending: number;
+    failed: number;
+    cancelled: number;
+  }>();
+
+  const getRow = (date: Date) => {
+    const key = formatDateKey(date);
+    const current = rows.get(key);
+    if (current) return current;
+    const row = {
+      label: format(date, "dd/MM", { locale: vi }),
+      sortKey: Number(format(date, "yyyyMMdd")),
+      start: startOfDay(date),
+      end: endOfDay(date),
+      success: 0,
+      pending: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+    rows.set(key, row);
+    return row;
+  };
+
+  bankTransferRecords.forEach((record) => {
+    const date = parseRecordDate(record.transactionDate ?? record.createdAt);
+    if (!date || record.type !== "in") return;
+    const row = getRow(date);
+    if (record.processingResult === "TOPUP_SUCCESS") row.success += 1;
+    else if (record.processingResult === "IGNORED") row.failed += 1;
+    else row.pending += 1;
+  });
+
+  return Array.from(rows.values()).sort((a, b) => a.sortKey - b.sortKey);
+}
+
+function periodToSourceRow(item: FinancialPeriodSummary): PeriodSourceRow {
+  const start = parseDateOnly(item.startDate);
+  const end = parseDateOnly(item.endDate);
+  return {
+    label: item.label || item.periodKey,
+    sortKey: Number((item.periodKey || "0").replace(/\D/g, "")) || 0,
+    start,
+    end: end ? endOfDay(end) : undefined,
+    bankInVnd: item.bankInVnd ?? 0,
+    bankOutVnd: item.bankOutVnd ?? 0,
+    teacherGrossIncomeHoa: item.teacherGrossIncomeHoa ?? 0,
+    bookingGrossHoa: item.bookingGrossHoa ?? 0,
+    courseGrossHoa: item.courseGrossHoa ?? 0,
+  };
+}
+
+function paymentPeriodToRow(item: PaymentPeriodStatus) {
+  const start = parseDateOnly(item.startDate);
+  const end = parseDateOnly(item.endDate);
+  return {
+    label: item.label || item.periodKey,
+    sortKey: Number((item.periodKey || "0").replace(/\D/g, "")) || 0,
+    start,
+    end: end ? endOfDay(end) : undefined,
+    success: item.successCount ?? 0,
+    pending: item.pendingCount ?? 0,
+    failed: item.failedCount ?? 0,
+    cancelled: item.cancelledCount ?? 0,
+  };
+}
+
+function summarizeFinancialRows(rows: FinancialChartRow[]): OverallFinance & { grossTradingVnd: number } {
+  return rows.reduce(
+    (sum, row) => ({
+      cashInVnd: sum.cashInVnd + row.revenueVnd,
+      cashOutVnd: sum.cashOutVnd + row.withdrawnVnd,
+      cashOnHandVnd: sum.cashOnHandVnd + row.revenueVnd - row.withdrawnVnd,
+      teacherGrossDebtVnd: sum.teacherGrossDebtVnd + row.teacherDebtVnd,
+      teacherNetDebtVnd: sum.teacherNetDebtVnd + row.teacherDebtVnd,
+      platformFeeReserveVnd: sum.platformFeeReserveVnd,
+      estimatedProfitVnd: sum.estimatedProfitVnd + row.estimatedProfitVnd,
+      userPrepaidVnd: 0,
+      adminHoaVnd: 0,
+      pendingWithdrawVnd: 0,
+      processingWithdrawVnd: 0,
+      grossTradingVnd: sum.grossTradingVnd + row.grossTradingVnd,
+    }),
+    {
+      cashInVnd: 0,
+      cashOutVnd: 0,
+      cashOnHandVnd: 0,
+      teacherGrossDebtVnd: 0,
+      teacherNetDebtVnd: 0,
+      platformFeeReserveVnd: 0,
+      estimatedProfitVnd: 0,
+      userPrepaidVnd: 0,
+      adminHoaVnd: 0,
+      pendingWithdrawVnd: 0,
+      processingWithdrawVnd: 0,
+      grossTradingVnd: 0,
+    },
   );
 }
 
@@ -2017,8 +2374,8 @@ function filterBankTransferRecordsByDate(
 ) {
   if (!bounds) return records;
   return records.filter((record) => {
-    const date = parseRecordDate(record.transactionDate, record.createdAt);
-    return date ? isWithinDateBounds(date, bounds) : false;
+    const date = parseRecordDate(record.transactionDate ?? record.createdAt);
+    return date ? date >= bounds.from && date <= bounds.to : false;
   });
 }
 
@@ -2029,323 +2386,218 @@ function filterTransactionsByDate(
   if (!bounds) return transactions;
   return transactions.filter((transaction) => {
     const date = parseRecordDate(transaction.createdAt);
-    return date ? isWithinDateBounds(date, bounds) : false;
+    return date ? date >= bounds.from && date <= bounds.to : false;
   });
 }
 
-function normalizeDateBounds(range?: DateRange): DateBounds | undefined {
-  if (!range?.from && !range?.to) return undefined;
-  const fromSource = range.from ?? range.to;
-  const toSource = range.to ?? range.from;
-  if (!fromSource || !toSource) return undefined;
-
-  const from = startOfDay(fromSource);
-  const to = endOfDay(toSource);
-
-  if (from.getTime() <= to.getTime()) {
-    return { from, to };
+function filterXGateRecords(
+  records: BankTransferRecord[],
+  filter: XGateRecordFilter,
+) {
+  if (filter === "ignored") {
+    return records.filter((record) => record.processingResult === "IGNORED");
   }
-
-  return { from: startOfDay(toSource), to: endOfDay(fromSource) };
+  if (filter === "success") {
+    return records.filter((record) => record.processingResult?.includes("SUCCESS"));
+  }
+  return records;
 }
 
-function periodIntersectsDateBounds(
-  item: { startDate?: string; endDate?: string; year?: number | null },
+function filterTransactionsByType(
+  transactions: AdminRevenueRecentTransaction[],
+  filter: TransactionTypeFilter,
+) {
+  if (filter === "ALL") return transactions;
+  if (filter === "OTHER") {
+    return transactions.filter((transaction) => {
+      const type = transaction.type || "";
+      return !["TOPUP", "WITHDRAW", "COURSE", "BOOKING", "SUBSCRIPTION", "PACKAGE"].some((prefix) =>
+        type.startsWith(prefix),
+      );
+    });
+  }
+  if (filter === "PACKAGE") {
+    return transactions.filter((transaction) => transaction.type === "PACKAGE_PURCHASE");
+  }
+  return transactions.filter((transaction) => transaction.type?.startsWith(filter));
+}
+
+function periodOverlapsDateBounds(
+  item: { start?: Date; end?: Date },
   bounds?: DateBounds,
 ) {
-  if (!bounds) return true;
-  const start = parseRecordDate(item.startDate ?? (item.year ? `${item.year}-01-01` : undefined));
-  const end = parseRecordDate(item.endDate ?? (item.year ? `${item.year}-12-31` : undefined));
-  if (!start || !end) return true;
-  return startOfDay(start).getTime() <= bounds.to.getTime() && endOfDay(end).getTime() >= bounds.from.getTime();
+  if (!bounds || !item.start) return true;
+  const end = item.end ?? item.start;
+  return item.start <= bounds.to && end >= bounds.from;
 }
 
-function monthIntersectsDateBounds(
-  year: number,
-  month: number,
-  bounds?: DateBounds,
-) {
-  if (!bounds) return true;
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 0, 23, 59, 59, 999);
-  return start.getTime() <= bounds.to.getTime() && end.getTime() >= bounds.from.getTime();
+function exportAdminAnalyticsCsv({
+  stats,
+  platformFeePercent,
+  overallFinance,
+  financialChartData,
+}: {
+  stats: AdminRevenueStatsResponse;
+  platformFeePercent: number;
+  overallFinance: OverallFinance;
+  financialChartData: FinancialChartRow[];
+}) {
+  const rows: string[][] = [
+    ["FUJI Admin Analytics"],
+    ["platform_fee_percent", String(platformFeePercent)],
+    ["cash_in_vnd", String(overallFinance.cashInVnd)],
+    ["cash_out_vnd", String(overallFinance.cashOutVnd)],
+    ["teacher_gross_debt_vnd", String(overallFinance.teacherGrossDebtVnd)],
+    ["teacher_net_debt_vnd", String(overallFinance.teacherNetDebtVnd)],
+    ["estimated_profit_vnd", String(overallFinance.estimatedProfitVnd)],
+    ["user_prepaid_vnd", String(overallFinance.userPrepaidVnd)],
+    ["admin_internal_vnd", String(overallFinance.adminHoaVnd)],
+    [],
+    ["period", "revenue_vnd", "withdrawn_vnd", "teacher_debt_vnd", "estimated_profit_vnd", "gross_trading_vnd"],
+    ...financialChartData.map((item) => [
+      item.label,
+      String(item.revenueVnd),
+      String(item.withdrawnVnd),
+      String(item.teacherDebtVnd),
+      String(item.estimatedProfitVnd),
+      String(item.grossTradingVnd),
+    ]),
+    [],
+    ["xgate_recent_count", String(stats.bankTransferRecords?.length ?? 0)],
+    ["ledger_recent_count", String(stats.recentTransactions?.length ?? 0)],
+  ];
+
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `fuji-admin-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
-function parseRecordDate(...values: Array<string | undefined | null>) {
-  for (const value of values) {
-    if (!value) continue;
-    const normalized = value.includes(" ") ? value.replace(" ", "T") : value;
-    const date = new Date(normalized);
-    if (!Number.isNaN(date.getTime())) {
-      return date;
-    }
-
-    const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (dateOnly) {
-      return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
-    }
+function csvCell(value: string) {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
   }
-  return undefined;
+  return value;
 }
 
-function isWithinDateBounds(date: Date, bounds: DateBounds) {
-  const time = date.getTime();
-  return time >= bounds.from.getTime() && time <= bounds.to.getTime();
+function normalizeDateBounds(value?: DateRange): DateBounds | undefined {
+  if (!value?.from && !value?.to) return undefined;
+  const from = startOfDay(value.from ?? value.to ?? new Date());
+  const to = endOfDay(value.to ?? value.from ?? new Date());
+  return from <= to ? { from, to } : { from: startOfDay(to), to: endOfDay(from) };
+}
+
+function parseRecordDate(value?: string | null): Date | undefined {
+  if (!value) return undefined;
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function parseDateOnly(value?: string | null): Date | undefined {
+  if (!value) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
 }
 
 function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
 }
 
 function endOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
 }
 
 function formatDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return format(date, "yyyy-MM-dd");
 }
 
 function formatShortDate(date: Date) {
   return format(date, "dd/MM/yyyy", { locale: vi });
 }
 
-function dateSortKey(periodKey: string) {
-  return Number(periodKey.replace(/\D/g, "")) || 0;
+function formatRecordDate(value?: string | null) {
+  const parsed = parseRecordDate(value);
+  return parsed ? format(parsed, "dd/MM/yyyy HH:mm", { locale: vi }) : "-";
 }
 
-function spendAmount(amount: number) {
-  return amount < 0 ? -amount : 0;
+function hoaToVnd(hoa?: number | null) {
+  return Math.round((hoa ?? 0) * HOA_TO_VND);
 }
 
-function vndToHoaEquivalent(amountVnd: number) {
-  return Math.trunc((amountVnd || 0) / HOA_TO_VND);
+function applyPlatformFee(vndAmount: number, platformFeePercent: number) {
+  return Math.round(vndAmount * (100 - clampPercent(platformFeePercent)) / 100);
 }
 
-function timeRangeLabel(mode: TimeRangeMode) {
-  if (mode === "day") return "Theo ngày";
-  if (mode === "week") return "Theo tuần";
-  if (mode === "year") return "Theo năm";
-  return "Theo tháng";
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return DEFAULT_PLATFORM_FEE_PERCENT;
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-function fallbackProfitBreakdown(summary: ProfitSummary): SourceBreakdownItem[] {
-  return [
-    breakdown("booking_fee", "Chiết khấu booking đã thu hồi", summary.bookingPlatformFeeHoa),
-    breakdown("booking_penalty", "Hoa phạt/hủy đã thu hồi", summary.cancellationPenaltyProfitHoa),
-    breakdown("course_fee", "Chiết khấu khóa học đã thu hồi", summary.coursePlatformFeeHoa),
-    breakdown("course_admin", "Hoa khóa học admin đã thu hồi", summary.adminCourseProfitHoa),
-    breakdown("course_legacy", "Hoa khóa học cũ chưa tách", summary.legacyCourseProfitHoa),
-  ];
+function bpsToPercent(bps: number) {
+  return clampPercent(bps / 100);
 }
 
-function fallbackLiabilityBreakdown(summary: TeacherLiabilitySummary): SourceBreakdownItem[] {
-  return [
-    breakdown("booking_teacher", "Thu nhập giáo viên từ lịch học", summary.bookingTeacherIncomeHoa),
-    breakdown("course_teacher", "Thu nhập giáo viên khóa học", summary.courseTeacherIncomeHoa),
-    breakdown("withdraw_completed", "Đã chi trả giáo viên", summary.completedWithdrawalHoa),
-    breakdown("withdraw_processing", "Chi trả đang xử lý", summary.processingWithdrawalHoa),
-    breakdown("withdraw_pending", "Chi trả đang chờ", summary.pendingWithdrawalHoa),
-  ];
+function percentToBps(percent: number) {
+  return clampPercent(percent) * 100;
 }
 
-function breakdown(key: string, label: string, amountHoa: number): SourceBreakdownItem {
-  return {
-    key,
-    label,
-    amountHoa: amountHoa ?? 0,
-    amountVnd: hoaToVnd(amountHoa ?? 0),
-  };
+function formatVND(value?: number | null) {
+  return `${formatNumber(value ?? 0)} đ`;
 }
 
-function exportAdminAnalyticsCsv(stats: AdminRevenueStatsResponse) {
-  const lines = [
-    ["nhom", "chi_tieu", "gia_tri"],
-    ["tong_quan", "tien_nguoi_dung_da_nap_vnd", String(stats.cashRevenue?.grossTopupVnd ?? 0)],
-    ["tong_quan", "tien_rong_ngan_hang_vnd", String(stats.cashRevenue?.netCashVnd ?? 0)],
-    ["tong_quan", "loi_nhuan_tien_mat_vnd", String(stats.profitSummary?.totalProfitVndEquivalent ?? 0)],
-    ["tong_quan", "phai_tra_giao_vien_hoa", String(stats.teacherLiabilitySummary?.totalTeacherLiabilityHoa ?? 0)],
-    ["tong_quan", "lenh_nap_hoan_thanh", String(stats.paymentStatusStats?.successCount ?? 0)],
-    ["tong_quan", "lenh_nap_dang_cho", String(stats.paymentStatusStats?.pendingCount ?? 0)],
-    ["tong_quan", "lenh_nap_that_bai", String(stats.paymentStatusStats?.failedCount ?? 0)],
-    ["tong_quan", "lenh_nap_da_huy", String(stats.paymentStatusStats?.cancelledCount ?? 0)],
-    ["tong_quan", "da_chi_tra_giao_vien_hoa", String(stats.withdrawalStatusStats?.completedAmount ?? 0)],
-    ["tong_quan", "chi_tra_dang_cho_hoa", String(stats.withdrawalStatusStats?.pendingAmount ?? 0)],
-    ...((stats.monthlyFinancialSummaries ?? []).map((item) => [
-      "tai_chinh_theo_thang",
-      `${item.month}/${item.year}`,
-      [
-        `tien_nap_vnd=${item.bankInVnd ?? 0}`,
-        `tien_chuyen_ra_vnd=${item.bankOutVnd ?? 0}`,
-        `loi_nhuan_tien_mat_vnd=${(item.bankInVnd ?? 0) - (item.bankOutVnd ?? 0)}`,
-        `phai_tra_giao_vien_hoa=${item.teacherLiabilityHoa ?? 0}`,
-      ].join("; "),
-    ])),
-    ...((stats.profitBreakdown ?? []).map((item) => [
-      "hoa_chiet_khau_thu_hoi",
-      item.label,
-      `${item.amountHoa ?? 0} hoa / ${item.amountVnd ?? 0} VND`,
-    ])),
-    ...((stats.liabilityBreakdown ?? []).map((item) => [
-      "co_cau_phai_tra_giao_vien",
-      item.label,
-      `${item.amountHoa ?? 0} hoa / ${item.amountVnd ?? 0} VND`,
-    ])),
-    ...((stats.recentTransactions ?? []).map((item) => [
-      "hach_toan",
-      item.referenceId || String(item.id),
-      `${item.type}=${item.amount ?? 0}`,
-    ])),
-    ...((stats.bankTransferRecords ?? []).map((item) => [
-      "chuyen_khoan_xgate",
-      item.xgateTransactionId || String(item.id),
-      [
-        `so_tien_vnd=${item.amountVnd ?? 0}`,
-        `noi_dung=${item.content ?? ""}`,
-        `ket_qua=${item.processingResult ?? ""}`,
-        `ma_lenh=${item.matchedOrderId ?? ""}`,
-        `nguoi_dung=${item.matchedUserName || item.matchedUserEmail || ""}`,
-        `tai_khoan_nhan=${item.receiverBankName ?? ""}/${item.receiverAccount ?? ""}`,
-      ].join("; "),
-    ])),
-  ];
-
-  const csv = lines
-    .map((row) =>
-      row
-        .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
-        .join(","),
-    )
-    .join("\n");
-  const blob = new Blob([`\uFEFF${csv}`], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `fuji-admin-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function transactionTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    PLATFORM_FEE: "Phí lịch học",
-    COURSE_PAYMENT: "Mua khóa học",
-    COURSE_PLATFORM_FEE: "Phí khóa học",
-    COURSE_ADMIN_PROFIT: "Khóa học của admin",
-    COURSE_INCOME: "Thu khóa học giáo viên",
-    BOOKING_PAYMENT: "Lịch học",
-    BOOKING_INCOME: "Thu lịch học giáo viên",
-    PACKAGE_PURCHASE: "Gói hệ thống",
-    SUBSCRIPTION: "Gói thành viên",
-    SUBSCRIPTION_RENEW: "Gia hạn gói",
-    BOOKING_CANCEL_PENALTY: "Phí hủy",
-    WITHDRAWAL_FEE: "Phí rút",
-  };
-
-  return labels[type] ?? type;
-}
-
-function transactionTypeClass(type: string) {
-  if (isOutflowType(type)) {
-    return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300";
-  }
-  if (["COURSE_INCOME", "BOOKING_INCOME", "BOOKING_PAYMENT"].includes(type)) {
-    return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300";
-  }
-  if (["COURSE_PLATFORM_FEE", "COURSE_ADMIN_PROFIT", "PLATFORM_FEE"].includes(type)) {
-    return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300";
-  }
-  return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300";
-}
-
-function xgateResultLabel(result?: string) {
-  const labels: Record<string, string> = {
-    TOPUP_SUCCESS: "Đã cộng ví",
-    PAYOUT_SUCCESS: "Đã chi trả",
-    IGNORED: "Không khớp",
-    ERROR: "Lỗi đối soát",
-  };
-
-  return labels[result || ""] ?? result ?? "Chưa rõ";
-}
-
-function xgateResultClass(result?: string) {
-  if (result === "TOPUP_SUCCESS") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300";
-  }
-  if (result === "PAYOUT_SUCCESS") {
-    return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300";
-  }
-  if (result === "ERROR") {
-    return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300";
-  }
-  if (result === "IGNORED") {
-    return "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-300";
-  }
-
-  return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300";
-}
-
-function isOutflowType(type: string) {
-  return ["COURSE_PAYMENT", "PACKAGE_PURCHASE", "SUBSCRIPTION", "SUBSCRIPTION_RENEW", "BOOKING_CANCEL_PENALTY"].includes(type);
-}
-
-function formatVND(amount: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(amount || 0);
-}
-
-function formatHoa(amount: number) {
-  return `${formatNumber(amount)} hoa`;
+function formatHoa(value?: number | null) {
+  return `${formatNumber(value ?? 0)} hoa`;
 }
 
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("vi-VN").format(value || 0);
+  return compactNumber(value);
 }
 
 function formatPercent(value: number) {
-  return `${(value || 0).toFixed(1)}%`;
+  return `${formatNumber(value)}%`;
 }
 
 function compactMoney(value: number) {
-  if (Math.abs(value) >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(1)}B`;
-  }
-  if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `${(value / 1_000).toFixed(0)}K`;
-  }
-  return String(value || 0);
+  return compactNumber(value);
 }
 
-function hoaToVnd(amountHoa: number) {
-  return (amountHoa || 0) * HOA_TO_VND;
+function compactNumber(value: number) {
+  if (!Number.isFinite(value)) return "0";
+
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 999_500_000) return `${sign}${trimCompactDecimal(abs / 1_000_000_000)}B`;
+  if (abs >= 999_500) return `${sign}${trimCompactDecimal(abs / 1_000_000)}M`;
+  if (abs >= 1_000) return `${sign}${trimCompactDecimal(abs / 1_000)}k`;
+  return new Intl.NumberFormat("vi-VN").format(Math.round(abs) * (value < 0 ? -1 : 1));
 }
 
-function shortTransferId(value?: string) {
-  if (!value) return "-";
-  if (value.length <= 14) return value;
-  return `${value.slice(0, 8)}...${value.slice(-6)}`;
+function trimCompactDecimal(value: number) {
+  return value.toFixed(1).replace(/\.0$/, "");
 }
 
-function formatDateTime(value?: string) {
-  if (!value) return "-";
-  const date = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function timeRangeLabel(mode: TimeRangeMode) {
+  switch (mode) {
+    case "day":
+      return "Theo ngày";
+    case "week":
+      return "Theo tuần";
+    case "year":
+      return "Theo năm";
+    case "month":
+    default:
+      return "Theo tháng";
+  }
 }

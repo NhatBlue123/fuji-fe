@@ -1121,6 +1121,7 @@
     "filter": {
       "all": "All",
       "deposit": "Deposit",
+      "withdraw": "Withdraw",
       "spending": "Spending"
     },
     "searchPlaceholder": "Transaction ID...",

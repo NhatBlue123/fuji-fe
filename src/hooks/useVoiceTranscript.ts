@@ -66,6 +66,7 @@ export function useVoiceTranscript({
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isStoppingRef = useRef(false);
   const sessionStartMs = useRef<number>(Date.now());
+  const reconnectCountRef = useRef(0);
 
   /**
    * Lưu transcript segment lên backend (fire-and-forget).
@@ -164,6 +165,7 @@ export function useVoiceTranscript({
     }
 
     reconnectAttemptsRef.current = 0;
+    reconnectCountRef.current = 0;
     setStatus("stopped");
   }, []);
 
@@ -187,6 +189,7 @@ export function useVoiceTranscript({
   const startAudio = useCallback(
     async (ws: WebSocket): Promise<void> => {
       try {
+        console.info("[VoiceTranscript] Requesting microphone access...");
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             sampleRate: SAMPLE_RATE,
@@ -197,15 +200,23 @@ export function useVoiceTranscript({
           },
         });
         streamRef.current = stream;
+        console.info("[VoiceTranscript] Microphone access granted");
 
         const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
         audioCtxRef.current = audioCtx;
+        console.info("[VoiceTranscript] AudioContext created, state:", audioCtx.state);
+
+        // Resume AudioContext nếu đang suspended
+        if (audioCtx.state === "suspended") {
+          console.info("[VoiceTranscript] Resuming AudioContext...");
+          await audioCtx.resume();
+          console.info("[VoiceTranscript] AudioContext resumed, state:", audioCtx.state);
+        }
 
         const source = audioCtx.createMediaStreamSource(stream);
         sourceRef.current = source;
 
-        // ScriptProcessorNode — đủ tốt cho production (AudioWorklet phức tạp hơn)
-        // Buffer size 1024 = ~64ms @16kHz, acceptable latency
+        // ScriptProcessorNode — buffer size 1024 = ~64ms @16kHz
         const processor = audioCtx.createScriptProcessor(1024, 1, 1);
         processorRef.current = processor;
 
@@ -215,11 +226,15 @@ export function useVoiceTranscript({
           const pcm16 = float32ToPCM16(inputData);
           try {
             ws.send(pcm16);
-          } catch { /* ignore send errors */ }
+          } catch (err) {
+            console.error("[VoiceTranscript] Failed to send audio:", err);
+          }
         };
 
         source.connect(processor);
         processor.connect(audioCtx.destination);
+
+        console.info("[VoiceTranscript] Audio processor started");
       } catch (err: any) {
         console.error("[VoiceTranscript] Failed to start audio:", err);
         throw err;
@@ -244,10 +259,18 @@ export function useVoiceTranscript({
       return;
     }
 
-    sessionStartMs.current = Date.now();
+    console.info("[VoiceTranscript] Token received (first 50 chars):", token.substring(0, 50));
+    console.info("[VoiceTranscript] Token length:", token.length);
 
-    const url = `${ASSEMBLYAI_WS_URL}?token=${token}&speech_model=universal&sample_rate=${SAMPLE_RATE}`;
+    sessionStartMs.current = Date.now();
+    reconnectCountRef.current += 1;
+
+    // URL theo AssemblyAI v3 documentation
+    const url = `${ASSEMBLYAI_WS_URL}?token=${token}`;
+    console.info("[VoiceTranscript] Connecting to AssemblyAI WS:", url.replace(token, "***"));
+
     const ws = new WebSocket(url);
+    ws.binaryType = "arraybuffer";
     wsRef.current = ws;
 
     ws.onopen = async () => {
@@ -255,8 +278,21 @@ export function useVoiceTranscript({
         ws.close();
         return;
       }
-      console.info("[VoiceTranscript] Connected to AssemblyAI");
+      console.info("[VoiceTranscript] WebSocket connected to AssemblyAI");
       reconnectAttemptsRef.current = 0;
+
+      // Gửi Start message theo AssemblyAI v3 protocol
+      ws.send(JSON.stringify({
+        type: "Start",
+        config: {
+          sample_rate: SAMPLE_RATE,
+          encoding: "pcm_s16le",
+          speech_model: "u3-pro",
+          language_detection: true,
+        }
+      }));
+      console.info("[VoiceTranscript] Sent Start config with speech_model=u3-pro");
+
       try {
         await startAudio(ws);
         setStatus("active");
@@ -271,29 +307,28 @@ export function useVoiceTranscript({
 
     ws.onmessage = (event) => {
       try {
+        // AssemblyAI gửi message dạng text JSON
         const msg = JSON.parse(event.data as string);
+        console.info("[VoiceTranscript] WS message:", msg.message_type ?? msg.type);
 
-        if (msg.type === "Begin") {
-          turnStartMs.current = Date.now();
-          console.info("[VoiceTranscript] Session started:", msg.id);
-        } else if (msg.type === "Turn") {
-          const transcript: string = msg.transcript ?? "";
-          const isEndOfTurn: boolean = msg.end_of_turn ?? false;
+        if (msg.message_type === "SessionBegins") {
+          console.info("[VoiceTranscript] Session started:", msg.session_id);
+        } else if (msg.message_type === "Transcripts") {
+          // Xử lý transcripts
+          const transcript = msg.transcripts?.[0]?.text ?? "";
+          const isEndOfTurn = msg.transcripts?.[0]?.end_of_turn ?? false;
 
           if (isEndOfTurn && transcript.trim()) {
-            const startTimeMs = Math.max(
-              0,
-              turnStartMs.current - sessionStartMs.current
-            );
+            console.info("[VoiceTranscript] Final transcript:", transcript);
+            const startTimeMs = Math.max(0, turnStartMs.current - sessionStartMs.current);
             void saveTranscriptSegment(transcript.trim(), startTimeMs);
             turnStartMs.current = Date.now();
           }
-        } else if (msg.type === "Termination") {
-          console.info(
-            "[VoiceTranscript] Session terminated — audio:",
-            msg.audio_duration_seconds,
-            "s"
-          );
+        } else if (msg.message_type === "SessionTerminated") {
+          console.info("[VoiceTranscript] Session terminated");
+        } else if (msg.error) {
+          console.error("[VoiceTranscript] AssemblyAI error:", msg.error);
+          setError(msg.error);
         }
       } catch (err) {
         console.warn("[VoiceTranscript] Failed to parse message:", err);
@@ -306,9 +341,7 @@ export function useVoiceTranscript({
     };
 
     ws.onclose = (event) => {
-      console.info(
-        `[VoiceTranscript] WS closed: code=${event.code} reason="${event.reason}"`
-      );
+      console.info(`[VoiceTranscript] WS closed: code=${event.code} reason="${event.reason}"`);
 
       // Stop audio resources
       if (processorRef.current) {
@@ -320,17 +353,11 @@ export function useVoiceTranscript({
         sourceRef.current = null;
       }
 
-      // Reconnect nếu đóng bất ngờ (không phải do stopAll hay mic off)
-      if (
-        !isStoppingRef.current &&
-        event.code !== 1000 &&
-        reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS
-      ) {
+      // Reconnect nếu đóng bất ngờ
+      if (!isStoppingRef.current && event.code !== 1000 && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttemptsRef.current += 1;
         const delay = RECONNECT_DELAY_MS * reconnectAttemptsRef.current;
-        console.info(
-          `[VoiceTranscript] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`
-        );
+        console.info(`[VoiceTranscript] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`);
         setStatus("reconnecting");
         reconnectTimerRef.current = setTimeout(() => {
           void connect();
@@ -349,6 +376,7 @@ export function useVoiceTranscript({
 
     if (isMicOn) {
       isStoppingRef.current = false;
+      reconnectAttemptsRef.current = 0;
       // Chỉ connect nếu chưa active
       if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
         void connect();

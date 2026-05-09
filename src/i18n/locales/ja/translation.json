@@ -613,6 +613,7 @@
     "filter": {
       "all": "すべて",
       "deposit": "入金",
+      "withdraw": "引き出し",
       "spending": "支出"
     },
     "searchPlaceholder": "取引ID...",

@@ -1119,6 +1119,7 @@
     "filter": {
       "all": "Tất cả",
       "deposit": "Nạp vào",
+      "withdraw": "Rút tiền",
       "spending": "Chi tiêu"
     },
     "searchPlaceholder": "Mã giao dịch...",

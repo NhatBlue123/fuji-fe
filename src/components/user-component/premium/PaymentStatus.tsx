@@ -39,16 +39,45 @@ interface PaymentStatusProps {
 }
 
 const MAX_WAIT_TIME_MS = 300000;
-const FALLBACK_POLL_INTERVAL_MS = 3000;
-const FALLBACK_POLL_WINDOW_MS = 18000;
+const STATUS_POLL_INTERVAL_MS = 3000;
 const PINK_PRIMARY_BUTTON_CLASS =
   "bg-pink-500 text-white shadow-lg shadow-pink-500/25 transition-all hover:bg-pink-600 hover:shadow-pink-500/35";
 const MUTED_SECONDARY_BUTTON_CLASS =
   "border border-white/10 bg-white/[0.04] text-slate-400 shadow-none transition-all hover:bg-white/[0.08] hover:text-slate-200";
 
+const VIETQR_BANK_CODES: Record<string, string> = {
+  MB: "mbbank",
+  MBBANK: "mbbank",
+  MILITARYBANK: "mbbank",
+  VIETCOMBANK: "vietcombank",
+  VCB: "vietcombank",
+  TECHCOMBANK: "techcombank",
+  TCB: "techcombank",
+  BIDV: "bidv",
+  VIETINBANK: "vietinbank",
+  ICB: "vietinbank",
+  ACB: "acb",
+  TPBANK: "tpbank",
+  TPB: "tpbank",
+  VPBANK: "vpbank",
+  VPB: "vpbank",
+  SACOMBANK: "sacombank",
+  STB: "sacombank",
+};
+
 const toFiniteNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getVietQrBankCode = (bankName: string) => {
+  const normalized = bankName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+
+  return VIETQR_BANK_CODES[normalized] || bankName.trim();
 };
 
 type WindowWithWebkitAudioContext = Window &
@@ -196,7 +225,7 @@ export default function PaymentStatus({
       if (handledRef.current) return;
 
       try {
-        const result = await getPaymentStatus(orderId, true);
+        const result = await getPaymentStatus(orderId, false);
         handleStatusResult(result.data?.status, source, result.data?.message);
       } catch (error) {
         console.error("[payment] status poll failed", { orderId, error });
@@ -242,34 +271,24 @@ export default function PaymentStatus({
     return () => unsubStatus();
   }, [handleStatusResult, onPaymentStatusChange, orderId]);
 
-  // CHỈ polling khi socket KHÔNG kết nối được (fallback mode)
-  // VÀ chỉ trong khoảng thời gian giới hạn (18 giây)
+  // Polling always runs as the verification source of truth; socket only shortens the wait.
   useEffect(() => {
     if (handledRef.current) return;
 
-    // Nếu socket đang hoạt động tốt, KHÔNG cần polling
-    if (isConnected) {
-      setPollingUntil(null);
-      return;
-    }
-
-    // Socket không hoạt động -> bật fallback polling
-    const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
+    const deadline = Date.now() + MAX_WAIT_TIME_MS;
     setPollingUntil(deadline);
     void pollStatus("poll");
-  }, [isConnected, orderId, pollStatus]);
+  }, [orderId, pollStatus]);
 
-  // Effect này chỉ chạy khi pollingUntil được set (tức là socket fail)
+  // Keep checking status in case webhook/polling updated DB but the socket event was missed.
   useEffect(() => {
     if (handledRef.current || !pollingUntil) return;
 
-    // Hết thời gian polling
     if (Date.now() >= pollingUntil) {
       setPollingUntil(null);
       return;
     }
 
-    // Polling interval - CHỈ chạy khi pollingUntil còn giá trị
     const intervalId = setInterval(() => {
       if (handledRef.current || Date.now() >= (pollingUntil || 0)) {
         clearInterval(intervalId);
@@ -277,7 +296,7 @@ export default function PaymentStatus({
         return;
       }
       void pollStatus("poll");
-    }, FALLBACK_POLL_INTERVAL_MS);
+    }, STATUS_POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [pollStatus, pollingUntil]);
@@ -295,7 +314,7 @@ export default function PaymentStatus({
     setLastCheckTime(now);
 
     try {
-      const result = await getPaymentStatus(orderId, true);
+      const result = await getPaymentStatus(orderId, false);
       handleStatusResult(result.data?.status, "poll", result.data?.message);
     } catch {
       toast.error(tMsg("api.error"));
@@ -318,7 +337,8 @@ export default function PaymentStatus({
 
   const displayAmount = toFiniteNumber(amount, 0);
   const qrAmountVnd = toFiniteNumber(transferAmountVnd, displayAmount * 1000);
-  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(accountName)}`;
+  const vietQrBankCode = getVietQrBankCode(bankId);
+  const qrUrl = `https://img.vietqr.io/image/${vietQrBankCode}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(accountName)}`;
 
   if (isSuccessPopupOpen) {
     return (

@@ -18,6 +18,7 @@ import PaymentStatus from "./PaymentStatus";
 import TopupPackageCard from "./TopupPackageCard";
 import { PaymentSocketProvider } from "@/providers/PaymentSocketProvider";
 import { cn } from "@/lib/utils";
+import { getTopupTransferAmountVnd, VND_PER_FLOWER } from "@/lib/topup";
 import { useCreatePaymentMutation } from "@/store/services/paymentApi";
 import {
   type TopupPackage,
@@ -34,8 +35,6 @@ type PaymentQrData = {
   accountName: string;
   createdAt: number;
 };
-
-const VND_PER_FLOWER = 1000;
 
 const toFiniteNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value);
@@ -83,7 +82,7 @@ function TopupContentInner() {
 
   const locale = "vi-VN";
   const selectedTransferAmountVnd = selectedPkg
-    ? selectedPkg.price * VND_PER_FLOWER
+    ? getTopupTransferAmountVnd(selectedPkg.price)
     : 0;
   const selectedReceiveFlowers = selectedPkg
     ? selectedPkg.flowers + selectedPkg.bonusFlowers
@@ -132,7 +131,10 @@ function TopupContentInner() {
       const accountName = orderData.accountName?.trim();
       const topupAmount = toFiniteNumber(orderData.amount, selectedPkg.flowers);
       const transferAmountVnd =
-        toFiniteNumber(orderData.transferAmountVnd, selectedPkg.price * VND_PER_FLOWER);
+        toFiniteNumber(
+          orderData.transferAmountVnd,
+          getTopupTransferAmountVnd(selectedPkg.price),
+        );
 
       if (!bankId || !accountNo || !accountName) {
         console.error("[payment] createPayment missing account data", {

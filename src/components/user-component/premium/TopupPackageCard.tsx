@@ -2,8 +2,7 @@
 import { CheckCircle2, Gift, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-
-const VND_PER_FLOWER = 1000;
+import { getTopupTransferAmountVnd } from "@/lib/topup";
 
 interface TopupPackageCardProps {
   price: number;
@@ -23,7 +22,7 @@ export default function TopupPackageCard({
   onSelect,
 }: TopupPackageCardProps) {
   const { t } = useTranslation();
-  const transferAmountVnd = price * VND_PER_FLOWER;
+  const transferAmountVnd = getTopupTransferAmountVnd(price);
   const totalFlowers = flowers + bonusFlowers;
 
   return (

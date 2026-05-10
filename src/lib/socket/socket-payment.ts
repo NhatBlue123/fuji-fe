@@ -17,7 +17,10 @@ export function connectPaymentSocket(token?: string | null, userId?: number | st
   const authToken = token || getAccessToken() || undefined;
 
   const authPayload = authToken ? { token: authToken } : {};
-  const queryPayload = userId ? { userId: userId.toString() } : {};
+  const queryPayload = {
+    ...(authToken ? { token: authToken } : {}),
+    ...(userId ? { userId: userId.toString() } : {}),
+  };
 
   if (!paymentSocket) {
     paymentSocket = io(getPaymentUrl(), {

@@ -221,7 +221,6 @@ function JLPTtestPageInner() {
 
   /* ===== AUTO SUBMIT WHEN TIME UP ===== */
   const handleAutoSubmit = useCallback(() => {
-    console.log("⏱ Hết giờ — auto submit");
     submitExam();
   }, [submitExam]);
 

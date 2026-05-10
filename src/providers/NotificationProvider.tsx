@@ -125,7 +125,6 @@ export function NotificationProvider({
         }, 100);
       }
 
-      console.log("[NotificationProvider] Bell sound played!");
     } catch (error) {
       console.error("Failed to play bell sound:", error);
     }
@@ -138,11 +137,9 @@ export function NotificationProvider({
     if (!isInitialized || !isAuthenticated || !accessToken) return;
     try {
       const res = await api.get("/notifications");
-      console.log("[NotificationProvider] fetchNotifications response:", res.data);
       setNotifications(res.data.content);
       // Lấy unreadCount trực tiếp từ response của API (count từ DB, chính xác)
       if (res.data.unreadCount !== undefined) {
-        console.log("[NotificationProvider] Setting unreadCount from API:", res.data.unreadCount);
         setUnreadCount(res.data.unreadCount);
       }
     } catch (error) {
@@ -241,9 +238,6 @@ export function NotificationProvider({
       setBellRingCount(c => c + 1);
       playBellSound();
     };
-
-    console.log("[NotificationProvider] Connecting socket with userId:", user.id);
-
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("new-notification", handleNewNotification);

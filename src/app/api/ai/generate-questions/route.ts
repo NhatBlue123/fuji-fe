@@ -268,12 +268,10 @@ export async function POST(req: NextRequest) {
     const cacheKey = `gq:${body.level}:${body.section}:${body.mondaiNumber}:${body.count}:${body.topic ?? ""}`;
     const cached = getCached(cacheKey);
     if (cached) {
-      console.log(`[AI/generate-questions] Cache HIT (${cacheKey})`);
       return NextResponse.json({ questions: cached, model: `${model} (cached)` });
     }
 
     const prompt = buildPrompt(body);
-    console.log(`[AI/generate-questions] Calling Gemini REST v1 (${model}), prompt=${prompt.length}chars`);
 
     const text = await callGemini(apiKey, model, prompt);
 

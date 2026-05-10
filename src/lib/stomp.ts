@@ -19,11 +19,6 @@ export function getStompClient(token: string): Client {
     reconnectDelay: 3000,
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,
-    debug: (str) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[STOMP]", str);
-      }
-    },
   });
 
   stompClient.activate();

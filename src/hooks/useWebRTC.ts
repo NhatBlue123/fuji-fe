@@ -104,7 +104,6 @@ export function useWebRTC(): WebRTCHook {
     }
 
     const iceServers = await loadIceServers();
-    console.log("[WebRTC] Creating new RTCPeerConnection with ICE servers:", iceServers);
     const pc = new RTCPeerConnection({ iceServers });
 
     pc.onicecandidate = (e) => {
@@ -112,12 +111,10 @@ export function useWebRTC(): WebRTCHook {
     };
 
     pc.onconnectionstatechange = () => {
-      console.log("[WebRTC] state:", pc.connectionState);
       stateCbRef.current?.(pc.connectionState);
     };
 
     pc.ontrack = (e) => {
-      console.log("[WebRTC] ontrack fired, kind:", e.track.kind, "readyState:", e.track.readyState);
       const incomingStream = e.streams[0] ?? new MediaStream([e.track]);
       setRemoteStream((prev) => {
         if (prev && prev.id === incomingStream.id) {
@@ -162,11 +159,8 @@ export function useWebRTC(): WebRTCHook {
 
   const createOffer = useCallback(async () => {
     const pc = await ensurePC();
-    console.log("[WebRTC] createOffer - signalingState:", pc.signalingState, "| tracks:", pc.getSenders().length);
     const offer = await pc.createOffer();
-    console.log("[WebRTC] setLocalDescription (offer)...");
     await pc.setLocalDescription(offer);
-    console.log("[WebRTC] setLocalDescription done.");
     return offer;
   }, [ensurePC]);
 

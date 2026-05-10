@@ -75,12 +75,14 @@ function formatDuration(totalMinutes: number): string {
   return `${h}h ${m}m`;
 }
 
+function normalizeHoaAmount(price: number): number {
+  return Math.round(Number(price) || 0);
+}
+
 function formatPrice(price: number): string {
-  if (price === 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
+  const hoa = normalizeHoaAmount(price);
+  if (hoa <= 0) return "Miễn phí";
+  return `${hoa.toLocaleString("vi-VN")} hoa`;
 }
 
 const DEFAULT_THUMBNAIL =
@@ -186,7 +188,7 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
         title: (editTitle ?? course.title ?? "").trim(),
         description: (editDescription ?? course.description ?? "").trim(),
         instructorId: course.instructor.id,
-        price: Number(editPrice ?? course.price ?? 0) || 0,
+        price: Number(editPrice ?? normalizeHoaAmount(course.price ?? 0)) || 0,
         jlptLevel: editJlptLevel ?? course.jlptLevel ?? "N5",
         isPublished: editPublished ?? course.isPublished,
       };
@@ -679,12 +681,13 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-price">Giá (VNĐ)</Label>
+              <Label htmlFor="edit-price">Giá (hoa)</Label>
               <Input
                 id="edit-price"
                 type="number"
                 min="0"
-                value={editPrice ?? String(course.price ?? 0)}
+                step="1"
+                value={editPrice ?? String(normalizeHoaAmount(course.price ?? 0))}
                 onChange={(e) => setEditPrice(e.target.value)}
               />
             </div>

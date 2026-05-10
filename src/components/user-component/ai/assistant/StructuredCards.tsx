@@ -11,7 +11,6 @@ import type {
   NextStepsPayload,
   PaymentActionPayload,
   PurchaseSummaryPayload,
-  QuickFactItem,
   StructuredBlockType,
 } from "./types";
 
@@ -381,66 +380,6 @@ export function CourseCompareTable({
   );
 }
 
-export function QuickFactsCard({ facts }: { facts: QuickFactItem[] }) {
-  if (facts.length === 0) {
-    return null;
-  }
-
-  return (
-    <LiquidGlass
-      {...glassCardProps}
-      cornerRadius={18}
-      className="my-3 rounded-2xl"
-    >
-      <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-white/84 via-sky-50/52 to-blue-100/38 p-3.5 shadow-[0_22px_48px_-34px_rgba(15,23,42,0.4)] dark:border-white/15 dark:from-slate-900/72 dark:via-slate-900/58 dark:to-slate-800/45">
-        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(255,255,255,0.62),transparent_54%)]" />
-
-        <div className="relative z-10">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80">
-            Insight Nhanh
-          </p>
-          <div className="mt-2.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {facts.map((fact, idx) => {
-              const tone = resolveToneClasses(fact.tone);
-              return (
-                <div
-                  key={`${fact.label}-${idx}`}
-                  className={`rounded-xl border bg-gradient-to-br px-3 py-2.5 ${tone.card}`}
-                >
-                  <div className="flex items-start gap-2">
-                    <span
-                      className={`mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-lg ${tone.icon}`}
-                    >
-                      <SkillIcon
-                        name={fact.icon}
-                        fallback="insights"
-                        className="text-[15px]"
-                      />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        {fact.label}
-                      </p>
-                      <p className="mt-0.5 text-sm font-semibold text-foreground">
-                        {fact.value}
-                      </p>
-                      {fact.note && (
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
-                          {fact.note}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </LiquidGlass>
-  );
-}
-
 export function NextStepsCard({ payload }: { payload: NextStepsPayload }) {
   const steps = payload.steps || [];
   if (steps.length === 0) {
@@ -513,9 +452,7 @@ export function StructuredLoadingCard({
         ? "Đang chuẩn bị bảng so sánh khóa học..."
         : blockType === "payment-action"
           ? "Đang chuẩn bị nút thanh toán..."
-          : blockType === "quick-facts"
-            ? "Đang chuẩn bị cụm insight..."
-            : blockType === "purchase-summary"
+          : blockType === "purchase-summary"
               ? "Đang chuẩn bị tóm tắt mua khóa..."
               : blockType === "next-steps"
                 ? "Đang chuẩn bị các bước đề xuất..."
@@ -582,7 +519,7 @@ export function PurchaseSummaryCard({
 }) {
   const canAfford = payload.affordableCount > 0;
   const primaryUrl = canAfford ? "/course" : "/premium?tab=topup";
-  const primaryCta = canAfford ? "Xem khóa mua được" : "Nạp tiền ngay";
+  const primaryCta = canAfford ? "Xem khóa mua được" : "Nạp 🌸 ngay";
 
   return (
     <LiquidGlass
@@ -599,7 +536,7 @@ export function PurchaseSummaryCard({
               Tóm tắt mua khóa
             </p>
             <span className="inline-flex items-center gap-1 rounded-full border border-white/55 bg-white/70 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground dark:border-white/15 dark:bg-slate-900/55">
-              🌸 Ví blossom
+              Ví 🌸
             </span>
           </div>
 
@@ -667,7 +604,7 @@ export function PurchaseSummaryCard({
             {canAfford ? (
               <SkillIcon name="school" className="text-base" />
             ) : (
-              <span className="text-base">🌸</span>
+              <SkillIcon name="local_florist" className="text-base" />
             )}
             {primaryCta}
           </Link>

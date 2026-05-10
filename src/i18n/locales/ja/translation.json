@@ -1058,13 +1058,13 @@
     "upgradePremium": "Nâng cấp 🚀 PREMIUM (AI)",
     "upgradePro": "Nâng cấp 🌟 PRO",
     "loadingPricing": "Đang tải bảng giá...",
-    "currencyPerMonth": "hoa / tháng",
+    "currencyPerMonth": "🌸 / tháng",
     "confirmUpgradeTitle": "Xác nhận nâng cấp",
     "currentPackageDesc": "Bạn đang dùng gói",
     "stackDesc": "Sẽ được cộng dồn thời gian sử dụng.",
     "currentExpiry": "Hạn hiện tại:",
     "newExpiry": "Sau khi mua:",
-    "deductDesc": "Hệ thống sẽ trừ {{amount}} hoa của bạn.",
+    "deductDesc": "Hệ thống sẽ trừ {{amount}} 🌸 của bạn.",
     "confirmQuestion": "Nâng cấp gói {{name}}?",
     "tiers": {
       "experience": "Trải nghiệm",
@@ -2124,7 +2124,7 @@
         "editPrice": "コース価格の更新"
       },
       "label": {
-        "newPrice": "新価格 (VND)"
+        "newPrice": "新価格 (🌸)"
       }
     },
     "vocab": {

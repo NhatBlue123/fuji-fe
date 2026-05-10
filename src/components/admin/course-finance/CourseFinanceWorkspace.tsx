@@ -119,23 +119,23 @@ function getSalesTierBadgeClass(tier: SalesTier): string {
 }
 
 function formatCompactCurrency(value: number, lang: string): string {
+  const suffix = " 🌸";
   if (lang === "vi") {
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ`;
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}tr`;
-    if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ${suffix}`;
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}tr${suffix}`;
+    if (value >= 1_000) return `${Math.round(value / 1_000)}k${suffix}`;
   }
-  return new Intl.NumberFormat(lang, {
+  return `${new Intl.NumberFormat(lang, {
     notation: "compact",
     maximumFractionDigits: 1,
-  }).format(value);
+  }).format(value)}${suffix}`;
 }
 
 function formatCurrency(value: number, lang: string): string {
-  return new Intl.NumberFormat(lang === "vi" ? "vi-VN" : lang, {
-    style: "currency",
-    currency: lang === "vi" ? "VND" : lang === "ja" ? "JPY" : "USD",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+  const amount = Number(value);
+  return `${new Intl.NumberFormat(lang === "vi" ? "vi-VN" : lang, {
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0)} 🌸`;
 }
 
 function formatDateTime(value?: string | null, lang?: string): string {
@@ -500,7 +500,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
       toast.error("Phần trăm giảm phải từ 1–100"); return;
     }
     if (globalDiscountType === "FIXED_AMOUNT" && (isNaN(parsedAmount!) || parsedAmount! <= 0)) {
-      toast.error("Số tiền giảm phải lớn hơn 0"); return;
+      toast.error("Số 🌸 giảm phải lớn hơn 0"); return;
     }
 
     try {
@@ -1006,7 +1006,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                     onClick={() => setDiscountType("FIXED_AMOUNT")}
                     className="flex-1"
                   >
-                    🌸 Số hoa
+                    Số 🌸
                   </Button>
                 </div>
               </div>
@@ -1224,7 +1224,7 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                       onClick={() => setGlobalDiscountType("FIXED_AMOUNT")}
                       className="flex-1"
                     >
-                      🌸 Số hoa
+                      Số 🌸
                     </Button>
                   </div>
                 </div>

@@ -67,10 +67,16 @@ function formatDateTime(v?: string | null) {
   return d.toLocaleString("vi-VN");
 }
 
-function formatCurrency(amount: number, currency = "VND") {
+function normalizeHoaAmount(amount: number) {
+  if (!Number.isFinite(amount)) return 0;
+  return Math.round(amount);
+}
+
+function formatCurrency(amount: number) {
   if (!Number.isFinite(amount)) return "-";
-  if (amount <= 0) return "Miễn phí";
-  return `${amount.toLocaleString("vi-VN")} ${currency}`;
+  const hoa = normalizeHoaAmount(amount);
+  if (hoa <= 0) return "Miễn phí";
+  return `${hoa.toLocaleString("vi-VN")} hoa`;
 }
 
 function formatSecondsToText(seconds?: number) {
@@ -657,7 +663,7 @@ export default function AdminRagManagementPage() {
                             />
                           </TableHead>
                           <TableHead>Khóa học</TableHead>
-                          <TableHead>Giá</TableHead>
+                          <TableHead>Giá (hoa)</TableHead>
                           <TableHead>Chỉ mục</TableHead>
                           <TableHead>Thay đổi</TableHead>
                           <TableHead>Độ cũ</TableHead>
@@ -711,7 +717,7 @@ export default function AdminRagManagementPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {formatCurrency(course.price, course.currency)}
+                              {formatCurrency(course.price)}
                             </TableCell>
                             <TableCell>
                               <StatusBadge indexed={course.indexed} />
@@ -763,7 +769,7 @@ export default function AdminRagManagementPage() {
                             />
                           </TableHead>
                           <TableHead>Gói</TableHead>
-                          <TableHead>Giá</TableHead>
+                          <TableHead>Giá (hoa)</TableHead>
                           <TableHead>Chỉ mục</TableHead>
                           <TableHead>Thay đổi</TableHead>
                           <TableHead>Độ cũ</TableHead>
@@ -817,7 +823,7 @@ export default function AdminRagManagementPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {formatCurrency(plan.price, "VND")}
+                              {formatCurrency(plan.price)}
                             </TableCell>
                             <TableCell>
                               <StatusBadge indexed={plan.indexed} />

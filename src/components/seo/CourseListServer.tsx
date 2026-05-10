@@ -9,12 +9,10 @@ interface CourseListServerProps {
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
 
-const BLOSSOM_RATE = 1000;
-
 function formatPrice(price: number | null | undefined): string {
   const value = Number(price ?? 0);
   if (!Number.isFinite(value) || value <= 0) return "Miễn phí";
-  return `${Math.floor(value / BLOSSOM_RATE).toLocaleString("vi-VN")} 🌸`;
+  return `${value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
 }
 
 /**

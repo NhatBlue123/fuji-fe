@@ -12,6 +12,7 @@ type AiEnvelope<T> = {
   tokenStats?: AiUsageTokenStat[];
   tokenTotals?: AiUsageTokenTotals;
   period?: AiUsagePeriod;
+  metrics?: ChatbotMetrics;
 } & { data?: T };
 
 const readEnvelope = <T,>(res: unknown, key: keyof AiEnvelope<T>, fallback: T): T => {
@@ -151,6 +152,41 @@ export type AiPackPayload = Omit<AiPack, "id" | "createdAt" | "updatedAt">;
 
 export type AiPolicyPayload = Omit<AiPolicy, "id">;
 
+export interface ChatbotLatencyStats {
+  count: number;
+  p50: number | null;
+  p95: number | null;
+  max: number | null;
+}
+
+export interface ChatbotMetrics {
+  source: string;
+  available: boolean;
+  windowDays: number;
+  reason?: string;
+  events?: {
+    total: number;
+    byType: Record<string, number>;
+  };
+  routeDistribution?: Record<string, number>;
+  workerDistribution?: Record<string, number>;
+  queueDistribution?: Record<string, number>;
+  toolUsage?: Record<string, number>;
+  failures?: {
+    total: number;
+    qdrant: number;
+    openai: number;
+    openaiTimeout: number;
+    quotaExhausted: number;
+    other: number;
+    openaiTimeoutRate: number;
+  };
+  latency?: {
+    firstTokenMs: ChatbotLatencyStats;
+    workerMs: ChatbotLatencyStats;
+  };
+}
+
 const emptyTokenTotals: AiUsageTokenTotals = {
   externalCalls: 0,
   totalTokens: 0,
@@ -203,6 +239,13 @@ const buildSummaryQuery = (filters?: AiUsageSummaryFilters) => {
   return query ? `/admin/ai/usage/summary?${query}` : "/admin/ai/usage/summary";
 };
 
+const buildChatbotMetricsQuery = (filters?: { days?: number }) => {
+  const params = new URLSearchParams();
+  if (filters?.days) params.set("days", String(filters.days));
+  const query = params.toString();
+  return query ? `/admin/ai/chatbot/metrics?${query}` : "/admin/ai/chatbot/metrics";
+};
+
 export const aiQuotaAdminApi = aiBaseApi.injectEndpoints({
   endpoints: (builder) => ({
     getAiPolicies: builder.query<AiPolicy[], void>({
@@ -242,6 +285,15 @@ export const aiQuotaAdminApi = aiBaseApi.injectEndpoints({
       },
       providesTags: ["AiQuota"],
     }),
+    getChatbotMetrics: builder.query<ChatbotMetrics, { days?: number } | void>({
+      query: (filters) => buildChatbotMetricsQuery(filters || undefined),
+      transformResponse: (res: unknown) => readEnvelope<ChatbotMetrics>(
+        res,
+        "metrics",
+        { source: "redis_chat_observability", available: false, windowDays: 7 },
+      ),
+      providesTags: ["AiQuota"],
+    }),
     getAiPacks: builder.query<AiPack[], void>({
       query: () => "/admin/ai/packs",
       transformResponse: (res: unknown) => readEnvelope<AiPack[]>(res, "packs", []),
@@ -272,6 +324,7 @@ export const {
   useGetAiUsageSummaryQuery,
   useGetAiUsageQuery,
   useGetAiUsageStatsQuery,
+  useGetChatbotMetricsQuery,
   useGetAiPacksQuery,
   useCreateAiPackMutation,
   useUpdateAiPackMutation,

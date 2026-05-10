@@ -18,10 +18,31 @@ export interface AdminUserListParams {
   size?: number;
   sortBy?: string;
   sortDir?: string;
+  keyword?: string;
+  role?: string;
+  isActive?: boolean;
+  hasViolations?: boolean;
 }
 
 export interface UpdateUserRoleRequest {
   role: string;
+}
+
+export interface AdminHoaGrantRequest {
+  userId: number;
+  amountHoa: number;
+  reason?: string;
+}
+
+export interface AdminHoaGrantResponse {
+  targetUserId: number;
+  username: string;
+  email: string;
+  fullName: string;
+  amountHoa: number;
+  balanceBeforeHoa: number;
+  balanceAfterHoa: number;
+  transactionId: number;
 }
 
 export const adminUserApi = baseApi.injectEndpoints({
@@ -37,6 +58,11 @@ export const adminUserApi = baseApi.injectEndpoints({
         if (p.size !== undefined) qs.set("size", String(p.size));
         if (p.sortBy) qs.set("sortBy", p.sortBy);
         if (p.sortDir) qs.set("sortDir", p.sortDir);
+        if (p.keyword) qs.set("keyword", p.keyword);
+        if (p.role) qs.set("role", p.role);
+        if (p.isActive !== undefined) qs.set("isActive", String(p.isActive));
+        if (p.hasViolations !== undefined)
+          qs.set("hasViolations", String(p.hasViolations));
         const q = qs.toString();
         return `/users/me/all${q ? `?${q}` : ""}`;
       },
@@ -70,8 +96,30 @@ export const adminUserApi = baseApi.injectEndpoints({
         { type: "AdminUser", id: "LIST" },
       ],
     }),
+
+    grantAdminHoa: builder.mutation<
+      AdminHoaGrantResponse,
+      AdminHoaGrantRequest
+    >({
+      query: (body) => ({
+        url: "/admin/secret-wallet/grant",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<AdminHoaGrantResponse>) =>
+        response.data!,
+      invalidatesTags: (_result, _error, { userId }) => [
+        "Wallet",
+        "AdminRevenue",
+        { type: "AdminUser", id: userId },
+        { type: "AdminUser", id: "LIST" },
+      ],
+    }),
   }),
 });
 
-export const { useGetAdminUsersQuery, useUpdateUserRoleMutation } =
-  adminUserApi;
+export const {
+  useGetAdminUsersQuery,
+  useUpdateUserRoleMutation,
+  useGrantAdminHoaMutation,
+} = adminUserApi;

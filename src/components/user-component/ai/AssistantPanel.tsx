@@ -36,10 +36,7 @@ import {
 } from "./assistant/MessageBubbles";
 import ConversationSidebar from "./assistant/ConversationSidebar";
 import AiAvatar from "@/components/chatdock/AiAvatar";
-import type {
-  AssistantConversationSnapshot,
-  RouterThinkingItem,
-} from "./assistant/types";
+import type { RouterThinkingItem } from "./assistant/types";
 
 const MESSAGES_PAGE_SIZE = 20;
 const STREAM_STALL_TIMEOUT_MS = 20000; // ✅ Giảm từ 70s xuống 20s
@@ -197,9 +194,6 @@ export default function AssistantPanel({
   const optimisticConversationRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string>("");
   const activeConversationRef = useRef<number | null>(null);
-  const conversationSnapshotsRef = useRef<
-    Map<number, AssistantConversationSnapshot>
-  >(new Map());
   const initialLoadSeqRef = useRef(0);
   const pendingScrollRestoreRef = useRef<{
     prevHeight: number;
@@ -310,35 +304,16 @@ export default function AssistantPanel({
     [router],
   );
 
-  const restoreConversationSnapshot = useCallback((conversationId: number) => {
-    const snapshot = conversationSnapshotsRef.current.get(conversationId);
-    if (!snapshot) {
-      return false;
-    }
-
-    pendingScrollRestoreRef.current = null;
-    pendingBottomScrollBehaviorRef.current = "auto";
-    setMessages(snapshot.messages);
-    setHasMoreMessages(snapshot.hasMore);
-    setNextBeforeId(snapshot.nextBeforeId);
-    return true;
-  }, []);
-
   const loadInitialMessages = useCallback(
     async (
       conversationId: number,
       options?: {
         preferCacheValue?: boolean;
-        skipLoadingState?: boolean;
       },
     ) => {
       const seq = initialLoadSeqRef.current + 1;
       initialLoadSeqRef.current = seq;
-      if (!options?.skipLoadingState) {
-        setIsLoadingInitialMessages(true);
-      } else {
-        setIsLoadingInitialMessages(false);
-      }
+      setIsLoadingInitialMessages(true);
 
       try {
         const page = await fetchMessages(
@@ -391,18 +366,6 @@ export default function AssistantPanel({
     },
     [fetchMessages, goToDraftConversation],
   );
-
-  useEffect(() => {
-    if (activeConversationId == null) {
-      return;
-    }
-
-    conversationSnapshotsRef.current.set(activeConversationId, {
-      messages,
-      hasMore: hasMoreMessages,
-      nextBeforeId,
-    });
-  }, [activeConversationId, hasMoreMessages, messages, nextBeforeId]);
 
   const loadOlderMessages = useCallback(async () => {
     const conversationId = activeConversationRef.current;
@@ -548,10 +511,8 @@ export default function AssistantPanel({
       routerThinkingRef.current = [];
       streamBufferRef.current = "";
 
-      const hasWarmSnapshot = restoreConversationSnapshot(activeConversationId);
       void loadInitialMessages(activeConversationId, {
         preferCacheValue: true,
-        skipLoadingState: hasWarmSnapshot,
       });
       return;
     }
@@ -566,7 +527,6 @@ export default function AssistantPanel({
   }, [
     activeConversationId,
     loadInitialMessages,
-    restoreConversationSnapshot,
   ]);
 
   // Timer khi typing

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Brain, Cpu, RefreshCw, Users } from "lucide-react";
+import { AlertTriangle, Brain, Cpu, RefreshCw, Route, Timer, Users, Wrench } from "lucide-react";
 import {
   CartesianGrid,
   Legend,
@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   type AiUsagePeriod,
   useGetAiUsageSummaryQuery,
+  useGetChatbotMetricsQuery,
 } from "@/store/services/admin/aiQuotaAdminApi";
 import {
   featureLabel,
@@ -49,13 +50,36 @@ const periodOptions: Array<{ value: AiUsagePeriod; label: string; title: string 
   { value: "year", label: "Năm", title: "Lượt gọi theo năm" },
 ];
 
+function formatMs(value?: number | null) {
+  if (value == null || !Number.isFinite(Number(value))) return "-";
+  return `${formatNumber(Math.round(Number(value)))}ms`;
+}
+
+function metricRows(data?: Record<string, number>, limit = 6) {
+  return Object.entries(data ?? {})
+    .filter(([, value]) => Number(value) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, limit);
+}
+
 export default function AiUsageOverviewPage() {
   const [chartPeriod, setChartPeriod] = useState<AiUsagePeriod>("day");
   const { data, isFetching, isLoading, isError, refetch } = useGetAiUsageSummaryQuery({ period: chartPeriod });
+  const {
+    data: chatbotMetrics,
+    isFetching: isMetricsFetching,
+    refetch: refetchMetrics,
+  } = useGetChatbotMetricsQuery({ days: 7 });
   const summary = data?.summary ?? [];
   const topUsers = data?.topUsers ?? [];
   const tokenStats = data?.tokenStats ?? [];
   const tokenTotals = data?.tokenTotals ?? { externalCalls: 0, totalTokens: 0, estimatedCostUsd: 0 };
+  const routeRows = metricRows(chatbotMetrics?.routeDistribution);
+  const toolRows = metricRows(chatbotMetrics?.toolUsage);
+  const workerRows = metricRows(chatbotMetrics?.workerDistribution);
+  const failures = chatbotMetrics?.failures;
+  const firstToken = chatbotMetrics?.latency?.firstTokenMs;
+  const workerLatency = chatbotMetrics?.latency?.workerMs;
   const totalExternalCalls = summary.reduce(
     (total, item) => total + Number(item.externalCalls || 0),
     0,
@@ -88,8 +112,15 @@ export default function AiUsageOverviewPage() {
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><Brain className="h-6 w-6" /> AI và quota</h1>
           <p className="text-sm text-muted-foreground">Tổng quan lượt gọi dịch vụ AI trong 30 ngày gần nhất.</p>
         </div>
-        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+        <Button
+          variant="outline"
+          onClick={() => {
+            refetch();
+            refetchMetrics();
+          }}
+          disabled={isFetching || isMetricsFetching}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching || isMetricsFetching ? "animate-spin" : ""}`} />
           Làm mới
         </Button>
       </div>
@@ -137,6 +168,177 @@ export default function AiUsageOverviewPage() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Timer className="h-4 w-4" />
+              First token p95
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatMs(firstToken?.p95)}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              p50 {formatMs(firstToken?.p50)} · {formatNumber(firstToken?.count ?? 0)} mẫu
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Cpu className="h-4 w-4" />
+              Worker p95
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatMs(workerLatency?.p95)}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              max {formatMs(workerLatency?.max)} · {formatNumber(workerLatency?.count ?? 0)} mẫu
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Route className="h-4 w-4" />
+              Route events
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatNumber(chatbotMetrics?.events?.total ?? 0)}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Cửa sổ {formatNumber(chatbotMetrics?.windowDays ?? 7)} ngày
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Lỗi runtime
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatNumber(failures?.total ?? 0)}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Qdrant {formatNumber(failures?.qdrant ?? 0)} · timeout {formatNumber(failures?.openaiTimeout ?? 0)} · quota {formatNumber(failures?.quotaExhausted ?? 0)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {!chatbotMetrics?.available && (
+        <Card className="border-amber-300/50 bg-amber-50/50">
+          <CardContent className="py-4 text-sm text-amber-800">
+            Chưa đọc được metrics runtime chatbot từ Redis{chatbotMetrics?.reason ? `: ${chatbotMetrics.reason}` : "."}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Route className="h-5 w-5" />
+              Route distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Route</TableHead>
+                  <TableHead className="text-right">Events</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {routeRows.map(([route, count]) => (
+                  <TableRow key={route}>
+                    <TableCell className="font-mono text-xs">{route}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatNumber(count)}</TableCell>
+                  </TableRow>
+                ))}
+                {routeRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-8 text-center text-sm text-muted-foreground">
+                      Chưa có dữ liệu route.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              Tool usage
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tool</TableHead>
+                  <TableHead className="text-right">Calls</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {toolRows.map(([tool, count]) => (
+                  <TableRow key={tool}>
+                    <TableCell className="font-mono text-xs">{tool}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatNumber(count)}</TableCell>
+                  </TableRow>
+                ))}
+                {toolRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-8 text-center text-sm text-muted-foreground">
+                      Chưa có tool call được ghi nhận.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Cpu className="h-5 w-5" />
+              Worker distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Worker</TableHead>
+                  <TableHead className="text-right">Jobs</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workerRows.map(([worker, count]) => (
+                  <TableRow key={worker}>
+                    <TableCell className="font-mono text-xs">{worker}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatNumber(count)}</TableCell>
+                  </TableRow>
+                ))}
+                {workerRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-8 text-center text-sm text-muted-foreground">
+                      Chưa có worker event.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">

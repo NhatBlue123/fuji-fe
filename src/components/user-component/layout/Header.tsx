@@ -64,6 +64,16 @@ function quotaTextClass(status: "normal" | "warning" | "empty") {
   return "text-muted-foreground";
 }
 
+const HOA_BALANCE_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  maximumFractionDigits: 20,
+};
+
+function formatHoaBalance(value: number, language: string) {
+  const amount = Number.isFinite(value) ? value : 0;
+  const locale = language === "vi" ? "vi-VN" : language === "ja" ? "ja-JP" : "en-US";
+  return `${amount.toLocaleString(locale, HOA_BALANCE_FORMAT_OPTIONS)} 🌸`;
+}
+
 const Header = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -237,7 +247,7 @@ const Header = () => {
               title={t('auto.header_9')}
             >
               <span className="text-xs font-bold leading-none">
-                {flowerBalance.toLocaleString(i18n.language === "vi" ? "vi-VN" : "en-US")} 🌸
+                {formatHoaBalance(flowerBalance, i18n.language)}
               </span>
             </Link>
           )}

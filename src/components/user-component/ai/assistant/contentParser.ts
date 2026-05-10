@@ -8,7 +8,6 @@ import type {
   NextStepsPayload,
   PaymentActionPayload,
   PurchaseSummaryPayload,
-  QuickFactItem,
   StructuredBlockType,
 } from "./types";
 
@@ -45,6 +44,10 @@ function sanitizeIconName(value: unknown) {
   return icon;
 }
 
+function displayFlowerIcon(value: string) {
+  return value.replace(/\s+hoa\b/gi, " 🌸");
+}
+
 function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
   if (!Array.isArray(value)) {
     return [];
@@ -74,7 +77,10 @@ function sanitizeCoursePreviewItems(value: unknown): CoursePreviewItem[] {
       id,
       title,
       url: safeUrl,
-      price: typeof record.price === "string" ? record.price.trim() : undefined,
+      price:
+        typeof record.price === "string"
+          ? displayFlowerIcon(record.price.trim())
+          : undefined,
       thumbnail:
         typeof record.thumbnail === "string"
           ? record.thumbnail.trim()
@@ -121,7 +127,10 @@ function sanitizeCourseComparePayload(
       id,
       title,
       url: safeUrl,
-      price: typeof col.price === "string" ? col.price.trim() : undefined,
+      price:
+        typeof col.price === "string"
+          ? displayFlowerIcon(col.price.trim())
+          : undefined,
       thumbnail:
         typeof col.thumbnail === "string" ? col.thumbnail.trim() : undefined,
     });
@@ -181,8 +190,8 @@ function sanitizePaymentActionPayload(
   const record = value as Record<string, unknown>;
   const label =
     typeof record.label === "string" && record.label.trim()
-      ? record.label.trim()
-      : "Nạp tiền để mua khóa học";
+      ? displayFlowerIcon(record.label.trim())
+      : "Nạp 🌸 để mua khóa học";
 
   const urlRaw =
     typeof record.url === "string" && record.url.trim()
@@ -195,7 +204,7 @@ function sanitizePaymentActionPayload(
 
   const note =
     typeof record.note === "string" && record.note.trim()
-      ? record.note.trim()
+      ? displayFlowerIcon(record.note.trim())
       : undefined;
 
   return {
@@ -222,7 +231,7 @@ function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
     const record = raw as Record<string, unknown>;
     const label =
       typeof record.label === "string" && record.label.trim()
-        ? record.label.trim()
+        ? displayFlowerIcon(record.label.trim())
         : "Mở liên kết";
 
     const urlRaw =
@@ -236,14 +245,14 @@ function sanitizeActionLinksPayload(value: unknown): ActionLinkItem[] {
 
     const note =
       typeof record.note === "string" && record.note.trim()
-        ? record.note.trim()
+        ? displayFlowerIcon(record.note.trim())
         : undefined;
 
     const icon = sanitizeIconName(record.icon);
     const tone = sanitizeTone(record.tone);
     const cta =
       typeof record.cta === "string" && record.cta.trim()
-        ? record.cta.trim().slice(0, 28)
+        ? displayFlowerIcon(record.cta.trim()).slice(0, 28)
         : undefined;
 
     out.push({ label, url: urlRaw, note, icon, tone, cta });
@@ -260,7 +269,7 @@ function inferActionLabelFromUrl(url: string) {
     return "Đặt lịch với giáo viên";
   }
   if (/^\/premium\?tab=topup$/i.test(url)) {
-    return "Nạp tiền";
+    return "Nạp 🌸";
   }
   if (/^\/premium\?tab=premium$/i.test(url)) {
     return "Xem bảng gói thành viên";
@@ -285,7 +294,7 @@ function inferActionNoteFromUrl(url: string) {
     return "Chọn giáo viên và khung giờ phù hợp";
   }
   if (/^\/premium\?tab=topup$/i.test(url)) {
-    return "Nạp tiền trước khi thanh toán";
+    return "Nạp 🌸 trước khi thanh toán";
   }
   if (/^\/premium\?tab=premium$/i.test(url)) {
     return "Xem quyền lợi và bảng giá gói thành viên";
@@ -387,54 +396,6 @@ function extractActionLinksFromMarkdown(markdown: string): {
   };
 }
 
-function sanitizeQuickFactsPayload(value: unknown): QuickFactItem[] {
-  const wrapped = value as { facts?: unknown };
-  const rawList = Array.isArray(value)
-    ? value
-    : value && typeof value === "object" && Array.isArray(wrapped.facts)
-      ? wrapped.facts
-      : [];
-
-  const out: QuickFactItem[] = [];
-  for (const raw of rawList) {
-    if (!raw || typeof raw !== "object") {
-      continue;
-    }
-
-    const record = raw as Record<string, unknown>;
-    const label =
-      typeof record.label === "string" && record.label.trim()
-        ? record.label.trim()
-        : "";
-
-    const valueText =
-      typeof record.value === "string" && record.value.trim()
-        ? record.value.trim()
-        : typeof record.amount === "string" && record.amount.trim()
-          ? record.amount.trim()
-          : "";
-
-    if (!label || !valueText) {
-      continue;
-    }
-
-    const note =
-      typeof record.note === "string" && record.note.trim()
-        ? record.note.trim()
-        : undefined;
-
-    out.push({
-      label,
-      value: valueText,
-      note,
-      icon: sanitizeIconName(record.icon),
-      tone: sanitizeTone(record.tone),
-    });
-  }
-
-  return out.slice(0, 6);
-}
-
 function sanitizeNextStepsPayload(value: unknown): NextStepsPayload | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -502,7 +463,7 @@ function sanitizePurchaseSummaryPayload(
   // walletAvailable: string "998 🌸" hoặc số 998
   let walletAvailable = "";
   if (typeof record.walletAvailable === "string" && record.walletAvailable.trim()) {
-    walletAvailable = record.walletAvailable.trim();
+    walletAvailable = displayFlowerIcon(record.walletAvailable.trim());
   } else if (
     typeof record.walletAvailable === "number" &&
     Number.isFinite(record.walletAvailable)
@@ -524,11 +485,11 @@ function sanitizePurchaseSummaryPayload(
   // cheapestAffordable: string "999 🌸" hoặc object {price: "999 🌸"}
   let cheapestAffordable: string | null = null;
   if (typeof record.cheapestAffordable === "string" && record.cheapestAffordable.trim()) {
-    cheapestAffordable = record.cheapestAffordable.trim();
+    cheapestAffordable = displayFlowerIcon(record.cheapestAffordable.trim());
   } else if (record.cheapestAffordable && typeof record.cheapestAffordable === "object") {
     const obj = record.cheapestAffordable as Record<string, unknown>;
     if (typeof obj.price === "string" && obj.price.trim()) {
-      cheapestAffordable = obj.price.trim();
+      cheapestAffordable = displayFlowerIcon(obj.price.trim());
     } else if (typeof obj.price === "number" && Number.isFinite(obj.price)) {
       cheapestAffordable = `${obj.price} 🌸`;
     }
@@ -540,7 +501,7 @@ function sanitizePurchaseSummaryPayload(
     typeof record.cheapestMissingAmount === "string" &&
     record.cheapestMissingAmount.trim()
   ) {
-    cheapestMissingAmount = record.cheapestMissingAmount.trim();
+    cheapestMissingAmount = displayFlowerIcon(record.cheapestMissingAmount.trim());
   } else if (
     typeof record.cheapestMissingAmount === "number" &&
     record.cheapestMissingAmount > 0
@@ -772,14 +733,9 @@ function expandLooseJsonFromPlainText(text: string): AssistantContentSegment[] {
                 payload: purchaseSummary,
               };
             } else {
-              const quickFacts = sanitizeQuickFactsPayload(parsed);
-              if (quickFacts.length > 0) {
-                structured = { kind: "quick-facts", facts: quickFacts };
-              } else {
-                const actionLinks = sanitizeActionLinksPayload(parsed);
-                if (actionLinks.length > 0) {
-                  structured = { kind: "action-links", links: actionLinks };
-                }
+              const actionLinks = sanitizeActionLinksPayload(parsed);
+              if (actionLinks.length > 0) {
+                structured = { kind: "action-links", links: actionLinks };
               }
             }
           }
@@ -927,6 +883,7 @@ export function parseAssistantContent(
     /```(course-preview|course-compare|payment-action|action-links|quick-facts|purchase-summary|next-steps)\s*([\s\S]*?)```/gi;
   const segments: AssistantContentSegment[] = [];
   let cursor = 0;
+  let droppedStructuredBlock = false;
 
   while (true) {
     const match = re.exec(visibleSource);
@@ -990,15 +947,7 @@ export function parseAssistantContent(
         }
       }
     } else if (blockType === "quick-facts") {
-      const facts = sanitizeQuickFactsPayload(parsed);
-      if (facts.length > 0) {
-        segments.push({ kind: "quick-facts", facts });
-      } else {
-        const rawBlock = visibleSource.slice(start, end).trim();
-        if (rawBlock) {
-          segments.push({ kind: "markdown", content: rawBlock });
-        }
-      }
+      droppedStructuredBlock = true;
     } else if (blockType === "purchase-summary") {
       const payload = sanitizePurchaseSummaryPayload(parsed);
       if (payload) {
@@ -1068,13 +1017,16 @@ export function parseAssistantContent(
   const finalSegments = transformed.length > 0 ? transformed : normalized;
 
   if (finalSegments.length === 0) {
-    if (pendingBlockType) {
+    if (droppedStructuredBlock) {
+      return [];
+    }
+    if (pendingBlockType && pendingBlockType !== "quick-facts") {
       return [{ kind: "structured-loading", blockType: pendingBlockType }];
     }
-    return [{ kind: "markdown", content: visibleSource }];
+    return visibleSource.trim() ? [{ kind: "markdown", content: visibleSource }] : [];
   }
 
-  if (pendingBlockType) {
+  if (pendingBlockType && pendingBlockType !== "quick-facts") {
     finalSegments.push({
       kind: "structured-loading",
       blockType: pendingBlockType,

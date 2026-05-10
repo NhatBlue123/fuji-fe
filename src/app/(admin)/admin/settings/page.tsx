@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
   Infinity,
+  Search,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +26,11 @@ import {
   type AdminSubscriptionPlan,
   type SubscriptionTier,
 } from "@/store/services/admin/subscriptionPlanApi";
+import {
+  useGetAdminUsersQuery,
+  useGrantAdminHoaMutation,
+  type AdminUserDTO,
+} from "@/store/services/adminUserApi";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,14 +82,22 @@ const formatDuration = (days: number) => {
   return `${days} Ngày`;
 };
 
+const formatHoa = (value: number) =>
+  new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+
 function extractErrorMessage(error: unknown, fallback: string) {
   if (typeof error === "object" && error !== null) {
     const candidate = error as {
-      data?: { message?: string };
+      data?: { message?: string; messageKey?: string };
       message?: string;
     };
 
-    return candidate.data?.message || candidate.message || fallback;
+    return (
+      candidate.data?.message ||
+      candidate.data?.messageKey ||
+      candidate.message ||
+      fallback
+    );
   }
 
   return fallback;
@@ -92,8 +106,15 @@ function extractErrorMessage(error: unknown, fallback: string) {
 export default function PaymentPackages() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isHoaGrantOpen, setIsHoaGrantOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] =
     useState<AdminSubscriptionPlan | null>(null);
+  const [hoaSearchTerm, setHoaSearchTerm] = useState("");
+  const [selectedHoaUser, setSelectedHoaUser] = useState<AdminUserDTO | null>(
+    null,
+  );
+  const [hoaGrantAmount, setHoaGrantAmount] = useState("");
+  const [hoaGrantReason, setHoaGrantReason] = useState("prod-test");
 
   const [formData, setFormData] = useState({
     tier: "BASIC" as SubscriptionTier,
@@ -117,6 +138,23 @@ export default function PaymentPackages() {
   const [createPlan, { isLoading: isCreating }] = useCreatePlanMutation();
   const [updatePlan, { isLoading: isUpdating }] = useUpdatePlanMutation();
   const [deletePlan, { isLoading: isDeleting }] = useDeletePlanMutation();
+  const {
+    data: hoaUserPage,
+    isFetching: isSearchingHoaUsers,
+  } = useGetAdminUsersQuery(
+    {
+      page: 0,
+      size: 8,
+      sortBy: "createdAt",
+      sortDir: "desc",
+      keyword: hoaSearchTerm.trim() || undefined,
+    },
+    { skip: !isHoaGrantOpen },
+  );
+  const [grantAdminHoa, { isLoading: isGrantingHoa }] =
+    useGrantAdminHoaMutation();
+
+  const hoaUsers = hoaUserPage?.content ?? [];
 
   const handleEdit = (plan: AdminSubscriptionPlan) => {
     setSelectedPlan(plan);
@@ -166,6 +204,58 @@ export default function PaymentPackages() {
   const handleDeleteClick = (plan: AdminSubscriptionPlan) => {
     setSelectedPlan(plan);
     setIsDeleteModalOpen(true);
+  };
+
+  const resetHoaGrantForm = () => {
+    setHoaSearchTerm("");
+    setSelectedHoaUser(null);
+    setHoaGrantAmount("");
+    setHoaGrantReason("prod-test");
+  };
+
+  const handleHoaGrantOpenChange = (open: boolean) => {
+    setIsHoaGrantOpen(open);
+    if (!open) {
+      resetHoaGrantForm();
+    }
+  };
+
+  const handleHoaGrantSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedHoaUser) {
+      toast.error("Chọn user cần cộng hoa");
+      return;
+    }
+
+    const amountHoa = Number(hoaGrantAmount);
+    if (
+      !Number.isFinite(amountHoa) ||
+      !Number.isInteger(amountHoa) ||
+      amountHoa <= 0
+    ) {
+      toast.error("Số hoa phải là số nguyên lớn hơn 0");
+      return;
+    }
+
+    try {
+      const result = await grantAdminHoa({
+        userId: selectedHoaUser.id,
+        amountHoa,
+        reason: hoaGrantReason.trim() || undefined,
+      }).unwrap();
+
+      toast.success(
+        `Đã cộng ${formatHoa(result.amountHoa)} hoa cho ${
+          result.fullName || result.username
+        }. Số dư mới: ${formatHoa(result.balanceAfterHoa)} hoa`,
+      );
+      setSelectedHoaUser(null);
+      setHoaGrantAmount("");
+      setHoaSearchTerm("");
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error, "Không thể cộng hoa"));
+    }
   };
 
   const confirmDelete = async () => {
@@ -223,7 +313,18 @@ export default function PaymentPackages() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-6">
+      <div className="relative rounded-2xl border bg-card p-6">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Cộng hoa"
+          onClick={() => setIsHoaGrantOpen(true)}
+          className="absolute right-4 top-4 h-9 w-9 rounded-full border border-primary/20 bg-background/90 text-primary opacity-0 shadow-sm transition-opacity hover:opacity-100 focus-visible:opacity-100"
+        >
+          <span className="text-lg leading-none">✿</span>
+        </Button>
+
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           System Admin
         </p>
@@ -421,6 +522,121 @@ export default function PaymentPackages() {
           </Table>
         )}
       </div>
+
+      <Dialog open={isHoaGrantOpen} onOpenChange={handleHoaGrantOpenChange}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Cộng hoa thủ công</DialogTitle>
+            <DialogDescription>
+              Tìm user, nhập số hoa cần cộng và xác nhận giao dịch test.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleHoaGrantSubmit} className="mt-2 space-y-5">
+            <div className="space-y-2">
+              <Label>Tìm user</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={hoaSearchTerm}
+                  onChange={(e) => setHoaSearchTerm(e.target.value)}
+                  placeholder="Email, username hoặc tên"
+                  className="pl-9"
+                />
+                {isSearchingHoaUsers && (
+                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                )}
+              </div>
+            </div>
+
+            <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+              {hoaUsers.map((user) => {
+                const isSelected = selectedHoaUser?.id === user.id;
+
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => setSelectedHoaUser(user)}
+                    className={`w-full rounded-xl border p-3 text-left transition ${
+                      isSelected
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-background hover:bg-muted/60"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {user.fullName || user.username}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          @{user.username} · {user.email}
+                        </p>
+                      </div>
+                      <Badge variant={isSelected ? "default" : "outline"}>
+                        {user.role}
+                      </Badge>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {!isSearchingHoaUsers && hoaUsers.length === 0 && (
+                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                  Không tìm thấy user phù hợp.
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Số hoa cộng</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={hoaGrantAmount}
+                  onChange={(e) => setHoaGrantAmount(e.target.value)}
+                  placeholder="VD: 3000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ghi chú</Label>
+                <Input
+                  value={hoaGrantReason}
+                  onChange={(e) => setHoaGrantReason(e.target.value)}
+                  maxLength={180}
+                  placeholder="prod-test"
+                />
+              </div>
+            </div>
+
+            {selectedHoaUser && (
+              <div className="rounded-xl border bg-muted/40 p-3 text-sm">
+                <span className="font-semibold">Đích cộng:</span>{" "}
+                {selectedHoaUser.fullName || selectedHoaUser.username} ·{" "}
+                {selectedHoaUser.email}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleHoaGrantOpenChange(false)}
+              >
+                Hủy
+              </Button>
+              <Button type="submit" disabled={isGrantingHoa}>
+                {isGrantingHoa && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Cộng hoa
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">

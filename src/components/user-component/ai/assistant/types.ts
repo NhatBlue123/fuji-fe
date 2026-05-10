@@ -1,5 +1,3 @@
-import type { AssistantMessage } from "../shared";
-
 export type CoursePreviewItem = {
   id: number;
   title: string;
@@ -44,14 +42,6 @@ export type ActionLinkItem = {
   cta?: string;
 };
 
-export type QuickFactItem = {
-  label: string;
-  value: string;
-  note?: string;
-  icon?: string;
-  tone?: "primary" | "sky" | "emerald" | "amber" | "rose" | "slate";
-};
-
 export type NextStepItem = {
   label: string;
   url: string;
@@ -87,7 +77,6 @@ export type AssistantContentSegment =
   | { kind: "course-compare"; payload: CourseComparePayload }
   | { kind: "payment-action"; payload: PaymentActionPayload }
   | { kind: "action-links"; links: ActionLinkItem[] }
-  | { kind: "quick-facts"; facts: QuickFactItem[] }
   | { kind: "purchase-summary"; payload: PurchaseSummaryPayload }
   | { kind: "next-steps"; payload: NextStepsPayload }
   | { kind: "structured-loading"; blockType: StructuredBlockType };
@@ -107,8 +96,3 @@ export type AssistantQueuedInfo = {
   jobId?: string;
 } | null;
 
-export type AssistantConversationSnapshot = {
-  messages: AssistantMessage[];
-  hasMore: boolean;
-  nextBeforeId: number | null;
-};

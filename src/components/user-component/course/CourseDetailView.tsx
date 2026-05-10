@@ -33,8 +33,6 @@ import { LikeButton } from "./LikeButton";
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1200&auto=format&fit=crop";
 
-const BLOSSOM_RATE = 1000;
-
 function normalizePrice(price: unknown): number {
   const value = Number(price ?? 0);
   return Number.isFinite(value) ? value : 0;
@@ -44,13 +42,15 @@ function isFreePrice(price: unknown): boolean {
   return normalizePrice(price) <= 0;
 }
 
-function toBlossomAmount(price: unknown): number {
-  return Math.floor(normalizePrice(price) / BLOSSOM_RATE);
-}
-
 function formatPrice(price: unknown): string {
   if (isFreePrice(price)) return "Miễn phí";
-  return `${toBlossomAmount(price).toLocaleString("vi-VN")} 🌸`;
+  return `${normalizePrice(price).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
+}
+
+function formatHoaAmount(amount: unknown): string {
+  const value = Number(amount ?? 0);
+  const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+  return `${safeValue.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
 }
 
 function formatDuration(minutes: number): string {
@@ -1334,11 +1334,11 @@ export default function CourseDetailView({
                     <div className="space-y-0.5">
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                          {appliedCoupon.finalPrice === 0 ? t("auto.courseDetail_88") : `${appliedCoupon.finalPrice} 🌸`}
+                          {appliedCoupon.finalPrice === 0 ? t("auto.courseDetail_88") : formatHoaAmount(appliedCoupon.finalPrice)}
                         </span>
                         <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                           {appliedCoupon.discountType === "FIXED_AMOUNT"
-                            ? `−${appliedCoupon.discountAmount} 🌸`
+                            ? `−${formatHoaAmount(appliedCoupon.discountAmount)}`
                             : `−${appliedCoupon.discountPercent}%`}
                         </span>
                       </div>
@@ -1516,7 +1516,7 @@ export default function CourseDetailView({
                         </span>
                         <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
                           {appliedCoupon.discountType === "FIXED_AMOUNT"
-                            ? `−${appliedCoupon.discountAmount} 🌸`
+                            ? `−${formatHoaAmount(appliedCoupon.discountAmount)}`
                             : `−${appliedCoupon.discountPercent}%`}
                         </span>
                       </div>
@@ -1534,19 +1534,19 @@ export default function CourseDetailView({
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{t("auto.courseDetail_67")}</span>
                         <span className="line-through text-muted-foreground">
-                          {appliedCoupon.originalPrice} 🌸
+                          {formatHoaAmount(appliedCoupon.originalPrice)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-emerald-600 dark:text-emerald-400">{t("auto.courseDetail_68")}</span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          −{appliedCoupon.discountAmount} 🌸
+                          −{formatHoaAmount(appliedCoupon.discountAmount)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between border-t border-emerald-400/25 pt-1.5">
                         <span className="font-bold text-foreground">{t("auto.courseDetail_69")}</span>
                         <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                          {appliedCoupon.finalPrice === 0 ? t("auto.courseDetail_88") : `${appliedCoupon.finalPrice} 🌸`}
+                          {appliedCoupon.finalPrice === 0 ? t("auto.courseDetail_88") : formatHoaAmount(appliedCoupon.finalPrice)}
                         </span>
                       </div>
                     </div>

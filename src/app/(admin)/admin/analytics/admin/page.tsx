@@ -140,11 +140,14 @@ type OverallFinance = {
   cashInVnd: number;
   cashOutVnd: number;
   cashOnHandVnd: number;
+  teacherOwnedHoa: number;
   teacherGrossDebtVnd: number;
   teacherNetDebtVnd: number;
   platformFeeReserveVnd: number;
   estimatedProfitVnd: number;
+  userPrepaidHoa: number;
   userPrepaidVnd: number;
+  adminInternalHoa: number;
   adminHoaVnd: number;
   pendingWithdrawVnd: number;
   processingWithdrawVnd: number;
@@ -781,14 +784,14 @@ function KpiGrid({ overallFinance }: { overallFinance: OverallFinance }) {
         icon={<ArrowUpRight className="h-4 w-4" />}
         label="Tổng nạp thành công"
         value={formatVND(overallFinance.cashInVnd)}
-        helper="Dòng tiền vào đã ghi nhận"
+        helper="Tiền bank từ XGate"
         tone="emerald"
       />
       <KpiCard
         icon={<ArrowDownRight className="h-4 w-4" />}
         label="Đã rút giáo viên"
         value={formatVND(overallFinance.cashOutVnd)}
-        helper="Dòng tiền ra đã chuyển"
+        helper="Tiền bank đã chuyển"
         tone="rose"
       />
       <KpiCard
@@ -949,7 +952,7 @@ function FormulaCard({
           Công thức lợi nhuận
         </CardTitle>
         <CardDescription>
-          Công nợ không lấy từ chiết khấu booking/course nữa, mà lấy từ hoa giáo viên đang sở hữu sau phí sàn.
+          Nạp/rút là VND từ ngân hàng. Ví, khóa học và công nợ là hoa nội bộ, chỉ quy đổi 1 hoa = 1.000đ khi tính nghĩa vụ chi trả.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 p-6">
@@ -988,7 +991,8 @@ function FormulaCard({
             />
             <MiniMetric
               label="Dư hoa học viên"
-              value={formatVND(overallFinance.userPrepaidVnd)}
+              value={formatHoa(overallFinance.userPrepaidHoa)}
+              helper={`Quy đổi ${formatVND(overallFinance.userPrepaidVnd)}`}
             />
           </div>
         </div>
@@ -1023,7 +1027,7 @@ function WalletInventoryCard({
           Hoa tồn đọng
         </CardTitle>
         <CardDescription>
-          Admin, giáo viên và user đều được hiển thị rõ trong tổng hoa hệ thống.
+          Số chính là hoa đang nằm trong ví hệ thống; dòng ≈ chỉ là quy đổi VND để đối soát.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 p-6">
@@ -1455,13 +1459,24 @@ function InventoryRow({
   );
 }
 
-function MiniMetric({ label, value }: { label: string; value: string }) {
+function MiniMetric({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+}) {
   return (
     <div className="rounded-lg border bg-background/80 p-3">
       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
         {label}
       </p>
       <p className="mt-1 text-sm font-black">{value}</p>
+      {helper ? (
+        <p className="mt-1 text-xs font-semibold text-muted-foreground">{helper}</p>
+      ) : null}
     </div>
   );
 }
@@ -1999,7 +2014,10 @@ function buildOverallFinance({
   liabilityEstimate: LiabilityEstimateSummary;
   platformFeePercent: number;
 }): OverallFinance {
-  const teacherGrossDebtVnd = hoaToVnd(liabilityEstimate.teacherOwnedHoa ?? 0);
+  const teacherOwnedHoa = liabilityEstimate.teacherOwnedHoa ?? 0;
+  const userPrepaidHoa = liabilityEstimate.userPrepaidHoa ?? 0;
+  const adminInternalHoa = liabilityEstimate.adminInternalHoa ?? 0;
+  const teacherGrossDebtVnd = hoaToVnd(teacherOwnedHoa);
   const teacherNetDebtVnd = applyPlatformFee(teacherGrossDebtVnd, platformFeePercent);
   const platformFeeReserveVnd = teacherGrossDebtVnd - teacherNetDebtVnd;
   const cashInVnd = cashRevenue.grossTopupVnd ?? 0;
@@ -2008,11 +2026,14 @@ function buildOverallFinance({
     cashInVnd,
     cashOutVnd,
     cashOnHandVnd: cashInVnd - cashOutVnd,
+    teacherOwnedHoa,
     teacherGrossDebtVnd,
     teacherNetDebtVnd,
     platformFeeReserveVnd,
     estimatedProfitVnd: cashInVnd - teacherNetDebtVnd - cashOutVnd,
+    userPrepaidHoa,
     userPrepaidVnd: liabilityEstimate.userPrepaidVndEquivalent ?? 0,
+    adminInternalHoa,
     adminHoaVnd: liabilityEstimate.adminInternalVndEquivalent ?? 0,
     pendingWithdrawVnd: liabilityEstimate.pendingWithdrawalVnd ?? 0,
     processingWithdrawVnd: liabilityEstimate.processingWithdrawalVnd ?? 0,
@@ -2341,11 +2362,14 @@ function summarizeFinancialRows(rows: FinancialChartRow[]): OverallFinance & { g
       cashInVnd: sum.cashInVnd + row.revenueVnd,
       cashOutVnd: sum.cashOutVnd + row.withdrawnVnd,
       cashOnHandVnd: sum.cashOnHandVnd + row.revenueVnd - row.withdrawnVnd,
+      teacherOwnedHoa: sum.teacherOwnedHoa,
       teacherGrossDebtVnd: sum.teacherGrossDebtVnd + row.teacherDebtVnd,
       teacherNetDebtVnd: sum.teacherNetDebtVnd + row.teacherDebtVnd,
       platformFeeReserveVnd: sum.platformFeeReserveVnd,
       estimatedProfitVnd: sum.estimatedProfitVnd + row.estimatedProfitVnd,
+      userPrepaidHoa: 0,
       userPrepaidVnd: 0,
+      adminInternalHoa: 0,
       adminHoaVnd: 0,
       pendingWithdrawVnd: 0,
       processingWithdrawVnd: 0,
@@ -2355,11 +2379,14 @@ function summarizeFinancialRows(rows: FinancialChartRow[]): OverallFinance & { g
       cashInVnd: 0,
       cashOutVnd: 0,
       cashOnHandVnd: 0,
+      teacherOwnedHoa: 0,
       teacherGrossDebtVnd: 0,
       teacherNetDebtVnd: 0,
       platformFeeReserveVnd: 0,
       estimatedProfitVnd: 0,
+      userPrepaidHoa: 0,
       userPrepaidVnd: 0,
+      adminInternalHoa: 0,
       adminHoaVnd: 0,
       pendingWithdrawVnd: 0,
       processingWithdrawVnd: 0,
@@ -2450,7 +2477,9 @@ function exportAdminAnalyticsCsv({
     ["teacher_gross_debt_vnd", String(overallFinance.teacherGrossDebtVnd)],
     ["teacher_net_debt_vnd", String(overallFinance.teacherNetDebtVnd)],
     ["estimated_profit_vnd", String(overallFinance.estimatedProfitVnd)],
+    ["user_prepaid_hoa", String(overallFinance.userPrepaidHoa)],
     ["user_prepaid_vnd", String(overallFinance.userPrepaidVnd)],
+    ["admin_internal_hoa", String(overallFinance.adminInternalHoa)],
     ["admin_internal_vnd", String(overallFinance.adminHoaVnd)],
     [],
     ["period", "revenue_vnd", "withdrawn_vnd", "teacher_debt_vnd", "estimated_profit_vnd", "gross_trading_vnd"],

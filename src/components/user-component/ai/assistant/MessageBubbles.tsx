@@ -12,7 +12,6 @@ import {
   NextStepsCard,
   PaymentActionCard,
   PurchaseSummaryCard,
-  QuickFactsCard,
   StructuredLoadingCard,
 } from "./StructuredCards";
 import type { AssistantQueuedInfo, ParseAssistantContentFn } from "./types";
@@ -129,11 +128,6 @@ export function AiMessageBubble({
                       <ActionLinksCard
                         key={`links-${msg.id}-${idx}`}
                         links={segment.links}
-                      />
-                    ) : segment.kind === "quick-facts" ? (
-                      <QuickFactsCard
-                        key={`facts-${msg.id}-${idx}`}
-                        facts={segment.facts}
                       />
                     ) : segment.kind === "purchase-summary" ? (
                       <PurchaseSummaryCard

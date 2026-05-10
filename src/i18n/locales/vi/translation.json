@@ -87,7 +87,7 @@
       "availableDiscountCodes": "Mã giảm giá đang dùng được",
       "systemPackages": "Gói hệ thống",
       "currentWallet": "Ví hiện tại",
-      "blossom": "hoa",
+      "blossom": "🌸",
       "imageBundle": "Gói lượt ảnh",
       "imageBundles": "Gói lượt ảnh",
       "imageUsage": "lượt ảnh",
@@ -137,11 +137,11 @@
       "imageRemainingToday": "Còn {{count}} lượt ảnh hôm nay",
       "imageUsageExhausted": "Bạn đã hết lượt ảnh hôm nay. Mua thêm gói ảnh hoặc nâng cấp gói để tiếp tục dùng hình ảnh.",
       "imageSearchOverflow": "Bạn còn {{remaining}} lượt ảnh, nhưng có {{readyCount}} từ đang chờ tìm ảnh. Một số từ có thể không tìm được ảnh nếu vượt lượt dùng.",
-      "imageBundleDescription": "Gói này cộng thêm lượt tìm và lưu ảnh, không trừ hoa từng ảnh riêng lẻ.",
+      "imageBundleDescription": "Gói này cộng thêm lượt tìm và lưu ảnh, không trừ 🌸 từng ảnh riêng lẻ.",
       "imageBundleUnavailable": "Hiện chưa có gói ảnh nào đang mở bán.",
       "buyImageBundleSuccess": "Đã mua gói lượt ảnh.",
       "buyImageBundleFailed": "Không thể mua gói ảnh lúc này.",
-      "walletNotEnough": "Ví hoa không đủ để mua gói này.",
+      "walletNotEnough": "Ví 🌸 không đủ để mua gói này.",
       "systemPackageDescription": "Gói mở quota và mã giảm giá, không tự mua khóa học hoặc đặt lịch.",
       "durationDays": "Thời hạn {{days}} ngày",
       "adminNoPackage": "Quản trị viên chưa mở bán gói nào.",
@@ -157,14 +157,14 @@
       "amountToPay": "Cần thanh toán",
       "walletAfterPayment": "Ví sau thanh toán",
       "willReceive": "Bạn sẽ nhận",
-      "notEnoughForPackage": "Ví của bạn không đủ hoa để mua gói này.",
+      "notEnoughForPackage": "Ví của bạn không đủ 🌸 để mua gói này.",
       "downgradeBlockedShort": "Bạn đã đăng ký gói lớn hơn gói này. Vui lòng tham khảo chính sách.",
       "upgradeCreditPolicyApplied": "Bạn dùng gói hiện tại dưới {{days}} ngày nên được áp dụng 50% giá gói hiện tại vào lần nâng cấp này.",
       "upgradeCreditPolicyExpired": "Bạn đã dùng gói hiện tại {{usedDays}} ngày. Từ {{days}} ngày trở lên, gói cũ sẽ bị hủy khi nâng cấp và không có credit.",
       "emptyDiscountCodes": "Không có mã giảm giá trong mục này.",
       "discountCodeCopied": "Đã sao chép mã giảm giá",
       "discountPercent": "Giảm {{value}}%",
-      "discountBlossom": "Giảm {{value}} hoa",
+      "discountBlossom": "Giảm {{value}} 🌸",
       "remainingUsage": "Còn {{remaining}}/{{total}} lượt",
       "remainingSingleUsage": "Còn {{remaining}} lượt",
       "noExpiry": "Không giới hạn hạn dùng",
@@ -175,7 +175,7 @@
       "enterDiscountCode": "Nhập mã giảm giá",
       "invalidDiscountCode": "Mã không hợp lệ",
       "discountAppliedToTotal": "Mã đã được trừ vào tổng thanh toán; giáo viên chịu phần ưu đãi này.",
-      "bookingHoldPolicy": "Số hoa này sẽ được giữ cho đến khi buổi học hoàn tất hoặc bị hủy theo chính sách.",
+      "bookingHoldPolicy": "Số 🌸 này sẽ được giữ cho đến khi buổi học hoàn tất hoặc bị hủy theo chính sách.",
       "confirmPayment": "Xác nhận thanh toán",
       "chatEmpty": "Bạn đã hết lượt trò chuyện hôm nay.",
       "chatLow": "Bạn còn {{count}} lượt trò chuyện hôm nay.",
@@ -424,11 +424,11 @@
     "subscribeSuccess": "Nâng cấp gói thành công",
     "adminConfirmSuccess": "Admin đã xác nhận thanh toán thành công",
     "fetchHistorySuccess": "Lấy lịch sử giao dịch thành công",
-    "invalidAmount": "Số hoa nạp phải lớn hơn 0",
-    "topupSuccessTitle": "Nạp hoa thành công",
-    "topupSuccessContent": "Bạn vừa nạp thành công hoa vào ví.",
-    "topupSuccessTitleAdmin": "Nạp hoa thành công (Admin)",
-    "topupSuccessContentAdmin": "Admin đã xác nhận nạp thành công hoa vào ví của bạn.",
+    "invalidAmount": "Số 🌸 nạp phải lớn hơn 0",
+    "topupSuccessTitle": "Nạp 🌸 thành công",
+    "topupSuccessContent": "Bạn vừa nạp thành công 🌸 vào ví.",
+    "topupSuccessTitleAdmin": "Nạp 🌸 thành công (Admin)",
+    "topupSuccessContentAdmin": "Admin đã xác nhận nạp thành công 🌸 vào ví của bạn.",
     "status": {
       "pending": "Đang chờ xử lý",
       "success": "Giao dịch thành công",
@@ -444,8 +444,8 @@
     "backToPayment": "Quay lại thanh toán",
     "allBanksSupport": "Hỗ trợ hơn 40+ ngân hàng Việt Nam",
     "manualCheck": "Bạn đã chuyển tiền nhưng chưa thấy cập nhật? Nhấn để kiểm tra ngay",
-    "paymentTitle": "Thanh toán nạp hoa",
-    "payoutDesc": "Vui lòng thực hiện chuyển khoản chính xác nội dung bên dưới để hệ thống tự động cộng hoa.",
+    "paymentTitle": "Thanh toán nạp 🌸",
+    "payoutDesc": "Vui lòng thực hiện chuyển khoản chính xác nội dung bên dưới để hệ thống tự động cộng 🌸.",
     "requiredContent": "Nội dung chuyển khoản bắt buộc",
     "confirmedVia": "Xác nhận qua {{source}}",
     "waitingSocket": "Đang chờ xác nhận từ ngân hàng...",
@@ -453,12 +453,12 @@
     "cancelTransaction": "Hủy giao dịch",
     "bank": "Ngân hàng",
     "accountHolder": "Chủ tài khoản",
-    "amountNeeded": "Số hoa cần nạp",
+    "amountNeeded": "Số 🌸 cần nạp",
     "actualTransferAmount": "Số tiền chuyển",
     "successPopupKicker": "Đã xác nhận tự động",
     "successPopupTitle": "Thanh toán thành công",
-    "successPopupDesc": "Hoa đã được cộng vào ví. Bạn vẫn ở trang hiện tại để tiếp tục thao tác.",
-    "successPopupFlowers": "Hoa đã nạp",
+    "successPopupDesc": "🌸 đã được cộng vào ví. Bạn vẫn ở trang hiện tại để tiếp tục thao tác.",
+    "successPopupFlowers": "🌸 đã nạp",
     "successPopupVnd": "Số tiền chuyển",
     "successPopupAutoClose": "Popup tự đóng sau 5 giây",
     "successPopupClose": "Đóng thông báo"
@@ -828,7 +828,7 @@
       "reading": "Reading"
     },
     "topic": "Chủ đề",
-    "tuition": "Học phí (Hoa)",
+    "tuition": "Học phí (🌸)",
     "conversion": "Quy đổi",
     "btn": {
       "save": "Lưu lịch rảnh"
@@ -1015,13 +1015,13 @@
     "upgradePremium": "Nâng cấp 🚀 PREMIUM (AI)",
     "upgradePro": "Nâng cấp 🌟 PRO",
     "loadingPricing": "Đang tải bảng giá...",
-    "currencyPerMonth": "hoa / tháng",
+    "currencyPerMonth": "🌸 / tháng",
     "confirmUpgradeTitle": "Xác nhận nâng cấp",
     "currentPackageDesc": "Bạn đang dùng gói",
     "stackDesc": "Sẽ được cộng dồn thời gian sử dụng.",
     "currentExpiry": "Hạn hiện tại:",
     "newExpiry": "Sau khi mua:",
-    "deductDesc": "Hệ thống sẽ trừ {{amount}} hoa của bạn.",
+    "deductDesc": "Hệ thống sẽ trừ {{amount}} 🌸 của bạn.",
     "confirmQuestion": "Nâng cấp gói {{name}}?",
     "tiers": {
       "experience": "Trải nghiệm",
@@ -1081,25 +1081,25 @@
       "choosePackage": "Chọn gói nạp",
       "creatingOrder": "Đang tạo đơn...",
       "payWithQR": "Nạp ngay bằng VietQR",
-      "subtitle": "Chọn số hoa cần nạp, hệ thống sẽ tạo QR chuyển khoản đúng số tiền.",
-      "rateLine": "1 hoa = 1.000đ",
+      "subtitle": "Chọn số 🌸 cần nạp, hệ thống sẽ tạo QR chuyển khoản đúng số tiền.",
+      "rateLine": "1 🌸 = 1.000đ",
       "selectedPackage": "Gói đang chọn",
-      "receiveAmount": "Hoa nhận",
+      "receiveAmount": "🌸 nhận",
       "transferAmount": "Số tiền chuyển khoản",
       "checkoutTitle": "Tạo thanh toán",
       "secureVietQr": "VietQR tự động đối soát",
       "noPackageSelected": "Chưa chọn",
-      "packageBase": "Hoa gốc",
+      "packageBase": "🌸 gốc",
       "totalReceive": "Tổng nhận",
-      "bonusFlowers": "Tặng {{count}} hoa",
+      "bonusFlowers": "Tặng {{count}} 🌸",
       "autoMatchTitle": "Đối soát tự động",
-      "autoMatchDesc": "QR đã có số tiền và mã đơn hàng, ví sẽ cộng hoa khi giao dịch được xác nhận."
+      "autoMatchDesc": "QR đã có số tiền và mã đơn hàng, ví sẽ cộng 🌸 khi giao dịch được xác nhận."
     },
     "modal": {
       "title": "Nâng cấp tài khoản",
-      "description": "Nâng cấp gói Premium hoặc nạp hoa anh đào",
+      "description": "Nâng cấp gói Premium hoặc nạp 🌸",
       "tabPremium": "Nâng cấp Premium",
-      "tabTopup": "Nạp Hoa Anh Đào"
+      "tabTopup": "Nạp 🌸"
     }
   },
   "wallet": {
@@ -1156,15 +1156,15 @@
     "table": {
       "id": "Mã giao dịch",
       "type": "Loại",
-      "amount": "Số tiền",
+      "amount": "Số 🌸",
       "balanceAfter": "Số dư còn lại",
       "status": "Trạng thái",
       "time": "Thời gian",
       "note": "Ghi chú"
     },
     "types": {
-      "deposit": "Nạp tiền",
-      "withdraw": "Rút tiền",
+      "deposit": "Nạp 🌸",
+      "withdraw": "Rút 🌸",
       "spending": "Chi tiêu",
       "reward": "Thưởng"
     },
@@ -2154,7 +2154,7 @@
         "editPrice": "Cập nhật giá khóa học"
       },
       "label": {
-        "newPrice": "Giá mới (VND)"
+        "newPrice": "Giá mới (🌸)"
       }
     },
     "vocab": {
@@ -2235,7 +2235,7 @@
         "bankName": "Ngân hàng",
         "accountNumber": "Số tài khoản",
         "accountHolder": "Chủ tài khoản",
-        "amountBlossom": "Số hoa",
+        "amountBlossom": "Số 🌸",
         "amountVnd": "Số tiền chuyển",
         "info": "Nội dung"
       },

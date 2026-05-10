@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useMemo, useState } from "react";
 import {
   useCreateCourseDiscountMutation,
@@ -67,9 +68,8 @@ import { useTranslation } from "react-i18next";
 import { skipToken } from "@reduxjs/toolkit/query";
 import {
   CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
+  Bar,
+  BarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -85,6 +85,8 @@ interface CourseFinanceWorkspaceProps {
 
 const PAGE_SIZE = 10;
 const CHART_LIMIT = 12;
+const DEFAULT_COURSE_THUMBNAIL =
+  "https://i.postimg.cc/LXt5Hbnf/image.png";
 
 type SalesTier = "hot" | "medium" | "low";
 
@@ -92,9 +94,10 @@ interface RevenueChartPoint {
   courseId: number;
   courseTitle: string;
   courseLabel: string;
-  hotRevenue: number | null;
-  mediumRevenue: number | null;
-  lowRevenue: number | null;
+  salesCount: number;
+  totalRevenue: number;
+  studentCount: number;
+  totalTransactions: number;
 }
 
 function getSalesTier(value: number, min: number, max: number): SalesTier {
@@ -136,6 +139,13 @@ function formatCurrency(value: number, lang: string): string {
   return `${new Intl.NumberFormat(lang === "vi" ? "vi-VN" : lang, {
     maximumFractionDigits: 2,
   }).format(Number.isFinite(amount) ? amount : 0)} 🌸`;
+}
+
+function formatCompactNumber(value: number, lang: string): string {
+  return new Intl.NumberFormat(lang === "vi" ? "vi-VN" : lang, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Number.isFinite(value) ? value : 0);
 }
 
 function formatDateTime(value?: string | null, lang?: string): string {
@@ -253,37 +263,37 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
 
   const totalPages = pageData?.totalPages ?? 1;
 
-  const { revenueChartData, revenueTierByCourseId } = useMemo(() => {
+  const { bestSellingChartData, topRevenueChartData, salesTierByCourseId } =
+    useMemo(() => {
     const sourceCourses = chartSourceData?.content ?? [];
     if (!sourceCourses.length) {
       return {
-        revenueChartData: [] as RevenueChartPoint[],
-        revenueTierByCourseId: new Map<number, SalesTier>(),
+        bestSellingChartData: [] as RevenueChartPoint[],
+        topRevenueChartData: [] as RevenueChartPoint[],
+        salesTierByCourseId: new Map<number, SalesTier>(),
       };
     }
 
-    const revenues = sourceCourses.map((course) =>
-      Number(course.totalRevenue ?? 0),
+    const salesCounts = sourceCourses.map((course) =>
+      Number(course.totalTransactions ?? 0) || Number(course.studentCount ?? 0),
     );
-    const minRevenue = Math.min(...revenues);
-    const maxRevenue = Math.max(...revenues);
+    const minSales = Math.min(...salesCounts);
+    const maxSales = Math.max(...salesCounts);
 
     const tierMap = new Map<number, SalesTier>();
     sourceCourses.forEach((course) => {
-      const revenue = Number(course.totalRevenue ?? 0);
+      const salesCount =
+        Number(course.totalTransactions ?? 0) || Number(course.studentCount ?? 0);
       tierMap.set(
         course.courseId,
-        getSalesTier(revenue, minRevenue, maxRevenue),
+        getSalesTier(salesCount, minSales, maxSales),
       );
     });
 
-    const topCourses = [...sourceCourses]
-      .sort((a, b) => Number(b.totalRevenue ?? 0) - Number(a.totalRevenue ?? 0))
-      .slice(0, CHART_LIMIT);
-
-    const chartData = topCourses.map((course) => {
+    const toChartPoint = (course: CourseFinanceCourse): RevenueChartPoint => {
       const revenue = Number(course.totalRevenue ?? 0);
-      const tier = tierMap.get(course.courseId) ?? "medium";
+      const totalTransactions = Number(course.totalTransactions ?? 0);
+      const studentCount = Number(course.studentCount ?? 0);
       const shortTitle =
         course.title.length > 24
           ? `${course.title.slice(0, 24).trim()}...`
@@ -293,17 +303,33 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
         courseId: course.courseId,
         courseTitle: course.title,
         courseLabel: shortTitle,
-        hotRevenue: tier === "hot" ? revenue : null,
-        mediumRevenue: tier === "medium" ? revenue : null,
-        lowRevenue: tier === "low" ? revenue : null,
+        salesCount: totalTransactions || studentCount,
+        totalRevenue: revenue,
+        studentCount,
+        totalTransactions,
       };
-    });
+    };
+
+    const bestSellingChartData = [...sourceCourses]
+      .sort((a, b) => {
+        const salesA = Number(a.totalTransactions ?? 0) || Number(a.studentCount ?? 0);
+        const salesB = Number(b.totalTransactions ?? 0) || Number(b.studentCount ?? 0);
+        return salesB - salesA;
+      })
+      .slice(0, CHART_LIMIT)
+      .map(toChartPoint);
+
+    const topRevenueChartData = [...sourceCourses]
+      .sort((a, b) => Number(b.totalRevenue ?? 0) - Number(a.totalRevenue ?? 0))
+      .slice(0, CHART_LIMIT)
+      .map(toChartPoint);
 
     return {
-      revenueChartData: chartData,
-      revenueTierByCourseId: tierMap,
+      bestSellingChartData,
+      topRevenueChartData,
+      salesTierByCourseId: tierMap,
     };
-  }, [chartSourceData]);
+    }, [chartSourceData]);
 
   const pageTitle = isAdminPage
     ? t("admin.finance.title.admin")
@@ -664,105 +690,207 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t("admin.finance.tier.hot")}
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                {t("admin.finance.chart.salesMetric")}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> {t("admin.finance.tier.medium")}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> {t("admin.finance.tier.low")}
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                {t("admin.finance.chart.revenueMetric")}
               </span>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[360px] w-full min-h-[360px] min-w-0">
-            {revenueChartData.length > 0 ? (
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-                minWidth={0}
-                minHeight={0}
-              >
-                <LineChart
-                  data={revenueChartData}
-                  margin={{ top: 16, right: 20, left: 8, bottom: 20 }}
-                  key={`chart-${revenueChartData.length}`}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="courseLabel"
-                    tickLine={false}
-                    axisLine={false}
-                    interval={0}
-                    angle={-18}
-                    textAnchor="end"
-                    height={70}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    width={66}
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) =>
-                      formatCompactCurrency(Number(value ?? 0), lang)
-                    }
-                  />
-                  <Tooltip
-                    formatter={(
-                      value: number | string | undefined,
-                      name: string | number | undefined,
-                    ) => [formatCurrency(Number(value ?? 0), lang), String(name)]}
-                    labelFormatter={(_label, payload) =>
-                      payload?.[0]?.payload?.courseTitle || t("admin.finance.table.course")
-                    }
-                    contentStyle={{
-                      borderRadius: 10,
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--background))",
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="hotRevenue"
-                    name={t("admin.finance.tier.hot")}
-                    stroke="#22c55e"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    connectNulls={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="mediumRevenue"
-                    name={t("admin.finance.tier.medium")}
-                    stroke="#f59e0b"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    connectNulls={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="lowRevenue"
-                    name={t("admin.finance.tier.low")}
-                    stroke="#f43f5e"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-                {fetchingChartData
-                  ? t("admin.finance.chart.loading")
-                  : t("admin.finance.chart.noData")}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-lg border p-4">
+              <div className="mb-4">
+                <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("admin.finance.chart.bestSelling")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("admin.finance.chart.bestSellingDesc")}
+                </p>
               </div>
-            )}
+              <div className="h-[320px] w-full min-w-0">
+                {bestSellingChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <BarChart
+                      data={bestSellingChartData}
+                      margin={{ top: 10, right: 10, left: -12, bottom: 32 }}
+                      key={`sales-chart-${bestSellingChartData.length}`}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        strokeOpacity={0.05}
+                      />
+                      <XAxis
+                        dataKey="courseLabel"
+                        axisLine
+                        tickLine={false}
+                        interval={0}
+                        angle={-18}
+                        textAnchor="end"
+                        height={62}
+                        tick={{
+                          fontSize: 10,
+                          fill: "hsl(var(--muted-foreground))",
+                          fontWeight: 600,
+                        }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        width={56}
+                        tick={{
+                          fontSize: 10,
+                          fill: "hsl(var(--muted-foreground))",
+                          fontWeight: 600,
+                        }}
+                        tickFormatter={(value) =>
+                          formatCompactNumber(Number(value ?? 0), lang)
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value) => [
+                          `${Number(value ?? 0).toLocaleString(
+                            lang === "vi" ? "vi-VN" : lang,
+                          )} ${t("admin.finance.chart.salesUnit")}`,
+                          t("admin.finance.chart.salesMetric"),
+                        ]}
+                        labelFormatter={(_label, payload) =>
+                          payload?.[0]?.payload?.courseTitle ||
+                          t("admin.finance.table.course")
+                        }
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "1px solid hsl(var(--border))",
+                          boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                          padding: "12px",
+                        }}
+                        labelStyle={{
+                          fontWeight: 800,
+                          color: "hsl(var(--foreground))",
+                          marginBottom: "8px",
+                          fontSize: "12px",
+                        }}
+                        itemStyle={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          padding: "2px 0",
+                        }}
+                      />
+                      <Bar
+                        dataKey="salesCount"
+                        fill="#3b82f6"
+                        radius={[6, 6, 0, 0]}
+                        barSize={28}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                    {fetchingChartData
+                      ? t("admin.finance.chart.loading")
+                      : t("admin.finance.chart.noData")}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="mb-4">
+                <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("admin.finance.chart.highestRevenue")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("admin.finance.chart.highestRevenueDesc")}
+                </p>
+              </div>
+              <div className="h-[320px] w-full min-w-0">
+                {topRevenueChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <BarChart
+                      data={topRevenueChartData}
+                      margin={{ top: 10, right: 10, left: 4, bottom: 32 }}
+                      key={`revenue-chart-${topRevenueChartData.length}`}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        strokeOpacity={0.05}
+                      />
+                      <XAxis
+                        dataKey="courseLabel"
+                        axisLine
+                        tickLine={false}
+                        interval={0}
+                        angle={-18}
+                        textAnchor="end"
+                        height={62}
+                        tick={{
+                          fontSize: 10,
+                          fill: "hsl(var(--muted-foreground))",
+                          fontWeight: 600,
+                        }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        width={70}
+                        tick={{
+                          fontSize: 10,
+                          fill: "hsl(var(--muted-foreground))",
+                          fontWeight: 600,
+                        }}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(Number(value ?? 0), lang)
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value) => [
+                          formatCurrency(Number(value ?? 0), lang),
+                          t("admin.finance.chart.revenueMetric"),
+                        ]}
+                        labelFormatter={(_label, payload) =>
+                          payload?.[0]?.payload?.courseTitle ||
+                          t("admin.finance.table.course")
+                        }
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "1px solid hsl(var(--border))",
+                          boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                          padding: "12px",
+                        }}
+                        labelStyle={{
+                          fontWeight: 800,
+                          color: "hsl(var(--foreground))",
+                          marginBottom: "8px",
+                          fontSize: "12px",
+                        }}
+                        itemStyle={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          padding: "2px 0",
+                        }}
+                      />
+                      <Bar
+                        dataKey="totalRevenue"
+                        fill="#10b981"
+                        radius={[6, 6, 0, 0]}
+                        barSize={28}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                    {fetchingChartData
+                      ? t("admin.finance.chart.loading")
+                      : t("admin.finance.chart.noData")}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -817,15 +945,26 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                   pageData.content.map((course) => (
                     <TableRow key={course.courseId}>
                       <TableCell>
-                        <div className="space-y-1">
-                          <p className="font-medium">{course.title}</p>
-                          <Badge
-                            variant={
-                              course.isPublished ? "default" : "secondary"
-                            }
-                          >
-                            {course.isPublished ? t("admin.finance.status.published") : t("admin.finance.status.draft")}
-                          </Badge>
+                        <div className="flex min-w-[240px] items-center gap-3">
+                          <Image
+                            src={course.thumbnailUrl || DEFAULT_COURSE_THUMBNAIL}
+                            alt={course.title}
+                            width={64}
+                            height={44}
+                            className="h-11 w-16 shrink-0 rounded-md object-cover"
+                          />
+                          <div className="min-w-0 space-y-1">
+                            <p className="max-w-[220px] truncate font-medium">
+                              {course.title}
+                            </p>
+                            <Badge
+                              variant={
+                                course.isPublished ? "default" : "secondary"
+                              }
+                            >
+                              {course.isPublished ? t("admin.finance.status.published") : t("admin.finance.status.draft")}
+                            </Badge>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -848,13 +987,13 @@ export function CourseFinanceWorkspace({ mode }: CourseFinanceWorkspaceProps) {
                             className={cn(
                               "border-transparent text-[11px]",
                               getSalesTierBadgeClass(
-                                revenueTierByCourseId.get(course.courseId) ??
+                                salesTierByCourseId.get(course.courseId) ??
                                   "medium",
                               ),
                             )}
                           >
                             {getSalesTierLabel(
-                              revenueTierByCourseId.get(course.courseId) ??
+                              salesTierByCourseId.get(course.courseId) ??
                                 "medium", t
                             )}
                           </Badge>

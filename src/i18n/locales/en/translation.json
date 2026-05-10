@@ -2126,8 +2126,15 @@
         "activeDiscounts": "Active Discounts"
       },
       "chart": {
-        "title": "Course Revenue Trend Chart",
-        "desc": "Top {{limit}} courses by revenue, categorized by performance tiers.",
+        "title": "Course Performance",
+        "desc": "Separates top {{limit}} best-selling courses by sales count from top revenue courses.",
+        "bestSelling": "Best sellers",
+        "bestSellingDesc": "Ranked by transaction count, falling back to enrolled students when there are no transactions.",
+        "highestRevenue": "Highest revenue",
+        "highestRevenueDesc": "Ranked by total recognized course revenue.",
+        "salesMetric": "Sales",
+        "revenueMetric": "Revenue",
+        "salesUnit": "sales",
         "loading": "Loading chart data...",
         "noData": "No data available for chart"
       },

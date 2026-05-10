@@ -2124,8 +2124,15 @@
         "activeDiscounts": "Mã giảm giá đang hiệu lực"
       },
       "chart": {
-        "title": "Biểu đồ đường doanh thu khóa học",
-        "desc": "Top {{limit}} khóa học theo doanh thu, phân hạng bán chạy, bán vừa, bán chậm bằng màu riêng.",
+        "title": "Hiệu suất khóa học",
+        "desc": "Tách rõ top {{limit}} khóa bán chạy theo lượt bán và top doanh thu theo hoa.",
+        "bestSelling": "Top bán chạy",
+        "bestSellingDesc": "Xếp hạng theo số giao dịch, fallback theo học viên nếu chưa có giao dịch.",
+        "highestRevenue": "Top doanh thu",
+        "highestRevenueDesc": "Xếp hạng theo tổng doanh thu thực thu.",
+        "salesMetric": "Lượt bán",
+        "revenueMetric": "Doanh thu",
+        "salesUnit": "lượt",
         "loading": "Đang tải dữ liệu biểu đồ...",
         "noData": "Chưa có dữ liệu để hiển thị biểu đồ"
       },

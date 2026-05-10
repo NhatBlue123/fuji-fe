@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   BarChart3,
   BookOpen,
@@ -30,6 +31,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+const DEFAULT_COURSE_THUMBNAIL =
+  "https://i.postimg.cc/LXt5Hbnf/image.png";
 
 const formatNumber = (value?: number | null) =>
   new Intl.NumberFormat("vi-VN").format(value || 0);
@@ -304,11 +308,20 @@ export default function TeacherDashboardPage() {
                     key={course.courseId}
                     className="flex items-center justify-between gap-4 rounded-lg border p-3"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{course.courseTitle}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatNumber(course.studentCount)} học viên
-                      </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Image
+                        src={course.thumbnailUrl || DEFAULT_COURSE_THUMBNAIL}
+                        alt={course.courseTitle}
+                        width={64}
+                        height={48}
+                        className="h-12 w-16 shrink-0 rounded-md object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{course.courseTitle}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatNumber(course.studentCount)} học viên
+                        </p>
+                      </div>
                     </div>
                     <p className="shrink-0 font-semibold">{formatBlossom(course.revenue)}</p>
                   </div>

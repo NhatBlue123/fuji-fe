@@ -114,7 +114,7 @@ export default function PaymentPackages() {
     null,
   );
   const [hoaGrantAmount, setHoaGrantAmount] = useState("");
-  const [hoaGrantReason, setHoaGrantReason] = useState("prod-test");
+  const [hoaGrantReason, setHoaGrantReason] = useState("");
 
   const [formData, setFormData] = useState({
     tier: "BASIC" as SubscriptionTier,
@@ -210,7 +210,7 @@ export default function PaymentPackages() {
     setHoaSearchTerm("");
     setSelectedHoaUser(null);
     setHoaGrantAmount("");
-    setHoaGrantReason("prod-test");
+    setHoaGrantReason("");
   };
 
   const handleHoaGrantOpenChange = (open: boolean) => {
@@ -606,7 +606,7 @@ export default function PaymentPackages() {
                   value={hoaGrantReason}
                   onChange={(e) => setHoaGrantReason(e.target.value)}
                   maxLength={180}
-                  placeholder="prod-test"
+                  placeholder="VD: Cộng hoa thủ công"
                 />
               </div>
             </div>

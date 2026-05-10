@@ -2094,8 +2094,15 @@
         "activeDiscounts": "有効な割引コード"
       },
       "chart": {
-        "title": "コース収益トレンドチャート",
-        "desc": "収益上位{{limit}}コースを、パフォーマンス層別に表示します。",
+        "title": "コース実績",
+        "desc": "販売数上位{{limit}}コースと収益上位コースを分けて表示します。",
+        "bestSelling": "販売数上位",
+        "bestSellingDesc": "取引数で順位付けし、取引がない場合は受講生数を使用します。",
+        "highestRevenue": "収益上位",
+        "highestRevenueDesc": "コースの実収収益合計で順位付けします。",
+        "salesMetric": "販売数",
+        "revenueMetric": "収益",
+        "salesUnit": "件",
         "loading": "チャートデータを読み込み中...",
         "noData": "表示するチャートデータがありません"
       },

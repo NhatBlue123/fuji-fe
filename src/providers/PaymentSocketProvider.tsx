@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
@@ -46,10 +47,17 @@ export function PaymentSocketProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const { accessToken, isAuthenticated, user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const statusChangeCallbacks = useRef<Set<StatusChangeCallback>>(new Set());
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   const onPaymentStatusChange = useCallback((cb: StatusChangeCallback) => {
     statusChangeCallbacks.current.add(cb);
@@ -111,10 +119,21 @@ export function PaymentSocketProvider({
         receivedAt: new Date().toISOString(),
       });
 
+      const callbacks = Array.from(statusChangeCallbacks.current);
+      const hasScreenListener = callbacks.length > 0;
+
       // [FRONTEND I18N ROLE] Resolve messageKey ONLY at UI Layer (Toasts)
       if (data.newStatus === "SUCCESS") {
-        if (data.transactionType !== "TOPUP") {
+        if (data.transactionType !== "TOPUP" || !hasScreenListener) {
           toast.success(tMsg(data.message) || tMsg("payment.status.success"));
+        }
+
+        if (
+          data.transactionType === "TOPUP" &&
+          !hasScreenListener &&
+          pathnameRef.current !== "/premium/success"
+        ) {
+          setTimeout(() => router.push("/premium/success"), 1000);
         }
       } else if (data.newStatus === "FAILED" || data.newStatus === "CANCELLED") {
         toast.error(
@@ -128,7 +147,7 @@ export function PaymentSocketProvider({
       store.dispatch(
         baseApi.util.invalidateTags(["Wallet", "Payment", "Withdraw", "Subscription"]),
       );
-      statusChangeCallbacks.current.forEach((cb) => cb(data));
+      callbacks.forEach((cb) => cb(data));
     };
 
     s.on("connect", handleConnect);
@@ -150,7 +169,7 @@ export function PaymentSocketProvider({
       });
       disconnectPaymentSocket();
     };
-  }, [accessToken, isAuthenticated, user]);
+  }, [accessToken, isAuthenticated, router, user]);
 
   const value = useMemo(
     () => ({

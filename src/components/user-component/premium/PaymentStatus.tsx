@@ -18,10 +18,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  type PaymentStatusResponse,
-  useLazyGetPaymentStatusQuery,
-} from "@/store/services/paymentApi";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
 import { type PaymentStatusChangeEvent, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
@@ -44,6 +42,16 @@ const PINK_PRIMARY_BUTTON_CLASS =
   "bg-pink-500 text-white shadow-lg shadow-pink-500/25 transition-all hover:bg-pink-600 hover:shadow-pink-500/35";
 const MUTED_SECONDARY_BUTTON_CLASS =
   "border border-white/10 bg-white/[0.04] text-slate-400 shadow-none transition-all hover:bg-white/[0.08] hover:text-slate-200";
+
+type PaymentStatusSnapshot = {
+  status?: string;
+  message?: string;
+  messageKey?: string;
+};
+
+type PaymentStatusEnvelope = PaymentStatusSnapshot & {
+  data?: PaymentStatusSnapshot | null;
+};
 
 const VIETQR_BANK_CODES: Record<string, string> = {
   MB: "mbbank",
@@ -78,6 +86,56 @@ const getVietQrBankCode = (bankName: string) => {
     .toUpperCase();
 
   return VIETQR_BANK_CODES[normalized] || bankName.trim();
+};
+
+const unwrapPaymentStatusPayload = (payload: unknown): PaymentStatusSnapshot => {
+  if (!payload || typeof payload !== "object") return {};
+
+  const envelope = payload as PaymentStatusEnvelope;
+  if (envelope.data && typeof envelope.data === "object") {
+    return {
+      ...envelope.data,
+      message:
+        envelope.data.message ??
+        envelope.data.messageKey ??
+        envelope.message ??
+        envelope.messageKey,
+      messageKey: envelope.data.messageKey ?? envelope.messageKey,
+    };
+  }
+
+  return envelope;
+};
+
+const fetchPaymentStatusSnapshot = async (
+  orderId: string,
+): Promise<PaymentStatusSnapshot> => {
+  const baseUrl = API_CONFIG.BASE_URL.replace(/\/+$/, "");
+  const headers = new Headers({ Accept: "application/json" });
+  const token = getAccessToken();
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  if (typeof window !== "undefined") {
+    headers.set("Accept-Language", localStorage.getItem("i18nextLng") || "vi");
+  }
+
+  const response = await fetch(
+    `${baseUrl}/payments/status/${encodeURIComponent(orderId)}?_=${Date.now()}`,
+    {
+      cache: "no-store",
+      credentials: "include",
+      headers,
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Payment status request failed: ${response.status}`);
+  }
+
+  return unwrapPaymentStatusPayload(await response.json());
 };
 
 type WindowWithWebkitAudioContext = Window &
@@ -138,15 +196,13 @@ export default function PaymentStatus({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false);
   const [resolvedBy, setResolvedBy] = useState<"socket" | "poll" | null>(null);
   const [pollingUntil, setPollingUntil] = useState<number | null>(null);
   const handledRef = useRef(false);
   const successCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [getPaymentStatus, { isFetching: isStatusLoading }] =
-    useLazyGetPaymentStatusQuery();
 
   const { isConnected, onPaymentStatusChange } = usePaymentSocket();
 
@@ -202,18 +258,24 @@ export default function PaymentStatus({
 
   const handleStatusResult = useCallback(
     (
-      status: PaymentStatusResponse["status"] | string | undefined,
+      status: string | undefined,
       source: "socket" | "poll",
       messageKey?: string,
     ) => {
       if (!status || handledRef.current) return;
 
-      if (status === "SUCCESS") {
+      const normalizedStatus = status.toUpperCase();
+
+      if (normalizedStatus === "SUCCESS" || normalizedStatus === "TOPUP_SUCCESS") {
         finalizeSuccess(source);
         return;
       }
 
-      if (status === "FAILED" || status === "CANCELLED") {
+      if (
+        normalizedStatus === "FAILED" ||
+        normalizedStatus === "CANCELLED" ||
+        normalizedStatus === "ERROR"
+      ) {
         finalizeFailure(source, messageKey);
       }
     },
@@ -225,13 +287,21 @@ export default function PaymentStatus({
       if (handledRef.current) return;
 
       try {
-        const result = await getPaymentStatus(orderId, false);
-        handleStatusResult(result.data?.status, source, result.data?.message);
+        setIsStatusLoading(true);
+        const result = await fetchPaymentStatusSnapshot(orderId);
+        console.info("[payment] status poll result", {
+          orderId,
+          status: result.status,
+          receivedAt: new Date().toISOString(),
+        });
+        handleStatusResult(result.status, source, result.message ?? result.messageKey);
       } catch (error) {
         console.error("[payment] status poll failed", { orderId, error });
+      } finally {
+        setIsStatusLoading(false);
       }
     },
-    [getPaymentStatus, handleStatusResult, orderId],
+    [handleStatusResult, orderId],
   );
 
   useEffect(() => {
@@ -314,8 +384,13 @@ export default function PaymentStatus({
     setLastCheckTime(now);
 
     try {
-      const result = await getPaymentStatus(orderId, false);
-      handleStatusResult(result.data?.status, "poll", result.data?.message);
+      const result = await fetchPaymentStatusSnapshot(orderId);
+      console.info("[payment] manual status check result", {
+        orderId,
+        status: result.status,
+        receivedAt: new Date().toISOString(),
+      });
+      handleStatusResult(result.status, "poll", result.message ?? result.messageKey);
     } catch {
       toast.error(tMsg("api.error"));
     } finally {

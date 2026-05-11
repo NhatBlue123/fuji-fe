@@ -251,132 +251,136 @@ export default function MySchedulePage() {
         )}
 
         <div className="space-y-4">
-          {items.map((c) => (
-            <div
-              key={c.bookingId}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
-            >
-              <div className="flex items-center gap-4 flex-1 w-full">
-                <img
-                  src={(c.role === "TEACHER" ? c.studentAvatarUrl : c.teacherAvatarUrl) || "/images/avt-default.jpg"}
-                  className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
-                  alt={c.role === "TEACHER" ? "Student" : "Teacher"}
-                />
-                <div>
-                  <h4 className="text-slate-100 font-bold">
-                    {c.role === "TEACHER" ? c.studentName : c.teacherName}
-                  </h4>
-                  <p className="text-pink-400 text-sm">{c.subject}</p>
-                  <p className="text-slate-500 text-xs">
-                    {c.role === "TEACHER" ? "Học viên" : "Giáo viên"}
-                  </p>
-                </div>
-              </div>
+          {items.map((c) => {
+            const isTeachingBooking = c.role === "TEACHER";
 
-              <div className="flex items-center gap-8 px-8 border-x border-white/10">
-                <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_8")}</p>
-                  <p className="text-white font-bold">{formatDate(c.startAt)}</p>
+            return (
+              <div
+                key={c.bookingId}
+                className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
+              >
+                <div className="flex items-center gap-4 flex-1 w-full">
+                  <img
+                    src={(isTeachingBooking ? c.studentAvatarUrl : c.teacherAvatarUrl) || "/images/avt-default.jpg"}
+                    className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
+                    alt={isTeachingBooking ? "Student" : "Teacher"}
+                  />
+                  <div>
+                    <h4 className="text-slate-100 font-bold">
+                      {isTeachingBooking ? c.studentName : c.teacherName}
+                    </h4>
+                    <p className="text-pink-400 text-sm">{c.subject}</p>
+                    <p className="text-slate-500 text-xs">
+                      {isTeachingBooking ? "Học viên" : "Giáo viên"}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_9")}</p>
-                  <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
-                </div>
-              </div>
+                <div className="flex items-center gap-8 px-8 border-x border-white/10">
+                  <div className="flex flex-col items-center">
+                    <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_8")}</p>
+                    <p className="text-white font-bold">{formatDate(c.startAt)}</p>
+                  </div>
 
-              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                {tab === "UPCOMING" && (
-                  <>
-                    {c.canJoinVideoCall ? (
+                  <div className="flex flex-col items-center">
+                    <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_9")}</p>
+                    <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                  {tab === "UPCOMING" && (
+                    <>
+                      {c.canJoinVideoCall ? (
+                        <Link href={`/learn/lesson/${c.bookingId}`}>
+                          <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
+                            <span className="material-symbols-outlined text-sm">videocam</span>
+                            {t("auto.bookingModal_10")}
+                          </button>
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
+                          title={t("auto.bookingModal_18")}
+                        >
+                          {t("auto.bookingModal_11")}
+                        </button>
+                      )}
+                      {!isTeachingBooking && (
+                        <button
+                          disabled={isCancelling}
+                          onClick={() => {
+                            setActionType("CANCEL");
+                            setDeletingId(c.bookingId);
+                          }}
+                          className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                        >
+                          {t("auto.bookingModal_12")}
+                        </button>
+                      )}
+                      {isTeachingBooking && (() => {
+                        const action = getTeacherAction(c.startAt, c.endAt);
+                        if (action.canEndEarly) {
+                          return (
+                            <button
+                              disabled={isEndingEarly}
+                              onClick={() => {
+                                setActionType("END_EARLY");
+                                setDeletingId(c.bookingId);
+                              }}
+                              className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
+                            >
+                              {t("auto.bookingModal_13")}
+                            </button>
+                          );
+                        }
+                        if (action.canCancel) {
+                          return (
+                            <button
+                              disabled={isCancelling}
+                              onClick={() => {
+                                setActionType("CANCEL");
+                                setDeletingId(c.bookingId);
+                              }}
+                              className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                            >
+                              {t("auto.bookingModal_14")}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </>
+                  )}
+
+                  {tab === "COMPLETED" && (
+                    <>
+                      <button
+                        onClick={() => handleViewSummary(c.bookingId)}
+                        className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                        AI Summary
+                      </button>
                       <Link href={`/learn/lesson/${c.bookingId}`}>
-                        <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
-                          <span className="material-symbols-outlined text-sm">videocam</span>
-                          {t("auto.bookingModal_10")}
+                        <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm">visibility</span>
+                          {t("auto.bookingModal_19")}
                         </button>
                       </Link>
-                    ) : (
-                      <button
-                        disabled
-                        className="px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
-                        title={t("auto.bookingModal_18")}
-                      >
-                        {t("auto.bookingModal_11")}
-                      </button>
-                    )}
-                    {!isTeacher && (
-                      <button
-                        disabled={isCancelling}
-                        onClick={() => {
-                          setActionType("CANCEL");
-                          setDeletingId(c.bookingId);
-                        }}
-                        className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                      >
-                        {t("auto.bookingModal_12")}
-                      </button>
-                    )}
-                    {isTeacher && (() => {
-                      const action = getTeacherAction(c.startAt, c.endAt);
-                      if (action.canEndEarly) {
-                        return (
-                          <button
-                            disabled={isEndingEarly}
-                            onClick={() => {
-                              setActionType("END_EARLY");
-                              setDeletingId(c.bookingId);
-                            }}
-                            className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
-                          >
-                            {t("auto.bookingModal_13")}
-                          </button>
-                        );
-                      }
-                      if (action.canCancel) {
-                        return (
-                          <button
-                            disabled={isCancelling}
-                            onClick={() => {
-                              setActionType("CANCEL");
-                              setDeletingId(c.bookingId);
-                            }}
-                            className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                          >
-                            {t("auto.bookingModal_14")}
-                          </button>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </>
-                )}
+                    </>
+                  )}
 
-                {tab === "COMPLETED" && (
-                  <>
-                    <button
-                      onClick={() => handleViewSummary(c.bookingId)}
-                      className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                      AI Summary
-                    </button>
-                    <Link href={`/learn/session/${c.bookingId}`}>
-                      <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm">visibility</span>
-                        {t("auto.bookingModal_19")}
-                      </button>
-                    </Link>
-                  </>
-                )}
-
-                {tab === "CANCELLED" && (
-                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
-                    {t("auto.bookingModal_16")}
-                  </span>
-                )}
+                  {tab === "CANCELLED" && (
+                    <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
+                      {t("auto.bookingModal_16")}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

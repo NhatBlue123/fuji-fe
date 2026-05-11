@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseVietnamDateTime } from "@/lib/vietnam-time";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +63,7 @@ function isCourseNotification(n: NotifType) {
   return (
     related.includes("BOOKING") ||
     link.includes("/booking") ||
+    link.includes("/learn/lesson") ||
     link.includes("/learn/session") ||
     title.includes("giờ học") ||
     title.includes("buổi học") ||
@@ -244,7 +246,7 @@ export default function NotificationsPage() {
                         
                         <div className="flex items-center gap-2 mt-1.5">
                            <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/40">
-                             {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: currentLocale })}
+                             {formatDistanceToNow(parseVietnamDateTime(n.createdAt), { addSuffix: true, locale: currentLocale })}
                            </span>
                         </div>
                       </div>

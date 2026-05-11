@@ -47,6 +47,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useMyMonetizationSummary } from "@/hooks/useMyMonetizationSummary";
 import { useAvatarFrames } from "@/hooks/useAvatarFrames";
 import { getUsableAvatarFrame, hasAnyAvatarFramePackage } from "@/lib/avatar-frames";
+import { parseVietnamDateTime } from "@/lib/vietnam-time";
 
 function HeaderAuthSkeleton() {
   return (
@@ -353,7 +354,7 @@ const Header = () => {
                               {n.content}
                             </p>
                             <span className="text-[9px] text-muted-foreground/40 font-bold mt-1 block">
-                              {formatDistanceToNow(new Date(n.createdAt), {
+                              {formatDistanceToNow(parseVietnamDateTime(n.createdAt), {
                                 addSuffix: true,
                                 locale: i18n.language === "vi" ? vi : i18n.language === "ja" ? ja : enUS,
                               })}

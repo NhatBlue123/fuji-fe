@@ -39,59 +39,118 @@ export default function ExamSidebar({
   const totalCount = leafQuestions.length;
 
   return (
-    <aside className="sidebar-jlpt w-72 shrink-0 hidden xl:flex flex-col z-30 h-full">
+    <aside style={{
+      width: "18rem",
+      flexShrink: 0,
+      display: "flex",
+      flexDirection: "column",
+      zIndex: 30,
+      height: "100%",
+      background: "linear-gradient(180deg, rgba(17, 25, 39, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%)",
+      borderRight: "1px solid rgba(245, 240, 232, 0.08)",
+      backdropFilter: "blur(12px)"
+    }} className="hidden xl:flex">
       {/* Header */}
-      <div className="p-4 border-b border-washi-paper/5 flex justify-between items-center bg-charcoal/30">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-shun-nuri/80 text-lg">
+      <div style={{
+        padding: "1rem",
+        borderBottom: "1px solid rgba(245, 240, 232, 0.05)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "rgba(30, 41, 59, 0.3)"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span className="material-symbols-outlined" style={{ color: "rgba(165, 42, 42, 0.8)", fontSize: "1.125rem" }}>
             grid_view
           </span>
-          <span className="sidebar-section-label">問題一覧</span>
+          <span style={{
+            fontFamily: "'Noto Sans JP', sans-serif",
+            fontSize: "0.75rem",
+            fontWeight: 500,
+            color: "rgba(245, 240, 232, 0.7)",
+            letterSpacing: "0.05em",
+            textTransform: "uppercase"
+          }}>問題一覧</span>
         </div>
-        <span className="font-mono text-xs bg-charcoal/50 text-washi-paper/60 px-2.5 py-1 rounded-sm border border-washi-paper/5">
+        <span style={{
+          fontFamily: "monospace",
+          fontSize: "0.75rem",
+          backgroundColor: "rgba(30, 41, 59, 0.5)",
+          color: "rgba(245, 240, 232, 0.6)",
+          padding: "0.25rem 0.625rem",
+          borderRadius: "4px",
+          border: "1px solid rgba(245, 240, 232, 0.05)"
+        }}>
           {answeredCount}/{totalCount}
         </span>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between gap-3 mx-4 mt-4 mb-2 p-2.5 rounded-sm bg-charcoal/30 border border-washi-paper/5">
-        <div className="flex items-center gap-1.5">
-          <div className="size-2.5 rounded-sm bg-charcoal/60 border border-washi-paper/10" />
-          <span className="text-[9px] text-washi-paper/40 font-jp">未回答</span>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "0.75rem",
+        margin: "1rem 1rem 0.5rem",
+        padding: "0.625rem",
+        borderRadius: "4px",
+        backgroundColor: "rgba(30, 41, 59, 0.3)",
+        border: "1px solid rgba(245, 240, 232, 0.05)"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+          <div style={{ width: "10px", height: "10px", borderRadius: "2px", backgroundColor: "rgba(30, 41, 59, 0.6)", border: "1px solid rgba(245, 240, 232, 0.1)" }} />
+          <span style={{ fontSize: "0.5625rem", color: "rgba(245, 240, 232, 0.4)", fontFamily: "'Noto Sans JP', sans-serif" }}>未回答</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-2.5 rounded-sm bg-shun-nuri" />
-          <span className="text-[9px] text-washi-paper/40 font-jp">回答済</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+          <div style={{ width: "10px", height: "10px", borderRadius: "2px", backgroundColor: "#A52A2A" }} />
+          <span style={{ fontSize: "0.5625rem", color: "rgba(245, 240, 232, 0.4)", fontFamily: "'Noto Sans JP', sans-serif" }}>回答済</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-2.5 rounded-sm border border-washi-paper/40" />
-          <span className="text-[9px] text-washi-paper/40 font-jp">現在</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+          <div style={{ width: "10px", height: "10px", borderRadius: "2px", border: "1px solid rgba(245, 240, 232, 0.4)" }} />
+          <span style={{ fontSize: "0.5625rem", color: "rgba(245, 240, 232, 0.4)", fontFamily: "'Noto Sans JP', sans-serif" }}>現在</span>
         </div>
       </div>
 
       {/* Section groups */}
-      <div className="flex-1 overflow-y-auto py-3 custom-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", paddingTop: "0.75rem" }} className="custom-scrollbar">
         {structure.map((section, si) => {
           const isOpen = !collapsed[si];
           return (
-            <div key={si} className="mb-1">
+            <div key={si} style={{ marginBottom: "0.25rem" }}>
               {/* Section header */}
               <button
                 onClick={() => setCollapsed((p) => ({ ...p, [si]: !p[si] }))}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-charcoal/30 transition-colors"
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0.625rem 1rem",
+                  textAlign: "left",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "rgba(245, 240, 232, 0.7)",
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                  transition: "background-color 0.15s"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 0.3)"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
               >
-                <span className="sidebar-section-label">
-                  {section.name}
-                </span>
+                <span>{section.name}</span>
                 {isOpen ? (
-                  <ChevronDown className="h-3 w-3 text-washi-paper/30" />
+                  <ChevronDown style={{ width: "12px", height: "12px", color: "rgba(245, 240, 232, 0.3)" }} />
                 ) : (
-                  <ChevronRight className="h-3 w-3 text-washi-paper/30" />
+                  <ChevronRight style={{ width: "12px", height: "12px", color: "rgba(245, 240, 232, 0.3)" }} />
                 )}
               </button>
 
               {isOpen && (
-                <div className="px-3 pb-3 space-y-2">
+                <div style={{ padding: "0 0.75rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {section.mondai.map((mondai) => {
                     const mondaiQuestions = leafQuestions
                       .filter(q => q.mondaiNumber === mondai.number)
@@ -100,19 +159,24 @@ export default function ExamSidebar({
                     if (mondaiQuestions.length === 0) return null;
 
                     return (
-                      <div key={mondai.number} className="bg-charcoal/20 rounded-sm p-3 border border-washi-paper/5">
-                        <div className="flex items-center gap-2 mb-2.5">
-                          <span className="text-[10px] text-washi-paper/50 font-mincho">
+                      <div key={mondai.number} style={{
+                        backgroundColor: "rgba(30, 41, 59, 0.2)",
+                        borderRadius: "4px",
+                        padding: "0.75rem",
+                        border: "1px solid rgba(245, 240, 232, 0.05)"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.625rem" }}>
+                          <span style={{ fontSize: "0.625rem", color: "rgba(245, 240, 232, 0.5)", fontFamily: "'Noto Serif JP', serif" }}>
                             問題{mondai.number}
                           </span>
                           {mondai.requires_audio && (
-                            <Volume2 className="h-2.5 w-2.5 text-shun-nuri/60" />
+                            <Volume2 style={{ width: "10px", height: "10px", color: "rgba(165, 42, 42, 0.6)" }} />
                           )}
                           {mondai.requires_passage && (
-                            <FileText className="h-2.5 w-2.5 text-blue-400/50" />
+                            <FileText style={{ width: "10px", height: "10px", color: "rgba(96, 165, 250, 0.5)" }} />
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
                           {mondaiQuestions.map((leafQ) => {
                             const qId = leafQ.id;
                             const n = leafQ.questionOrder;
@@ -126,13 +190,44 @@ export default function ExamSidebar({
                               <button
                                 key={qId}
                                 onClick={() => onSelect(n)}
-                                className={`question-dot ${
-                                  isAnswered ? "answered" : "unanswered"
-                                } ${isCurrent ? "current" : ""}`}
+                                style={{
+                                  width: "32px",
+                                  height: "32px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: "4px",
+                                  fontFamily: "'Noto Sans JP', sans-serif",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                  cursor: "pointer",
+                                  backgroundColor: isAnswered ? "#A52A2A" : "rgba(30, 41, 59, 0.6)",
+                                  border: isAnswered 
+                                    ? "1px solid rgba(165, 42, 42, 0.8)" 
+                                    : "1px solid rgba(245, 240, 232, 0.15)",
+                                  color: isAnswered ? "#F5F0E8" : "rgba(245, 240, 232, 0.6)",
+                                  boxShadow: isCurrent 
+                                    ? `0 0 0 2px rgba(245, 240, 232, 0.4), 0 0 12px rgba(165, 42, 42, ${isAnswered ? 0.6 : 0.3})`
+                                    : isAnswered 
+                                      ? "0 2px 8px rgba(165, 42, 42, 0.4)" 
+                                      : "none",
+                                  transform: isCurrent ? "scale(1.1)" : "scale(1)",
+                                  zIndex: isCurrent ? 10 : 1,
+                                  position: "relative",
+                                  transition: "all 0.2s ease"
+                                }}
                               >
                                 {subLabel}
                                 {isFlagged && (
-                                  <span className="absolute -top-0.5 -right-0.5 size-1.5 bg-yellow-500 rounded-sm" />
+                                  <span style={{ 
+                                    position: 'absolute', 
+                                    top: '-3px', 
+                                    right: '-3px',
+                                    width: '6px',
+                                    height: '6px',
+                                    backgroundColor: '#EAB308',
+                                    borderRadius: '2px'
+                                  }} />
                                 )}
                               </button>
                             );
@@ -149,27 +244,34 @@ export default function ExamSidebar({
       </div>
 
       {/* Divider */}
-      <div className="divider-ma mx-4" />
+      <div style={{
+        height: "1px",
+        margin: "0 1rem",
+        background: "linear-gradient(90deg, transparent 0%, rgba(245, 240, 232, 0.15) 20%, rgba(245, 240, 232, 0.25) 50%, rgba(245, 240, 232, 0.15) 80%, transparent 100%)"
+      }} />
 
       {/* Flag button */}
-      <div className="p-4 bg-charcoal/20">
+      <div style={{ padding: "1rem", backgroundColor: "rgba(30, 41, 59, 0.2)" }}>
         <button
           onClick={toggleFlag}
-          className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-sm border transition-all font-jp text-sm"
           style={{
-            borderColor: isCurrentFlagged ? "rgba(234, 179, 8, 0.5)" : "rgba(245, 240, 232, 0.08)",
-            backgroundColor: isCurrentFlagged
-              ? "rgba(234, 179, 8, 0.08)"
-              : "transparent",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.625rem",
+            padding: "0.625rem 1rem",
+            borderRadius: "4px",
+            border: `1px solid ${isCurrentFlagged ? "rgba(234, 179, 8, 0.5)" : "rgba(245, 240, 232, 0.08)"}`,
+            backgroundColor: isCurrentFlagged ? "rgba(234, 179, 8, 0.08)" : "transparent",
             color: isCurrentFlagged ? "#EAB308" : "rgba(245, 240, 232, 0.5)",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            fontSize: "0.875rem",
+            cursor: "pointer",
+            transition: "all 0.2s"
           }}
         >
-          <span
-            className="material-symbols-outlined text-[18px]"
-            style={{
-              fontVariationSettings: isCurrentFlagged ? "'FILL' 1" : "'FILL' 0",
-            }}
-          >
+          <span className="material-symbols-outlined" style={{ fontSize: "1.125rem", fontVariationSettings: isCurrentFlagged ? "'FILL' 1" : "'FILL' 0" }}>
             flag
           </span>
           {isCurrentFlagged ? "フラグ解除" : "フラグを付ける"}

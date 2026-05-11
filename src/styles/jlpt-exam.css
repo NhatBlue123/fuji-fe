@@ -1,0 +1,512 @@
+/* JLPT Exam Styles - Japanese Minimalism Theme */
+@layer components {
+  /* ========== EXAM DARK BACKGROUND ========== */
+  .bg-exam-dark {
+    background-color: #0B1120;
+    color: #F5F0E8;
+  }
+
+  /* ========== WASHI PAPER COLORS ========== */
+  .text-washi-paper {
+    color: #F5F0E8;
+  }
+  .text-washi-paper\/10 { color: rgba(245, 240, 232, 0.1); }
+  .text-washi-paper\/20 { color: rgba(245, 240, 232, 0.2); }
+  .text-washi-paper\/30 { color: rgba(245, 240, 232, 0.3); }
+  .text-washi-paper\/40 { color: rgba(245, 240, 232, 0.4); }
+  .text-washi-paper\/50 { color: rgba(245, 240, 232, 0.5); }
+  .text-washi-paper\/60 { color: rgba(245, 240, 232, 0.6); }
+  .text-washi-paper\/70 { color: rgba(245, 240, 232, 0.7); }
+  .text-washi-paper\/80 { color: rgba(245, 240, 232, 0.8); }
+  .text-washi-paper\/90 { color: rgba(245, 240, 232, 0.9); }
+
+  .bg-washi-paper\/5 { background-color: rgba(245, 240, 232, 0.05); }
+  .bg-washi-paper\/10 { background-color: rgba(245, 240, 232, 0.1); }
+  .bg-washi-paper\/20 { background-color: rgba(245, 240, 232, 0.2); }
+  .bg-washi-paper\/30 { background-color: rgba(245, 240, 232, 0.3); }
+  .bg-washi-paper\/40 { background-color: rgba(245, 240, 232, 0.4); }
+  .bg-washi-paper\/50 { background-color: rgba(245, 240, 232, 0.5); }
+
+  .border-washi-paper\/5 { border-color: rgba(245, 240, 232, 0.05); }
+  .border-washi-paper\/10 { border-color: rgba(245, 240, 232, 0.1); }
+  .border-washi-paper\/20 { border-color: rgba(245, 240, 232, 0.2); }
+  .border-washi-paper\/30 { border-color: rgba(245, 240, 232, 0.3); }
+  .border-washi-paper\/40 { border-color: rgba(245, 240, 232, 0.4); }
+  .border-washi-paper\/50 { border-color: rgba(245, 240, 232, 0.5); }
+
+  /* ========== HEADER ========== */
+  .header-jlpt {
+    background: linear-gradient(180deg, rgba(11, 17, 32, 0.98) 0%, rgba(11, 17, 32, 0.95) 100%);
+    border-bottom: 1px solid rgba(245, 240, 232, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  /* ========== SIDEBAR ========== */
+  .sidebar-jlpt {
+    background: linear-gradient(180deg, rgba(17, 25, 39, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border-right: 1px solid rgba(245, 240, 232, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  .sidebar-section-label {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(245, 240, 232, 0.7);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ========== QUESTION DOTS (Sidebar navigation) ========== */
+  .question-dot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .question-dot.unanswered {
+    background-color: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(245, 240, 232, 0.15);
+    color: rgba(245, 240, 232, 0.6);
+  }
+
+  .question-dot.unanswered:hover {
+    background-color: rgba(30, 41, 59, 0.9);
+    border-color: rgba(245, 240, 232, 0.25);
+    color: rgba(245, 240, 232, 0.9);
+    transform: scale(1.05);
+  }
+
+  .question-dot.answered {
+    background-color: #A52A2A;
+    border: 1px solid rgba(165, 42, 42, 0.8);
+    color: #F5F0E8;
+    box-shadow: 0 2px 8px rgba(165, 42, 42, 0.4);
+  }
+
+  .question-dot.answered:hover {
+    background-color: #8B2525;
+    border-color: rgba(165, 42, 42, 1);
+    transform: scale(1.05);
+  }
+
+  .question-dot.current {
+    box-shadow: 0 0 0 2px rgba(245, 240, 232, 0.4), 0 0 12px rgba(165, 42, 42, 0.5);
+    transform: scale(1.1);
+    z-index: 10;
+  }
+
+  .question-dot.current.answered {
+    box-shadow: 0 0 0 2px rgba(245, 240, 232, 0.4), 0 0 12px rgba(165, 42, 42, 0.6);
+  }
+
+  .question-dot.current.unanswered {
+    border-color: rgba(245, 240, 232, 0.5);
+    background-color: rgba(30, 41, 59, 0.8);
+  }
+
+  /* ========== QUESTION ID BADGE ========== */
+  .question-id-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem 0.875rem;
+    background: linear-gradient(135deg, #A52A2A 0%, #8B2525 100%);
+    border-radius: 4px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #F5F0E8;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(165, 42, 42, 0.3);
+  }
+
+  /* ========== JLPT OPTIONS ========== */
+  .jlpt-option {
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    border: 1px solid rgba(245, 240, 232, 0.1);
+    background-color: rgba(30, 41, 59, 0.3);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .jlpt-option::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: transparent;
+    transition: background 0.25s ease;
+  }
+
+  .jlpt-option:hover {
+    border-color: rgba(165, 42, 42, 0.4);
+    background-color: rgba(30, 41, 59, 0.5);
+    transform: translateX(4px);
+  }
+
+  .jlpt-option:hover::before {
+    background: rgba(165, 42, 42, 0.5);
+  }
+
+  .jlpt-option.selected {
+    border-color: #A52A2A;
+    background-color: rgba(165, 42, 42, 0.15);
+    box-shadow: 0 0 0 1px rgba(165, 42, 42, 0.3), 0 4px 12px rgba(165, 42, 42, 0.2);
+  }
+
+  .jlpt-option.selected::before {
+    background: #A52A2A;
+  }
+
+  .jlpt-option .option-number {
+    background: rgba(245, 240, 232, 0.08);
+    border: 1px solid rgba(245, 240, 232, 0.15);
+    color: rgba(245, 240, 232, 0.8);
+  }
+
+  .jlpt-option.selected .option-number {
+    background: #A52A2A;
+    border-color: rgba(165, 42, 42, 0.8);
+    color: #F5F0E8;
+    box-shadow: 0 2px 8px rgba(165, 42, 42, 0.4);
+  }
+
+  /* ========== PASSAGE BOX ========== */
+  .passage-box {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(30, 41, 59, 0.3) 100%);
+    border: 1px solid rgba(245, 240, 232, 0.1);
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: relative;
+  }
+
+  .passage-box::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #A52A2A 0%, rgba(165, 42, 42, 0.3) 100%);
+    border-radius: 4px 0 0 4px;
+  }
+
+  /* ========== DIVIDER - MA (間) ========== */
+  .divider-ma {
+    height: 1px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(245, 240, 232, 0.15) 20%, 
+      rgba(245, 240, 232, 0.25) 50%, 
+      rgba(245, 240, 232, 0.15) 80%, 
+      transparent 100%
+    );
+  }
+
+  /* ========== TIMER ========== */
+  .timer-jlpt {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: rgba(245, 240, 232, 0.9);
+    letter-spacing: 0.05em;
+  }
+
+  .timer-jlpt.warning {
+    color: #EF4444;
+    animation: timer-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes timer-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* ========== SUBMIT BUTTON ========== */
+  .btn-submit-jlpt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: linear-gradient(135deg, #A52A2A 0%, #8B2525 100%);
+    border: 1px solid rgba(165, 42, 42, 0.6);
+    border-radius: 6px;
+    color: #F5F0E8;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(165, 42, 42, 0.3);
+  }
+
+  .btn-submit-jlpt:hover {
+    background: linear-gradient(135deg, #8B2525 0%, #6B1D1D 100%);
+    box-shadow: 0 6px 16px rgba(165, 42, 42, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-submit-jlpt:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(165, 42, 42, 0.3);
+  }
+
+  /* ========== CONFIRM DIALOG ========== */
+  .confirm-dialog {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(17, 25, 39, 0.98) 100%);
+    border: 1px solid rgba(245, 240, 232, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+  }
+
+  /* ========== LISTENING CONTAINER ========== */
+  .listening-container {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .listening-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .image-sticky {
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+  }
+
+  /* ========== CUSTOM SCROLLBAR ========== */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(11, 17, 32, 0.5);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(245, 240, 232, 0.15);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 240, 232, 0.25);
+  }
+
+  /* ========== FONT CLASSES ========== */
+  .font-jp {
+    font-family: 'Noto Sans JP', 'Noto Serif JP', sans-serif;
+  }
+
+  .font-mincho {
+    font-family: 'Noto Serif JP', serif;
+  }
+
+  /* ========== TEXT SIZES ========== */
+  .text-jlpt-question {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1.0625rem;
+    line-height: 1.9;
+    letter-spacing: 0.03em;
+  }
+
+  .text-jp-content {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    line-height: 2;
+    letter-spacing: 0.05em;
+  }
+
+  /* ========== ANIMATIONS ========== */
+  @keyframes slideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+}
+
+/* ========== LIGHT MODE OVERRIDES ========== */
+.light .bg-exam-dark,
+:root:not(.dark) .bg-exam-dark {
+  background-color: #FAFAFA;
+  color: #1A1A1A;
+}
+
+.light .header-jlpt,
+:root:not(.dark) .header-jlpt {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 250, 0.95) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.light .sidebar-jlpt,
+:root:not(.dark) .sidebar-jlpt {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 245, 245, 0.95) 100%);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.light .sidebar-section-label,
+:root:not(.dark) .sidebar-section-label {
+  color: rgba(26, 26, 26, 0.7);
+}
+
+.light .question-dot.unanswered,
+:root:not(.dark) .question-dot.unanswered {
+  background-color: rgba(240, 240, 240, 0.8);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(26, 26, 26, 0.7);
+}
+
+.light .question-dot.unanswered:hover,
+:root:not(.dark) .question-dot.unanswered:hover {
+  background-color: rgba(230, 230, 230, 0.9);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: rgba(26, 26, 26, 0.9);
+}
+
+.light .jlpt-option,
+:root:not(.dark) .jlpt-option {
+  border-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.light .jlpt-option:hover,
+:root:not(.dark) .jlpt-option:hover {
+  border-color: rgba(165, 42, 42, 0.4);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.light .jlpt-option .option-number,
+:root:not(.dark) .jlpt-option .option-number {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: rgba(26, 26, 26, 0.8);
+}
+
+.light .passage-box,
+:root:not(.dark) .passage-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(245, 245, 245, 0.7) 100%);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.light .passage-box::before,
+:root:not(.dark) .passage-box::before {
+  background: linear-gradient(180deg, #A52A2A 0%, rgba(165, 42, 42, 0.5) 100%);
+}
+
+.light .divider-ma,
+:root:not(.dark) .divider-ma {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 0, 0, 0.08) 20%, 
+    rgba(0, 0, 0, 0.12) 50%, 
+    rgba(0, 0, 0, 0.08) 80%, 
+    transparent 100%
+  );
+}
+
+.light .timer-jlpt,
+:root:not(.dark) .timer-jlpt {
+  color: rgba(26, 26, 26, 0.9);
+}
+
+.light .timer-jlpt.warning,
+:root:not(.dark) .timer-jlpt.warning {
+  color: #DC2626;
+}
+
+.light .confirm-dialog,
+:root:not(.dark) .confirm-dialog {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 250, 0.98) 100%);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light .question-id-badge,
+:root:not(.dark) .question-id-badge {
+  background: linear-gradient(135deg, #A52A2A 0%, #8B2525 100%);
+  color: #FFFFFF;
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-track,
+:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb,
+:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ========== SPECIFIC LIGHT MODE TEXT OVERRIDES ========== */
+.light .text-washi-paper,
+:root:not(.dark) .text-washi-paper {
+  color: #1A1A1A;
+}
+
+.light .text-washi-paper\/20,
+:root:not(.dark) .text-washi-paper\/20 { color: rgba(26, 26, 26, 0.2); }
+.light .text-washi-paper\/30,
+:root:not(.dark) .text-washi-paper\/30 { color: rgba(26, 26, 26, 0.3); }
+.light .text-washi-paper\/40,
+:root:not(.dark) .text-washi-paper\/40 { color: rgba(26, 26, 26, 0.4); }
+.light .text-washi-paper\/50,
+:root:not(.dark) .text-washi-paper\/50 { color: rgba(26, 26, 26, 0.5); }
+.light .text-washi-paper\/60,
+:root:not(.dark) .text-washi-paper\/60 { color: rgba(26, 26, 26, 0.6); }
+.light .text-washi-paper\/70,
+:root:not(.dark) .text-washi-paper\/70 { color: rgba(26, 26, 26, 0.7); }
+.light .text-washi-paper\/80,
+:root:not(.dark) .text-washi-paper\/80 { color: rgba(26, 26, 26, 0.8); }
+.light .text-washi-paper\/90,
+:root:not(.dark) .text-washi-paper\/90 { color: rgba(26, 26, 26, 0.9); }
+
+.light .text-jlpt-question,
+:root:not(.dark) .text-jlpt-question {
+  color: rgba(26, 26, 26, 0.9);
+}
+
+.light .text-jp-content,
+:root:not(.dark) .text-jp-content {
+  color: rgba(26, 26, 26, 0.9);
+}

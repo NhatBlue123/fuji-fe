@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import api from "@/lib/api";
+import { useCreateBulkSlotMutation } from "@/store/services/bookingApi";
 import { Mode, TimeRange, Weekday } from "./types";
 import {
   estimateSlots,
@@ -62,6 +62,7 @@ function Field({
 export default function CreateTimeSlotForm() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const [createBulkSlot, { isLoading: creatingSlot }] = useCreateBulkSlotMutation();
 
   const [mode, setMode] = useState<Mode>("bulk");
   const [dateFrom, setDateFrom] = useState("");
@@ -83,7 +84,6 @@ export default function CreateTimeSlotForm() {
     { start: "19:00", end: "20:00" },
   ]);
 
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
   const composedSubject = subjectType && level ? `${subjectType} - ${level}` : "";
@@ -163,7 +163,7 @@ export default function CreateTimeSlotForm() {
     }
 
     try {
-      setLoading(true);
+      setNotice(null);
 
       let payload: {
         dateFrom: string;
@@ -207,8 +207,8 @@ export default function CreateTimeSlotForm() {
         };
       }
 
-      const { data: res } = await api.post("/time-slots/bulk", payload);
-      const bulk = res?.data as {
+      const result = await createBulkSlot(payload).unwrap();
+      const bulk = result as {
         requested: number;
         created: number;
         skipped: number;
@@ -248,15 +248,13 @@ export default function CreateTimeSlotForm() {
       }
     } catch (e: unknown) {
       const message =
-        (e as any)?.response?.data?.message || t("booking.error.createFailed");
+        (e as any)?.data?.message || t("booking.error.createFailed");
       setErr(message);
       setNotice({
         type: "error",
         title: t("booking.error.saveFailed"),
         description: message,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -509,10 +507,10 @@ export default function CreateTimeSlotForm() {
             <button
               type="button"
               onClick={submit}
-              disabled={!canSubmit || loading}
+              disabled={!canSubmit || creatingSlot}
               className="h-12 rounded-xl bg-secondary px-8 font-bold text-secondary-foreground disabled:opacity-50 hover:bg-secondary/90"
             >
-              {loading ? t("common.saving") : t("booking.btn.save")}
+              {creatingSlot ? t("common.saving") : t("booking.btn.save")}
             </button>
           </div>
         </section>

@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -135,6 +136,9 @@ export default function AdminChatModerationPage() {
   const [size, setSize] = useState(20);
   const [banPage, setBanPage] = useState(0);
   const [selectedViolation, setSelectedViolation] = useState<typeof violations[0] | null>(null);
+  const [deleteViolationConfirm, setDeleteViolationConfirm] = useState<typeof violations[0] | null>(null);
+  const [deleteAllViolationsConfirm, setDeleteAllViolationsConfirm] = useState(false);
+  const [deleteAllBansConfirm, setDeleteAllBansConfirm] = useState(false);
 
   const violationsQuery = useGetViolationsQuery({ page, size });
   const bansQuery = useGetBansQuery({ page: banPage, size });
@@ -292,19 +296,7 @@ export default function AdminChatModerationPage() {
                     variant="outline"
                     size="sm"
                     disabled={deleteAllViolationsState.isLoading || totalViolations === 0}
-                    onClick={async () => {
-                      const ok = window.confirm(
-                        "Bạn chắc chắn muốn xóa toàn bộ vi phạm? Hành động này không thể hoàn tác.",
-                      );
-                      if (!ok) return;
-                      try {
-                        await deleteAllViolations().unwrap();
-                        toast.success("Đã xóa toàn bộ vi phạm");
-                        violationsQuery.refetch();
-                      } catch (err: any) {
-                        toast.error(err?.message || "Xóa thất bại");
-                      }
-                    }}
+                    onClick={() => setDeleteAllViolationsConfirm(true)}
                     className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:hover:bg-rose-900/20"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -397,16 +389,7 @@ export default function AdminChatModerationPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={async () => {
-                                if (!confirm("Bạn có chắc muốn xóa vi phạm này?")) return;
-                                try {
-                                  await deleteViolation({ id: v.id }).unwrap();
-                                  toast.success("Đã xóa vi phạm");
-                                  violationsQuery.refetch();
-                                } catch (err: any) {
-                                  toast.error(err?.message || "Xóa thất bại");
-                                }
-                              }}
+                              onClick={() => setDeleteViolationConfirm(v)}
                               disabled={deleteViolationState.isLoading}
                               className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20"
                               title="Xóa vi phạm"
@@ -472,39 +455,7 @@ export default function AdminChatModerationPage() {
                   variant="destructive"
                   size="sm"
                   disabled={deleteAllBansState.isLoading || totalBans === 0}
-                  onClick={async () => {
-                    const ok = window.confirm(
-                      "Bạn chắc chắn muốn reset toàn bộ cấm chat cho tất cả user?",
-                    );
-                    if (!ok) return;
-                    try {
-                      await deleteAllBans().unwrap();
-                      toast.success("Đã reset toàn bộ cấm chat");
-                      bansQuery.refetch();
-                    } catch (err: any) {
-                      const msg = String(err?.message || "");
-                      if (msg.includes("not supported")) {
-                        try {
-                          await Promise.all(
-                            bans.map((b) =>
-                              deleteBan({ userId: b.userId }).unwrap(),
-                            ),
-                          );
-                          toast.success(
-                            "Đã gỡ ban từng user trong danh sách hiện tại.",
-                          );
-                          bansQuery.refetch();
-                          return;
-                        } catch (fallbackErr: any) {
-                          toast.error(
-                            fallbackErr?.message || "Gỡ ban thất bại",
-                          );
-                          return;
-                        }
-                      }
-                      toast.error(msg || "Reset toàn bộ cấm chat thất bại");
-                    }
-                  }}
+                  onClick={() => setDeleteAllBansConfirm(true)}
                   className="gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -646,6 +597,162 @@ export default function AdminChatModerationPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Single Violation Dialog */}
+      <Dialog open={!!deleteViolationConfirm} onOpenChange={() => setDeleteViolationConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa vi phạm</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa vi phạm này? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteViolationConfirm && (
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Username</span>
+                <span className="font-medium">{deleteViolationConfirm.username || `#${deleteViolationConfirm.userId}`}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Nội dung</span>
+                <span className="text-sm max-w-[250px] truncate">{deleteViolationConfirm.messageContent}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" size="sm" className="px-5" onClick={() => setDeleteViolationConfirm(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="px-5"
+              disabled={deleteViolationState.isLoading}
+              onClick={async () => {
+                if (!deleteViolationConfirm) return;
+                try {
+                  await deleteViolation({ id: deleteViolationConfirm.id }).unwrap();
+                  toast.success("Đã xóa vi phạm");
+                  violationsQuery.refetch();
+                  setDeleteViolationConfirm(null);
+                } catch (err: any) {
+                  toast.error(err?.message || "Xóa thất bại");
+                }
+              }}
+            >
+              {deleteViolationState.isLoading ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Đang xóa...
+                </>
+              ) : (
+                "Xóa vi phạm"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Violations Dialog */}
+      <Dialog open={deleteAllViolationsConfirm} onOpenChange={setDeleteAllViolationsConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa toàn bộ vi phạm</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa toàn bộ {totalViolations} vi phạm? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" size="sm" className="px-5" onClick={() => setDeleteAllViolationsConfirm(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="px-5"
+              disabled={deleteAllViolationsState.isLoading}
+              onClick={async () => {
+                try {
+                  await deleteAllViolations().unwrap();
+                  toast.success("Đã xóa toàn bộ vi phạm");
+                  violationsQuery.refetch();
+                  setDeleteAllViolationsConfirm(false);
+                } catch (err: any) {
+                  toast.error(err?.message || "Xóa thất bại");
+                }
+              }}
+            >
+              {deleteAllViolationsState.isLoading ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Đang xóa...
+                </>
+              ) : (
+                `Xóa ${totalViolations} vi phạm`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset All Bans Dialog */}
+      <Dialog open={deleteAllBansConfirm} onOpenChange={setDeleteAllBansConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận reset toàn bộ cấm chat</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn gỡ cấm chat cho toàn bộ {totalBans} người dùng? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" size="sm" className="px-5" onClick={() => setDeleteAllBansConfirm(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="px-5"
+              disabled={deleteAllBansState.isLoading}
+              onClick={async () => {
+                try {
+                  await deleteAllBans().unwrap();
+                  toast.success("Đã reset toàn bộ cấm chat");
+                  bansQuery.refetch();
+                  setDeleteAllBansConfirm(false);
+                } catch (err: any) {
+                  const msg = String(err?.message || "");
+                  if (msg.includes("not supported")) {
+                    try {
+                      await Promise.all(
+                        bans.map((b) =>
+                          deleteBan({ userId: b.userId }).unwrap(),
+                        ),
+                      );
+                      toast.success("Đã gỡ ban từng user trong danh sách hiện tại.");
+                      bansQuery.refetch();
+                      setDeleteAllBansConfirm(false);
+                      return;
+                    } catch (fallbackErr: any) {
+                      toast.error(fallbackErr?.message || "Gỡ ban thất bại");
+                      return;
+                    }
+                  }
+                  toast.error(msg || "Reset toàn bộ cấm chat thất bại");
+                }
+              }}
+            >
+              {deleteAllBansState.isLoading ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Đang reset...
+                </>
+              ) : (
+                `Gỡ cấm ${totalBans} người dùng`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Violation Detail Dialog */}
       <Dialog open={!!selectedViolation} onOpenChange={() => setSelectedViolation(null)}>

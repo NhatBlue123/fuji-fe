@@ -21,63 +21,112 @@ export default function ExamHeader({
   const isWarning = timeLeft < 300;
 
   return (
-    <header className="header-jlpt h-16 shrink-0 z-50 flex items-center justify-between px-6">
+    <header style={{
+      height: "4rem",
+      flexShrink: 0,
+      zIndex: 50,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0 1.5rem",
+      background: "linear-gradient(180deg, rgba(11, 17, 32, 0.98) 0%, rgba(11, 17, 32, 0.95) 100%)",
+      borderBottom: "1px solid rgba(245, 240, 232, 0.08)",
+      backdropFilter: "blur(12px)"
+    }}>
       {/* Left: Logo & Title */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center size-9 rounded-sm bg-shun-nuri/10 border border-shun-nuri/20">
-          <span
-            className="material-symbols-outlined text-shun-nuri text-lg"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "2.25rem",
+          height: "2.25rem",
+          borderRadius: "4px",
+          backgroundColor: "rgba(165, 42, 42, 0.1)",
+          border: "1px solid rgba(165, 42, 42, 0.2)"
+        }}>
+          <span className="material-symbols-outlined" style={{ color: "#A52A2A", fontSize: "1.125rem", fontVariationSettings: "'FILL' 1" }}>
             school
           </span>
         </div>
-        <div className="flex flex-col">
-          <h1 className="text-sm font-semibold tracking-wide text-washi-paper/90 font-jp">
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <h1 style={{
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            color: "rgba(245, 240, 232, 0.9)",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            letterSpacing: "0.025em"
+          }}>
             {testTitle || "JLPT模擬試験"}
           </h1>
-          <span className="text-[10px] text-washi-paper/40 font-jp tracking-widest uppercase">
+          <span style={{
+            fontSize: "0.625rem",
+            color: "rgba(245, 240, 232, 0.4)",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase"
+          }}>
             Japanese Language Proficiency Test
           </span>
         </div>
       </div>
 
       {/* Center: Progress indicator */}
-      <div className="hidden md:flex items-center gap-3">
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-sm bg-charcoal/50 border border-washi-paper/5">
-          <span className="text-[10px] text-washi-paper/50 font-jp uppercase tracking-wider">
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          padding: "0.375rem 1rem",
+          borderRadius: "4px",
+          backgroundColor: "rgba(30, 41, 59, 0.5)",
+          border: "1px solid rgba(245, 240, 232, 0.05)"
+        }}>
+          <span style={{
+            fontSize: "0.625rem",
+            color: "rgba(245, 240, 232, 0.5)",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em"
+          }}>
             解答済み
           </span>
-          <span
-            className={`font-mono text-sm font-semibold tracking-wider ${
-              answeredCount === totalCount
-                ? "text-emerald-400"
-                : "text-washi-paper/70"
-            }`}
-          >
+          <span style={{
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            color: answeredCount === totalCount ? "#34D399" : "rgba(245, 240, 232, 0.7)"
+          }}>
             {answeredCount}
-            <span className="text-washi-paper/30 mx-1">/</span>
+            <span style={{ color: "rgba(245, 240, 232, 0.3)", margin: "0 0.25rem" }}>/</span>
             {totalCount}
           </span>
         </div>
       </div>
 
       {/* Right: Timer & Submit */}
-      <div className="flex items-center gap-5">
+      <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
         {/* Timer */}
-        <div className="flex items-center gap-2.5 px-4 py-2 rounded-sm bg-charcoal/50 border border-washi-paper/5">
-          <span
-            className="material-symbols-outlined text-washi-paper/50"
-            style={{
-              fontVariationSettings: "'FILL' 1",
-              fontSize: "1.125rem",
-            }}
-          >
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.625rem",
+          padding: "0.5rem 1rem",
+          borderRadius: "4px",
+          backgroundColor: "rgba(30, 41, 59, 0.5)",
+          border: "1px solid rgba(245, 240, 232, 0.05)"
+        }}>
+          <span className="material-symbols-outlined" style={{ color: "rgba(245, 240, 232, 0.5)", fontSize: "1.125rem", fontVariationSettings: "'FILL' 1" }}>
             timer
           </span>
-          <span
-            className={`timer-jlpt ${isWarning ? "warning" : ""}`}
-          >
+          <span style={{
+            fontFamily: "monospace",
+            fontSize: "1.125rem",
+            fontWeight: 600,
+            color: isWarning ? "#EF4444" : "rgba(245, 240, 232, 0.9)",
+            letterSpacing: "0.05em",
+            animation: isWarning ? "timer-pulse 1s ease-in-out infinite" : "none"
+          }}>
             {formatTime(timeLeft)}
           </span>
         </div>
@@ -85,12 +134,34 @@ export default function ExamHeader({
         {/* Submit button */}
         <button
           onClick={onSubmit}
-          className="btn-submit-jlpt flex items-center gap-2"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.625rem 1.25rem",
+            background: "linear-gradient(135deg, #A52A2A 0%, #8B2525 100%)",
+            border: "1px solid rgba(165, 42, 42, 0.6)",
+            borderRadius: "6px",
+            color: "#F5F0E8",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(165, 42, 42, 0.3)",
+            transition: "all 0.25s ease"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "linear-gradient(135deg, #8B2525 0%, #6B1D1D 100%)";
+            e.currentTarget.style.boxShadow = "0 6px 16px rgba(165, 42, 42, 0.4)";
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "linear-gradient(135deg, #A52A2A 0%, #8B2525 100%)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(165, 42, 42, 0.3)";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
         >
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: "1.125rem" }}
-          >
+          <span className="material-symbols-outlined" style={{ fontSize: "1.125rem" }}>
             send
           </span>
           <span>提出</span>

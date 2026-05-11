@@ -38,6 +38,8 @@ export interface MondaiConfig {
   requires_audio: boolean;
   instruction?: string; // Official JLPT direction text shown above questions
   _totalCount?: number; // total number of child questions (populated by rebuildStructureWithCounts)
+  _displayStart?: number; // visible question number; differs from question_order for child-mode mondai
+  _displayEnd?: number;
 }
 
 export interface SectionConfig {
@@ -67,30 +69,55 @@ export interface SectionConfig {
 export function rebuildStructureWithCounts(
   level: JLPTLevel,
   counts: Record<number, number>,
-  filteredSections?: SectionConfig[]
+  filteredSections?: SectionConfig[],
+  childModes: Record<number, boolean> = {},
 ): SectionConfig[] {
   const base = filteredSections ?? JLPT_STRUCTURE[level];
   const defaults = JLPT_PASSAGE_DEFAULTS[level] ?? {};
-  let cursor = 1;
+  let actualCursor = 1;
+  let displayCursor = 1;
 
   const rebuilt = base.map((section) => ({
     ...section,
     mondai: section.mondai.map((m) => {
-      const isPassage = m.requires_passage;
+      const isPassage = childModes[m.number] ?? m.requires_passage;
+      const baseCount = m.end - m.start + 1;
+      const count = counts[m.number] ?? baseCount;
 
-      // For passage mondai: use defaults from JLPT_PASSAGE_DEFAULTS, else end-start+1
+      // Child-mode mondai: one visible parent number, many scored child rows.
       if (isPassage) {
-        const hardcodedCount = defaults[m.number] ?? (m.end - m.start + 1);
-        const start = cursor;
-        cursor += 1;
-        return { ...m, start, end: start, _totalCount: hardcodedCount };
+        const totalCount = counts[m.number] ?? defaults[m.number] ?? baseCount;
+        const start = actualCursor;
+        const end = start + totalCount - 1;
+        const displayStart = displayCursor;
+        actualCursor = end + 1;
+        displayCursor += 1;
+        return {
+          ...m,
+          start,
+          end,
+          requires_passage: true,
+          _displayStart: displayStart,
+          _displayEnd: displayStart,
+          _totalCount: totalCount,
+        };
       }
 
-      // For standalone mondai: use override count if provided, else hardcoded
-      const count = counts[m.number] ?? (m.end - m.start + 1);
-      const end = cursor + count - 1;
-      cursor = end + 1;
-      return { ...m, start: cursor - count, end, _totalCount: count };
+      const start = actualCursor;
+      const end = start + count - 1;
+      const displayStart = displayCursor;
+      const displayEnd = displayStart + count - 1;
+      actualCursor = end + 1;
+      displayCursor = displayEnd + 1;
+      return {
+        ...m,
+        start,
+        end,
+        requires_passage: false,
+        _displayStart: displayStart,
+        _displayEnd: displayEnd,
+        _totalCount: count,
+      };
     }),
   }));
 

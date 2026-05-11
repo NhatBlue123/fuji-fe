@@ -1150,6 +1150,7 @@
     "filter": {
       "all": "Tất cả",
       "deposit": "Nạp vào",
+      "withdraw": "Rút tiền",
       "spending": "Chi tiêu"
     },
     "searchPlaceholder": "Mã giao dịch...",
@@ -1727,7 +1728,9 @@
     "errorEnd": "Lỗi khi kết thúc buổi học.",
     "confirm": {
       "endTeacher": "Bạn có chắc muốn kết thúc buổi học này? Hệ thống sẽ ghi nhận hoàn thành.",
-      "leaveStudent": "Bạn có chắc muốn thoát phòng? Buổi học vẫn có thể tiếp tục nếu còn thời gian."
+      "leaveStudent": "Bạn có chắc muốn thoát phòng? Buổi học vẫn có thể tiếp tục nếu còn thời gian.",
+      "leaveTitle": "Xác nhận rời lớp học",
+      "leaveConfirm": "Rời lớp"
     },
     "report": {
       "student": "Đánh giá học viên",
@@ -2386,5 +2389,37 @@
     "desc": "Tính năng này chỉ dành cho tài khoản nâng cấp. Vui lòng nâng cấp gói để trải nghiệm tốt nhất.",
     "btnUpgrade": "Nâng cấp {{tier}}",
     "btnLater": "Để sau"
+  },
+  "meetingSummary": {
+    "title": "Tóm tắt cuộc họp",
+    "summary": "Tóm tắt",
+    "keyPoints": "Các ý chính",
+    "actionItems": "Việc cần làm",
+    "generatedAt": "Đã tạo lúc",
+    "words": "Số từ",
+    "loading": "Đang tải tóm tắt...",
+    "generating": "AI đang tạo tóm tắt...",
+    "generatingHint": "Việc này có thể mất vài giây",
+    "retry": "Thử lại",
+    "download": "Tải về",
+    "viewSummary": "Xem tóm tắt",
+    "noSummary": "Chưa có tóm tắt",
+    "noSummaryHint": "Tóm tắt sẽ được tạo sau khi cuộc họp kết thúc",
+    "error": "Đã xảy ra lỗi khi tạo tóm tắt",
+    "success": "Tóm tắt đã được tạo thành công!",
+    "teacher": "Giáo viên",
+    "student": "Học viên",
+    "both": "Cả hai",
+    "completed": "Hoàn thành",
+    "pending": "Đang chờ",
+    "settings": {
+      "title": "Cài đặt AI Summary",
+      "subtitle": "Tùy chỉnh tóm tắt cuộc họp",
+      "enable": "Bật AI Summary",
+      "enableDesc": "Tự động tạo tóm tắt sau mỗi cuộc họp",
+      "language": "Ngôn ngữ tóm tắt",
+      "languageDesc": "Ngôn ngữ cho bản tóm tắt AI",
+      "info": "AI Summary sử dụng chuyển giọng nói thành văn bản để ghi lại cuộc họp và tạo tóm tắt bằng AI. Cả hai người tham gia đều có thể xem tóm tắt sau cuộc họp."
+    }
   }
 }

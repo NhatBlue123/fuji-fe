@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AlertTriangle, Ban, Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,9 @@ import {
   useGetMyBookingsQuery,
 } from "@/store/services/bookingApi";
 import { useAuth } from "@/store/hooks";
+import { MeetingSummaryModal } from "@/components/meeting-summary/MeetingSummaryModal";
+import type { MeetingSummaryResult } from "@/hooks/useMeetingSummary";
+import { API_CONFIG } from "@/config/api";
 
 type BookingTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
@@ -30,7 +33,7 @@ function formatTimeRange(startAt: string, endAt: string) {
 
 export default function MySchedulePage() {
   const { t } = useTranslation();
-  const { isTeacher, isInitialized } = useAuth();
+  const { isTeacher, isInitialized, accessToken } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -42,6 +45,13 @@ export default function MySchedulePage() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [actionType, setActionType] = useState<"CANCEL" | "END_EARLY">("CANCEL");
 
+  // AI Summary state
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
+  const [currentSummary, setCurrentSummary] = useState<MeetingSummaryResult | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
+
   const { data, isLoading, isFetching, isError } = useGetMyBookingsQuery(
     { status: tab },
     { skip: !isInitialized }
@@ -49,6 +59,96 @@ export default function MySchedulePage() {
 
   const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
   const [endBookingSession, { isLoading: isEndingEarly }] = useEndBookingVideoSessionMutation();
+
+  // Fetch AI Summary for a booking
+  const fetchMeetingSummary = useCallback(async (bookingId: number) => {
+    setSelectedBookingId(bookingId);
+    setSummaryLoading(true);
+    setSummaryError(null);
+    setCurrentSummary(null);
+
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/summaries/session/${bookingId}?sessionType=BOOKING`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No summary exists - either AI was disabled or transcript wasn't collected
+          setSummaryError(
+            t("meetingSummary.noSummaryHint") ||
+            "AI Summary không được bật trong buổi học này hoặc chưa có dữ liệu transcript."
+          );
+          return;
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch summary");
+      }
+
+      const data = await response.json();
+      setCurrentSummary(data);
+    } catch (err) {
+      console.error("[BookingModal] Failed to fetch summary:", err);
+      setSummaryError(err instanceof Error ? err.message : (t("meetingSummary.error") || "Không thể tải tóm tắt cuộc họp."));
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [t, accessToken]);
+
+  const handleViewSummary = (bookingId: number) => {
+    fetchMeetingSummary(bookingId);
+    setSummaryModalOpen(true);
+  };
+
+  const handleRetrySummary = useCallback(async () => {
+    if (!selectedBookingId) return;
+    setSummaryLoading(true);
+    setSummaryError(null);
+
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/summaries/generate`,
+        {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify({
+            sessionId: selectedBookingId,
+            sessionType: "BOOKING",
+            language: "vi",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.message || "";
+        // Check if it's a "no transcript" error
+        if (errorMsg.toLowerCase().includes("transcript") ||
+            errorMsg.toLowerCase().includes("no data") ||
+            errorMsg.toLowerCase().includes("không có dữ liệu")) {
+          throw new Error("Buổi học này không có dữ liệu transcript. Vui lòng bật AI Summary khi vào phòng học để thu thập dữ liệu.");
+        }
+        throw new Error(errorMsg || "Không thể tạo tóm tắt. Vui lòng thử lại sau.");
+      }
+
+      const data = await response.json();
+      setCurrentSummary(data);
+    } catch (err) {
+      console.error("[BookingModal] Failed to generate summary:", err);
+      setSummaryError(err instanceof Error ? err.message : (t("meetingSummary.error") || "Không thể tạo tóm tắt cuộc họp."));
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [selectedBookingId, t, accessToken]);
 
   const items = data ?? [];
 
@@ -252,12 +352,21 @@ export default function MySchedulePage() {
                 )}
 
                 {tab === "COMPLETED" && (
-                  <Link href={`/learn/session/${c.bookingId}`}>
-                    <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm">visibility</span>
-                      {t("auto.bookingModal_19")}
+                  <>
+                    <button
+                      onClick={() => handleViewSummary(c.bookingId)}
+                      className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                      AI Summary
                     </button>
-                  </Link>
+                    <Link href={`/learn/session/${c.bookingId}`}>
+                      <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">visibility</span>
+                        {t("auto.bookingModal_19")}
+                      </button>
+                    </Link>
+                  </>
                 )}
 
                 {tab === "CANCELLED" && (
@@ -270,6 +379,23 @@ export default function MySchedulePage() {
           ))}
         </div>
       </div>
+
+      {/* --- MODAL AI SUMMARY --- */}
+      <MeetingSummaryModal
+        isOpen={summaryModalOpen}
+        onClose={() => setSummaryModalOpen(false)}
+        summary={currentSummary}
+        isLoading={summaryLoading}
+        isGenerating={summaryLoading}
+        error={summaryError}
+        onRetry={handleRetrySummary}
+        isNoDataError={
+          summaryError?.toLowerCase().includes("không có dữ liệu") ||
+          summaryError?.toLowerCase().includes("no data") ||
+          summaryError?.toLowerCase().includes("no transcripts") ||
+          summaryError?.toLowerCase().includes("transcript")
+        }
+      />
 
       {/* --- MODAL XÁC NHẬN HỦY --- */}
       {deletingId !== null && (

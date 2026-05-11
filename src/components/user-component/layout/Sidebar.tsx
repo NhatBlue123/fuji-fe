@@ -12,7 +12,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect, useMemo, useRef } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -132,16 +131,11 @@ const Sidebar = () => {
             isCollapsed ? "justify-center px-4" : "gap-0.5 px-2 -ml-3"
           )}
         >
-          <div className={cn("flex-shrink-0", !isCollapsed && "-ml-1")}>
-            <Image
+          <div className={cn("flex-shrink-0 flex items-center justify-center", !isCollapsed && "-ml-1")}>
+            <img
               src="/images/logofuji_v1.png"
               alt="FUJI Logo"
-              width={70}
-              height={47}
-              quality={100}
-              loading="eager"
-              className="object-contain"
-              style={{ width: "auto", height: "auto" }}
+              className="h-15 w-auto object-contain"
             />
           </div>
 

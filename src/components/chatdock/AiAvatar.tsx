@@ -70,14 +70,10 @@ export default function AiAvatar({ className = "" }: { className?: string }) {
         cx="38"
         cy="45"
         rx="4"
-        ry={isBlinking ? "0.5" : "8"}
+        ry="8"
         fill="#2d3748"
-        animate={{
-          ry: isBlinking ? 0.5 : 8,
-        }}
-        transition={{
-          duration: 0.1,
-        }}
+        animate={isBlinking ? { scaleY: 0.125 } : { scaleY: 1 }}
+        transition={{ duration: 0.1 }}
       />
 
       {/* Right Eye */}
@@ -85,14 +81,10 @@ export default function AiAvatar({ className = "" }: { className?: string }) {
         cx="62"
         cy="45"
         rx="4"
-        ry={isBlinking ? "0.5" : "8"}
+        ry="8"
         fill="#2d3748"
-        animate={{
-          ry: isBlinking ? 0.5 : 8,
-        }}
-        transition={{
-          duration: 0.1,
-        }}
+        animate={isBlinking ? { scaleY: 0.125 } : { scaleY: 1 }}
+        transition={{ duration: 0.1 }}
       />
 
       {/* Eye shine - Left */}
@@ -129,25 +121,13 @@ export default function AiAvatar({ className = "" }: { className?: string }) {
         />
       )}
 
-      {/* Smile - Optional cute mouth */}
-      <motion.path
+      {/* Smile */}
+      <path
         d="M 40 60 Q 50 65 60 60"
         stroke="#2d3748"
         strokeWidth="2"
         fill="none"
         strokeLinecap="round"
-        animate={{
-          d: [
-            "M 40 60 Q 50 65 60 60",
-            "M 40 60 Q 50 67 60 60",
-            "M 40 60 Q 50 65 60 60",
-          ],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
       />
     </svg>
   );

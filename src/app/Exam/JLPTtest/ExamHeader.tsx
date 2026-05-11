@@ -10,55 +10,90 @@ interface HeaderProps {
   onSubmit: () => void;
 }
 
-export default function ExamHeader({ timeLeft, formatTime, testTitle, answeredCount, totalCount, onSubmit }: HeaderProps) {
+export default function ExamHeader({
+  timeLeft,
+  formatTime,
+  testTitle,
+  answeredCount,
+  totalCount,
+  onSubmit,
+}: HeaderProps) {
+  const isWarning = timeLeft < 300;
+
   return (
-    <header className="h-16 shrink-0 z-50 flex items-center justify-between border-b border-border bg-surface-dark px-6 shadow-sm">
+    <header className="header-jlpt h-16 shrink-0 z-50 flex items-center justify-between px-6">
+      {/* Left: Logo & Title */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center size-8 rounded-lg bg-[#ee2b5b]/20 text-[#ee2b5b]">
+        <div className="flex items-center justify-center size-9 rounded-sm bg-shun-nuri/10 border border-shun-nuri/20">
           <span
-            className="material-symbols-outlined text-xl"
+            className="material-symbols-outlined text-shun-nuri text-lg"
             style={{ fontVariationSettings: "'FILL' 1" }}
           >
             school
           </span>
         </div>
-        <h1 className="text-lg font-bold tracking-tight text-foreground">
-          {testTitle || "Đề thi thử JLPT"}
-        </h1>
+        <div className="flex flex-col">
+          <h1 className="text-sm font-semibold tracking-wide text-washi-paper/90 font-jp">
+            {testTitle || "JLPT模擬試験"}
+          </h1>
+          <span className="text-[10px] text-washi-paper/40 font-jp tracking-widest uppercase">
+            Japanese Language Proficiency Test
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        {/* Answered progress */}
-        <span className="hidden sm:block text-xs text-slate-400 font-mono bg-slate-800 px-2.5 py-1 rounded border border-slate-700">
-          Đã làm: <span className={answeredCount === totalCount ? "text-green-400" : "text-yellow-400"}>{answeredCount}</span>/{totalCount}
-        </span>
-
-        {/* Timer */}
-        <div className="flex items-center gap-2 bg-background-dark/50 px-4 py-2 rounded-lg border border-border">
+      {/* Center: Progress indicator */}
+      <div className="hidden md:flex items-center gap-3">
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-sm bg-charcoal/50 border border-washi-paper/5">
+          <span className="text-[10px] text-washi-paper/50 font-jp uppercase tracking-wider">
+            解答済み
+          </span>
           <span
-            className="material-symbols-outlined"
+            className={`font-mono text-sm font-semibold tracking-wider ${
+              answeredCount === totalCount
+                ? "text-emerald-400"
+                : "text-washi-paper/70"
+            }`}
+          >
+            {answeredCount}
+            <span className="text-washi-paper/30 mx-1">/</span>
+            {totalCount}
+          </span>
+        </div>
+      </div>
+
+      {/* Right: Timer & Submit */}
+      <div className="flex items-center gap-5">
+        {/* Timer */}
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-sm bg-charcoal/50 border border-washi-paper/5">
+          <span
+            className="material-symbols-outlined text-washi-paper/50"
             style={{
-              color: timeLeft < 300 ? '#ee2b5b' : 'var(--color-muted-foreground)',
-              fontVariationSettings: "'FILL' 1"
+              fontVariationSettings: "'FILL' 1",
+              fontSize: "1.125rem",
             }}
           >
             timer
           </span>
           <span
-            className={`font-mono text-xl font-bold tracking-widest ${timeLeft < 300 ? 'animate-pulse text-[#ee2b5b]' : 'text-foreground'}`}
+            className={`timer-jlpt ${isWarning ? "warning" : ""}`}
           >
             {formatTime(timeLeft)}
           </span>
         </div>
 
-        {/* Submit button — always visible */}
+        {/* Submit button */}
         <button
           onClick={onSubmit}
-          className="text-white font-bold py-2 px-6 rounded-lg transition-opacity hover:opacity-90 flex items-center gap-2 shadow-lg shadow-red-900/20"
-          style={{ backgroundColor: '#ee2b5b' }}
+          className="btn-submit-jlpt flex items-center gap-2"
         >
-          <span className="material-symbols-outlined text-[20px]">send</span>
-          <span>Nộp bài</span>
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: "1.125rem" }}
+          >
+            send
+          </span>
+          <span>提出</span>
         </button>
       </div>
     </header>

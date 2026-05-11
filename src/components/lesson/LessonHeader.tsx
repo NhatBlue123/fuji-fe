@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Clock } from "lucide-react";
+import { Clock, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface LessonHeaderProps {
   subject: string | null;
@@ -13,6 +14,8 @@ interface LessonHeaderProps {
   role: "TEACHER" | "STUDENT";
   /** Callback khi đồng hồ về 0 */
   onTimeUp?: () => void;
+  /** Callback khi nhấn nút settings */
+  onSettingsClick?: () => void;
 }
 
 export function LessonHeader({
@@ -23,6 +26,7 @@ export function LessonHeader({
   isConnected,
   role,
   onTimeUp,
+  onSettingsClick,
 }: LessonHeaderProps) {
   const [remaining, setRemaining] = useState(initialSeconds);
   const hasNotifiedTimeUp = useRef(false);
@@ -99,6 +103,16 @@ export function LessonHeader({
         >
           {formatTime(remaining)}
         </span>
+        {onSettingsClick && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSettingsClick}
+            className="ml-2 text-[#8B8FA8] hover:text-[#F0F0F0]"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

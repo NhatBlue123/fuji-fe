@@ -133,17 +133,44 @@ function getReadingPassageHint(mondaiTitle: string): string {
   return "appropriate length for the level";
 }
 
+// Strip Japanese instruction patterns from mondaiTitle to avoid AI echoing them verbatim
+function stripJapaneseInstruction(text: string): string {
+  if (!text) return text;
+  
+  // If there's a 【word】 bracket, extract just the word
+  const bracketMatch = text.match(/【([^】]+)】/);
+  if (bracketMatch) {
+    return bracketMatch[1];
+  }
+  
+  // Check if text is mostly instruction (contains １・２・３・４ pattern)
+  if (/[１一]?[234三四][\.．・][234三四][\.．・][234三四]/.test(text)) {
+    // This is an instruction-only text, extract key topic word
+    const kanjiMatch = text.match(/[一-鿎]{2,6}/g);
+    if (kanjiMatch && kanjiMatch.length > 0) {
+      const longest = kanjiMatch.reduce((a, b) => a.length >= b.length ? a : b);
+      if (longest.length >= 2) return longest;
+    }
+    // Just extract a short meaningful part
+    const shortMatch = text.match(/[一-鿎]{3,4}/);
+    if (shortMatch) return shortMatch[0];
+  }
+  
+  // Return trimmed text if reasonable
+  return text.length > 40 ? text.slice(0, 40) : text;
+}
+
 function buildPrompt(req: GenerateQuestionsRequest): string {
   const { level, section, count, mondaiNumber, mondaiTitle, instruction, topic } = req;
   const topicLine = topic?.trim()
     ? `- Topic/Theme: "${topic.trim()}" — All questions MUST relate to this topic.`
     : "";
   const instructionLine = instruction?.trim()
-    ? `- Official instruction to show above questions: "${instruction.trim()}" — include this in contentText before the question.`
+    ? `- Official instruction: "${instruction.trim()}" — Add this instruction at the START of contentText, then your example sentence and question.`
     : "";
   const focus =
     MONDAI_FOCUS[level]?.[section]?.[mondaiNumber] ??
-    (mondaiTitle ? `JLPT ${level} style for "${mondaiTitle}".` : `Standard JLPT ${level} ${section} question.`);
+    (mondaiTitle ? `JLPT ${level} style for "${stripJapaneseInstruction(mondaiTitle)}".` : `Standard JLPT ${level} ${section} question.`);
 
   const jsonFormat = `Return a valid JSON array. Each element:
 {
@@ -153,6 +180,12 @@ function buildPrompt(req: GenerateQuestionsRequest): string {
   "explanation": "Vietnamese explanation",
   "passageText": ""
 }`;
+  // IMPORTANT: distribute correct answers evenly across options 1-4.
+  // Avoid clustering correct answers on the same option (especially option 1).
+  // For every 4 questions generated, try to have roughly 1 correct answer per option.
+  // The correctOption value must be a number from 1 to 4.`;
+  const distributionRule = `- IMPORTANT: Distribute correct answers evenly across options 1, 2, 3, and 4.
+  Do NOT always put the correct answer in option 1. For every 4 questions, try to spread correct answers roughly as: 1 correct in option 1, 1 in option 2, 1 in option 3, 1 in option 4.`;
 
   if (section === "READING") {
     const sizeHint = mondaiTitle ? getReadingPassageHint(mondaiTitle) : "appropriate length";
@@ -160,6 +193,7 @@ function buildPrompt(req: GenerateQuestionsRequest): string {
 Task: ${focus}
 - Passage length: ${sizeHint}.
 ${topicLine}
+${distributionRule}
 - Generate EXACTLY ${count} questions from the passage.
 - Japanese for passage/questions/options. Vietnamese for explanations only.
 - JLPT ${level} difficulty.
@@ -172,6 +206,7 @@ ${jsonFormat}`;
     const isReorder = /文の文法②|文章の文法/.test(mondaiTitle || "");
     return `JLPT ${level} test creator. GRAMMAR Mondai ${mondaiNumber}${mondaiTitle ? `: ${mondaiTitle}` : ""}.
 Task: ${focus}
+${distributionRule}
 - Generate EXACTLY ${count} questions. Japanese for questions/options. Vietnamese for explanations.
 - JLPT ${level} difficulty. passageText MUST be "" for all.
 ${topicLine}
@@ -181,12 +216,19 @@ ${isReorder
 ${jsonFormat}`;
   }
 
-  return `JLPT ${level} test creator. ${section} Mondai ${mondaiNumber}${mondaiTitle ? `: ${mondaiTitle}` : ""}.
-Focus: ${focus}
+  // VOCABULARY prompt - instruction is NOT in contentText, it's shown in UI
+  const vocabFocus = MONDAI_FOCUS[level]?.VOCABULARY?.[mondaiNumber] ?? `JLPT ${level} vocabulary question`;
+  return `JLPT ${level} test creator. VOCABULARY Mondai ${mondaiNumber}.
+Focus: ${vocabFocus}
+${distributionRule}
 - Generate EXACTLY ${count} questions. Japanese for questions/options. Vietnamese for explanations.
 - JLPT ${level} difficulty. passageText MUST be "" for all.
 ${topicLine}
-- VOCABULARY: use 【word】 to mark the target word.
+- IMPORTANT: Create your OWN original example sentence using the target word.
+- contentText should contain ONLY the example sentence with the target word marked as 【word】.
+- Do NOT include any instruction text in contentText.
+- WRONG contentText: "毎朝ジョギング...). ＿＿の　ことばは..."
+- CORRECT contentText: "毎朝ジョギングをするのが、私の【習慣】です。"
 ${jsonFormat}`;
 }
 
@@ -260,15 +302,20 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY ?? "";
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-    if (!apiKey || apiKey === "your_gemini_api_key_here") {
+    if (!apiKey) {
       return NextResponse.json({ error: "GEMINI_API_KEY chưa được cấu hình trong .env.local" }, { status: 500 });
     }
 
-    // Cache check
-    const cacheKey = `gq:${body.level}:${body.section}:${body.mondaiNumber}:${body.count}:${body.topic ?? ""}`;
-    const cached = getCached(cacheKey);
-    if (cached) {
-      return NextResponse.json({ questions: cached, model: `${model} (cached)` });
+    // Don't cache VOCABULARY/GRAMMAR (AI generates different results each time)
+    // Only cache READING (passages are expensive to generate)
+    const shouldCache = body.section === "READING";
+    if (shouldCache) {
+      const cacheKey = `gq:${body.level}:${body.section}:${body.mondaiNumber}:${body.count}:${body.topic ?? ""}`;
+      const cached = getCached(cacheKey);
+      if (cached) {
+        console.log(`[AI/generate-questions] Cache HIT (${cacheKey})`);
+        return NextResponse.json({ questions: cached, model: `${model} (cached)` });
+      }
     }
 
     const prompt = buildPrompt(body);
@@ -287,12 +334,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "AI không trả về danh sách câu hỏi. Hãy thử lại." }, { status: 500 });
     }
 
-    const sanitized = questions.map((q: any, i: number) => ({
-      ...q,
-      passageText: i === 0 ? (q.passageText || "") : "",
-    }));
+    const sanitized = questions.map((q: any, i: number) => {
+      const rawCorrect = q.correctOption;
+      // Ensure correctOption is always a valid 1-4 integer (default to 1)
+      const correctOption =
+        typeof rawCorrect === "number" && rawCorrect >= 1 && rawCorrect <= 4
+          ? rawCorrect
+          : 1;
+      return {
+        ...q,
+        correctOption,
+        passageText: i === 0 ? (q.passageText || "") : "",
+      };
+    });
 
-    setCache(cacheKey, sanitized);
+    // Only cache READING (passages are expensive to generate)
+    if (body.section === "READING") {
+      const cacheKey = `gq:${body.level}:${body.section}:${body.mondaiNumber}:${body.count}:${body.topic ?? ""}`;
+      setCache(cacheKey, sanitized);
+    }
     return NextResponse.json({ questions: sanitized, model });
   } catch (err: any) {
     console.error("[AI/generate-questions] error:", err);

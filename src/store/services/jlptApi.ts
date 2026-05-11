@@ -12,7 +12,8 @@ import type {
 import type { AnswerReview, QuestionReportPayload, QuestionReport } from "@/types/jlpt-review";
 import type { SystemReport } from "@/types/admin-reports";
 
-// Base query with authentication
+// ── Base query with authentication (fuji-be) ──────────────────────────────────
+
 const baseQuery = async (
   args:
     | string
@@ -30,7 +31,6 @@ const baseQuery = async (
 
   const headers: HeadersInit = {};
 
-  // Only set Content-Type for JSON, let browser set it for FormData
   const isFormData = body instanceof FormData;
   if (!isFormData) {
     headers["Content-Type"] = "application/json";
@@ -48,7 +48,6 @@ const baseQuery = async (
   };
 
   if (body) {
-    // Don't stringify FormData
     config.body = isFormData ? body : JSON.stringify(body);
   }
 
@@ -75,6 +74,85 @@ interface ApiResponse<T> {
   message?: string;
   data: T;
 }
+
+// ── AI JLPT Assessment API (calls fuji-ai) ───────────────────────────────────
+
+const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:3005";
+
+const aiBaseQuery = async (args: { url: string; method?: string; body?: object | null }) => {
+  const { url, method = "GET", body } = args;
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const config: RequestInit = { method, headers, credentials: "include" };
+  if (body) config.body = JSON.stringify(body);
+
+  const response = await fetch(`${AI_BASE_URL}${url}`, config);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    return { error: { status: response.status, data: error } };
+  }
+
+  const data = await response.json();
+  return { data };
+};
+
+interface AiApiResponse<T> {
+  ok: boolean;
+  data?: T;
+  error?: { code: string; message: string };
+}
+
+export interface JlptAiAssessment {
+  attemptId: number;
+  markdown: string;
+  generatedAt: string;
+  modelVersion?: string;
+}
+
+export const jlptAiApi = createApi({
+  reducerPath: "jlptAiApi",
+  baseQuery: aiBaseQuery,
+  tagTypes: ["JlptAiAssessment"],
+  endpoints: (builder) => ({
+    getJlptAiAssessment: builder.query<JlptAiAssessment, number>({
+      query: (attemptId) => ({
+        url: `/api/jlpt/attempts/${attemptId}/assessment`,
+        method: "GET",
+      }),
+      transformResponse: (response: AiApiResponse<JlptAiAssessment>) => {
+        if (!response.ok || !response.data) {
+          throw new Error(response.error?.message || "Không thể lấy đánh giá AI");
+        }
+        return response.data;
+      },
+      providesTags: (result, error, attemptId) => [
+        { type: "JlptAiAssessment", id: attemptId },
+      ],
+    }),
+    createJlptAiAssessment: builder.mutation<JlptAiAssessment, number>({
+      query: (attemptId) => ({
+        url: `/api/jlpt/attempts/${attemptId}/assessment`,
+        method: "POST",
+      }),
+      transformResponse: (response: AiApiResponse<JlptAiAssessment>) => {
+        if (!response.ok || !response.data) {
+          throw new Error(response.error?.message || "Không thể tạo đánh giá AI");
+        }
+        return response.data;
+      },
+      invalidatesTags: (result, error, attemptId) => [
+        { type: "JlptAiAssessment", id: attemptId },
+      ],
+    }),
+  }),
+});
+
+export const { useGetJlptAiAssessmentQuery, useCreateJlptAiAssessmentMutation } = jlptAiApi;
+
+// ── Main jlptApi (fuji-be endpoints) ─────────────────────────────────────────
 
 export const jlptApi = createApi({
   reducerPath: "jlptApi",

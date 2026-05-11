@@ -30,6 +30,7 @@ export interface JlptTest {
   attemptCount: number;
   averageScore: number;
   isPublished: boolean;
+  isAntiCheatEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   mondaiCounts?: Record<number, number>;
@@ -55,6 +56,8 @@ export interface JlptQuestion {
   createdAt: string;
   children?: JlptQuestion[];
   parent?: JlptQuestion;  // populated on frontend when flattening tree for exam
+  subLabel?: string;
+  isReadingPassage?: boolean;
 }
 
 export interface MediaInfo {

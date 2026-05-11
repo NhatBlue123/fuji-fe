@@ -17,12 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SystemErrorFilter } from "@/components/admin/system-errors/SystemErrorFilter";
 import { SystemErrorTable } from "@/components/admin/system-errors/SystemErrorTable";
 import { SystemErrorDetailSheet } from "@/components/admin/system-errors/SystemErrorDetailSheet";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 
 /**
  * System Error Management Page for Admin.
@@ -39,8 +38,7 @@ export default function SystemErrorPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(10); // seconds
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [autoRefreshInterval] = useState(10); // seconds
   const [selectedErrorId, setSelectedErrorId] = useState<number | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [quickFilterLevel, setQuickFilterLevel] = useState<string>("");
@@ -73,12 +71,14 @@ export default function SystemErrorPage() {
     isLoading: isLogsLoading,
     refetch: refetchLogs,
     isFetching: isLogsFetching,
+    isError: isLogsError,
+    error: logsError,
   } = useGetSystemErrorLogsQuery({
     page,
     size,
     sortBy: "createdAt",
     sortDir: "desc",
-    level: quickFilterLevel || activeFilters.level === "all" ? undefined : activeFilters.level,
+    level: quickFilterLevel || (activeFilters.level === "all" ? undefined : activeFilters.level),
     service: activeFilters.service === "all" ? undefined : activeFilters.service,
     resolved:
       activeFilters.resolved === "all"
@@ -96,7 +96,6 @@ export default function SystemErrorPage() {
   const handleRefresh = useCallback(() => {
     refetchLogs();
     refetchSummary();
-    setLastRefreshTime(new Date());
   }, [refetchLogs, refetchSummary]);
 
   // Auto-refresh logic with configurable interval
@@ -141,6 +140,11 @@ export default function SystemErrorPage() {
       setActiveFilters((prev) => ({ ...prev, resolved: "all" }));
     }
   };
+
+  const logsErrorStatus =
+    typeof logsError === "object" && logsError && "status" in logsError
+      ? String(logsError.status)
+      : undefined;
 
   return (
     <div className="space-y-4">
@@ -300,7 +304,34 @@ export default function SystemErrorPage() {
           />
 
           {/* Main Data Table */}
-          {isLogsLoading && logsData === undefined ? (
+          {isLogsError ? (
+            <div className="flex min-h-64 items-center justify-center p-6">
+              <div className="max-w-md text-center space-y-3">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                  <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {t("admin.systemErrors.toast.refreshError")}
+                  </p>
+                  {logsErrorStatus && (
+                    <p className="text-xs text-muted-foreground">
+                      HTTP {logsErrorStatus}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleRefresh}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  {t("common.tryAgain")}
+                </Button>
+              </div>
+            </div>
+          ) : isLogsLoading && logsData === undefined ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>

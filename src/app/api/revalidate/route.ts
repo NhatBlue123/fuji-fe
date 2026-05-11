@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, action, id } = body;
 
-    console.log(`[Revalidate] Type: ${type}, Action: ${action}, ID: ${id}`);
-
     switch (type) {
       case "course":
         await handleCourseRevalidation(action, id);
@@ -56,7 +54,6 @@ async function handleCourseRevalidation(action: string, id?: number) {
     case "delete":
       // Revalidate course list page
       revalidatePath("/course");
-      console.log("[Revalidate] Course list revalidated");
       break;
 
     case "update":
@@ -64,7 +61,6 @@ async function handleCourseRevalidation(action: string, id?: number) {
         // Revalidate specific course detail page
         revalidatePath(`/course/[slug]`, "page");
         revalidatePath("/course");
-        console.log(`[Revalidate] Course ${id} revalidated`);
       }
       break;
 
@@ -73,7 +69,6 @@ async function handleCourseRevalidation(action: string, id?: number) {
       // Revalidate both list and detail
       revalidatePath("/course");
       revalidatePath(`/course/[slug]`, "page");
-      console.log("[Revalidate] Course published/unpublished");
       break;
 
     default:
@@ -88,7 +83,6 @@ async function handleFlashcardRevalidation(action: string, id?: number) {
     case "update":
       // Revalidate flashcard list page
       revalidatePath("/flashcards");
-      console.log("[Revalidate] Flashcard pages revalidated");
       break;
 
     default:

@@ -65,7 +65,10 @@ export function CourseJsonLd({ course }: CourseJsonLdProps) {
     jsonLd.offers = {
       "@type": "Offer",
       price: course.price,
-      priceCurrency: course.currency ?? "VND",
+      priceCurrency:
+        course.currency && course.currency.toUpperCase() !== "VND"
+          ? course.currency.toUpperCase()
+          : "HOA",
       availability: "https://schema.org/InStock",
     };
   }

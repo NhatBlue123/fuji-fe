@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { getTopupTransferAmountVnd } from "@/lib/topup";
 import {
   Dialog,
   DialogContent,
@@ -100,7 +101,7 @@ export default function AdminTopupPackagesPage() {
   const handleEdit = (pkg: AdminTopupPackage) => {
     setSelectedPackage(pkg);
     setFormData({
-      price: pkg.price,
+      price: getTopupTransferAmountVnd(pkg.price),
       flowers: pkg.flowers,
       bonusFlowers: pkg.bonusFlowers,
       isPopular: pkg.isPopular,
@@ -119,6 +120,10 @@ export default function AdminTopupPackagesPage() {
     e.preventDefault();
     if (!formData.price || !formData.flowers) {
       toast.error("Vui lòng nhập đầy đủ giá và số hoa");
+      return;
+    }
+    if (formData.price < 1000 || formData.price % 1000 !== 0) {
+      toast.error("Giá chuyển khoản phải là bội số 1.000đ");
       return;
     }
 
@@ -243,7 +248,9 @@ export default function AdminTopupPackagesPage() {
                       {pkg.isPopular && <Badge>Nổi bật</Badge>}
                     </div>
                   </TableCell>
-                  <TableCell>{pkg.price.toLocaleString()}đ</TableCell>
+                  <TableCell>
+                    {getTopupTransferAmountVnd(pkg.price).toLocaleString()}đ
+                  </TableCell>
                   <TableCell>{pkg.bonusFlowers?.toLocaleString() || 0}</TableCell>
                   <TableCell>
                     {pkg.isActive ? (
@@ -289,10 +296,11 @@ export default function AdminTopupPackagesPage() {
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Giá *</Label>
+                <Label>Giá chuyển khoản (VND) *</Label>
                 <Input
                   type="number"
-                  min={1}
+                  min={1000}
+                  step={1000}
                   value={formData.price || 0}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -300,6 +308,7 @@ export default function AdminTopupPackagesPage() {
                       price: Number(e.target.value) || 0,
                     }))
                   }
+                  placeholder="VD: 10000"
                 />
               </div>
               <div className="space-y-2">

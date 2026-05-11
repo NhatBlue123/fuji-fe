@@ -5,7 +5,7 @@ import type { AdminRevenueStatsResponse, AdminIncomeStatsResponse } from "@/type
 export const adminRevenueApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getRevenueStats: builder.query<AdminRevenueStatsResponse, void>({
-      query: () => "/admin/stats/revenue",
+      query: () => "/admin/analytics/summary",
       transformResponse: (response: ApiResponse<AdminRevenueStatsResponse>) => 
         response.data,
       providesTags: ["AdminRevenue"],

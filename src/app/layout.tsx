@@ -64,11 +64,11 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/images/og_image.png",
+        url: "https://fuji.io.vn/images/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "FUJI - Nền tảng học tiếng Nhật All-in-One",
-        type: "image/png",
+        type: "image/jpeg",
       },
     ],
   },
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     title: "FUJI - Nền tảng học tiếng Nhật All-in-One",
     description:
       "Học tiếng Nhật từ N5 đến N1 với FUJI. Luyện đề JLPT, AI Chat 24/7, Video Call 1-1 với giáo viên.",
-    images: ["/images/og_image.png"],
+    images: ["https://fuji.io.vn/images/og-image.jpg"],
     creator: "@fuji_japan",
   },
   alternates: {
@@ -146,7 +146,7 @@ export default async function RootLayout({
         <meta property="og:see_also" content="https://linkedin.com/company/fuji-japan" />
         
         {/* Structured Data - Organization */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "EducationalOrganization", name: "FUJI", description: "Nền tảng học tiếng Nhật All-in-One", url: "https://fuji.io.vn", logo: "https://fuji.io.vn/images/og_image.png", image: "https://fuji.io.vn/images/og_image.png", sameAs: ["https://facebook.com/fuji.japan", "https://twitter.com/fuji_japan", "https://linkedin.com/company/fuji-japan", "https://t.me/fuji_japan"], contactPoint: { "@type": "ContactPoint", contactType: "Customer Service", availableLanguage: ["Vietnamese", "Japanese", "English"] }, address: { "@type": "PostalAddress", addressCountry: "VN", addressLocality: "Ho Chi Minh City" } }) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "EducationalOrganization", name: "FUJI", description: "Nền tảng học tiếng Nhật All-in-One", url: "https://fuji.io.vn", logo: "https://fuji.io.vn/images/og-image.jpg", image: "https://fuji.io.vn/images/og-image.jpg", sameAs: ["https://facebook.com/fuji.japan", "https://twitter.com/fuji_japan", "https://linkedin.com/company/fuji-japan", "https://t.me/fuji_japan"], contactPoint: { "@type": "ContactPoint", contactType: "Customer Service", availableLanguage: ["Vietnamese", "Japanese", "English"] }, address: { "@type": "PostalAddress", addressCountry: "VN", addressLocality: "Ho Chi Minh City" } }) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "FUJI", url: "https://fuji.io.vn", potentialAction: { "@type": "SearchAction", target: "https://fuji.io.vn/course?search={search_term_string}", "query-input": "required name=search_term_string" } }) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Course", name: "Khóa học tiếng Nhật JLPT N5-N1", description: "Học tiếng Nhật từ cơ bản đến nâng cao với FUJI", provider: { "@type": "Organization", name: "FUJI", url: "https://fuji.io.vn" }, educationalLevel: "Beginner to Advanced", inLanguage: ["vi", "ja"], availableLanguage: ["Vietnamese", "Japanese", "English"], coursePrerequisites: "Không yêu cầu kiến thức trước", hasCourseInstance: [{ "@type": "CourseInstance", courseMode: "online", courseWorkload: "PT2H" }] }) }} />
       </head>

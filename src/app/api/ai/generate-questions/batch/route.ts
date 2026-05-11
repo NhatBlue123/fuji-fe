@@ -204,12 +204,10 @@ export async function POST(req: NextRequest) {
     const cacheKey = `batch:${level}:${sections.map(s => `${s.section}${s.mondaiNumber}x${s.count}`).join(",")}`;
     const cached = getBatchCached(cacheKey);
     if (cached) {
-      console.log(`[AI/batch] Cache HIT (${cacheKey})`);
       return NextResponse.json({ results: cached, cached: true });
     }
 
     const prompt = buildBatchPrompt(level, sections);
-    console.log(`[AI/batch] Calling Gemini REST v1 (${model}), ${sections.length} mondai, prompt=${prompt.length}chars`);
 
     const text = await callGemini(apiKey, model, prompt, 16384);
 

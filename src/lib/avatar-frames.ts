@@ -5,14 +5,14 @@ export type AvatarFrame = {
   isDefault: boolean;
 };
 
-export const AVATAR_FRAME_DIR = "/images/khung_avatar";
+export const AVATAR_FRAME_DIR = "/images/khung_avatar_new";
 export const DEFAULT_AVATAR_FRAME_LIMIT = 5;
 
 export function isAvatarFramePath(value?: string | null): value is string {
   return Boolean(
     value &&
       value.startsWith(`${AVATAR_FRAME_DIR}/`) &&
-      value.toLowerCase().endsWith(".webp"),
+      /\.(png|webp)$/i.test(value),
   );
 }
 

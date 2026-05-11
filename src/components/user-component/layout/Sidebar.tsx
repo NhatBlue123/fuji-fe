@@ -8,7 +8,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -27,7 +27,6 @@ import {
   Zap,
   Mic
 } from "lucide-react";
-import TopupModal from "@/components/user-component/premium/TopupModal";
 import { useNotifications } from "@/providers/NotificationProvider";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -45,6 +44,7 @@ const getSavedSidebarCollapsed = () => {
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { roles } = useAuth();
   useNotifications();
   const { t, i18n } = useTranslation();
@@ -52,7 +52,6 @@ const Sidebar = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(getSavedSidebarCollapsed);
   const [tooltipReady, setTooltipReady] = useState(getSavedSidebarCollapsed);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -76,6 +75,10 @@ const Sidebar = () => {
       // Chỉ bật tooltip sau khi animation collapse xong (300ms)
       tooltipTimerRef.current = setTimeout(() => setTooltipReady(true), 320);
     }
+  };
+
+  const openPremiumPage = () => {
+    router.push("/premium?tab=premium");
   };
 
   const isAdminOrTeacher =
@@ -244,7 +247,7 @@ const Sidebar = () => {
                 variant="ghost"
                 size="icon"
                 className="size-8 rounded-lg bg-secondary text-white hover:scale-110 shadow-lg shadow-secondary/30"
-                onClick={() => setIsPremiumModalOpen(true)}
+                onClick={openPremiumPage}
               >
                 <Zap className="size-4 fill-current" />
               </Button>
@@ -263,7 +266,7 @@ const Sidebar = () => {
                   size="sm"
                   variant="outline"
                   className="h-8 text-[11px] font-black w-full border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary hover:text-white transition-all active:scale-95 rounded-xl uppercase tracking-widest"
-                  onClick={() => setIsPremiumModalOpen(true)}
+                  onClick={openPremiumPage}
                 >
                   {t("sidebar.viewDetails") || "Xem chi tiết"}
                 </Button>
@@ -271,11 +274,6 @@ const Sidebar = () => {
             )}
           </div>
         </div>
-
-        <TopupModal
-          isOpen={isPremiumModalOpen}
-          onClose={() => setIsPremiumModalOpen(false)}
-        />
       </aside>
     </TooltipProvider>
   );

@@ -417,7 +417,7 @@ export const FlashcardList = ({
                   {card.meaning}
                 </p>
                 <p className="text-[11px] text-muted-foreground font-medium italic line-clamp-1 opacity-70">
-                  "{card.example}"
+                  &quot;{card.example}&quot;
                 </p>
               </div>
 

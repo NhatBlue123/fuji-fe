@@ -25,11 +25,8 @@ const getInitialAuthState = (): AuthState => {
   try {
     const token = getAccessToken();
     const savedAuth = localStorage.getItem("auth_state");
-    console.log("🔍 getInitialAuthState: token =", token ? "EXISTS" : "NULL");
-    console.log("🔍 getInitialAuthState: savedAuth =", savedAuth ? "EXISTS" : "NULL");
     if (savedAuth && token) {
       const parsed = JSON.parse(savedAuth);
-      console.log("✅ getInitialAuthState: Restoring user from localStorage:", parsed.user?.username);
       return {
         ...parsed,
         accessToken: token,
@@ -38,8 +35,6 @@ const getInitialAuthState = (): AuthState => {
         error: null,
         isInitialized: false,
       };
-    } else {
-      console.log("❌ getInitialAuthState: Cannot restore - missing token or savedAuth");
     }
   } catch (error) {
     console.warn("Failed to parse saved auth state:", error);

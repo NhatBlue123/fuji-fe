@@ -9,7 +9,7 @@ import type { CourseResponseDTO, UserSummaryDTO } from "@/types/course";
 export const revalidate = 3600;
 
 const BASE_URL = "https://fuji.io.vn";
-const DEFAULT_OG_IMAGE = "/images/og_image.png";
+const DEFAULT_OG_IMAGE = "/images/og-image.jpg";
 
 interface Props {
   params: Promise<{ slug: string }>;

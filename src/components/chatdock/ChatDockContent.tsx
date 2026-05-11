@@ -7,13 +7,10 @@ import {
   useCallback,
   useLayoutEffect,
 } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import {
   useCreateAiConversationMutation,
-  useCreateAiMessageMutation,
-  useLazyGetAiMessagesQuery,
 } from "@/store/services/aiChatHistoryApi";
 import {
   parseResponse,
@@ -30,9 +27,8 @@ import {
 import type {
   RouterThinkingItem,
 } from "@/components/user-component/ai/assistant/types";
-import AiAvatar from "./AiAvatar";
+import FramedAiAvatar from "./FramedAiAvatar";
 
-const MESSAGES_PAGE_SIZE = 20;
 const STREAM_STALL_TIMEOUT_MS = 20000;
 const STREAM_HEARTBEAT_CHECK_MS = 5000;
 const STREAM_MAX_IDLE_MS = 15000;
@@ -47,6 +43,7 @@ function intentToLabel(intent?: string) {
   if (intent === "grammar") return "Ngu phap";
   if (intent === "product") return "Khoa hoc";
   if (intent === "guide") return "Huong dan";
+  if (intent === "orchestrator" || intent === "routing") return "Dang dieu phoi";
   if (intent === "general_reject") return "Tu choi";
   if (intent === "grammar_qa") return "Ngu phap";
   if (intent === "product_info") return "Khoa hoc";
@@ -63,12 +60,14 @@ function formatThinkingItems(items: RouterThinkingItem[]) {
     .join("\n");
 }
 
+function createClientMessageId() {
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `chat_${Date.now().toString(36)}_${randomPart}`;
+}
+
 export default function ChatDockContent() {
-  const router = useRouter();
   const { socket, isConnected } = useAIChatSocket();
-  const [fetchMessages] = useLazyGetAiMessagesQuery();
   const [createAiConversation] = useCreateAiConversationMutation();
-  const [createAiMessage] = useCreateAiMessageMutation();
 
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
@@ -83,7 +82,8 @@ export default function ChatDockContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamBufferRef = useRef<string>("");
-  const sessionIdRef = useRef<string>(`draft_${Date.now()}`);
+  const [draftSessionId] = useState(() => `draft_${Date.now()}`);
+  const sessionIdRef = useRef<string>(draftSessionId);
   const activeConversationRef = useRef<number | null>(null);
   const streamWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -98,6 +98,54 @@ export default function ChatDockContent() {
     }
     return Math.max(0, Math.round(Date.now() - startedAt));
   }, [elapsedMs]);
+
+  const finishStreamingWithError = useCallback((message: string) => {
+    const finalResponseTimeMs = resolveResponseTimeMs();
+
+    if (streamWatchdogRef.current) {
+      clearTimeout(streamWatchdogRef.current);
+      streamWatchdogRef.current = null;
+    }
+    if (streamHeartbeatRef.current) {
+      clearInterval(streamHeartbeatRef.current);
+      streamHeartbeatRef.current = null;
+    }
+
+    setIsTyping(false);
+    setQueuedInfo(null);
+    setRouterThinking([]);
+    routerThinkingRef.current = [];
+    typingStartedAtRef.current = null;
+    streamBufferRef.current = "";
+
+    setMessages((prev) => {
+      const lastIdx = prev.length - 1;
+      if (lastIdx >= 0 && prev[lastIdx].role === "ai" && prev[lastIdx]._streaming) {
+        const updated = [...prev];
+        updated[lastIdx] = {
+          ...updated[lastIdx],
+          textVn: message,
+          responseTimeMs:
+            finalResponseTimeMs > 0
+              ? finalResponseTimeMs
+              : updated[lastIdx].responseTimeMs,
+          _streaming: false,
+        };
+        return updated;
+      }
+
+      return [
+        ...prev,
+        {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          role: "ai",
+          textVn: message,
+          responseTimeMs: finalResponseTimeMs > 0 ? finalResponseTimeMs : undefined,
+          _streaming: false,
+        },
+      ];
+    });
+  }, [resolveResponseTimeMs]);
 
   // Auto-scroll to bottom
   useLayoutEffect(() => {
@@ -411,12 +459,6 @@ export default function ChatDockContent() {
     activeConversationRef.current = conversationId;
     sessionIdRef.current = `conv_${conversationId}`;
 
-    await createAiMessage({
-      conversationId,
-      role: "user",
-      content: trimmed,
-    }).unwrap().catch(() => {});
-
     streamBufferRef.current = "";
     setMessages((prev) => [
       ...prev,
@@ -430,17 +472,45 @@ export default function ChatDockContent() {
     setRouterThinking([]);
     routerThinkingRef.current = [];
     typingStartedAtRef.current = Date.now();
+    const clientMessageId = createClientMessageId();
 
-    socket.emit("chat:message", {
-      sessionId: sessionIdRef.current,
-      message: trimmed,
-      conversationId,
-    });
+    socket.emit(
+      "chat:send",
+      {
+        sessionId: sessionIdRef.current,
+        message: trimmed,
+        mode: "basic",
+        deepHelp: false,
+        clientMessageId,
+      },
+      (ack: {
+        ok: boolean;
+        error?: string;
+        intent?: string;
+        jobId?: string;
+      }) => {
+        if (ack?.ok || ack?.intent) {
+          return;
+        }
+
+        const errorText = ack?.error || "";
+        finishStreamingWithError(
+          errorText.toLowerCase().includes("quota")
+            ? "⚠️ Bạn đã hết lượt chat AI hôm nay. Vui lòng quay lại sau hoặc nâng cấp gói."
+            : "⚠️ Không thể kết nối trợ giảng. Vui lòng thử lại sau.",
+        );
+      },
+    );
 
     armWatchdog();
-  }, [input, socket, isConnected, ensureConversationId, createAiMessage, armWatchdog]);
-
-  const shouldShowInputChips = messages.length === 0 && !isTyping;
+  }, [
+    input,
+    socket,
+    isConnected,
+    ensureConversationId,
+    armWatchdog,
+    finishStreamingWithError,
+  ]);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background/40 dark:bg-slate-950/95">
@@ -459,8 +529,8 @@ export default function ChatDockContent() {
       >
         {messages.length === 0 && !isTyping ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
-            <div className="size-16 rounded-full bg-gradient-to-br from-primary to-indigo-600 p-3 shadow-lg shadow-primary/20">
-              <AiAvatar className="w-full h-full" />
+            <div className="h-20 w-20">
+              <FramedAiAvatar className="h-full w-full" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground mb-1">
@@ -515,6 +585,8 @@ export default function ChatDockContent() {
         onSend={handleSend}
         chips={[]}
         placeholder="Hỏi về tiếng Nhật..."
+        inputDisabled={!isConnected}
+        sendDisabled={!isConnected || isTyping}
       />
     </div>
   );

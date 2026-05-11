@@ -5,6 +5,7 @@ export type DiscountType = "PERCENT" | "FIXED_AMOUNT";
 export interface CourseFinanceCourse {
   courseId: number;
   title: string;
+  thumbnailUrl?: string | null;
   price: number;
   studentCount: number;
   isPublished: boolean;

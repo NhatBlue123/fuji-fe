@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { Check, CircleSlash } from "lucide-react";
+import { Check, CircleSlash, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { FramedAvatar } from "@/components/common/FramedAvatar";
@@ -36,6 +36,11 @@ export function AvatarFramePicker({
     [frames, hasAnyPackage],
   );
 
+  const availableSrcSet = useMemo(
+    () => new Set(availableFrames.map((f) => f.src)),
+    [availableFrames],
+  );
+
   useEffect(() => {
     if (
       !isLoading &&
@@ -61,7 +66,7 @@ export function AvatarFramePicker({
           <p className="mt-1 text-xs font-medium text-muted-foreground">
             {hasAnyPackage
               ? t("profile.avatarFrame.allUnlocked", { defaultValue: "Đã mở toàn bộ khung" })
-              : t("profile.avatarFrame.defaultOnly", { defaultValue: "Đang dùng 5 khung mặc định" })}
+              : t("profile.avatarFrame.defaultOnly", { defaultValue: "Chỉ chọn được khung miễn phí" })}
           </p>
         </div>
 
@@ -85,20 +90,23 @@ export function AvatarFramePicker({
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
-          {availableFrames.map((frame) => {
+          {frames.map((frame) => {
             const selected = value === frame.src;
+            const unlocked = availableSrcSet.has(frame.src);
             return (
               <button
                 key={frame.id}
                 type="button"
+                disabled={!unlocked}
                 onClick={() => handleSelect(frame.src)}
-                title={frame.name}
+                title={unlocked ? frame.name : `${frame.name} (locked)`}
                 className={cn(
                   "relative aspect-square rounded-2xl border bg-background p-1.5 transition-all",
-                  "hover:-translate-y-0.5 hover:border-pink-400 hover:shadow-lg",
+                  unlocked && "hover:-translate-y-0.5 hover:border-pink-400 hover:shadow-lg",
                   selected
                     ? "border-pink-500 ring-2 ring-pink-500/30"
                     : "border-muted dark:border-white/10",
+                  !unlocked && "cursor-not-allowed opacity-50",
                 )}
               >
                 <FramedAvatar
@@ -109,9 +117,14 @@ export function AvatarFramePicker({
                   fallbackClassName="text-lg"
                   sizes="96px"
                 />
-                {selected && (
+                {selected && unlocked && (
                   <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-pink-500 text-white shadow-lg">
                     <Check className="size-3" />
+                  </span>
+                )}
+                {!unlocked && (
+                  <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg">
+                    <Lock className="size-3" />
                   </span>
                 )}
               </button>

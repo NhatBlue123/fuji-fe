@@ -30,7 +30,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -58,11 +57,9 @@ function formatDuration(totalMinutes: number): string {
 }
 
 function formatPrice(price: number): string {
-  if (price === 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
+  const hoa = Math.round(Number(price) || 0);
+  if (hoa <= 0) return "Miễn phí";
+  return `${hoa.toLocaleString("vi-VN")} hoa`;
 }
 
 const DEFAULT_THUMBNAIL =

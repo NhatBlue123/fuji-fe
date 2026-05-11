@@ -2,24 +2,24 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
 import {
   AlertCircle,
   Banknote,
+  CheckCircle2,
   Clock,
   Copy,
+  PartyPopper,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
   X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  type PaymentStatusResponse,
-  useLazyGetPaymentStatusQuery,
-} from "@/store/services/paymentApi";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
 import { type PaymentStatusChangeEvent, usePaymentSocket } from "@/providers/PaymentSocketProvider";
 import { store } from "@/store";
 import { baseApi } from "@/store/services/baseApi";
@@ -37,12 +37,150 @@ interface PaymentStatusProps {
 }
 
 const MAX_WAIT_TIME_MS = 300000;
-const FALLBACK_POLL_INTERVAL_MS = 3000;
-const FALLBACK_POLL_WINDOW_MS = 18000;
+const STATUS_POLL_INTERVAL_MS = 3000;
+const PINK_PRIMARY_BUTTON_CLASS =
+  "bg-pink-500 text-white shadow-lg shadow-pink-500/25 transition-all hover:bg-pink-600 hover:shadow-pink-500/35";
+const MUTED_SECONDARY_BUTTON_CLASS =
+  "border border-white/10 bg-white/[0.04] text-slate-400 shadow-none transition-all hover:bg-white/[0.08] hover:text-slate-200";
+
+type PaymentStatusSnapshot = {
+  status?: string;
+  message?: string;
+  messageKey?: string;
+};
+
+type PaymentStatusEnvelope = PaymentStatusSnapshot & {
+  data?: PaymentStatusSnapshot | null;
+};
+
+const VIETQR_BANK_CODES: Record<string, string> = {
+  MB: "mbbank",
+  MBBANK: "mbbank",
+  MILITARYBANK: "mbbank",
+  VIETCOMBANK: "vietcombank",
+  VCB: "vietcombank",
+  TECHCOMBANK: "techcombank",
+  TCB: "techcombank",
+  BIDV: "bidv",
+  VIETINBANK: "vietinbank",
+  ICB: "vietinbank",
+  ACB: "acb",
+  TPBANK: "tpbank",
+  TPB: "tpbank",
+  VPBANK: "vpbank",
+  VPB: "vpbank",
+  SACOMBANK: "sacombank",
+  STB: "sacombank",
+};
 
 const toFiniteNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getVietQrBankCode = (bankName: string) => {
+  const normalized = bankName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+
+  return VIETQR_BANK_CODES[normalized] || bankName.trim();
+};
+
+const unwrapPaymentStatusPayload = (payload: unknown): PaymentStatusSnapshot => {
+  if (!payload || typeof payload !== "object") return {};
+
+  const envelope = payload as PaymentStatusEnvelope;
+  if (envelope.data && typeof envelope.data === "object") {
+    return {
+      ...envelope.data,
+      message:
+        envelope.data.message ??
+        envelope.data.messageKey ??
+        envelope.message ??
+        envelope.messageKey,
+      messageKey: envelope.data.messageKey ?? envelope.messageKey,
+    };
+  }
+
+  return envelope;
+};
+
+const fetchPaymentStatusSnapshot = async (
+  orderId: string,
+): Promise<PaymentStatusSnapshot> => {
+  const baseUrl = API_CONFIG.BASE_URL.replace(/\/+$/, "");
+  const headers = new Headers({ Accept: "application/json" });
+  const token = getAccessToken();
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  if (typeof window !== "undefined") {
+    headers.set("Accept-Language", localStorage.getItem("i18nextLng") || "vi");
+  }
+
+  const response = await fetch(
+    `${baseUrl}/payments/status/${encodeURIComponent(orderId)}?_=${Date.now()}`,
+    {
+      cache: "no-store",
+      credentials: "include",
+      headers,
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Payment status request failed: ${response.status}`);
+  }
+
+  return unwrapPaymentStatusPayload(await response.json());
+};
+
+type WindowWithWebkitAudioContext = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
+
+const playPaymentSuccessSound = () => {
+  if (typeof window === "undefined") return;
+
+  const AudioContextConstructor =
+    window.AudioContext ||
+    (window as WindowWithWebkitAudioContext).webkitAudioContext;
+
+  if (!AudioContextConstructor) return;
+
+  try {
+    const audioContext = new AudioContextConstructor();
+    const startTime = audioContext.currentTime;
+    const notes = [523.25, 659.25, 783.99];
+
+    notes.forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const noteStart = startTime + index * 0.09;
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, noteStart);
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.12, noteStart + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.24);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(noteStart);
+      oscillator.stop(noteStart + 0.26);
+    });
+
+    void audioContext.resume().catch(() => undefined);
+    window.setTimeout(() => {
+      void audioContext.close().catch(() => undefined);
+    }, 900);
+  } catch {
+    // Browsers may block non-gesture audio; the visual success state still applies.
+  }
 };
 
 export default function PaymentStatus({
@@ -54,23 +192,36 @@ export default function PaymentStatus({
   accountName,
   onClose,
 }: PaymentStatusProps) {
-  const router = useRouter();
   const { t, i18n } = useTranslation();
   const [elapsedTime, setElapsedTime] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false);
   const [resolvedBy, setResolvedBy] = useState<"socket" | "poll" | null>(null);
   const [pollingUntil, setPollingUntil] = useState<number | null>(null);
   const handledRef = useRef(false);
-
-  const [getPaymentStatus, { isFetching: isStatusLoading }] =
-    useLazyGetPaymentStatusQuery();
+  const successCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { isConnected, onPaymentStatusChange } = usePaymentSocket();
 
   const invalidateWalletAndPayment = useCallback(() => {
     store.dispatch(baseApi.util.invalidateTags(["Wallet", "Payment"]));
+  }, []);
+
+  const closeSuccessPopup = useCallback(() => {
+    if (successCloseTimerRef.current) {
+      clearTimeout(successCloseTimerRef.current);
+      successCloseTimerRef.current = null;
+    }
+
+    setIsSuccessPopupOpen(false);
+    onClose();
+  }, [onClose]);
+
+  const requestClosePayment = useCallback(() => {
+    setIsConfirming(true);
   }, []);
 
   const finalizeSuccess = useCallback(
@@ -79,12 +230,16 @@ export default function PaymentStatus({
       setResolvedBy(source);
       setPollingUntil(null);
       invalidateWalletAndPayment();
-      if (source === "poll") {
-        toast.success(tMsg("payment.status.success"));
+      setIsSuccessPopupOpen(true);
+      playPaymentSuccessSound();
+
+      if (successCloseTimerRef.current) {
+        clearTimeout(successCloseTimerRef.current);
       }
-      setTimeout(() => router.push("/premium/success"), 1000);
+
+      successCloseTimerRef.current = setTimeout(closeSuccessPopup, 5000);
     },
-    [invalidateWalletAndPayment, router],
+    [closeSuccessPopup, invalidateWalletAndPayment],
   );
 
   const finalizeFailure = useCallback(
@@ -103,18 +258,24 @@ export default function PaymentStatus({
 
   const handleStatusResult = useCallback(
     (
-      status: PaymentStatusResponse["status"] | string | undefined,
+      status: string | undefined,
       source: "socket" | "poll",
       messageKey?: string,
     ) => {
       if (!status || handledRef.current) return;
 
-      if (status === "SUCCESS") {
+      const normalizedStatus = status.toUpperCase();
+
+      if (normalizedStatus === "SUCCESS" || normalizedStatus === "TOPUP_SUCCESS") {
         finalizeSuccess(source);
         return;
       }
 
-      if (status === "FAILED") {
+      if (
+        normalizedStatus === "FAILED" ||
+        normalizedStatus === "CANCELLED" ||
+        normalizedStatus === "ERROR"
+      ) {
         finalizeFailure(source, messageKey);
       }
     },
@@ -126,13 +287,21 @@ export default function PaymentStatus({
       if (handledRef.current) return;
 
       try {
-        const result = await getPaymentStatus(orderId, true);
-        handleStatusResult(result.data?.status, source, result.data?.message);
+        setIsStatusLoading(true);
+        const result = await fetchPaymentStatusSnapshot(orderId);
+        console.info("[payment] status poll result", {
+          orderId,
+          status: result.status,
+          receivedAt: new Date().toISOString(),
+        });
+        handleStatusResult(result.status, source, result.message ?? result.messageKey);
       } catch (error) {
         console.error("[payment] status poll failed", { orderId, error });
+      } finally {
+        setIsStatusLoading(false);
       }
     },
-    [getPaymentStatus, handleStatusResult, orderId],
+    [handleStatusResult, orderId],
   );
 
   useEffect(() => {
@@ -154,6 +323,14 @@ export default function PaymentStatus({
   }, [onClose]);
 
   useEffect(() => {
+    return () => {
+      if (successCloseTimerRef.current) {
+        clearTimeout(successCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const unsubStatus = onPaymentStatusChange((data: PaymentStatusChangeEvent) => {
       if (handledRef.current) return;
       if (data.transactionType !== "TOPUP" || data.orderId !== orderId) return;
@@ -164,34 +341,24 @@ export default function PaymentStatus({
     return () => unsubStatus();
   }, [handleStatusResult, onPaymentStatusChange, orderId]);
 
-  // CHỈ polling khi socket KHÔNG kết nối được (fallback mode)
-  // VÀ chỉ trong khoảng thời gian giới hạn (18 giây)
+  // Polling always runs as the verification source of truth; socket only shortens the wait.
   useEffect(() => {
     if (handledRef.current) return;
 
-    // Nếu socket đang hoạt động tốt, KHÔNG cần polling
-    if (isConnected) {
-      setPollingUntil(null);
-      return;
-    }
-
-    // Socket không hoạt động -> bật fallback polling
-    const deadline = Date.now() + FALLBACK_POLL_WINDOW_MS;
+    const deadline = Date.now() + MAX_WAIT_TIME_MS;
     setPollingUntil(deadline);
     void pollStatus("poll");
-  }, [isConnected, orderId, pollStatus]);
+  }, [orderId, pollStatus]);
 
-  // Effect này chỉ chạy khi pollingUntil được set (tức là socket fail)
+  // Keep checking status in case webhook/polling updated DB but the socket event was missed.
   useEffect(() => {
     if (handledRef.current || !pollingUntil) return;
 
-    // Hết thời gian polling
     if (Date.now() >= pollingUntil) {
       setPollingUntil(null);
       return;
     }
 
-    // Polling interval - CHỈ chạy khi pollingUntil còn giá trị
     const intervalId = setInterval(() => {
       if (handledRef.current || Date.now() >= (pollingUntil || 0)) {
         clearInterval(intervalId);
@@ -199,7 +366,7 @@ export default function PaymentStatus({
         return;
       }
       void pollStatus("poll");
-    }, FALLBACK_POLL_INTERVAL_MS);
+    }, STATUS_POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [pollStatus, pollingUntil]);
@@ -217,8 +384,13 @@ export default function PaymentStatus({
     setLastCheckTime(now);
 
     try {
-      const result = await getPaymentStatus(orderId, true);
-      handleStatusResult(result.data?.status, "poll", result.data?.message);
+      const result = await fetchPaymentStatusSnapshot(orderId);
+      console.info("[payment] manual status check result", {
+        orderId,
+        status: result.status,
+        receivedAt: new Date().toISOString(),
+      });
+      handleStatusResult(result.status, "poll", result.message ?? result.messageKey);
     } catch {
       toast.error(tMsg("api.error"));
     } finally {
@@ -240,13 +412,30 @@ export default function PaymentStatus({
 
   const displayAmount = toFiniteNumber(amount, 0);
   const qrAmountVnd = toFiniteNumber(transferAmountVnd, displayAmount * 1000);
-  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(accountName)}`;
+  const vietQrBankCode = getVietQrBankCode(bankId);
+  const qrUrl = `https://img.vietqr.io/image/${vietQrBankCode}-${accountNo}-compact2.png?amount=${qrAmountVnd}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(accountName)}`;
+
+  if (isSuccessPopupOpen) {
+    return (
+      <PaymentSuccessPopup
+        amount={displayAmount}
+        transferAmountVnd={qrAmountVnd}
+        onClose={closeSuccessPopup}
+      />
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
-      <div className="bg-[#12141c] border border-white/10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] max-w-4xl w-full overflow-hidden relative">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 backdrop-blur-md p-4 animate-in fade-in duration-300"
+      onMouseDown={requestClosePayment}
+    >
+      <div
+        className="bg-[#12141c] border border-white/10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] max-w-4xl w-full overflow-hidden relative"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         {isConfirming && (
-          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#0a0c10]/80 backdrop-blur-md animate-in fade-in zoom-in duration-200">
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/55 backdrop-blur-md animate-in fade-in zoom-in duration-200">
             <div className="bg-[#1a1d29] border border-white/10 p-10 rounded-[2.5rem] max-w-sm w-full mx-4 shadow-2xl text-center space-y-6">
               <div className="mx-auto w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
                 <AlertCircle size={40} />
@@ -255,20 +444,20 @@ export default function PaymentStatus({
                 <h4 className="text-2xl font-black text-white uppercase tracking-tight">
                   {t("payment.confirmCancelTitle")}
                 </h4>
-                <p className="text-slate-400 text-sm font-medium px-4">
+                <p className="text-slate-300 text-sm font-medium px-4 leading-6">
                   {t("payment.confirmCancelDesc")}
                 </p>
               </div>
               <div className="flex flex-col gap-3 pt-2">
                 <Button
                   onClick={onClose}
-                  className="h-14 rounded-2xl bg-pink-400 hover:bg-blue-600 text-white font-black uppercase text-xs tracking-widest shadow-lg shadow-red-500/20"
+                  className={`h-14 rounded-full font-semibold uppercase text-xs tracking-widest ${MUTED_SECONDARY_BUTTON_CLASS}`}
                 >
                   {t("payment.agreeCancel")}
                 </Button>
                 <button
                   onClick={() => setIsConfirming(false)}
-                  className="h-12 text-slate-500 hover:text-white font-bold text-xs uppercase transition-colors"
+                  className={`h-12 rounded-full font-semibold text-xs uppercase tracking-widest ${PINK_PRIMARY_BUTTON_CLASS}`}
                 >
                   {t("payment.backToPayment")}
                 </button>
@@ -278,8 +467,8 @@ export default function PaymentStatus({
         )}
 
         <button
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all z-10"
+          onClick={requestClosePayment}
+          className="absolute top-6 right-6 p-2 rounded-full bg-pink-500 text-white shadow-lg shadow-pink-500/20 transition-all hover:bg-pink-600 hover:shadow-pink-500/35 z-10"
         >
           <X size={20} />
         </button>
@@ -354,7 +543,7 @@ export default function PaymentStatus({
                   onCopy={() => copyToClipboard(accountNo, t("wallet.table.id"))}
                   isBold
                 />
-                <InfoRow label={t("wallet.withdraw.accountHolder")} value={accountName} />
+                <InfoRow label={t("payment.accountHolder")} value={accountName} />
                 <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase text-pink-400 tracking-widest">
@@ -364,7 +553,7 @@ export default function PaymentStatus({
                       {displayAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')} 🌸
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      {t("wallet.withdraw.actualReceived")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
+                      {t("payment.actualTransferAmount")}: {qrAmountVnd.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}đ
                     </p>
                   </div>
                   <div className="p-2 bg-pink-500 rounded-xl">
@@ -416,9 +605,9 @@ export default function PaymentStatus({
 
               <div className="grid grid-cols-1 gap-3">
                 <Button
-                  onClick={() => setIsConfirming(true)}
+                  onClick={requestClosePayment}
                   variant="ghost"
-                  className="h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-pink-500/10 hover:border-pink-500/30 font-bold text-xs uppercase text-slate-400 hover:text-pink-400 transition-all"
+                  className={`h-12 rounded-full font-semibold text-xs uppercase tracking-widest ${PINK_PRIMARY_BUTTON_CLASS}`}
                 >
                   {t("payment.cancelTransaction")}
                 </Button>
@@ -442,6 +631,251 @@ export default function PaymentStatus({
         }
         .animate-spin-slow {
           animation: spin 3s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function PaymentSuccessPopup({
+  amount,
+  transferAmountVnd,
+  onClose,
+}: {
+  amount: number;
+  transferAmountVnd: number;
+  onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const locale =
+    i18n.language === "vi"
+      ? "vi-VN"
+      : i18n.language === "ja"
+        ? "ja-JP"
+        : "en-US";
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-emerald-950/45 p-4 backdrop-blur-md payment-success-backdrop"
+      onMouseDown={onClose}
+    >
+      <div
+        className="payment-success-card relative w-full max-w-[460px] overflow-hidden rounded-[2rem] border border-emerald-300/20 bg-[#10141d] shadow-[0_32px_90px_-24px_rgba(16,185,129,0.65)]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.24),transparent_42%)]" />
+        <div className="payment-success-sparks pointer-events-none absolute inset-0">
+          <span className="payment-success-spark payment-success-spark-1" />
+          <span className="payment-success-spark payment-success-spark-2" />
+          <span className="payment-success-spark payment-success-spark-3" />
+          <span className="payment-success-spark payment-success-spark-4" />
+          <span className="payment-success-spark payment-success-spark-5" />
+          <span className="payment-success-spark payment-success-spark-6" />
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("common.close")}
+          className="absolute right-4 top-4 z-10 rounded-full bg-pink-500 p-2 text-white shadow-lg shadow-pink-500/20 transition hover:bg-pink-600 hover:shadow-pink-500/35"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="relative px-7 py-8 text-center sm:px-9">
+          <div className="relative mx-auto mb-6 h-28 w-28">
+            <div className="payment-success-ping absolute inset-0 rounded-full bg-emerald-400/25" />
+            <div className="payment-success-pulse absolute inset-4 rounded-full bg-cyan-300/15" />
+            <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500 shadow-[0_0_44px_rgba(45,212,191,0.35)]">
+              <CheckCircle2 className="h-14 w-14 text-[#06100d]" strokeWidth={2.8} />
+            </div>
+            <div className="payment-success-pop absolute -right-2 -top-1 rounded-2xl bg-yellow-300 p-2.5 text-slate-950 shadow-lg shadow-yellow-300/20">
+              <PartyPopper size={20} />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">
+              <Sparkles size={13} />
+              {t("payment.successPopupKicker")}
+            </div>
+            <h3 className="text-3xl font-black uppercase tracking-tight text-white">
+              {t("payment.successPopupTitle")}
+            </h3>
+            <p className="mx-auto max-w-sm text-sm font-medium leading-6 text-slate-300">
+              {t("payment.successPopupDesc")}
+            </p>
+          </div>
+
+          <div className="mt-7 grid grid-cols-2 gap-3 text-left">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                {t("payment.successPopupFlowers")}
+              </p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {amount.toLocaleString(locale)} 🌸
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                {t("payment.successPopupVnd")}
+              </p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {transferAmountVnd.toLocaleString(locale)}đ
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-7 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+            <div className="payment-success-countdown h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-300" />
+          </div>
+          <p className="mt-3 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+            {t("payment.successPopupAutoClose")}
+          </p>
+
+          <Button
+            onClick={onClose}
+            className={`mt-6 h-12 w-full rounded-full font-semibold uppercase tracking-widest ${PINK_PRIMARY_BUTTON_CLASS}`}
+          >
+            {t("payment.successPopupClose")}
+          </Button>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .payment-success-backdrop {
+          animation: payment-success-fade 220ms ease-out both;
+        }
+        .payment-success-card {
+          animation: payment-success-rise 420ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+        }
+        .payment-success-ping {
+          animation: payment-success-ping 1.8s ease-out infinite;
+        }
+        .payment-success-pulse {
+          animation: payment-success-pulse 1.7s ease-in-out infinite;
+        }
+        .payment-success-pop {
+          animation: payment-success-pop 520ms cubic-bezier(0.18, 0.9, 0.28, 1.12) 120ms both;
+        }
+        .payment-success-countdown {
+          animation: payment-success-countdown 5s linear forwards;
+        }
+        .payment-success-spark {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          border-radius: 9999px;
+          background: #facc15;
+          opacity: 0;
+          animation: payment-success-spark 1.65s ease-out infinite;
+        }
+        .payment-success-spark-1 {
+          left: 18%;
+          top: 22%;
+          background: #34d399;
+          animation-delay: 80ms;
+        }
+        .payment-success-spark-2 {
+          right: 19%;
+          top: 18%;
+          background: #67e8f9;
+          animation-delay: 230ms;
+        }
+        .payment-success-spark-3 {
+          left: 12%;
+          top: 58%;
+          background: #fde68a;
+          animation-delay: 360ms;
+        }
+        .payment-success-spark-4 {
+          right: 13%;
+          top: 55%;
+          background: #5eead4;
+          animation-delay: 510ms;
+        }
+        .payment-success-spark-5 {
+          left: 31%;
+          top: 12%;
+          background: #a7f3d0;
+          animation-delay: 650ms;
+        }
+        .payment-success-spark-6 {
+          right: 32%;
+          top: 72%;
+          background: #fef08a;
+          animation-delay: 780ms;
+        }
+        @keyframes payment-success-fade {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes payment-success-rise {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        @keyframes payment-success-ping {
+          0% {
+            opacity: 0.45;
+            transform: scale(0.82);
+          }
+          80%,
+          100% {
+            opacity: 0;
+            transform: scale(1.32);
+          }
+        }
+        @keyframes payment-success-pulse {
+          0%,
+          100% {
+            opacity: 0.55;
+            transform: scale(0.92);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.08);
+          }
+        }
+        @keyframes payment-success-pop {
+          from {
+            opacity: 0;
+            transform: translateY(8px) rotate(-10deg) scale(0.72);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) rotate(10deg) scale(1);
+          }
+        }
+        @keyframes payment-success-countdown {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+        @keyframes payment-success-spark {
+          0% {
+            opacity: 0;
+            transform: translateY(8px) scale(0.4);
+          }
+          20% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-24px) scale(1.2);
+          }
         }
       `}</style>
     </div>

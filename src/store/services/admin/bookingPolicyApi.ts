@@ -14,24 +14,16 @@ export interface BookingPolicy {
   defaultServiceFeeBps: number;
   proServiceFeeBps?: number | null;
   premiumServiceFeeBps?: number | null;
+  courseDefaultPlatformFeeBps: number;
+  courseProPlatformFeeBps?: number | null;
+  coursePremiumPlatformFeeBps?: number | null;
+  withdrawPlatformFeeBps?: number | null;
   normalCancelPenaltyBps: number;
   lateCancelPenaltyBps: number;
   lateCancelThresholdHours: number;
   teacherCancelRefundBps: number;
   noShowPenaltyBps: number;
   active: boolean;
-}
-
-export interface BookingHold {
-  id: number;
-  bookingId: number;
-  userId: number;
-  amountHoa: number;
-  heldAmountHoa: number;
-  capturedAmountHoa: number;
-  releasedAmountHoa: number;
-  status: string;
-  expiresAt?: string;
 }
 
 export const bookingPolicyApi = baseApi.injectEndpoints({
@@ -46,16 +38,10 @@ export const bookingPolicyApi = baseApi.injectEndpoints({
       transformResponse: (res: unknown) => unwrapData<BookingPolicy>(res, res as BookingPolicy),
       invalidatesTags: ["BookingPolicy"],
     }),
-    getBookingHolds: builder.query<BookingHold[], void>({
-      query: () => "/admin/booking-holds",
-      transformResponse: (res: unknown) => unwrapData<BookingHold[]>(res, []),
-      providesTags: ["BookingPolicy"],
-    }),
   }),
 });
 
 export const {
   useGetBookingPolicyQuery,
   useUpdateBookingPolicyMutation,
-  useGetBookingHoldsQuery,
 } = bookingPolicyApi;

@@ -12,11 +12,15 @@ import {
   usePurchaseCourseMutation,
 } from "@/store/services/courseApi";
 
-const BLOSSOM_RATE = 1000;
-
 function isFreePrice(price: unknown): boolean {
   const value = Number(price ?? 0);
   return Number.isFinite(value) && value <= 0;
+}
+
+function formatHoaPrice(price: unknown): string {
+  const value = Number(price ?? 0);
+  const amount = Number.isFinite(value) ? Math.max(0, value) : 0;
+  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
 }
 
 interface CourseCardActionsProps {
@@ -84,7 +88,7 @@ export default function CourseCardActions({
     ? "Học tiếp"
     : freeCourse
       ? "Đăng ký"
-      : `${Math.floor(Number(price ?? 0) / BLOSSOM_RATE).toLocaleString("vi-VN")} 🌸`;
+      : formatHoaPrice(price);
 
   return (
     <div className="flex gap-3">

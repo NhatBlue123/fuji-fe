@@ -209,7 +209,7 @@ export function MaterialsPanel({ lessonId, token, isTeacher }: MaterialsPanelPro
               allow="fullscreen"
             />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <div className="w-full h-full overflow-auto bg-[#252838] flex items-start justify-center p-2">
               <img
                 src={resolvedViewingUrl}

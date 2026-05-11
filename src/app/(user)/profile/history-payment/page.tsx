@@ -13,30 +13,52 @@ import {
   Search,
   ArrowLeft,
   Download,
-  Filter,
   CheckCircle2,
  } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+type HistoryFilter = "ALL" | "TOPUP" | "SPENDING";
+
+function isPayoutTransaction(tx: Transaction) {
+  return tx.type === "PAYOUT" || tx.type.startsWith("WITHDRAW");
+}
+
+function isDepositTransaction(tx: Transaction) {
+  return tx.type === "TOPUP" || tx.type === "DEPOSIT";
+}
+
+function isSpendingTransaction(tx: Transaction) {
+  return tx.amount < 0 && !isPayoutTransaction(tx);
+}
+
+function isVisibleUserTransaction(tx: Transaction) {
+  return isDepositTransaction(tx) || isSpendingTransaction(tx);
+}
 
 export default function TransactionHistory() {
   const { t } = useTranslation();
   const router = useRouter();
   const [page, setPage] = useState(0);
-  const [filter, setFilter] = useState<string>("ALL"); // ALL, DEPOSIT, WITHDRAW
+  const [filter, setFilter] = useState<HistoryFilter>("ALL");
   const size = 10;
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const rafId = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(rafId);
+  }, []);
 
-  const { data, isLoading, isError } = useGetWalletHistoryQuery({ page, size });
+  const { data, isLoading } = useGetWalletHistoryQuery({ page, size });
 
   const transactions = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
   // Lọc dữ liệu client-side (Nếu API chưa hỗ trợ lọc)
-  const filteredTransactions = transactions.filter((tx) => {
+  const visibleTransactions = transactions.filter(isVisibleUserTransaction);
+  const filteredTransactions = visibleTransactions.filter((tx) => {
     if (filter === "ALL") return true;
-    return tx.type === filter;
+    if (filter === "TOPUP") return isDepositTransaction(tx);
+    return isSpendingTransaction(tx);
   });
 
   if (!mounted) return null;
@@ -94,12 +116,12 @@ export default function TransactionHistory() {
             <div className="flex p-1.5 bg-white/5 border border-white/10 rounded-2xl">
               {[
                 { label: "Tất cả", value: "ALL" },
-                { label: "Nạp tiền", value: "DEPOSIT" },
-                { label: "Thanh toán", value: "WITHDRAW" },
+                { label: "Nạp tiền", value: "TOPUP" },
+                { label: "Chi tiêu", value: "SPENDING" },
               ].map((item) => (
                 <button
                   key={item.value}
-                  onClick={() => setFilter(item.value)}
+                  onClick={() => setFilter(item.value as HistoryFilter)}
                   className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                     filter === item.value 
                     ? "bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-lg shadow-pink-500/20" 
@@ -139,7 +161,7 @@ export default function TransactionHistory() {
 
               <tbody className="divide-y divide-white/5">
                 {filteredTransactions.map((tx: Transaction) => {
-                  const isDeposit = tx.type === "DEPOSIT" || tx.amount > 0;
+                  const isDeposit = isDepositTransaction(tx);
                   return (
                     <tr key={tx.id} className="hover:bg-white/[0.02] transition-all group border-l-2 border-transparent hover:border-pink-500">
                       <td className="p-6">
@@ -160,7 +182,7 @@ export default function TransactionHistory() {
                       </td>
 
                       <td className={`p-6 text-right font-black text-xl tracking-tighter ${isDeposit ? "text-cyan-400" : "text-pink-500"}`}>
-                        {isDeposit ? "+" : "-"}{tx.amount.toLocaleString()} 
+                        {isDeposit ? "+" : "-"}{Math.abs(tx.amount).toLocaleString()} 
                         <span className="text-[10px] ml-1 opacity-40">{t('auto.historyPayment_12')}</span>
                       </td>
 

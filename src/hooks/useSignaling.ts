@@ -2,7 +2,7 @@
  * useSignaling — manages Socket.IO connection to the signaling server
  * and exposes typed emit helpers + event subscription utilities.
  */
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { getSignalingUrl } from "@/lib/video-call-urls";
 
@@ -51,10 +51,6 @@ if (typeof window !== "undefined") {
     query: {},
   });
 
-  globalSocket.on("connect", () => {
-    console.log("[Signaling] Connected:", globalSocket?.id, "| server:", getSignalingUrl());
-  });
-
   globalSocket.on("connect_error", (err) => {
     const msg = String(err?.message || "");
     const isTimeout = msg.toLowerCase().includes("timeout");
@@ -98,7 +94,6 @@ export function useSignaling(): SignalingHook {
       setTimeout(() => {
         if (activeCount === 0 && globalSocket?.connected) {
           globalSocket.disconnect();
-          console.log("[Signaling] No active hooks, disconnected.");
         }
       }, 3000);
     };

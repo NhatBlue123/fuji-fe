@@ -96,6 +96,16 @@ export type BulkBookingQuote = {
   tuitionBlossom: number;
   serviceFeeBlossom: number;
   totalBlossom: number;
+  couponCode?: string | null;
+  couponValid?: boolean | null;
+  couponMessage?: string | null;
+  discountVnd?: number;
+  discountBlossom?: number;
+  teacherPayoutVnd?: number;
+  teacherPayoutBlossom?: number;
+  platformRevenueVnd?: number;
+  platformRevenueBlossom?: number;
+  adminCommissionWaived?: boolean;
   walletAvailableVnd: number;
   walletAvailableBlossom: number;
   canPay: boolean;
@@ -107,6 +117,7 @@ export type CreateBookingRequest = { timeSlotId: number; couponCode?: string };
 export type CreateBulkBookingRequest = {
   teacherId: number;
   timeSlotIds: number[];
+  couponCode?: string;
 };
 
 export type CreateBookingResponse = {
@@ -138,6 +149,11 @@ export type CreateBulkBookingResponse = {
   totalVnd: number;
   totalBlossom: number;
   frozenBalanceVnd: number;
+  couponCode?: string | null;
+  discountBlossom?: number;
+  teacherPayoutBlossom?: number;
+  platformRevenueBlossom?: number;
+  adminCommissionWaived?: boolean;
   items: BulkBookingCreatedItem[];
 };
 

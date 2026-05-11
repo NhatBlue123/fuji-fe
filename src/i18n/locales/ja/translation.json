@@ -112,6 +112,7 @@
       "upgradePackage": "プランをアップグレード",
       "choosePackage": "学習に合うプランを選択",
       "buyPackage": "プランを購入",
+      "unavailablePackage": "利用不可",
       "confirmPurchase": "購入を確認",
       "applyCode": "コードを適用",
       "removeCode": "コードを外す",
@@ -144,14 +145,21 @@
       "durationDays": "{{days}}日間",
       "adminNoPackage": "現在購入できるプランはありません。",
       "packagePurchaseSuccess": "{{name}}を購入しました",
+      "packageUpgradeSuccess": "{{from}}から{{name}}へアップグレードしました",
       "discountCodesReceived": "新しい割引コードを{{count}}件受け取りました",
       "aiSyncPending": "AIクォータを同期中です。数秒かかる場合があります。",
       "packagePurchaseFailed": "現在、このプランを購入できません。",
       "reviewBeforeConfirm": "確定前に特典とウォレット残高を確認してください。",
+      "upgradeReviewBeforeConfirm": "アップグレードを確定すると現在のプランはキャンセルされます。アップグレードクレジットは今回の支払いにのみ適用され、ウォレットには戻りません。",
       "packagePrice": "プラン価格",
+      "upgradeCredit": "アップグレードクレジット",
+      "amountToPay": "支払い額",
       "walletAfterPayment": "支払い後のウォレット",
       "willReceive": "受け取る内容",
       "notEnoughForPackage": "このプランを購入する花が不足しています。",
+      "downgradeBlockedShort": "このプランより上位のプランに登録済みです。ポリシーをご確認ください。",
+      "upgradeCreditPolicyApplied": "現在のプランの利用が{{days}}日未満のため、価格の50%を今回のアップグレードに適用します。",
+      "upgradeCreditPolicyExpired": "現在のプランを{{usedDays}}日利用しています。{{days}}日以降はアップグレード時に旧プランをキャンセルし、クレジットはありません。",
       "emptyDiscountCodes": "この項目に割引コードはありません。",
       "discountCodeCopied": "割引コードをコピーしました",
       "discountPercent": "{{value}}%割引",
@@ -160,12 +168,12 @@
       "remainingSingleUsage": "残り{{remaining}}回",
       "noExpiry": "有効期限なし",
       "expiresOn": "{{date}}まで",
-      "bookingDiscountApplied": "予約割引が支払い合計に適用されました。",
+      "bookingDiscountApplied": "割引は支払い合計から差し引かれ、講師がその割引分を負担します。",
       "bookingDiscountTitle": "予約用割引コード",
       "loadingYourDiscountCodes": "割引コードを読み込み中...",
       "enterDiscountCode": "割引コードを入力",
       "invalidDiscountCode": "無効なコードです",
-      "discountAppliedToTotal": "コードが支払い合計に適用されました。",
+      "discountAppliedToTotal": "コードは支払い合計から差し引かれ、講師がその割引分を負担します。",
       "bookingHoldPolicy": "この花はレッスン完了またはキャンセルポリシーに基づく処理まで保持されます。",
       "confirmPayment": "支払いを確定",
       "chatEmpty": "本日のチャット回数がなくなりました。",
@@ -485,7 +493,7 @@
       "videoCall": { "title": "ライブビデオ授業", "desc": "オンライン教室でネイティブ教師とリアルタイムで練習できます。", "badge": "Realtime" },
       "flashcards2": { "title": "スマートフラッシュカード", "desc": "SRSシステムで単語を復習し、穴埋めや選択問題も毎日練習。", "badge": "SRS" },
       "premium2": { "title": "プレミアム・プラン", "desc": "アップグレードプランと現在適用中の特典をご確認ください。", "badge": "Upgrade" },
-      "wallet": { "title": "ウォレット・決済管理", "desc": "残高管理、出金、取引履歴、安全な決済情報の確認。", "badge": "Finance" }
+      "wallet": { "title": "ウォレットと決済履歴", "desc": "ウォレット残高、チャージ履歴、利用履歴を確認できます。", "badge": "Finance" }
     },
     "jlptSection": {
       "badge": "JLPT 練習",
@@ -762,13 +770,14 @@
       "pending": "保留中",
       "success": "支払いに成功しました",
       "failed": "支払いに失敗しました",
+      "cancelled": "期限切れにより取引はキャンセルされました",
       "unknown": "不明なステータス"
     },
     "timeoutError": "お取引がタイムアウトしました。残高または取引履歴をご確認ください。",
     "waitFiveSeconds": "チェックの間隔を5秒以上空けてください",
-    "confirmCancelTitle": "キャンセルの確認",
-    "confirmCancelDesc": "このチャージをキャンセルしてもよろしいですか？",
-    "agreeCancel": "はい、キャンセルします",
+    "confirmCancelTitle": "取引を閉じますか？",
+    "confirmCancelDesc": "まだ振込をしていない場合は、この取引を閉じても問題ありません。すでに振込済みの場合、残り時間内に取引は自動確認されます。支払いに問題がある場合は、Zalo 0359811642 へ支払い証明をお送りください。",
+    "agreeCancel": "理解しました、閉じる",
     "backToPayment": "支払いに戻る",
     "allBanksSupport": "40以上のベトナムの銀行に対応しています",
     "manualCheck": "送金したのに更新されませんか？ここをクリックして確認してください",
@@ -780,7 +789,16 @@
     "socketFallback": "ステータスを確認中（ポーリング）...",
     "cancelTransaction": "取引をキャンセル",
     "bank": "銀行",
-    "amountNeeded": "チャージ額"
+    "accountHolder": "口座名義",
+    "amountNeeded": "チャージ額",
+    "actualTransferAmount": "振込金額",
+    "successPopupKicker": "自動確認済み",
+    "successPopupTitle": "支払いが完了しました",
+    "successPopupDesc": "Blossomがウォレットに追加されました。このページのまま操作を続けられます。",
+    "successPopupFlowers": "追加されたBlossom",
+    "successPopupVnd": "振込金額",
+    "successPopupAutoClose": "このポップアップは5秒後に閉じます",
+    "successPopupClose": "通知を閉じる"
   },
   "flashcards": {
     "page": {
@@ -1041,13 +1059,13 @@
     "upgradePremium": "Nâng cấp 🚀 PREMIUM (AI)",
     "upgradePro": "Nâng cấp 🌟 PRO",
     "loadingPricing": "Đang tải bảng giá...",
-    "currencyPerMonth": "hoa / tháng",
+    "currencyPerMonth": "🌸 / tháng",
     "confirmUpgradeTitle": "Xác nhận nâng cấp",
     "currentPackageDesc": "Bạn đang dùng gói",
     "stackDesc": "Sẽ được cộng dồn thời gian sử dụng.",
     "currentExpiry": "Hạn hiện tại:",
     "newExpiry": "Sau khi mua:",
-    "deductDesc": "Hệ thống sẽ trừ {{amount}} hoa của bạn.",
+    "deductDesc": "Hệ thống sẽ trừ {{amount}} 🌸 của bạn.",
     "confirmQuestion": "Nâng cấp gói {{name}}?",
     "tiers": {
       "experience": "Trải nghiệm",
@@ -1103,10 +1121,23 @@
       "bank": "Ngân hàng",
       "selectPackage": "Vui lòng chọn gói nạp",
       "noBankAccount": "Backend chưa cấu hình tài khoản nhận tiền",
-      "currentBalance": "SỐ DƯ HIỆN TẠI :",
+      "currentBalance": "現在の残高",
       "choosePackage": "Chọn gói nạp",
       "creatingOrder": "Đang tạo đơn...",
-      "payWithQR": "Nạp ngay bằng VietQR"
+      "payWithQR": "Nạp ngay bằng VietQR",
+      "subtitle": "チャージする花を選ぶと、正確な金額のQRを作成します。",
+      "rateLine": "1花 = 1,000 VND",
+      "selectedPackage": "選択中のパック",
+      "receiveAmount": "受け取る花",
+      "transferAmount": "振込金額",
+      "checkoutTitle": "支払いを作成",
+      "secureVietQr": "VietQRで自動照合",
+      "noPackageSelected": "未選択",
+      "packageBase": "基本の花",
+      "totalReceive": "合計受取",
+      "bonusFlowers": "ボーナス{{count}}花",
+      "autoMatchTitle": "自動照合",
+      "autoMatchDesc": "QRには金額と注文コードが含まれます。振込確認後に花が追加されます。"
     },
     "modal": {
       "title": "アカウントをアップグレード",
@@ -2066,8 +2097,15 @@
         "activeDiscounts": "有効な割引コード"
       },
       "chart": {
-        "title": "コース収益トレンドチャート",
-        "desc": "収益上位{{limit}}コースを、パフォーマンス層別に表示します。",
+        "title": "コース実績",
+        "desc": "販売数上位{{limit}}コースと収益上位コースを分けて表示します。",
+        "bestSelling": "販売数上位",
+        "bestSellingDesc": "取引数で順位付けし、取引がない場合は受講生数を使用します。",
+        "highestRevenue": "収益上位",
+        "highestRevenueDesc": "コースの実収収益合計で順位付けします。",
+        "salesMetric": "販売数",
+        "revenueMetric": "収益",
+        "salesUnit": "件",
         "loading": "チャートデータを読み込み中...",
         "noData": "表示するチャートデータがありません"
       },
@@ -2096,7 +2134,7 @@
         "editPrice": "コース価格の更新"
       },
       "label": {
-        "newPrice": "新価格 (VND)"
+        "newPrice": "新価格 (🌸)"
       }
     },
     "vocab": {

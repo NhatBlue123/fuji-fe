@@ -31,17 +31,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+interface SystemErrorFiltersState {
+  level: string;
+  service: string;
+  keyword: string;
+  resolved: string;
+  requestId: string;
+  dateFrom: string | undefined;
+  dateTo: string | undefined;
+}
+
 interface SystemErrorFilterProps {
-  filters: {
-    level: string;
-    service: string;
-    keyword: string;
-    resolved: string;
-    requestId: string;
-    dateFrom?: string;
-    dateTo?: string;
-  };
-  setFilters: (f: any) => void;
+  filters: SystemErrorFiltersState;
+  setFilters: React.Dispatch<React.SetStateAction<SystemErrorFiltersState>>;
   handleResetFilters: () => void;
   autoRefresh: boolean;
   setAutoRefresh: (b: boolean) => void;

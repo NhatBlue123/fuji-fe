@@ -204,7 +204,7 @@ export default function ReportDetailPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-secondary mb-4 block">{t('auto._id__page_5')}</span>
               {report.adminNote ? (
                 <div className="text-[14px] font-black text-slate-800 dark:text-slate-100 leading-relaxed italic border-l-4 border-secondary/30 pl-6 py-1">
-                  "{report.adminNote}"
+                  &quot;{report.adminNote}&quot;
                 </div>
               ) : (
                 <div className="text-[11px] font-bold text-muted-foreground italic pl-6 border-l-2 border-muted/30 py-1 opacity-60">

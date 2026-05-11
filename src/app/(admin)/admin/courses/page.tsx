@@ -54,6 +54,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -77,12 +83,17 @@ function formatDuration(totalMinutes: number): string {
   return `${h}h ${m}m`;
 }
 
-function formatPrice(price: number): string {
-  if (price === 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
+function CoursePrice({ price }: { price: number }) {
+  const hoa = Math.round(Number(price) || 0);
+  if (hoa <= 0) return <span>Miễn phí</span>;
+
+  return (
+    <span className="inline-flex items-center justify-end gap-1.5">
+      <span>{hoa.toLocaleString("vi-VN")}</span>
+      <span aria-hidden="true">🌸</span>
+      <span className="sr-only">hoa</span>
+    </span>
+  );
 }
 
 export default function CoursesPage() {
@@ -234,6 +245,10 @@ export default function CoursesPage() {
       avgDuration: Math.round(totalDuration / data.content.length),
     };
   }, [data]);
+
+  const canManageCourse = (
+    course: NonNullable<typeof data>["content"][number],
+  ) => isAdmin || Number(course.instructor?.id) === currentUserId;
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -575,7 +590,7 @@ export default function CoursesPage() {
                         Chỉ số
                       </TableHead>
                       <TableHead className="text-center">Đánh giá</TableHead>
-                      <TableHead className="text-right min-w-[200px]">
+                      <TableHead className="w-[116px] min-w-[116px] text-right">
                         Thao tác
                       </TableHead>
                     </TableRow>
@@ -623,7 +638,7 @@ export default function CoursesPage() {
                         </TableCell>
 
                         <TableCell className="text-right font-medium">
-                          {formatPrice(course.price)}
+                          <CoursePrice price={course.price} />
                         </TableCell>
 
                         <TableCell className="text-center">
@@ -633,7 +648,11 @@ export default function CoursesPage() {
                               course.isPublished ? "default" : "secondary"
                             }
                             size="sm"
-                            disabled={!canToggleStatus || isUpdating}
+                            disabled={
+                              !canToggleStatus ||
+                              !canManageCourse(course) ||
+                              isUpdating
+                            }
                             onClick={() => handleTogglePublish(course)}
                             className="h-7"
                           >
@@ -668,39 +687,65 @@ export default function CoursesPage() {
                         </TableCell>
 
                         <TableCell>
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={`/admin/courses/${course.id}`}>
-                                <Eye className="mr-1 size-4" />
-                                Chi tiết
-                              </Link>
-                            </Button>
+                          <TooltipProvider delayDuration={120}>
+                            <div className="flex items-center justify-end gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8"
+                                    asChild
+                                  >
+                                    <Link
+                                      href={`/admin/courses/${course.id}`}
+                                      aria-label={`Xem chi tiết ${course.title}`}
+                                    >
+                                      <Eye className="size-4" />
+                                    </Link>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Chi tiết</TooltipContent>
+                              </Tooltip>
 
-                            {canEdit && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(course.id)}
-                              >
-                                <Pencil className="mr-1 size-4" />
-                                Sửa
-                              </Button>
-                            )}
+                              {canEdit && canManageCourse(course) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="size-8"
+                                      aria-label={`Sửa ${course.title}`}
+                                      onClick={() => handleEdit(course.id)}
+                                    >
+                                      <Pencil className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Sửa</TooltipContent>
+                                </Tooltip>
+                              )}
 
-                            {canDelete && (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                disabled={isDeleting}
-                                onClick={() =>
-                                  openDeleteDialog(course.id, course.title)
-                                }
-                              >
-                                <Trash2 className="mr-1 size-4" />
-                                Xóa
-                              </Button>
-                            )}
-                          </div>
+                              {canDelete && canManageCourse(course) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="destructive"
+                                      size="icon"
+                                      className="size-8"
+                                      disabled={isDeleting}
+                                      aria-label={`Xóa ${course.title}`}
+                                      onClick={() =>
+                                        openDeleteDialog(course.id, course.title)
+                                      }
+                                    >
+                                      <Trash2 className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Xóa</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TooltipProvider>
                         </TableCell>
                       </TableRow>
                     ))}

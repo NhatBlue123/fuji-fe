@@ -87,7 +87,6 @@ type QuickKey =
   | "profile"
   | "paymentHistory"
   | "subscription"
-  | "withdraw"
   | "reports"
   | "settings"
   | "help";
@@ -97,7 +96,6 @@ const QUICK_META: Array<{ key: QuickKey; href: string }> = [
   { key: "profile", href: "/profile" },
   { key: "paymentHistory", href: "/profile/history-payment" },
   { key: "subscription", href: "/profile/subscription" },
-  { key: "withdraw", href: "/withdraw" },
   { key: "reports", href: "/reports" },
   { key: "settings", href: "/settings" },
   { key: "help", href: "/help" },

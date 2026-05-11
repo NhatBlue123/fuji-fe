@@ -20,7 +20,6 @@ const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
 
 const PAGE_SIZE = 9;
-const BLOSSOM_RATE = 1000;
 
 function normalizePrice(price: unknown): number {
   const value = Number(price ?? 0);
@@ -29,10 +28,6 @@ function normalizePrice(price: unknown): number {
 
 function isFreePrice(price: unknown): boolean {
   return normalizePrice(price) <= 0;
-}
-
-function toBlossomAmount(price: unknown): number {
-  return Math.floor(normalizePrice(price) / BLOSSOM_RATE);
 }
 
 // ─── Skeleton ──────────────────────────────────────────
@@ -85,7 +80,7 @@ function UserCourseCard({
 
   const formattedPrice = freeCourse 
     ? t("course.list.free") 
-    : `${toBlossomAmount(course.price).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language === "ja" ? "ja-JP" : "en-US")} 🌸`;
+    : `${normalizePrice(course.price).toLocaleString(i18n.language === "vi" ? "vi-VN" : i18n.language === "ja" ? "ja-JP" : "en-US", { maximumFractionDigits: 2 })} 🌸`;
 
   return (
     <div className="bg-card rounded-2xl overflow-hidden border border-border card-hover-effect group flex flex-col h-full hover:shadow-xl transition-all duration-300">

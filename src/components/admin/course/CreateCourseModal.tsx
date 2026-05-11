@@ -266,12 +266,12 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({
 
           {/* Price */}
           <div className="space-y-2">
-            <Label htmlFor="price">Giá (VNĐ)</Label>
+            <Label htmlFor="price">Giá (hoa)</Label>
             <Input
               id="price"
               type="number"
               min="0"
-              step="1000"
+              step="1"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="0 = Miễn phí"

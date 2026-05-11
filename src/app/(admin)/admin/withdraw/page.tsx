@@ -355,8 +355,15 @@ function AdminWithdrawManagementInner() {
                             {t("admin.user.table.id")}: {req.userId}
                           </div>
                         </td>
-                        <td className="p-4 align-middle font-semibold whitespace-nowrap">
-                          {req.amount.toLocaleString()} 🌸
+                        <td className="p-4 align-middle whitespace-nowrap">
+                          <div className="font-semibold">
+                            {req.amount.toLocaleString()} 🌸
+                          </div>
+                          {req.netPayoutAmount != null ? (
+                            <div className="text-xs text-muted-foreground">
+                              Net: {req.netPayoutAmount.toLocaleString()} 🌸
+                            </div>
+                          ) : null}
                         </td>
                         <td className="p-4 align-middle">
                           <div className="space-y-1">

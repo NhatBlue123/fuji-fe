@@ -105,7 +105,7 @@ function PaymentPageContent() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCouponCode, setAppliedCouponCode] = useState("");
   const { data: myCoupons = [], isFetching: isFetchingCoupons } =
-    useGetMyCouponsQuery(undefined, { skip: !isSingleMode });
+    useGetMyCouponsQuery(undefined, { skip: !isSingleMode && !isBulkMode });
   const bookingCoupons = useMemo(
     () => myCoupons.filter(isActiveBookingCoupon),
     [myCoupons],
@@ -134,14 +134,18 @@ function PaymentPageContent() {
 
   useEffect(() => {
     if (!isBulkMode) return;
-    getBulkQuote({ teacherId, timeSlotIds: bulkIds })
+    getBulkQuote({
+      teacherId,
+      timeSlotIds: bulkIds,
+      couponCode: appliedCouponCode || undefined,
+    })
       .unwrap()
       .catch((e: unknown) => {
         setErrorMsg(
           extractApiErrorMessage(e, "Không tải được thông tin hóa đơn."),
         );
       });
-  }, [isBulkMode, teacherId, bulkIds, getBulkQuote]);
+  }, [isBulkMode, teacherId, bulkIds, appliedCouponCode, getBulkQuote]);
 
   const [createBooking, { isLoading: isCreatingSingle }] =
     useCreateBookingMutation();
@@ -150,10 +154,12 @@ function PaymentPageContent() {
 
   const isCreating = isCreatingSingle || isCreatingBulk;
   const quote = isSingleMode ? singleQuote : bulkQuote;
+  const hasInvalidCoupon =
+    Boolean(appliedCouponCode) && quote?.couponValid === false;
   const canConfirm =
     !!quote &&
     quote.canPay &&
-    !(isSingleMode && Boolean(appliedCouponCode) && "couponValid" in quote && quote.couponValid === false);
+    !hasInvalidCoupon;
   const isQuoteError = isSingleMode ? isSingleQuoteError : isBulkQuoteError;
   const quoteErrorMessage =
     extractApiErrorMessage(
@@ -174,6 +180,7 @@ function PaymentPageContent() {
         await createBulkBooking({
           teacherId,
           timeSlotIds: bulkIds,
+          couponCode: appliedCouponCode || undefined,
         }).unwrap();
       } else {
         return;
@@ -207,6 +214,96 @@ function PaymentPageContent() {
   const removeCoupon = () => {
     setCouponCode("");
     setAppliedCouponCode("");
+  };
+
+  const renderCouponPanel = () => {
+    if (!quote) return null;
+
+    return (
+      <div className="rounded-xl border border-slate-800 bg-white/5 p-4">
+        <p className="mb-3 text-sm font-semibold text-slate-200">
+          {t("monetization.messages.bookingDiscountTitle")}
+        </p>
+        {isFetchingCoupons && (
+          <p className="mb-3 text-xs text-slate-400">
+            {t("monetization.messages.loadingYourDiscountCodes")}
+          </p>
+        )}
+        {bookingCoupons.length > 0 && (
+          <div className="mb-4 grid gap-2">
+            {bookingCoupons.map((coupon) => {
+              const selected =
+                appliedCouponCode === coupon.code.trim().toUpperCase();
+              return (
+                <button
+                  key={coupon.id}
+                  type="button"
+                  onClick={() => selectCoupon(coupon)}
+                  className={`rounded-xl border p-3 text-left transition-all ${
+                    selected
+                      ? "border-emerald-400/60 bg-emerald-500/10"
+                      : "border-slate-800 bg-slate-950/60 hover:border-pink-500/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-100">
+                      <Ticket className="size-4 text-pink-400" />
+                      {coupon.code}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-300">
+                      {formatCouponDiscount(coupon, t)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400">
+                    <span>
+                      {t("monetization.messages.remainingSingleUsage", {
+                        remaining: coupon.usageRemaining,
+                      })}
+                    </span>
+                    <span>{formatCouponExpiry(coupon, t)}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            value={couponCode}
+            onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+            disabled={Boolean(appliedCouponCode)}
+            placeholder={t("monetization.messages.enterDiscountCode")}
+            className="min-h-11 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-pink-500 disabled:opacity-60"
+          />
+          {appliedCouponCode ? (
+            <button
+              type="button"
+              onClick={removeCoupon}
+              className="min-h-11 rounded-lg border border-slate-700 px-4 text-sm font-bold text-slate-200 hover:bg-slate-800"
+            >
+              {t("monetization.actions.removeCode")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={applyCoupon}
+              disabled={!couponCode.trim()}
+              className="min-h-11 rounded-lg bg-pink-600 px-4 text-sm font-bold text-white hover:bg-pink-500 disabled:opacity-50"
+            >
+              {t("monetization.actions.applyCode")}
+            </button>
+          )}
+        </div>
+        {appliedCouponCode && quote.couponValid === false && (
+          <p className="mt-2 text-xs text-red-300">{quote.couponMessage}</p>
+        )}
+        {appliedCouponCode && quote.couponValid && (
+          <p className="mt-2 text-xs text-emerald-300">
+            {t("monetization.messages.discountAppliedToTotal")}
+          </p>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -308,10 +405,23 @@ function PaymentPageContent() {
                     <span>{t('auto.booking_appointment_2')}</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
-                  <div className="flex justify-between text-slate-400 text-sm">
-                    <span>{t('auto.booking_appointment_3')}</span>
-                    <span>{quote.serviceFeeBlossom} 🌸</span>
-                  </div>
+                  {quote.serviceFeeBlossom > 0 && (
+                    <div className="flex justify-between text-slate-400 text-sm">
+                      <span>{t('auto.booking_appointment_3')}</span>
+                      <span>{quote.serviceFeeBlossom} 🌸</span>
+                    </div>
+                  )}
+                  {(quote.discountBlossom ?? 0) > 0 && (
+                    <div className="flex justify-between text-emerald-300 text-sm">
+                      <span>{t("monetization.terms.discountCode")} {quote.couponCode}</span>
+                      <span>-{quote.discountBlossom} 🌸</span>
+                    </div>
+                  )}
+                  {quote.adminCommissionWaived && (quote.discountBlossom ?? 0) > 0 && (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                      {t("monetization.messages.bookingDiscountApplied")}
+                    </div>
+                  )}
                   <div className="flex justify-between text-slate-100 font-bold text-2xl pt-2">
                     <span>{t('auto.booking_appointment_4')}</span>
                     <span className="text-pink-500">
@@ -319,6 +429,7 @@ function PaymentPageContent() {
                     </span>
                   </div>
                 </div>
+                {renderCouponPanel()}
               </div>
             ) : (
               <div className="space-y-6">
@@ -344,10 +455,12 @@ function PaymentPageContent() {
                     <span>{t('auto.booking_appointment_5')}</span>
                     <span>{quote.tuitionBlossom} 🌸</span>
                   </div>
-                  <div className="flex justify-between text-slate-400 text-sm">
-                    <span>{t('auto.booking_appointment_6')}</span>
-                    <span>{quote.serviceFeeBlossom} 🌸</span>
-                  </div>
+                  {quote.serviceFeeBlossom > 0 && (
+                    <div className="flex justify-between text-slate-400 text-sm">
+                      <span>{t('auto.booking_appointment_6')}</span>
+                      <span>{quote.serviceFeeBlossom} 🌸</span>
+                    </div>
+                  )}
                   {(quote.discountBlossom ?? 0) > 0 && (
                     <div className="flex justify-between text-emerald-300 text-sm">
                       <span>{t("monetization.terms.discountCode")} {quote.couponCode}</span>
@@ -367,89 +480,7 @@ function PaymentPageContent() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-800 bg-white/5 p-4">
-                  <p className="mb-3 text-sm font-semibold text-slate-200">
-                    {t("monetization.messages.bookingDiscountTitle")}
-                  </p>
-                  {isFetchingCoupons && (
-                    <p className="mb-3 text-xs text-slate-400">
-                      {t("monetization.messages.loadingYourDiscountCodes")}
-                    </p>
-                  )}
-                  {bookingCoupons.length > 0 && (
-                    <div className="mb-4 grid gap-2">
-                      {bookingCoupons.map((coupon) => {
-                        const selected =
-                          appliedCouponCode === coupon.code.trim().toUpperCase();
-                        return (
-                          <button
-                            key={coupon.id}
-                            type="button"
-                            onClick={() => selectCoupon(coupon)}
-                            className={`rounded-xl border p-3 text-left transition-all ${
-                              selected
-                                ? "border-emerald-400/60 bg-emerald-500/10"
-                                : "border-slate-800 bg-slate-950/60 hover:border-pink-500/40"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-100">
-                                <Ticket className="size-4 text-pink-400" />
-                                {coupon.code}
-                              </span>
-                              <span className="text-xs font-bold text-emerald-300">
-                                {formatCouponDiscount(coupon, t)}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400">
-                              <span>
-                                {t("monetization.messages.remainingSingleUsage", {
-                                  remaining: coupon.usageRemaining,
-                                })}
-                              </span>
-                              <span>{formatCouponExpiry(coupon, t)}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <input
-                      value={couponCode}
-                      onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
-                      disabled={Boolean(appliedCouponCode)}
-                      placeholder={t("monetization.messages.enterDiscountCode")}
-                      className="min-h-11 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-pink-500 disabled:opacity-60"
-                    />
-                    {appliedCouponCode ? (
-                      <button
-                        type="button"
-                        onClick={removeCoupon}
-                        className="min-h-11 rounded-lg border border-slate-700 px-4 text-sm font-bold text-slate-200 hover:bg-slate-800"
-                      >
-                        {t("monetization.actions.removeCode")}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={applyCoupon}
-                        disabled={!couponCode.trim()}
-                        className="min-h-11 rounded-lg bg-pink-600 px-4 text-sm font-bold text-white hover:bg-pink-500 disabled:opacity-50"
-                      >
-                        {t("monetization.actions.applyCode")}
-                      </button>
-                    )}
-                  </div>
-                  {appliedCouponCode && quote.couponValid === false && (
-                    <p className="mt-2 text-xs text-red-300">{quote.couponMessage}</p>
-                  )}
-                  {appliedCouponCode && quote.couponValid && (
-                    <p className="mt-2 text-xs text-emerald-300">
-                      {t("monetization.messages.discountAppliedToTotal")}
-                    </p>
-                  )}
-                </div>
+                {renderCouponPanel()}
               </div>
             )}
 

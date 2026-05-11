@@ -65,7 +65,7 @@ export const PERMISSIONS: PermissionDef[] = [
   {
     key: "WALLET_VIEW",
     label: "Xem ví",
-    description: "Truy cập ví và yêu cầu rút tiền của chính mình",
+    description: "Truy cập ví và yêu cầu rút tiền của chính mình trong admin workspace",
     group: "finance",
   },
 ];
@@ -78,7 +78,7 @@ export const PERMISSION_ROUTE_MAP: Record<string, string> = {
   BOOKING_VIEW: "/admin/teacher-schedules",
   COURSE_VIEW: "/admin/courses",
   COURSE_FINANCE_VIEW: "/admin/courses/finance/teacher",
-  WALLET_VIEW: "/profile/wallet",
+  WALLET_VIEW: "/admin/my-wallet",
 };
 
 /**
@@ -92,8 +92,8 @@ export const ROUTE_PERMISSION_MAP: Record<string, string> = {
   "/admin/courses": "COURSE_VIEW",
   "/admin/courses/finance": "ADMIN_ONLY",
   "/admin/courses/finance/teacher": "COURSE_FINANCE_VIEW",
-  "/profile/wallet": "WALLET_VIEW",
-  "/withdraw": "WALLET_VIEW",
+  "/admin/my-wallet": "WALLET_VIEW",
+  "/admin/my-withdraw": "WALLET_VIEW",
 };
 
 export function getPermissionsByGroup(group: string): PermissionDef[] {

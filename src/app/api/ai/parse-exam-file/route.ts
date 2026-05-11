@@ -194,18 +194,14 @@ export async function POST(req: NextRequest) {
     const cleaned = preprocessPdfText(rawText);
     const trimmed = extractRelevantText(cleaned);
 
-    console.log(`[AI/parse-exam-file] raw=${rawText.length} → cleaned=${cleaned.length} → trimmed=${trimmed.length} chars`);
-
     // ── Cache check (hash of trimmed text + level) ────────────────────────────
     const cacheKey = `pe:${level}:${hashString(trimmed)}`;
     const cached = getParseCached(cacheKey);
     if (cached) {
-      console.log(`[AI/parse-exam-file] Cache HIT (${cacheKey})`);
       return NextResponse.json({ questions: cached, total: cached.length, valid: cached.filter((q: any) => !q._error).length, invalid: cached.filter((q: any) => q._error).length, cached: true });
     }
 
     const prompt = buildParsePrompt(trimmed, level);
-    console.log(`[AI/parse-exam-file] MISS — calling Gemini REST v1 (${modelName}), prompt=${prompt.length}chars`);
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
     const geminiRes = await fetch(url, {

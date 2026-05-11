@@ -9,6 +9,10 @@ type AiEnvelope<T> = {
   byDay?: AiUsageByDay[];
   topUsers?: AiTopUser[];
   usage?: AiUsage[];
+  tokenStats?: AiUsageTokenStat[];
+  tokenTotals?: AiUsageTokenTotals;
+  period?: AiUsagePeriod;
+  metrics?: ChatbotMetrics;
 } & { data?: T };
 
 const readEnvelope = <T,>(res: unknown, key: keyof AiEnvelope<T>, fallback: T): T => {
@@ -29,6 +33,12 @@ export interface AiPolicy {
 export interface AiUsage {
   id: number;
   userId: number;
+  username?: string | null;
+  email?: string | null;
+  fullName?: string | null;
+  avatarUrl?: string | null;
+  role?: string | null;
+  identificationCode?: string | null;
   featureKey: string;
   quotaSource: string;
   amount: number;
@@ -40,39 +50,87 @@ export interface AiUsage {
   conversationId?: number | null;
   messageId?: number | null;
   success?: boolean | number;
+  costRateUsdPerMillion?: number;
+  estimatedCostUsd?: number;
   createdAt: string;
 }
 
 export interface AiUsageSummaryRow {
   featureKey: string;
   externalCalls: number;
+  amount?: number;
+  totalTokens?: number;
 }
 
 export interface AiUsageByDay {
   usageDate: string;
+  periodKey?: string;
+  periodLabel?: string;
   featureKey: string;
   externalCalls: number;
+  totalTokens?: number;
 }
 
 export interface AiTopUser {
   userId: number;
+  username?: string | null;
+  email?: string | null;
+  fullName?: string | null;
+  avatarUrl?: string | null;
+  role?: string | null;
+  identificationCode?: string | null;
   externalCalls: number;
   amount: number;
+  totalTokens?: number;
+}
+
+export interface AiUsageTokenStat {
+  featureKey: string;
+  model: string;
+  externalCalls: number;
+  amount: number;
+  totalTokens: number;
+  avgTokens?: number;
+  costRateUsdPerMillion?: number;
+  estimatedCostUsd?: number;
+  lastUsedAt?: string | null;
+}
+
+export interface AiUsageTokenTotals {
+  externalCalls: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
 }
 
 export interface AiUsageSummaryResponse {
   summary: AiUsageSummaryRow[];
   byDay: AiUsageByDay[];
   topUsers: AiTopUser[];
+  tokenStats: AiUsageTokenStat[];
+  tokenTotals: AiUsageTokenTotals;
+  period: AiUsagePeriod;
+}
+
+export interface AiUsageEventsResponse {
+  usage: AiUsage[];
+  tokenStats: AiUsageTokenStat[];
+  tokenTotals: AiUsageTokenTotals;
 }
 
 export interface AiUsageFilters {
   limit?: number;
   featureKey?: string;
   quotaSource?: string;
+  keyword?: string;
   userId?: string;
   from?: string;
   to?: string;
+}
+
+export type AiUsagePeriod = "day" | "week" | "month" | "year";
+
+export interface AiUsageSummaryFilters {
+  period?: AiUsagePeriod;
 }
 
 export interface AiPack {
@@ -92,15 +150,73 @@ export interface AiPack {
 
 export type AiPackPayload = Omit<AiPack, "id" | "createdAt" | "updatedAt">;
 
+export type AiPolicyPayload = Omit<AiPolicy, "id">;
+
+export interface ChatbotLatencyStats {
+  count: number;
+  p50: number | null;
+  p95: number | null;
+  max: number | null;
+}
+
+export interface ChatbotMetrics {
+  source: string;
+  available: boolean;
+  windowDays: number;
+  reason?: string;
+  events?: {
+    total: number;
+    byType: Record<string, number>;
+  };
+  routeDistribution?: Record<string, number>;
+  workerDistribution?: Record<string, number>;
+  queueDistribution?: Record<string, number>;
+  toolUsage?: Record<string, number>;
+  failures?: {
+    total: number;
+    qdrant: number;
+    openai: number;
+    openaiTimeout: number;
+    quotaExhausted: number;
+    other: number;
+    openaiTimeoutRate: number;
+  };
+  latency?: {
+    firstTokenMs: ChatbotLatencyStats;
+    workerMs: ChatbotLatencyStats;
+  };
+}
+
+const emptyTokenTotals: AiUsageTokenTotals = {
+  externalCalls: 0,
+  totalTokens: 0,
+  estimatedCostUsd: 0,
+};
+
 const readSummaryEnvelope = (res: unknown): AiUsageSummaryResponse => {
   if (!res || typeof res !== "object") {
-    return { summary: [], byDay: [], topUsers: [] };
+    return { summary: [], byDay: [], topUsers: [], tokenStats: [], tokenTotals: emptyTokenTotals, period: "day" };
   }
   const envelope = res as AiEnvelope<AiUsageSummaryResponse>;
   return {
     summary: envelope.summary ?? [],
     byDay: envelope.byDay ?? [],
     topUsers: envelope.topUsers ?? [],
+    tokenStats: envelope.tokenStats ?? [],
+    tokenTotals: envelope.tokenTotals ?? emptyTokenTotals,
+    period: envelope.period ?? "day",
+  };
+};
+
+const readUsageEnvelope = (res: unknown): AiUsageEventsResponse => {
+  if (!res || typeof res !== "object") {
+    return { usage: [], tokenStats: [], tokenTotals: emptyTokenTotals };
+  }
+  const envelope = res as AiEnvelope<AiUsageEventsResponse>;
+  return {
+    usage: envelope.usage ?? [],
+    tokenStats: envelope.tokenStats ?? [],
+    tokenTotals: envelope.tokenTotals ?? emptyTokenTotals,
   };
 };
 
@@ -109,10 +225,25 @@ const buildUsageQuery = (filters?: AiUsageFilters) => {
   params.set("limit", String(filters?.limit ?? 100));
   if (filters?.featureKey && filters.featureKey !== "ALL") params.set("featureKey", filters.featureKey);
   if (filters?.quotaSource && filters.quotaSource !== "ALL") params.set("quotaSource", filters.quotaSource);
+  if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
   if (filters?.userId?.trim()) params.set("userId", filters.userId.trim());
   if (filters?.from) params.set("from", filters.from);
   if (filters?.to) params.set("to", filters.to);
   return `/admin/ai/usage?${params.toString()}`;
+};
+
+const buildSummaryQuery = (filters?: AiUsageSummaryFilters) => {
+  const params = new URLSearchParams();
+  if (filters?.period) params.set("period", filters.period);
+  const query = params.toString();
+  return query ? `/admin/ai/usage/summary?${query}` : "/admin/ai/usage/summary";
+};
+
+const buildChatbotMetricsQuery = (filters?: { days?: number }) => {
+  const params = new URLSearchParams();
+  if (filters?.days) params.set("days", String(filters.days));
+  const query = params.toString();
+  return query ? `/admin/ai/chatbot/metrics?${query}` : "/admin/ai/chatbot/metrics";
 };
 
 export const aiQuotaAdminApi = aiBaseApi.injectEndpoints({
@@ -122,19 +253,45 @@ export const aiQuotaAdminApi = aiBaseApi.injectEndpoints({
       transformResponse: (res: unknown) => readEnvelope<AiPolicy[]>(res, "policies", []),
       providesTags: ["AiQuota"],
     }),
-    updateAiPolicy: builder.mutation<AiPolicy, { id: number; data: Partial<AiPolicy> }>({
+    createAiPolicy: builder.mutation<AiPolicy, AiPolicyPayload>({
+      query: (body) => ({ url: "/admin/ai/policies", method: "POST", body }),
+      transformResponse: (res: unknown) => readEnvelope<AiPolicy>(res, "policy", res as AiPolicy),
+      invalidatesTags: ["AiQuota"],
+    }),
+    updateAiPolicy: builder.mutation<AiPolicy, { id: number; data: Partial<AiPolicyPayload> }>({
       query: ({ id, data }) => ({ url: `/admin/ai/policies/${id}`, method: "PUT", body: data }),
       transformResponse: (res: unknown) => readEnvelope<AiPolicy>(res, "policy", res as AiPolicy),
       invalidatesTags: ["AiQuota"],
     }),
-    getAiUsageSummary: builder.query<AiUsageSummaryResponse, void>({
-      query: () => "/admin/ai/usage/summary",
+    deleteAiPolicy: builder.mutation<{ ok: boolean }, number>({
+      query: (id) => ({ url: `/admin/ai/policies/${id}`, method: "DELETE" }),
+      invalidatesTags: ["AiQuota"],
+    }),
+    getAiUsageSummary: builder.query<AiUsageSummaryResponse, AiUsageSummaryFilters | void>({
+      query: (filters) => buildSummaryQuery(filters || undefined),
       transformResponse: readSummaryEnvelope,
       providesTags: ["AiQuota"],
     }),
-    getAiUsage: builder.query<AiUsage[], AiUsageFilters | void>({
+    getAiUsage: builder.query<AiUsageEventsResponse, AiUsageFilters | void>({
       query: (filters) => buildUsageQuery(filters || undefined),
-      transformResponse: (res: unknown) => readEnvelope<AiUsage[]>(res, "usage", []),
+      transformResponse: readUsageEnvelope,
+      providesTags: ["AiQuota"],
+    }),
+    getAiUsageStats: builder.query<Pick<AiUsageEventsResponse, "tokenStats" | "tokenTotals">, AiUsageFilters | void>({
+      query: (filters) => buildUsageQuery(filters || undefined),
+      transformResponse: (res: unknown) => {
+        const envelope = readUsageEnvelope(res);
+        return { tokenStats: envelope.tokenStats, tokenTotals: envelope.tokenTotals };
+      },
+      providesTags: ["AiQuota"],
+    }),
+    getChatbotMetrics: builder.query<ChatbotMetrics, { days?: number } | void>({
+      query: (filters) => buildChatbotMetricsQuery(filters || undefined),
+      transformResponse: (res: unknown) => readEnvelope<ChatbotMetrics>(
+        res,
+        "metrics",
+        { source: "redis_chat_observability", available: false, windowDays: 7 },
+      ),
       providesTags: ["AiQuota"],
     }),
     getAiPacks: builder.query<AiPack[], void>({
@@ -152,15 +309,24 @@ export const aiQuotaAdminApi = aiBaseApi.injectEndpoints({
       transformResponse: (res: unknown) => readEnvelope<AiPack>(res, "pack", res as AiPack),
       invalidatesTags: ["AiQuota"],
     }),
+    deleteAiPack: builder.mutation<{ ok: boolean }, number>({
+      query: (id) => ({ url: `/admin/ai/packs/${id}`, method: "DELETE" }),
+      invalidatesTags: ["AiQuota"],
+    }),
   }),
 });
 
 export const {
   useGetAiPoliciesQuery,
+  useCreateAiPolicyMutation,
   useUpdateAiPolicyMutation,
+  useDeleteAiPolicyMutation,
   useGetAiUsageSummaryQuery,
   useGetAiUsageQuery,
+  useGetAiUsageStatsQuery,
+  useGetChatbotMetricsQuery,
   useGetAiPacksQuery,
   useCreateAiPackMutation,
   useUpdateAiPackMutation,
+  useDeleteAiPackMutation,
 } = aiQuotaAdminApi;

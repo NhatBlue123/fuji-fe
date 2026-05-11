@@ -52,6 +52,8 @@ export interface UserPackage {
   packageId: number;
   packageCode: string;
   packageName: string;
+  priceHoa?: number | null;
+  sortOrder?: number | null;
   status: string;
   startsAt: string;
   expiresAt: string;
@@ -79,6 +81,10 @@ export interface PackagePurchaseResponse {
   packageId: number;
   packageName: string;
   priceHoa: number;
+  chargedHoa?: number;
+  upgradeCreditHoa?: number;
+  upgradeFromPackageName?: string | null;
+  upgraded?: boolean;
   walletBalanceAfter: number;
   startsAt: string;
   expiresAt: string;

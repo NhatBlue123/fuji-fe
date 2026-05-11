@@ -11,7 +11,7 @@ import {
   Flame,
 } from "lucide-react";
 import { useTheme } from "@/components/common";
-import { useAuth, useAppDispatch } from "@/store/hooks";
+import { useAuth } from "@/store/hooks";
 import { useNotifications } from "@/providers/NotificationProvider";
 import { useGetWalletQuery } from "@/store/services/walletApi";
 import { useGetStreakQuery } from "@/store/services/progressApi";
@@ -28,11 +28,21 @@ import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 
+const HOA_BALANCE_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  maximumFractionDigits: 20,
+};
+
+function formatHoaBalance(value: number, language: string) {
+  const amount = Number.isFinite(value) ? value : 0;
+  const locale = language === "vi" ? "vi-VN" : language === "ja" ? "ja-JP" : "en-US";
+  return `${amount.toLocaleString(locale, HOA_BALANCE_FORMAT_OPTIONS)} 🌸`;
+}
+
 const MobileHeader = () => {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { unreadCount, notifications, markAsRead, bellRingCount } = useNotifications();
   const [bellAnimating, setBellAnimating] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -174,9 +184,8 @@ const MobileHeader = () => {
                 className="flex h-9 items-center gap-1.5 rounded-full border border-secondary/20 bg-secondary/5 px-2.5 text-secondary transition-all hover:bg-secondary/10 active:scale-95"
               >
                 <span className="text-xs font-bold leading-none">
-                  {flowerBalance.toLocaleString(i18n.language === "vi" ? "vi-VN" : "en-US")}
+                  {formatHoaBalance(flowerBalance, i18n.language)}
                 </span>
-                <span className="text-sm">🌸</span>
               </Link>
             </motion.div>
           )}

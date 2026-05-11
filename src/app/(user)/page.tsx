@@ -14,11 +14,11 @@ export const dynamic = "force-static";
 export const revalidate = 3600;
 
 const DEFAULT_OG_IMAGE = {
-  url: "https://fuji.io.vn/images/og_image.png",
+  url: "https://fuji.io.vn/images/og-image.jpg",
   width: 1200,
   height: 630,
   alt: "FUJI - Nền tảng học tiếng Nhật All-in-One",
-  type: "image/png",
+  type: "image/jpeg",
 };
 
 export const metadata: Metadata = {

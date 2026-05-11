@@ -26,7 +26,18 @@ interface TransferModalProps {
   onSuccess: () => void;
   onPayoutCreated?: () => void;
   isConfirming: boolean;
-  request: Pick<WithdrawRequestData, "id" | "amount" | "bankName" | "accountNumber" | "accountHolder"> | null;
+  request: Pick<
+    WithdrawRequestData,
+    | "id"
+    | "amount"
+    | "platformFeeBps"
+    | "platformFeeAmount"
+    | "netPayoutAmount"
+    | "netPayoutVnd"
+    | "bankName"
+    | "accountNumber"
+    | "accountHolder"
+  > | null;
 }
 
 export function TransferModal({
@@ -68,7 +79,7 @@ export function TransferModal({
       }
     });
     return () => unsub();
-  }, [request, onPaymentStatusChange, onSuccess]);
+  }, [request, onPaymentStatusChange, onSuccess, t]);
 
   // Fallback Check (Phụ thuộc API - Không SetInterval)
   useEffect(() => {
@@ -97,7 +108,7 @@ export function TransferModal({
     }, 20000); // Fallback 20s (đủ cho 1 chu kỳ polling 15s + margin)
 
     return () => clearTimeout(timeoutId);
-  }, [payoutOrderId, socketHandled, refetchPayoutStatus, onSuccess]);
+  }, [payoutOrderId, socketHandled, refetchPayoutStatus, onSuccess, t]);
 
   const handleAutoPayout = async () => {
     try {
@@ -126,8 +137,10 @@ export function TransferModal({
 
   if (!request) return null;
 
-  const transferAmountBlossom = request.amount;
-  const transferAmountVnd = transferAmountBlossom * 1000;
+  const grossAmountBlossom = request.amount;
+  const platformFeeAmount = request.platformFeeAmount ?? 0;
+  const transferAmountBlossom = request.netPayoutAmount ?? Math.max(0, grossAmountBlossom - platformFeeAmount);
+  const transferAmountVnd = request.netPayoutVnd ?? transferAmountBlossom * 1000;
   // Format để tạo QR vietqr: amount=..., addInfo=..., accountName=...
   const orderId = `RUTTIEN${request.id}`;
 
@@ -210,18 +223,23 @@ export function TransferModal({
             />
             <InfoRow
               label={t("admin.withdraw.label.amountBlossom")}
-              value={`${transferAmountBlossom.toLocaleString(i18n.language)} 🌸`}
+              value={`${grossAmountBlossom.toLocaleString(i18n.language)} 🌸`}
               onCopy={() =>
-                copyToClipboard(transferAmountBlossom.toString(), t("admin.withdraw.label.amountBlossom"))
+                copyToClipboard(grossAmountBlossom.toString(), t("admin.withdraw.label.amountBlossom"))
               }
               isBold
               textClass="text-emerald-600"
             />
             <InfoRow
-              label={t("admin.withdraw.label.amountVnd")}
+              label="Phí sàn"
+              value={`${platformFeeAmount.toLocaleString(i18n.language)} 🌸 (${formatBps(request.platformFeeBps ?? 0)})`}
+              onCopy={() => copyToClipboard(platformFeeAmount.toString(), "Phí sàn")}
+            />
+            <InfoRow
+              label="Số tiền chuyển thực nhận"
               value={`${transferAmountVnd.toLocaleString(i18n.language)}đ`}
               onCopy={() =>
-                copyToClipboard(transferAmountVnd.toString(), t("admin.withdraw.label.amountVnd"))
+                copyToClipboard(transferAmountVnd.toString(), "Số tiền chuyển thực nhận")
               }
               isBold
             />
@@ -308,4 +326,9 @@ function InfoRow({
       </div>
     </div>
   );
+}
+
+function formatBps(bps: number) {
+  const percent = bps / 100;
+  return `${Number.isInteger(percent) ? percent.toFixed(0) : percent.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}%`;
 }

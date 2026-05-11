@@ -52,7 +52,6 @@ export function AIChatSocketProvider({
     }
 
     if (!isAuthenticated) {
-      console.log("[AI Socket] Not authenticated, disconnecting");
       disconnectAISocket();
       setSocket(null);
       setIsConnected(false);
@@ -60,7 +59,6 @@ export function AIChatSocketProvider({
       return;
     }
 
-    console.log("[AI Socket] Initializing connection...");
     const s = connectAISocket(accessToken ?? undefined);
     setSocket(s as Socket);
 
@@ -69,14 +67,12 @@ export function AIChatSocketProvider({
 
     const handleConnect = () => {
       if (!mountedRef.current) return;
-      console.log("[AI Socket] ✅ Connected successfully");
       setIsConnected(true);
       setConnectionAttempts(0);
     };
 
     const handleDisconnect = (reason: string) => {
       if (!mountedRef.current) return;
-      console.log("[AI Socket] ❌ Disconnected:", reason);
       setIsConnected(false);
 
       // ✅ FIX 2: Auto-reconnect on transport errors
@@ -85,10 +81,8 @@ export function AIChatSocketProvider({
         reason === "transport close" ||
         reason === "ping timeout"
       ) {
-        console.log("[AI Socket] 🔄 Attempting reconnect in 2s...");
         reconnectTimeoutRef.current = setTimeout(() => {
           if (mountedRef.current && s && !s.connected) {
-            console.log("[AI Socket] Reconnecting...");
             s.connect();
           }
         }, 2000);
@@ -105,9 +99,8 @@ export function AIChatSocketProvider({
 
     const handleReconnectAttempt = (attemptNumber: number) => {
       if (!mountedRef.current) return;
-      console.log(`[AI Socket] 🔄 Reconnect attempt #${attemptNumber}`);
       setConnectionAttempts(attemptNumber);
-    };
+    };  
 
     const handleReconnectFailed = () => {
       if (!mountedRef.current) return;
@@ -115,22 +108,14 @@ export function AIChatSocketProvider({
       setIsConnected(false);
     };
 
-    // ✅ FIX 4: Thêm ready event để confirm socket đã join room
-    const handleReady = (data: { ok: boolean; user?: unknown }) => {
-      if (!mountedRef.current) return;
-      console.log("[AI Socket] 🎯 Ready event received:", data);
-    };
-
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("connect_error", handleConnectError);
     s.on("reconnect_attempt", handleReconnectAttempt);
     s.on("reconnect_failed", handleReconnectFailed);
-    s.on("ready", handleReady);
 
     // ✅ FIX 5: Cleanup listeners properly
     return () => {
-      console.log("[AI Socket] 🧹 Cleaning up...");
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
@@ -140,7 +125,6 @@ export function AIChatSocketProvider({
       s.off("connect_error", handleConnectError);
       s.off("reconnect_attempt", handleReconnectAttempt);
       s.off("reconnect_failed", handleReconnectFailed);
-      s.off("ready", handleReady);
       disconnectAISocket();
     };
   }, [accessToken, isAuthenticated]);

@@ -252,7 +252,7 @@ async function callGemini(apiKey: string, model: string, prompt: string) {
     const msg = data?.error?.message ?? `Gemini API error ${res.status}`;
     throw new Error(msg);
   }
-  let rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
   // ── Robust JSON extraction ─────────────────────────────────────────────────
   // Strategy 1: Find first '[' and last ']' (valid array)
@@ -319,7 +319,6 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = buildPrompt(body);
-    console.log(`[AI/generate-questions] Calling Gemini REST v1 (${model}), prompt=${prompt.length}chars`);
 
     const text = await callGemini(apiKey, model, prompt);
 

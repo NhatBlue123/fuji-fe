@@ -132,10 +132,8 @@ export function scheduleTokenRefresh(
 
   // Refresh at 80% of TTL, but at least 30s before expiry
   const refreshIn = Math.max(ttl - 30_000, ttl * 0.8);
-  console.log(`⏰ Token refresh scheduled in ${Math.round(refreshIn / 1000)}s`);
 
   refreshTimer = setTimeout(() => {
-    console.log("🔄 Proactive token refresh triggered");
     refreshFn();
   }, refreshIn);
 }

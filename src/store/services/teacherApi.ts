@@ -50,7 +50,8 @@ export interface TeacherDashboardData {
   }[];
   courseRevenueList: { 
     courseId: number;
-    courseTitle: string; 
+    courseTitle: string;
+    thumbnailUrl?: string | null;
     revenue: number; 
     studentCount: number; 
   }[];

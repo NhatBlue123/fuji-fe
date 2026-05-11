@@ -6,6 +6,8 @@ import {
   useGetViolationsQuery,
   useDeleteBanMutation,
   useDeleteAllBansMutation,
+  useDeleteViolationMutation,
+  useDeleteAllViolationsMutation,
 } from "@/store/services/adminChatModerationApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,7 @@ import {
   XCircle,
   ShieldAlert,
   Volume2,
+  Trash,
 } from "lucide-react";
 
 type ChatModerationTab = "violations" | "bans";
@@ -137,6 +140,8 @@ export default function AdminChatModerationPage() {
   const bansQuery = useGetBansQuery({ page: banPage, size });
   const [deleteBan, deleteBanState] = useDeleteBanMutation();
   const [deleteAllBans, deleteAllBansState] = useDeleteAllBansMutation();
+  const [deleteViolation, deleteViolationState] = useDeleteViolationMutation();
+  const [deleteAllViolations, deleteAllViolationsState] = useDeleteAllViolationsMutation();
 
   const violations = violationsQuery.data?.content ?? [];
   const bans = bansQuery.data?.content ?? [];
@@ -152,6 +157,7 @@ export default function AdminChatModerationPage() {
       const matchesKeyword =
         !searchKeyword ||
         v.userId?.toString().includes(searchKeyword) ||
+        v.username?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
         v.messageContent?.toLowerCase().includes(searchKeyword.toLowerCase());
       const matchesType = filterType === "all" || v.violationType === filterType;
       return matchesKeyword && matchesType;
@@ -243,7 +249,7 @@ export default function AdminChatModerationPage() {
                   <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Tìm kiếm user ID, nội dung..."
+                      placeholder="Tìm kiếm username, user ID, nội dung..."
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
                       className="pl-9"
@@ -282,6 +288,28 @@ export default function AdminChatModerationPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={deleteAllViolationsState.isLoading || totalViolations === 0}
+                    onClick={async () => {
+                      const ok = window.confirm(
+                        "Bạn chắc chắn muốn xóa toàn bộ vi phạm? Hành động này không thể hoàn tác.",
+                      );
+                      if (!ok) return;
+                      try {
+                        await deleteAllViolations().unwrap();
+                        toast.success("Đã xóa toàn bộ vi phạm");
+                        violationsQuery.refetch();
+                      } catch (err: any) {
+                        toast.error(err?.message || "Xóa thất bại");
+                      }
+                    }}
+                    className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:hover:bg-rose-900/20"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Xóa tất cả
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -290,18 +318,17 @@ export default function AdminChatModerationPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-[100px] font-semibold">User ID</TableHead>
+                      <TableHead className="w-[180px] font-semibold">Người dùng</TableHead>
                       <TableHead className="font-semibold">Nội dung vi phạm</TableHead>
                       <TableHead className="w-[120px] font-semibold">Loại</TableHead>
                       <TableHead className="w-[160px] font-semibold">Thời gian</TableHead>
-                      <TableHead className="w-[130px] font-semibold">IP Address</TableHead>
-                      <TableHead className="w-[80px] text-right font-semibold">Hành động</TableHead>
+                      <TableHead className="w-[100px] font-semibold">Hành động</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {violationsQuery.isLoading && (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center">
+                        <TableCell colSpan={5} className="h-32 text-center">
                           <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <RefreshCw className="h-5 w-5 animate-spin" />
                             Đang tải dữ liệu...
@@ -311,7 +338,7 @@ export default function AdminChatModerationPage() {
                     )}
                     {!violationsQuery.isLoading && violationsQuery.isError && (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center text-rose-500">
+                        <TableCell colSpan={5} className="h-32 text-center text-rose-500">
                           <AlertCircle className="mx-auto mb-2 h-8 w-8" />
                           Không tải được dữ liệu. Hãy thử lại.
                         </TableCell>
@@ -319,7 +346,7 @@ export default function AdminChatModerationPage() {
                     )}
                     {!violationsQuery.isLoading && !violationsQuery.isError && filteredViolations.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                           <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-green-500" />
                           Không có vi phạm nào được tìm thấy.
                         </TableCell>
@@ -332,11 +359,14 @@ export default function AdminChatModerationPage() {
                         className="group transition-colors hover:bg-muted/50"
                       >
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-xs font-semibold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
-                              {v.userId?.toString().slice(-2) || "??"}
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-100 text-xs font-semibold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                              {v.username?.slice(0, 2).toUpperCase() || v.userId?.toString().slice(-2) || "??"}
                             </div>
-                            <span className="font-medium">#{v.userId}</span>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{v.username || `#${v.userId}`}</span>
+                              <span className="text-xs text-muted-foreground">ID: {v.userId}</span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -354,19 +384,36 @@ export default function AdminChatModerationPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                            {v.ipAddress ?? "-"}
-                          </code>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setSelectedViolation(v)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setSelectedViolation(v)}
+                              className="h-8 w-8 p-0"
+                              title="Xem chi tiết"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                if (!confirm("Bạn có chắc muốn xóa vi phạm này?")) return;
+                                try {
+                                  await deleteViolation({ id: v.id }).unwrap();
+                                  toast.success("Đã xóa vi phạm");
+                                  violationsQuery.refetch();
+                                } catch (err: any) {
+                                  toast.error(err?.message || "Xóa thất bại");
+                                }
+                              }}
+                              disabled={deleteViolationState.isLoading}
+                              className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                              title="Xóa vi phạm"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -469,11 +516,10 @@ export default function AdminChatModerationPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-[100px] font-semibold">User ID</TableHead>
+                    <TableHead className="w-[180px] font-semibold">Người dùng</TableHead>
                     <TableHead className="w-[140px] font-semibold">Loại ban</TableHead>
                     <TableHead className="w-[180px] font-semibold">Còn đến</TableHead>
                     <TableHead className="w-[130px] font-semibold">Số lần vi phạm</TableHead>
-                    <TableHead className="w-[160px] font-semibold">Cập nhật lần cuối</TableHead>
                     <TableHead className="w-[120px] text-right font-semibold">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -508,11 +554,14 @@ export default function AdminChatModerationPage() {
                   {bans.map((b) => (
                     <TableRow key={b.id} className="group transition-colors hover:bg-muted/50">
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-xs font-semibold text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
-                            {b.userId?.toString().slice(-2) || "??"}
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-xs font-semibold text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                            {b.username?.slice(0, 2).toUpperCase() || b.userId?.toString().slice(-2) || "??"}
                           </div>
-                          <span className="font-medium">#{b.userId}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{b.username || `#${b.userId}`}</span>
+                            <span className="text-xs text-muted-foreground">ID: {b.userId}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -539,32 +588,27 @@ export default function AdminChatModerationPage() {
                           {b.violationCount} lần
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" />
-                          {fmtDate(b.updatedAt ?? null)}
-                        </div>
-                      </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
-                          disabled={deleteBanState.isLoading}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            try {
-                              await deleteBan({ userId: b.userId }).unwrap();
-                              toast.success("Đã gỡ ban thành công");
-                              bansQuery.refetch();
-                            } catch (err: any) {
-                              toast.error(err?.message || "Gỡ ban thất bại");
-                            }
-                          }}
-                        >
-                          <CheckCircle2 className="mr-1 h-4 w-4" />
-                          Gỡ ban
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                            disabled={deleteBanState.isLoading}
+                            onClick={async () => {
+                              try {
+                                await deleteBan({ userId: b.userId }).unwrap();
+                                toast.success("Đã gỡ ban thành công");
+                                bansQuery.refetch();
+                              } catch (err: any) {
+                                toast.error(err?.message || "Gỡ ban thất bại");
+                              }
+                            }}
+                          >
+                            <CheckCircle2 className="mr-1 h-4 w-4" />
+                            Gỡ ban
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -618,6 +662,10 @@ export default function AdminChatModerationPage() {
           {selectedViolation && (
             <div className="space-y-4">
               <div className="grid gap-4 rounded-lg bg-muted/50 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Username</span>
+                  <span className="font-semibold">{selectedViolation.username || "-"}</span>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">User ID</span>
                   <span className="font-semibold">#{selectedViolation.userId}</span>

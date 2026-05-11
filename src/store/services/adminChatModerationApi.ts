@@ -90,6 +90,24 @@ export const adminChatModerationApi = createApi({
       transformResponse: () => undefined,
       invalidatesTags: ["ChatBan"],
     }),
+
+    deleteViolation: builder.mutation<void, { id: number }>({
+      query: ({ id }) => ({
+        url: `/admin/violations/${id}`,
+        method: "DELETE",
+      }),
+      transformResponse: () => undefined,
+      invalidatesTags: ["ChatViolation"],
+    }),
+
+    deleteAllViolations: builder.mutation<void, void>({
+      query: () => ({
+        url: "/admin/violations",
+        method: "DELETE",
+      }),
+      transformResponse: () => undefined,
+      invalidatesTags: ["ChatViolation"],
+    }),
   }),
 });
 
@@ -98,5 +116,7 @@ export const {
   useGetBansQuery,
   useDeleteBanMutation,
   useDeleteAllBansMutation,
+  useDeleteViolationMutation,
+  useDeleteAllViolationsMutation,
 } = adminChatModerationApi;
 

@@ -167,6 +167,13 @@ export const lessonApi = baseApi.injectEndpoints({
       }),
     }),
 
+    markLessonPresence: builder.mutation<void, { lessonId: number; present: boolean }>({
+      query: ({ lessonId, present }) => ({
+        url: `/lessons/${lessonId}/presence/${present ? "join" : "leave"}`,
+        method: "POST",
+      }),
+    }),
+
     getLessonByBooking: builder.query<LessonRoomResponse | null, { bookingId: number }>({
       query: ({ bookingId }) => `/lessons/by-booking/${bookingId}`,
       transformResponse: (res: ApiEnvelope<LessonRoomResponse | null>) => res.data,
@@ -300,6 +307,7 @@ export const {
   useGetLessonTokenQuery,
   useEndLessonMutation,
   useMarkLessonActiveMutation,
+  useMarkLessonPresenceMutation,
   useGetLessonByBookingQuery,
   useGetChatHistoryQuery,
   useSendChatMessageMutation,

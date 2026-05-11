@@ -71,13 +71,24 @@ export function getUsableAvatarFrame(
 }
 
 export function hasAnyAvatarFramePackage(
-  userPackage?: { status?: string | null } | null,
+  userPackage?: {
+    status?: string | null;
+    startsAt?: string | null;
+    expiresAt?: string | null;
+  } | null,
   subscriptionTier?: string | null,
 ) {
+  const status = userPackage?.status?.toUpperCase();
+  const startsAt = userPackage?.startsAt ? Date.parse(userPackage.startsAt) : NaN;
+  const expiresAt = userPackage?.expiresAt ? Date.parse(userPackage.expiresAt) : NaN;
+  const now = Date.now();
+  const packageHasStarted = !Number.isFinite(startsAt) || startsAt <= now;
+  const packageNotExpired = !Number.isFinite(expiresAt) || expiresAt > now;
   const hasActivePackage =
     Boolean(userPackage) &&
-    (!userPackage?.status ||
-      ["ACTIVE", "active"].includes(String(userPackage.status)));
+    (!status || ["ACTIVE", "PENDING_SYNC"].includes(status)) &&
+    packageHasStarted &&
+    packageNotExpired;
 
   return hasActivePackage || Boolean(subscriptionTier && subscriptionTier !== "BASIC");
 }

@@ -2,6 +2,8 @@
   "common": {
     "home": "Home",
     "course": "Courses",
+    "video": "Video",
+    "task": "Task",
     "flashcard": "Flashcards",
     "management": "Management",
     "notification": "Notifications",
@@ -10,6 +12,7 @@
     "login": "Login",
     "logout": "Logout",
     "creating": "Creating...",
+    "updating": "Updating...",
     "jlptPractice": "JLPT practice",
     "booking": "Booking",
     "aiPractice": "AI Sensei",
@@ -18,6 +21,7 @@
     "noResults": "No results found",
     "register": "Register",
     "viewAll": "View All",
+    "viewNow": "View now",
     "noNotifications": "No new notifications",
     "profile": "Profile",
     "all": "All",
@@ -26,6 +30,7 @@
     "edit": "Edit",
     "notUpdated": "Not updated",
     "notDetermined": "Not determined",
+    "lastUpdated": "Last updated",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "processing": "Processing...",
@@ -55,6 +60,10 @@
     "action": "Action",
     "status": "Status",
     "time": "Time",
+    "duration": {
+      "hour": "hr",
+      "minute": "min"
+    },
     "noAccess": "Access Denied",
     "pageInfo": "Page {{current}} / {{total}}",
     "prev": "Prev",
@@ -70,7 +79,9 @@
     "tryLater": "Please try again later",
     "tryAgain": "Try again",
     "close": "Close",
-    "copied": "Copied"
+    "copied": "Copied",
+    "quickActions": "Quick actions",
+    "help": "Help"
   },
   "monetization": {
     "terms": {
@@ -209,7 +220,9 @@
     "logoutFailed": "Logout failed",
     "logout": "Logout",
     "videoCall": "Video Call",
-    "sensei": "Talk with Sensei"
+    "sensei": "Talk with Sensei",
+    "booking": "Booking",
+    "flashcards": "Flashcards"
   },
   "languageSwitcher": {
     "title": "Language Settings",
@@ -399,13 +412,33 @@
       "content": "Lesson Content",
       "noDescription": "No description for this lesson",
       "completed": "You have completed this lesson",
+      "markAsDone": "Mark as completed",
+      "invalidYoutube": "Invalid YouTube link",
+      "noTaskData": "This task does not have data yet",
+      "taskUpcoming": "This task will be updated soon",
+      "completedSuffix": "completed",
+      "completedCountSuffix": "students completed",
+      "lessonPrefix": "Lesson",
       "noLessons": "No lessons available",
       "completeCourse": "Complete course",
       "courseContent": "Course Content",
+      "tab": {
+        "overview": "Overview",
+        "qa": "Q&A",
+        "notes": "Notes"
+      },
+      "status": {
+        "learning": "Learning",
+        "completed": "Completed",
+        "notStarted": "Not started",
+        "preview": "Preview"
+      },
       "lockedTitleSequence": "You must complete the previous lesson first",
       "lockedTitleEnroll": "This lesson is locked",
       "lockedDescSequence": "Please finish the previous lesson to unlock this one.",
+      "lockedDescSequenceDetailed": "Please finish the previous lesson to unlock \"{{title}}\".",
       "lockedDescEnrollSpecific": "You need to enroll in the course to view \"{{lesson}}\".",
+      "lockedDescEnrollDetailed": "You need to enroll in the course to view \"{{title}}\".",
       "lockedDescEnroll": "You need to enroll in the course to view this lesson.",
       "actionSequence": "Study available lesson",
       "actionEnroll": "Back to course page",
@@ -413,6 +446,16 @@
       "actionEnrollAlt": "Register to unlock",
       "labelSequence": "Study previous lesson",
       "labelEnroll": "Enroll in course"
+    },
+    "task": {
+      "type": {
+        "multipleChoice": "Multiple choice",
+        "fillBlank": "Fill in the blank",
+        "listening": "Listening",
+        "matching": "Matching",
+        "speaking": "Speaking",
+        "reading": "Reading"
+      }
     },
     "buyFailed": "Could not purchase the course. Please try again.",
     "alreadyBought": "You have already purchased this course."

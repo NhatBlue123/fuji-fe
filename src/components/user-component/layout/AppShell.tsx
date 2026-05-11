@@ -40,10 +40,10 @@ export default function AppShell({
           >
             <div className="flex-1">
               {children}
-              {auth}
             </div>
             <Footer />
           </main>
+          {auth}
         </div>
         <MobieSidebar />
         <ChatDock />

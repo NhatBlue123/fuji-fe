@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
-import type { IMessage, StompSubscription } from "@stomp/stompjs";
+import {
+  publishStomp,
+  subscribeStomp,
+  subscribeStompConnectionState,
+  STOMP_JSON_HEADERS,
+} from "@/lib/stomp";
+import type { IMessage } from "@stomp/stompjs";
 import {
   useSendChatMessageMutation,
   type ChatMessageResponse,
@@ -127,7 +132,6 @@ export function useStompChat(
   const [typingUsers, setTypingUsers] = useState<TypingStatus[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [sendChatMessage] = useSendChatMessageMutation();
-  const subsRef = useRef<StompSubscription[]>([]);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const prevLessonIdRef = useRef<number | null>(null);
   const optimisticIdRef = useRef(0);
@@ -157,18 +161,13 @@ export function useStompChat(
   useEffect(() => {
     if (!lessonId || !token) return;
 
-    const client = getStompClient(token);
-    let cancelled = false;
-    let subscribed = false;
-    let connectRetryTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubState = subscribeStompConnectionState((state) => {
+      setIsConnected(state === "CONNECTED");
+    });
 
-    const subscribe = () => {
-      if (subscribed || cancelled) return;
-      subscribed = true;
-      setIsConnected(true);
-
-      const chatSub = client.subscribe(
-        `/topic/room/${lessonId}/chat`,
+    const unsubChat = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/chat`,
         (frame: IMessage) => {
           try {
             const raw = JSON.parse(frame.body) as Record<string, unknown>;
@@ -193,57 +192,45 @@ export function useStompChat(
             console.error("[StompChat] Failed to parse chat message:", err, frame.body);
           }
         }
-      );
+    );
 
-      const typingSub = client.subscribe(
-        `/topic/room/${lessonId}/typing`,
-        (frame: IMessage) => {
-          const status: TypingStatus = JSON.parse(frame.body);
-          handleTypingStatus(status);
-        }
-      );
-
-      const reactionSub = client.subscribe(
-        `/topic/room/${lessonId}/reactions`,
-        (frame: IMessage) => {
-          const updated = normalizeIncomingChat(
-            JSON.parse(frame.body) as Record<string, unknown>
-          );
-          setMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? updated : m))
-          );
-        }
-      );
-
-      const seenSub = client.subscribe(
-        `/topic/room/${lessonId}/seen`,
-        (_frame: IMessage) => {
-          // Could update seen indicators per-message if needed
-        }
-      );
-
-      subsRef.current = [chatSub, typingSub, reactionSub, seenSub];
-    };
-
-    const waitUntilConnected = () => {
-      if (cancelled) return;
-      if (client.connected) {
-        subscribe();
-        return;
+    const unsubTyping = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/typing`,
+      (frame: IMessage) => {
+        const status: TypingStatus = JSON.parse(frame.body);
+        handleTypingStatus(status);
       }
-      connectRetryTimer = setTimeout(waitUntilConnected, 150);
-    };
+    );
 
-    waitUntilConnected();
+    const unsubReactions = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/reactions`,
+      (frame: IMessage) => {
+        const updated = normalizeIncomingChat(
+          JSON.parse(frame.body) as Record<string, unknown>
+        );
+        setMessages((prev) =>
+          prev.map((m) => (m.id === updated.id ? updated : m))
+        );
+      }
+    );
+
+    const unsubSeen = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/seen`,
+      (_frame: IMessage) => {
+        // Could update seen indicators per-message if needed
+      }
+    );
 
     return () => {
-      cancelled = true;
-      if (connectRetryTimer) clearTimeout(connectRetryTimer);
       setIsConnected(false);
-      subsRef.current.forEach((s) => {
-        try { s.unsubscribe(); } catch { /* ignore */ }
-      });
-      subsRef.current = [];
+      unsubState();
+      unsubChat();
+      unsubTyping();
+      unsubReactions();
+      unsubSeen();
       typingTimeoutsRef.current.forEach((t) => clearTimeout(t));
       typingTimeoutsRef.current.clear();
     };
@@ -362,10 +349,7 @@ export function useStompChat(
   const sendTyping = useCallback(
     (isTyping: boolean) => {
       if (!lessonId || !token) return;
-      const client = getStompClient(token);
-      if (!client.connected) return;
-
-      client.publish({
+      publishStomp(token, {
         destination: `/app/chat/${lessonId}/typing`,
         body: JSON.stringify({ isTyping }),
         headers: STOMP_JSON_HEADERS,
@@ -377,10 +361,7 @@ export function useStompChat(
   const sendReaction = useCallback(
     (messageId: number, emoji: string) => {
       if (!lessonId || !token) return;
-      const client = getStompClient(token);
-      if (!client.connected) return;
-
-      client.publish({
+      publishStomp(token, {
         destination: `/app/chat/${lessonId}/react`,
         body: JSON.stringify({ messageId, emoji }),
         headers: STOMP_JSON_HEADERS,
@@ -391,10 +372,7 @@ export function useStompChat(
 
   const markSeen = useCallback(() => {
     if (!lessonId || !token) return;
-    const client = getStompClient(token);
-    if (!client.connected) return;
-
-    client.publish({
+    publishStomp(token, {
       destination: `/app/chat/${lessonId}/seen`,
       body: "{}",
       headers: STOMP_JSON_HEADERS,

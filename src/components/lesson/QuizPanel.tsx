@@ -78,16 +78,12 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
     onEnded,
   });
 
-  const { data: results, refetch: refetchResults } = useGetQuizResultsQuery(
+  // Reactive query: enabled when teacher + results are shown for an active quiz.
+  // No manual refetch needed — RTK Query auto-fetches when `enabled` flips false→true.
+  const { data: results } = useGetQuizResultsQuery(
     { lessonId, quizId: activeQuizId ?? 0 },
-    { skip: !isTeacher || !activeQuizId }
+    { skip: !isTeacher || !activeQuizId || !showResults }
   );
-
-  useEffect(() => {
-    if (showResults) {
-      refetchResults();
-    }
-  }, [showResults, refetchResults]);
 
   useEffect(() => {
     if (liveQuestion?.quizId) {

@@ -6,6 +6,7 @@ import "tldraw/tldraw.css";
 import "@/app/globals.css";
 import { ThemeProvider, ExtensionCleanup, I18nProvider } from "@/components/common";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import RtkProvider from "./providers";
 
 export const metadata: Metadata = {
@@ -170,8 +171,10 @@ export default async function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
-              <Toaster />
+              <TooltipProvider delayDuration={400}>
+                {children}
+                <Toaster />
+              </TooltipProvider>
             </ThemeProvider>
           </RtkProvider>
         </I18nProvider>

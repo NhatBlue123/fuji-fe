@@ -23,6 +23,9 @@ export interface MeetingSummaryResult {
   totalDurationSeconds?: number;
   totalWords?: number;
   modelUsed?: string;
+  processingTimeMs?: number;
+  errorMessage?: string | null;
+  isMock?: boolean;
   status: string;
   createdAt: string;
   completedAt?: string;
@@ -52,6 +55,7 @@ interface UseMeetingSummaryReturn {
   saveBulkTranscripts: (segments: TranscriptSegment[]) => Promise<void>;
   generateSummary: (sessionId: number, sessionType: string, language?: string) => Promise<MeetingSummaryResult | null>;
   getSummary: (sessionId: number, sessionType: string) => Promise<MeetingSummaryResult | null>;
+  toggleActionItem: (summaryId: number, itemIndex: number) => Promise<MeetingSummaryResult | null>;
   toggleAiSummary: (enabled: boolean) => Promise<void>;
   setAiSummaryLanguage: (language: string) => Promise<void>;
   loadSettings: () => Promise<void>;
@@ -65,10 +69,20 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<AiSummarySettings>({ enabled: true, language: "vi" });
+  const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
 
   // Check if AI summary should be generated based on settings
   const isSummaryEnabled = settings.enabled;
-  const shouldGenerateSummary = isSummaryEnabled && summary === null;
+  const shouldGenerateSummary =
+    isSummaryEnabled && summary === null && !hasAttemptedGeneration && !isGenerating;
+
+  const normalizeSummary = useCallback((data: any): MeetingSummaryResult => ({
+    ...data,
+    keyPoints: Array.isArray(data?.keyPoints) ? data.keyPoints : [],
+    actionItems: Array.isArray(data?.actionItems) ? data.actionItems : [],
+    isMock: Boolean(data?.isMock),
+    errorMessage: data?.errorMessage ?? null,
+  }), []);
 
   const saveTranscript = useCallback(async (segment: TranscriptSegment) => {
     try {
@@ -113,6 +127,7 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
     sessionType: string,
     language = "vi"
   ): Promise<MeetingSummaryResult | null> => {
+    setHasAttemptedGeneration(true);
     setIsGenerating(true);
     setError(null);
 
@@ -132,11 +147,7 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
       }
 
       const data = await response.json();
-      const result: MeetingSummaryResult = {
-        ...data,
-        keyPoints: data.keyPoints || [],
-        actionItems: data.actionItems || [],
-      };
+      const result = normalizeSummary(data);
       setSummary(result);
       return result;
     } catch (err) {
@@ -147,12 +158,13 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
     } finally {
       setIsGenerating(false);
     }
-  }, [accessToken]);
+  }, [accessToken, normalizeSummary]);
 
   const getSummary = useCallback(async (
     sessionId: number,
     sessionType: string
   ): Promise<MeetingSummaryResult | null> => {
+    setHasAttemptedGeneration(true);
     setIsLoading(true);
     setError(null);
 
@@ -174,11 +186,7 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
       }
 
       const data = await response.json();
-      const result: MeetingSummaryResult = {
-        ...data,
-        keyPoints: data.keyPoints || [],
-        actionItems: data.actionItems || [],
-      };
+      const result = normalizeSummary(data);
       setSummary(result);
       return result;
     } catch (err) {
@@ -189,7 +197,38 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, normalizeSummary]);
+
+  const toggleActionItem = useCallback(async (
+    summaryId: number,
+    itemIndex: number
+  ): Promise<MeetingSummaryResult | null> => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/summaries/${summaryId}/action-items/${itemIndex}/toggle`,
+        {
+          method: "PATCH",
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to update action item");
+      }
+
+      const data = await response.json();
+      const updated = normalizeSummary(data);
+      setSummary(updated);
+      setError(null);
+      return updated;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(message);
+      console.error("[MeetingSummary] Failed to toggle action item:", err);
+      return null;
+    }
+  }, [accessToken, normalizeSummary]);
 
   // Load AI summary settings from backend
   const loadSettings = useCallback(async () => {
@@ -203,10 +242,11 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.data) {
+        const settingsData = data?.data ?? data;
+        if (settingsData && typeof settingsData === "object") {
           setSettings({
-            enabled: data.data.enabled,
-            language: data.data.language,
+            enabled: settingsData.enabled ?? true,
+            language: settingsData.language ?? "vi",
           });
         }
       }
@@ -261,6 +301,7 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
   const clearSummary = useCallback(() => {
     setSummary(null);
     setError(null);
+    setHasAttemptedGeneration(false);
   }, []);
 
   return {
@@ -270,11 +311,12 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
     error,
     settings,
     isSummaryEnabled: settings.enabled,
-    shouldGenerateSummary: settings.enabled && summary === null,
+    shouldGenerateSummary,
     saveTranscript,
     saveBulkTranscripts,
     generateSummary,
     getSummary,
+    toggleActionItem,
     toggleAiSummary,
     setAiSummaryLanguage,
     loadSettings,

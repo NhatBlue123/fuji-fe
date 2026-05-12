@@ -126,6 +126,10 @@ export default function LessonPage() {
     isScreenSharing,
     isJoined,
     error: dailyError,
+    mediaError,
+    isMicLoading,
+    isCameraLoading,
+    localAudioLevel,
     toggleMic,
     toggleCamera,
     startScreenShare,
@@ -421,6 +425,10 @@ export default function LessonPage() {
         onToggleScreenShare={handleToggleScreenShare}
         onEndCall={handleEndCall}
         isTeacher={role === "TEACHER"}
+        isMicLoading={isMicLoading}
+        isCameraLoading={isCameraLoading}
+        mediaError={mediaError}
+        audioLevel={localAudioLevel}
       />
 
       {/* AI Summary Settings Modal */}

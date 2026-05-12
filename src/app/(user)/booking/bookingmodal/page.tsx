@@ -31,6 +31,16 @@ function formatTimeRange(startAt: string, endAt: string) {
   return `${hhmm(s)} - ${hhmm(e)}`;
 }
 
+function normalizeSummary(data: any): MeetingSummaryResult {
+  return {
+    ...data,
+    keyPoints: Array.isArray(data?.keyPoints) ? data.keyPoints : [],
+    actionItems: Array.isArray(data?.actionItems) ? data.actionItems : [],
+    isMock: Boolean(data?.isMock),
+    errorMessage: data?.errorMessage ?? null,
+  };
+}
+
 export default function MySchedulePage() {
   const { t } = useTranslation();
   const { isTeacher, isInitialized, accessToken } = useAuth();
@@ -69,7 +79,7 @@ export default function MySchedulePage() {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/summaries/session/${bookingId}?sessionType=BOOKING`,
+        `${API_CONFIG.BASE_URL}/summaries/booking/${bookingId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -92,7 +102,7 @@ export default function MySchedulePage() {
       }
 
       const data = await response.json();
-      setCurrentSummary(data);
+      setCurrentSummary(normalizeSummary(data));
     } catch (err) {
       console.error("[BookingModal] Failed to fetch summary:", err);
       setSummaryError(err instanceof Error ? err.message : (t("meetingSummary.error") || "Không thể tải tóm tắt cuộc họp."));
@@ -113,18 +123,13 @@ export default function MySchedulePage() {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/summaries/generate`,
+        `${API_CONFIG.BASE_URL}/summaries/booking/${selectedBookingId}/generate?language=vi`,
         {
           method: "POST",
           headers: {
             'Content-Type': 'application/json',
             ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
           },
-          body: JSON.stringify({
-            sessionId: selectedBookingId,
-            sessionType: "BOOKING",
-            language: "vi",
-          }),
         }
       );
 
@@ -141,7 +146,7 @@ export default function MySchedulePage() {
       }
 
       const data = await response.json();
-      setCurrentSummary(data);
+      setCurrentSummary(normalizeSummary(data));
     } catch (err) {
       console.error("[BookingModal] Failed to generate summary:", err);
       setSummaryError(err instanceof Error ? err.message : (t("meetingSummary.error") || "Không thể tạo tóm tắt cuộc họp."));
@@ -149,6 +154,29 @@ export default function MySchedulePage() {
       setSummaryLoading(false);
     }
   }, [selectedBookingId, t, accessToken]);
+
+  const handleToggleSummaryActionItem = useCallback(async (
+    summaryId: number,
+    itemIndex: number
+  ): Promise<MeetingSummaryResult | null> => {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}/summaries/${summaryId}/action-items/${itemIndex}/toggle`,
+      {
+        method: "PATCH",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to update action item");
+    }
+
+    const data = await response.json();
+    const updated = normalizeSummary(data);
+    setCurrentSummary(updated);
+    return updated;
+  }, [accessToken]);
 
   const items = data ?? [];
 
@@ -389,6 +417,7 @@ export default function MySchedulePage() {
         isGenerating={summaryLoading}
         error={summaryError}
         onRetry={handleRetrySummary}
+        onToggleActionItem={handleToggleSummaryActionItem}
         isNoDataError={
           summaryError?.toLowerCase().includes("không có dữ liệu") ||
           summaryError?.toLowerCase().includes("no data") ||

@@ -5,6 +5,7 @@ interface UseCountdownProps {
   paused?: boolean; // nếu true, timer dừng
   onTimeUp: () => void;
   onFiveMinutesLeft?: () => void;
+  initialTimeLeft?: number; // thời gian còn lại ban đầu (dùng khi restore từ localStorage)
 }
 
 export function useCountdown({
@@ -12,8 +13,9 @@ export function useCountdown({
   paused = false,
   onTimeUp,
   onFiveMinutesLeft,
+  initialTimeLeft,
 }: UseCountdownProps) {
-  const [timeLeft, setTimeLeft] = useState(duration);
+  const [timeLeft, setTimeLeft] = useState(initialTimeLeft ?? duration);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const warnedRef = useRef(false);
   const onTimeUpRef = useRef(onTimeUp);

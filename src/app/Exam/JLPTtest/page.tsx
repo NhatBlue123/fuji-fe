@@ -61,6 +61,12 @@ function JLPTtestPageInner() {
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId");
 
+  const {
+    data: testData,
+    isLoading,
+    error,
+  } = useGetTestByIdQuery(Number(testId), { skip: !testId });
+
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,6 +74,50 @@ function JLPTtestPageInner() {
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const examStartTimeRef = useRef(0);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+  const [initialTimeLeft, setInitialTimeLeft] = useState<number | undefined>();
+  const [initialTabSwitchCount, setInitialTabSwitchCount] = useState(0);
+
+  const [submitTest] = useSubmitTestMutation();
+  const [reportViolation] = useReportViolationMutation();
+
+  const storageKey = `jlpt_exam_state_${testId}`;
+
+  // Restore answers, current question, and tab switch count immediately
+  useEffect(() => {
+    if (!testId) return;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.answers) setAnswers(state.answers);
+        if (typeof state.currentQuestion === "number") setCurrentQuestion(state.currentQuestion);
+        if (typeof state.tabSwitchCount === "number") setInitialTabSwitchCount(state.tabSwitchCount);
+      }
+    } catch {}
+  }, [testId, storageKey]);
+
+  // Set start time and calculate remaining time when testData is available
+  useEffect(() => {
+    if (!testId || !testData?.duration) return;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.examStartTime) {
+          examStartTimeRef.current = state.examStartTime;
+          const elapsed = Math.floor((Date.now() - state.examStartTime) / 1000);
+          const durationSec = testData.duration * 60;
+          const remaining = Math.max(0, durationSec - elapsed);
+          setInitialTimeLeft(remaining);
+          return;
+        }
+      }
+      examStartTimeRef.current = Date.now();
+    } catch {
+      examStartTimeRef.current = Date.now();
+    }
+  }, [testId, testData, storageKey]);
+
   const {
     jlptTopupTitle,
     jlptTopupMessage,
@@ -75,24 +125,11 @@ function JLPTtestPageInner() {
     jlptRecommendedPlan,
   } = useFeatureAccess();
 
-  const {
-    data: testData,
-    isLoading,
-    error,
-  } = useGetTestByIdQuery(Number(testId), { skip: !testId });
-
-  const [submitTest] = useSubmitTestMutation();
-  const [reportViolation] = useReportViolationMutation();
-
   const allQuestions = useMemo(
     () => testData?.questions || [],
     [testData?.questions],
   );
   const upgradePath = getJlptTopupPath(jlptTopupType, jlptRecommendedPlan);
-
-  useEffect(() => {
-    examStartTimeRef.current = Date.now();
-  }, []);
 
   /* ===== STRUCTURE ===== */
   const examStructure = useMemo<SectionConfig[]>(() => {
@@ -246,6 +283,7 @@ function JLPTtestPageInner() {
         timeSpent,
       }).unwrap();
 
+      localStorage.removeItem(storageKey);
       router.push(`/jlpt/result?attemptId=${result.id}`);
     } catch (e) {
       if (isFeatureError(e)) {
@@ -259,7 +297,7 @@ function JLPTtestPageInner() {
       alert("提出できません！");
       setIsSubmitting(false);
     }
-  }, [answers, submitTest, router, testId]);
+  }, [answers, submitTest, router, testId, storageKey]);
 
   /* ===== AUTO SUBMIT WHEN TIME UP ===== */
   const handleAutoSubmit = useCallback(() => {
@@ -274,11 +312,12 @@ function JLPTtestPageInner() {
       toast.warning("⚠️ 残り5分 — 試験を完了してください！");
     },
     onTimeUp: handleAutoSubmit,
+    ...(initialTimeLeft !== undefined && { initialTimeLeft }),
   });
 
   /* ===== ANTI CHEAT ===== */
   const MAX_TAB_SWITCHES = 5;
-  const isAntiCheatEnabled = true;
+  const isAntiCheatEnabled = testData?.isAntiCheatEnabled ?? true;
 
   const handleViolation = useCallback(
     (warning: import("@/hooks/useAntiCheat").AntiCheatWarning) => {
@@ -302,13 +341,27 @@ function JLPTtestPageInner() {
     [submitExam, reportViolation, testId]
   );
 
-  const { tabSwitchCount, activeWarning, dismissWarning } =
+  const { tabSwitchCount, activeWarning, dismissWarning, setTabSwitchCount } =
     useAntiCheat({
       enabled: isAntiCheatEnabled,
       maxTabSwitches: MAX_TAB_SWITCHES,
       detectDevTools: true,
+      initialTabSwitchCount,
       onViolation: handleViolation,
     });
+
+  // Sync tab switch count to localStorage
+  useEffect(() => {
+    if (!testId) return;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      const state = saved ? JSON.parse(saved) : {};
+      localStorage.setItem(storageKey, JSON.stringify({
+        ...state,
+        tabSwitchCount,
+      }));
+    } catch {}
+  }, [tabSwitchCount, testId, storageKey]);
 
   /* ===== UI STATES ===== */
 

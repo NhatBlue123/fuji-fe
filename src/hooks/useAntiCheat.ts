@@ -11,6 +11,7 @@ interface UseAntiCheatOptions {
   enabled?: boolean;          // bật/tắt toàn bộ anti-cheat (mặc định: true)
   maxTabSwitches?: number;
   detectDevTools?: boolean;
+  initialTabSwitchCount?: number; // số lần chuyển tab ban đầu (từ localStorage)
   // callback khi có sự kiện gian lận
   onViolation?: (warning: AntiCheatWarning) => void;
 }
@@ -20,6 +21,7 @@ interface AntiCheatState {
   devToolsOpen: boolean;
   activeWarning: AntiCheatWarning | null;
   dismissWarning: () => void;
+  setTabSwitchCount: (count: number) => void;
 }
 
 const DEVTOOLS_THRESHOLD = 160; // px difference to detect devtools
@@ -28,12 +30,13 @@ export function useAntiCheat({
   enabled = true,
   maxTabSwitches = 3,
   detectDevTools = true,
+  initialTabSwitchCount = 0,
   onViolation,
 }: UseAntiCheatOptions = {}): AntiCheatState {
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [tabSwitchCount, setTabSwitchCount] = useState(initialTabSwitchCount);
   const [devToolsOpen, setDevToolsOpen] = useState(false);
   const [activeWarning, setActiveWarning] = useState<AntiCheatWarning | null>(null);
-  const tabSwitchCountRef = useRef(0);
+  const tabSwitchCountRef = useRef(initialTabSwitchCount);
   const devToolsRef = useRef(false);
 
   const trigger = useCallback(
@@ -180,5 +183,5 @@ export function useAntiCheat({
     };
   }, [detectDevTools, trigger, enabled]);
 
-  return { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning };
+  return { tabSwitchCount, devToolsOpen, activeWarning, dismissWarning, setTabSwitchCount };
 }

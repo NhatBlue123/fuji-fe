@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Clock,
   Wallet,
@@ -84,6 +85,10 @@ type ChartTooltipProps = {
   }>;
 };
 
+const currentYear = new Date().getFullYear();
+const monthOptions = Array.from({ length: 12 }, (_, index) => index);
+const yearOptions = Array.from({ length: 8 }, (_, index) => currentYear - index);
+
 const pad2 = (value: number) => value.toString().padStart(2, "0");
 
 const toLocalDateTimeParam = (date: Date) =>
@@ -109,7 +114,11 @@ const addDays = (date: Date, days: number) => {
   return next;
 };
 
-const getChartDateRange = (range: ChartRange): ChartDateRange => {
+const getChartDateRange = (
+  range: ChartRange,
+  selectedMonth: number,
+  selectedYear: number,
+): ChartDateRange => {
   const now = new Date();
 
   if (range === "week") {
@@ -123,14 +132,14 @@ const getChartDateRange = (range: ChartRange): ChartDateRange => {
 
   if (range === "year") {
     return {
-      start: new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0),
-      end: new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999),
+      start: new Date(selectedYear, 0, 1, 0, 0, 0, 0),
+      end: new Date(selectedYear, 11, 31, 23, 59, 59, 999),
     };
   }
 
   return {
-    start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
-    end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+    start: new Date(selectedYear, selectedMonth, 1, 0, 0, 0, 0),
+    end: new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999),
   };
 };
 
@@ -207,6 +216,16 @@ const chartRangeLabel: Record<ChartRange, string> = {
   year: "Năm nay",
 };
 
+const getChartRangeLabel = (
+  range: ChartRange,
+  selectedMonth: number,
+  selectedYear: number,
+) => {
+  if (range === "month") return `Tháng ${selectedMonth + 1}/${selectedYear}`;
+  if (range === "year") return `Năm ${selectedYear}`;
+  return chartRangeLabel.week;
+};
+
 const chartDescription: Record<ChartRange, string> = {
   week: "Hiển thị theo từng ngày trong tuần",
   month: "Hiển thị theo từng ngày trong tháng",
@@ -248,9 +267,11 @@ const TeacherDashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const [chartRange, setChartRange] = useState<ChartRange>("month");
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const chartDateRange = useMemo(
-    () => getChartDateRange(chartRange),
-    [chartRange],
+    () => getChartDateRange(chartRange, selectedMonth, selectedYear),
+    [chartRange, selectedMonth, selectedYear],
   );
   const dashboardParams = useMemo(
     () => ({
@@ -344,7 +365,7 @@ const TeacherDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Calendar className="mr-2 h-4 w-4" />
-            {chartRangeLabel[chartRange]}
+            {getChartRangeLabel(chartRange, selectedMonth, selectedYear)}
           </Button>
           <Button size="sm">{t("admin.analytics.teacher.downloadReport")}</Button>
         </div>
@@ -408,26 +429,62 @@ const TeacherDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Main Chart */}
             <Card className="lg:col-span-2 shadow-sm border-muted/60">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
                 <div className="space-y-1">
                   <CardTitle>{t("admin.analytics.teacher.chart.title")}</CardTitle>
                   <CardDescription>
                     {chartDescription[chartRange]}
                   </CardDescription>
                 </div>
-                <Select
-                  value={chartRange}
-                  onValueChange={(value) => setChartRange(value as ChartRange)}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Chọn kỳ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="week">Theo tuần</SelectItem>
-                    <SelectItem value="month">Theo tháng</SelectItem>
-                    <SelectItem value="year">Theo năm</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Select
+                    value={chartRange}
+                    onValueChange={(value) => setChartRange(value as ChartRange)}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Chọn kỳ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="week">Theo tuần</SelectItem>
+                      <SelectItem value="month">Theo tháng</SelectItem>
+                      <SelectItem value="year">Theo năm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {chartRange === "month" && (
+                    <Select
+                      value={String(selectedMonth)}
+                      onValueChange={(value) => setSelectedMonth(Number(value))}
+                    >
+                      <SelectTrigger className="w-[110px]">
+                        <SelectValue placeholder="Tháng" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthOptions.map((month) => (
+                          <SelectItem key={month} value={String(month)}>
+                            Tháng {month + 1}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {chartRange !== "week" && (
+                    <Select
+                      value={String(selectedYear)}
+                      onValueChange={(value) => setSelectedYear(Number(value))}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue placeholder="Năm" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((year) => (
+                          <SelectItem key={year} value={String(year)}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="h-[350px] pl-2 pt-4 min-h-[350px] min-w-0 w-full">
                 {chartData.length > 0 ? (
@@ -531,8 +588,10 @@ const TeacherDashboard: React.FC = () => {
                 </div>
               </CardContent>
               <CardFooter className="pt-2">
-                <Button className="w-full h-11" size="lg">
-                  {t("admin.analytics.teacher.wallet.requestWithdraw")}
+                <Button asChild className="w-full h-11" size="lg">
+                  <Link href="/admin/my-withdraw">
+                    {t("admin.analytics.teacher.wallet.requestWithdraw")}
+                  </Link>
                 </Button>
               </CardFooter>
             </Card>

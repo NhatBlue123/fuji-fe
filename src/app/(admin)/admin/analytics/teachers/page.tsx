@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   Clock,
   Wallet,
@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/common";
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -55,10 +55,221 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type ChartRange = "week" | "month" | "year";
+
+type ChartDateRange = {
+  start: Date;
+  end: Date;
+};
+
+type EarningsPoint = {
+  date: string;
+  income: number;
+  bookingIncome?: number;
+  courseIncome?: number;
+};
+
+type ChartPoint = {
+  date: string;
+  income: number;
+  bookingIncome: number;
+  courseIncome: number;
+};
+
+type ChartTooltipProps = {
+  active?: boolean;
+  label?: string | number;
+  payload?: ReadonlyArray<{
+    payload?: ChartPoint;
+  }>;
+};
+
+const pad2 = (value: number) => value.toString().padStart(2, "0");
+
+const toLocalDateTimeParam = (date: Date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+
+const toDateKey = (date: Date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+const parseDashboardDate = (value: string) => {
+  const datePart = value.split("T")[0];
+  const [year, month, day] = datePart.split("-").map(Number);
+  if (year && month && day) {
+    return new Date(year, month - 1, day);
+  }
+
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const getChartDateRange = (range: ChartRange): ChartDateRange => {
+  const now = new Date();
+
+  if (range === "week") {
+    const currentDay = now.getDay();
+    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
+    const end = addDays(start, 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  if (range === "year") {
+    return {
+      start: new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0),
+      end: new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999),
+    };
+  }
+
+  return {
+    start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
+    end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+  };
+};
+
+const buildChartData = (
+  points: EarningsPoint[],
+  range: ChartRange,
+  start: Date,
+  end: Date,
+): ChartPoint[] => {
+  if (range === "year") {
+    const incomeByMonth = new Map<number, Omit<ChartPoint, "date">>();
+    points.forEach((point) => {
+      const date = parseDashboardDate(point.date);
+      if (!date || date.getFullYear() !== start.getFullYear()) return;
+      const month = date.getMonth();
+      const current = incomeByMonth.get(month) || {
+        income: 0,
+        bookingIncome: 0,
+        courseIncome: 0,
+      };
+      const bookingIncome = point.bookingIncome || 0;
+      const courseIncome = point.courseIncome ?? Math.max(point.income - bookingIncome, 0);
+      incomeByMonth.set(month, {
+        income: current.income + point.income,
+        bookingIncome: current.bookingIncome + bookingIncome,
+        courseIncome: current.courseIncome + courseIncome,
+      });
+    });
+
+    return Array.from({ length: 12 }, (_, month) => ({
+      date: `${start.getFullYear()}-${pad2(month + 1)}-01`,
+      income: incomeByMonth.get(month)?.income || 0,
+      bookingIncome: incomeByMonth.get(month)?.bookingIncome || 0,
+      courseIncome: incomeByMonth.get(month)?.courseIncome || 0,
+    }));
+  }
+
+  const incomeByDay = new Map<string, Omit<ChartPoint, "date">>();
+  points.forEach((point) => {
+    const date = parseDashboardDate(point.date);
+    if (!date) return;
+    const key = toDateKey(date);
+    const current = incomeByDay.get(key) || {
+      income: 0,
+      bookingIncome: 0,
+      courseIncome: 0,
+    };
+    const bookingIncome = point.bookingIncome || 0;
+    const courseIncome = point.courseIncome ?? Math.max(point.income - bookingIncome, 0);
+    incomeByDay.set(key, {
+      income: current.income + point.income,
+      bookingIncome: current.bookingIncome + bookingIncome,
+      courseIncome: current.courseIncome + courseIncome,
+    });
+  });
+
+  const result: ChartPoint[] = [];
+  for (let date = new Date(start); date <= end; date = addDays(date, 1)) {
+    const key = toDateKey(date);
+    const income = incomeByDay.get(key);
+    result.push({
+      date: key,
+      income: income?.income || 0,
+      bookingIncome: income?.bookingIncome || 0,
+      courseIncome: income?.courseIncome || 0,
+    });
+  }
+  return result;
+};
+
+const chartRangeLabel: Record<ChartRange, string> = {
+  week: "Tuần này",
+  month: "Tháng này",
+  year: "Năm nay",
+};
+
+const chartDescription: Record<ChartRange, string> = {
+  week: "Hiển thị theo từng ngày trong tuần",
+  month: "Hiển thị theo từng ngày trong tháng",
+  year: "Hiển thị theo từng tháng trong năm",
+};
+
+const formatChartTick = (value: string, range: ChartRange) => {
+  const date = parseDashboardDate(value);
+  if (!date) return value;
+
+  if (range === "year") {
+    return `T${date.getMonth() + 1}`;
+  }
+
+  if (range === "week") {
+    const weekdayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    return `${weekdayLabels[date.getDay()]} ${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}`;
+  }
+
+  return pad2(date.getDate());
+};
+
+const formatChartTooltipLabel = (value: string, range: ChartRange) => {
+  const date = parseDashboardDate(value);
+  if (!date) return value;
+
+  if (range === "year") {
+    return `Tháng ${date.getMonth() + 1}/${date.getFullYear()}`;
+  }
+
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 const TeacherDashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
-  const { data: dashboardData, isLoading } = useGetTeacherDashboardQuery();
+  const [chartRange, setChartRange] = useState<ChartRange>("month");
+  const chartDateRange = useMemo(
+    () => getChartDateRange(chartRange),
+    [chartRange],
+  );
+  const dashboardParams = useMemo(
+    () => ({
+      startDate: toLocalDateTimeParam(chartDateRange.start),
+      endDate: toLocalDateTimeParam(chartDateRange.end),
+    }),
+    [chartDateRange],
+  );
+  const { data: dashboardData, isLoading } = useGetTeacherDashboardQuery(dashboardParams);
+  const chartData = useMemo(
+    () =>
+      buildChartData(
+        dashboardData?.earningsOverTime || [],
+        chartRange,
+        chartDateRange.start,
+        chartDateRange.end,
+    ),
+    [dashboardData?.earningsOverTime, chartRange, chartDateRange],
+  );
 
   if (isLoading) {
     return (
@@ -72,13 +283,50 @@ const TeacherDashboard: React.FC = () => {
   const gridColor = isDark ? "#334155" : "#e2e8f0";
   const textColor = isDark ? "#94a3b8" : "#64748b";
   const chartStroke = isDark ? "#60a5fa" : "#2563eb";
-  const chartFillStart = isDark ? "rgba(96, 165, 250, 0.32)" : "rgba(37, 99, 235, 0.22)";
-  const chartFillEnd = isDark ? "rgba(96, 165, 250, 0.02)" : "rgba(37, 99, 235, 0.02)";
 
   const formatCurrency = (val: number) => {
     return `${new Intl.NumberFormat(
       i18n.language === "vi" ? "vi-VN" : i18n.language,
     ).format(val)} 🌸`;
+  };
+
+  const renderIncomeTooltip = ({ active, label, payload }: ChartTooltipProps) => {
+    const point = payload?.[0]?.payload;
+    if (!active || !point) return null;
+
+    return (
+      <div
+        className="min-w-[190px] rounded-xl border p-3 text-xs shadow-lg"
+        style={{
+          backgroundColor: isDark ? "#0f172a" : "#ffffff",
+          borderColor: isDark ? "#334155" : "#e2e8f0",
+        }}
+      >
+        <p className="mb-2 font-semibold text-foreground">
+          {formatChartTooltipLabel(String(label), chartRange)}
+        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Tổng thu nhập</span>
+            <span className="font-semibold text-primary">
+              {formatCurrency(point.income)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Từ khóa học</span>
+            <span className="font-semibold">
+              {formatCurrency(point.courseIncome)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Từ booking</span>
+            <span className="font-semibold">
+              {formatCurrency(point.bookingIncome)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -96,7 +344,7 @@ const TeacherDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Calendar className="mr-2 h-4 w-4" />
-            {t("admin.analytics.teacher.last30Days")}
+            {chartRangeLabel[chartRange]}
           </Button>
           <Button size="sm">{t("admin.analytics.teacher.downloadReport")}</Button>
         </div>
@@ -164,72 +412,56 @@ const TeacherDashboard: React.FC = () => {
                 <div className="space-y-1">
                   <CardTitle>{t("admin.analytics.teacher.chart.title")}</CardTitle>
                   <CardDescription>
-                    {t("admin.analytics.teacher.chart.desc")}
+                    {chartDescription[chartRange]}
                   </CardDescription>
                 </div>
-                <Select defaultValue="all">
+                <Select
+                  value={chartRange}
+                  onValueChange={(value) => setChartRange(value as ChartRange)}
+                >
                   <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder={t("admin.analytics.teacher.chart.filter")} />
+                    <SelectValue placeholder="Chọn kỳ" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("admin.analytics.teacher.chart.all")}</SelectItem>
-                    <SelectItem value="courses">{t("admin.analytics.teacher.chart.courses")}</SelectItem>
-                    <SelectItem value="sessions">{t("admin.analytics.teacher.chart.sessions")}</SelectItem>
+                    <SelectItem value="week">Theo tuần</SelectItem>
+                    <SelectItem value="month">Theo tháng</SelectItem>
+                    <SelectItem value="year">Theo năm</SelectItem>
                   </SelectContent>
                 </Select>
               </CardHeader>
               <CardContent className="h-[350px] pl-2 pt-4 min-h-[350px] min-w-0 w-full">
-                {(dashboardData?.earningsOverTime?.length ?? 0) > 0 ? (
+                {chartData.length > 0 ? (
                   <ResponsiveContainer
                     width="100%"
                     height="100%"
                     minWidth={0}
                     minHeight={0}
                   >
-                    <AreaChart
-                      data={dashboardData?.earningsOverTime || []}
-                      margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                    <LineChart
+                      data={chartData}
+                      margin={{ top: 12, right: 18, left: 10, bottom: 8 }}
                     >
-                      <defs>
-                        <linearGradient
-                          id="teacherIncomeGradient"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor={chartFillStart}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor={chartFillEnd}
-                          />
-                        </linearGradient>
-                      </defs>
                       <CartesianGrid
-                        strokeDasharray="3 3"
+                        strokeDasharray="4 4"
                         vertical={false}
                         stroke={gridColor}
+                        opacity={0.7}
                       />
                       <XAxis
                         dataKey="date"
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: textColor, fontSize: 11 }}
-                        tickFormatter={(value) =>
-                          new Date(value).toLocaleDateString(
-                            i18n.language === "vi" ? "vi-VN" : i18n.language,
-                            { day: "2-digit", month: "2-digit" },
-                          )
-                        }
+                        tickFormatter={(value) => formatChartTick(value, chartRange)}
+                        minTickGap={chartRange === "month" ? 16 : 8}
                         dy={10}
                       />
                       <YAxis
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: textColor, fontSize: 11 }}
+                        allowDecimals={false}
+                        domain={[0, (dataMax: number) => Math.max(dataMax, 10)]}
                         tickFormatter={(value: number) =>
                           new Intl.NumberFormat(
                             i18n.language === "vi" ? "vi-VN" : i18n.language,
@@ -237,37 +469,21 @@ const TeacherDashboard: React.FC = () => {
                         }
                       />
                       <Tooltip
-                        formatter={(value: number | string | undefined) => [
-                          formatCurrency(Number(value ?? 0)),
-                          t("admin.analytics.teacher.chart.title"),
-                        ]}
-                        labelFormatter={(value) =>
-                          new Date(value).toLocaleDateString(
-                            i18n.language === "vi" ? "vi-VN" : i18n.language,
-                            {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            },
-                          )
-                        }
-                        contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                          borderColor: isDark ? "#334155" : "#e2e8f0",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                        }}
+                        content={renderIncomeTooltip}
                       />
-                      <Area
+                      <Line
                         type="monotone"
                         dataKey="income"
                         stroke={chartStroke}
                         strokeWidth={3}
-                        fillOpacity={1}
-                        fill="url(#teacherIncomeGradient)"
+                        dot={{
+                          r: chartRange === "month" ? 2 : 3,
+                          strokeWidth: 2,
+                          fill: isDark ? "#0f172a" : "#ffffff",
+                        }}
+                        activeDot={{ r: 6, strokeWidth: 0, fill: chartStroke }}
                       />
-                    </AreaChart>
+                    </LineChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

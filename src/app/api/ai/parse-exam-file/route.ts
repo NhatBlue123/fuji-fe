@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey || apiKey === "your_gemini_api_key_here") {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY chưa được cấu hình trong .env.local" },
+        { error: "GEMINI_API_KEY chưa được cấu hình trong biến môi trường." },
         { status: 500 }
       );
     }

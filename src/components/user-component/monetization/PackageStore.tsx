@@ -39,6 +39,7 @@ const FEATURE_LABEL_KEYS: Record<string, string> = {
 
 const UPGRADE_CREDIT_DAYS = 15;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const BASIC_PACKAGE_CODE = "BASIC_FREE";
 
 type PackageActionState = "buy" | "upgrade" | "current" | "blocked";
 
@@ -55,11 +56,19 @@ function isActiveUserPackage(userPackage?: UserPackage | null) {
   const status = userPackage.status?.toUpperCase();
   if (status !== "ACTIVE" && status !== "PENDING_SYNC") return false;
 
-  const startsAt = Date.parse(userPackage.startsAt);
-  const expiresAt = Date.parse(userPackage.expiresAt);
+  const startsAt = userPackage.startsAt ? Date.parse(userPackage.startsAt) : NaN;
+  const expiresAt = userPackage.expiresAt ? Date.parse(userPackage.expiresAt) : NaN;
   const now = Date.now();
   if (Number.isFinite(startsAt) && startsAt > now) return false;
   return !Number.isFinite(expiresAt) || expiresAt > now;
+}
+
+function isBasicSystemPackage(pack?: SystemPackage | null) {
+  return pack?.code?.toUpperCase() === BASIC_PACKAGE_CODE;
+}
+
+function isBasicUserPackage(pack?: UserPackage | null) {
+  return pack?.packageCode?.toUpperCase() === BASIC_PACKAGE_CODE;
 }
 
 function getCurrentPackagePrice(currentPackage: UserPackage | null, packages: SystemPackage[]) {
@@ -85,7 +94,7 @@ function getPurchasePreview(
 
   const currentPrice = getCurrentPackagePrice(currentPackage, packages);
   const selectedPrice = Number(selectedPackage.priceHoa ?? 0);
-  const startsAt = Date.parse(currentPackage.startsAt);
+  const startsAt = currentPackage.startsAt ? Date.parse(currentPackage.startsAt) : NaN;
   const usedMs = Number.isFinite(startsAt) ? Math.max(0, Date.now() - startsAt) : 0;
   const usedDays = Math.floor(usedMs / DAY_MS);
   const qualifiesForCredit = usedMs < UPGRADE_CREDIT_DAYS * DAY_MS;
@@ -282,7 +291,10 @@ export function PackageStore() {
   );
 
   const getActionState = (pack: SystemPackage): PackageActionState => {
-    if (!currentPackage) return "buy";
+    if (isBasicSystemPackage(pack)) {
+      return !currentPackage || isBasicUserPackage(currentPackage) ? "current" : "blocked";
+    }
+    if (!currentPackage || isBasicUserPackage(currentPackage)) return "buy";
     if (pack.id === currentPackage.packageId) return "current";
 
     const currentPrice = getCurrentPackagePrice(currentPackage, packages);
@@ -293,6 +305,10 @@ export function PackageStore() {
 
   const handleConfirmPurchase = async () => {
     if (!selectedPackage || !canPay) return;
+    if (isBasicSystemPackage(selectedPackage)) {
+      setSelectedPackage(null);
+      return;
+    }
     try {
       const result = await purchasePackage(selectedPackage.id).unwrap();
       toast.success(t(

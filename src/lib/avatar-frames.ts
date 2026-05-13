@@ -72,6 +72,7 @@ export function getUsableAvatarFrame(
 
 export function hasAnyAvatarFramePackage(
   userPackage?: {
+    packageCode?: string | null;
     status?: string | null;
     startsAt?: string | null;
     expiresAt?: string | null;
@@ -79,6 +80,7 @@ export function hasAnyAvatarFramePackage(
   subscriptionTier?: string | null,
 ) {
   const status = userPackage?.status?.toUpperCase();
+  const packageCode = userPackage?.packageCode?.toUpperCase();
   const startsAt = userPackage?.startsAt ? Date.parse(userPackage.startsAt) : NaN;
   const expiresAt = userPackage?.expiresAt ? Date.parse(userPackage.expiresAt) : NaN;
   const now = Date.now();
@@ -86,6 +88,7 @@ export function hasAnyAvatarFramePackage(
   const packageNotExpired = !Number.isFinite(expiresAt) || expiresAt > now;
   const hasActivePackage =
     Boolean(userPackage) &&
+    packageCode !== "BASIC_FREE" &&
     (!status || ["ACTIVE", "PENDING_SYNC"].includes(status)) &&
     packageHasStarted &&
     packageNotExpired;

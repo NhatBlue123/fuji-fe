@@ -48,15 +48,15 @@ export interface SystemPackage {
 }
 
 export interface UserPackage {
-  id: number;
-  packageId: number;
+  id: number | null;
+  packageId: number | null;
   packageCode: string;
   packageName: string;
   priceHoa?: number | null;
   sortOrder?: number | null;
   status: string;
-  startsAt: string;
-  expiresAt: string;
+  startsAt?: string | null;
+  expiresAt?: string | null;
   autoRenew: boolean;
   entitlements: PackageFeature[];
 }

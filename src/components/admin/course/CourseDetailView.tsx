@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -64,6 +64,8 @@ import {
   Video,
   ClipboardList,
   Loader2,
+  Camera,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -130,6 +132,13 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
   const [editPrice, setEditPrice] = useState<string | null>(null);
   const [editJlptLevel, setEditJlptLevel] = useState<string | null>(null);
   const [editPublished, setEditPublished] = useState<boolean | null>(null);
+  const [editThumbnailFile, setEditThumbnailFile] = useState<File | null>(
+    null,
+  );
+  const [editThumbnailPreview, setEditThumbnailPreview] = useState<
+    string | null
+  >(null);
+  const editThumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const openEditCourseDialog = () => {
     if (!course || !canEdit) return;
@@ -138,7 +147,49 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
     setEditPrice(String(course.price ?? 0));
     setEditJlptLevel(course.jlptLevel || "N5");
     setEditPublished(course.isPublished);
+    setEditThumbnailFile(null);
+    setEditThumbnailPreview(course.thumbnailUrl || null);
     setEditCourseDialog(true);
+  };
+
+  const handleEditCourseDialogChange = (open: boolean) => {
+    setEditCourseDialog(open);
+    if (!open) {
+      setEditThumbnailFile(null);
+      setEditThumbnailPreview(null);
+      if (editThumbnailInputRef.current) {
+        editThumbnailInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleEditThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file ảnh hợp lệ");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Ảnh không được vượt quá 10MB");
+      e.target.value = "";
+      return;
+    }
+
+    setEditThumbnailFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setEditThumbnailPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const resetEditThumbnail = () => {
+    setEditThumbnailFile(null);
+    setEditThumbnailPreview(course?.thumbnailUrl || null);
+    if (editThumbnailInputRef.current) {
+      editThumbnailInputRef.current.value = "";
+    }
   };
 
   const handleDeleteLesson = async (lessonId: number) => {
@@ -198,6 +249,10 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
         new Blob([JSON.stringify(courseData)], { type: "application/json" }),
       );
 
+      if (editThumbnailFile) {
+        formData.append("thumbnail", editThumbnailFile);
+      }
+
       await updateCourse({ id: courseId, course: formData }).unwrap();
       
       // Revalidate ISR pages
@@ -211,6 +266,8 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
       
       toast.success("Cập nhật khóa học thành công!");
       setEditCourseDialog(false);
+      setEditThumbnailFile(null);
+      setEditThumbnailPreview(null);
       router.replace(`/admin/courses/${courseId}`);
     } catch {
       toast.error("Cập nhật khóa học thất bại");
@@ -650,8 +707,11 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
         onConfirm={handleDeleteCourse}
       />
 
-      <Dialog open={editCourseDialog} onOpenChange={setEditCourseDialog}>
-        <DialogContent>
+      <Dialog
+        open={editCourseDialog}
+        onOpenChange={handleEditCourseDialogChange}
+      >
+        <DialogContent className="max-h-[88vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-[720px] lg:max-w-[860px]">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa khóa học</DialogTitle>
             <DialogDescription>
@@ -660,6 +720,64 @@ export function CourseDetailView({ courseId }: CourseDetailViewProps) {
           </DialogHeader>
 
           <form onSubmit={handleUpdateCourse} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Ảnh bìa khóa học</Label>
+              <div
+                className="group relative aspect-video w-full overflow-hidden rounded-lg border bg-muted"
+                role="button"
+                tabIndex={0}
+                onClick={() => editThumbnailInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    editThumbnailInputRef.current?.click();
+                  }
+                }}
+              >
+                <Image
+                  src={
+                    editThumbnailPreview ||
+                    course.thumbnailUrl ||
+                    DEFAULT_THUMBNAIL
+                  }
+                  alt={`Ảnh bìa ${course.title}`}
+                  fill
+                  sizes="520px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-background/95 px-4 py-2 text-sm font-semibold text-foreground shadow">
+                    <Camera className="size-4" />
+                    Đổi ảnh
+                  </span>
+                </div>
+              </div>
+              <input
+                ref={editThumbnailInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleEditThumbnailChange}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG, WEBP. Ảnh mới sẽ được lưu khi bấm Lưu thay đổi.
+                </p>
+                {editThumbnailFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={resetEditThumbnail}
+                  >
+                    <X className="mr-1 size-3.5" />
+                    Bỏ ảnh mới
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="edit-title">Tiêu đề</Label>
               <Input

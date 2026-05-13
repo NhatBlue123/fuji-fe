@@ -26,6 +26,7 @@ export function ParticipantTile({
   label,
 }: ParticipantTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -36,7 +37,33 @@ export function ParticipantTile({
     } else {
       el.srcObject = null;
     }
+
+    return () => {
+      el.srcObject = null;
+    };
   }, [participant.video, participant.videoTrack]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    if (!participant.local && participant.audioTrack) {
+      el.srcObject = new MediaStream([participant.audioTrack]);
+      el.muted = false;
+      el.volume = 1;
+      void el.play().catch(() => {
+        // Browser autoplay policy may require a user gesture before remote audio can start.
+      });
+    } else {
+      el.pause();
+      el.srcObject = null;
+    }
+
+    return () => {
+      el.pause();
+      el.srcObject = null;
+    };
+  }, [participant.local, participant.audioTrack]);
 
   const displayName = label || participant.userName || "Unknown";
   const showVideo = participant.video && participant.videoTrack;
@@ -72,9 +99,18 @@ export function ParticipantTile({
               isMini ? "w-10 h-10 text-sm" : "w-20 h-20 text-2xl"
             )}
           >
-            {getInitials(participant.userName)}
+            {getInitials(displayName)}
           </div>
         </div>
+      )}
+
+      {!participant.local && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          muted={false}
+          className="hidden"
+        />
       )}
 
       {/* Name badge */}

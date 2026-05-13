@@ -324,6 +324,7 @@
     "updateProfileSuccess": "Cập nhật hồ sơ thành công",
     "changePasswordSuccess": "Đổi mật khẩu thành công",
     "resetViolationsSuccess": "Reset số lần vi phạm thành công",
+    "unlockAccountSuccess": "Mở khóa tài khoản thành công",
     "updateUserSuccess": "Cập nhật thông tin người dùng thành công",
     "violationHandled": "Đã đánh dấu vi phạm là đã xử lý",
     "violationReported": "Đã ghi nhận vi phạm",

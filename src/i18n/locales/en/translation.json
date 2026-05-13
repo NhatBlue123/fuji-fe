@@ -323,6 +323,7 @@
     "updateProfileSuccess": "Profile updated successfully",
     "changePasswordSuccess": "Password changed successfully",
     "resetViolationsSuccess": "Violations reset successfully",
+    "unlockAccountSuccess": "Account unlocked successfully",
     "updateUserSuccess": "User information updated successfully",
     "violationHandled": "Violation marked as handled",
     "violationReported": "Violation reported successfully",

@@ -30,12 +30,44 @@ export function useWhiteboard(
   const [isConnected, setIsConnected] = useState(false);
   const changeHandlerRef = useRef<((data: WhiteboardBroadcast) => void) | null>(null);
   const clearHandlerRef = useRef<(() => void) | null>(null);
+  const pendingChangesRef = useRef<unknown[]>([]);
+
+  const publishChanges = useCallback(
+    (changes: unknown): boolean => {
+      if (!lessonId || !token) return false;
+      return publishStomp(token, {
+        destination: `/app/whiteboard/${lessonId}/change`,
+        body: JSON.stringify({ changes }),
+        headers: STOMP_JSON_HEADERS,
+      });
+    },
+    [lessonId, token]
+  );
+
+  const flushPendingChanges = useCallback(() => {
+    if (!pendingChangesRef.current.length) return;
+    const pending = pendingChangesRef.current;
+    pendingChangesRef.current = [];
+
+    for (let i = 0; i < pending.length; i += 1) {
+      const changes = pending[i];
+      if (!publishChanges(changes)) {
+        pendingChangesRef.current.unshift(...pending.slice(i));
+        pendingChangesRef.current = pendingChangesRef.current.slice(-100);
+        break;
+      }
+    }
+  }, [publishChanges]);
 
   useEffect(() => {
     if (!lessonId || !token) return;
 
     const unsubState = subscribeStompConnectionState((state) => {
-      setIsConnected(state === "CONNECTED");
+      const connected = state === "CONNECTED";
+      setIsConnected(connected);
+      if (connected) {
+        flushPendingChanges();
+      }
     });
 
     const unsubChanges = subscribeStomp(
@@ -65,18 +97,14 @@ export function useWhiteboard(
       unsubChanges();
       unsubClear();
     };
-  }, [lessonId, token]);
+  }, [lessonId, token, flushPendingChanges]);
 
   const sendChanges = useCallback(
     (changes: unknown) => {
-      if (!lessonId || !token) return;
-      publishStomp(token, {
-        destination: `/app/whiteboard/${lessonId}/change`,
-        body: JSON.stringify({ changes }),
-        headers: STOMP_JSON_HEADERS,
-      });
+      if (publishChanges(changes)) return;
+      pendingChangesRef.current = [...pendingChangesRef.current, changes].slice(-100);
     },
-    [lessonId, token]
+    [publishChanges]
   );
 
   const clearBoard = useCallback(() => {

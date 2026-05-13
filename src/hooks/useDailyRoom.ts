@@ -3,9 +3,12 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import DailyIframe, {
   DailyCall,
-  DailyEventObjectParticipant,
   DailyParticipant as DailySDKParticipant,
   DailyEventObjectActiveSpeakerChange,
+  DailyEventObjectCameraError,
+  DailyEventObjectLocalAudioLevel,
+  DailyEventObjectNonFatalError,
+  DailyFactoryOptions,
 } from "@daily-co/daily-js";
 
 export interface Participant {
@@ -61,6 +64,10 @@ function isMeetingEndedMessage(message?: string | null): boolean {
 }
 
 function mapParticipant(p: DailySDKParticipant): Participant {
+  const tracks = p.tracks as
+    | Record<string, { persistentTrack?: MediaStreamTrack | null; track?: MediaStreamTrack | null }>
+    | undefined;
+
   return {
     sessionId: p.session_id,
     userId: p.user_id || "",
@@ -69,9 +76,10 @@ function mapParticipant(p: DailySDKParticipant): Participant {
     video: p.video ?? false,
     audio: p.audio ?? false,
     screen: p.screen ?? false,
-    videoTrack: p.tracks?.video?.persistentTrack ?? null,
-    audioTrack: p.tracks?.audio?.persistentTrack ?? null,
-    screenVideoTrack: p.tracks?.screenVideo?.persistentTrack ?? null,
+    videoTrack: tracks?.video?.persistentTrack ?? tracks?.video?.track ?? null,
+    audioTrack: tracks?.audio?.persistentTrack ?? tracks?.audio?.track ?? null,
+    screenVideoTrack:
+      tracks?.screenVideo?.persistentTrack ?? tracks?.screenVideo?.track ?? null,
   };
 }
 
@@ -82,6 +90,13 @@ function errorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === "object") {
     const obj = err as Record<string, unknown>;
     if (typeof obj.errorMsg === "string") return obj.errorMsg;
+    if (
+      obj.errorMsg &&
+      typeof obj.errorMsg === "object" &&
+      typeof (obj.errorMsg as Record<string, unknown>).errorMsg === "string"
+    ) {
+      return String((obj.errorMsg as Record<string, unknown>).errorMsg);
+    }
     if (typeof obj.msg === "string") return obj.msg;
     if (obj.error && typeof (obj.error as Record<string, unknown>).msg === "string") {
       return String((obj.error as Record<string, unknown>).msg);
@@ -90,32 +105,16 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-async function probeMediaPermissions(): Promise<string | null> {
+function mediaSupportWarning(): string | null {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
     return "Browser does not support camera or microphone access.";
   }
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: AUDIO_CONSTRAINTS,
-      video: VIDEO_CONSTRAINTS,
-    });
-    stream.getTracks().forEach((track) => track.stop());
-    return null;
-  } catch (videoAndAudioError) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: AUDIO_CONSTRAINTS,
-      });
-      stream.getTracks().forEach((track) => track.stop());
-      return "Camera is unavailable. Microphone permission is available.";
-    } catch {
-      return errorMessage(
-        videoAndAudioError,
-        "Camera or microphone permission was denied."
-      );
-    }
+  if (typeof window !== "undefined" && !window.isSecureContext) {
+    return "Camera requires HTTPS in production, or localhost while testing.";
   }
+
+  return null;
 }
 
 function localAudioState(call: DailyCall): boolean {
@@ -168,11 +167,11 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
     let call: DailyCall | null = null;
 
     const setup = async () => {
-      const permissionWarning = await probeMediaPermissions();
+      const permissionWarning = mediaSupportWarning();
       if (destroyed) return;
       setMediaError(permissionWarning);
 
-      call = DailyIframe.createCallObject({
+      const callOptions: DailyFactoryOptions = {
         audioSource: true,
         videoSource: true,
         inputSettings: {
@@ -183,9 +182,9 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
             settings: VIDEO_CONSTRAINTS,
           },
         },
-      } as any);
+      };
+      call = DailyIframe.createCallObject(callOptions);
       callRef.current = call;
-      const daily = call as any;
 
       const handleJoined = async () => {
         setIsJoined(true);
@@ -209,7 +208,7 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
         setLocalAudioLevel(0);
       };
 
-      const handleParticipantChange = (_evt?: DailyEventObjectParticipant) => {
+      const handleParticipantChange = () => {
         refreshParticipants();
       };
 
@@ -232,12 +231,16 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
         setError(msg);
       };
 
-      const handleMediaError = (evt?: { errorMsg?: string; error?: { msg?: string } }) => {
+      const handleMediaError = (
+        evt?: DailyEventObjectCameraError | DailyEventObjectNonFatalError
+      ) => {
         const msg = errorMessage(
           evt ?? {},
           "Camera or microphone failed."
         );
         setMediaError(msg);
+        setIsCameraOn(localVideoState(call as DailyCall));
+        setIsMicOn(localAudioState(call as DailyCall));
         refreshParticipants();
       };
 
@@ -245,8 +248,17 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
         refreshParticipants();
       };
 
-      const handleAudioLevel = (evt?: { audioLevel?: number }) => {
+      const handleAudioLevel = (evt?: DailyEventObjectLocalAudioLevel) => {
         setLocalAudioLevel(typeof evt?.audioLevel === "number" ? evt.audioLevel : 0);
+      };
+
+      const handleNonFatalError = (evt?: DailyEventObjectNonFatalError) => {
+        if (
+          evt?.type === "input-settings-error" ||
+          evt?.type === "local-audio-level-observer-error"
+        ) {
+          handleMediaError(evt);
+        }
       };
 
       call.on("joined-meeting", handleJoined);
@@ -256,12 +268,12 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
       call.on("participant-left", handleParticipantChange);
       call.on("active-speaker-change", handleActiveSpeaker);
       call.on("error", handleError);
-      daily.on("camera-error", handleMediaError);
-      daily.on("input-settings-error", handleMediaError);
-      daily.on("track-started", handleTrackChanged);
-      daily.on("track-stopped", handleTrackChanged);
-      daily.on("local-audio-level", handleAudioLevel);
-      await Promise.resolve(daily.startLocalAudioLevelObserver?.(500)).catch(() => undefined);
+      call.on("camera-error", handleMediaError);
+      call.on("nonfatal-error", handleNonFatalError);
+      call.on("track-started", handleTrackChanged);
+      call.on("track-stopped", handleTrackChanged);
+      call.on("local-audio-level", handleAudioLevel);
+      await Promise.resolve(call.startLocalAudioLevelObserver(500)).catch(() => undefined);
 
       call
         .join({ url: roomUrl, token })
@@ -281,9 +293,8 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
       destroyed = true;
       const activeCall = call ?? callRef.current;
       if (!activeCall) return;
-      const daily = activeCall as any;
-      daily.stopLocalAudioLevelObserver?.();
-      activeCall.destroy();
+      activeCall.stopLocalAudioLevelObserver();
+      void Promise.resolve(activeCall.destroy()).catch(() => undefined);
       callRef.current = null;
       setLocalAudioLevel(0);
     };
@@ -324,12 +335,22 @@ export function useDailyRoom(roomUrl: string | null, token: string | null): UseD
   }, [isCameraLoading, refreshParticipants]);
 
   const startScreenShare = useCallback(() => {
-    callRef.current?.startScreenShare();
-  }, []);
+    const call = callRef.current;
+    if (!call) return;
+    Promise.resolve(call.startScreenShare()).catch((err: unknown) => {
+      setMediaError(errorMessage(err, "Unable to start screen sharing."));
+      refreshParticipants();
+    });
+  }, [refreshParticipants]);
 
   const stopScreenShare = useCallback(() => {
-    callRef.current?.stopScreenShare();
-  }, []);
+    const call = callRef.current;
+    if (!call) return;
+    Promise.resolve(call.stopScreenShare()).catch((err: unknown) => {
+      setMediaError(errorMessage(err, "Unable to stop screen sharing."));
+      refreshParticipants();
+    });
+  }, [refreshParticipants]);
 
   const leave = useCallback(() => {
     callRef.current

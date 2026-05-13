@@ -1,20 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ParticipantTile } from "./ParticipantTile";
 import type { Participant } from "@/hooks/useDailyRoom";
 
 interface VideoGridProps {
   participants: Participant[];
   activeSpeakerId: string | null;
-  localSessionId: string | null;
   screenShareParticipant?: Participant | null;
 }
 
 export function VideoGrid({
   participants,
   activeSpeakerId,
-  localSessionId,
   screenShareParticipant,
 }: VideoGridProps) {
   const { localParticipant, remoteParticipants } = useMemo(() => {
@@ -63,20 +61,29 @@ export function VideoGrid({
 }
 
 function ScreenShareView({ participant }: { participant: Participant }) {
-  const videoRef = useMemo(() => {
-    return { current: null as HTMLVideoElement | null };
-  }, []);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    if (participant.screenVideoTrack) {
+      el.srcObject = new MediaStream([participant.screenVideoTrack]);
+    } else {
+      el.srcObject = null;
+    }
+
+    return () => {
+      el.srcObject = null;
+    };
+  }, [participant.screenVideoTrack]);
 
   return (
     <video
-      ref={(el) => {
-        videoRef.current = el;
-        if (el && participant.screenVideoTrack) {
-          el.srcObject = new MediaStream([participant.screenVideoTrack]);
-        }
-      }}
+      ref={videoRef}
       autoPlay
       playsInline
+      muted={participant.local}
       className="w-full h-full object-contain bg-black"
     />
   );

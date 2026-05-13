@@ -120,7 +120,6 @@ export default function LessonPage() {
   const {
     participants,
     activeSpeakerId,
-    localSessionId,
     isMicOn,
     isCameraOn,
     isScreenSharing,
@@ -386,7 +385,6 @@ export default function LessonPage() {
               <VideoGrid
                 participants={participants}
                 activeSpeakerId={activeSpeakerId}
-                localSessionId={localSessionId}
                 screenShareParticipant={screenShareParticipant}
               />
             ) : (

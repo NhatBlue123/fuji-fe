@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
+import { useGetWhiteboardSnapshotQuery } from "@/store/services/lessonApi";
 import { Trash2, Download, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,13 +30,49 @@ interface WhiteboardPanelProps {
   currentUserId: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyTldrawChanges(editor: any, payload: unknown) {
+  const changes = ((payload as { changes?: unknown })?.changes ?? payload) as {
+    added?: Record<string, unknown>;
+    updated?: Record<string, [unknown, unknown]>;
+    removed?: Record<string, unknown>;
+  };
+
+  if (!changes || typeof changes !== "object") return;
+
+  editor.store.mergeRemoteChanges(() => {
+    if (changes.added) {
+      for (const record of Object.values(changes.added)) {
+        editor.store.put([record]);
+      }
+    }
+    if (changes.updated) {
+      for (const [, to] of Object.values(changes.updated)) {
+        editor.store.put([to]);
+      }
+    }
+    if (changes.removed) {
+      for (const id of Object.keys(changes.removed)) {
+        try {
+          editor.store.remove([id]);
+        } catch {
+          /* ignore stale records */
+        }
+      }
+    }
+  });
+}
+
 export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPanelProps) {
   const { t } = useTranslation();
   const { sendChanges, clearBoard, onRemoteChange, onRemoteClear } = useWhiteboard(lessonId, token);
+  const { data: snapshotChanges = [] } = useGetWhiteboardSnapshotQuery({ lessonId });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
+  const snapshotAppliedRef = useRef(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [hasShapes, setHasShapes] = useState(false);
+  const [editorReady, setEditorReady] = useState(false);
   const isRemoteUpdateRef = useRef(false);
 
   const syncHasShapes = useCallback(() => {
@@ -52,6 +89,7 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (editor: any) => {
       editorRef.current = editor;
+      setEditorReady(true);
       // Bật grid mode để người dùng dễ canh nét vẽ ngay từ đầu.
       try {
         editor.updateInstanceState?.({ isGridMode: true });
@@ -80,6 +118,30 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
   );
 
   useEffect(() => {
+    snapshotAppliedRef.current = false;
+  }, [lessonId]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editorReady || !editor || snapshotAppliedRef.current || snapshotChanges.length === 0) {
+      return;
+    }
+
+    snapshotAppliedRef.current = true;
+    isRemoteUpdateRef.current = true;
+    try {
+      for (const changes of snapshotChanges) {
+        applyTldrawChanges(editor, changes);
+      }
+    } catch (e) {
+      console.warn("[Whiteboard] Failed to apply snapshot:", e);
+    } finally {
+      isRemoteUpdateRef.current = false;
+      syncHasShapes();
+    }
+  }, [editorReady, snapshotChanges, syncHasShapes]);
+
+  useEffect(() => {
     onRemoteChange((data) => {
       const editor = editorRef.current;
       if (!editor) return;
@@ -87,28 +149,7 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
 
       isRemoteUpdateRef.current = true;
       try {
-        editor.store.mergeRemoteChanges(() => {
-          const changes = data.changes as {
-            added?: Record<string, unknown>;
-            updated?: Record<string, [unknown, unknown]>;
-            removed?: Record<string, unknown>;
-          };
-          if (changes.added) {
-            for (const record of Object.values(changes.added)) {
-              editor.store.put([record]);
-            }
-          }
-          if (changes.updated) {
-            for (const [, to] of Object.values(changes.updated)) {
-              editor.store.put([to]);
-            }
-          }
-          if (changes.removed) {
-            for (const id of Object.keys(changes.removed)) {
-              try { editor.store.remove([id]); } catch { /* ignore */ }
-            }
-          }
-        });
+        applyTldrawChanges(editor, data.changes);
       } catch (e) {
         console.warn("[Whiteboard] Failed to apply remote changes:", e);
       } finally {

@@ -1,8 +1,7 @@
 "use client";
 
-import { useTranslation } from "react-i18next";
-import { useCallback, useEffect, useState } from "react";
-import { HelpCircle, Play, SkipForward, Eye, Flag, Plus, X, ChevronRight } from "lucide-react";
+import { useCallback, useState } from "react";
+import { HelpCircle, Play, SkipForward, Eye, EyeOff, Flag, Plus, X, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCreateQuizMutation,
@@ -11,7 +10,6 @@ import {
   useGetQuizResultsQuery,
   type QuizResponse,
   type QuizType,
-  type QuestionType,
 } from "@/store/services/lessonApi";
 import { useQuizStomp, type QuizQuestionPublic, type QuizSubmissionEvent, type QuizRevealEvent } from "@/hooks/useQuizStomp";
 import { cn } from "@/lib/utils";
@@ -28,7 +26,6 @@ interface QuizPanelProps {
 }
 
 export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
-  const { t } = useTranslation();
   const { data: quizzes = [], refetch } = useListQuizzesQuery({ lessonId });
   const [createQuiz, { isLoading: creating }] = useCreateQuizMutation();
   const [submitAnswer, { isLoading: submitting }] = useSubmitQuizAnswerMutation();
@@ -42,19 +39,31 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
   // Quiz panel state
   const [activeQuizId, setActiveQuizId] = useState<number | null>(null);
-  const [questionIndex, setQuestionIndex] = useState(0);
   const [liveQuestion, setLiveQuestion] = useState<QuizQuestionPublic | null>(null);
   const [studentAnswer, setStudentAnswer] = useState("");
   const [reveal, setReveal] = useState<QuizRevealEvent | null>(null);
   const [feed, setFeed] = useState<QuizSubmissionEvent[]>([]);
   const [showCreator, setShowCreator] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isLiveQuestionHidden, setIsLiveQuestionHidden] = useState(false);
+
+  const resetLiveQuiz = useCallback(() => {
+    setActiveQuizId(null);
+    setLiveQuestion(null);
+    setStudentAnswer("");
+    setReveal(null);
+    setFeed([]);
+    setShowResults(false);
+    setIsLiveQuestionHidden(false);
+  }, []);
 
   const onQuestion = useCallback((q: QuizQuestionPublic) => {
+    setActiveQuizId(q.quizId);
     setLiveQuestion(q);
     setReveal(null);
     setStudentAnswer("");
     setShowResults(false);
+    setIsLiveQuestionHidden(false);
   }, []);
 
   const onSubmission = useCallback((s: QuizSubmissionEvent) => {
@@ -66,8 +75,8 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
   }, []);
 
   const onEnded = useCallback(() => {
-    setShowResults(true);
-  }, []);
+    resetLiveQuiz();
+  }, [resetLiveQuiz]);
 
   const { startQuiz, nextQuestion, submitLive, sendReveal, endQuiz } = useQuizStomp({
     lessonId,
@@ -84,12 +93,6 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
     { lessonId, quizId: activeQuizId ?? 0 },
     { skip: !isTeacher || !activeQuizId || !showResults }
   );
-
-  useEffect(() => {
-    if (liveQuestion?.quizId) {
-      setActiveQuizId(liveQuestion.quizId);
-    }
-  }, [liveQuestion]);
 
   const handleCreate = async () => {
     if (!creatorTitle.trim() || creatorQuestions.length === 0) {
@@ -160,6 +163,87 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
     }
   };
 
+  const handleEndQuiz = (quizId: number) => {
+    endQuiz(quizId);
+    resetLiveQuiz();
+  };
+
+  const getQuizQuestionCount = (quizId: number) => {
+    return quizzes.find((q) => q.id === quizId)?.questionCount ?? 0;
+  };
+
+  const getNextQuizInList = (quizId: number) => {
+    const currentIndex = quizzes.findIndex((q) => q.id === quizId);
+    return currentIndex >= 0 ? quizzes[currentIndex + 1] : undefined;
+  };
+
+  const canGoNext = (quizId: number) => {
+    if (!liveQuestion || liveQuestion.quizId !== quizId) {
+      return false;
+    }
+
+    const totalQuestions = getQuizQuestionCount(quizId);
+    if (totalQuestions > 0 && liveQuestion.questionIndex + 1 < totalQuestions) {
+      return true;
+    }
+
+    return Boolean(getNextQuizInList(quizId));
+  };
+
+  const handleStartQuiz = (quizId: number) => {
+    setActiveQuizId(quizId);
+    setShowResults(false);
+    setIsLiveQuestionHidden(false);
+    startQuiz(quizId, 0);
+  };
+
+  const handleNextQuestion = (quizId: number) => {
+    if (!liveQuestion || liveQuestion.quizId !== quizId) {
+      toast.info("Bấm Start trước khi chuyển câu tiếp theo");
+      return;
+    }
+
+    const totalQuestions = getQuizQuestionCount(quizId);
+    const next = liveQuestion.questionIndex + 1;
+    if (totalQuestions > 0 && next < totalQuestions) {
+      setReveal(null);
+      setStudentAnswer("");
+      setIsLiveQuestionHidden(false);
+      nextQuestion(quizId, next);
+      return;
+    }
+
+    const nextQuiz = getNextQuizInList(quizId);
+    if (nextQuiz) {
+      setActiveQuizId(nextQuiz.id);
+      setReveal(null);
+      setStudentAnswer("");
+      setIsLiveQuestionHidden(false);
+      startQuiz(nextQuiz.id, 0);
+      return;
+    }
+
+    toast.info("Đây là câu cuối của danh sách quiz");
+  };
+
+  const getNextTitle = (quizId: number) => {
+    if (!liveQuestion || liveQuestion.quizId !== quizId) {
+      return "Bấm Start trước";
+    }
+
+    const totalQuestions = getQuizQuestionCount(quizId);
+    if (totalQuestions > 0 && liveQuestion.questionIndex + 1 < totalQuestions) {
+      return "Câu tiếp theo";
+    }
+
+    const nextQuiz = getNextQuizInList(quizId);
+    if (nextQuiz) {
+      return `Chuyển sang quiz: ${nextQuiz.title}`;
+    }
+
+    return "Đây là câu cuối";
+  };
+
   const getQuizTypeLabel = (type?: string) => {
     switch (type) {
       case "LISTENING": return "Nghe";
@@ -178,8 +262,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
   // Get total questions from current quiz
   const getTotalQuestions = () => {
-    const quiz = quizzes.find(q => q.id === activeQuizId);
-    return quiz?.questionCount ?? 0;
+    return activeQuizId ? getQuizQuestionCount(activeQuizId) : 0;
   };
 
   return (
@@ -190,6 +273,31 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
           <HelpCircle className="h-4 w-4 text-[#6C63FF]" />
           <span className="font-medium text-[#F0F0F0]">Quiz</span>
         </div>
+        {liveQuestion && (
+          <button
+            type="button"
+            onClick={() => setIsLiveQuestionHidden((prev) => !prev)}
+            className={cn(
+              "ml-auto mr-1.5 flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
+              isLiveQuestionHidden
+                ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                : "bg-white/[0.06] text-[#C9CAD4] hover:bg-white/[0.1]"
+            )}
+            title={isLiveQuestionHidden ? "Hiện quiz" : "Ẩn quiz"}
+          >
+            {isLiveQuestionHidden ? (
+              <>
+                <Eye className="h-3 w-3" />
+                Hiện quiz
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-3 w-3" />
+                Ẩn quiz
+              </>
+            )}
+          </button>
+        )}
         {isTeacher && (
           <button
             onClick={() => setShowCreator(!showCreator)}
@@ -267,7 +375,6 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                     className="rounded-md bg-white/[0.06] px-2 py-1 text-[10px] text-[#F0F0F0] hover:bg-white/10"
                     onClick={() => {
                       setActiveQuizId(q.id);
-                      setQuestionIndex(0);
                       setFeed([]);
                       setShowResults(false);
                     }}
@@ -279,11 +386,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                       <button
                         type="button"
                         className="rounded-md bg-[#6C63FF]/30 px-2 py-1 text-[10px] text-[#F0F0F0]"
-                        onClick={() => {
-                          setQuestionIndex(0);
-                          setShowResults(false);
-                          startQuiz(q.id, 0);
-                        }}
+                        onClick={() => handleStartQuiz(q.id)}
                         title="Bắt đầu"
                       >
                         <Play className="inline h-3 w-3 mr-0.5" />
@@ -291,12 +394,14 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                       </button>
                       <button
                         type="button"
-                        className="rounded-md bg-white/[0.08] px-2 py-1 text-[10px]"
-                        onClick={() => {
-                          const next = questionIndex + 1;
-                          setQuestionIndex(next);
-                          nextQuestion(q.id, next);
-                        }}
+                        disabled={
+                          !liveQuestion ||
+                          liveQuestion.quizId !== q.id ||
+                          !canGoNext(q.id)
+                        }
+                        className="rounded-md bg-white/[0.08] px-2 py-1 text-[10px] disabled:cursor-not-allowed disabled:opacity-40"
+                        onClick={() => handleNextQuestion(q.id)}
+                        title={getNextTitle(q.id)}
                       >
                         <SkipForward className="inline h-3 w-3 mr-0.5" />
                         Next
@@ -312,7 +417,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                       <button
                         type="button"
                         className="rounded-md bg-[#FF6B6B]/25 px-2 py-1 text-[10px] text-[#ffb4b4]"
-                        onClick={() => endQuiz(q.id)}
+                        onClick={() => handleEndQuiz(q.id)}
                       >
                         <Flag className="inline h-3 w-3 mr-0.5" />
                         End
@@ -326,7 +431,35 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
         </div>
 
         {/* Live Question Display */}
-        {liveQuestion && (
+        {liveQuestion && isLiveQuestionHidden && (
+          <div className="rounded-xl border border-white/[0.08] bg-[#1a1d27]/80 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full", getQuizTypeColor(liveQuestion.quizType))}>
+                    {getQuizTypeLabel(liveQuestion.quizType)}
+                  </span>
+                  <span className="text-xs text-[#F0F0F0]">
+                    Câu {liveQuestion.questionIndex + 1}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-[#8B8FA8] truncate">
+                  Quiz đang được ẩn trên máy này để dành chỗ tạo quiz mới.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLiveQuestionHidden(false)}
+                className="shrink-0 rounded-md bg-[#6C63FF]/20 px-2 py-1 text-[10px] text-[#CFCBFF] hover:bg-[#6C63FF]/30"
+              >
+                <Eye className="inline h-3 w-3 mr-1" />
+                Hiện quiz
+              </button>
+            </div>
+          </div>
+        )}
+
+        {liveQuestion && !isLiveQuestionHidden && (
           <div className="rounded-xl border border-[#6C63FF]/30 bg-[#1a1d27] p-3 space-y-3">
             {/* Question Header with Progress */}
             <div className="flex items-center justify-between">

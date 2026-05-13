@@ -9,7 +9,6 @@ import React, {
   useState,
 } from "react";
 import {
-  disconnectStomp,
   getStompClient,
   getStompConnectionState,
   subscribeStomp,
@@ -46,7 +45,7 @@ interface StompProviderProps {
  * const { connectionState, isConnected, reconnect } = useStompContext();
  * ```
  */
-export function StompProvider({ children, token, lessonId }: StompProviderProps) {
+export function StompProvider({ children, token }: StompProviderProps) {
   const [connectionState, setConnectionState] = useState<StompConnectionState>(
     getStompConnectionState()
   );
@@ -117,13 +116,16 @@ export function useStompContext(): StompContextValue {
 export function useStompSubscribe(
   token: string | null,
   destination: string,
-  callback: Parameters<typeof subscribeStomp>[3]
+  callback: Parameters<typeof subscribeStomp>[2]
 ) {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   const latestCallback = useCallback(
-    (frame: Parameters<typeof subscribeStomp>[3]) => {
+    (frame: Parameters<Parameters<typeof subscribeStomp>[2]>[0]) => {
       callbackRef.current(frame);
     },
     []

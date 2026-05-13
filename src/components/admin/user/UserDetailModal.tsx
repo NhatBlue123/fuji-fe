@@ -33,7 +33,6 @@ import {
   TrendingUp,
   History,
   MessageSquareWarning,
-  UserX,
   UserCheck,
   X,
   Calendar,
@@ -247,6 +246,7 @@ export function UserDetailModal({
   const [chatBanInfo, setChatBanInfo] = useState<ChatBanInfo>(null);
   const [isChatBanLoading, setIsChatBanLoading] = useState(false);
   const [chatViolations, setChatViolations] = useState<any[]>([]);
+  const [isAccountUnlockLoading, setIsAccountUnlockLoading] = useState(false);
   const PAGE_SIZE = 5;
 
   useEffect(() => {
@@ -380,6 +380,80 @@ export function UserDetailModal({
       setIsChatBanLoading(false);
     }
   };
+
+  const isAccountTemporarilyLocked = Boolean(user?.temporarilyLocked);
+
+  const isAccountLocked = Boolean(
+    user && (!user.isActive || isAccountTemporarilyLocked),
+  );
+
+  const accountIsActive = user?.isActive;
+  const accountLockedUntil = user?.lockedUntil;
+
+  const accountLockStatusLabel = useMemo(() => {
+    if (accountIsActive === undefined) return "";
+    if (!accountIsActive) return "Đang khóa tài khoản";
+    if (!isAccountTemporarilyLocked) return "Đang hoạt động";
+    return accountLockedUntil
+      ? `Khóa tạm đến ${format(new Date(accountLockedUntil), "HH:mm dd/MM/yyyy")}`
+      : "Đang khóa tạm thời";
+  }, [accountIsActive, accountLockedUntil, isAccountTemporarilyLocked]);
+
+  const accountLockBadgeClass = !isAccountLocked
+    ? "text-emerald-600 border-emerald-200 bg-emerald-50"
+    : isAccountTemporarilyLocked
+      ? "text-amber-600 border-amber-200 bg-amber-50"
+      : "text-rose-600 border-rose-200 bg-rose-50";
+
+  const handleUnlockAccount = async () => {
+    if (!user) return;
+    setIsAccountUnlockLoading(true);
+    try {
+      const response = await api.post(`/users/me/${user.id}/unlock-account`);
+      if (response.data.success) {
+        toast.success(t("admin.user.toast.unlocked"));
+        setFormData((prev) => ({ ...prev, isActive: true }));
+        if (onUserUpdated) onUserUpdated();
+      } else {
+        toast.error(response.data.message || t("admin.user.toast.actionFailed"));
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || t("admin.user.toast.statusUpdateError"),
+      );
+    } finally {
+      setIsAccountUnlockLoading(false);
+    }
+  };
+
+  const renderAccountLockStatus = () => (
+    <div className="flex items-center justify-between gap-3">
+      <div className="text-xs font-bold text-foreground">
+        Trạng thái tài khoản
+      </div>
+      <Badge variant="outline" className={accountLockBadgeClass}>
+        {accountLockStatusLabel}
+      </Badge>
+    </div>
+  );
+
+  const renderUnlockAccountButton = () =>
+    isAccountLocked ? (
+      <Button
+        type="button"
+        size="sm"
+        disabled={isAccountUnlockLoading}
+        onClick={handleUnlockAccount}
+        className="text-[11px] bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+      >
+        {isAccountUnlockLoading ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <UserCheck className="size-3.5" />
+        )}
+        Mở khóa tài khoản
+      </Button>
+    ) : null;
 
   const riskLevel = useMemo(() => {
     const violationsCount = user?.violationLogs?.length || 0;
@@ -871,9 +945,13 @@ export function UserDetailModal({
                         </AvatarFallback>
                       </Avatar>
                       <div
-                        className={`absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full text-[10px] font-bold border-2 border-card shadow-sm ${user.isActive ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}
+                        className={`absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full text-[10px] font-bold border-2 border-card shadow-sm ${isAccountLocked ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"}`}
                       >
-                        {user.isActive ? "ONLINE" : "LOCKED"}
+                        {isAccountLocked
+                          ? isAccountTemporarilyLocked
+                            ? "TEMP LOCK"
+                            : "LOCKED"
+                          : "ONLINE"}
                       </div>
                     </div>
                     <h4 className="font-bold text-xl text-foreground mb-1">
@@ -1643,6 +1721,8 @@ export function UserDetailModal({
                       </div>
 
                       <div className="rounded-xl border border-border bg-muted/10 p-4 space-y-3">
+                        {renderAccountLockStatus()}
+
                         <div className="flex items-center justify-between">
                           <div className="text-xs font-bold text-foreground">
                             {t("admin.user.modal.permissions.chatBanStatus")}
@@ -1709,6 +1789,7 @@ export function UserDetailModal({
                           >
                             {t("admin.user.modal.permissions.unban")}
                           </Button>
+                          {renderUnlockAccountButton()}
                         </div>
                       </div>
                     </CardContent>
@@ -2231,6 +2312,8 @@ export function UserDetailModal({
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="rounded-xl border border-border bg-muted/10 p-4 space-y-3">
+                        {renderAccountLockStatus()}
+
                         <div className="flex items-center justify-between">
                           <div className="text-xs font-bold text-foreground">
                             Trạng thái cấm chat
@@ -2290,6 +2373,7 @@ export function UserDetailModal({
                           >
                             Gỡ cấm chat
                           </Button>
+                          {renderUnlockAccountButton()}
                         </div>
                       </div>
                     </CardContent>

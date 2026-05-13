@@ -41,6 +41,10 @@ export interface AdminUser {
   lastActiveAt?: string;
   score?: number;
   antiCheatViolations?: number;
+  violationLevel?: number;
+  lastViolationAt?: string | null;
+  lockedUntil?: string | null;
+  temporarilyLocked?: boolean;
   identificationCode?: string;
   violationLogs?: ViolationLog[];
   auditLogs?: {
@@ -89,8 +93,10 @@ export const UserTable: React.FC<UserTableProps> = ({
     }
   };
 
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive ? (
+  const getStatusBadge = (user: AdminUser) => {
+    const temporarilyLocked = Boolean(user.temporarilyLocked);
+
+    return user.isActive && !temporarilyLocked ? (
       <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-100 font-semibold min-w-[90px] justify-center rounded-full px-2 py-0.5 text-[10px]">{t("admin.user.status.active")}</Badge>
     ) : (
       <Badge variant="outline" className="text-rose-600 bg-rose-50 border-rose-100 font-semibold min-w-[90px] justify-center rounded-full px-2 py-0.5 text-[10px]">{t("admin.user.status.lockedLabel")}</Badge>
@@ -147,7 +153,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                   </div>
                 </TableCell>
                 <TableCell className="text-center py-3">{getRoleBadge(user.role)}</TableCell>
-                <TableCell className="text-center py-3">{getStatusBadge(user.isActive)}</TableCell>
+                <TableCell className="text-center py-3">{getStatusBadge(user)}</TableCell>
                 <TableCell className="text-center py-3">
                   {(() => {
                     const violationCount = user.violationLogs?.length ?? 0;

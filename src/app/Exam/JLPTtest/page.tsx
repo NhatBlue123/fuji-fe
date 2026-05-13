@@ -67,56 +67,61 @@ function JLPTtestPageInner() {
     error,
   } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const storageKey = `jlpt_exam_state_${testId}`;
+
+  // Read localStorage synchronously at init time — this is the key fix.
+  // We store remainingSeconds (not examStartTime) so it works regardless of when testData arrives.
+  const getInitialState = () => {
+    if (!testId) return { savedAnswers: {} as Record<number, number>, savedCurrentQuestion: 0, savedTabSwitchCount: 0, savedRemainingSeconds: undefined as number | undefined };
+    try {
+      const raw = localStorage.getItem(`jlpt_exam_state_${testId}`);
+      if (!raw) return { savedAnswers: {} as Record<number, number>, savedCurrentQuestion: 0, savedTabSwitchCount: 0, savedRemainingSeconds: undefined as number | undefined };
+      const state = JSON.parse(raw);
+      return {
+        savedAnswers: (state.answers || {}) as Record<number, number>,
+        savedCurrentQuestion: typeof state.currentQuestion === "number" ? state.currentQuestion : 0,
+        savedTabSwitchCount: typeof state.tabSwitchCount === "number" ? state.tabSwitchCount : 0,
+        savedRemainingSeconds: typeof state.remainingSeconds === "number" ? state.remainingSeconds : undefined,
+      };
+    } catch {
+      return { savedAnswers: {} as Record<number, number>, savedCurrentQuestion: 0, savedTabSwitchCount: 0, savedRemainingSeconds: undefined as number | undefined };
+    }
+  };
+
+  const initial = getInitialState();
+
+  const [currentQuestion, setCurrentQuestion] = useState(initial.savedCurrentQuestion);
+  const [answers, setAnswers] = useState<Record<number, number>>(initial.savedAnswers);
+  const [initialTimeLeft, setInitialTimeLeft] = useState<number | undefined>(initial.savedRemainingSeconds);
+  const [initialTabSwitchCount] = useState(initial.savedTabSwitchCount);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
-  const examStartTimeRef = useRef(0);
   const [scrollTrigger, setScrollTrigger] = useState(0);
-  const [initialTimeLeft, setInitialTimeLeft] = useState<number | undefined>();
-  const [initialTabSwitchCount, setInitialTabSwitchCount] = useState(0);
+  const durationRef = useRef(140); // default, updated below
+  const isFirstMountRef = useRef(true); // skip first auto-save on initial render
 
   const [submitTest] = useSubmitTestMutation();
   const [reportViolation] = useReportViolationMutation();
 
-  const storageKey = `jlpt_exam_state_${testId}`;
-
-  // Restore answers, current question, and tab switch count immediately
-  useEffect(() => {
-    if (!testId) return;
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const state = JSON.parse(saved);
-        if (state.answers) setAnswers(state.answers);
-        if (typeof state.currentQuestion === "number") setCurrentQuestion(state.currentQuestion);
-        if (typeof state.tabSwitchCount === "number") setInitialTabSwitchCount(state.tabSwitchCount);
-      }
-    } catch {}
-  }, [testId, storageKey]);
-
-  // Set start time and calculate remaining time when testData is available
+  // Sync initialTimeLeft if we got remainingSeconds from storage but hadn't computed it yet
+  // (this handles the case where localStorage had examStartTime but not remainingSeconds from an older save)
   useEffect(() => {
     if (!testId || !testData?.duration) return;
+    if (initialTimeLeft !== undefined) return; // already set from remainingSeconds
+
     try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const state = JSON.parse(saved);
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const state = JSON.parse(raw);
         if (state.examStartTime) {
-          examStartTimeRef.current = state.examStartTime;
           const elapsed = Math.floor((Date.now() - state.examStartTime) / 1000);
-          const durationSec = testData.duration * 60;
-          const remaining = Math.max(0, durationSec - elapsed);
+          const remaining = Math.max(0, (testData.duration * 60) - elapsed);
           setInitialTimeLeft(remaining);
-          return;
         }
       }
-      examStartTimeRef.current = Date.now();
-    } catch {
-      examStartTimeRef.current = Date.now();
-    }
-  }, [testId, testData, storageKey]);
+    } catch {}
+  }, [testId, testData, storageKey, initialTimeLeft]);
 
   const {
     jlptTopupTitle,
@@ -268,7 +273,8 @@ function JLPTtestPageInner() {
     setIsSubmitting(true);
 
     try {
-      const timeSpent = Math.floor((Date.now() - examStartTimeRef.current) / 1000);
+      // Calculate time spent: total duration - remaining time
+      const timeSpent = Math.max(0, (duration * 60) - timeLeft);
 
       const userAnswers: UserAnswer[] = Object.entries(answers).map(
         ([id, selected]) => ({
@@ -350,18 +356,25 @@ function JLPTtestPageInner() {
       onViolation: handleViolation,
     });
 
-  // Sync tab switch count to localStorage
+  // Save full exam state to localStorage on every meaningful change
   useEffect(() => {
-    if (!testId) return;
+    if (!testId || isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
+    }
     try {
       const saved = localStorage.getItem(storageKey);
       const state = saved ? JSON.parse(saved) : {};
       localStorage.setItem(storageKey, JSON.stringify({
         ...state,
+        answers,
+        currentQuestion,
         tabSwitchCount,
+        remainingSeconds: timeLeft,
+        lastSavedAt: Date.now(),
       }));
     } catch {}
-  }, [tabSwitchCount, testId, storageKey]);
+  }, [answers, currentQuestion, tabSwitchCount, timeLeft, testId, storageKey]);
 
   /* ===== UI STATES ===== */
 

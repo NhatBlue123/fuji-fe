@@ -742,10 +742,12 @@ function ReviewsContent({
   courseId,
   averageRating,
   ratingCount,
+  canAccessCourse,
 }: {
   courseId: number;
   averageRating: number;
   ratingCount: number;
+  canAccessCourse: boolean;
 }) {
   const { t } = useTranslation();
   const { data: reviews, isLoading } = useGetCourseRatingsQuery(courseId);
@@ -755,7 +757,7 @@ function ReviewsContent({
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
   const currentUserId = typeof user?.id === "number" ? user.id : undefined;
   const myReview = reviews?.find((review) => review.user.id === currentUserId);
-  const canWriteReview = isAuthenticated && !myReview;
+  const canWriteReview = isAuthenticated && canAccessCourse && !myReview;
 
   // Calculate rating distribution from reviews
   const distribution = [0, 0, 0, 0, 0]; // index 0..4 → 1-star..5-star
@@ -863,6 +865,13 @@ function ReviewsContent({
         <div className="rounded-2xl border border-border bg-card/40 p-5 text-sm text-muted-foreground flex items-center gap-3">
           <span className="material-symbols-outlined text-secondary">lock</span>
           {t("auto.courseDetail_43")} hoặc {t("auto.courseDetail_42")} của học viên khác.
+        </div>
+      )}
+
+      {isAuthenticated && !canAccessCourse && (
+        <div className="rounded-2xl border border-border bg-card/40 p-5 text-sm text-muted-foreground flex items-center gap-3">
+          <span className="material-symbols-outlined text-secondary">school</span>
+          Bạn cần đăng ký hoặc mua khóa học trước khi đánh giá.
         </div>
       )}
 
@@ -1296,6 +1305,7 @@ export default function CourseDetailView({
                 courseId={courseId}
                 averageRating={course.averageRating}
                 ratingCount={course.ratingCount}
+                canAccessCourse={canAccessCourse}
               />
             )}
           </div>

@@ -58,17 +58,18 @@ export function ReviewForm({
     }
 
     try {
+      const trimmedReview = review.trim();
       if (isEdit && existingReview) {
         await updateReview({
           courseId,
           ratingId: existingReview.id,
-          body: { rating },
+          body: { rating, review: trimmedReview },
         }).unwrap();
         toast.success("Cập nhật đánh giá thành công!");
       } else {
         await submitReview({
           courseId,
-          body: { rating },
+          body: { rating, review: trimmedReview },
         }).unwrap();
         toast.success("Gửi đánh giá thành công!");
       }
@@ -76,8 +77,12 @@ export function ReviewForm({
       setRating(0);
       setReview("");
       onSuccess?.();
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Không thể gửi đánh giá");
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "data" in error
+          ? (error as { data?: { message?: string } }).data?.message
+          : undefined;
+      toast.error(message || "Không thể gửi đánh giá");
     }
   };
 

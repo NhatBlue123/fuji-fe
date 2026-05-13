@@ -39,6 +39,12 @@ export function useAntiCheat({
   const tabSwitchCountRef = useRef(initialTabSwitchCount);
   const devToolsRef = useRef(false);
 
+  // Sync when initialTabSwitchCount changes (e.g., restored from localStorage on reload)
+  useEffect(() => {
+    setTabSwitchCount(initialTabSwitchCount);
+    tabSwitchCountRef.current = initialTabSwitchCount;
+  }, [initialTabSwitchCount]);
+
   const trigger = useCallback(
     (warning: AntiCheatWarning) => {
       setActiveWarning(warning);

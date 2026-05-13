@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Copy, Ticket } from "lucide-react";
+import { ArrowLeft, Copy, Ticket } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +151,7 @@ function CouponList({ coupons, active }: { coupons: UserCoupon[]; active: boolea
 
 export function CouponWallet() {
   const { t } = useTranslation();
+  const router = require("next/navigation").useRouter();
   const { data: coupons = [], isLoading } = useGetMyCouponsQuery();
   const grouped = groupCoupons(coupons);
 
@@ -158,6 +159,12 @@ export function CouponWallet() {
     <Card className="rounded-[2rem] border-muted/60 bg-white/70 shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/5 dark:bg-[#0B1120]/70">
       <CardHeader>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="group flex items-center justify-center size-10 rounded-xl border border-border/60 bg-card/70 hover:bg-card hover:border-primary/20 hover:text-primary transition-all shrink-0"
+          >
+            <ArrowLeft size={18} />
+          </button>
           <div className="rounded-2xl border border-secondary/20 bg-secondary/10 p-3 text-secondary">
             <Ticket className="size-5" />
           </div>

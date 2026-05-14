@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -65,9 +65,6 @@ import {
   BookOpen,
   Loader2,
   ArrowRight,
-  Upload,
-  FileText,
-  AlertCircle,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -80,7 +77,7 @@ import {
 } from "@/lib/jlpt-structure";
 import { API_CONFIG } from "@/config/api";
 import { getAccessToken } from "@/lib/token";
-import type { CreateQuestionDTO, JlptQuestionAdmin, QuestionBankItem } from "@/store/services/adminJlptApi";
+import type { JlptQuestionAdmin, QuestionBankItem } from "@/store/services/adminJlptApi";
 import { toast } from "sonner";
 
 // ─── Level color map ──────────────────────────────────────────────────────────
@@ -142,14 +139,6 @@ export default function AdminJLPTTestsPage() {
   const [autoGenerateWithBank, setAutoGenerateWithBank] = useState(false);
   const [generatingFromBank, setGeneratingFromBank] = useState(false);
   const [generatingWithAI, setGeneratingWithAI] = useState(false);
-
-  // ── PDF/Word import state ───────────────────────────────────────────────────
-  const pdfFileInputRef = useRef<HTMLInputElement>(null);
-  const [pdfParsing, setPdfParsing] = useState(false);
-  const [pdfPreview, setPdfPreview] = useState<any[] | null>(null);
-  const [pdfFileName, setPdfFileName] = useState("");
-  const [pdfImporting, setPdfImporting] = useState(false);
-  const [pdfParseError, setPdfParseError] = useState<string | null>(null);
 
   const [updateTest, { isLoading: isUpdating }] = useUpdateTestMutation();
   const [updateQuestion, updateQuestionState] = useUpdateQuestionMutation();
@@ -261,141 +250,6 @@ export default function AdminJLPTTestsPage() {
     setPreviewTestId(null);
     setSelectedQuestionId(null);
     setReviewConfirmed(false);
-    // Reset PDF import
-    setPdfPreview(null);
-    setPdfFileName("");
-    setPdfParseError(null);
-  };
-
-  // ── PDF/Word import handlers ──────────────────────────────────────────────────
-  const handlePdfFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const name = file.name.toLowerCase();
-    if (!name.endsWith(".pdf") && !name.endsWith(".docx") && !name.endsWith(".doc")) {
-      toast.error("Chỉ hỗ trợ file PDF, DOCX, DOC.");
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("File quá lớn. Giới hạn tối đa 15MB.");
-      return;
-    }
-
-    setPdfFileName(file.name);
-    setPdfPreview(null);
-    setPdfParseError(null);
-    setPdfParsing(true);
-
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("level", formData.level ?? "N5");
-
-      const res = await fetch("/api/ai/parse-exam-file", { method: "POST", body: fd });
-      const json = await res.json();
-
-      if (!res.ok) {
-        setPdfParseError(json.error ?? "Lỗi phân tích file.");
-        return;
-      }
-
-      setPdfPreview(json.questions ?? []);
-      toast.success(`Đã trích xuất ${json.valid}/${json.total} câu hỏi hợp lệ`);
-    } catch (err: any) {
-      setPdfParseError(err?.message ?? "Lỗi kết nối server.");
-    } finally {
-      setPdfParsing(false);
-      // Reset file input so same file can be re-uploaded
-      if (pdfFileInputRef.current) pdfFileInputRef.current.value = "";
-    }
-  };
-
-  const handlePdfSubmit = async () => {
-    if (editingTestId) {
-      await confirmPdfImport(editingTestId);
-    } else {
-      try {
-        const result = await createTest(formData).unwrap();
-        toast.success("Tạo đề thi mới thành công!");
-        setEditingTestId(result.id); 
-        await confirmPdfImport(result.id);
-      } catch (err) {
-        toast.error("Tạo đề thi thất bại, không thể import!");
-        console.error(err);
-      }
-    }
-  };
-
-  const confirmPdfImport = async (testId: number) => {
-    if (!pdfPreview || pdfPreview.length === 0) return;
-    const validQuestions = pdfPreview.filter((q) => !q._error);
-    if (validQuestions.length === 0) {
-      toast.error("Không có câu hỏi hợp lệ để import.");
-      return;
-    }
-
-    setPdfImporting(true);
-    let imported = 0;
-    let failed = 0;
-
-    // Group by mondai to track passages across questions in the same mondai
-    const mondaiPassageId: Record<number, number | null> = {};
-
-    for (const q of validQuestions) {
-      try {
-        const mondai = q.mondaiNumber ?? 1;
-        const requiresPassage = (q.passageText ?? "").trim().length > 0;
-
-        let parentId: number | null = mondaiPassageId[mondai] ?? null;
-
-        // If this question has a passage and no parent created yet, create the parent
-        if (requiresPassage && parentId === null) {
-          const parentCreated = await addQuestion({
-            testId,
-            data: {
-              mondaiNumber: mondai,
-              mondaiTitle: q.mondaiTitle ?? "",
-              parentId: null,
-              questionOrder: (mondai - 1) * 10, // rough ordering
-              section: (q.section ?? "VOCABULARY") as any,
-              contentText: q.passageText,
-            },
-          }).unwrap();
-          parentId = parentCreated.id;
-          mondaiPassageId[mondai] = parentId;
-        }
-
-        await addQuestion({
-          testId,
-          data: {
-            mondaiNumber: mondai,
-            mondaiTitle: q.mondaiTitle ?? "",
-            parentId: requiresPassage ? parentId : null,
-            questionOrder: imported + 1,
-            section: (q.section ?? "VOCABULARY") as any,
-            contentText: q.contentText,
-            options: Array.isArray(q.options) ? JSON.stringify(q.options) : undefined,
-            correctOption: q.correctOption ?? undefined,
-            explanation: q.explanation ?? undefined,
-            points: 1.0,
-          },
-        }).unwrap();
-        imported++;
-      } catch {
-        failed++;
-      }
-    }
-
-    setPdfImporting(false);
-    if (failed === 0) {
-      toast.success(`✅ Đã import ${imported} câu hỏi từ file PDF vào đề thi!`);
-    } else {
-      toast.warning(`Import xong: ${imported} thành công, ${failed} thất bại.`);
-    }
-    // Refresh the preview panel
-    setPreviewTestId(testId);
-    setPdfPreview(null);
   };
 
 
@@ -866,7 +720,7 @@ export default function AdminJLPTTestsPage() {
             </Link>
           </Button>
           {canCreate && (
-            <Button onClick={() => setShowCreateForm(true)}>
+            <Button onClick={openCreateForm}>
               <Plus className="mr-2 h-4 w-4" />
               Tạo đề thi mới
             </Button>
@@ -1181,77 +1035,6 @@ export default function AdminJLPTTestsPage() {
                         )}
                       </div>
 
-                      {/* ── Import câu hỏi từ PDF / Word ── */}
-                      <div className="p-4 bg-muted/40 rounded-lg border border-dashed space-y-3">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-primary" />
-                            Import từ file PDF / Word
-                          </p>
-                          {pdfPreview && (
-                            <Badge variant="outline" className="text-xs bg-background">
-                              {pdfPreview.filter((q: any) => !q._error).length}/{pdfPreview.length} câu hợp lệ
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Hỗ trợ .pdf, .docx — AI tự động trích xuất Mondai.
-                        </p>
-                        <input
-                          ref={pdfFileInputRef}
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.docx,.doc"
-                          onChange={handlePdfFileChange}
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          disabled={pdfParsing}
-                          className="w-full gap-2"
-                          onClick={() => pdfFileInputRef.current?.click()}
-                        >
-                          {pdfParsing ? (
-                            <><Loader2 className="w-3 h-3 animate-spin" /> Đang phân tích...</>
-                          ) : (
-                            <><Upload className="w-3 h-3" /> {pdfFileName ? `Đổi file: ${pdfFileName}` : "Tải tệp lên"}</>
-                          )}
-                        </Button>
-                        
-                        {pdfParseError && (
-                          <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-[11px] text-destructive">
-                            {pdfParseError}
-                          </div>
-                        )}
-
-                        {pdfPreview && pdfPreview.length > 0 && (
-                          <div className="space-y-2">
-                            <ScrollArea className="h-40 rounded border bg-background">
-                              <div className="text-[10px]">
-                                {pdfPreview.map((q: any, idx: number) => (
-                                  <div key={idx} className="p-1.5 border-b flex justify-between gap-2">
-                                    <span className="truncate opacity-70">問{q.mondaiNumber}: {q.contentText}</span>
-                                    {q._error ? <span className="text-destructive whitespace-nowrap">❌</span> : <span className="text-green-500 whitespace-nowrap">✅</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            </ScrollArea>
-                            <Button
-                              type="button"
-                              variant="default"
-                              size="sm"
-                              className="w-full text-xs"
-                              disabled={pdfImporting || pdfPreview.filter((q: any) => !q._error).length === 0}
-                              onClick={handlePdfSubmit}
-                            >
-                              {pdfImporting ? "Đang import..." : `Xác nhận import (${pdfPreview.filter((q: any) => !q._error).length} câu)`}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-
                       {/* Actions */}
                       <div className="flex gap-3 pt-2">
                           <>
@@ -1309,11 +1092,6 @@ export default function AdminJLPTTestsPage() {
                         </Button>
                       </div>
 
-                      {!editingTestId && (
-                        <div className="pt-1 border-t">
-                          {/* We allow PDF import here too now */}
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </form>
@@ -1713,7 +1491,7 @@ export default function AdminJLPTTestsPage() {
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">Chưa có đề thi nào</p>
               {canCreate && (
-                <Button onClick={() => setShowCreateForm(true)}>
+                <Button onClick={openCreateForm}>
                   <Plus className="mr-2 h-4 w-4" />
                   Tạo đề thi đầu tiên
                 </Button>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { tMsg } from "@/i18n";
@@ -23,6 +23,15 @@ function formatHoaPrice(price: unknown): string {
   return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
 }
 
+function getApiMessageKey(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null || !("data" in error)) {
+    return undefined;
+  }
+
+  const data = (error as { data?: { messageKey?: unknown } }).data;
+  return typeof data?.messageKey === "string" ? data.messageKey : undefined;
+}
+
 interface CourseCardActionsProps {
   courseId: number;
   detailHref: string;
@@ -36,12 +45,17 @@ export default function CourseCardActions({
 }: CourseCardActionsProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [purchaseCourse] = usePurchaseCourseMutation();
 
   const { data: userCourse, isFetching } = useGetCourseByIdQuery(courseId, {
-    skip: !isAuthenticated,
+    skip: !mounted || !isAuthenticated,
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const freeCourse = isFreePrice(price);
   const isEnrolled = Boolean(userCourse?.isEnrolled);
@@ -65,15 +79,15 @@ export default function CourseCardActions({
       await purchaseCourse({ courseId }).unwrap();
       // Backend will send notification, no need for toast here
       router.push(resumeHref);
-    } catch (error: any) {
-      const msg = tMsg(error?.data?.messageKey) || tMsg("api.error");
+    } catch (error: unknown) {
+      const msg = tMsg(getApiMessageKey(error)) || tMsg("api.error");
       toast.error(msg);
     } finally {
       setIsRegistering(false);
     }
   };
 
-  if (!isAuthenticated) {
+  if (!mounted || !isAuthenticated) {
     return (
       <Link
         href={detailHref}

@@ -13,6 +13,7 @@ import { useDailyRoom } from "@/hooks/useDailyRoom";
 import { useStompChat } from "@/hooks/useStompChat";
 import { useMeetingSummary } from "@/hooks/useMeetingSummary";
 import { useTranscriptSync } from "@/hooks/useTranscriptSync";
+import { useLessonTranscript } from "@/hooks/useLessonTranscript";
 import { useVoiceTranscript } from "@/hooks/useVoiceTranscript";
 import {
   useCreateLessonRoomMutation,
@@ -38,13 +39,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Settings } from "lucide-react";
 import { disconnectStomp } from "@/lib/stomp";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 
 export default function LessonPage() {
   const params = useParams<{ bookingId: string }>();
@@ -138,7 +137,7 @@ export default function LessonPage() {
 
   // Voice transcript — streams mic audio to AssemblyAI realtime, saves final turns as transcripts
   // Starts automatically when mic is on, pauses when mic is off
-  useVoiceTranscript({
+  const voiceTranscript = useVoiceTranscript({
     lessonId: lessonData?.lessonId ?? null,
     role,
     userId: Number(user?.id ?? 0),
@@ -147,6 +146,12 @@ export default function LessonPage() {
     isMicOn,
     enabled: meetingSummary.settings.enabled,
   });
+
+  const {
+    transcripts,
+    isLoading: transcriptsLoading,
+    error: transcriptsError,
+  } = useLessonTranscript(lessonData?.lessonId ?? null, accessToken ?? null);
 
   // Screen share participant
   const screenShareParticipant = useMemo(
@@ -403,8 +408,17 @@ export default function LessonPage() {
             currentUserId={Number(user?.id ?? 0)}
             token={accessToken ?? null}
             isTeacher={role === "TEACHER"}
+            currentUserName={user?.fullName ?? "Unknown"}
+            currentUserRole={role}
             messages={liveMessages}
             typingUsers={typingUsers}
+            transcripts={transcripts}
+            transcriptsLoading={transcriptsLoading}
+            transcriptsError={transcriptsError}
+            voiceTranscriptStatus={voiceTranscript.status}
+            voiceTranscriptError={voiceTranscript.error}
+            voiceTranscriptPartialText={voiceTranscript.partialTranscript}
+            transcriptEnabled={meetingSummary.settings.enabled}
             onSendMessage={sendMessage}
             onSendTyping={sendTyping}
             onReaction={sendReaction}

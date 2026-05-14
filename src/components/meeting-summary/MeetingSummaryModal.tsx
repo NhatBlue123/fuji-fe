@@ -57,12 +57,6 @@ export function MeetingSummaryModal({
   }, [summary?.actionItems]);
 
   useEffect(() => {
-    if (summary) {
-      setError(null);
-    }
-  }, [summary]);
-
-  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {

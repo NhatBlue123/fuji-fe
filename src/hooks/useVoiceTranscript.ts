@@ -1,28 +1,18 @@
 "use client";
 
-/**
- * useVoiceTranscript
- *
- * Stream microphone audio đến AssemblyAI v3 Streaming API để nhận realtime transcript.
- * Mỗi "Turn" hoàn chỉnh (end_of_turn=true) được lưu vào /api/transcripts.
- *
- * Production-ready:
- * - Temporary token từ backend (không expose API key trên FE)
- * - Audio resampling về 16kHz mono PCM16 bằng AudioContext
- * - Graceful cleanup: send Terminate → close WS → stop mic tracks
- * - Auto-reconnect tối đa 3 lần khi WS đóng bất ngờ
- * - Chỉ active khi mic đang bật (isMicOn)
- */
-
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { API_CONFIG } from "@/config/api";
+import { isLikelyTranscriptNoise } from "@/lib/transcriptFilters";
 
 const ASSEMBLYAI_WS_URL = "wss://streaming.assemblyai.com/v3/ws";
 const SAMPLE_RATE = 16_000;
-const CHUNK_DURATION_MS = 50; // 50ms = 800 samples @16kHz
-const SAMPLES_PER_CHUNK = (SAMPLE_RATE * CHUNK_DURATION_MS) / 1000; // 800
+const SPEECH_MODEL = "whisper-rt";
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 2000;
+const VAD_START_THRESHOLD = 0.018;
+const VAD_CONTINUE_THRESHOLD = 0.01;
+const VAD_HANGOVER_CHUNKS = 12;
+const MIN_FINAL_TRANSCRIPT_CHARS = 4;
 
 export type VoiceTranscriptStatus =
   | "idle"
@@ -38,10 +28,97 @@ interface UseVoiceTranscriptOptions {
   userId: number;
   userName: string;
   accessToken: string | null;
-  /** Mic đang bật hay không — hook sẽ start/stop theo giá trị này */
   isMicOn: boolean;
-  /** Bật/tắt toàn bộ tính năng */
   enabled?: boolean;
+}
+
+interface AssemblyAiMessage {
+  type?: string;
+  id?: string;
+  transcript?: string;
+  end_of_turn?: boolean;
+  language_code?: string | null;
+  language_confidence?: number | null;
+  error?: string;
+  message?: string;
+  audio_duration_seconds?: number;
+  session_duration_seconds?: number;
+}
+
+interface SpeechRecognitionAlternativeLike {
+  transcript: string;
+  confidence?: number;
+}
+
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  0: SpeechRecognitionAlternativeLike;
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: {
+    length: number;
+    [index: number]: SpeechRecognitionResultLike;
+  };
+}
+
+interface SpeechRecognitionErrorEventLike {
+  error?: string;
+  message?: string;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+function getBrowserSpeechRecognition(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+}
+
+function buildAssemblyAiUrl(token: string): string {
+  const params = new URLSearchParams({
+    token,
+    sample_rate: String(SAMPLE_RATE),
+    speech_model: SPEECH_MODEL,
+    encoding: "pcm_s16le",
+    language_detection: "true",
+  });
+
+  return `${ASSEMBLYAI_WS_URL}?${params.toString()}`;
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err ?? "");
+}
+
+function calculateRms(samples: Float32Array): number {
+  let sum = 0;
+  for (let i = 0; i < samples.length; i += 1) {
+    sum += samples[i] * samples[i];
+  }
+  return Math.sqrt(sum / samples.length);
+}
+
+function normalizeForDuplicate(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 export function useVoiceTranscript({
@@ -55,25 +132,31 @@ export function useVoiceTranscript({
 }: UseVoiceTranscriptOptions) {
   const [status, setStatus] = useState<VoiceTranscriptStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [partialTranscript, setPartialTranscript] = useState("");
 
-  // Refs — không trigger re-render
   const wsRef = useRef<WebSocket | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const browserRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectAssemblyAiRef = useRef<(() => void) | null>(null);
+  const browserSpeechDisabledRef = useRef(false);
   const isStoppingRef = useRef(false);
-  const sessionStartMs = useRef<number>(Date.now());
-  const reconnectCountRef = useRef(0);
+  const shouldReconnectRef = useRef(true);
+  const sessionStartMs = useRef(0);
+  const turnStartMsRef = useRef(0);
+  const speechHangoverChunksRef = useRef(0);
+  const lastSavedTranscriptRef = useRef("");
+  const lastSavedAtRef = useRef(0);
 
-  /**
-   * Lưu transcript segment lên backend (fire-and-forget).
-   */
   const saveTranscriptSegment = useCallback(
     async (content: string, startTimeMs: number) => {
       if (!lessonId || !accessToken || !content.trim()) return;
+
       try {
         await fetch(`${API_CONFIG.BASE_URL}/transcripts`, {
           method: "POST",
@@ -88,6 +171,7 @@ export function useVoiceTranscript({
             speakerRole: role,
             speakerName: userName,
             content: content.trim(),
+            source: "VOICE",
             startTimeMs,
           }),
         });
@@ -98,53 +182,55 @@ export function useVoiceTranscript({
     [lessonId, accessToken, userId, role, userName]
   );
 
-  /**
-   * Lấy temporary token từ backend.
-   */
+  const handleFinalTranscript = useCallback(
+    (rawTranscript: string, options: { languageCode?: string | null; languageConfidence?: number | null } = {}) => {
+      const cleanTranscript = rawTranscript.trim();
+      if (cleanTranscript.length < MIN_FINAL_TRANSCRIPT_CHARS) {
+        setPartialTranscript("");
+        return;
+      }
+      if (isLikelyTranscriptNoise(cleanTranscript, options)) {
+        return;
+      }
+
+      const normalizedFinal = normalizeForDuplicate(cleanTranscript);
+      const now = Date.now();
+      if (
+        normalizedFinal === lastSavedTranscriptRef.current &&
+        now - lastSavedAtRef.current < 10_000
+      ) {
+        return;
+      }
+
+      const startTimeMs = Math.max(0, (turnStartMsRef.current || now) - sessionStartMs.current);
+      setPartialTranscript("");
+      void saveTranscriptSegment(cleanTranscript, startTimeMs);
+      lastSavedTranscriptRef.current = normalizedFinal;
+      lastSavedAtRef.current = now;
+      turnStartMsRef.current = now;
+    },
+    [saveTranscriptSegment]
+  );
+
   const fetchToken = useCallback(async (): Promise<string | null> => {
     if (!lessonId || !accessToken) return null;
+
     try {
       const res = await fetch(
         `${API_CONFIG.BASE_URL}/summaries/realtime-token?sessionId=${lessonId}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
-      return data.token ?? null;
+      return typeof data?.token === "string" ? data.token : null;
     } catch (err) {
       console.error("[VoiceTranscript] Failed to fetch token:", err);
       return null;
     }
   }, [lessonId, accessToken]);
 
-  /**
-   * Dừng và cleanup toàn bộ: WS + AudioContext + MediaStream.
-   */
-  const stopAll = useCallback(() => {
-    isStoppingRef.current = true;
-
-    // Clear reconnect timer
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
-
-    // Gửi Terminate message trước khi đóng WebSocket
-    const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(JSON.stringify({ type: "Terminate" }));
-      } catch { /* ignore */ }
-      // Đợi 200ms để server xử lý Terminate trước khi đóng
-      setTimeout(() => {
-        try { ws.close(1000, "Session ended"); } catch { /* ignore */ }
-      }, 200);
-    }
-    wsRef.current = null;
-
-    // Stop AudioWorklet/ScriptProcessor
+  const cleanupAudioResources = useCallback(() => {
     if (processorRef.current) {
       try { processorRef.current.disconnect(); } catch { /* ignore */ }
       processorRef.current = null;
@@ -154,119 +240,272 @@ export function useVoiceTranscript({
       sourceRef.current = null;
     }
     if (audioCtxRef.current) {
-      try { audioCtxRef.current.close(); } catch { /* ignore */ }
+      try { void audioCtxRef.current.close(); } catch { /* ignore */ }
       audioCtxRef.current = null;
     }
-
-    // Stop mic tracks
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-
-    reconnectAttemptsRef.current = 0;
-    reconnectCountRef.current = 0;
-    setStatus("stopped");
   }, []);
 
-  /**
-   * Chuyển Float32 audio samples sang PCM16 Int16Array.
-   * AssemblyAI yêu cầu raw PCM 16-bit little-endian.
-   */
+  const stopBrowserSpeech = useCallback(() => {
+    if (browserRestartTimerRef.current) {
+      clearTimeout(browserRestartTimerRef.current);
+      browserRestartTimerRef.current = null;
+    }
+
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    recognition.onstart = null;
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    try { recognition.stop(); } catch { /* ignore */ }
+    try { recognition.abort(); } catch { /* ignore */ }
+    recognitionRef.current = null;
+  }, []);
+
+  const stopAll = useCallback(() => {
+    isStoppingRef.current = true;
+    shouldReconnectRef.current = false;
+    browserSpeechDisabledRef.current = false;
+
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+
+    stopBrowserSpeech();
+
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify({ type: "Terminate" })); } catch { /* ignore */ }
+      setTimeout(() => {
+        try { ws.close(1000, "Session ended"); } catch { /* ignore */ }
+      }, 200);
+    } else if (ws) {
+      try { ws.close(1000, "Session ended"); } catch { /* ignore */ }
+    }
+
+    wsRef.current = null;
+    cleanupAudioResources();
+    reconnectAttemptsRef.current = 0;
+    speechHangoverChunksRef.current = 0;
+    setPartialTranscript("");
+    setStatus("stopped");
+  }, [cleanupAudioResources, stopBrowserSpeech]);
+
+  const startBrowserSpeech = useCallback(() => {
+    const SpeechRecognition = getBrowserSpeechRecognition();
+    if (!SpeechRecognition) return false;
+    if (browserSpeechDisabledRef.current) return false;
+    if (recognitionRef.current) return true;
+
+    const scheduleAssemblyFallback = () => {
+      if (browserRestartTimerRef.current) {
+        clearTimeout(browserRestartTimerRef.current);
+      }
+
+      browserRestartTimerRef.current = setTimeout(() => {
+        browserRestartTimerRef.current = null;
+        if (isStoppingRef.current || !shouldReconnectRef.current) return;
+        connectAssemblyAiRef.current?.();
+      }, 300);
+    };
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "vi-VN";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.info("[VoiceTranscript] Browser SpeechRecognition started with lang=vi-VN");
+      recognitionRef.current = recognition;
+      sessionStartMs.current = sessionStartMs.current || Date.now();
+      turnStartMsRef.current = Date.now();
+      setStatus("active");
+      setError(null);
+    };
+
+    recognition.onresult = (event) => {
+      let interim = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const transcript = result[0]?.transcript?.trim() ?? "";
+        if (!transcript) continue;
+
+        if (result.isFinal) {
+          handleFinalTranscript(transcript);
+        } else {
+          interim = `${interim} ${transcript}`.trim();
+        }
+      }
+
+      if (interim && !isLikelyTranscriptNoise(interim)) {
+        setPartialTranscript(interim);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      const code = event.error ?? "unknown";
+      if (code === "no-speech" || code === "aborted") return;
+      console.warn("[VoiceTranscript] Browser SpeechRecognition error:", event);
+
+      if (code === "network" || code === "service-not-allowed") {
+        browserSpeechDisabledRef.current = true;
+        setPartialTranscript("");
+        setStatus("reconnecting");
+        setError("SpeechRecognition lỗi mạng, đang chuyển sang AssemblyAI fallback.");
+        scheduleAssemblyFallback();
+        try { recognition.abort(); } catch { /* ignore */ }
+        return;
+      }
+
+      setError(event.message || `Speech recognition error: ${code}`);
+    };
+
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      if (
+        browserSpeechDisabledRef.current &&
+        !isStoppingRef.current &&
+        shouldReconnectRef.current &&
+        enabled &&
+        isMicOn &&
+        lessonId &&
+        accessToken
+      ) {
+        setStatus("reconnecting");
+        scheduleAssemblyFallback();
+        return;
+      }
+
+      if (!isStoppingRef.current && shouldReconnectRef.current && enabled && isMicOn && lessonId && accessToken) {
+        setStatus("reconnecting");
+        browserRestartTimerRef.current = setTimeout(() => {
+          void startBrowserSpeech();
+        }, 500);
+        return;
+      }
+
+      if (!isStoppingRef.current) {
+        setStatus("stopped");
+      }
+    };
+
+    try {
+      setStatus("connecting");
+      recognition.start();
+      recognitionRef.current = recognition;
+      return true;
+    } catch (err) {
+      console.warn("[VoiceTranscript] Failed to start browser SpeechRecognition:", err);
+      recognitionRef.current = null;
+      return false;
+    }
+  }, [accessToken, enabled, handleFinalTranscript, isMicOn, lessonId]);
+
   const float32ToPCM16 = (float32Array: Float32Array): ArrayBuffer => {
     const buffer = new ArrayBuffer(float32Array.length * 2);
     const view = new DataView(buffer);
-    for (let i = 0; i < float32Array.length; i++) {
-      const s = Math.max(-1, Math.min(1, float32Array[i]));
-      view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+
+    for (let i = 0; i < float32Array.length; i += 1) {
+      const sample = Math.max(-1, Math.min(1, float32Array[i]));
+      view.setInt16(i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
     }
+
     return buffer;
   };
 
-  /**
-   * Khởi động mic + AudioContext + ScriptProcessor để capture audio.
-   */
   const startAudio = useCallback(
     async (ws: WebSocket): Promise<void> => {
-      try {
-        console.info("[VoiceTranscript] Requesting microphone access...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            sampleRate: SAMPLE_RATE,
-            channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
-        streamRef.current = stream;
-        console.info("[VoiceTranscript] Microphone access granted");
+      cleanupAudioResources();
+      console.info("[VoiceTranscript] Requesting microphone access...");
 
-        const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
-        audioCtxRef.current = audioCtx;
-        console.info("[VoiceTranscript] AudioContext created, state:", audioCtx.state);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: SAMPLE_RATE,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
 
-        // Resume AudioContext nếu đang suspended
-        if (audioCtx.state === "suspended") {
-          console.info("[VoiceTranscript] Resuming AudioContext...");
-          await audioCtx.resume();
-          console.info("[VoiceTranscript] AudioContext resumed, state:", audioCtx.state);
+      if (ws.readyState !== WebSocket.OPEN || isStoppingRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      streamRef.current = stream;
+      console.info("[VoiceTranscript] Microphone access granted");
+
+      const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+      audioCtxRef.current = audioCtx;
+
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      sourceRef.current = source;
+
+      const processor = audioCtx.createScriptProcessor(1024, 1, 1);
+      processorRef.current = processor;
+
+      processor.onaudioprocess = (event) => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        const inputData = event.inputBuffer.getChannelData(0);
+        const rms = calculateRms(inputData);
+        const threshold = speechHangoverChunksRef.current > 0
+          ? VAD_CONTINUE_THRESHOLD
+          : VAD_START_THRESHOLD;
+
+        if (rms >= threshold) {
+          speechHangoverChunksRef.current = VAD_HANGOVER_CHUNKS;
+        } else if (speechHangoverChunksRef.current > 0) {
+          speechHangoverChunksRef.current -= 1;
+        } else {
+          return;
         }
 
-        const source = audioCtx.createMediaStreamSource(stream);
-        sourceRef.current = source;
+        try {
+          ws.send(float32ToPCM16(inputData));
+        } catch (err) {
+          console.error("[VoiceTranscript] Failed to send audio:", err);
+        }
+      };
 
-        // ScriptProcessorNode — buffer size 1024 = ~64ms @16kHz
-        const processor = audioCtx.createScriptProcessor(1024, 1, 1);
-        processorRef.current = processor;
-
-        processor.onaudioprocess = (event) => {
-          if (ws.readyState !== WebSocket.OPEN) return;
-          const inputData = event.inputBuffer.getChannelData(0);
-          const pcm16 = float32ToPCM16(inputData);
-          try {
-            ws.send(pcm16);
-          } catch (err) {
-            console.error("[VoiceTranscript] Failed to send audio:", err);
-          }
-        };
-
-        source.connect(processor);
-        processor.connect(audioCtx.destination);
-
-        console.info("[VoiceTranscript] Audio processor started");
-      } catch (err: any) {
-        console.error("[VoiceTranscript] Failed to start audio:", err);
-        throw err;
-      }
+      source.connect(processor);
+      processor.connect(audioCtx.destination);
+      console.info("[VoiceTranscript] Audio processor started");
     },
-    []
+    [cleanupAudioResources]
   );
 
-  /**
-   * Kết nối đến AssemblyAI WebSocket.
-   */
-  const connect = useCallback(async () => {
+  const connectAssemblyAi = useCallback(async () => {
     if (!enabled || !lessonId || !accessToken || isStoppingRef.current) return;
 
     setStatus("connecting");
     setError(null);
+    shouldReconnectRef.current = true;
 
     const token = await fetchToken();
     if (!token) {
+      shouldReconnectRef.current = false;
       setStatus("error");
       setError("Không thể lấy token AssemblyAI. Kiểm tra cấu hình server.");
       return;
     }
 
-    console.info("[VoiceTranscript] Token received (first 50 chars):", token.substring(0, 50));
-    console.info("[VoiceTranscript] Token length:", token.length);
-
     sessionStartMs.current = Date.now();
-    reconnectCountRef.current += 1;
+    turnStartMsRef.current = Date.now();
 
-    // URL theo AssemblyAI v3 documentation
-    const url = `${ASSEMBLYAI_WS_URL}?token=${token}`;
+    const url = buildAssemblyAiUrl(token);
     console.info("[VoiceTranscript] Connecting to AssemblyAI WS:", url.replace(token, "***"));
 
     const ws = new WebSocket(url);
@@ -278,57 +517,68 @@ export function useVoiceTranscript({
         ws.close();
         return;
       }
-      console.info("[VoiceTranscript] WebSocket connected to AssemblyAI");
-      reconnectAttemptsRef.current = 0;
 
-      // Gửi Start message theo AssemblyAI v3 protocol
-      ws.send(JSON.stringify({
-        type: "Start",
-        config: {
-          sample_rate: SAMPLE_RATE,
-          encoding: "pcm_s16le",
-          speech_model: "u3-pro",
-          language_detection: true,
-        }
-      }));
-      console.info("[VoiceTranscript] Sent Start config with speech_model=u3-pro");
+      console.info(`[VoiceTranscript] WebSocket connected with speech_model=${SPEECH_MODEL}`);
 
       try {
         await startAudio(ws);
-        setStatus("active");
-      } catch (err: any) {
+        if (ws.readyState === WebSocket.OPEN && !isStoppingRef.current) {
+          setStatus("active");
+        }
+      } catch (err) {
+        shouldReconnectRef.current = false;
         setStatus("error");
-        setError("Không thể truy cập microphone: " + (err.message ?? ""));
-        ws.close();
+        setError("Không thể truy cập microphone: " + errorMessage(err));
+        try { ws.close(1000, "Microphone error"); } catch { /* ignore */ }
       }
     };
 
-    const turnStartMs = { current: Date.now() };
-
     ws.onmessage = (event) => {
       try {
-        // AssemblyAI gửi message dạng text JSON
-        const msg = JSON.parse(event.data as string);
-        console.info("[VoiceTranscript] WS message:", msg.message_type ?? msg.type);
+        if (typeof event.data !== "string") return;
+        const msg = JSON.parse(event.data) as AssemblyAiMessage;
 
-        if (msg.message_type === "SessionBegins") {
-          console.info("[VoiceTranscript] Session started:", msg.session_id);
-        } else if (msg.message_type === "Transcripts") {
-          // Xử lý transcripts
-          const transcript = msg.transcripts?.[0]?.text ?? "";
-          const isEndOfTurn = msg.transcripts?.[0]?.end_of_turn ?? false;
+        if (msg.type === "Begin") {
+          console.info("[VoiceTranscript] Session started:", msg.id);
+          return;
+        }
 
-          if (isEndOfTurn && transcript.trim()) {
-            console.info("[VoiceTranscript] Final transcript:", transcript);
-            const startTimeMs = Math.max(0, turnStartMs.current - sessionStartMs.current);
-            void saveTranscriptSegment(transcript.trim(), startTimeMs);
-            turnStartMs.current = Date.now();
+        if (msg.type === "Turn") {
+          const cleanTranscript = (msg.transcript ?? "").trim();
+          if (
+            isLikelyTranscriptNoise(cleanTranscript, {
+              languageCode: msg.language_code,
+              languageConfidence: msg.language_confidence,
+            })
+          ) {
+            return;
           }
-        } else if (msg.message_type === "SessionTerminated") {
-          console.info("[VoiceTranscript] Session terminated");
-        } else if (msg.error) {
-          console.error("[VoiceTranscript] AssemblyAI error:", msg.error);
-          setError(msg.error);
+
+          if (msg.end_of_turn) {
+            handleFinalTranscript(cleanTranscript, {
+              languageCode: msg.language_code,
+              languageConfidence: msg.language_confidence,
+            });
+          } else {
+            setPartialTranscript(cleanTranscript);
+          }
+          return;
+        }
+
+        if (msg.type === "Termination") {
+          console.info(
+            `[VoiceTranscript] Session terminated: audio=${msg.audio_duration_seconds ?? 0}s session=${msg.session_duration_seconds ?? 0}s`
+          );
+          return;
+        }
+
+        if (msg.type === "Error" || msg.error) {
+          const assemblyError = msg.error || msg.message || "AssemblyAI streaming error";
+          console.error("[VoiceTranscript] AssemblyAI error:", assemblyError);
+          shouldReconnectRef.current = false;
+          setStatus("error");
+          setError(assemblyError);
+          try { ws.close(1000, "AssemblyAI validation error"); } catch { /* ignore */ }
         }
       } catch (err) {
         console.warn("[VoiceTranscript] Failed to parse message:", err);
@@ -342,54 +592,72 @@ export function useVoiceTranscript({
 
     ws.onclose = (event) => {
       console.info(`[VoiceTranscript] WS closed: code=${event.code} reason="${event.reason}"`);
+      cleanupAudioResources();
+      wsRef.current = null;
 
-      // Stop audio resources
-      if (processorRef.current) {
-        try { processorRef.current.disconnect(); } catch { /* ignore */ }
-        processorRef.current = null;
-      }
-      if (sourceRef.current) {
-        try { sourceRef.current.disconnect(); } catch { /* ignore */ }
-        sourceRef.current = null;
-      }
-
-      // Reconnect nếu đóng bất ngờ
-      if (!isStoppingRef.current && event.code !== 1000 && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+      if (
+        !isStoppingRef.current &&
+        shouldReconnectRef.current &&
+        event.code !== 1000 &&
+        reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS
+      ) {
         reconnectAttemptsRef.current += 1;
         const delay = RECONNECT_DELAY_MS * reconnectAttemptsRef.current;
-        console.info(`[VoiceTranscript] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`);
         setStatus("reconnecting");
         reconnectTimerRef.current = setTimeout(() => {
-          void connect();
+          void connectAssemblyAi();
         }, delay);
-      } else if (!isStoppingRef.current) {
+        return;
+      }
+
+      if (!isStoppingRef.current && shouldReconnectRef.current) {
         setStatus("stopped");
       }
     };
-  }, [enabled, lessonId, accessToken, fetchToken, startAudio, saveTranscriptSegment]);
+  }, [
+    enabled,
+    lessonId,
+    accessToken,
+    fetchToken,
+    startAudio,
+    handleFinalTranscript,
+    cleanupAudioResources,
+  ]);
 
-  /**
-   * Start/stop khi isMicOn thay đổi.
-   */
   useEffect(() => {
-    if (!enabled || !lessonId || !accessToken) return;
+    connectAssemblyAiRef.current = () => {
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) return;
+      void connectAssemblyAi();
+    };
+  }, [connectAssemblyAi]);
 
-    if (isMicOn) {
-      isStoppingRef.current = false;
-      reconnectAttemptsRef.current = 0;
-      // Chỉ connect nếu chưa active
-      if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-        void connect();
-      }
-    } else {
-      // Mic tắt → dừng session
+  useEffect(() => {
+    if (!enabled || !lessonId || !accessToken) {
       stopAll();
+      return;
     }
-  }, [isMicOn, enabled, lessonId, accessToken, connect, stopAll]);
 
-  /**
-   * Cleanup khi component unmount.
-   */
+    if (!isMicOn) {
+      stopAll();
+      return;
+    }
+
+    isStoppingRef.current = false;
+    shouldReconnectRef.current = true;
+    reconnectAttemptsRef.current = 0;
+
+    sessionStartMs.current = Date.now();
+    turnStartMsRef.current = Date.now();
+
+    if (!browserSpeechDisabledRef.current && startBrowserSpeech()) {
+      return;
+    }
+
+    if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+      void connectAssemblyAi();
+    }
+  }, [isMicOn, enabled, lessonId, accessToken, connectAssemblyAi, startBrowserSpeech, stopAll]);
+
   useEffect(() => {
     return () => {
       isStoppingRef.current = true;
@@ -398,5 +666,5 @@ export function useVoiceTranscript({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, error };
+  return { status, error, partialTranscript };
 }

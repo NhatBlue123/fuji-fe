@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { MessageSquare, PenTool, HelpCircle, StickyNote } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, PenTool, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatPanel } from "./ChatPanel";
 import { NotesPanel } from "./NotesPanel";
 import { WhiteboardPanel } from "./WhiteboardPanel";
 import { QuizPanel } from "./QuizPanel";
+import { TranscriptPanel } from "./TranscriptPanel";
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
+import type { LessonTranscriptItem } from "@/hooks/useLessonTranscript";
+import type { VoiceTranscriptStatus } from "@/hooks/useVoiceTranscript";
 
 
-type TabId = "chat" | "whiteboard" | "quiz" | "notes";
+type TabId = "chat" | "whiteboard" | "quiz" | "transcript" | "notes";
 
 interface Tab {
   id: TabId;
@@ -23,6 +26,7 @@ const TABS: Tab[] = [
   { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" />, available: true },
   { id: "whiteboard", label: "Whiteboard", icon: <PenTool className="h-3.5 w-3.5" />, available: true },
   { id: "quiz", label: "Quiz", icon: <HelpCircle className="h-3.5 w-3.5" />, available: true },
+  { id: "transcript", label: "Transcript", icon: <FileText className="h-3.5 w-3.5" />, available: true },
   { id: "notes", label: "Notes", icon: <StickyNote className="h-3.5 w-3.5" />, available: true },
 ];
 
@@ -31,8 +35,17 @@ interface SidePanelProps {
   currentUserId: number;
   token: string | null;
   isTeacher: boolean;
+  currentUserName: string;
+  currentUserRole: "TEACHER" | "STUDENT";
   messages: ChatMessage[];
   typingUsers: TypingStatus[];
+  transcripts: LessonTranscriptItem[];
+  transcriptsLoading?: boolean;
+  transcriptsError?: string | null;
+  voiceTranscriptStatus?: VoiceTranscriptStatus;
+  voiceTranscriptError?: string | null;
+  voiceTranscriptPartialText?: string;
+  transcriptEnabled: boolean;
   onSendMessage: (content: string, type?: string, fileUrl?: string) => void;
   onSendTyping: (isTyping: boolean) => void;
   onReaction: (messageId: number, emoji: string) => void;
@@ -45,8 +58,17 @@ export function SidePanel({
   currentUserId,
   token,
   isTeacher,
+  currentUserName,
+  currentUserRole,
   messages,
   typingUsers,
+  transcripts,
+  transcriptsLoading,
+  transcriptsError,
+  voiceTranscriptStatus,
+  voiceTranscriptError,
+  voiceTranscriptPartialText,
+  transcriptEnabled,
   onSendMessage,
   onSendTyping,
   onReaction,
@@ -124,6 +146,20 @@ export function SidePanel({
             lessonId={lessonId}
             token={token}
             isTeacher={isTeacher}
+          />
+        </div>
+
+        <div style={{ display: activeTab === "transcript" ? "flex" : "none" }} className="h-full flex-col">
+          <TranscriptPanel
+            transcripts={transcripts}
+            isLoading={transcriptsLoading}
+            error={transcriptsError}
+            voiceStatus={voiceTranscriptStatus}
+            voiceError={voiceTranscriptError}
+            partialText={voiceTranscriptPartialText}
+            currentUserName={currentUserName}
+            currentUserRole={currentUserRole}
+            enabled={transcriptEnabled}
           />
         </div>
       </div>

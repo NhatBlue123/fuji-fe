@@ -41,6 +41,7 @@ async function postTranscript(
     speakerRole: string;
     speakerName: string;
     content: string;
+    source?: string;
     startTimeMs?: number;
   }
 ): Promise<void> {
@@ -63,7 +64,6 @@ export function useTranscriptSync(
   messages: ChatMessage[],
   {
     lessonId,
-    role,
     userId,
     userName,
     accessToken,
@@ -79,7 +79,11 @@ export function useTranscriptSync(
   /**
    * Thời điểm buổi học bắt đầu (mount của hook) — để tính startTimeMs tương đối.
    */
-  const sessionStartMs = useRef<number>(Date.now());
+  const sessionStartMs = useRef<number | null>(null);
+
+  useEffect(() => {
+    sessionStartMs.current = Date.now();
+  }, []);
 
   const syncMessage = useCallback(
     async (msg: ChatMessage) => {
@@ -91,6 +95,7 @@ export function useTranscriptSync(
 
       // Bỏ optimistic messages (id âm) — chờ server confirm
       if (msg.id < 0) return;
+      if (msg.senderId !== userId) return;
 
       // Đã sync rồi thì bỏ qua
       if (syncedIdsRef.current.has(msg.id)) return;
@@ -99,7 +104,7 @@ export function useTranscriptSync(
       syncedIdsRef.current.add(msg.id);
 
       const msgTimeMs = new Date(msg.createdAt).getTime();
-      const startTimeMs = Math.max(0, msgTimeMs - sessionStartMs.current);
+      const startTimeMs = Math.max(0, msgTimeMs - (sessionStartMs.current ?? msgTimeMs));
 
       await postTranscript(accessToken, {
         sessionId: lessonId,
@@ -108,10 +113,11 @@ export function useTranscriptSync(
         speakerRole: msg.senderRole,
         speakerName: msg.senderName || userName,
         content: msg.content.trim(),
+        source: "CHAT",
         startTimeMs,
       });
     },
-    [lessonId, accessToken, enabled, userName]
+    [lessonId, accessToken, enabled, userId, userName]
   );
 
   useEffect(() => {
@@ -136,6 +142,7 @@ export function useTranscriptSync(
           m.type === "TEXT" &&
           m.content?.trim() &&
           m.id > 0 &&
+          m.senderId === userId &&
           !syncedIdsRef.current.has(m.id)
       );
 
@@ -152,7 +159,8 @@ export function useTranscriptSync(
             speakerRole: msg.senderRole,
             speakerName: msg.senderName || userName,
             content: msg.content.trim(),
-            startTimeMs: Math.max(0, msgTimeMs - sessionStartMs.current),
+            source: "CHAT",
+            startTimeMs: Math.max(0, msgTimeMs - (sessionStartMs.current ?? msgTimeMs)),
           };
         });
 
@@ -171,7 +179,7 @@ export function useTranscriptSync(
         console.warn("[TranscriptSync] Bulk flush failed:", err);
       }
     },
-    [lessonId, accessToken, enabled, userName]
+    [lessonId, accessToken, enabled, userId, userName]
   );
 
   return { flushAll };

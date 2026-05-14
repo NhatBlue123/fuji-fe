@@ -81,12 +81,12 @@ export function StreakCard({ className, hideMessage = false }: StreakCardProps) 
 
         {/* Streak Count */}
         <div className="text-center mb-4">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/10 backdrop-blur-sm mb-2">
+          <div className="inline-flex h-28 w-28 items-center justify-center rounded-full border border-white/20 bg-white/15 shadow-inner backdrop-blur-sm mb-2">
             <div className="text-center">
-              <p className="text-xs text-orange-400 font-medium">Streak hiện tại</p>
-              <p className="text-2xl font-bold text-white">
-                {streak.streakCount}
-                <span className="text-sm text-orange-400 ml-1">ngày</span>
+              <p className="text-[11px] font-semibold text-white/85">Streak hiện tại</p>
+              <p className="mt-1 flex items-baseline justify-center gap-1.5 text-white">
+                <span className="text-3xl font-extrabold leading-none">{streak.streakCount}</span>
+                <span className="text-sm font-semibold leading-none text-white/90">ngày</span>
               </p>
             </div>
           </div>

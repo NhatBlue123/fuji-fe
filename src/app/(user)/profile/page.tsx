@@ -8,7 +8,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { logout } from "@/lib/auth";
+import { useAppDispatch } from "@/store/hooks";
+import { logoutThunk } from "@/store/slices/authSlice";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { useGetMySubscriptionQuery } from "@/store/services/subscriptionApi";
 import { useGetMySystemPackageQuery } from "@/store/services/userMonetizationApi";
@@ -30,6 +31,7 @@ import { getUsableAvatarFrame, hasAnyAvatarFramePackage } from "@/lib/avatar-fra
 
 export default function ProfilePage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { t, i18n } = useTranslation();
   const [openLogout, setOpenLogout] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -71,7 +73,7 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    await logout();
+    await dispatch(logoutThunk());
     router.push("/");
     router.refresh();
   };

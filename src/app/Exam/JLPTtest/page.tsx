@@ -30,6 +30,7 @@ import {
   getFeatureErrorMessage,
   isFeatureError,
 } from "@/lib/subscription-errors";
+import { useAuth } from "@/store/hooks";
 
 function parseOptions(opts?: string[] | string | null): string[] {
   if (!opts) return [];
@@ -57,6 +58,54 @@ export default function JLPTtestPage() {
 }
 
 function JLPTtestPageInner() {
+  const router = useRouter();
+  const { isAuthenticated, isInitialized } = useAuth();
+
+  if (!isInitialized) {
+    return (
+      <div className="h-screen flex items-center justify-center" style={{ backgroundColor: "#0B1120" }}>
+        <div className="text-center animate-pulse">
+          <span className="material-symbols-outlined text-5xl mb-3" style={{ color: "rgba(165, 42, 42, 0.4)" }}>school</span>
+          <p className="font-jp text-sm tracking-wider" style={{ color: "rgba(245, 240, 232, 0.6)" }}>Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#0B1120" }}>
+        <div className="max-w-md rounded-2xl border border-pink-500/20 bg-slate-900/70 p-8 text-center shadow-2xl">
+          <span className="material-symbols-outlined mb-4 text-6xl text-pink-400">lock</span>
+          <h1 className="text-2xl font-black text-white">Bạn cần đăng nhập</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            Vui lòng đăng nhập để làm bài thi JLPT và lưu kết quả vào tài khoản của bạn.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => router.push("/login")}
+              className="rounded-lg bg-pink-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-pink-600"
+            >
+              Đăng nhập
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/jlpt-practice")}
+              className="rounded-lg border border-slate-600 px-5 py-2.5 text-sm font-bold text-slate-200 transition hover:bg-slate-800"
+            >
+              Quay lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <JLPTTestExperience />;
+}
+
+function JLPTTestExperience() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId");

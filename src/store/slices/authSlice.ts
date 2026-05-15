@@ -56,7 +56,7 @@ const initialState: AuthState = getInitialAuthState();
 // Async thunk để logout - gọi backend API để clear cookies
 export const logoutThunk = createAsyncThunk(
   "auth/logoutThunk",
-  async (_, { rejectWithValue }) => {
+  async () => {
     try {
       const token = getAccessToken();
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
@@ -75,7 +75,7 @@ export const logoutThunk = createAsyncThunk(
       return true;
     } catch (error) {
       console.error("Logout API error:", error);
-      return rejectWithValue(error);
+      return true;
     } finally {
       clearTokens();
     }

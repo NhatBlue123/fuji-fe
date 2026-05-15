@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import PaywallPopup from "@/components/common/PaywallPopup";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { getJlptTopupPath } from "@/lib/jlpt-topup";
+import { useAuth } from "@/store/hooks";
 import {
   useGetMyAttemptsQuery,
   useGetPublishedTestsQuery,
@@ -27,6 +28,7 @@ const DEFAULT_IMAGE =
 
 export default function JlptPracticePage() {
   const { t } = useTranslation();
+  const { isAuthenticated, isInitialized } = useAuth();
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -71,10 +73,13 @@ export default function JlptPracticePage() {
     search: debouncedSearch,
   });
 
-  const { data: attempts } = useGetMyAttemptsQuery();
+  const canLoadAttempts = isInitialized && isAuthenticated;
+  const { data: attempts } = useGetMyAttemptsQuery(undefined, {
+    skip: !canLoadAttempts,
+  });
 
   const attemptsMap = useMemo(() => {
-    if (!attempts) return {};
+    if (!canLoadAttempts || !attempts) return {};
     const map: Record<number, TestAttemptResult> = {};
 
     attempts.forEach((attempt) => {
@@ -84,7 +89,7 @@ export default function JlptPracticePage() {
     });
 
     return map;
-  }, [attempts]);
+  }, [attempts, canLoadAttempts]);
 
   const tests = data?.content || [];
   const totalPages = data?.totalPages || 1;
@@ -177,7 +182,7 @@ export default function JlptPracticePage() {
                 ? "done"
                 : "new";
 
-              if (status === "new" && jlptTopupRequired) {
+              if (status === "new" && canLoadAttempts && jlptTopupRequired) {
                 status = "locked";
               }
 
@@ -202,6 +207,7 @@ export default function JlptPracticePage() {
                   lockedTitle={topupTitle}
                   lockedButtonLabel={actionLabel}
                   onLockedClick={() => setUpgradeOpen(true)}
+                  requiresAuth={isInitialized && !isAuthenticated}
                 />
               );
             })}

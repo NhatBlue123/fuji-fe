@@ -43,17 +43,22 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/store/hooks";
 
 function JLPTResultPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
+  const { isAuthenticated, isInitialized } = useAuth();
+  const attemptIdNum = attemptId ? Number(attemptId) : 0;
+  const canLoadAttempt =
+    isInitialized && isAuthenticated && Number.isFinite(attemptIdNum) && attemptIdNum > 0;
 
   const {
     data: attempt,
     isLoading,
     error,
-  } = useGetAttemptByIdQuery(Number(attemptId), { skip: !attemptId });
+  } = useGetAttemptByIdQuery(attemptIdNum, { skip: !canLoadAttempt });
 
   const [createExamFeedback, createExamFeedbackState] =
     useCreateExamFeedbackMutation();
@@ -61,14 +66,12 @@ function JLPTResultPageInner() {
   const [feedbackOpen, setFeedbackOpen] = React.useState(false);
 
   // ── AI Assessment ─────────────────────────────────────────────────────────────
-  const attemptIdNum = attemptId ? Number(attemptId) : 0;
-
   const {
     data: assessment,
     isLoading: isGetLoading,
     error: getError,
   } = useGetJlptAiAssessmentQuery(attemptIdNum, {
-    skip: !attemptIdNum,
+    skip: !canLoadAttempt,
   });
 
   const [triggerAssessment, { data: mutateResult, isLoading: isMutationLoading, error: generateError }] =
@@ -90,12 +93,12 @@ function JLPTResultPageInner() {
 
   // Trigger POST only when GET returns 404
   React.useEffect(() => {
-    if (!attemptIdNum || isGetLoading) return;
+    if (!canLoadAttempt || isGetLoading) return;
     if (assessment || assessmentData) return; // already have it
     if (getError && (getError as { status?: number }).status === 404) {
       triggerAssessment(attemptIdNum).catch(() => {});
     }
-  }, [attemptIdNum, isGetLoading, assessment, assessmentData, getError, triggerAssessment]);
+  }, [attemptIdNum, canLoadAttempt, isGetLoading, assessment, assessmentData, getError, triggerAssessment]);
 
   // Loading: GET in flight, or POST triggered and not yet reflected in query cache
   const isAiLoading = isGetLoading || (isMutationLoading && !mutateResult);
@@ -104,12 +107,32 @@ function JLPTResultPageInner() {
     ? ((getError && (getError as { status?: number }).status !== 404) ? getError : generateError)
     : null;
 
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center text-foreground">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mb-4" />
           <p className="text-lg">Đang tải kết quả...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center text-foreground">
+          <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <p className="text-lg font-semibold">Bạn cần đăng nhập để xem kết quả</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Kết quả JLPT chỉ hiển thị cho tài khoản đã làm bài.
+          </p>
+          <Button
+            onClick={() => router.push("/login")}
+            className="mt-6"
+          >
+            Đăng nhập
+          </Button>
         </div>
       </div>
     );

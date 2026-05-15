@@ -1,12 +1,17 @@
 // Listener middleware để handle các auth events
-import { createListenerMiddleware } from "@reduxjs/toolkit";
+import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit";
 import { authApi } from "../services/authApi";
 import {
   loginSuccess,
   logout,
+  logoutThunk,
   tokenRefreshed,
   updateUser,
 } from "../slices/authSlice";
+import {
+  clearUserScopedClientStorage,
+  resetClientApiState,
+} from "../resetClientState";
 import {
   scheduleTokenRefresh,
   cancelScheduledRefresh,
@@ -218,10 +223,11 @@ authListenerMiddleware.startListening({
 
 // Logout → clear mọi thứ
 authListenerMiddleware.startListening({
-  actionCreator: logout,
+  matcher: isAnyOf(logout, logoutThunk.fulfilled, logoutThunk.rejected),
   effect: async (_, listenerApi) => {
     cancelScheduledRefresh();
     clearTokens();
-    listenerApi.dispatch(authApi.util.resetApiState());
+    clearUserScopedClientStorage();
+    resetClientApiState(listenerApi.dispatch as AppDispatch);
   },
 });

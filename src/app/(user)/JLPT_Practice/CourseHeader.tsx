@@ -2,6 +2,8 @@ import React from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 
+const JLPT_PRACTICE_HERO_IMAGE = "/images/a81f5eef-99c1-44bd-9b66-ed87f9a8c40a.png";
+
 export default function CourseHeader() {
   const { t } = useTranslation();
 
@@ -12,8 +14,7 @@ export default function CourseHeader() {
         <div
           className="w-full h-full bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1600&q=80')",
+            backgroundImage: `url('${JLPT_PRACTICE_HERO_IMAGE}')`,
           }}
         />
       </div>

@@ -23,8 +23,7 @@ const CATEGORY_KEY_MAP: Record<string, string> = {
   listening: "jlpt.filter.listening",
 };
 
-const DEFAULT_IMAGE =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCDxFdbUtg2jEo2f1rVJJRTWZBFyHB44-mlAfp-GKLrUnc3cvcH-cYZkH9ydP1YZODRfyQc0x6eBpLw_08krUI8ntpUCInksY4rGhIQ81URRQSBldgEks8NzAQfdI8muIWwfH4RaeSIOQCcSC46f2ShFOMCOQekPfNuYnJdTzqcgOFbRdGgflkzcH3f6CnWfeMZ-BeBwcAsHM_QHKpoJWgS8OFizAnRfRkQ-wkuB1LIA4y2pGlwyGgNB5FumbYYiB57B4jKGJC2xEI";
+const DEFAULT_IMAGE = "/images/a81f5eef-99c1-44bd-9b66-ed87f9a8c40a.png";
 
 export default function JlptPracticePage() {
   const { t } = useTranslation();

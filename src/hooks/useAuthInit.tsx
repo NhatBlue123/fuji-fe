@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { useLazyGetCurrentUserQuery } from "../store/services/authApi";
 import {
@@ -38,12 +39,17 @@ async function refreshAccessToken(): Promise<string | null> {
  */
 export const useAuthInit = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const pathname = usePathname();
   const { isInitialized } = useSelector((state: RootState) => state.auth);
   const [triggerGetCurrentUser] = useLazyGetCurrentUserQuery();
 
   // Khôi phục session khi app mount
   useEffect(() => {
     if (isInitialized) return;
+    if (pathname?.startsWith("/oauth2/redirect")) {
+      dispatch(setInitialized());
+      return;
+    }
 
     const restoreSession = async () => {
       let initialToken = getAccessToken();
@@ -106,7 +112,7 @@ export const useAuthInit = () => {
         } else {
           dispatch(logout());
         }
-      } catch (error) {
+      } catch {
         const refreshedToken = await refreshAccessToken();
         if (!refreshedToken) {
           dispatch(logout());
@@ -123,7 +129,7 @@ export const useAuthInit = () => {
     };
 
     restoreSession();
-  }, [dispatch, isInitialized, triggerGetCurrentUser]);
+  }, [dispatch, isInitialized, pathname, triggerGetCurrentUser]);
 
   // Khi user quay lại tab, refetch user info
   useEffect(() => {

@@ -346,6 +346,8 @@
     "page": {
       "title": "FUJI Course Treasury",
       "subtitle": "High-quality lecture system, exclusively designed for learners. From Beginner N5 to Advanced N1.",
+      "heroTitle": "Japanese courses on <brand>FUJI</brand>",
+      "heroSubtitle": "Learn Japanese from N5 to N1 with professional teachers, AI Chat 24/7, and a complete JLPT practice system.",
       "title_part1": "Explore ",
       "title_part2": " courses"
     },
@@ -365,9 +367,12 @@
       "continueLearning": "Continue Learning",
       "registerFree": "Register for Free",
       "register": "Register",
+      "processing": "Processing...",
       "lessons": "{{count}} lessons",
       "students": "{{count}} students",
       "details": "Details",
+      "viewDetails": "View details",
+      "instructor": "Instructor",
       "noCourses": "No courses found",
       "tryDifferentKeyword": "Try searching with a different keyword",
       "loginToRegister": "Please log in to register for a course.",
@@ -790,6 +795,7 @@
   },
   "booking": {
     "title": "Book with Sensei",
+    "heroTitle": "Book with <highlight>Sensei</highlight>",
     "subtitle": "Find the right teacher and choose an available slot.",
     "mySchedule": "My Schedule",
     "rules": {
@@ -856,6 +862,60 @@
       "someSkippedTitle": "Partial Overlap Detected",
       "someSkippedDesc": "Successfully created {{created}} slots, skipped {{skipped}} slots due to overlap.",
       "conflictListTitle": "Overlapping Slots"
+    },
+    "modal": {
+      "tabs": {
+        "upcoming": "Upcoming",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "manageTeachingSchedule": "Manage teaching schedule",
+      "newBooking": "New booking",
+      "rules": {
+        "title": "Booking rules",
+        "rule1": "Cancelling within 2 hours before the lesson starts will deduct 100% of the fee.",
+        "rule2": "Your booking access may be locked for 24 hours if you cancel too close to class time.",
+        "rule3": "A cancelled slot cannot be re-booked by the same account."
+      },
+      "loading": "Loading your schedule...",
+      "fetchError": "Could not load your schedule. Please check your connection.",
+      "empty": "There are no lessons in this section.",
+      "roles": {
+        "student": "Student",
+        "teacher": "Teacher"
+      },
+      "date": "Date",
+      "time": "Time",
+      "joinRoom": "Join room",
+      "waitingRoom": "Waiting",
+      "joinNotYetTitle": "You can enter the room only within 5 minutes before the start time",
+      "cancel": "Cancel",
+      "endEarly": "End early",
+      "cancelSchedule": "Cancel booking",
+      "viewDetail": "View details",
+      "cancelled": "Cancelled",
+      "summary": {
+        "noData": "AI Summary was not enabled for this lesson or no transcript data is available.",
+        "loadFailed": "Could not load the meeting summary.",
+        "noTranscript": "This lesson has no transcript data. Please enable AI Summary when entering the classroom to collect transcript data.",
+        "createFailed": "Could not generate the summary. Please try again later.",
+        "updateActionFailed": "Could not update the action item."
+      },
+      "alert": {
+        "endEarlyFailed": "Could not end the lesson early. Please try again later.",
+        "cancelFailed": "Could not cancel the booking. Please try again later."
+      },
+      "confirm": {
+        "endEarlyTitle": "Confirm early end",
+        "cancelTitle": "Confirm cancellation",
+        "endEarlyDescription": "The lesson will end immediately and you will not be able to re-enter the room. Are you sure?",
+        "cancelDescription": "You will be charged 50% of the cancellation fee. Are you sure you want to cancel this lesson?",
+        "later": "Later",
+        "ending": "Ending...",
+        "cancelling": "Cancelling...",
+        "endEarlyConfirm": "End early",
+        "cancelConfirm": "Confirm cancel"
+      }
     }
   },
   "settings": {
@@ -952,10 +1012,24 @@
     "badge": "Personal Information",
     "page": {
       "title": "My Profile",
+      "titlePrefix": "My ",
+      "titleHighlight": "Profile",
       "subtitle": "Manage your appearance and contact information."
     },
     "bio": {
       "empty": "No bio yet..."
+    },
+    "tiers": {
+      "premium": "Premium",
+      "pro": "Pro",
+      "basic": "Basic"
+    },
+    "avatarFrame": {
+      "title": "Avatar frame",
+      "allUnlocked": "All frames unlocked",
+      "defaultOnly": "Only free frames are available",
+      "none": "None",
+      "lockedTitle": "{{name}} (locked)"
     },
     "details": {
       "title": "Detailed Information",
@@ -974,6 +1048,22 @@
       "changePassword": "Regularly change password",
       "wallet": "FUJI Wallet",
       "manageWallet": "Manage your balance"
+    },
+    "streak": {
+      "loadError": "Could not load streak",
+      "title": "Learning streak",
+      "subtitle": "Consecutive logins",
+      "current": "Current streak",
+      "dayUnit": "days",
+      "loggedToday": "Logged in today",
+      "messages": {
+        "loginToday": "Log in today to keep your streak!",
+        "start": "Start your streak!",
+        "firstDay": "Good start! Keep going!",
+        "underWeek": "{{count}} consecutive days! Great work!",
+        "underMonth": "{{count}} days! You are doing very well!",
+        "legendary": "{{count}} days! You are a legend!"
+      }
     },
     "logout": {
       "modalTitle": "Want to log out?",
@@ -2316,6 +2406,115 @@
     }
   },
   "videoCall": {
+    "random": {
+      "title": "Random Japanese Call",
+      "subtitle": "Practice Japanese conversation",
+      "localScreen": "Your screen",
+      "cameraOff": "Camera is off.",
+      "waitingPeer": "Waiting for the other learner",
+      "settingUpRoom": "Setting up the call room...",
+      "chooseFilters": "Choose filters, then start matching.",
+      "chooseLevel": "Choose JLPT Level",
+      "matchMode": "Matching mode",
+      "startMatching": "Start matching",
+      "matchModes": {
+        "sameLevel": "Same level",
+        "overLevel": "Over level"
+      },
+      "status": {
+        "deviceError": "Device error",
+        "closed": "Stopped",
+        "ready": "Ready",
+        "connected": "Connected",
+        "matching": "Matching",
+        "preparing": "Preparing",
+        "reconnecting": "Reconnecting"
+      },
+      "controls": {
+        "micOff": "Turn off microphone",
+        "micOn": "Turn on microphone",
+        "cameraOff": "Turn off camera",
+        "cameraOn": "Turn on camera",
+        "stop": "Stop",
+        "matching": "Matching",
+        "next": "Next"
+      },
+      "notice": {
+        "openingMedia": "Opening camera and microphone...",
+        "openingAndConnecting": "Opening camera and connecting...",
+        "connectingServer": "Connecting to server...",
+        "searchingPeer": "Finding a random learner...",
+        "mediaError": "Could not open camera or microphone.",
+        "settingConnection": "Setting up connection...",
+        "signalLostRetrying": "Signal lost, trying to reconnect...",
+        "weakConnectionRetrying": "Weak connection, trying again...",
+        "reconnectFailedSearching": "Could not reconnect. Finding a new learner...",
+        "peerFoundCalling": "Learner found. Calling...",
+        "peerFoundWaiting": "Learner found. Waiting for the call...",
+        "peerLeftSearching": "The other learner left. Finding someone new...",
+        "switchingPeer": "Switching to a new learner...",
+        "searchStopped": "Search stopped.",
+        "cameraReady": "Camera is ready. Choose a level, then start matching.",
+        "signalProcessingError": "An error occurred while handling the call signal.",
+        "serverConnectionError": "Could not connect to the video call server.",
+        "connectionClosed": "Video call connection closed."
+      },
+      "chat": {
+        "title": "Chat",
+        "warning": "You should use Japanese so the practice stays effective on the platform.",
+        "violationCount": "Violations: {{count}}/5",
+        "minutes": "{{count}} minutes",
+        "banMessage": "You are banned from chat for {{remaining}}",
+        "empty": "No messages yet",
+        "sending": "Sending...",
+        "sendFailed": "Send failed",
+        "hiraganaLabel": "Hiragana:",
+        "applySuggestionHint": "(click to convert)",
+        "kanjiSuggestions": "Kanji suggestions",
+        "searching": "Searching...",
+        "noSuggestions": "No suggestions yet",
+        "keyboardHint": "Use arrows to choose · Enter to apply · Esc to close",
+        "bannedPlaceholder": "You are banned from chat",
+        "messagePlaceholder": "Type a message..."
+      },
+      "rules": {
+        "button": "Rules",
+        "viewTitle": "View rules",
+        "title": "Rules before calling",
+        "description": "To avoid being banned from this feature, please read and accept the following rules:",
+        "mandatory": "Required",
+        "progressTitle": "Confirmation progress",
+        "progressCount": "Selected {{count}}/{{total}} required rules",
+        "selectAll": "Select all",
+        "clearAll": "Clear all",
+        "noticeTitle": "Important notice",
+        "noticeDescription": "Violating the rules may lead to a temporary or permanent ban from video calls. The system automatically detects language-related violations.",
+        "acceptReady": "I understand and agree",
+        "acceptPending": "Accept all ({{count}}/{{total}})",
+        "items": {
+          "japaneseOnly": {
+            "title": "Use Japanese only",
+            "description": "Speak or chat in Japanese throughout the call. Do not use Vietnamese, English, or other languages."
+          },
+          "noPii": {
+            "title": "Do not share personal information",
+            "description": "Do not share phone numbers, email addresses, social media accounts, addresses, or any personal information."
+          },
+          "respectful": {
+            "title": "Respect other learners",
+            "description": "Keep a polite and positive attitude. Do not use offensive language or inappropriate behavior."
+          },
+          "noRecord": {
+            "title": "Do not record audio or video",
+            "description": "Do not record images, audio, or call content in any form."
+          },
+          "appropriateContent": {
+            "title": "Keep content appropriate",
+            "description": "Call content must stay appropriate for Japanese practice. Sensitive content is not allowed."
+          }
+        }
+      }
+    },
     "room": {
       "reconnecting": "Reconnecting...",
       "secondsLeft": "{{val}}s left",

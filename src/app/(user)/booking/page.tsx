@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   Ban,
@@ -238,7 +238,12 @@ export default function BookingPage() {
         <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-6 md:px-12 lg:px-20">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
-              {t("booking.title").split("Sensei")[0]}<span className="text-secondary text-glow">Sensei</span>
+              <Trans
+                i18nKey="booking.heroTitle"
+                components={{
+                  highlight: <span className="text-secondary text-glow" />,
+                }}
+              />
             </h1>
             <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-muted-foreground md:text-xl">
               {t("booking.subtitle")}

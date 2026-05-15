@@ -1,6 +1,13 @@
 import Image from "next/image";
 import type { PublicCourseDto } from "./types";
 import CourseCardActions from "@/components/user-component/course/CourseCardActions";
+import {
+  CourseInstructorLine,
+  CourseLessonCount,
+  CourseListHeading,
+  CoursePriceBadge,
+  CourseStudentCount,
+} from "@/components/user-component/course/CoursePageI18nText";
 
 interface CourseListServerProps {
   courses: PublicCourseDto[];
@@ -8,12 +15,6 @@ interface CourseListServerProps {
 
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
-
-function formatPrice(price: number | null | undefined): string {
-  const value = Number(price ?? 0);
-  if (!Number.isFinite(value) || value <= 0) return "Miễn phí";
-  return `${value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
-}
 
 /**
  * Server Component — renders the initial course grid for SSR.
@@ -32,12 +33,11 @@ export function CourseListServer({ courses }: CourseListServerProps) {
 
   return (
     <section
-      aria-label="Danh sách khóa học"
+      aria-label="Course list"
       className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8"
     >
       <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-        <span className="material-symbols-outlined text-secondary">auto_awesome</span>
-        Khóa học nổi bật
+        <CourseListHeading />
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -64,7 +64,7 @@ export function CourseListServer({ courses }: CourseListServerProps) {
 
                 {/* Price badge */}
                 <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
-                  {formatPrice(course.price)}
+                  <CoursePriceBadge price={course.price} />
                 </div>
 
                 {/* Rating badge */}
@@ -98,7 +98,7 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                 {/* Instructor */}
                 {course.instructorName && (
                   <p className="text-xs text-muted-foreground mb-3">
-                    Giảng viên: <span className="font-medium text-foreground">{course.instructorName}</span>
+                    <CourseInstructorLine name={course.instructorName} />
                   </p>
                 )}
 
@@ -107,16 +107,13 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                   {course.lessonCount > 0 && (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-sm">menu_book</span>
-                      {course.lessonCount} bài học
+                      <CourseLessonCount count={course.lessonCount} />
                     </span>
                   )}
                   {course.studentCount > 0 && (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-sm">group</span>
-                      {course.studentCount > 1000
-                        ? `${(course.studentCount / 1000).toFixed(1)}k`
-                        : course.studentCount}{" "}
-                      học viên
+                      <CourseStudentCount count={course.studentCount} />
                     </span>
                   )}
                 </div>

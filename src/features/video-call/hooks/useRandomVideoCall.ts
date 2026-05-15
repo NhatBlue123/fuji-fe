@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { API_CONFIG } from "@/config/api";
 import { getAccessToken } from "@/lib/token";
 import type { ChatViolationType } from "@/types/chat-moderation";
@@ -81,6 +82,7 @@ export function useRandomVideoCall({
   autoStart = false,
   initialPreferences = DEFAULT_MATCH_PREFERENCES,
 }: UseRandomVideoCallOptions = {}) {
+  const { t } = useTranslation();
   const wsRef = useRef<WebSocket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -95,7 +97,7 @@ export function useRandomVideoCall({
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState<VideoCallStatus>("connecting");
-  const [notice, setNotice] = useState("Đang mở camera và micro...");
+  const [noticeKey, setNoticeKey] = useState("videoCall.random.notice.openingMedia");
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [remoteMedia, setRemoteMedia] = useState<RemoteMediaStatus>({
@@ -225,7 +227,7 @@ export function useRandomVideoCall({
 
     autoStartRef.current = true;
     setStatus("connecting");
-    setNotice("Đang mở camera và kết nối...");
+    setNoticeKey("videoCall.random.notice.openingAndConnecting");
     setRemoteStream(null);
     setRemoteMedia({ audio: true, video: true });
     queuedRemoteIceRef.current = [];
@@ -234,12 +236,12 @@ export function useRandomVideoCall({
       .then(() => {
         if (!autoStartRef.current) return;
         if (wsRef.current?.readyState !== WebSocket.OPEN) {
-          setNotice("Đang kết nối máy chủ...");
+          setNoticeKey("videoCall.random.notice.connectingServer");
           return;
         }
 
         setStatus("searching");
-        setNotice("Đang tìm bạn học ngẫu nhiên...");
+        setNoticeKey("videoCall.random.notice.searchingPeer");
         sendSignal({
           type: "ready_for_peer",
           ...matchPreferencesRef.current,
@@ -249,7 +251,7 @@ export function useRandomVideoCall({
         console.warn("[VideoCall] getUserMedia failed.", error);
         sendSignal({ type: "leave" });
         setStatus("error");
-        setNotice("Không mở được camera hoặc micro.");
+        setNoticeKey("videoCall.random.notice.mediaError");
       });
   }, [ensureLocalMedia, sendSignal]);
 
@@ -320,22 +322,22 @@ export function useRandomVideoCall({
       switch (pc.iceConnectionState) {
         case "checking":
           setStatus("calling");
-          setNotice("Đang thiết lập kết nối...");
+          setNoticeKey("videoCall.random.notice.settingConnection");
           break;
         case "connected":
         case "completed":
           clearReconnectTimer();
           setStatus("connected");
-          setNotice("");
+          setNoticeKey("");
           break;
         case "disconnected":
           setStatus("reconnecting");
-          setNotice("Mất tín hiệu, đang thử nối lại...");
+          setNoticeKey("videoCall.random.notice.signalLostRetrying");
           pc.restartIce();
           break;
         case "failed":
           setStatus("reconnecting");
-          setNotice("Kết nối yếu, thử gọi lại...");
+          setNoticeKey("videoCall.random.notice.weakConnectionRetrying");
           clearReconnectTimer();
           reconnectTimerRef.current = setTimeout(() => {
             if (pcRef.current?.iceConnectionState !== "failed") return;
@@ -345,7 +347,7 @@ export function useRandomVideoCall({
                 sendSignal({ type: "offer", offer });
               })
               .catch(() => {
-                setNotice("Không nối lại được. Đang tìm bạn học mới...");
+                setNoticeKey("videoCall.random.notice.reconnectFailedSearching");
                 resetAndSearch();
               });
           }, 3000);
@@ -357,7 +359,7 @@ export function useRandomVideoCall({
       const incomingStream = event.streams[0] ?? new MediaStream([event.track]);
       setRemoteStream(incomingStream);
       setStatus("connected");
-      setNotice("");
+      setNoticeKey("");
 
       const local = localStreamRef.current;
       if (local) {
@@ -510,7 +512,7 @@ export function useRandomVideoCall({
         }
         case "initiateOffer": {
           setStatus("matched");
-          setNotice("Đã tìm thấy bạn học. Đang gọi...");
+          setNoticeKey("videoCall.random.notice.peerFoundCalling");
           await ensurePeerConnection();
           await addLocalTracks();
           const offer = await createOfferWithIceRestart();
@@ -520,7 +522,7 @@ export function useRandomVideoCall({
         }
         case "waitForOffer":
           setStatus("matched");
-          setNotice("Đã tìm thấy bạn học. Đang chờ cuộc gọi...");
+          setNoticeKey("videoCall.random.notice.peerFoundWaiting");
           await ensurePeerConnection();
           await addLocalTracks();
           break;
@@ -563,7 +565,7 @@ export function useRandomVideoCall({
           setRemoteMedia((prev) => ({ ...prev, [data.kind]: data.enabled }));
           break;
         case "leave":
-          setNotice("Bạn học đã rời phòng. Đang tìm người mới...");
+          setNoticeKey("videoCall.random.notice.peerLeftSearching");
           resetAndSearch();
           break;
       }
@@ -613,7 +615,7 @@ export function useRandomVideoCall({
 
   const nextPeer = useCallback(() => {
     sendSignal({ type: "leave" });
-    setNotice("Đang chuyển sang bạn học mới...");
+    setNoticeKey("videoCall.random.notice.switchingPeer");
     resetAndSearch();
   }, [resetAndSearch, sendSignal]);
 
@@ -623,7 +625,7 @@ export function useRandomVideoCall({
     closePeerConnection();
     setChatMessages([]);
     setStatus("closed");
-    setNotice("Đã dừng tìm kiếm.");
+    setNoticeKey("videoCall.random.notice.searchStopped");
   }, [closePeerConnection, sendSignal]);
 
   useEffect(() => {
@@ -634,13 +636,13 @@ export function useRandomVideoCall({
         .then(() => {
           if (!isMounted || autoStartRef.current) return;
           setStatus("idle");
-          setNotice("Camera đã sẵn sàng. Chọn level rồi bắt đầu matching.");
+          setNoticeKey("videoCall.random.notice.cameraReady");
         })
         .catch((error) => {
           if (!isMounted) return;
           console.warn("[VideoCall] getUserMedia failed.", error);
           setStatus("error");
-          setNotice("Không mở được camera hoặc micro.");
+          setNoticeKey("videoCall.random.notice.mediaError");
         });
     }, 0);
 
@@ -653,26 +655,26 @@ export function useRandomVideoCall({
         startSearch(matchPreferencesRef.current);
       } else if (localStreamRef.current) {
         setStatus("idle");
-        setNotice("Camera đã sẵn sàng. Chọn level rồi bắt đầu matching.");
+        setNoticeKey("videoCall.random.notice.cameraReady");
       }
     };
     ws.onmessage = (message) => {
       handleSignalMessage(message).catch((error) => {
         console.error("[VideoCall] Failed to handle signal.", error);
         setStatus("error");
-        setNotice("Có lỗi khi xử lý tín hiệu cuộc gọi.");
+        setNoticeKey("videoCall.random.notice.signalProcessingError");
       });
     };
     ws.onerror = () => {
       if (!isMounted) return;
       setStatus("error");
-      setNotice("Không kết nối được máy chủ video call.");
+      setNoticeKey("videoCall.random.notice.serverConnectionError");
     };
     ws.onclose = () => {
       if (!isMounted) return;
       closePeerConnection();
       setStatus("closed");
-      setNotice("Kết nối video call đã đóng.");
+      setNoticeKey("videoCall.random.notice.connectionClosed");
     };
 
     return () => {
@@ -701,7 +703,7 @@ export function useRandomVideoCall({
     localStream,
     remoteStream,
     status,
-    notice,
+    notice: noticeKey ? t(noticeKey) : "",
     isMicOn,
     isCameraOn,
     remoteMedia,

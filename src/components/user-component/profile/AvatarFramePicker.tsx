@@ -61,12 +61,12 @@ export function AvatarFramePicker({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            {t("profile.avatarFrame.title", { defaultValue: "Khung avatar" })}
+            {t("profile.avatarFrame.title")}
           </p>
           <p className="mt-1 text-xs font-medium text-muted-foreground">
             {hasAnyPackage
-              ? t("profile.avatarFrame.allUnlocked", { defaultValue: "Đã mở toàn bộ khung" })
-              : t("profile.avatarFrame.defaultOnly", { defaultValue: "Chỉ chọn được khung miễn phí" })}
+              ? t("profile.avatarFrame.allUnlocked")
+              : t("profile.avatarFrame.defaultOnly")}
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export function AvatarFramePicker({
           className="h-9 rounded-xl px-3 text-[10px] font-black uppercase tracking-widest"
         >
           <CircleSlash className="mr-2 size-4" />
-          {t("common.none", { defaultValue: "Không" })}
+          {t("profile.avatarFrame.none")}
         </Button>
       </div>
 
@@ -99,7 +99,7 @@ export function AvatarFramePicker({
                 type="button"
                 disabled={!unlocked}
                 onClick={() => handleSelect(frame.src)}
-                title={unlocked ? frame.name : `${frame.name} (locked)`}
+                title={unlocked ? frame.name : t("profile.avatarFrame.lockedTitle", { name: frame.name })}
                 className={cn(
                   "relative aspect-square rounded-2xl border bg-background p-1.5 transition-all",
                   unlocked && "hover:-translate-y-0.5 hover:border-pink-400 hover:shadow-lg",

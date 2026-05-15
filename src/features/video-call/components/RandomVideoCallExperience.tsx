@@ -16,14 +16,13 @@ import {
   Shield,
   AlertTriangle,
   CheckCircle2,
-  X,
-  Volume2,
   Eye,
   EyeOff,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { useRandomVideoCall } from "../hooks/useRandomVideoCall";
 import type { JLPTLevel, VideoCallMatchMode } from "../types";
 import { ChatBox } from "./ChatBox";
@@ -42,16 +41,16 @@ const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];
 
 const MATCH_MODES: Array<{
   value: VideoCallMatchMode;
-  label: string;
+  labelKey: string;
 }> = [
-  { value: "same_level", label: "Cùng level" },
-  { value: "over_level", label: "Over level" },
+  { value: "same_level", labelKey: "videoCall.random.matchModes.sameLevel" },
+  { value: "over_level", labelKey: "videoCall.random.matchModes.overLevel" },
 ];
 
 interface CallRule {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: React.ElementType;
   color: string;
   mandatory: boolean;
@@ -60,40 +59,40 @@ interface CallRule {
 const CALL_RULES: CallRule[] = [
   {
     id: "japanese_only",
-    title: "Chỉ sử dụng tiếng Nhật",
-    description: "Nói hoặc chat tiếng Nhật trong suốt cuộc gọi. Không dùng tiếng Việt, tiếng Anh hay ngôn ngữ khác.",
+    titleKey: "videoCall.random.rules.items.japaneseOnly.title",
+    descriptionKey: "videoCall.random.rules.items.japaneseOnly.description",
     icon: GraduationCap,
     color: "text-blue-600",
     mandatory: true,
   },
   {
     id: "no_pii",
-    title: "Không chia sẻ thông tin cá nhân",
-    description: "Không chia sẻ số điện thoại, email, mạng xã hội, địa chỉ hay bất kỳ thông tin cá nhân nào.",
+    titleKey: "videoCall.random.rules.items.noPii.title",
+    descriptionKey: "videoCall.random.rules.items.noPii.description",
     icon: EyeOff,
     color: "text-purple-600",
     mandatory: true,
   },
   {
     id: "respectful",
-    title: "Tôn trọng người học",
-    description: "Giữ thái độ lịch sự, tích cực. Không sử dụng từ ngữ xúc phạm hay hành vi không phù hợp.",
+    titleKey: "videoCall.random.rules.items.respectful.title",
+    descriptionKey: "videoCall.random.rules.items.respectful.description",
     icon: CheckCircle2,
     color: "text-green-600",
     mandatory: true,
   },
   {
     id: "no_record",
-    title: "Không ghi hình/ghi âm",
-    description: "Không ghi lại hình ảnh, âm thanh hay nội dung cuộc gọi dưới bất kỳ hình thức nào.",
+    titleKey: "videoCall.random.rules.items.noRecord.title",
+    descriptionKey: "videoCall.random.rules.items.noRecord.description",
     icon: Eye,
     color: "text-amber-600",
     mandatory: true,
   },
   {
     id: "appropriate_content",
-    title: "Nội dung phù hợp",
-    description: "Nội dung cuộc gọi phải phù hợp với mục đích luyện tập tiếng Nhật. Không có nội dung nhạy cảm.",
+    titleKey: "videoCall.random.rules.items.appropriateContent.title",
+    descriptionKey: "videoCall.random.rules.items.appropriateContent.description",
     icon: Shield,
     color: "text-rose-600",
     mandatory: true,
@@ -101,6 +100,7 @@ const CALL_RULES: CallRule[] = [
 ];
 
 function RuleItem({ rule, checked, onChange }: { rule: CallRule; checked: boolean; onChange: (checked: boolean) => void }) {
+  const { t } = useTranslation();
   const Icon = rule.icon;
   return (
     <div className="flex items-start gap-4 rounded-xl border p-4 transition-all hover:bg-muted/50">
@@ -110,13 +110,15 @@ function RuleItem({ rule, checked, onChange }: { rule: CallRule; checked: boolea
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-2">
           <Label htmlFor={rule.id} className="font-semibold cursor-pointer">
-            {rule.title}
+            {t(rule.titleKey)}
           </Label>
           {rule.mandatory && (
-            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">Bắt buộc</Badge>
+            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+              {t("videoCall.random.rules.mandatory")}
+            </Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">{rule.description}</p>
+        <p className="text-sm text-muted-foreground">{t(rule.descriptionKey)}</p>
       </div>
       <Checkbox
         id={rule.id}
@@ -129,6 +131,7 @@ function RuleItem({ rule, checked, onChange }: { rule: CallRule; checked: boolea
 }
 
 export default function RandomVideoCallExperience() {
+  const { t } = useTranslation();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [selectedLevel, setSelectedLevel] = useState<JLPTLevel>("N5");
@@ -150,11 +153,26 @@ export default function RandomVideoCallExperience() {
   }, [call.remoteStream]);
 
   const allRulesAccepted = CALL_RULES.every((rule) => acceptedRules[rule.id]);
+  const acceptedRulesCount = CALL_RULES.filter((rule) => acceptedRules[rule.id]).length;
 
   const handleAcceptRules = () => {
     if (allRulesAccepted) {
       setShowRulesDialog(false);
     }
+  };
+
+  const handleToggleAllRules = () => {
+    if (allRulesAccepted) {
+      setAcceptedRules({});
+      return;
+    }
+
+    setAcceptedRules(
+      CALL_RULES.reduce<Record<string, boolean>>((next, rule) => {
+        next[rule.id] = true;
+        return next;
+      }, {}),
+    );
   };
 
   const handleToggleRule = (ruleId: string, checked: boolean) => {
@@ -175,16 +193,16 @@ export default function RandomVideoCallExperience() {
   const canStart = Boolean(call.localStream) && !isBusy;
   const statusLabel =
     call.status === "error"
-      ? "Lỗi thiết bị"
+      ? t("videoCall.random.status.deviceError")
       : call.status === "closed"
-        ? "Đã dừng"
+        ? t("videoCall.random.status.closed")
         : call.status === "idle"
-          ? "Sẵn sàng"
+          ? t("videoCall.random.status.ready")
           : isConnected
-            ? "Đã kết nối"
+            ? t("videoCall.random.status.connected")
             : isMatching
-              ? "Đang matching"
-              : "Đang chuẩn bị";
+              ? t("videoCall.random.status.matching")
+              : t("videoCall.random.status.preparing");
 
   const handleStartMatching = () => {
     if (showRulesDialog && !allRulesAccepted) {
@@ -205,13 +223,40 @@ export default function RandomVideoCallExperience() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
               <Shield className="h-8 w-8 text-white" />
             </div>
-            <DialogTitle className="text-2xl font-bold">Quy định trước khi gọi</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
+              {t("videoCall.random.rules.title")}
+            </DialogTitle>
             <DialogDescription className="text-base">
-              Để tránh bị cấm sử dụng tính năng, vui lòng đọc và chấp nhận các quy định sau:
+              {t("videoCall.random.rules.description")}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-3 py-4">
+            <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold">
+                  {t("videoCall.random.rules.progressTitle")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("videoCall.random.rules.progressCount", {
+                    count: acceptedRulesCount,
+                    total: CALL_RULES.length,
+                  })}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={allRulesAccepted ? "outline" : "secondary"}
+                size="sm"
+                onClick={handleToggleAllRules}
+                className="shrink-0 font-semibold"
+              >
+                {allRulesAccepted
+                  ? t("videoCall.random.rules.clearAll")
+                  : t("videoCall.random.rules.selectAll")}
+              </Button>
+            </div>
+
             {CALL_RULES.map((rule) => (
               <RuleItem
                 key={rule.id}
@@ -227,11 +272,10 @@ export default function RandomVideoCallExperience() {
               <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
               <div className="text-sm">
                 <p className="font-semibold text-amber-800 dark:text-amber-200">
-                  Lưu ý quan trọng
+                  {t("videoCall.random.rules.noticeTitle")}
                 </p>
                 <p className="mt-1 text-amber-700 dark:text-amber-300">
-                  Vi phạm quy định có thể dẫn đến cấm tạm thời hoặc vĩnh viễn khỏi tính năng gọi video. 
-                  Hệ thống tự động phát hiện các vi phạm về ngôn ngữ.
+                  {t("videoCall.random.rules.noticeDescription")}
                 </p>
               </div>
             </div>
@@ -249,14 +293,19 @@ export default function RandomVideoCallExperience() {
               )}
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
-              {allRulesAccepted ? "Đã hiểu và đồng ý" : `Chấp nhận tất cả (${Object.values(acceptedRules).filter(Boolean).length}/${CALL_RULES.length})`}
+              {allRulesAccepted
+                ? t("videoCall.random.rules.acceptReady")
+                : t("videoCall.random.rules.acceptPending", {
+                    count: acceptedRulesCount,
+                    total: CALL_RULES.length,
+                  })}
             </Button>
             <Button
               variant="outline"
               onClick={() => setShowRulesDialog(false)}
               className="h-10"
             >
-              Đóng
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -277,8 +326,10 @@ export default function RandomVideoCallExperience() {
                 <GraduationCap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-semibold">Random Japanese Call</h1>
-                <p className="text-xs text-muted-foreground">Luyện giao tiếp tiếng Nhật</p>
+                <h1 className="font-semibold">{t("videoCall.random.title")}</h1>
+                <p className="text-xs text-muted-foreground">
+                  {t("videoCall.random.subtitle")}
+                </p>
               </div>
             </div>
             <Button
@@ -288,7 +339,7 @@ export default function RandomVideoCallExperience() {
               className="gap-2 border-sky-200 bg-sky-50 hover:bg-sky-100 dark:border-white/10 dark:bg-slate-900/60 dark:hover:bg-slate-800"
             >
               <Shield className="h-4 w-4 text-blue-600" />
-              Quy định
+              {t("videoCall.random.rules.button")}
             </Button>
           </div>
 
@@ -318,11 +369,13 @@ export default function RandomVideoCallExperience() {
                     <VideoOff className="h-9 w-9 text-slate-500 dark:text-slate-400" />
                   )}
                   <div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Màn hình của bạn</h2>
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                      {t("videoCall.random.localScreen")}
+                    </h2>
                     <p className="mt-1 max-w-sm text-sm text-slate-600 dark:text-slate-300">
                       {!call.localStream
                         ? call.notice
-                        : "Camera đang tắt."}
+                        : t("videoCall.random.cameraOff")}
                     </p>
                   </div>
                 </div>
@@ -330,7 +383,7 @@ export default function RandomVideoCallExperience() {
 
               <div className="absolute left-5 top-5 flex items-center gap-2">
                 <Badge className="rounded-full border border-sky-300 bg-sky-50/95 px-3 py-1 text-[11px] text-sky-700 dark:border-white/15 dark:bg-slate-900/75 dark:text-slate-100">
-                  Bạn
+                  {t("common.me")}
                 </Badge>
                 {!call.isMicOn && (
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-300/50 bg-rose-50/90 dark:border-rose-300/20 dark:bg-rose-500/15">
@@ -363,10 +416,10 @@ export default function RandomVideoCallExperience() {
                       )}
                       <div>
                         <h1 className="text-xl font-semibold tracking-wide text-slate-900 dark:text-slate-50">
-                          Đang đợi đối phương
+                          {t("videoCall.random.waitingPeer")}
                         </h1>
                         <p className="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-300">
-                          {call.notice || "Đang thiết lập phòng gọi..."}
+                          {call.notice || t("videoCall.random.settingUpRoom")}
                         </p>
                       </div>
                     </>
@@ -377,17 +430,19 @@ export default function RandomVideoCallExperience() {
                       </div>
                       <div>
                         <h1 className="text-xl font-semibold tracking-wide text-slate-900 dark:text-slate-50">
-                          Random Japanese Call
+                          {t("videoCall.random.title")}
                         </h1>
                         <p className="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-300">
-                          Chọn bộ lọc rồi bắt đầu matching.
+                          {t("videoCall.random.chooseFilters")}
                         </p>
                       </div>
 
                       {/* Level Selection */}
                       <div className="w-full max-w-md space-y-4">
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-muted-foreground">Chọn JLPT Level</Label>
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            {t("videoCall.random.chooseLevel")}
+                          </Label>
                           <div className="grid grid-cols-5 gap-2">
                             {LEVELS.map((level) => (
                               <button
@@ -408,7 +463,9 @@ export default function RandomVideoCallExperience() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-muted-foreground">Chế độ matching</Label>
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            {t("videoCall.random.matchMode")}
+                          </Label>
                           <div className="grid grid-cols-2 gap-2">
                             {MATCH_MODES.map((mode) => (
                               <button
@@ -422,7 +479,7 @@ export default function RandomVideoCallExperience() {
                                 )}
                                 onClick={() => setMatchMode(mode.value)}
                               >
-                                {mode.label}
+                                {t(mode.labelKey)}
                               </button>
                             ))}
                           </div>
@@ -435,7 +492,7 @@ export default function RandomVideoCallExperience() {
                           disabled={!canStart || !allRulesAccepted}
                         >
                           <Radio className="mr-2 h-4 w-4" />
-                          Bắt đầu matching
+                          {t("videoCall.random.startMatching")}
                         </Button>
                       </div>
                     </>
@@ -464,7 +521,7 @@ export default function RandomVideoCallExperience() {
                 </Badge>
                 {call.status === "reconnecting" && (
                   <Badge className="rounded-full border border-amber-400/60 bg-amber-50/95 px-3 py-1 text-[11px] text-amber-700 dark:border-amber-300/30 dark:bg-amber-400/15 dark:text-amber-100">
-                    Đang nối lại
+                    {t("videoCall.random.status.reconnecting")}
                   </Badge>
                 )}
               </div>
@@ -493,7 +550,7 @@ export default function RandomVideoCallExperience() {
               className="h-11 w-11 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700"
               onClick={call.toggleMic}
               disabled={!call.localStream}
-              title={call.isMicOn ? "Tắt micro" : "Bật micro"}
+              title={call.isMicOn ? t("videoCall.random.controls.micOff") : t("videoCall.random.controls.micOn")}
             >
               {call.isMicOn ? <Mic /> : <MicOff />}
             </Button>
@@ -504,7 +561,7 @@ export default function RandomVideoCallExperience() {
               className="h-11 w-11 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700"
               onClick={call.toggleCamera}
               disabled={!call.localStream}
-              title={call.isCameraOn ? "Tắt camera" : "Bật camera"}
+              title={call.isCameraOn ? t("videoCall.random.controls.cameraOff") : t("videoCall.random.controls.cameraOn")}
             >
               {call.isCameraOn ? <Video /> : <VideoOff />}
             </Button>
@@ -523,12 +580,12 @@ export default function RandomVideoCallExperience() {
               {isBusy ? (
                 <>
                   <PhoneOff className="mr-2 h-4 w-4" />
-                  Dừng
+                  {t("videoCall.random.controls.stop")}
                 </>
               ) : (
                 <>
                   <Radio className="mr-2 h-4 w-4" />
-                  Matching
+                  {t("videoCall.random.controls.matching")}
                 </>
               )}
             </Button>
@@ -541,7 +598,7 @@ export default function RandomVideoCallExperience() {
               disabled={!isMatching && !isConnected}
             >
               <SkipForward className="mr-2 h-4 w-4" />
-              Next
+              {t("videoCall.random.controls.next")}
             </Button>
 
             <Button
@@ -550,7 +607,7 @@ export default function RandomVideoCallExperience() {
               size="icon"
               className="h-11 w-11 rounded-full text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
               onClick={handleOpenRules}
-              title="Xem quy định"
+              title={t("videoCall.random.rules.viewTitle")}
             >
               <Shield className="h-5 w-5 text-blue-600" />
             </Button>

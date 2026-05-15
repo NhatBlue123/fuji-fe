@@ -2,29 +2,23 @@ import type { Metadata } from "next";
 import { fetchPublishedCourses } from "@/lib/publicApi";
 import { CourseListServer } from "@/components/seo/CourseListServer";
 import CourseListClient from "@/components/user-component/course/CourseListClient";
+import { CoursePageHeroText } from "@/components/user-component/course/CoursePageI18nText";
 
 export const dynamic = "force-static";
 export const revalidate = 3600;
 
+const COURSE_HERO_IMAGE_PATH = "/images/add18fd4-4014-464b-a78a-e0901a9aeafe.png";
+const COURSE_HERO_IMAGE_URL = `https://fuji.io.vn${COURSE_HERO_IMAGE_PATH}`;
+
 const DEFAULT_OG_IMAGE = {
-  url: "https://fuji.io.vn/images/og-image.jpg",
+  url: COURSE_HERO_IMAGE_URL,
   width: 1200,
   height: 630,
   alt: "Khóa học tiếng Nhật | FUJI",
-  type: "image/jpeg",
+  type: "image/png",
 };
 
-interface SearchParams {
-  level?: string;
-  search?: string;
-  category?: string;
-}
-
-export async function generateMetadata({
-  searchParams: _searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   const title = "Khóa học tiếng Nhật | FUJI";
   const description =
     "Khám phá các khóa học tiếng Nhật từ N5 đến N1 trên FUJI. Học online với giáo viên chuyên nghiệp, luyện đề JLPT, AI Chat 24/7.";
@@ -63,11 +57,7 @@ export async function generateMetadata({
  * Client layer (CourseListClient): handles filter controls by updating
  * the URL. The server component then renders the matching course list.
  */
-export default async function CoursePage({
-  searchParams: _searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function CoursePage() {
   // Fetch initial courses with ISR so /course remains a public SEO page.
   const initialCourses = await fetchPublishedCourses({
     size: 9,
@@ -81,20 +71,12 @@ export default async function CoursePage({
           <div
             className="w-full h-full bg-cover bg-bottom"
             style={{
-              backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c')",
+              backgroundImage: `url('${COURSE_HERO_IMAGE_PATH}')`,
             }}
           />
         </div>
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
-          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3">
-            Khóa học tiếng Nhật trên{" "}
-            <span className="text-secondary text-glow">FUJI</span>
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed">
-            Học tiếng Nhật từ N5 đến N1 với giáo viên chuyên nghiệp, AI Chat
-            24/7 và hệ thống luyện đề JLPT toàn diện.
-          </p>
+          <CoursePageHeroText />
         </div>
       </div>
 

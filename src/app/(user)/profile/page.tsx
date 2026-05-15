@@ -98,7 +98,10 @@ export default function ProfilePage() {
             <User size={12} /> {t("profile.badge")}
           </Badge>
           <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3 uppercase">
-            {t("profile.page.title").split("Cá Nhân")[0]}<span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">{t("profile.page.title").includes("Cá Nhân") ? "Cá Nhân" : ""}</span>
+            {t("profile.page.titlePrefix")}
+            <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">
+              {t("profile.page.titleHighlight")}
+            </span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed mx-auto md:mx-0">
             {t("profile.page.subtitle")}
@@ -139,15 +142,15 @@ export default function ProfilePage() {
                   <Link href="/profile/subscription">
                     {displayTier === 'PREMIUM' ? (
                       <Badge className="bg-gradient-to-r from-pink-500 to-pink-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(236,72,153,0.5)] hover:shadow-[0_0_25px_rgba(236,72,153,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
-                        Premium
+                        {t("profile.tiers.premium")}
                       </Badge>
                     ) : displayTier === 'PRO' ? (
                       <Badge className="bg-gradient-to-r from-cyan-500 to-pink-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:shadow-[0_0_25px_rgba(6,182,212,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
-                        Pro
+                        {t("profile.tiers.pro")}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="border-muted dark:border-white/10 text-muted-foreground dark:text-slate-400 font-black uppercase tracking-widest text-[10px] px-3 py-1 hover:bg-muted/50 dark:hover:bg-white/5 transition-all cursor-pointer hover:border-pink-500/30 hover:text-pink-500 dark:hover:text-pink-400 active:scale-95">
-                        Basic
+                        {t("profile.tiers.basic")}
                       </Badge>
                     )}
                   </Link>

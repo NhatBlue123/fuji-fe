@@ -19,15 +19,15 @@
     "register": "登録",
     "viewAll": "Xem tất cả",
     "noNotifications": "Không có thông báo mới",
-    "profile": "Hồ sơ",
+    "profile": "プロフィール",
     "all": "Tất cả",
     "search": "Tìm kiếm",
     "create": "Tạo mới",
     "edit": "編集",
     "notUpdated": "未更新",
-    "notDetermined": "Chưa xác định",
+    "notDetermined": "未設定",
     "cancel": "キャンセル",
-    "confirm": "Xác nhận",
+    "confirm": "確認",
     "processing": "Đang xử lý...",
     "back": "Quay lại",
     "save": "Lưu thay đổi",
@@ -682,36 +682,41 @@
     "rateSuccess": "Đánh giá khóa học thành công",
     "fetchRatingsSuccess": "Lấy danh sách đánh giá thành công",
     "page": {
-      "title": "Kho tàng khóa học FUJI",
-      "subtitle": "Hệ thống bài giảng chất lượng cao, thiết kế độc quyền cho người Việt. Từ sơ cấp N5 đến cao cấp N1.",
+      "title": "FUJIコースライブラリ",
+      "subtitle": "N5の基礎からN1の上級まで学べる、高品質な講義システムです。",
+      "heroTitle": "<brand>FUJI</brand>の日本語コース",
+      "heroSubtitle": "プロ講師、24時間対応のAIチャット、総合的なJLPT対策システムで、N5からN1まで日本語を学べます。",
       "title_part1": "FUJIで",
       "title_part2": "コースを探索"
     },
     "filter": {
-      "searchPlaceholder": "Tìm kiếm khóa học (VD: Luyện thi N3, Kaiwa...)",
-      "levelLabel": "Trình độ:",
-      "categoryLabel": "Danh mục:",
-      "levelPlaceholder": "Chọn trình độ",
-      "categoryPlaceholder": "Chọn danh mục",
-      "all": "Tất cả",
-      "free": "Miễn phí",
-      "paid": "Tốn phí",
-      "mine": "Của tôi"
+      "searchPlaceholder": "コースを検索（例：N3対策、会話...）",
+      "levelLabel": "レベル:",
+      "categoryLabel": "カテゴリー:",
+      "levelPlaceholder": "レベルを選択",
+      "categoryPlaceholder": "カテゴリーを選択",
+      "all": "すべて",
+      "free": "無料",
+      "paid": "有料",
+      "mine": "自分のコース"
     },
     "list": {
-      "free": "Miễn phí",
-      "continueLearning": "Tiếp tục học",
-      "registerFree": "Đăng ký miễn phí",
-      "register": "Đăng ký",
-      "lessons": "{{count}} bài học",
-      "students": "{{count}} học viên",
-      "details": "Chi tiết",
-      "noCourses": "Không tìm thấy khóa học nào",
-      "tryDifferentKeyword": "Hãy thử tìm kiếm với từ khóa khác",
-      "loginToRegister": "Vui lòng đăng nhập để đăng ký khóa học.",
-      "searchResults": "Kết quả tìm kiếm",
-      "featuredCourses": "Khóa học nổi bật",
-      "courseCount": "{{count}} khóa học"
+      "free": "無料",
+      "continueLearning": "学習を続ける",
+      "registerFree": "無料で登録",
+      "register": "登録",
+      "processing": "処理中...",
+      "lessons": "{{count}} レッスン",
+      "students": "{{count}} 人の受講者",
+      "details": "詳細",
+      "viewDetails": "詳細を見る",
+      "instructor": "講師",
+      "noCourses": "コースが見つかりません",
+      "tryDifferentKeyword": "別のキーワードで検索してください",
+      "loginToRegister": "コースに登録するにはログインしてください。",
+      "searchResults": "検索結果",
+      "featuredCourses": "注目コース",
+      "courseCount": "{{count}} コース"
     },
     "detail": {
       "notFound": "Không tìm thấy khóa học",
@@ -831,30 +836,31 @@
     }
   },
   "booking": {
-    "title": "Đặt lịch cùng Sensei",
-    "subtitle": "Tìm giáo viên phù hợp và chọn khung giờ trống.",
-    "mySchedule": "Lịch của tôi",
+    "title": "先生とのレッスン予約",
+    "heroTitle": "先生との<highlight>レッスン予約</highlight>",
+    "subtitle": "自分に合う講師を探して、空いている時間を選択できます。",
+    "mySchedule": "自分の予約",
     "rules": {
-      "title": "Quy định đặt lịch",
-      "rule1": "Chỉ vào phòng học trước tối đa 5 phút.",
-      "rule2": "Hủy lịch trong vòng 2 giờ trước khi học sẽ mất 100% học phí.",
-      "rule3": "Tài khoản có thể bị khóa chức năng đặt lịch 24 giờ.",
-      "rule4": "Slot đã hủy không thể đặt lại ngay."
+      "title": "予約ルール",
+      "rule1": "授業開始の最大5分前から入室できます。",
+      "rule2": "授業開始2時間以内のキャンセルは受講料が100%差し引かれます。",
+      "rule3": "違反時は予約機能が24時間ロックされる場合があります。",
+      "rule4": "キャンセル済みの枠はすぐに再予約できません。"
     },
-    "searchPlaceholder": "Tìm giáo viên theo tên...",
-    "allSubjects": "Tất cả môn học",
-    "allLevels": "Tất cả cấp độ",
-    "availableTeachers": "{{count}} giáo viên khả dụng",
-    "noTeachers": "Chưa có giáo viên phù hợp",
-    "tryAgain": "Hãy thử đổi ngày, môn học, cấp độ hoặc từ khóa.",
-    "viewProfile": "Hồ sơ giáo viên",
-    "bookNow": "Đặt lịch ngay",
-    "fetchError": "Không tải được danh sách giáo viên.",
-    "instructorEmpty": "Chưa cập nhật",
-    "groupSubject": "{{count}} môn đang mở lịch",
-    "earliest": "Sớm nhất: {{time}}",
-    "slotRemaining": "{{count}} khung giờ trống",
-    "infoDescription": "Giáo viên đang mở {{count}} khung giờ trong ngày {{date}}.",
+    "searchPlaceholder": "講師名で検索...",
+    "allSubjects": "すべての科目",
+    "allLevels": "すべてのレベル",
+    "availableTeachers": "予約可能な講師 {{count}} 人",
+    "noTeachers": "条件に合う講師が見つかりません",
+    "tryAgain": "日付、科目、レベル、またはキーワードを変更してみてください。",
+    "viewProfile": "講師プロフィール",
+    "bookNow": "今すぐ予約",
+    "fetchError": "講師一覧を読み込めませんでした。",
+    "instructorEmpty": "未更新",
+    "groupSubject": "予約可能な科目 {{count}} 件",
+    "earliest": "最短: {{time}}",
+    "slotRemaining": "空き枠 {{count}} 件",
+    "infoDescription": "この講師は {{date}} に {{count}} 件の空き枠があります。",
     "createTitle": "講師スケジュールの作成",
     "mode": {
       "single": "単発セッション",
@@ -898,6 +904,60 @@
       "someSkippedTitle": "一部の重複が検出されました",
       "someSkippedDesc": "{{created}}個のスロットを正常に作成しました。重複のため{{skipped}}個のスロットをスキップしました。",
       "conflictListTitle": "重複しているスロット"
+    },
+    "modal": {
+      "tabs": {
+        "upcoming": "予定",
+        "completed": "完了",
+        "cancelled": "キャンセル済み"
+      },
+      "manageTeachingSchedule": "授業スケジュール管理",
+      "newBooking": "新規予約",
+      "rules": {
+        "title": "予約ルール",
+        "rule1": "授業開始2時間以内にキャンセルすると、受講料が100%差し引かれます。",
+        "rule2": "直前キャンセルをすると、予約機能が24時間ロックされる場合があります。",
+        "rule3": "キャンセル済みの枠は同じアカウントですぐに再予約できません。"
+      },
+      "loading": "予約一覧を読み込み中...",
+      "fetchError": "予約一覧を読み込めませんでした。接続を確認してください。",
+      "empty": "この項目にレッスンはありません。",
+      "roles": {
+        "student": "学習者",
+        "teacher": "講師"
+      },
+      "date": "日付",
+      "time": "時間",
+      "joinRoom": "入室",
+      "waitingRoom": "待機中",
+      "joinNotYetTitle": "入室できるのは開始5分前からです",
+      "cancel": "キャンセル",
+      "endEarly": "早期終了",
+      "cancelSchedule": "予約をキャンセル",
+      "viewDetail": "詳細を見る",
+      "cancelled": "キャンセル済み",
+      "summary": {
+        "noData": "このレッスンではAI Summaryが有効ではないか、transcriptデータがありません。",
+        "loadFailed": "ミーティングサマリーを読み込めませんでした。",
+        "noTranscript": "このレッスンにはtranscriptデータがありません。教室に入るときにAI Summaryを有効にしてください。",
+        "createFailed": "サマリーを作成できませんでした。後でもう一度お試しください。",
+        "updateActionFailed": "アクション項目を更新できませんでした。"
+      },
+      "alert": {
+        "endEarlyFailed": "レッスンを早期終了できませんでした。後でもう一度お試しください。",
+        "cancelFailed": "予約をキャンセルできませんでした。後でもう一度お試しください。"
+      },
+      "confirm": {
+        "endEarlyTitle": "早期終了の確認",
+        "cancelTitle": "キャンセルの確認",
+        "endEarlyDescription": "レッスンはすぐに終了し、再入室できなくなります。よろしいですか？",
+        "cancelDescription": "キャンセル料として50%が発生します。このレッスンをキャンセルしますか？",
+        "later": "後で",
+        "ending": "終了中...",
+        "cancelling": "キャンセル中...",
+        "endEarlyConfirm": "早期終了",
+        "cancelConfirm": "キャンセルする"
+      }
     }
   },
   "settings": {
@@ -991,35 +1051,65 @@
     }
   },
   "profile": {
-    "badge": "Thông tin cá nhân",
+    "badge": "個人情報",
     "page": {
-      "title": "Hồ Sơ Cá Nhân",
-      "subtitle": "Quản lý diện mạo và thông tin liên hệ của bạn."
+      "title": "プロフィール",
+      "titlePrefix": "",
+      "titleHighlight": "プロフィール",
+      "subtitle": "表示と連絡先情報を管理します。"
     },
     "bio": {
-      "empty": "Chưa có tự bạch..."
+      "empty": "自己紹介は未設定です..."
+    },
+    "tiers": {
+      "premium": "プレミアム",
+      "pro": "プロ",
+      "basic": "ベーシック"
+    },
+    "avatarFrame": {
+      "title": "アバターフレーム",
+      "allUnlocked": "すべてのフレームが利用できます",
+      "defaultOnly": "無料フレームのみ選択できます",
+      "none": "なし",
+      "lockedTitle": "{{name}}（ロック中）"
     },
     "details": {
-      "title": "Thông tin chi tiết",
-      "subtitle": "Liên hệ và trình độ ngôn ngữ của bạn",
-      "email": "Email liên hệ",
-      "phone": "Số điện thoại",
-      "joinedDate": "Ngày tham gia",
-      "level": "Trình độ",
-      "jlptLevel": "Tiếng Nhật - {{level}}"
+      "title": "詳細情報",
+      "subtitle": "連絡先と日本語レベル",
+      "email": "連絡先メール",
+      "phone": "電話番号",
+      "joinedDate": "登録日",
+      "level": "レベル",
+      "jlptLevel": "日本語 - {{level}}"
     },
     "rank": {
-      "label": "Hạng học tập"
+      "label": "学習ランク"
     },
     "actions": {
-      "security": "Bảo mật tài khoản",
-      "changePassword": "Đổi mật khẩu định kỳ",
-      "wallet": "Ví FUJI",
-      "manageWallet": "Quản lý số dư"
+      "security": "アカウントセキュリティ",
+      "changePassword": "定期的にパスワードを変更",
+      "wallet": "FUJI ウォレット",
+      "manageWallet": "残高を管理"
+    },
+    "streak": {
+      "loadError": "ストリークを読み込めませんでした",
+      "title": "学習ストリーク",
+      "subtitle": "連続ログイン",
+      "current": "現在のストリーク",
+      "dayUnit": "日",
+      "loggedToday": "本日はログイン済み",
+      "messages": {
+        "loginToday": "今日ログインしてストリークを維持しましょう！",
+        "start": "ストリークを始めましょう！",
+        "firstDay": "良いスタートです！続けましょう！",
+        "underWeek": "{{count}}日連続です！素晴らしいです！",
+        "underMonth": "{{count}}日です！とても順調です！",
+        "legendary": "{{count}}日です！素晴らしい継続力です！"
+      }
     },
     "logout": {
-      "modalTitle": "Đăng xuất?",
-      "modalDesc": "Kết thúc phiên làm việc hiện tại của bạn."
+      "modalTitle": "ログアウトしますか？",
+      "modalDesc": "現在のセッションを終了します。"
     }
   },
   "reports": {
@@ -2284,6 +2374,115 @@
     }
   },
   "videoCall": {
+    "random": {
+      "title": "ランダム日本語通話",
+      "subtitle": "日本語会話を練習",
+      "localScreen": "あなたの画面",
+      "cameraOff": "カメラはオフです。",
+      "waitingPeer": "相手を待っています",
+      "settingUpRoom": "通話ルームを準備中...",
+      "chooseFilters": "条件を選んでマッチングを開始してください。",
+      "chooseLevel": "JLPTレベルを選択",
+      "matchMode": "マッチングモード",
+      "startMatching": "マッチング開始",
+      "matchModes": {
+        "sameLevel": "同じレベル",
+        "overLevel": "上のレベル"
+      },
+      "status": {
+        "deviceError": "デバイスエラー",
+        "closed": "停止しました",
+        "ready": "準備完了",
+        "connected": "接続済み",
+        "matching": "マッチング中",
+        "preparing": "準備中",
+        "reconnecting": "再接続中"
+      },
+      "controls": {
+        "micOff": "マイクをオフ",
+        "micOn": "マイクをオン",
+        "cameraOff": "カメラをオフ",
+        "cameraOn": "カメラをオン",
+        "stop": "停止",
+        "matching": "マッチング",
+        "next": "次へ"
+      },
+      "notice": {
+        "openingMedia": "カメラとマイクを起動中...",
+        "openingAndConnecting": "カメラを起動して接続中...",
+        "connectingServer": "サーバーに接続中...",
+        "searchingPeer": "ランダムな学習者を検索中...",
+        "mediaError": "カメラまたはマイクを起動できませんでした。",
+        "settingConnection": "接続を準備中...",
+        "signalLostRetrying": "信号が途切れました。再接続しています...",
+        "weakConnectionRetrying": "接続が不安定です。再試行しています...",
+        "reconnectFailedSearching": "再接続できませんでした。新しい相手を探しています...",
+        "peerFoundCalling": "相手が見つかりました。通話中...",
+        "peerFoundWaiting": "相手が見つかりました。通話を待っています...",
+        "peerLeftSearching": "相手が退出しました。新しい相手を探しています...",
+        "switchingPeer": "新しい相手に切り替えています...",
+        "searchStopped": "検索を停止しました。",
+        "cameraReady": "カメラの準備ができました。レベルを選んでマッチングを開始してください。",
+        "signalProcessingError": "通話信号の処理中にエラーが発生しました。",
+        "serverConnectionError": "ビデオ通話サーバーに接続できませんでした。",
+        "connectionClosed": "ビデオ通話接続が閉じられました。"
+      },
+      "chat": {
+        "title": "チャット",
+        "warning": "学習効果を保つため、日本語を使用してください。",
+        "violationCount": "違反: {{count}}/5",
+        "minutes": "{{count}}分",
+        "banMessage": "チャットは禁止されています。残り {{remaining}}",
+        "empty": "まだメッセージはありません",
+        "sending": "送信中...",
+        "sendFailed": "送信失敗",
+        "hiraganaLabel": "ひらがな:",
+        "applySuggestionHint": "(クリックして変換)",
+        "kanjiSuggestions": "漢字候補",
+        "searching": "検索中...",
+        "noSuggestions": "候補はまだありません",
+        "keyboardHint": "矢印キーで選択 · Enterで適用 · Escで閉じる",
+        "bannedPlaceholder": "チャットが禁止されています",
+        "messagePlaceholder": "メッセージを入力..."
+      },
+      "rules": {
+        "button": "ルール",
+        "viewTitle": "ルールを見る",
+        "title": "通話前のルール",
+        "description": "この機能の利用停止を避けるため、次のルールを読んで同意してください。",
+        "mandatory": "必須",
+        "progressTitle": "確認状況",
+        "progressCount": "{{count}}/{{total}} 件の必須ルールを選択済み",
+        "selectAll": "すべて選択",
+        "clearAll": "すべて解除",
+        "noticeTitle": "重要なお知らせ",
+        "noticeDescription": "ルール違反は、ビデオ通話機能の一時停止または永久停止につながる場合があります。システムは言語に関する違反を自動検知します。",
+        "acceptReady": "理解して同意します",
+        "acceptPending": "すべて同意 ({{count}}/{{total}})",
+        "items": {
+          "japaneseOnly": {
+            "title": "日本語のみ使用",
+            "description": "通話中は日本語で話す、またはチャットしてください。ベトナム語、英語、その他の言語は使用しないでください。"
+          },
+          "noPii": {
+            "title": "個人情報を共有しない",
+            "description": "電話番号、メール、SNS、住所などの個人情報を共有しないでください。"
+          },
+          "respectful": {
+            "title": "相手を尊重する",
+            "description": "礼儀正しく前向きな態度を保ってください。攻撃的な言葉や不適切な行動は禁止です。"
+          },
+          "noRecord": {
+            "title": "録画・録音禁止",
+            "description": "映像、音声、通話内容をいかなる形でも記録しないでください。"
+          },
+          "appropriateContent": {
+            "title": "適切な内容",
+            "description": "通話内容は日本語練習の目的に適したものにしてください。不適切またはセンシティブな内容は禁止です。"
+          }
+        }
+      }
+    },
     "room": {
       "reconnecting": "再接続中...",
       "secondsLeft": "残り{{val}}秒",

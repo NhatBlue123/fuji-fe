@@ -1,6 +1,7 @@
 "use client";
 
 import { Flame } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useGetStreakQuery } from "@/store/services/progressApi";
 
@@ -10,6 +11,7 @@ interface StreakCardProps {
 }
 
 export function StreakCard({ className, hideMessage = false }: StreakCardProps) {
+  const { t } = useTranslation();
   const { data: streak, isLoading, isError } = useGetStreakQuery();
 
   if (isLoading) {
@@ -24,7 +26,7 @@ export function StreakCard({ className, hideMessage = false }: StreakCardProps) 
     return (
       <div className={cn("rounded-2xl bg-gradient-to-br from-gray-500/20 to-gray-600/20 border border-gray-500/30 p-5", className)}>
         <div className="text-center text-gray-400">
-          <p className="text-sm">Không thể tải streak</p>
+          <p className="text-sm">{t("profile.streak.loadError")}</p>
         </div>
       </div>
     );
@@ -39,21 +41,21 @@ export function StreakCard({ className, hideMessage = false }: StreakCardProps) 
 
   const getStreakMessage = () => {
     if (!streak.loggedInToday) {
-      return "Đăng nhập hôm nay để giữ streak!";
+      return t("profile.streak.messages.loginToday");
     }
     if (streak.streakCount === 0) {
-      return "Bắt đầu streak của bạn!";
+      return t("profile.streak.messages.start");
     }
     if (streak.streakCount === 1) {
-      return "Khởi đầu tốt! Tiếp tục nhé!";
+      return t("profile.streak.messages.firstDay");
     }
     if (streak.streakCount < 7) {
-      return `${streak.streakCount} ngày liên tiếp! Tuyệt vời!`;
+      return t("profile.streak.messages.underWeek", { count: streak.streakCount });
     }
     if (streak.streakCount < 30) {
-      return `${streak.streakCount} ngày! Bạn đang làm rất tốt!`;
+      return t("profile.streak.messages.underMonth", { count: streak.streakCount });
     }
-    return `${streak.streakCount} ngày! Bạn là huyền thoại! 🏆`;
+    return t("profile.streak.messages.legendary", { count: streak.streakCount });
   };
 
   return (
@@ -73,8 +75,8 @@ export function StreakCard({ className, hideMessage = false }: StreakCardProps) 
               <Flame className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">Streak học tập</h3>
-              <p className="text-xs text-white/70">Đăng nhập liên tiếp</p>
+              <h3 className="text-sm font-semibold text-white">{t("profile.streak.title")}</h3>
+              <p className="text-xs text-white/70">{t("profile.streak.subtitle")}</p>
             </div>
           </div>
         </div>
@@ -83,10 +85,10 @@ export function StreakCard({ className, hideMessage = false }: StreakCardProps) 
         <div className="text-center mb-4">
           <div className="inline-flex h-28 w-28 items-center justify-center rounded-full border border-white/20 bg-white/15 shadow-inner backdrop-blur-sm mb-2">
             <div className="text-center">
-              <p className="text-[11px] font-semibold text-white/85">Streak hiện tại</p>
+              <p className="text-[11px] font-semibold text-white/85">{t("profile.streak.current")}</p>
               <p className="mt-1 flex items-baseline justify-center gap-1.5 text-white">
                 <span className="text-3xl font-extrabold leading-none">{streak.streakCount}</span>
-                <span className="text-sm font-semibold leading-none text-white/90">ngày</span>
+                <span className="text-sm font-semibold leading-none text-white/90">{t("profile.streak.dayUnit")}</span>
               </p>
             </div>
           </div>
@@ -100,7 +102,7 @@ export function StreakCard({ className, hideMessage = false }: StreakCardProps) 
             </p>
             {streak.loggedInToday && (
               <p className="text-xs text-white/60 mt-1">
-                ✓ Đã đăng nhập hôm nay
+                {t("profile.streak.loggedToday")}
               </p>
             )}
           </div>

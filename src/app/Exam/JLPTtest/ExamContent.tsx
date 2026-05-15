@@ -485,12 +485,6 @@ const StandardView = ({
         vi: "Nghe đoạn hội thoại và chọn câu trả lời đúng nhất trong 4 đáp án.",
       };
     }
-    if (mondaiNumber === 1) {
-      return {
-        ja: "________の言葉の読み方として最もよいものを、1・2・3・4から一つ選びなさい。",
-        vi: "Chọn cách đọc đúng của từ được gạch chân trong 4 đáp án 1, 2, 3, 4.",
-      };
-    }
     return null;
   };
 

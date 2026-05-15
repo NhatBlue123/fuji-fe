@@ -347,6 +347,8 @@
     "page": {
       "title": "Kho tàng khóa học FUJI",
       "subtitle": "Hệ thống bài giảng chất lượng cao, thiết kế độc quyền cho người Việt. Từ sơ cấp N5 đến cao cấp N1.",
+      "heroTitle": "Khóa học tiếng Nhật trên <brand>FUJI</brand>",
+      "heroSubtitle": "Học tiếng Nhật từ N5 đến N1 với giáo viên chuyên nghiệp, AI Chat 24/7 và hệ thống luyện đề JLPT toàn diện.",
       "title_part1": "Khám phá ",
       "title_part2": " khóa học"
     },
@@ -366,9 +368,12 @@
       "continueLearning": "Tiếp tục học",
       "registerFree": "Đăng ký miễn phí",
       "register": "Đăng ký",
+      "processing": "Đang xử lý...",
       "lessons": "{{count}} bài học",
       "students": "{{count}} học viên",
       "details": "Chi tiết",
+      "viewDetails": "Xem chi tiết",
+      "instructor": "Giảng viên",
       "noCourses": "Không tìm thấy khóa học nào",
       "tryDifferentKeyword": "Hãy thử tìm kiếm với từ khóa khác",
       "loginToRegister": "Vui lòng đăng nhập để đăng ký khóa học.",
@@ -788,6 +793,7 @@
   },
   "booking": {
     "title": "Đặt lịch cùng Sensei",
+    "heroTitle": "Đặt lịch cùng <highlight>Sensei</highlight>",
     "subtitle": "Tìm giáo viên phù hợp và chọn khung giờ trống.",
     "mySchedule": "Lịch của tôi",
     "rules": {
@@ -855,6 +861,60 @@
       "someSkippedTitle": "Tạo lịch có trùng lặp",
       "someSkippedDesc": "Đã tạo {{created}} slot thành công, bỏ qua {{skipped}} slot do trùng giờ với lịch đã tồn tại.",
       "conflictListTitle": "Danh sách lịch bị trùng"
+    },
+    "modal": {
+      "tabs": {
+        "upcoming": "Sắp tới",
+        "completed": "Đã hoàn thành",
+        "cancelled": "Đã hủy"
+      },
+      "manageTeachingSchedule": "Quản lý lịch dạy",
+      "newBooking": "Đặt lịch mới",
+      "rules": {
+        "title": "Quy định booking",
+        "rule1": "Hủy sát giờ học trong 2 giờ trước giờ bắt đầu sẽ bị trừ 100% phí.",
+        "rule2": "Có thể bị khóa đặt lịch 24 giờ nếu hủy sát giờ.",
+        "rule3": "Slot đã hủy sẽ không đặt lại được bởi cùng tài khoản."
+      },
+      "loading": "Đang tải lịch của bạn...",
+      "fetchError": "Không tải được lịch của bạn. Vui lòng kiểm tra lại kết nối.",
+      "empty": "Không có dữ liệu lịch học trong mục này.",
+      "roles": {
+        "student": "Học viên",
+        "teacher": "Giáo viên"
+      },
+      "date": "Ngày",
+      "time": "Giờ",
+      "joinRoom": "Vào phòng",
+      "waitingRoom": "Chờ lớp",
+      "joinNotYetTitle": "Chỉ vào phòng được trước 5 phút so với giờ bắt đầu",
+      "cancel": "Hủy",
+      "endEarly": "Kết thúc sớm",
+      "cancelSchedule": "Hủy lịch",
+      "viewDetail": "Xem chi tiết",
+      "cancelled": "Đã hủy",
+      "summary": {
+        "noData": "AI Summary không được bật trong buổi học này hoặc chưa có dữ liệu transcript.",
+        "loadFailed": "Không thể tải tóm tắt cuộc họp.",
+        "noTranscript": "Buổi học này không có dữ liệu transcript. Vui lòng bật AI Summary khi vào phòng học để thu thập dữ liệu.",
+        "createFailed": "Không thể tạo tóm tắt. Vui lòng thử lại sau.",
+        "updateActionFailed": "Không thể cập nhật việc cần làm."
+      },
+      "alert": {
+        "endEarlyFailed": "Không thể kết thúc sớm, vui lòng thử lại sau.",
+        "cancelFailed": "Không thể hủy lịch, vui lòng thử lại sau."
+      },
+      "confirm": {
+        "endEarlyTitle": "Xác nhận kết thúc sớm",
+        "cancelTitle": "Xác nhận hủy lớp",
+        "endEarlyDescription": "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?",
+        "cancelDescription": "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?",
+        "later": "Để sau",
+        "ending": "Đang kết thúc...",
+        "cancelling": "Đang hủy...",
+        "endEarlyConfirm": "Kết thúc sớm",
+        "cancelConfirm": "Đồng ý hủy"
+      }
     }
   },
   "settings": {
@@ -951,10 +1011,24 @@
     "badge": "Thông tin cá nhân",
     "page": {
       "title": "Hồ Sơ Cá Nhân",
+      "titlePrefix": "Hồ Sơ ",
+      "titleHighlight": "Cá Nhân",
       "subtitle": "Quản lý diện mạo và thông tin liên hệ của bạn."
     },
     "bio": {
       "empty": "Chưa có tự bạch..."
+    },
+    "tiers": {
+      "premium": "Premium",
+      "pro": "Pro",
+      "basic": "Cơ bản"
+    },
+    "avatarFrame": {
+      "title": "Khung avatar",
+      "allUnlocked": "Đã mở toàn bộ khung",
+      "defaultOnly": "Chỉ chọn được khung miễn phí",
+      "none": "Không",
+      "lockedTitle": "{{name}} (đã khóa)"
     },
     "details": {
       "title": "Thông tin chi tiết",
@@ -973,6 +1047,22 @@
       "changePassword": "Đổi mật khẩu định kỳ",
       "wallet": "Ví FUJI",
       "manageWallet": "Quản lý số dư"
+    },
+    "streak": {
+      "loadError": "Không thể tải streak",
+      "title": "Streak học tập",
+      "subtitle": "Đăng nhập liên tiếp",
+      "current": "Streak hiện tại",
+      "dayUnit": "ngày",
+      "loggedToday": "Đã đăng nhập hôm nay",
+      "messages": {
+        "loginToday": "Đăng nhập hôm nay để giữ streak!",
+        "start": "Bắt đầu streak của bạn!",
+        "firstDay": "Khởi đầu tốt! Tiếp tục nhé!",
+        "underWeek": "{{count}} ngày liên tiếp! Tuyệt vời!",
+        "underMonth": "{{count}} ngày! Bạn đang làm rất tốt!",
+        "legendary": "{{count}} ngày! Bạn là huyền thoại!"
+      }
     },
     "logout": {
       "modalTitle": "Đăng xuất?",
@@ -2315,6 +2405,115 @@
     }
   },
   "videoCall": {
+    "random": {
+      "title": "Random Japanese Call",
+      "subtitle": "Luyện giao tiếp tiếng Nhật",
+      "localScreen": "Màn hình của bạn",
+      "cameraOff": "Camera đang tắt.",
+      "waitingPeer": "Đang đợi đối phương",
+      "settingUpRoom": "Đang thiết lập phòng gọi...",
+      "chooseFilters": "Chọn bộ lọc rồi bắt đầu matching.",
+      "chooseLevel": "Chọn JLPT Level",
+      "matchMode": "Chế độ matching",
+      "startMatching": "Bắt đầu matching",
+      "matchModes": {
+        "sameLevel": "Cùng level",
+        "overLevel": "Over level"
+      },
+      "status": {
+        "deviceError": "Lỗi thiết bị",
+        "closed": "Đã dừng",
+        "ready": "Sẵn sàng",
+        "connected": "Đã kết nối",
+        "matching": "Đang matching",
+        "preparing": "Đang chuẩn bị",
+        "reconnecting": "Đang nối lại"
+      },
+      "controls": {
+        "micOff": "Tắt micro",
+        "micOn": "Bật micro",
+        "cameraOff": "Tắt camera",
+        "cameraOn": "Bật camera",
+        "stop": "Dừng",
+        "matching": "Matching",
+        "next": "Tiếp theo"
+      },
+      "notice": {
+        "openingMedia": "Đang mở camera và micro...",
+        "openingAndConnecting": "Đang mở camera và kết nối...",
+        "connectingServer": "Đang kết nối máy chủ...",
+        "searchingPeer": "Đang tìm bạn học ngẫu nhiên...",
+        "mediaError": "Không mở được camera hoặc micro.",
+        "settingConnection": "Đang thiết lập kết nối...",
+        "signalLostRetrying": "Mất tín hiệu, đang thử nối lại...",
+        "weakConnectionRetrying": "Kết nối yếu, thử gọi lại...",
+        "reconnectFailedSearching": "Không nối lại được. Đang tìm bạn học mới...",
+        "peerFoundCalling": "Đã tìm thấy bạn học. Đang gọi...",
+        "peerFoundWaiting": "Đã tìm thấy bạn học. Đang chờ cuộc gọi...",
+        "peerLeftSearching": "Bạn học đã rời phòng. Đang tìm người mới...",
+        "switchingPeer": "Đang chuyển sang bạn học mới...",
+        "searchStopped": "Đã dừng tìm kiếm.",
+        "cameraReady": "Camera đã sẵn sàng. Chọn level rồi bắt đầu matching.",
+        "signalProcessingError": "Có lỗi khi xử lý tín hiệu cuộc gọi.",
+        "serverConnectionError": "Không kết nối được máy chủ video call.",
+        "connectionClosed": "Kết nối video call đã đóng."
+      },
+      "chat": {
+        "title": "Chat",
+        "warning": "Bạn nên sử dụng tiếng Nhật để việc học hiệu quả hơn trên nền tảng.",
+        "violationCount": "Vi phạm: {{count}}/5",
+        "minutes": "{{count}} phút",
+        "banMessage": "Bạn đã bị cấm chat trong {{remaining}}",
+        "empty": "Chưa có tin nhắn nào",
+        "sending": "Đang gửi...",
+        "sendFailed": "Gửi thất bại",
+        "hiraganaLabel": "Hiragana:",
+        "applySuggestionHint": "(bấm để chuyển đổi)",
+        "kanjiSuggestions": "Kanji gợi ý",
+        "searching": "Đang tìm...",
+        "noSuggestions": "Chưa có gợi ý",
+        "keyboardHint": "Dùng phím mũi tên để chọn · Enter để áp dụng · Esc để đóng",
+        "bannedPlaceholder": "Bạn đang bị cấm chat",
+        "messagePlaceholder": "Nhập tin nhắn..."
+      },
+      "rules": {
+        "button": "Quy định",
+        "viewTitle": "Xem quy định",
+        "title": "Quy định trước khi gọi",
+        "description": "Để tránh bị cấm sử dụng tính năng, vui lòng đọc và chấp nhận các quy định sau:",
+        "mandatory": "Bắt buộc",
+        "progressTitle": "Tiến độ xác nhận",
+        "progressCount": "Đã chọn {{count}}/{{total}} quy định bắt buộc",
+        "selectAll": "Chọn tất cả",
+        "clearAll": "Bỏ chọn tất cả",
+        "noticeTitle": "Lưu ý quan trọng",
+        "noticeDescription": "Vi phạm quy định có thể dẫn đến cấm tạm thời hoặc vĩnh viễn khỏi tính năng gọi video. Hệ thống tự động phát hiện các vi phạm về ngôn ngữ.",
+        "acceptReady": "Đã hiểu và đồng ý",
+        "acceptPending": "Chấp nhận tất cả ({{count}}/{{total}})",
+        "items": {
+          "japaneseOnly": {
+            "title": "Chỉ sử dụng tiếng Nhật",
+            "description": "Nói hoặc chat tiếng Nhật trong suốt cuộc gọi. Không dùng tiếng Việt, tiếng Anh hay ngôn ngữ khác."
+          },
+          "noPii": {
+            "title": "Không chia sẻ thông tin cá nhân",
+            "description": "Không chia sẻ số điện thoại, email, mạng xã hội, địa chỉ hay bất kỳ thông tin cá nhân nào."
+          },
+          "respectful": {
+            "title": "Tôn trọng người học",
+            "description": "Giữ thái độ lịch sự, tích cực. Không sử dụng từ ngữ xúc phạm hay hành vi không phù hợp."
+          },
+          "noRecord": {
+            "title": "Không ghi hình/ghi âm",
+            "description": "Không ghi lại hình ảnh, âm thanh hay nội dung cuộc gọi dưới bất kỳ hình thức nào."
+          },
+          "appropriateContent": {
+            "title": "Nội dung phù hợp",
+            "description": "Nội dung cuộc gọi phải phù hợp với mục đích luyện tập tiếng Nhật. Không có nội dung nhạy cảm."
+          }
+        }
+      }
+    },
     "room": {
       "reconnecting": "Đang kết nối lại...",
       "secondsLeft": "{{val}}s còn lại",

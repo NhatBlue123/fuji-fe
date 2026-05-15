@@ -3,12 +3,15 @@ import type { Metadata } from "next";
 export const dynamic = "force-static";
 export const revalidate = 3600;
 
+const JLPT_PRACTICE_HERO_IMAGE_PATH = "/images/a81f5eef-99c1-44bd-9b66-ed87f9a8c40a.png";
+const JLPT_PRACTICE_HERO_IMAGE_URL = `https://fuji.io.vn${JLPT_PRACTICE_HERO_IMAGE_PATH}`;
+
 const DEFAULT_OG_IMAGE = {
-  url: "https://fuji.io.vn/images/og-image.jpg",
+  url: JLPT_PRACTICE_HERO_IMAGE_URL,
   width: 1200,
   height: 630,
   alt: "Luyện đề JLPT N5-N1 | FUJI",
-  type: "image/jpeg",
+  type: "image/png",
 };
 
 export const metadata: Metadata = {

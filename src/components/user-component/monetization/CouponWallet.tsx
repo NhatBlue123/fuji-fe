@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Copy, Ticket } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -151,7 +152,7 @@ function CouponList({ coupons, active }: { coupons: UserCoupon[]; active: boolea
 
 export function CouponWallet() {
   const { t } = useTranslation();
-  const router = require("next/navigation").useRouter();
+  const router = useRouter();
   const { data: coupons = [], isLoading } = useGetMyCouponsQuery();
   const grouped = groupCoupons(coupons);
 

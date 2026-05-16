@@ -475,7 +475,7 @@ export default function AdminRevenuePage() {
                 Báo cáo tài chính FUJI
               </h1>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-                Lợi nhuận ước tính = tổng nạp thành công - công nợ giáo viên sau phí sàn - tiền đã rút của giáo viên.
+                Lợi nhuận ước tính tạm thời = tổng nạp thành công - tiền đã rút của giáo viên. Công nợ sau phí sàn chỉ để đối soát.
               </p>
             </div>
           </div>
@@ -805,7 +805,7 @@ function KpiGrid({ overallFinance }: { overallFinance: OverallFinance }) {
         icon={<LineChartIcon className="h-4 w-4" />}
         label="Lợi nhuận ước tính"
         value={formatVND(overallFinance.estimatedProfitVnd)}
-        helper="Nạp - công nợ - đã rút"
+        helper="Nạp - đã rút"
         tone={overallFinance.estimatedProfitVnd >= 0 ? "blue" : "rose"}
       />
     </div>
@@ -963,14 +963,14 @@ function FormulaCard({
             tone="text-emerald-600"
           />
           <FormulaStep
-            label="Trừ công nợ"
-            value={formatVND(overallFinance.teacherNetDebtVnd)}
-            tone="text-amber-600"
-          />
-          <FormulaStep
             label="Trừ đã rút"
             value={formatVND(overallFinance.cashOutVnd)}
             tone="text-rose-600"
+          />
+          <FormulaStep
+            label="Công nợ tạm chưa trừ"
+            value={formatVND(overallFinance.teacherNetDebtVnd)}
+            tone="text-amber-600"
           />
           <FormulaStep
             label="Lợi nhuận"
@@ -1079,7 +1079,7 @@ function FinancialChartCard({
             Doanh thu & lợi nhuận {timeRangeLabel(mode).toLowerCase()}
           </CardTitle>
           <CardDescription>
-            Biểu đồ dùng cùng công thức: nạp - đã rút - công nợ sau phí sàn {formatPercent(platformFeePercent)}.
+            Biểu đồ tạm dùng công thức: nạp - đã rút. Công nợ sau phí sàn {formatPercent(platformFeePercent)} chỉ hiển thị để đối soát.
           </CardDescription>
         </div>
         <div className="flex w-full flex-wrap gap-2 xl:w-auto xl:justify-end">
@@ -2030,7 +2030,7 @@ function buildOverallFinance({
     teacherGrossDebtVnd,
     teacherNetDebtVnd,
     platformFeeReserveVnd,
-    estimatedProfitVnd: cashInVnd - teacherNetDebtVnd - cashOutVnd,
+    estimatedProfitVnd: cashInVnd - cashOutVnd,
     userPrepaidHoa,
     userPrepaidVnd: liabilityEstimate.userPrepaidVndEquivalent ?? 0,
     adminInternalHoa,
@@ -2114,7 +2114,7 @@ function buildFinancialChartData({
         revenueVnd: item.bankInVnd,
         withdrawnVnd: item.bankOutVnd,
         teacherDebtVnd,
-        estimatedProfitVnd: item.bankInVnd - item.bankOutVnd - teacherDebtVnd,
+        estimatedProfitVnd: item.bankInVnd - item.bankOutVnd,
         grossTradingVnd: bookingVnd + courseVnd,
         bookingVnd,
         courseVnd,

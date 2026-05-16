@@ -50,8 +50,10 @@ interface PageResponse<T> {
 export interface FetchCoursesParams {
   level?: string;
   search?: string;
+  category?: string;
   page?: number;
   size?: number;
+  accessToken?: string;
 }
 
 /**
@@ -62,28 +64,38 @@ export async function fetchPublishedCourses(
   params: FetchCoursesParams = {}
 ): Promise<PublicCourseDto[]> {
   try {
-    const { level, search, page = 0, size = 100 } = params;
+    const { level, search, category, page = 0, size = 100, accessToken } = params;
+    const fetchOptions = accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: "no-store" as const,
+        }
+      : {
+          next: { revalidate: 3600 },
+        };
+
     const url = new URL(`${API_BASE}/public/courses`);
     url.searchParams.set("page", String(page));
     url.searchParams.set("size", String(size));
     if (level && level !== "all") url.searchParams.set("level", level);
+    if (category && category !== "all") url.searchParams.set("category", category);
     if (search) {
       // Use search endpoint when keyword is provided
       const searchUrl = new URL(`${API_BASE}/public/courses/search`);
       searchUrl.searchParams.set("keyword", search);
       searchUrl.searchParams.set("page", String(page));
       searchUrl.searchParams.set("size", String(size));
-      const res = await fetch(searchUrl.toString(), {
-        next: { revalidate: 3600 },
-      });
+      if (level && level !== "all") searchUrl.searchParams.set("level", level);
+      if (category && category !== "all") searchUrl.searchParams.set("category", category);
+      const res = await fetch(searchUrl.toString(), fetchOptions);
       if (!res.ok) return [];
       const json: ApiResponse<PageResponse<PublicCourseDto>> = await res.json();
       return json.data?.content ?? [];
     }
 
-    const res = await fetch(url.toString(), {
-      next: { revalidate: 3600 },
-    });
+    const res = await fetch(url.toString(), fetchOptions);
     if (!res.ok) return [];
     const json: ApiResponse<PageResponse<PublicCourseDto>> = await res.json();
     return json.data?.content ?? [];

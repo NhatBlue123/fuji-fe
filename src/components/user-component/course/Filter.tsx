@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Input from "@/components/common/Input";
 import {
@@ -30,14 +30,29 @@ export default function Filter({
   onFilterChange,
 }: FilterProps) {
   const { t } = useTranslation();
+  const initialCategoryValue = useMemo<CourseCategoryFilter>(
+    () =>
+      ["all", "free", "paid", "mine"].includes(initialCategory)
+        ? (initialCategory as CourseCategoryFilter)
+        : "all",
+    [initialCategory],
+  );
   const [search, setSearch] = useState(initialSearch);
   const [selectedLevel, setSelectedLevel] = useState(initialLevel);
   const [selectedCategory, setSelectedCategory] =
-    useState<CourseCategoryFilter>(
-      ["all", "free", "paid", "mine"].includes(initialCategory)
-        ? (initialCategory as CourseCategoryFilter)
-        : "all"
-    );
+    useState<CourseCategoryFilter>(initialCategoryValue);
+
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    setSelectedLevel(initialLevel);
+  }, [initialLevel]);
+
+  useEffect(() => {
+    setSelectedCategory(initialCategoryValue);
+  }, [initialCategoryValue]);
 
   const LEVELS = useMemo(() => [
     { id: "all", label: t("course.filter.all") },

@@ -56,21 +56,36 @@ export function CourseListServer({ courses }: CourseListServerProps) {
             const slug = course.slug
               ? `/course/${course.slug}-${course.id}`
               : `/course/${course.id}`;
+            const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
+            const imageAlt = course.thumbnailAlt || course.title;
 
-                {/* Price badge */}
-                <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
-                  <CoursePriceBadge price={course.price} />
-                </div>
+            return (
+              <article
+                key={course.id}
+                className="bg-card rounded-2xl overflow-hidden border border-border card-hover-effect group flex flex-col h-full hover:shadow-xl transition-all duration-300"
+              >
+                {/* Thumbnail */}
+                <div className="h-48 relative overflow-hidden">
+                  <Image
+                    src={thumbnail}
+                    alt={imageAlt}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-80" />
 
                   {/* Price badge */}
                   <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
-                    {formatPrice(course.price)}
+                    <CoursePriceBadge price={course.price} />
                   </div>
 
                   {/* Rating badge */}
                   {course.ratingCount > 0 && (
                     <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/60 backdrop-blur px-2 py-1 rounded-lg flex items-center gap-1 text-yellow-600 dark:text-yellow-400 text-xs font-bold border border-black/10 dark:border-white/10 shadow-sm">
-                      <span className="material-symbols-outlined text-sm filled">star</span>
+                      <span className="material-symbols-outlined text-sm filled">
+                        star
+                      </span>
                       {Number(course.averageRating).toFixed(1)}
                     </div>
                   )}
@@ -85,26 +100,20 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                     </span>
                   )}
 
-                {/* Instructor */}
-                {course.instructorName && (
-                  <p className="text-xs text-muted-foreground mb-3">
-                    <CourseInstructorLine name={course.instructorName} />
-                  </p>
-                )}
-
-                {/* Stats */}
-                <div className="mt-auto pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  {course.lessonCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">menu_book</span>
-                      <CourseLessonCount count={course.lessonCount} />
-                    </span>
+                  <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors line-clamp-1">
+                    {course.title}
+                  </h3>
+                  {course.description && (
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
+                      {course.description}
+                    </p>
                   )}
-                  {course.studentCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">group</span>
-                      <CourseStudentCount count={course.studentCount} />
-                    </span>
+
+                  {/* Instructor */}
+                  {course.instructorName && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                      <CourseInstructorLine name={course.instructorName} />
+                    </p>
                   )}
 
                   {/* Stats */}
@@ -112,16 +121,13 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                     {course.lessonCount > 0 && (
                       <span className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">menu_book</span>
-                        {course.lessonCount} bài học
+                        <CourseLessonCount count={course.lessonCount} />
                       </span>
                     )}
                     {course.studentCount > 0 && (
                       <span className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">group</span>
-                        {course.studentCount > 1000
-                          ? `${(course.studentCount / 1000).toFixed(1)}k`
-                          : course.studentCount}{" "}
-                        học viên
+                        <CourseStudentCount count={course.studentCount} />
                       </span>
                     )}
                   </div>

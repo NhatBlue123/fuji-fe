@@ -331,6 +331,7 @@ export default function MySchedulePage() {
                   <p className="text-slate-500 text-xs uppercase tracking-wider">{t("booking.modal.time")}</p>
                   <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
                 </div>
+              </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                 {tab === "UPCOMING" && (
@@ -418,8 +419,8 @@ export default function MySchedulePage() {
                   </span>
                 )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 

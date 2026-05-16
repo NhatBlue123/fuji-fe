@@ -3,6 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import React, { Suspense } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -40,10 +42,58 @@ import {
   ArrowRight,
   CheckCircle2,
   BotMessageSquare,
+  Brain,
+  GraduationCap,
+  ListChecks,
+  Tags,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/hooks";
+
+const assessmentCategoryMeta: Record<string, { label: string; className: string }> = {
+  GRAMMAR: {
+    label: "Ngữ pháp",
+    className: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  },
+  VOCABULARY: {
+    label: "Từ vựng",
+    className: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  },
+  READING: {
+    label: "Đọc hiểu",
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  },
+  LISTENING: {
+    label: "Nghe hiểu",
+    className: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  },
+};
+
+const assessmentPriorityMeta: Record<string, { label: string; className: string }> = {
+  HIGH: { label: "Ưu tiên cao", className: "border-destructive/40 bg-destructive/10 text-destructive" },
+  MEDIUM: { label: "Ưu tiên vừa", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300" },
+  LOW: { label: "Theo dõi", className: "border-muted-foreground/30 bg-muted text-muted-foreground" },
+};
+
+function getCategoryMeta(category?: string) {
+  return assessmentCategoryMeta[category || ""] || assessmentCategoryMeta.GRAMMAR;
+}
+
+function getPriorityMeta(priority?: string) {
+  return assessmentPriorityMeta[priority || ""] || assessmentPriorityMeta.MEDIUM;
+}
+
+function formatHoaPrice(value?: number) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return "Miễn phí";
+  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} hoa`;
+}
+
+function getCourseHref(url?: string, id?: number) {
+  if (url) return url;
+  return id ? `/course/${id}` : "/course";
+}
 
 function JLPTResultPageInner() {
   const router = useRouter();
@@ -244,6 +294,10 @@ function JLPTResultPageInner() {
   };
 
   const suggestion = getSuggestion();
+  const aiKeywords = assessmentData?.keywords ?? [];
+  const aiWeaknesses = assessmentData?.weaknesses ?? [];
+  const aiStudyPlan = assessmentData?.studyPlan ?? [];
+  const aiCourses = assessmentData?.courseRecommendations ?? [];
 
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4">
@@ -529,17 +583,206 @@ function JLPTResultPageInner() {
                 </p>
               </div>
             ) : assessmentData ? (
-              <div className="p-6">
+              <div className="space-y-6 p-6">
                 {assessmentData.generatedAt && (
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-xs text-muted-foreground">
                     Đánh giá lúc {new Date(assessmentData.generatedAt).toLocaleString("vi-VN")}
                   </p>
                 )}
-                <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {aiKeywords.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Tags className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Từ khóa AI phát hiện</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {aiKeywords.map((item) => {
+                        const meta = getCategoryMeta(item.category);
+                        return (
+                          <div
+                            key={`${item.category}-${item.keyword}`}
+                            className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", meta.className)}
+                            title={item.reason}
+                          >
+                            <span>{item.keyword}</span>
+                            <span className="ml-2 opacity-70">{meta.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-emerald-500/5 p-5">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h2: ({ children }) => (
+                        <h2 className="mt-5 first:mt-0 flex items-center gap-2 text-base font-bold text-foreground">
+                          <span className="h-2 w-2 rounded-full bg-primary" />
+                          {children}
+                        </h2>
+                      ),
+                      p: ({ children }) => (
+                        <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                          {children}
+                        </p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="mt-3 space-y-2">
+                          {children}
+                        </ul>
+                      ),
+                      li: ({ children }) => (
+                        <li className="flex gap-2 text-sm leading-7 text-muted-foreground">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                          <span>{children}</span>
+                        </li>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-foreground">{children}</strong>
+                      ),
+                    }}
+                  >
                     {assessmentData.markdown}
                   </ReactMarkdown>
                 </div>
+
+                {aiWeaknesses.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Lỗ hổng cần ưu tiên</h3>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {aiWeaknesses.map((item, index) => {
+                        const categoryMeta = getCategoryMeta(item.category);
+                        const priorityMeta = getPriorityMeta(item.priority);
+                        return (
+                          <div
+                            key={`${item.title}-${index}`}
+                            className="rounded-2xl border bg-background p-4"
+                          >
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <Badge variant="outline" className={cn("border", categoryMeta.className)}>
+                                {categoryMeta.label}
+                              </Badge>
+                              <Badge variant="outline" className={cn("border", priorityMeta.className)}>
+                                {priorityMeta.label}
+                              </Badge>
+                            </div>
+                            <p className="font-semibold leading-snug">{item.title}</p>
+                            {item.evidence && (
+                              <p className="mt-2 text-sm text-muted-foreground">{item.evidence}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {aiStudyPlan.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Lộ trình ôn tập ngắn hạn</h3>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {aiStudyPlan.map((item, index) => (
+                        <div key={`${item.title}-${index}`} className="rounded-2xl border bg-background p-4">
+                          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                            {index + 1}
+                          </div>
+                          <p className="font-semibold leading-snug">{item.title}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+                          {item.days ? (
+                            <p className="mt-3 text-xs font-medium text-primary">{item.days} ngày</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {aiCourses.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Khóa học phù hợp với lỗ hổng kiến thức</h3>
+                    </div>
+                    <div className="grid gap-3">
+                      {aiCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="grid gap-4 rounded-2xl border bg-background p-4 sm:grid-cols-[112px_1fr_auto]"
+                        >
+                          <div className="relative h-24 overflow-hidden rounded-xl border bg-muted sm:h-full">
+                            {course.thumbnailUrl ? (
+                              <Image
+                                src={course.thumbnailUrl}
+                                alt={course.title}
+                                fill
+                                sizes="112px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <BookOpen className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                              {course.level && <Badge variant="secondary">{course.level}</Badge>}
+                              {course.enrolled && <Badge variant="outline">Đang học</Badge>}
+                              {course.matchScore !== undefined && course.matchScore > 0 && (
+                                <Badge variant="outline">Match {Math.round(course.matchScore)}</Badge>
+                              )}
+                            </div>
+                            <h4 className="font-bold leading-snug">{course.title}</h4>
+                            {course.reason && (
+                              <p className="mt-1 text-sm text-muted-foreground">{course.reason}</p>
+                            )}
+                            {course.matchedKeywords && course.matchedKeywords.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {course.matchedKeywords.slice(0, 4).map((keyword) => (
+                                  <span
+                                    key={keyword}
+                                    className="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary"
+                                  >
+                                    {keyword}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {course.matchedLessons && course.matchedLessons.length > 0 && (
+                              <p className="mt-2 text-xs text-muted-foreground">
+                                Bài học liên quan: {course.matchedLessons.slice(0, 2).join(", ")}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end">
+                            <div className="text-left sm:text-right">
+                              <p className="text-sm font-bold text-primary">
+                                {formatHoaPrice(course.priceHoa ?? course.price)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {course.lessonCount || 0} bài học · {course.students || 0} học viên
+                              </p>
+                            </div>
+                            <Button asChild size="sm" className="gap-2">
+                              <Link href={getCourseHref(course.url, course.id)}>
+                                Xem khóa học
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </CardContent>

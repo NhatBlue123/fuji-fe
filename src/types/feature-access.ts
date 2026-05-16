@@ -26,7 +26,10 @@ export interface FeatureAccessData {
 
     // AI Sensei Quota
     aiSenseiDailyLimit: number; // -1 = unlimited, 0 = disabled
-    aiSenseiRemainingToday: number; // -1 = unlimited, 0 = disabled/exhausted
+    aiSenseiDailyUsed?: number;
+    aiSenseiDailyRemaining?: number;
+    aiSenseiPackRemaining?: number;
+    aiSenseiRemainingToday: number; // -1 = unlimited, 0 = exhausted
   };
 }
 

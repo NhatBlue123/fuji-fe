@@ -36,13 +36,13 @@ function formatDuration(minutes: number): string {
 }
 
 function formatDurationReadable(minutes: number, t: any): string {
-  if (!minutes || minutes <= 0) return `0 ${t("common.time.minute") || "phút"}`;
-  if (minutes < 60) return `${minutes} ${t("common.time.minute") || "phút"}`;
+  if (!minutes || minutes <= 0) return `0 ${t("common.duration.minute") || "phút"}`;
+  if (minutes < 60) return `${minutes} ${t("common.duration.minute") || "phút"}`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m > 0
-    ? `${h} ${t("common.time.hour") || "giờ"} ${m} ${t("common.time.minute") || "phút"}`
-    : `${h} ${t("common.time.hour") || "giờ"}`;
+    ? `${h} ${t("common.duration.hour") || "giờ"} ${m} ${t("common.duration.minute") || "phút"}`
+    : `${h} ${t("common.duration.hour") || "giờ"}`;
 }
 
 function extractYouTubeId(url: string): string | null {

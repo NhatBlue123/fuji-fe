@@ -51,6 +51,11 @@ export type SystemPackagePayload = Omit<SystemPackage, "id">;
 
 export interface UserPackage {
   id: number;
+  userId?: number | null;
+  username?: string | null;
+  fullName?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
   packageId: number;
   packageCode: string;
   packageName: string;

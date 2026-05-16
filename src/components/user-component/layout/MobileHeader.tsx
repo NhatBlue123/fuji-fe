@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS, ja } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { parseVietnamDateTime } from "@/lib/vietnam-time";
 
 const HOA_BALANCE_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
   maximumFractionDigits: 20,
@@ -288,7 +289,7 @@ const MobileHeader = () => {
                                   {n.content}
                                 </p>
                                 <span className="text-[9px] text-muted-foreground/40 font-medium mt-1 block">
-                                  {formatDistanceToNow(new Date(n.createdAt), {
+                                  {formatDistanceToNow(parseVietnamDateTime(n.createdAt), {
                                     addSuffix: true,
                                     locale: i18n.language === "vi" ? vi : i18n.language === "ja" ? ja : enUS,
                                   })}

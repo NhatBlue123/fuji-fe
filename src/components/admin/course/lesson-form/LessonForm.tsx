@@ -24,6 +24,8 @@ import {
   useCreateLessonMutation,
   useUpdateLessonMutation,
 } from "@/store/services/courseApi";
+import { API_CONFIG } from "@/config/api";
+import { getAccessToken } from "@/lib/token";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +100,190 @@ const TASK_TYPES: { value: TaskType; label: string }[] = [
   { value: "reading", label: "Đọc hiểu" },
 ];
 
+type UploadPhase = "idle" | "uploading" | "processing";
+
+const MAX_VIDEO_FILE_SIZE_BYTES = 300 * 1024 * 1024;
+const MAX_AUDIO_FILE_SIZE_BYTES = 300 * 1024 * 1024;
+
+type MediaUploadResponse = {
+  id?: number;
+  url: string;
+  publicId?: string;
+  resourceType?: string;
+  size?: number;
+  format?: string;
+};
+
+function formatFileSize(bytes: number): string {
+  if (!bytes) return "0 MB";
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) return `${mb.toFixed(1)} MB`;
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+function buildLessonFormData(
+  lessonData: Record<string, unknown>,
+  videoFile: File | null,
+): FormData {
+  const formData = new FormData();
+  formData.append(
+    "lesson",
+    new Blob([JSON.stringify(lessonData)], {
+      type: "application/json",
+    }),
+  );
+  if (videoFile) {
+    formData.append("video", videoFile);
+  }
+  return formData;
+}
+
+function readApiErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const record = payload as {
+    message?: unknown;
+    error?: { message?: unknown };
+  };
+  if (typeof record.error?.message === "string") return record.error.message;
+  if (typeof record.message === "string") return record.message;
+  return null;
+}
+
+function uploadLessonFormData({
+  endpoint,
+  method,
+  formData,
+  onProgress,
+  onProcessing,
+}: {
+  endpoint: string;
+  method: "POST" | "PATCH";
+  formData: FormData;
+  onProgress: (progress: number) => void;
+  onProcessing: () => void;
+}): Promise<LessonResponseDTO> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, `${API_CONFIG.BASE_URL}${endpoint}`);
+    xhr.withCredentials = true;
+
+    const token = getAccessToken();
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const progress = Math.min(
+        99,
+        Math.round((event.loaded / event.total) * 100),
+      );
+      onProgress(progress);
+      if (event.loaded >= event.total) {
+        onProgress(100);
+        onProcessing();
+      }
+    };
+
+    xhr.onload = () => {
+      let payload: unknown = null;
+      try {
+        payload = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        payload = null;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(100);
+        const data = (payload as { data?: LessonResponseDTO } | null)?.data;
+        resolve(data as LessonResponseDTO);
+        return;
+      }
+
+      reject(
+        new Error(
+          readApiErrorMessage(payload) ||
+            `Upload video thất bại với mã ${xhr.status}`,
+        ),
+      );
+    };
+
+    xhr.onerror = () =>
+      reject(new Error("Không thể kết nối máy chủ khi upload video"));
+    xhr.onabort = () => reject(new Error("Upload video đã bị hủy"));
+    xhr.send(formData);
+  });
+}
+
+function uploadAudioFile({
+  file,
+  onProgress,
+  onProcessing,
+}: {
+  file: File;
+  onProgress: (progress: number) => void;
+  onProcessing: () => void;
+}): Promise<MediaUploadResponse> {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_CONFIG.BASE_URL}/media/upload/audio`);
+    xhr.withCredentials = true;
+
+    const token = getAccessToken();
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const progress = Math.min(
+        99,
+        Math.round((event.loaded / event.total) * 100),
+      );
+      onProgress(progress);
+      if (event.loaded >= event.total) {
+        onProgress(100);
+        onProcessing();
+      }
+    };
+
+    xhr.onload = () => {
+      let payload: unknown = null;
+      try {
+        payload = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        payload = null;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(100);
+        const data = (payload as { data?: MediaUploadResponse } | null)?.data;
+        if (!data?.url) {
+          reject(new Error("Upload audio không trả về URL"));
+          return;
+        }
+        resolve(data);
+        return;
+      }
+
+      reject(
+        new Error(
+          readApiErrorMessage(payload) ||
+            `Upload audio thất bại với mã ${xhr.status}`,
+        ),
+      );
+    };
+
+    xhr.onerror = () =>
+      reject(new Error("Không thể kết nối máy chủ khi upload audio"));
+    xhr.onabort = () => reject(new Error("Upload audio đã bị hủy"));
+    xhr.send(formData);
+  });
+}
+
 // ─── Props ─────────────────────────────────────────────
 
 interface LessonFormProps {
@@ -109,10 +295,21 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
   const isEditing = !!lesson;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const videoPreviewObjectUrlRef = useRef<string | null>(null);
+  const audioPreviewObjectUrlRef = useRef<string | null>(null);
 
   const [createLesson, { isLoading: isCreating }] = useCreateLessonMutation();
   const [updateLesson, { isLoading: isUpdating }] = useUpdateLessonMutation();
-  const isSubmitting = isCreating || isUpdating;
+  const [uploadPhase, setUploadPhase] = useState<UploadPhase>("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [audioUploadPhase, setAudioUploadPhase] =
+    useState<UploadPhase>("idle");
+  const [audioUploadProgress, setAudioUploadProgress] = useState(0);
+  const isUploadingVideo = uploadPhase !== "idle";
+  const isUploadingAudio = audioUploadPhase !== "idle";
+  const isSubmitting =
+    isCreating || isUpdating || isUploadingVideo || isUploadingAudio;
 
   // ─── Form state ────────────────────────────────────
 
@@ -122,9 +319,9 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
   const [isPreview, setIsPreview] = useState(false);
 
   // Video fields
-  const [videoUrl, setVideoUrl] = useState("");
+  const [existingVideoUrl, setExistingVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoType, setVideoType] = useState<"youtube" | "upload">("upload");
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState("");
 
   // Task fields
   const [taskType, setTaskType] = useState<TaskType>("multiple_choice");
@@ -141,6 +338,8 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
 
   // Listening
   const [audioUrl, setAudioUrl] = useState("");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState("");
   const [listeningQuestions, setListeningQuestions] = useState<
     ListeningQuestion[]
   >([]);
@@ -161,8 +360,11 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
     setIsPreview(Boolean(lesson.isPreview));
 
     if (lesson.lessonType === "video") {
-      setVideoUrl(lesson.videoUrl || "");
-      setVideoType(lesson.videoType || "youtube");
+      setExistingVideoUrl(lesson.videoUrl || "");
+      setVideoPreviewUrl(lesson.videoUrl || "");
+      setVideoFile(null);
+      setUploadPhase("idle");
+      setUploadProgress(0);
     } else if (lesson.lessonType === "task") {
       setTaskType(lesson.taskType || "multiple_choice");
       // Parse taskData JSON
@@ -178,6 +380,10 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
             setMatchingItems(parsed.items);
           } else if (lesson.taskType === "listening") {
             setAudioUrl(parsed.audioUrl || "");
+            setAudioPreviewUrl(parsed.audioUrl || "");
+            setAudioFile(null);
+            setAudioUploadPhase("idle");
+            setAudioUploadProgress(0);
             if (parsed.items) setListeningQuestions(parsed.items);
           }
         } catch {
@@ -190,6 +396,17 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
   useEffect(() => {
     populateFromLesson();
   }, [populateFromLesson]);
+
+  useEffect(() => {
+    return () => {
+      if (videoPreviewObjectUrlRef.current) {
+        URL.revokeObjectURL(videoPreviewObjectUrlRef.current);
+      }
+      if (audioPreviewObjectUrlRef.current) {
+        URL.revokeObjectURL(audioPreviewObjectUrlRef.current);
+      }
+    };
+  }, []);
 
   // ─── Multiple Choice Handlers ──────────────────────
 
@@ -457,12 +674,95 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
 
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith("video/")) {
-      setVideoFile(file);
-      setVideoType("upload");
-      setErrors((prev) => ({ ...prev, video: "" }));
-    } else {
+    if (!file) return;
+
+    if (!file.type.startsWith("video/")) {
       setErrors((prev) => ({ ...prev, video: "File không hợp lệ" }));
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_VIDEO_FILE_SIZE_BYTES) {
+      setErrors((prev) => ({
+        ...prev,
+        video: "Video không được vượt quá 300 MB",
+      }));
+      e.target.value = "";
+      return;
+    }
+
+    if (videoPreviewObjectUrlRef.current) {
+      URL.revokeObjectURL(videoPreviewObjectUrlRef.current);
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    videoPreviewObjectUrlRef.current = nextPreviewUrl;
+    setVideoFile(file);
+    setVideoPreviewUrl(nextPreviewUrl);
+    setUploadPhase("idle");
+    setUploadProgress(0);
+    setErrors((prev) => ({ ...prev, video: "" }));
+  };
+
+  const clearSelectedVideo = () => {
+    if (videoPreviewObjectUrlRef.current) {
+      URL.revokeObjectURL(videoPreviewObjectUrlRef.current);
+      videoPreviewObjectUrlRef.current = null;
+    }
+    setVideoFile(null);
+    setVideoPreviewUrl(existingVideoUrl || "");
+    setUploadPhase("idle");
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // ─── Audio file handler ───────────────────────────
+
+  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("audio/")) {
+      setErrors((prev) => ({ ...prev, audio: "File audio không hợp lệ" }));
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_AUDIO_FILE_SIZE_BYTES) {
+      setErrors((prev) => ({
+        ...prev,
+        audio: "Audio không được vượt quá 300 MB",
+      }));
+      e.target.value = "";
+      return;
+    }
+
+    if (audioPreviewObjectUrlRef.current) {
+      URL.revokeObjectURL(audioPreviewObjectUrlRef.current);
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    audioPreviewObjectUrlRef.current = nextPreviewUrl;
+    setAudioFile(file);
+    setAudioPreviewUrl(nextPreviewUrl);
+    setAudioUploadPhase("idle");
+    setAudioUploadProgress(0);
+    setErrors((prev) => ({ ...prev, audio: "" }));
+  };
+
+  const clearSelectedAudio = () => {
+    if (audioPreviewObjectUrlRef.current) {
+      URL.revokeObjectURL(audioPreviewObjectUrlRef.current);
+      audioPreviewObjectUrlRef.current = null;
+    }
+    setAudioFile(null);
+    setAudioPreviewUrl(audioUrl || "");
+    setAudioUploadPhase("idle");
+    setAudioUploadProgress(0);
+    if (audioInputRef.current) {
+      audioInputRef.current.value = "";
     }
   };
 
@@ -475,10 +775,11 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
     if (!content.trim()) newErrors.content = "Nội dung không được để trống";
 
     if (lessonType === "video") {
-      if (videoType === "youtube" && !videoUrl.trim()) {
-        newErrors.video = "Vui lòng nhập URL YouTube hoặc upload video";
-      }
-      if (videoType === "upload" && !videoFile && !isEditing) {
+      const hasExistingVideo =
+        isEditing &&
+        lesson?.lessonType === "video" &&
+        Boolean(existingVideoUrl);
+      if (!videoFile && !hasExistingVideo) {
         newErrors.video = "Vui lòng chọn file video";
       }
     }
@@ -494,7 +795,9 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
       if (taskType === "matching" && matchingItems.length === 0)
         newErrors.task = "Vui lòng thêm ít nhất 1 cặp";
       if (taskType === "listening") {
-        if (!audioUrl.trim()) newErrors.audio = "Vui lòng nhập URL audio";
+        if (!audioFile && !audioUrl.trim()) {
+          newErrors.audio = "Vui lòng upload file audio";
+        }
         if (listeningQuestions.length === 0)
           newErrors.task = "Vui lòng thêm ít nhất 1 câu hỏi";
       }
@@ -511,6 +814,28 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
     if (!validate()) return;
 
     try {
+      let resolvedAudioUrl = audioUrl.trim();
+      if (lessonType === "task" && taskType === "listening" && audioFile) {
+        setAudioUploadPhase("uploading");
+        setAudioUploadProgress(0);
+        const uploadResult = await uploadAudioFile({
+          file: audioFile,
+          onProgress: setAudioUploadProgress,
+          onProcessing: () => setAudioUploadPhase("processing"),
+        });
+        resolvedAudioUrl = uploadResult.url;
+        setAudioUrl(uploadResult.url);
+        setAudioPreviewUrl(uploadResult.url);
+        setAudioFile(null);
+        if (audioPreviewObjectUrlRef.current) {
+          URL.revokeObjectURL(audioPreviewObjectUrlRef.current);
+          audioPreviewObjectUrlRef.current = null;
+        }
+        if (audioInputRef.current) {
+          audioInputRef.current.value = "";
+        }
+      }
+
       // Build lesson JSON
       const lessonData: Record<string, unknown> = {
         courseId,
@@ -520,14 +845,7 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
         isPreview,
       };
 
-      if (lessonType === "video") {
-        if (videoType === "youtube") {
-          lessonData.videoUrl = videoUrl.trim();
-          lessonData.videoType = "youtube";
-        } else {
-          lessonData.videoType = "upload";
-        }
-      } else if (lessonType === "task") {
+      if (lessonType === "task") {
         lessonData.taskType = taskType;
 
         // Build structured taskData JSON
@@ -541,7 +859,7 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
         else if (taskType === "fill_blank") jsonTask.items = fbItems;
         else if (taskType === "matching") jsonTask.items = matchingItems;
         else if (taskType === "listening") {
-          jsonTask.audioUrl = audioUrl.trim();
+          jsonTask.audioUrl = resolvedAudioUrl;
           jsonTask.items = listeningQuestions;
         } else {
           jsonTask.items = [];
@@ -550,39 +868,54 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
         lessonData.taskData = JSON.stringify(jsonTask);
       }
 
-      const formData = new FormData();
-      formData.append(
-        "lesson",
-        new Blob([JSON.stringify(lessonData)], {
-          type: "application/json",
-        }),
-      );
-
-      // Attach video file if uploading
-      if (lessonType === "video" && videoType === "upload" && videoFile) {
-        formData.append("video", videoFile);
-      }
+      const selectedVideoFile = lessonType === "video" ? videoFile : null;
 
       if (isEditing && lesson) {
         // For update, remove courseId from JSON
         delete lessonData.courseId;
-        const updateFormData = new FormData();
-        updateFormData.append(
-          "lesson",
-          new Blob([JSON.stringify(lessonData)], {
-            type: "application/json",
-          }),
+        const updateFormData = buildLessonFormData(
+          lessonData,
+          selectedVideoFile,
         );
-        if (lessonType === "video" && videoType === "upload" && videoFile) {
-          updateFormData.append("video", videoFile);
+
+        if (selectedVideoFile) {
+          setUploadPhase("uploading");
+          setUploadProgress(0);
+          await uploadLessonFormData({
+            endpoint: `/lessons/${lesson.id}`,
+            method: "PATCH",
+            formData: updateFormData,
+            onProgress: setUploadProgress,
+            onProcessing: () => setUploadPhase("processing"),
+          });
+        } else {
+          await updateLesson({
+            id: lesson.id,
+            formData: updateFormData,
+          }).unwrap();
         }
-        await updateLesson({
-          id: lesson.id,
-          formData: updateFormData,
-        }).unwrap();
+
         toast.success("Cập nhật bài học thành công!");
       } else {
-        await createLesson(formData).unwrap();
+        const createFormData = buildLessonFormData(
+          lessonData,
+          selectedVideoFile,
+        );
+
+        if (selectedVideoFile) {
+          setUploadPhase("uploading");
+          setUploadProgress(0);
+          await uploadLessonFormData({
+            endpoint: "/lessons",
+            method: "POST",
+            formData: createFormData,
+            onProgress: setUploadProgress,
+            onProcessing: () => setUploadPhase("processing"),
+          });
+        } else {
+          await createLesson(createFormData).unwrap();
+        }
+
         toast.success("Tạo bài học thành công!");
       }
 
@@ -591,11 +924,15 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
       const error = err as { data?: { message?: string } };
       const msg =
         error?.data?.message ||
+        (err instanceof Error ? err.message : "") ||
         (isEditing
           ? "Đã có lỗi xảy ra khi cập nhật bài học"
           : "Đã có lỗi xảy ra khi tạo bài học");
       toast.error(msg);
       setErrors({ submit: msg });
+    } finally {
+      setUploadPhase("idle");
+      setAudioUploadPhase("idle");
     }
   };
 
@@ -731,28 +1068,100 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
               <CardDescription>Upload file video cho bài học</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoFileChange}
-                  className="hidden"
-                />
-                <Button
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleVideoFileChange}
+                className="hidden"
+              />
+
+              {videoPreviewUrl ? (
+                <div className="space-y-3">
+                  <div className="overflow-hidden rounded-lg border bg-black">
+                    <video
+                      key={videoPreviewUrl}
+                      src={videoPreviewUrl}
+                      controls
+                      className="aspect-video w-full bg-black object-contain"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {videoFile ? videoFile.name : "Video hiện tại"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {videoFile
+                          ? formatFileSize(videoFile.size)
+                          : "Đang lưu trên hệ thống"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isSubmitting}
+                      >
+                        <Upload className="size-4" />
+                        Đổi video
+                      </Button>
+                      {videoFile && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2"
+                          onClick={clearSelectedVideo}
+                          disabled={isSubmitting}
+                        >
+                          <X className="size-4" />
+                          Bỏ video mới
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
                   type="button"
-                  variant="outline"
-                  className="gap-2 w-full h-20 border-dashed"
+                  className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm font-medium transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isSubmitting}
                 >
-                  <Upload className="size-5" />
-                  {videoFile ? videoFile.name : "Chọn file video"}
-                </Button>
-                {errors.video && (
-                  <p className="text-sm text-destructive">{errors.video}</p>
-                )}
-              </div>
+                  <Upload className="size-6 text-muted-foreground" />
+                  Chọn file video
+                  <span className="text-xs font-normal text-muted-foreground">
+                    Tối đa 300 MB
+                  </span>
+                </button>
+              )}
+
+              {isUploadingVideo && (
+                <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>
+                      {uploadPhase === "processing"
+                        ? "Đang xử lý video..."
+                        : "Đang upload video..."}
+                    </span>
+                    <span className="font-medium">{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {errors.video && (
+                <p className="text-sm text-destructive">{errors.video}</p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -1250,23 +1659,103 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
                       Audio
                     </CardTitle>
                     <CardDescription>
-                      Nhập URL file audio cho bài nghe
+                      Upload file audio cho bài nghe
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Input
-                      value={audioUrl}
-                      onChange={(e) => {
-                        setAudioUrl(e.target.value);
-                        setErrors((prev) => ({
-                          ...prev,
-                          audio: "",
-                        }));
-                      }}
-                      placeholder="https://cdn.example.com/audio/lesson.mp3"
-                      disabled={isSubmitting}
-                      className={errors.audio ? "border-destructive" : ""}
+                  <CardContent className="space-y-4">
+                    <input
+                      ref={audioInputRef}
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleAudioFileChange}
+                      className="hidden"
                     />
+
+                    {audioPreviewUrl ? (
+                      <div className="space-y-3">
+                        <div className="rounded-lg border bg-muted/30 p-3">
+                          <audio
+                            key={audioPreviewUrl}
+                            src={audioPreviewUrl}
+                            controls
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {audioFile ? audioFile.name : "Audio hiện tại"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {audioFile
+                                ? formatFileSize(audioFile.size)
+                                : "Đang lưu trên hệ thống"}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => audioInputRef.current?.click()}
+                              disabled={isSubmitting}
+                            >
+                              <Upload className="size-4" />
+                              Đổi audio
+                            </Button>
+                            {audioFile && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="gap-2"
+                                onClick={clearSelectedAudio}
+                                disabled={isSubmitting}
+                              >
+                                <X className="size-4" />
+                                Bỏ audio mới
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm font-medium transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => audioInputRef.current?.click()}
+                        disabled={isSubmitting}
+                      >
+                        <Upload className="size-6 text-muted-foreground" />
+                        Chọn file audio
+                        <span className="text-xs font-normal text-muted-foreground">
+                          MP3, WAV, M4A, OGG - tối đa 300 MB
+                        </span>
+                      </button>
+                    )}
+
+                    {isUploadingAudio && (
+                      <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>
+                            {audioUploadPhase === "processing"
+                              ? "Đang xử lý audio..."
+                              : "Đang upload audio..."}
+                          </span>
+                          <span className="font-medium">
+                            {audioUploadProgress}%
+                          </span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${audioUploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {errors.audio && (
                       <p className="text-sm text-destructive">{errors.audio}</p>
                     )}
@@ -1485,7 +1974,17 @@ export function LessonForm({ courseId, lesson }: LessonFormProps) {
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                {isEditing ? "Đang cập nhật..." : "Đang tạo..."}
+                {isUploadingVideo
+                  ? uploadPhase === "processing"
+                    ? "Đang xử lý..."
+                    : `Đang upload ${uploadProgress}%`
+                  : isUploadingAudio
+                    ? audioUploadPhase === "processing"
+                      ? "Đang xử lý audio..."
+                      : `Đang upload audio ${audioUploadProgress}%`
+                  : isEditing
+                    ? "Đang cập nhật..."
+                    : "Đang tạo..."}
               </>
             ) : (
               <>

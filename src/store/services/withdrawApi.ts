@@ -23,6 +23,12 @@ export interface WithdrawRequestData {
   netPayoutVnd?: number;
 }
 
+export interface WithdrawPolicyData {
+  minWithdrawBlossom: number;
+  vndPerBlossom: number;
+  withdrawPlatformFeeBps: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -46,6 +52,13 @@ export const withdrawApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["Withdraw"],
+    }),
+    getWithdrawPolicy: builder.query<ApiResponse<WithdrawPolicyData>, void>({
+      query: () => ({
+        url: "/withdraw/policy",
+        method: "GET",
+      }),
+      providesTags: ["BookingPolicy"],
     }),
     
     // --- ADMIN ENDPOINTS ---
@@ -101,6 +114,7 @@ export const withdrawApi = baseApi.injectEndpoints({
 export const {
   useCreateWithdrawRequestMutation,
   useGetMyWithdrawRequestsQuery,
+  useGetWithdrawPolicyQuery,
   useGetPendingWithdrawRequestsQuery,
   useGetAllWithdrawRequestsQuery,
   useApproveWithdrawRequestMutation,

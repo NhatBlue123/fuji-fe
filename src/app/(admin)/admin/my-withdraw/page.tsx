@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Banknote,
   CheckCircle2,
@@ -25,6 +26,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -35,12 +42,20 @@ import {
 import {
   useCreateWithdrawRequestMutation,
   useGetMyWithdrawRequestsQuery,
+  useGetWithdrawPolicyQuery,
   type WithdrawRequestData,
 } from "@/store/services/withdrawApi";
 import { useGetWalletQuery } from "@/store/services/walletApi";
+import { VND_PER_FLOWER } from "@/lib/topup";
 
-const MIN_WITHDRAW_AMOUNT = 50;
+const MIN_WITHDRAW_HOA = 50;
+const DEFAULT_WITHDRAW_PLATFORM_FEE_BPS = 3000;
 const numberFormatter = new Intl.NumberFormat("vi-VN");
+const vndFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
 
 type WithdrawFormState = {
   amount: string;
@@ -56,8 +71,61 @@ const initialFormState: WithdrawFormState = {
   accountHolder: "",
 };
 
+const BANK_OPTIONS = [
+  {
+    value: "MBBank",
+    label: "MBBank",
+    name: "Ngân hàng TMCP Quân đội",
+    logoUrl: "https://api.vietqr.io/img/MB.png",
+  },
+  {
+    value: "VietinBank",
+    label: "VietinBank",
+    name: "Ngân hàng TMCP Công thương Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/ICB.png",
+  },
+  {
+    value: "Vietcombank",
+    label: "Vietcombank",
+    name: "Ngân hàng TMCP Ngoại thương Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/VCB.png",
+  },
+  {
+    value: "Techcombank",
+    label: "Techcombank",
+    name: "Ngân hàng TMCP Kỹ thương Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/TCB.png",
+  },
+  {
+    value: "BIDV",
+    label: "BIDV",
+    name: "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+    logoUrl: "https://api.vietqr.io/img/BIDV.png",
+  },
+  {
+    value: "VPBank",
+    label: "VPBank",
+    name: "Ngân hàng TMCP Việt Nam Thịnh Vượng",
+    logoUrl: "https://api.vietqr.io/img/VPB.png",
+  },
+  {
+    value: "ACB",
+    label: "ACB",
+    name: "Ngân hàng TMCP Á Châu",
+    logoUrl: "https://api.vietqr.io/img/ACB.png",
+  },
+] as const;
+
 function formatHoa(value: number | null | undefined) {
   return `${numberFormatter.format(Number(value ?? 0))} 🌸`;
+}
+
+function formatVnd(value: number | null | undefined) {
+  return vndFormatter.format(Number(value ?? 0));
+}
+
+function formatPercentFromBps(value: number) {
+  return `${numberFormatter.format(value / 100)}%`;
 }
 
 function getStatusMeta(status: string) {
@@ -121,9 +189,20 @@ export default function AdminMyWithdrawPage() {
     isLoading: isWithdrawLoading,
     refetch,
   } = useGetMyWithdrawRequestsQuery();
+  const { data: withdrawPolicy } = useGetWithdrawPolicyQuery();
   const [createWithdrawRequest, { isLoading: isCreating }] =
     useCreateWithdrawRequestMutation();
 
+  const minWithdrawHoa = Number(
+    withdrawPolicy?.data?.minWithdrawBlossom ?? MIN_WITHDRAW_HOA,
+  );
+  const vndPerFlower = Number(
+    withdrawPolicy?.data?.vndPerBlossom ?? VND_PER_FLOWER,
+  );
+  const withdrawPlatformFeeBps = Number(
+    withdrawPolicy?.data?.withdrawPlatformFeeBps ??
+      DEFAULT_WITHDRAW_PLATFORM_FEE_BPS,
+  );
   const balance = Number(wallet?.balance ?? 0);
   const frozenBalance = Number(wallet?.frozenBalance ?? 0);
   const availableBalance = Number(
@@ -137,6 +216,18 @@ export default function AdminMyWithdrawPage() {
     (request) =>
       request.status === "PENDING" || request.status === "PROCESSING",
   ).length;
+  const selectedBank = BANK_OPTIONS.find((bank) => bank.value === form.bankName);
+  const withdrawHoa = Number(form.amount);
+  const hasWithdrawHoa =
+    form.amount.trim() !== "" && Number.isFinite(withdrawHoa) && withdrawHoa > 0;
+  const estimatedFeeHoa = hasWithdrawHoa
+    ? Math.floor((withdrawHoa * withdrawPlatformFeeBps) / 10000)
+    : 0;
+  const estimatedNetHoa = hasWithdrawHoa
+    ? Math.max(0, withdrawHoa - estimatedFeeHoa)
+    : 0;
+  const estimatedNetVnd = estimatedNetHoa * vndPerFlower;
+  const remainingHoa = hasWithdrawHoa ? availableBalance - withdrawHoa : availableBalance;
 
   const updateField = (field: keyof WithdrawFormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -150,18 +241,18 @@ export default function AdminMyWithdrawPage() {
     const accountNumber = form.accountNumber.trim();
     const accountHolder = form.accountHolder.trim();
 
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Vui lòng nhập số tiền rút hợp lệ.");
+    if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
+      toast.error("Vui lòng nhập số hoa rút hợp lệ.");
       return;
     }
 
-    if (amount < MIN_WITHDRAW_AMOUNT) {
-      toast.error(`Số tiền rút tối thiểu là ${formatHoa(MIN_WITHDRAW_AMOUNT)}.`);
+    if (amount < minWithdrawHoa) {
+      toast.error(`Số hoa rút tối thiểu là ${formatHoa(minWithdrawHoa)}.`);
       return;
     }
 
-    if (amount > availableBalance) {
-      toast.error("Số tiền rút không được vượt quá số dư khả dụng.");
+    if (amount >= availableBalance) {
+      toast.error("Số hoa rút phải nhỏ hơn số dư khả dụng hiện có.");
       return;
     }
 
@@ -268,32 +359,104 @@ export default function AdminMyWithdrawPage() {
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="withdraw-amount">Số tiền rút</Label>
+                <Label htmlFor="withdraw-amount">Số hoa rút</Label>
                 <Input
                   id="withdraw-amount"
                   type="number"
-                  min={MIN_WITHDRAW_AMOUNT}
+                  min={minWithdrawHoa}
                   step="1"
                   value={form.amount}
                   onChange={(event) => updateField("amount", event.target.value)}
                   placeholder="VD: 500"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Tối thiểu {formatHoa(MIN_WITHDRAW_AMOUNT)}, không vượt quá số
-                  dư khả dụng.
+                  Tối thiểu {formatHoa(minWithdrawHoa)} và nhỏ hơn số dư
+                  khả dụng hiện có.
                 </p>
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      Số tiền ước tính nhận
+                    </span>
+                    <span className="font-semibold">
+                      {formatVnd(estimatedNetVnd)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <span>Đã trừ phí sàn {formatPercentFromBps(withdrawPlatformFeeBps)}</span>
+                    <span>Phí: {formatHoa(estimatedFeeHoa)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <span>1 🌸 = {formatVnd(vndPerFlower)}</span>
+                    <span>
+                      Còn lại:{" "}
+                      {hasWithdrawHoa && remainingHoa >= 0
+                        ? formatHoa(remainingHoa)
+                        : formatHoa(availableBalance)}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="withdraw-bank">Ngân hàng</Label>
-                <Input
-                  id="withdraw-bank"
+                <Select
                   value={form.bankName}
-                  onChange={(event) =>
-                    updateField("bankName", event.target.value)
-                  }
-                  placeholder="VD: Vietcombank"
-                />
+                  onValueChange={(value) => updateField("bankName", value)}
+                >
+                  <SelectTrigger id="withdraw-bank" className="h-11">
+                    {selectedBank ? (
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-7 w-10 shrink-0 items-center justify-center rounded-md border bg-white p-1">
+                          <Image
+                            src={selectedBank.logoUrl}
+                            alt={selectedBank.label}
+                            width={32}
+                            height={20}
+                            className="max-h-full w-auto object-contain"
+                          />
+                        </span>
+                        <span className="truncate font-medium">
+                          {selectedBank.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Chọn ngân hàng nhận tiền
+                      </span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BANK_OPTIONS.map((bank) => (
+                      <SelectItem
+                        key={bank.value}
+                        value={bank.value}
+                        textValue={bank.label}
+                        className="py-2"
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          <span className="flex h-8 w-11 shrink-0 items-center justify-center rounded-md border bg-white p-1">
+                            <Image
+                              src={bank.logoUrl}
+                              alt={bank.label}
+                              width={36}
+                              height={22}
+                              className="max-h-full w-auto object-contain"
+                            />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium">
+                              {bank.label}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {bank.name}
+                            </span>
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

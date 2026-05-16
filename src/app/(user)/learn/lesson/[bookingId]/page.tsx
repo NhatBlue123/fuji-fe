@@ -19,6 +19,7 @@ import {
   useCreateLessonRoomMutation,
   useEndLessonMutation,
   useMarkLessonActiveMutation,
+  useMarkLessonPresenceMutation,
   useGetChatHistoryQuery,
 } from "@/store/services/lessonApi";
 import { useSubmitSessionReviewMutation } from "@/store/services/bookingApi";
@@ -59,7 +60,9 @@ export default function LessonPage() {
   const [endLesson] = useEndLessonMutation();
   const [submitSessionReview] = useSubmitSessionReviewMutation();
   const [markActive] = useMarkLessonActiveMutation();
+  const [markPresence] = useMarkLessonPresenceMutation();
   const autoEndedRef = useRef(false);
+  const presenceLessonIdRef = useRef<number | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [reportRating, setReportRating] = useState(5);
@@ -135,6 +138,24 @@ export default function LessonPage() {
     leave,
   } = useDailyRoom(lessonData?.roomUrl ?? null, lessonData?.token ?? null);
 
+  const sendPresenceKeepalive = useCallback(
+    (lessonId: number, present: boolean) => {
+      if (!accessToken) return;
+      fetch(
+        `${API_CONFIG.BASE_URL}/lessons/${lessonId}/presence/${present ? "join" : "leave"}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          credentials: "include",
+          keepalive: true,
+        }
+      ).catch(() => {});
+    },
+    [accessToken]
+  );
+
   // Voice transcript — streams mic audio to AssemblyAI realtime, saves final turns as transcripts
   // Starts automatically when mic is on, pauses when mic is off
   const voiceTranscript = useVoiceTranscript({
@@ -176,6 +197,46 @@ export default function LessonPage() {
         toast.error(msg);
       });
   }, [bookingId, createRoom, lessonData]);
+
+  useEffect(() => {
+    const lessonId = lessonData?.lessonId;
+    if (!lessonId) return;
+
+    if (!isJoined) {
+      if (presenceLessonIdRef.current === lessonId) {
+        presenceLessonIdRef.current = null;
+        sendPresenceKeepalive(lessonId, false);
+      }
+      return;
+    }
+
+    presenceLessonIdRef.current = lessonId;
+    markPresence({ lessonId, present: true }).unwrap().catch(() => {});
+
+    const heartbeat = window.setInterval(() => {
+      markPresence({ lessonId, present: true }).unwrap().catch(() => {});
+    }, 30_000);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      if (presenceLessonIdRef.current === lessonId) {
+        presenceLessonIdRef.current = null;
+        sendPresenceKeepalive(lessonId, false);
+      }
+    };
+  }, [lessonData?.lessonId, isJoined, markPresence, sendPresenceKeepalive]);
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      const lessonId = presenceLessonIdRef.current;
+      if (!lessonId) return;
+      presenceLessonIdRef.current = null;
+      sendPresenceKeepalive(lessonId, false);
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, [sendPresenceKeepalive]);
 
   // Mark lesson active when both participants have joined
   useEffect(() => {

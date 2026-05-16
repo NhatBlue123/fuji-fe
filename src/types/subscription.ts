@@ -11,6 +11,7 @@ export interface SubscriptionPlan {
 
 export interface SubscriptionMyStatus {
   tier: SubscriptionTier;
+  currentTier?: SubscriptionTier;
   expireAt: string;
   daysRemaining: number;
   autoRenew: boolean;

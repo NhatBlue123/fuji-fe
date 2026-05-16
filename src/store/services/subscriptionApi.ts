@@ -45,7 +45,13 @@ export const subscriptionApi = baseApi.injectEndpoints({
     }),
     getMySubscription: builder.query<SubscriptionMyStatus, void>({
       query: () => "/subscription/me",
-      transformResponse: (res: any) => res?.data || res,
+      transformResponse: (res: any) => {
+        const data = res?.data || res;
+        return {
+          ...data,
+          tier: data?.tier || data?.currentTier || "BASIC",
+        };
+      },
       providesTags: ["Subscription"],
     }),
     toggleAutoRenew: builder.mutation<string, { enable: boolean }>({

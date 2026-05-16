@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { fetchPublishedCourses } from "@/lib/publicApi";
 import { CourseListServer } from "@/components/seo/CourseListServer";
 import CourseListClient from "@/components/user-component/course/CourseListClient";
 import { CoursePageHeroText } from "@/components/user-component/course/CoursePageI18nText";
 
-export const dynamic = "force-static";
 export const revalidate = 3600;
 
 const COURSE_HERO_IMAGE_PATH = "/images/add18fd4-4014-464b-a78a-e0901a9aeafe.png";
@@ -17,6 +17,33 @@ const DEFAULT_OG_IMAGE = {
   alt: "Khóa học tiếng Nhật | FUJI",
   type: "image/png",
 };
+
+interface SearchParams {
+  level?: string;
+  search?: string;
+  category?: string;
+}
+
+type CourseCategoryFilter = "all" | "free" | "paid" | "mine";
+
+const LEVELS = new Set(["all", "n5", "n4", "n3", "n2", "n1"]);
+const CATEGORIES = new Set(["all", "free", "paid", "mine"]);
+
+function normalizeLevel(level?: string): string {
+  const normalized = level?.trim().toLowerCase() || "all";
+  return LEVELS.has(normalized) ? normalized : "all";
+}
+
+function normalizeCategory(category?: string): CourseCategoryFilter {
+  const normalized = category?.trim().toLowerCase() || "all";
+  return CATEGORIES.has(normalized)
+    ? (normalized as CourseCategoryFilter)
+    : "all";
+}
+
+function normalizeSearch(search?: string): string {
+  return search?.trim() || "";
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Khóa học tiếng Nhật | FUJI";
@@ -57,10 +84,27 @@ export async function generateMetadata(): Promise<Metadata> {
  * Client layer (CourseListClient): handles filter controls by updating
  * the URL. The server component then renders the matching course list.
  */
-export default async function CoursePage() {
+export default async function CoursePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const level = normalizeLevel(params.level);
+  const category = normalizeCategory(params.category);
+  const search = normalizeSearch(params.search);
+  const cookieStore = await cookies();
+  const accessToken =
+    cookieStore.get("access_token")?.value ??
+    cookieStore.get("auth_token")?.value;
+
   // Fetch initial courses with ISR so /course remains a public SEO page.
   const initialCourses = await fetchPublishedCourses({
+    level,
+    search,
+    category,
     size: 9,
+    accessToken,
   });
 
   return (
@@ -84,9 +128,9 @@ export default async function CoursePage() {
 
       {/* Filter controls update the URL; the course grid below is rendered server-side. */}
       <CourseListClient
-        initialLevel="all"
-        initialSearch=""
-        initialCategory="all"
+        initialLevel={level}
+        initialSearch={search}
+        initialCategory={category}
       />
 
       <CourseListServer courses={initialCourses} />

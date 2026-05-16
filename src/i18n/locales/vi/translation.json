@@ -2,6 +2,8 @@
   "common": {
     "home": "Trang chủ",
     "course": "Khóa học",
+    "video": "Video",
+    "task": "Bài tập",
     "flashcard": "Thẻ ghi nhớ",
     "management": "Quản lý",
     "notification": "Thông báo",
@@ -10,6 +12,7 @@
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
     "creating": "Đang tạo...",
+    "updating": "Đang cập nhật...",
     "jlptPractice": "Luyện thi JLPT",
     "booking": "Đặt lịch",
     "aiPractice": "AI Sensei",
@@ -27,6 +30,7 @@
     "edit": "Chỉnh sửa",
     "notUpdated": "Chưa cập nhật",
     "notDetermined": "Chưa xác định",
+    "lastUpdated": "Cập nhật lần cuối",
     "cancel": "Hủy",
     "confirm": "Xác nhận",
     "processing": "Đang xử lý...",
@@ -56,6 +60,10 @@
     "action": "Hành động",
     "status": "Trạng thái",
     "time": "Thời gian",
+    "duration": {
+      "hour": "giờ",
+      "minute": "phút"
+    },
     "noAccess": "Không có quyền truy cập",
     "pageInfo": "Trang {{current}} / {{total}}",
     "prev": "Trước",
@@ -71,7 +79,9 @@
     "tryLater": "Vui lòng thử lại sau",
     "tryAgain": "Thử lại",
     "close": "Đóng",
-    "copied": "Đã sao chép"
+    "copied": "Đã sao chép",
+    "quickActions": "Truy cập nhanh",
+    "help": "Trợ giúp"
   },
   "monetization": {
     "terms": {
@@ -210,7 +220,9 @@
     "logoutFailed": "Đăng xuất thất bại",
     "logout": "Đăng xuất",
     "videoCall": "Video Call",
-    "sensei": "Nói với Sensei"
+    "sensei": "Nói với Sensei",
+    "booking": "Đặt lịch",
+    "flashcards": "Thẻ ghi nhớ"
   },
   "languageSwitcher": {
     "title": "Cài đặt ngôn ngữ",
@@ -406,13 +418,33 @@
       "content": "Nội dung bài học",
       "noDescription": "Chưa có mô tả cho bài học này",
       "completed": "Bạn đã hoàn thành bài học này",
+      "markAsDone": "Đánh dấu hoàn thành",
+      "invalidYoutube": "Liên kết YouTube không hợp lệ",
+      "noTaskData": "Bài tập chưa có dữ liệu",
+      "taskUpcoming": "Bài tập sẽ sớm được cập nhật",
+      "completedSuffix": "hoàn thành",
+      "completedCountSuffix": "học viên đã hoàn thành",
+      "lessonPrefix": "Bài",
       "noLessons": "Chưa có bài học nào",
       "completeCourse": "Hoàn thành khóa học",
       "courseContent": "Nội dung khóa học",
+      "tab": {
+        "overview": "Tổng quan",
+        "qa": "Hỏi đáp",
+        "notes": "Ghi chú"
+      },
+      "status": {
+        "learning": "Đang học",
+        "completed": "Đã xong",
+        "notStarted": "Chưa học",
+        "preview": "Xem thử"
+      },
       "lockedTitleSequence": "Bạn cần hoàn thành bài học trước",
       "lockedTitleEnroll": "Bài học này đã bị khóa",
       "lockedDescSequence": "Hãy học xong bài trước để mở bài học này.",
+      "lockedDescSequenceDetailed": "Hãy học xong bài trước để mở \"{{title}}\".",
       "lockedDescEnrollSpecific": "Bạn cần đăng ký khóa học để xem \"{{lesson}}\".",
+      "lockedDescEnrollDetailed": "Bạn cần đăng ký khóa học để xem \"{{title}}\".",
       "lockedDescEnroll": "Bạn cần đăng ký khóa học để xem bài học này.",
       "actionSequence": "Học bài đang mở",
       "actionEnroll": "Về trang khóa học",
@@ -420,6 +452,16 @@
       "actionEnrollAlt": "Đăng ký để mở khóa",
       "labelSequence": "Học bài trước",
       "labelEnroll": "Đăng ký khóa học"
+    },
+    "task": {
+      "type": {
+        "multipleChoice": "Trắc nghiệm",
+        "fillBlank": "Điền vào chỗ trống",
+        "listening": "Nghe hiểu",
+        "matching": "Ghép cặp",
+        "speaking": "Nói",
+        "reading": "Đọc hiểu"
+      }
     },
     "buyFailed": "Không thể thanh toán khóa học. Vui lòng thử lại.",
     "alreadyBought": "Bạn đã mua khóa học này trước đó."

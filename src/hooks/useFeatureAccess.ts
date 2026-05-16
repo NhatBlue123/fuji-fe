@@ -38,7 +38,9 @@ export const useFeatureAccess = () => {
 
     // Feature booleans
     canUseVideoCall: features?.videoCallEnabled ?? false,
-    canUseAiSensei: (features?.aiSenseiDailyLimit ?? 0) !== 0,
+    canUseAiSensei:
+      features?.aiSenseiDailyLimit === -1 ||
+      (features?.aiSenseiRemainingToday ?? 0) > 0,
     hasPrioritySupport: features?.prioritySupportEnabled ?? false,
     flashcardMode: features?.flashcardMode ?? "basic",
 

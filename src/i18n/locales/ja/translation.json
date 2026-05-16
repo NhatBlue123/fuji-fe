@@ -2,6 +2,8 @@
   "common": {
     "home": "ホーム",
     "course": "コース",
+    "video": "動画",
+    "task": "課題",
     "flashcard": "フラッシュカード",
     "management": "管理",
     "notification": "通知",
@@ -10,6 +12,7 @@
     "login": "ログイン",
     "logout": "ログアウト",
     "creating": "作成中...",
+    "updating": "更新中...",
     "jlptPractice": "JLPT 模擬試験",
     "booking": "予約",
     "aiPractice": "AI 練習",
@@ -18,6 +21,7 @@
     "noResults": "結果が見つかりません",
     "register": "登録",
     "viewAll": "Xem tất cả",
+    "viewNow": "今すぐ見る",
     "noNotifications": "Không có thông báo mới",
     "profile": "プロフィール",
     "all": "Tất cả",
@@ -25,7 +29,8 @@
     "create": "Tạo mới",
     "edit": "編集",
     "notUpdated": "未更新",
-    "notDetermined": "未設定",
+    "notDetermined": "Chưa xác định",
+    "lastUpdated": "最終更新",
     "cancel": "キャンセル",
     "confirm": "確認",
     "processing": "Đang xử lý...",
@@ -55,6 +60,10 @@
     "action": "操作",
     "status": "ステータス",
     "time": "時間",
+    "duration": {
+      "hour": "時間",
+      "minute": "分"
+    },
     "noAccess": "アクセス権限がありません",
     "pageInfo": "ページ {{current}} / {{total}}",
     "prev": "前へ",
@@ -70,7 +79,9 @@
     "tryLater": "後でもう一度お試しください",
     "tryAgain": "再試行",
     "close": "閉じる",
-    "copied": "コピーしました"
+    "copied": "コピーしました",
+    "quickActions": "クイック操作",
+    "help": "ヘルプ"
   },
   "monetization": {
     "terms": {
@@ -209,7 +220,9 @@
     "logoutFailed": "ログアウトに失敗しました",
     "logout": "Đăng xuất",
     "videoCall": "ビデオ通話",
-    "sensei": "先生と話す"
+    "sensei": "先生と話す",
+    "booking": "予約",
+    "flashcards": "フラッシュカード"
   },
   "languageSwitcher": {
     "title": "言語設定",
@@ -743,13 +756,33 @@
       "content": "Nội dung bài học",
       "noDescription": "Chưa có mô tả cho bài học này",
       "completed": "Bạn đã hoàn thành bài học này",
+      "markAsDone": "完了としてマーク",
+      "invalidYoutube": "YouTubeリンクが正しくありません",
+      "noTaskData": "課題データがまだありません",
+      "taskUpcoming": "課題は近日更新予定です",
+      "completedSuffix": "完了",
+      "completedCountSuffix": "人が完了",
+      "lessonPrefix": "レッスン",
       "noLessons": "Chưa có bài học nào",
       "completeCourse": "Hoàn thành khóa học",
       "courseContent": "Nội dung khóa học",
+      "tab": {
+        "overview": "概要",
+        "qa": "Q&A",
+        "notes": "メモ"
+      },
+      "status": {
+        "learning": "学習中",
+        "completed": "完了",
+        "notStarted": "未開始",
+        "preview": "プレビュー"
+      },
       "lockedTitleSequence": "Bạn cần hoàn thành bài học trước",
       "lockedTitleEnroll": "Bài học này đã bị khóa",
       "lockedDescSequence": "Hãy học xong bài trước để mở bài học này.",
+      "lockedDescSequenceDetailed": "前のレッスンを完了すると「{{title}}」を開けます。",
       "lockedDescEnrollSpecific": "Bạn cần đăng ký khóa học để xem \"{{lesson}}\".",
+      "lockedDescEnrollDetailed": "このコースに登録すると「{{title}}」を閲覧できます。",
       "lockedDescEnroll": "Bạn cần đăng ký khóa học để xem bài học này.",
       "actionSequence": "Học bài đang mở",
       "actionEnroll": "Về trang khóa học",
@@ -757,6 +790,16 @@
       "actionEnrollAlt": "Đăng ký để mở khóa",
       "labelSequence": "Học bài trước",
       "labelEnroll": "Đăng ký khóa học"
+    },
+    "task": {
+      "type": {
+        "multipleChoice": "選択問題",
+        "fillBlank": "穴埋め",
+        "listening": "リスニング",
+        "matching": "マッチング",
+        "speaking": "スピーキング",
+        "reading": "読解"
+      }
     },
     "buyFailed": "Không thể thanh toán khóa học. Vui lòng thử lại.",
     "alreadyBought": "Bạn đã mua khóa học này trước đó."

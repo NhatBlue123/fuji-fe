@@ -7,6 +7,7 @@ import type { NextRequest } from "next/server";
  * for these paths. The HTML <meta name="robots"> tag is handled separately
  * via Next.js metadata exports in each route's layout.tsx.
  */
+// Các đường dẫn riêng tư mà không bao giờ được lập chỉ mục bởi các công cụ tìm kiếm.
 const PRIVATE_PATHS = [
   "/api",
   "/admin",
@@ -35,15 +36,14 @@ const PRIVATE_PATHS = [
  * Backend API base URL, used for course slug lookups during URL canonicalization.
  * Must be an absolute URL accessible from the Next.js proxy runtime.
  */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8181/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8181/api";
 
 /**
  * Fetch the canonical slug for a course ID from the public API.
  * Returns null on any error so the proxy fails closed and passes through.
  */
 async function fetchCourseSlug(
-  courseId: string
+  courseId: string,
 ): Promise<{ slug: string; id: number } | null> {
   try {
     const res = await fetch(`${API_BASE}/public/courses/${courseId}`, {
@@ -97,9 +97,11 @@ function buildFlashListSlug(flashList: {
   return `bo-tu-vung-${level}-${title}-${flashList.id}`;
 }
 
-async function fetchFlashcard(
-  flashcardId: string
-): Promise<{ id: number | string; name?: string | null; level?: string | null } | null> {
+async function fetchFlashcard(flashcardId: string): Promise<{
+  id: number | string;
+  name?: string | null;
+  level?: string | null;
+} | null> {
   try {
     const res = await fetch(`${API_BASE}/flashcards/${flashcardId}`, {
       signal: AbortSignal.timeout(3000),
@@ -118,9 +120,11 @@ async function fetchFlashcard(
   }
 }
 
-async function fetchFlashList(
-  flashListId: string
-): Promise<{ id: number | string; title?: string | null; level?: string | null } | null> {
+async function fetchFlashList(flashListId: string): Promise<{
+  id: number | string;
+  title?: string | null;
+  level?: string | null;
+} | null> {
   try {
     const res = await fetch(`${API_BASE}/flashlists/${flashListId}`, {
       signal: AbortSignal.timeout(3000),
@@ -138,7 +142,7 @@ async function fetchFlashList(
     return null;
   }
 }
-
+//để redirect đúng path khi người dùng nhập id không có slug hoặc slug sai, hoặc sai path
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -191,7 +195,9 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const flashcardDetailMatch = pathname.match(/^\/flashcards\/detail\/([^/]+)$/);
+  const flashcardDetailMatch = pathname.match(
+    /^\/flashcards\/detail\/([^/]+)$/,
+  );
   if (flashcardDetailMatch) {
     const flashcardId = extractTrailingId(flashcardDetailMatch[1]);
     if (flashcardId) {
@@ -208,7 +214,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const flashcardSettingsMatch = pathname.match(
-    /^\/flashcards\/detail\/([^/]+)\/settings$/
+    /^\/flashcards\/detail\/([^/]+)\/settings$/,
   );
   if (flashcardSettingsMatch) {
     const flashcardId = extractTrailingId(flashcardSettingsMatch[1]);
@@ -242,7 +248,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const flashcardExerciseMatch = pathname.match(
-    /^\/flashcards\/exercise\/([^/]+)\/(multiple-choice|fill-blank)$/
+    /^\/flashcards\/exercise\/([^/]+)\/(multiple-choice|fill-blank)$/,
   );
   if (flashcardExerciseMatch) {
     const flashcardId = extractTrailingId(flashcardExerciseMatch[1]);

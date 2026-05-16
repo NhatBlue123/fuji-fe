@@ -331,7 +331,6 @@ export default function MySchedulePage() {
                   <p className="text-slate-500 text-xs uppercase tracking-wider">{t("booking.modal.time")}</p>
                   <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
                 </div>
-              </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                 {tab === "UPCOMING" && (
@@ -354,12 +353,8 @@ export default function MySchedulePage() {
                     )}
                     {!isTeacher && (
                       <button
-                        disabled={isCancelling}
-                        onClick={() => {
-                          setActionType("CANCEL");
-                          setDeletingId(c.bookingId);
-                        }}
-                        className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                        onClick={() => handleViewSummary(c.bookingId)}
+                        className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
                       >
                         {t("booking.modal.cancel")}
                       </button>
@@ -423,8 +418,8 @@ export default function MySchedulePage() {
                   </span>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

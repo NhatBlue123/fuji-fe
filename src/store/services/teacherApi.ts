@@ -41,7 +41,12 @@ export interface TeacherDashboardData {
   availableBalance: number;
   pendingPayouts: number;
   totalWithdrawn: number;
-  earningsOverTime: { date: string; income: number }[];
+  earningsOverTime: {
+    date: string;
+    income: number;
+    bookingIncome?: number;
+    courseIncome?: number;
+  }[];
   topStudents: { 
     studentId: number;
     studentName: string; 

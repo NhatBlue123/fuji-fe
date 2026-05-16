@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthForm from "./AuthForm";
 import { useAuth } from "@/store/hooks";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface AuthModalProps {
   defaultTab?: "login" | "register";
@@ -13,19 +13,22 @@ interface AuthModalProps {
 export default function AuthModal({ defaultTab = "login" }: AuthModalProps) {
   const router = useRouter();
   const { isAuthenticated, isInitialized } = useAuth();
+  const isClosingRef = useRef(false);
 
   // If already authenticated, close modal and go back
   useEffect(() => {
-    if (isInitialized && isAuthenticated) {
+    if (isInitialized && isAuthenticated && !isClosingRef.current) {
       router.back();
     }
   }, [isInitialized, isAuthenticated, router]);
 
   const handleClose = () => {
+    isClosingRef.current = true;
     router.back();
   };
 
   const handleSuccess = () => {
+    isClosingRef.current = true;
     router.back();
     setTimeout(() => router.refresh(), 150);
   };

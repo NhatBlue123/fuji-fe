@@ -75,6 +75,9 @@ export default function JlptQuestionBankPage() {
 
   const [editing, setEditing] = useState<QuestionBankItem | null>(null);
   const [form, setForm] = useState<Partial<CreateQuestionBankItemDTO>>({});
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   // AI generator state (for bank)
   const [showAI, setShowAI] = useState(false);
@@ -106,10 +109,16 @@ export default function JlptQuestionBankPage() {
   const resetForm = () => {
     setEditing(null);
     setForm({});
+    setImagePreviewUrl(null);
+    setAudioPreviewUrl(null);
+    setUploadingMedia(false);
   };
 
   const openCreate = () => {
     setEditing(null);
+    setImagePreviewUrl(null);
+    setAudioPreviewUrl(null);
+    setUploadingMedia(false);
     setForm({
       level: level ?? "N5",
       section: section ?? "VOCABULARY",
@@ -120,6 +129,7 @@ export default function JlptQuestionBankPage() {
 
   const openEdit = (item: QuestionBankItem) => {
     setEditing(item);
+    setUploadingMedia(false);
     setForm({
       level: item.level,
       section: item.section,
@@ -128,12 +138,16 @@ export default function JlptQuestionBankPage() {
       mondaiTitle: item.mondaiTitle,
       passageText: item.passageText,
       contentText: item.contentText,
+      imageMediaId: item.imageMedia?.id ?? null,
+      audioMediaId: item.audioMedia?.id ?? null,
       options: item.options,
       correctOption: item.correctOption,
       explanation: item.explanation,
       points: item.points,
       tags: item.tags,
     });
+    setImagePreviewUrl(item.imageMedia?.url ?? null);
+    setAudioPreviewUrl(item.audioMedia?.url ?? null);
   };
 
   const handleSubmit = async () => {
@@ -168,27 +182,35 @@ export default function JlptQuestionBankPage() {
 
   const handleAudioUpload = async (file: File) => {
     try {
+      setUploadingMedia(true);
       const fd = new FormData();
       fd.append("file", file);
       const result = await uploadAudio(fd).unwrap();
       setForm((f) => ({ ...f, audioMediaId: result.id }));
+      setAudioPreviewUrl(result.url);
       toast.success("Upload audio thành công");
     } catch (e) {
       console.error(e);
       toast.error("Upload audio thất bại");
+    } finally {
+      setUploadingMedia(false);
     }
   };
 
   const handleImageUpload = async (file: File) => {
     try {
+      setUploadingMedia(true);
       const fd = new FormData();
       fd.append("file", file);
       const result = await uploadImage(fd).unwrap();
       setForm((f) => ({ ...f, imageMediaId: result.id }));
+      setImagePreviewUrl(result.url);
       toast.success("Upload ảnh thành công");
     } catch (e) {
       console.error(e);
       toast.error("Upload ảnh thất bại");
+    } finally {
+      setUploadingMedia(false);
     }
   };
 
@@ -800,10 +822,10 @@ export default function JlptQuestionBankPage() {
               <Button
                 size="sm"
                 onClick={handleSubmit}
-                disabled={creating || updating}
+                disabled={creating || updating || uploadingMedia}
               >
-                {(creating || updating) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Lưu
+                {(creating || updating || uploadingMedia) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                {uploadingMedia ? "Đang upload..." : "Lưu"}
               </Button>
             </div>
           </div>
@@ -896,6 +918,16 @@ export default function JlptQuestionBankPage() {
               {form.imageMediaId ? (
                 <p className="text-[10px] text-muted-foreground">imageMediaId: {form.imageMediaId}</p>
               ) : null}
+              {imagePreviewUrl ? (
+                <a
+                  href={imagePreviewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-[10px] text-blue-600 hover:underline"
+                >
+                  Ảnh đã lưu trên Cloudinary
+                </a>
+              ) : null}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Upload Audio (Listening)</Label>
@@ -910,6 +942,9 @@ export default function JlptQuestionBankPage() {
               />
               {form.audioMediaId ? (
                 <p className="text-[10px] text-muted-foreground">audioMediaId: {form.audioMediaId}</p>
+              ) : null}
+              {audioPreviewUrl ? (
+                <audio controls src={audioPreviewUrl} className="h-8 w-full" />
               ) : null}
             </div>
           </div>

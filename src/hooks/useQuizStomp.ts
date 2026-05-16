@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
-import type { Client, IMessage, StompSubscription } from "@stomp/stompjs";
+import { useEffect, useCallback } from "react";
+import { publishStomp, subscribeStomp, STOMP_JSON_HEADERS } from "@/lib/stomp";
+import type { IMessage } from "@stomp/stompjs";
 
 export interface QuizQuestionPublic {
   id: number;
@@ -55,86 +55,65 @@ export function useQuizStomp({
   onReveal,
   onEnded,
 }: UseQuizStompOptions) {
-  const clientRef = useRef<Client | null>(null);
-  const subsRef = useRef<StompSubscription[]>([]);
-
   useEffect(() => {
     if (!lessonId || !token) return;
 
-    const client = getStompClient(token);
-    clientRef.current = client;
-    let cancelled = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const subscribe = () => {
-      subsRef.current.forEach((s) => s.unsubscribe());
-      subsRef.current = [];
-
-      const base = `/topic/room/${lessonId}`;
-      const subQ = client.subscribe(`${base}/quiz`, (frame: IMessage) => {
+    const base = `/topic/room/${lessonId}`;
+    const unsubQuestion = subscribeStomp(token, `${base}/quiz`, (frame: IMessage) => {
         try {
           const q = JSON.parse(frame.body) as QuizQuestionPublic;
           onQuestion?.(q);
         } catch {
           /* ignore */
         }
-      });
-      const subS = client.subscribe(`${base}/quiz/submission`, (frame: IMessage) => {
+      }
+    );
+    const unsubSubmission = subscribeStomp(token, `${base}/quiz/submission`, (frame: IMessage) => {
         try {
           const s = JSON.parse(frame.body) as QuizSubmissionEvent;
           onSubmission?.(s);
         } catch {
           /* ignore */
         }
-      });
-      const subR = client.subscribe(`${base}/quiz/answer`, (frame: IMessage) => {
+      }
+    );
+    const unsubReveal = subscribeStomp(token, `${base}/quiz/answer`, (frame: IMessage) => {
         try {
           const r = JSON.parse(frame.body) as QuizRevealEvent;
           onReveal?.(r);
         } catch {
           /* ignore */
         }
-      });
-      const subE = client.subscribe(`${base}/quiz/ended`, (frame: IMessage) => {
+      }
+    );
+    const unsubEnded = subscribeStomp(token, `${base}/quiz/ended`, (frame: IMessage) => {
         try {
           const e = JSON.parse(frame.body) as QuizEndedEvent;
           onEnded?.(e);
         } catch {
           /* ignore */
         }
-      });
-      subsRef.current = [subQ, subS, subR, subE];
-    };
-
-    const waitUntilConnected = () => {
-      if (cancelled) return;
-      if (client.connected) {
-        subscribe();
-        return;
       }
-      retryTimer = setTimeout(waitUntilConnected, 150);
-    };
-
-    waitUntilConnected();
+    );
 
     return () => {
-      cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      subsRef.current.forEach((s) => s.unsubscribe());
-      subsRef.current = [];
+      unsubQuestion();
+      unsubSubmission();
+      unsubReveal();
+      unsubEnded();
     };
   }, [lessonId, token, onQuestion, onSubmission, onReveal, onEnded]);
 
   const publish = useCallback(
     (dest: string, body: object) => {
-      if (!lessonId || !clientRef.current?.connected) return;
-      clientRef.current.publish({
+      if (!lessonId || !token) return;
+      publishStomp(token, {
         destination: `/app${dest}`,
         body: JSON.stringify(body),
         headers: STOMP_JSON_HEADERS,
       });
     },
-    [lessonId]
+    [lessonId, token]
   );
 
   const startQuiz = useCallback(

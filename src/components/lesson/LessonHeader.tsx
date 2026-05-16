@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Clock, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { StompStatusIndicator } from "./StompStatusIndicator";
 
 interface LessonHeaderProps {
   subject: string | null;
@@ -87,6 +88,8 @@ export function LessonHeader({
             Đã kết nối
           </span>
         )}
+
+        <StompStatusIndicator compact />
       </div>
 
       <div className="flex items-center gap-2">

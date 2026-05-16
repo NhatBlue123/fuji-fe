@@ -17,6 +17,7 @@ import type {
   TeacherScheduleResponse,
   VideoSessionResponse,
 } from "@/types/booking";
+import type { Weekday } from "@/components/user-component/booking-instructor/types";
 
 export const bookingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -164,6 +165,26 @@ export const bookingApi = baseApi.injectEndpoints({
       providesTags: [{ type: "Booking", id: "MY_SLOTS" }],
     }),
 
+    createBulkSlot: builder.mutation<
+      { requested: number; created: number; skipped: number; conflicts: { startAt: string; endAt: string; reason: string }[] },
+      {
+        dateFrom: string;
+        dateTo: string;
+        daysOfWeek: Weekday[];
+        timeRanges: { start: string; end: string }[];
+        price: number;
+        subject: string;
+      }
+    >({
+      query: (body) => ({
+        url: "/time-slots/bulk",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: ApiEnvelope<{ requested: number; created: number; skipped: number; conflicts: { startAt: string; endAt: string; reason: string }[] }>) => res.data,
+      invalidatesTags: [{ type: "Booking", id: "MY_TEACHER_SCHEDULE" }],
+    }),
+
     deleteTimeSlot: builder.mutation<void, number>({
       query: (id) => ({
         url: `/time-slots/${id}`,
@@ -181,6 +202,7 @@ export const bookingApi = baseApi.injectEndpoints({
         method: "PUT",
         body,
       }),
+      transformResponse: (res: ApiEnvelope<unknown>) => res,
       invalidatesTags: [{ type: "Booking" }],
     }),
 
@@ -238,4 +260,5 @@ export const {
   useSubmitSessionReviewMutation,
   useGetMyBusySlotsQuery,
   useGetMyBusySlotsInRangeQuery,
+  useCreateBulkSlotMutation,
 } = bookingApi;

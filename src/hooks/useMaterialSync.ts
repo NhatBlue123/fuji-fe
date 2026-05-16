@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
-import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
-import type { StompSubscription, IMessage } from "@stomp/stompjs";
+import { useEffect, useCallback, useState } from "react";
+import { publishStomp, subscribeStomp, STOMP_JSON_HEADERS } from "@/lib/stomp";
+import type { IMessage } from "@stomp/stompjs";
 
 export interface PageSyncEvent {
   materialId: number;
@@ -23,53 +23,32 @@ export function useMaterialSync(
 ): UseMaterialSyncReturn {
   const [syncedPage, setSyncedPage] = useState<PageSyncEvent | null>(null);
   const [isSyncEnabled, setIsSyncEnabled] = useState(true);
-  const subRef = useRef<StompSubscription | null>(null);
 
   useEffect(() => {
     if (!lessonId || !token) return;
 
-    const client = getStompClient(token);
-    let cancelled = false;
-    let subscribed = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const subscribe = () => {
-      if (cancelled || subscribed) return;
-      subscribed = true;
-      subRef.current = client.subscribe(
-        `/topic/room/${lessonId}/materials/page`,
-        (frame: IMessage) => {
+    const unsubscribe = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/materials/page`,
+      (frame: IMessage) => {
+        try {
           const data: PageSyncEvent = JSON.parse(frame.body);
           setSyncedPage(data);
+        } catch (err) {
+          console.error("[MaterialSync] Failed to parse page sync:", err);
         }
-      );
-    };
-
-    const waitUntilConnected = () => {
-      if (cancelled) return;
-      if (client.connected) {
-        subscribe();
-        return;
       }
-      retryTimer = setTimeout(waitUntilConnected, 150);
-    };
-
-    waitUntilConnected();
+    );
 
     return () => {
-      cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      try { subRef.current?.unsubscribe(); } catch { /* ignore */ }
+      unsubscribe();
     };
   }, [lessonId, token]);
 
   const sendPageSync = useCallback(
     (materialId: number, pageNumber: number) => {
       if (!lessonId || !token) return;
-      const client = getStompClient(token);
-      if (!client.connected) return;
-
-      client.publish({
+      publishStomp(token, {
         destination: `/app/materials/${lessonId}/page`,
         body: JSON.stringify({ materialId, pageNumber }),
         headers: STOMP_JSON_HEADERS,

@@ -9,6 +9,10 @@ export interface AdminUserDTO {
   avatarUrl: string | null;
   role: string;
   isActive: boolean;
+  violationLevel?: number;
+  lastViolationAt?: string | null;
+  lockedUntil?: string | null;
+  temporarilyLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }

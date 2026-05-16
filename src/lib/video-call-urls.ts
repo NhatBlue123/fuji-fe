@@ -12,10 +12,33 @@
 
 const DEFAULT_SIGNALING_PORT = "8081";
 
+function isProduction(): boolean {
+  if (typeof window === "undefined") return false;
+  const debug = new URLSearchParams(window.location.search).get("env");
+  if (debug === "prod") return true;
+  if (debug === "local") return false;
+  const hostname = window.location.hostname;
+  return hostname !== "localhost" && hostname !== "127.0.0.1" && !hostname.startsWith("192.168.")
+    && !hostname.startsWith("10.") && !hostname.endsWith(".local");
+}
+
 export function getSignalingUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SIGNALING_URL?.trim();
   if (explicit) return explicit;
 
+  // Production: always use wss for secure WebSocket
+  if (isProduction()) {
+    const api = process.env.NEXT_PUBLIC_API_URL?.trim();
+    if (api) {
+      try {
+        const u = new URL(api);
+        return `wss://${u.host}/`;
+      } catch { /* fall through */ }
+    }
+    return `wss://${window.location.host}/`;
+  }
+
+  // Development: derive from API URL or current location
   const api = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (typeof window !== "undefined" && api) {
     try {
@@ -29,7 +52,9 @@ export function getSignalingUrl(): string {
   }
 
   if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:${DEFAULT_SIGNALING_PORT}`;
+    const port =
+      process.env.NEXT_PUBLIC_SIGNALING_PORT?.trim() || DEFAULT_SIGNALING_PORT;
+    return `${window.location.protocol}//${window.location.hostname}:${port}`;
   }
 
   return `http://localhost:${DEFAULT_SIGNALING_PORT}`;

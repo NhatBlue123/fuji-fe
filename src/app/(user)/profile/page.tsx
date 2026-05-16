@@ -8,7 +8,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { logout } from "@/lib/auth";
+import { useAppDispatch } from "@/store/hooks";
+import { logoutThunk } from "@/store/slices/authSlice";
 import { useGetCurrentUserQuery } from "@/store/services/authApi";
 import { useGetMySubscriptionQuery } from "@/store/services/subscriptionApi";
 import { useGetMySystemPackageQuery } from "@/store/services/userMonetizationApi";
@@ -30,6 +31,7 @@ import { getUsableAvatarFrame, hasAnyAvatarFramePackage } from "@/lib/avatar-fra
 
 export default function ProfilePage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { t, i18n } = useTranslation();
   const [openLogout, setOpenLogout] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -71,7 +73,7 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    await logout();
+    await dispatch(logoutThunk());
     router.push("/");
     router.refresh();
   };
@@ -88,17 +90,21 @@ export default function ProfilePage() {
         <div className="absolute inset-0 z-0">
           <div className="absolute top-[5%] right-[15%] w-[400px] h-[400px] bg-pink-500/10 dark:bg-pink-500/10 blur-[120px] rounded-full animate-pulse opacity-70" />
           <div className="absolute bottom-[10%] left-[10%] w-[500px] h-[500px] bg-cyan-500/10 dark:bg-cyan-500/10 blur-[120px] rounded-full opacity-60" />
-          <div className="w-full h-full bg-cover bg-bottom opacity-20 dark:opacity-30 mix-blend-overlay" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c')" }}></div>
+          <div className="w-full h-full bg-cover bg-bottom opacity-60" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c')" }}></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
         </div>
 
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
           <Badge variant="secondary" className="px-3 py-1 gap-2 border-pink-500/20 bg-pink-500/10 text-pink-600 dark:text-pink-400 mb-4 inline-flex">
             <User size={12} /> {t("profile.badge")}
           </Badge>
-          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3 uppercase">
-            {t("profile.page.title").split("Cá Nhân")[0]}<span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">{t("profile.page.title").includes("Cá Nhân") ? "Cá Nhân" : ""}</span>
+          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-3 uppercase drop-shadow-[0_3px_16px_rgba(0,0,0,0.45)]">
+            {t("profile.page.titlePrefix")}
+            <span className="text-pink-500 dark:text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">
+              {t("profile.page.titleHighlight")}
+            </span>
           </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed mx-auto md:mx-0">
+          <p className="text-white/95 text-lg md:text-xl font-semibold max-w-xl md:max-w-2xl leading-relaxed mx-auto md:mx-0 drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]">
             {t("profile.page.subtitle")}
           </p>
         </div>
@@ -137,15 +143,15 @@ export default function ProfilePage() {
                   <Link href="/profile/subscription">
                     {displayTier === 'PREMIUM' ? (
                       <Badge className="bg-gradient-to-r from-pink-500 to-pink-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(236,72,153,0.5)] hover:shadow-[0_0_25px_rgba(236,72,153,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
-                        Premium
+                        {t("profile.tiers.premium")}
                       </Badge>
                     ) : displayTier === 'PRO' ? (
                       <Badge className="bg-gradient-to-r from-cyan-500 to-pink-500 border-none text-white font-black uppercase tracking-widest text-[10px] px-3 py-1 shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:shadow-[0_0_25px_rgba(6,182,212,0.8)] transition-all cursor-pointer hover:scale-105 active:scale-95">
-                        Pro
+                        {t("profile.tiers.pro")}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="border-muted dark:border-white/10 text-muted-foreground dark:text-slate-400 font-black uppercase tracking-widest text-[10px] px-3 py-1 hover:bg-muted/50 dark:hover:bg-white/5 transition-all cursor-pointer hover:border-pink-500/30 hover:text-pink-500 dark:hover:text-pink-400 active:scale-95">
-                        Basic
+                        {t("profile.tiers.basic")}
                       </Badge>
                     )}
                   </Link>

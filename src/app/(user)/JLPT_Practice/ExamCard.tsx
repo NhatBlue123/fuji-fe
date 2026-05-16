@@ -16,6 +16,7 @@ interface ExamCardProps {
   lockedTitle?: string;
   lockedButtonLabel?: string;
   onLockedClick?: () => void;
+  requiresAuth?: boolean;
 }
 
 export default function ExamCard({
@@ -29,6 +30,7 @@ export default function ExamCard({
   lockedTitle = "Hết lượt JLPT",
   lockedButtonLabel = "Nâng cấp ngay",
   onLockedClick,
+  requiresAuth = false,
 }: ExamCardProps) {
   const { t } = useTranslation();
 
@@ -64,6 +66,17 @@ export default function ExamCard({
   };
 
   const renderButton = () => {
+    if (requiresAuth) {
+      return (
+        <Link
+          href="/login"
+          className="block w-full rounded-lg border border-transparent bg-pink-500 py-2 text-center text-sm font-bold text-white shadow-lg shadow-pink-500/20 transition-all hover:bg-pink-600"
+        >
+          Đăng nhập để làm bài
+        </Link>
+      );
+    }
+
     if (status === "locked") {
       return (
         <Button

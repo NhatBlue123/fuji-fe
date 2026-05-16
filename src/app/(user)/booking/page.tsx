@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   Ban,
@@ -18,6 +18,7 @@ import {
 import { useGetDiscoverySlotsQuery } from "@/store/services/bookingApi";
 
 const JLPT_LEVELS = ["N5", "N4", "N3", "N2", "N1"] as const;
+const BOOKING_HERO_IMAGE = "/images/50911b7b-0891-4338-b679-2e1e8b0cf1a8.png";
 type JlptLevel = (typeof JLPT_LEVELS)[number];
 type LevelFilter = "ALL" | JlptLevel;
 
@@ -225,29 +226,45 @@ export default function BookingPage() {
   };
 
   return (
-    <main className="relative flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 text-foreground md:px-6 md:py-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[360px] bg-gradient-to-b from-primary/10 via-secondary/5 to-transparent" />
-      <div className="pointer-events-none absolute -left-20 top-24 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-16 top-12 -z-10 h-80 w-80 rounded-full bg-secondary/10 blur-3xl" />
+    <main className="relative flex-1 overflow-x-hidden overflow-y-auto text-foreground">
+      <section className="relative h-[320px] overflow-hidden rounded-b-[2.5rem] shadow-2xl shadow-secondary/10">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url('${BOOKING_HERO_IMAGE}')` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background/80 to-transparent" />
 
-      <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
-        <section className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-6 md:px-12 lg:px-20">
           <div className="max-w-3xl">
-            <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
-              {t("booking.title").split("Sensei")[0]}<span className="text-secondary text-glow">Sensei</span>
+            <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-[0_3px_16px_rgba(0,0,0,0.45)] md:text-5xl">
+              <Trans
+                i18nKey="booking.heroTitle"
+                components={{
+                  highlight: <span className="text-secondary text-glow" />,
+                }}
+              />
             </h1>
-            <p className="mt-3 text-base text-muted-foreground md:text-xl">
+            <p className="mt-3 max-w-2xl text-base font-semibold leading-relaxed text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] md:text-xl">
               {t("booking.subtitle")}
             </p>
-          </div>
 
-          <Link
-            href="/booking/bookingmodal"
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-secondary-foreground shadow-sm transition hover:bg-secondary/90 active:scale-95"
-          >
-            {t("booking.mySchedule")}
-          </Link>
-        </section>
+            <Link
+              href="/booking/bookingmodal"
+              className="mt-6 inline-flex h-10 items-center justify-center rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-secondary-foreground shadow-sm transition hover:bg-secondary/90 active:scale-95"
+            >
+              {t("booking.mySchedule")}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <div className="relative px-4 py-6 md:px-6 md:py-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[360px] bg-gradient-to-b from-primary/10 via-secondary/5 to-transparent" />
+        <div className="pointer-events-none absolute -left-20 top-24 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 top-12 -z-10 h-80 w-80 rounded-full bg-secondary/10 blur-3xl" />
+
+        <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
 
         <section className="mb-6 flex items-center justify-between">
           <div className="flex-1" />
@@ -492,6 +509,7 @@ export default function BookingPage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </main>
   );

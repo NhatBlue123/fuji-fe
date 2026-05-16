@@ -1,6 +1,13 @@
 import Image from "next/image";
 import type { PublicCourseDto } from "./types";
 import CourseCardActions from "@/components/user-component/course/CourseCardActions";
+import {
+  CourseInstructorLine,
+  CourseLessonCount,
+  CourseListHeading,
+  CoursePriceBadge,
+  CourseStudentCount,
+} from "@/components/user-component/course/CoursePageI18nText";
 
 interface CourseListServerProps {
   courses: PublicCourseDto[];
@@ -8,12 +15,6 @@ interface CourseListServerProps {
 
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
-
-function formatPrice(price: number | null | undefined): string {
-  const value = Number(price ?? 0);
-  if (!Number.isFinite(value) || value <= 0) return "Miễn phí";
-  return `${value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} 🌸`;
-}
 
 /**
  * Server Component — renders the initial course grid for SSR.
@@ -30,12 +31,11 @@ function formatPrice(price: number | null | undefined): string {
 export function CourseListServer({ courses }: CourseListServerProps) {
   return (
     <section
-      aria-label="Danh sách khóa học"
+      aria-label="Course list"
       className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8"
     >
       <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-        <span className="material-symbols-outlined text-secondary">auto_awesome</span>
-        Khóa học nổi bật
+        <CourseListHeading />
       </h2>
 
       {courses.length === 0 ? (
@@ -57,21 +57,10 @@ export function CourseListServer({ courses }: CourseListServerProps) {
               ? `/course/${course.slug}-${course.id}`
               : `/course/${course.id}`;
 
-            return (
-              <article
-                key={course.id}
-                className="bg-card rounded-2xl overflow-hidden border border-border flex flex-col h-full hover:shadow-xl transition-all duration-300 group"
-              >
-                {/* Thumbnail */}
-                <div className="h-48 relative overflow-hidden">
-                  <Image
-                    src={course.thumbnailUrl ?? DEFAULT_THUMBNAIL}
-                    alt={course.thumbnailAlt ?? course.title}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-80" />
+                {/* Price badge */}
+                <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
+                  <CoursePriceBadge price={course.price} />
+                </div>
 
                   {/* Price badge */}
                   <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
@@ -96,21 +85,26 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                     </span>
                   )}
 
-                  <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors line-clamp-1">
-                    {course.title}
-                  </h3>
+                {/* Instructor */}
+                {course.instructorName && (
+                  <p className="text-xs text-muted-foreground mb-3">
+                    <CourseInstructorLine name={course.instructorName} />
+                  </p>
+                )}
 
-                  {course.description && (
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
-                      {course.description}
-                    </p>
+                {/* Stats */}
+                <div className="mt-auto pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                  {course.lessonCount > 0 && (
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">menu_book</span>
+                      <CourseLessonCount count={course.lessonCount} />
+                    </span>
                   )}
-
-                  {/* Instructor */}
-                  {course.instructorName && (
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Giảng viên: <span className="font-medium text-foreground">{course.instructorName}</span>
-                    </p>
+                  {course.studentCount > 0 && (
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">group</span>
+                      <CourseStudentCount count={course.studentCount} />
+                    </span>
                   )}
 
                   {/* Stats */}

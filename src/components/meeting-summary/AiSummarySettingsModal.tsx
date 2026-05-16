@@ -11,13 +11,17 @@ interface AiSummarySettingsModalProps {
   onClose: () => void;
   enabled: boolean;
   language: string;
-  onToggle: (enabled: boolean) => void;
-  onLanguageChange: (language: string) => void;
+  onToggle: (enabled: boolean) => void | Promise<void>;
+  onLanguageChange: (language: string) => void | Promise<void>;
   isLoading?: boolean;
 }
 
-export function AiSummarySettingsModal({
-  isOpen,
+export function AiSummarySettingsModal(props: AiSummarySettingsModalProps) {
+  if (!props.isOpen) return null;
+  return <AiSummarySettingsModalContent {...props} />;
+}
+
+function AiSummarySettingsModalContent({
   onClose,
   enabled,
   language,
@@ -29,14 +33,12 @@ export function AiSummarySettingsModal({
   const [localEnabled, setLocalEnabled] = useState(enabled);
   const [localLanguage, setLocalLanguage] = useState(language);
 
-  if (!isOpen) return null;
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (localEnabled !== enabled) {
-      onToggle(localEnabled);
+      await onToggle(localEnabled);
     }
     if (localLanguage !== language) {
-      onLanguageChange(localLanguage);
+      await onLanguageChange(localLanguage);
     }
     onClose();
   };

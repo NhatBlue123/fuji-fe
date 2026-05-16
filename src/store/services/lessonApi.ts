@@ -136,6 +136,22 @@ export interface LessonSummaryResponse {
   createdAt: string | null;
 }
 
+function normalizeWhiteboardSnapshot(raw: unknown): unknown[] {
+  if (raw == null) return [];
+
+  let payload = raw;
+  if (typeof raw === "string") {
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  if (Array.isArray(payload)) return payload;
+  return [payload];
+}
+
 export const lessonApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createLessonRoom: builder.mutation<LessonRoomResponse, { bookingId: number }>({
@@ -289,6 +305,12 @@ export const lessonApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<LessonSummaryResponse | null>) => res.data,
     }),
 
+    getWhiteboardSnapshot: builder.query<unknown[], { lessonId: number }>({
+      query: ({ lessonId }) => `/lessons/${lessonId}/whiteboard/snapshot`,
+      transformResponse: (res: ApiEnvelope<unknown>) =>
+        normalizeWhiteboardSnapshot(res.data),
+    }),
+
     // ==================== MEDIA ====================
 
     uploadAudio: builder.mutation<{ url: string; publicId: string }, FormData>({
@@ -322,5 +344,6 @@ export const {
   useGetQuizResultsQuery,
   useCreateLessonSummaryMutation,
   useGetLessonSummaryQuery,
+  useGetWhiteboardSnapshotQuery,
   useUploadAudioMutation,
 } = lessonApi;

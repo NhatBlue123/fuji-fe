@@ -2,6 +2,8 @@ import React from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 
+const JLPT_PRACTICE_HERO_IMAGE = "/images/a81f5eef-99c1-44bd-9b66-ed87f9a8c40a.png";
+
 export default function CourseHeader() {
   const { t } = useTranslation();
 
@@ -12,8 +14,7 @@ export default function CourseHeader() {
         <div
           className="w-full h-full bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1600&q=80')",
+            backgroundImage: `url('${JLPT_PRACTICE_HERO_IMAGE}')`,
           }}
         />
       </div>
@@ -28,7 +29,7 @@ export default function CourseHeader() {
               {t("jlpt.practice.headerTitle", { defaultValue: "Luy\u1EC7n thi" })}{" "}
               <span className="text-secondary text-glow">JLPT</span>
             </h1>
-            <p className="text-white/80 text-lg md:text-xl font-medium max-w-xl leading-relaxed">
+            <p className="text-white/95 text-lg md:text-xl font-semibold max-w-xl leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]">
               {t("jlpt.practice.headerSubtitle", { defaultValue: "\u0110\u1EC1 thi m\u00F4 ph\u1ECFng s\u00E1t k\u1EF3 thi th\u1EADt. Chinh ph\u1EE5c JLPT t\u1EEB N5 \u0111\u1EBFn N1." })}
             </p>
           </div>

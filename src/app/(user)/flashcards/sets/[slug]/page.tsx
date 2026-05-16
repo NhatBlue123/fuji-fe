@@ -65,6 +65,19 @@ export default function FlashListDetailPage({
 
   return (
     <div className="flex-1 overflow-y-auto relative scroll-smooth bg-background text-foreground">
+      {/* Back button */}
+      <div className="mx-auto max-w-7xl px-6 py-4 md:px-10">
+        <button
+          onClick={() => router.back()}
+          className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all font-bold"
+        >
+          <div className="p-2 rounded-xl border group-hover:border-primary/20 group-hover:bg-primary/10 transition-all">
+            <ArrowLeft size={18} />
+          </div>
+          Quay lại
+        </button>
+      </div>
+
       <div className="w-full relative">
         {/* Banner */}
         <section className="relative h-[450px] w-full overflow-hidden group bg-card">

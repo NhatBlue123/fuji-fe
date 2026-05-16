@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
     if (!apiKey) {
-      return NextResponse.json({ error: "GEMINI_API_KEY chưa được cấu hình trong .env.local" }, { status: 500 });
+      return NextResponse.json({ error: "GEMINI_API_KEY chưa được cấu hình trong biến môi trường." }, { status: 500 });
     }
 
     // Don't cache VOCABULARY/GRAMMAR (AI generates different results each time)

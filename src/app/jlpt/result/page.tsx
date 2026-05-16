@@ -3,6 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import React, { Suspense } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -40,20 +42,73 @@ import {
   ArrowRight,
   CheckCircle2,
   BotMessageSquare,
+  Brain,
+  GraduationCap,
+  ListChecks,
+  Tags,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/store/hooks";
+
+const assessmentCategoryMeta: Record<string, { label: string; className: string }> = {
+  GRAMMAR: {
+    label: "Ngữ pháp",
+    className: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  },
+  VOCABULARY: {
+    label: "Từ vựng",
+    className: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  },
+  READING: {
+    label: "Đọc hiểu",
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  },
+  LISTENING: {
+    label: "Nghe hiểu",
+    className: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  },
+};
+
+const assessmentPriorityMeta: Record<string, { label: string; className: string }> = {
+  HIGH: { label: "Ưu tiên cao", className: "border-destructive/40 bg-destructive/10 text-destructive" },
+  MEDIUM: { label: "Ưu tiên vừa", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300" },
+  LOW: { label: "Theo dõi", className: "border-muted-foreground/30 bg-muted text-muted-foreground" },
+};
+
+function getCategoryMeta(category?: string) {
+  return assessmentCategoryMeta[category || ""] || assessmentCategoryMeta.GRAMMAR;
+}
+
+function getPriorityMeta(priority?: string) {
+  return assessmentPriorityMeta[priority || ""] || assessmentPriorityMeta.MEDIUM;
+}
+
+function formatHoaPrice(value?: number) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return "Miễn phí";
+  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} hoa`;
+}
+
+function getCourseHref(url?: string, id?: number) {
+  if (url) return url;
+  return id ? `/course/${id}` : "/course";
+}
 
 function JLPTResultPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
+  const { isAuthenticated, isInitialized } = useAuth();
+  const attemptIdNum = attemptId ? Number(attemptId) : 0;
+  const canLoadAttempt =
+    isInitialized && isAuthenticated && Number.isFinite(attemptIdNum) && attemptIdNum > 0;
 
   const {
     data: attempt,
     isLoading,
     error,
-  } = useGetAttemptByIdQuery(Number(attemptId), { skip: !attemptId });
+  } = useGetAttemptByIdQuery(attemptIdNum, { skip: !canLoadAttempt });
 
   const [createExamFeedback, createExamFeedbackState] =
     useCreateExamFeedbackMutation();
@@ -61,14 +116,12 @@ function JLPTResultPageInner() {
   const [feedbackOpen, setFeedbackOpen] = React.useState(false);
 
   // ── AI Assessment ─────────────────────────────────────────────────────────────
-  const attemptIdNum = attemptId ? Number(attemptId) : 0;
-
   const {
     data: assessment,
     isLoading: isGetLoading,
     error: getError,
   } = useGetJlptAiAssessmentQuery(attemptIdNum, {
-    skip: !attemptIdNum,
+    skip: !canLoadAttempt,
   });
 
   const [triggerAssessment, { data: mutateResult, isLoading: isMutationLoading, error: generateError }] =
@@ -90,12 +143,12 @@ function JLPTResultPageInner() {
 
   // Trigger POST only when GET returns 404
   React.useEffect(() => {
-    if (!attemptIdNum || isGetLoading) return;
+    if (!canLoadAttempt || isGetLoading) return;
     if (assessment || assessmentData) return; // already have it
     if (getError && (getError as { status?: number }).status === 404) {
       triggerAssessment(attemptIdNum).catch(() => {});
     }
-  }, [attemptIdNum, isGetLoading, assessment, assessmentData, getError, triggerAssessment]);
+  }, [attemptIdNum, canLoadAttempt, isGetLoading, assessment, assessmentData, getError, triggerAssessment]);
 
   // Loading: GET in flight, or POST triggered and not yet reflected in query cache
   const isAiLoading = isGetLoading || (isMutationLoading && !mutateResult);
@@ -104,12 +157,32 @@ function JLPTResultPageInner() {
     ? ((getError && (getError as { status?: number }).status !== 404) ? getError : generateError)
     : null;
 
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
-        <div className="text-center text-white">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400 mb-4" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center text-foreground">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mb-4" />
           <p className="text-lg">Đang tải kết quả...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center text-foreground">
+          <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <p className="text-lg font-semibold">Bạn cần đăng nhập để xem kết quả</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Kết quả JLPT chỉ hiển thị cho tài khoản đã làm bài.
+          </p>
+          <Button
+            onClick={() => router.push("/login")}
+            className="mt-6"
+          >
+            Đăng nhập
+          </Button>
         </div>
       </div>
     );
@@ -117,16 +190,16 @@ function JLPTResultPageInner() {
 
   if (error || !attempt) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
-        <div className="text-center text-white">
-          <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center text-foreground">
+          <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
           <p className="text-lg font-semibold">Không thể tải kết quả</p>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Vui lòng kiểm tra lại hoặc liên hệ hỗ trợ
           </p>
           <Button
             onClick={() => router.push("/jlpt-practice")}
-            className="mt-6 bg-pink-600 hover:bg-pink-700"
+            className="mt-6"
           >
             Quay lại danh sách
           </Button>
@@ -175,7 +248,7 @@ function JLPTResultPageInner() {
     const weakSections = sectionScore.filter(s => s.score < s.min);
     if (weakSections.length === 0) {
       return {
-        icon: <Trophy className="w-5 h-5 text-yellow-400" />,
+        icon: <Trophy className="w-5 h-5 text-yellow-500" />,
         title: "Xuất sắc!",
         desc: "Bạn đã vượt qua tất cả các phần. Hãy tiếp tục luyện tập để duy trì phong độ!",
         resources: [
@@ -189,7 +262,7 @@ function JLPTResultPageInner() {
 
     if (weakest.key === "grammar") {
       return {
-        icon: <BookOpen className="w-5 h-5 text-blue-400" />,
+        icon: <BookOpen className="w-5 h-5 text-primary" />,
         title: "Cải thiện Ngữ pháp & Từ vựng",
         desc: `Bạn cần đạt tối thiểu ${passThreshold} điểm. Hãy ôn tập ngữ pháp cơ bản và mở rộng vốn từ vựng.`,
         resources: [
@@ -200,7 +273,7 @@ function JLPTResultPageInner() {
     }
     if (weakest.key === "reading") {
       return {
-        icon: <Lightbulb className="w-5 h-5 text-amber-400" />,
+        icon: <Lightbulb className="w-5 h-5 text-yellow-500" />,
         title: "Cải thiện Đọc hiểu",
         desc: `Phần đọc hiểu cần thêm ${(passThreshold - weakest.score).toFixed(1)} điểm. Hãy luyện đọc các bài văn ngắn.`,
         resources: [
@@ -210,7 +283,7 @@ function JLPTResultPageInner() {
       };
     }
     return {
-      icon: <TrendingUp className="w-5 h-5 text-emerald-400" />,
+      icon: <TrendingUp className="w-5 h-5 text-emerald-500" />,
       title: "Cải thiện Nghe hiểu",
       desc: `Bạn cần thêm ${(passThreshold - weakest.score).toFixed(1)} điểm. Hãy luyện nghe mỗi ngày.`,
       resources: [
@@ -221,19 +294,23 @@ function JLPTResultPageInner() {
   };
 
   const suggestion = getSuggestion();
+  const aiKeywords = assessmentData?.keywords ?? [];
+  const aiWeaknesses = assessmentData?.weaknesses ?? [];
+  const aiStudyPlan = assessmentData?.studyPlan ?? [];
+  const aiCourses = assessmentData?.courseRecommendations ?? [];
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-white py-8 px-4 pr-14 sm:pr-16">
+    <div className="min-h-screen bg-background text-foreground py-8 px-4">
       <Sheet open={feedbackOpen} onOpenChange={setFeedbackOpen}>
         <button
           type="button"
           onClick={() => setFeedbackOpen(true)}
-          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 flex flex-col items-center justify-center gap-2 rounded-l-xl border border-r-0 border-pink-500/50 bg-gradient-to-l from-pink-600 to-pink-700 px-2.5 py-6 shadow-lg shadow-pink-900/30 transition hover:from-pink-500 hover:to-pink-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 flex flex-col items-center justify-center gap-2 rounded-l-xl border border-r-0 border-primary/50 bg-primary text-primary-foreground px-2.5 py-6 shadow-lg transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Mở gửi phản hồi đề thi"
         >
-          <MessageSquareText className="h-5 w-5 shrink-0 text-white" />
+          <MessageSquareText className="h-5 w-5 shrink-0" />
           <span
-            className="text-xs font-semibold uppercase tracking-wider text-white"
+            className="text-xs font-semibold uppercase tracking-wider"
             style={{ writingMode: "vertical-rl" }}
           >
             Phản hồi
@@ -242,13 +319,13 @@ function JLPTResultPageInner() {
 
         <SheetContent
           side="right"
-          className="w-full border-l border-slate-700 bg-[#0B1120] p-6 text-white sm:max-w-md [&>button]:text-slate-400 [&>button]:hover:text-white"
+          className="w-full border-l p-6 sm:max-w-md"
         >
           <SheetHeader className="space-y-1 text-left">
-            <SheetTitle className="text-xl text-white">
+            <SheetTitle>
               Phản hồi đề thi
             </SheetTitle>
-            <SheetDescription className="text-slate-400">
+            <SheetDescription>
               Góp ý chung về đề thi (không cần trích nội dung câu hỏi). Sau khi
               gửi, bạn sẽ được chuyển về danh sách bài thi.
             </SheetDescription>
@@ -256,7 +333,7 @@ function JLPTResultPageInner() {
           <div className="mt-6 space-y-4">
             <Textarea
               rows={6}
-              className="resize-none border-slate-600 bg-slate-900/80 text-sm text-white placeholder:text-slate-500 focus-visible:ring-pink-500"
+              className="resize-none"
               value={examFeedback}
               onChange={(e) => setExamFeedback(e.target.value)}
               placeholder="Ví dụ: Độ khó, thời gian, trải nghiệm làm bài..."
@@ -265,8 +342,7 @@ function JLPTResultPageInner() {
           <SheetFooter className="mt-6 flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
-              variant="ghost"
-              className="text-slate-300 hover:bg-slate-800 hover:text-white"
+              variant="outline"
               onClick={() => setFeedbackOpen(false)}
             >
               Đóng
@@ -276,7 +352,6 @@ function JLPTResultPageInner() {
               disabled={
                 createExamFeedbackState.isLoading || !examFeedback.trim()
               }
-              className="bg-pink-600 hover:bg-pink-700"
               onClick={handleSubmitFeedback}
             >
               {createExamFeedbackState.isLoading ? "Đang gửi..." : "Gửi phản hồi"}
@@ -287,31 +362,31 @@ function JLPTResultPageInner() {
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Hero Result */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-8 text-center">
+        <div className="relative overflow-hidden rounded-3xl border p-8 text-center bg-card">
           {/* Background decorations */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl" />
 
           <div className="relative z-10">
             {/* Score Progress Ring */}
             <div className="relative inline-flex items-center justify-center mb-6">
               <svg className="w-36 h-36 -rotate-90">
-                <circle cx="72" cy="72" r="64" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-700" />
+                <circle cx="72" cy="72" r="64" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
                 <circle
                   cx="72" cy="72" r="64" fill="none"
                   stroke="currentColor" strokeWidth="8"
                   strokeLinecap="round"
                   className={cn(
                     "transition-all duration-1000",
-                    attempt.isPassed ? "text-emerald-400" : "text-pink-400"
+                    attempt.isPassed ? "text-emerald-500" : "text-primary"
                   )}
                   strokeDasharray={`${2 * Math.PI * 64}`}
                   strokeDashoffset={`${2 * Math.PI * 64 * (1 - accuracyPercent / 100)}`}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-white">{accuracyPercent}%</span>
-                <span className="text-xs text-slate-400">Độ chính xác</span>
+                <span className="text-4xl font-black">{accuracyPercent}%</span>
+                <span className="text-xs text-muted-foreground">Độ chính xác</span>
               </div>
             </div>
 
@@ -319,14 +394,14 @@ function JLPTResultPageInner() {
             {attempt.isPassed ? (
               <>
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <Trophy className="w-10 h-10 text-yellow-400 animate-pulse" />
-                  <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500">
+                  <Trophy className="w-10 h-10 text-yellow-500 animate-pulse" />
+                  <h1 className="text-3xl font-black">
                     Chúc mừng! Bạn đã đỗ
                   </h1>
-                  <Sparkles className="w-8 h-8 text-yellow-400 animate-pulse" />
+                  <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
                 </div>
-                <p className="text-slate-300 text-lg mb-2">{attempt.test?.title}</p>
-                <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 px-4 py-2 rounded-full">
+                <p className="text-lg mb-2">{attempt.test?.title}</p>
+                <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full">
                   <CheckCircle2 className="w-4 h-4" />
                   <span className="font-semibold">Kết quả: {attempt.isPassed ? "PASS" : "FAIL"}</span>
                   <Star className="w-4 h-4" />
@@ -335,13 +410,13 @@ function JLPTResultPageInner() {
             ) : (
               <>
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <Star className="w-8 h-8 text-pink-400" />
-                  <h1 className="text-3xl font-black text-white">
+                  <Star className="w-8 h-8 text-primary" />
+                  <h1 className="text-3xl font-black">
                     Kết quả bài thi
                   </h1>
                 </div>
-                <p className="text-slate-300 text-lg mb-2">{attempt.test?.title}</p>
-                <p className="text-slate-400 max-w-md mx-auto">
+                <p className="text-lg mb-2">{attempt.test?.title}</p>
+                <p className="text-muted-foreground max-w-md mx-auto">
                   Bạn chưa đạt điểm tối thiểu ở một số phần. Đừng nản lòng — mỗi lần thất bại là một bước tiến!
                 </p>
               </>
@@ -350,10 +425,10 @@ function JLPTResultPageInner() {
         </div>
 
         {/* Overall Score Progress Bar */}
-        <Card className="bg-slate-800/60 border-slate-700/50 backdrop-blur-sm">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Target className="w-5 h-5 text-pink-400" />
+              <Target className="w-5 h-5 text-primary" />
               Điểm tổng quan
             </CardTitle>
           </CardHeader>
@@ -361,37 +436,31 @@ function JLPTResultPageInner() {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-300">Tổng điểm</span>
-                  <span className="text-2xl font-black text-white">{attempt.totalScore.toFixed(1)}<span className="text-sm text-slate-400">/180</span></span>
+                  <span className="text-sm">Tổng điểm</span>
+                  <span className="text-2xl font-black">{attempt.totalScore.toFixed(1)}<span className="text-sm text-muted-foreground">/180</span></span>
                 </div>
                 <Progress
                   value={(attempt.totalScore / 180) * 100}
-                  className="h-3 bg-slate-700"
-                  indicatorClassName={cn(
-                    "bg-gradient-to-r transition-all",
-                    attempt.isPassed
-                      ? "from-emerald-500 to-teal-400"
-                      : "from-pink-500 to-rose-400"
-                  )}
+                  className="h-3"
                 />
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-slate-900/50 rounded-xl">
-                  <div className="text-2xl font-bold text-white">{attempt.correctAnswers}</div>
-                  <div className="text-xs text-slate-400">Câu đúng</div>
+                <div className="text-center p-3 border rounded-xl">
+                  <div className="text-2xl font-bold">{attempt.correctAnswers}</div>
+                  <div className="text-xs text-muted-foreground">Câu đúng</div>
                 </div>
-                <div className="text-center p-3 bg-slate-900/50 rounded-xl">
-                  <div className="text-2xl font-bold text-white">{attempt.totalQuestions - attempt.correctAnswers}</div>
-                  <div className="text-xs text-slate-400">Câu sai</div>
+                <div className="text-center p-3 border rounded-xl">
+                  <div className="text-2xl font-bold">{attempt.totalQuestions - attempt.correctAnswers}</div>
+                  <div className="text-xs text-muted-foreground">Câu sai</div>
                 </div>
-                <div className="text-center p-3 bg-slate-900/50 rounded-xl">
-                  <div className="text-2xl font-bold text-pink-400">{accuracyPercent}%</div>
-                  <div className="text-xs text-slate-400">Độ chính xác</div>
+                <div className="text-center p-3 border rounded-xl">
+                  <div className="text-2xl font-bold text-primary">{accuracyPercent}%</div>
+                  <div className="text-xs text-muted-foreground">Độ chính xác</div>
                 </div>
-                <div className="text-center p-3 bg-slate-900/50 rounded-xl">
-                  <div className="text-2xl font-bold text-blue-400">{formatTime(attempt.timeSpent)}</div>
-                  <div className="text-xs text-slate-400">Thời gian</div>
+                <div className="text-center p-3 border rounded-xl">
+                  <div className="text-2xl font-bold text-primary">{formatTime(attempt.timeSpent)}</div>
+                  <div className="text-xs text-muted-foreground">Thời gian</div>
                 </div>
               </div>
             </div>
@@ -399,7 +468,7 @@ function JLPTResultPageInner() {
         </Card>
 
         {/* Section Scores with Progress */}
-        <Card className="bg-slate-800/60 border-slate-700/50 backdrop-blur-sm">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Điểm theo phần</CardTitle>
           </CardHeader>
@@ -407,22 +476,16 @@ function JLPTResultPageInner() {
             {sectionScore.map((section) => (
               <div key={section.key} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-200">{section.name}</span>
+                  <span className="text-sm font-medium">{section.name}</span>
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "text-lg font-bold",
-                      section.score >= section.min ? "text-emerald-400" : "text-pink-400"
+                      section.score >= section.min ? "text-emerald-500" : "text-destructive"
                     )}>
                       {section.score.toFixed(1)}
                     </span>
                     <Badge
                       variant={section.score >= section.min ? "default" : "destructive"}
-                      className={cn(
-                        "text-xs px-2 py-0.5",
-                        section.score >= section.min
-                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                          : "bg-pink-500/20 text-pink-400 border-pink-500/40"
-                      )}
                     >
                       {section.score >= section.min ? "Đạt" : `Cần ${section.min}`}
                     </Badge>
@@ -430,13 +493,7 @@ function JLPTResultPageInner() {
                 </div>
                 <Progress
                   value={(section.score / 60) * 100}
-                  className="h-2 bg-slate-700"
-                  indicatorClassName={cn(
-                    "transition-all",
-                    section.score >= section.min
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                      : "bg-gradient-to-r from-pink-500 to-rose-400"
-                  )}
+                  className="h-2"
                 />
               </div>
             ))}
@@ -444,15 +501,15 @@ function JLPTResultPageInner() {
         </Card>
 
         {/* Learning Suggestions */}
-        <Card className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-slate-700/50 backdrop-blur-sm overflow-hidden">
+        <Card className="overflow-hidden">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center">
+              <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                 {suggestion.icon}
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-white mb-1">{suggestion.title}</h3>
-                <p className="text-sm text-slate-300 mb-4">{suggestion.desc}</p>
+                <h3 className="text-lg font-bold mb-1">{suggestion.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{suggestion.desc}</p>
 
                 <div className="flex flex-wrap gap-2">
                   {suggestion.resources.map((resource, i) => (
@@ -460,11 +517,12 @@ function JLPTResultPageInner() {
                       key={i}
                       asChild
                       size="sm"
+                      variant="outline"
                       className={cn(
                         "gap-2 transition-all",
                         attempt.isPassed
-                          ? "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40"
-                          : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40"
+                          ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                          : "border-primary/50 hover:bg-primary/10"
                       )}
                     >
                       <a href={resource.href}>
@@ -480,15 +538,15 @@ function JLPTResultPageInner() {
         </Card>
 
         {/* AI Assessment Card */}
-        <Card className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-slate-700/50 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-700/40">
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3 border-b">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500/20 to-violet-500/20 border border-pink-500/30 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-pink-400" />
+              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
               </div>
               Sensei đánh giá bài làm
               {assessmentData && assessmentData.modelVersion && (
-                <Badge variant="outline" className="text-xs border-slate-600 text-slate-400 ml-2">
+                <Badge variant="outline" className="text-xs ml-2">
                   {assessmentData.modelVersion}
                 </Badge>
               )}
@@ -499,49 +557,232 @@ function JLPTResultPageInner() {
               <div className="p-6 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full border-2 border-pink-400/30 border-t-pink-400 animate-spin" />
+                    <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-200 font-medium">Sensei đang phân tích bài làm...</p>
-                    <p className="text-xs text-slate-500">Vui lòng chờ trong giây lát</p>
+                    <p className="text-sm font-medium">Sensei đang phân tích bài làm...</p>
+                    <p className="text-xs text-muted-foreground">Vui lòng chờ trong giây lát</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {[100, 80, 65, 45].map((w, i) => (
-                    <div key={i} className="h-3 bg-slate-700/50 rounded-full animate-pulse" style={{ width: `${w}%` }} />
+                    <div key={i} className="h-3 bg-muted rounded-full animate-pulse" style={{ width: `${w}%` }} />
                   ))}
                 </div>
               </div>
             ) : aiError ? (
               <div className="p-6 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border border-slate-700 mb-3">
-                  <BotMessageSquare className="w-5 h-5 text-slate-500" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border mb-3">
+                  <BotMessageSquare className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   Chưa thể tạo đánh giá AI lúc này
                 </p>
-                <p className="text-xs text-slate-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Kết quả thi và gợi ý học tập vẫn hiển thị bình thường.
                 </p>
               </div>
             ) : assessmentData ? (
-              <div className="p-6">
+              <div className="space-y-6 p-6">
                 {assessmentData.generatedAt && (
-                  <p className="text-xs text-slate-600 mb-4">
+                  <p className="text-xs text-muted-foreground">
                     Đánh giá lúc {new Date(assessmentData.generatedAt).toLocaleString("vi-VN")}
                   </p>
                 )}
-                <div className="prose prose-invert prose-sm max-w-none
-                  prose-headings:text-slate-100 prose-p:text-slate-300
-                  prose-strong:text-slate-100 prose-strong:font-semibold
-                  prose-ul:text-slate-300 prose-li:text-slate-300
-                  prose-a:text-pink-400 prose-a:no-underline hover:prose-a:underline
-                  prose-blockquote:border-pink-400/50 prose-blockquote:text-slate-400
-                  prose-code:text-pink-300 prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-['']">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {aiKeywords.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Tags className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Từ khóa AI phát hiện</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {aiKeywords.map((item) => {
+                        const meta = getCategoryMeta(item.category);
+                        return (
+                          <div
+                            key={`${item.category}-${item.keyword}`}
+                            className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", meta.className)}
+                            title={item.reason}
+                          >
+                            <span>{item.keyword}</span>
+                            <span className="ml-2 opacity-70">{meta.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-emerald-500/5 p-5">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h2: ({ children }) => (
+                        <h2 className="mt-5 first:mt-0 flex items-center gap-2 text-base font-bold text-foreground">
+                          <span className="h-2 w-2 rounded-full bg-primary" />
+                          {children}
+                        </h2>
+                      ),
+                      p: ({ children }) => (
+                        <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                          {children}
+                        </p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="mt-3 space-y-2">
+                          {children}
+                        </ul>
+                      ),
+                      li: ({ children }) => (
+                        <li className="flex gap-2 text-sm leading-7 text-muted-foreground">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                          <span>{children}</span>
+                        </li>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-foreground">{children}</strong>
+                      ),
+                    }}
+                  >
                     {assessmentData.markdown}
                   </ReactMarkdown>
                 </div>
+
+                {aiWeaknesses.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Lỗ hổng cần ưu tiên</h3>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {aiWeaknesses.map((item, index) => {
+                        const categoryMeta = getCategoryMeta(item.category);
+                        const priorityMeta = getPriorityMeta(item.priority);
+                        return (
+                          <div
+                            key={`${item.title}-${index}`}
+                            className="rounded-2xl border bg-background p-4"
+                          >
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <Badge variant="outline" className={cn("border", categoryMeta.className)}>
+                                {categoryMeta.label}
+                              </Badge>
+                              <Badge variant="outline" className={cn("border", priorityMeta.className)}>
+                                {priorityMeta.label}
+                              </Badge>
+                            </div>
+                            <p className="font-semibold leading-snug">{item.title}</p>
+                            {item.evidence && (
+                              <p className="mt-2 text-sm text-muted-foreground">{item.evidence}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {aiStudyPlan.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Lộ trình ôn tập ngắn hạn</h3>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {aiStudyPlan.map((item, index) => (
+                        <div key={`${item.title}-${index}`} className="rounded-2xl border bg-background p-4">
+                          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                            {index + 1}
+                          </div>
+                          <p className="font-semibold leading-snug">{item.title}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+                          {item.days ? (
+                            <p className="mt-3 text-xs font-medium text-primary">{item.days} ngày</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {aiCourses.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Khóa học phù hợp với lỗ hổng kiến thức</h3>
+                    </div>
+                    <div className="grid gap-3">
+                      {aiCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="grid gap-4 rounded-2xl border bg-background p-4 sm:grid-cols-[112px_1fr_auto]"
+                        >
+                          <div className="relative h-24 overflow-hidden rounded-xl border bg-muted sm:h-full">
+                            {course.thumbnailUrl ? (
+                              <Image
+                                src={course.thumbnailUrl}
+                                alt={course.title}
+                                fill
+                                sizes="112px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <BookOpen className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                              {course.level && <Badge variant="secondary">{course.level}</Badge>}
+                              {course.enrolled && <Badge variant="outline">Đang học</Badge>}
+                              {course.matchScore !== undefined && course.matchScore > 0 && (
+                                <Badge variant="outline">Match {Math.round(course.matchScore)}</Badge>
+                              )}
+                            </div>
+                            <h4 className="font-bold leading-snug">{course.title}</h4>
+                            {course.reason && (
+                              <p className="mt-1 text-sm text-muted-foreground">{course.reason}</p>
+                            )}
+                            {course.matchedKeywords && course.matchedKeywords.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {course.matchedKeywords.slice(0, 4).map((keyword) => (
+                                  <span
+                                    key={keyword}
+                                    className="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary"
+                                  >
+                                    {keyword}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {course.matchedLessons && course.matchedLessons.length > 0 && (
+                              <p className="mt-2 text-xs text-muted-foreground">
+                                Bài học liên quan: {course.matchedLessons.slice(0, 2).join(", ")}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end">
+                            <div className="text-left sm:text-right">
+                              <p className="text-sm font-bold text-primary">
+                                {formatHoaPrice(course.priceHoa ?? course.price)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {course.lessonCount || 0} bài học · {course.students || 0} học viên
+                              </p>
+                            </div>
+                            <Button asChild size="sm" className="gap-2">
+                              <Link href={getCourseHref(course.url, course.id)}>
+                                Xem khóa học
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </CardContent>
@@ -552,7 +793,6 @@ function JLPTResultPageInner() {
           <Button
             onClick={() => router.push("/jlpt-practice")}
             variant="outline"
-            className="border-slate-600 text-white hover:bg-slate-800"
           >
             Quay lại danh sách
           </Button>
@@ -561,7 +801,6 @@ function JLPTResultPageInner() {
               onClick={() =>
                 router.push(`/jlpt-test?testId=${attempt.testId}`)
               }
-              className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 shadow-lg shadow-pink-500/25"
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Làm lại bài thi
@@ -570,7 +809,6 @@ function JLPTResultPageInner() {
           {attempt.isPassed && (
             <Button
               onClick={() => router.push("/jlpt-practice")}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/25"
             >
               <Trophy className="w-4 h-4 mr-2" />
               Tiếp tục luyện tập
@@ -579,7 +817,7 @@ function JLPTResultPageInner() {
         </div>
 
         {/* Exam Info */}
-        <div className="text-center text-sm text-slate-500 space-y-1">
+        <div className="text-center text-sm text-muted-foreground space-y-1">
           <div className="flex items-center justify-center gap-2">
             <Clock className="w-4 h-4" />
             <span>
@@ -602,8 +840,8 @@ export default function JLPTResultPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-400" />
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary" />
         </div>
       }
     >

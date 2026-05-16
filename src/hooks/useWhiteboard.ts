@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { getStompClient, STOMP_JSON_HEADERS } from "@/lib/stomp";
-import type { StompSubscription, IMessage } from "@stomp/stompjs";
+import {
+  publishStomp,
+  subscribeStomp,
+  subscribeStompConnectionState,
+  STOMP_JSON_HEADERS,
+} from "@/lib/stomp";
+import type { IMessage } from "@stomp/stompjs";
 
 export interface WhiteboardBroadcast {
   userId: string;
@@ -23,70 +28,14 @@ export function useWhiteboard(
   token: string | null
 ): UseWhiteboardReturn {
   const [isConnected, setIsConnected] = useState(false);
-  const subsRef = useRef<StompSubscription[]>([]);
   const changeHandlerRef = useRef<((data: WhiteboardBroadcast) => void) | null>(null);
   const clearHandlerRef = useRef<(() => void) | null>(null);
+  const pendingChangesRef = useRef<unknown[]>([]);
 
-  useEffect(() => {
-    if (!lessonId || !token) return;
-
-    const client = getStompClient(token);
-    let cancelled = false;
-    let subscribed = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const subscribe = () => {
-      if (cancelled || subscribed) return;
-      subscribed = true;
-      setIsConnected(true);
-
-      const changeSub = client.subscribe(
-        `/topic/room/${lessonId}/whiteboard`,
-        (frame: IMessage) => {
-          const data: WhiteboardBroadcast = JSON.parse(frame.body);
-          changeHandlerRef.current?.(data);
-        }
-      );
-
-      const clearSub = client.subscribe(
-        `/topic/room/${lessonId}/whiteboard/clear`,
-        () => {
-          clearHandlerRef.current?.();
-        }
-      );
-
-      subsRef.current = [changeSub, clearSub];
-    };
-
-    const waitUntilConnected = () => {
-      if (cancelled) return;
-      if (client.connected) {
-        subscribe();
-        return;
-      }
-      retryTimer = setTimeout(waitUntilConnected, 150);
-    };
-
-    waitUntilConnected();
-
-    return () => {
-      cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      setIsConnected(false);
-      subsRef.current.forEach((s) => {
-        try { s.unsubscribe(); } catch { /* ignore */ }
-      });
-      subsRef.current = [];
-    };
-  }, [lessonId, token]);
-
-  const sendChanges = useCallback(
-    (changes: unknown) => {
-      if (!lessonId || !token) return;
-      const client = getStompClient(token);
-      if (!client.connected) return;
-
-      client.publish({
+  const publishChanges = useCallback(
+    (changes: unknown): boolean => {
+      if (!lessonId || !token) return false;
+      return publishStomp(token, {
         destination: `/app/whiteboard/${lessonId}/change`,
         body: JSON.stringify({ changes }),
         headers: STOMP_JSON_HEADERS,
@@ -95,12 +44,72 @@ export function useWhiteboard(
     [lessonId, token]
   );
 
+  const flushPendingChanges = useCallback(() => {
+    if (!pendingChangesRef.current.length) return;
+    const pending = pendingChangesRef.current;
+    pendingChangesRef.current = [];
+
+    for (let i = 0; i < pending.length; i += 1) {
+      const changes = pending[i];
+      if (!publishChanges(changes)) {
+        pendingChangesRef.current.unshift(...pending.slice(i));
+        pendingChangesRef.current = pendingChangesRef.current.slice(-100);
+        break;
+      }
+    }
+  }, [publishChanges]);
+
+  useEffect(() => {
+    if (!lessonId || !token) return;
+
+    const unsubState = subscribeStompConnectionState((state) => {
+      const connected = state === "CONNECTED";
+      setIsConnected(connected);
+      if (connected) {
+        flushPendingChanges();
+      }
+    });
+
+    const unsubChanges = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/whiteboard`,
+      (frame: IMessage) => {
+        try {
+          const data: WhiteboardBroadcast = JSON.parse(frame.body);
+          changeHandlerRef.current?.(data);
+        } catch (err) {
+          console.error("[Whiteboard] Failed to parse change:", err);
+        }
+      }
+    );
+
+    const unsubClear = subscribeStomp(
+      token,
+      `/topic/room/${lessonId}/whiteboard/clear`,
+      () => {
+        clearHandlerRef.current?.();
+      }
+    );
+
+    return () => {
+      setIsConnected(false);
+      unsubState();
+      unsubChanges();
+      unsubClear();
+    };
+  }, [lessonId, token, flushPendingChanges]);
+
+  const sendChanges = useCallback(
+    (changes: unknown) => {
+      if (publishChanges(changes)) return;
+      pendingChangesRef.current = [...pendingChangesRef.current, changes].slice(-100);
+    },
+    [publishChanges]
+  );
+
   const clearBoard = useCallback(() => {
     if (!lessonId || !token) return;
-    const client = getStompClient(token);
-    if (!client.connected) return;
-
-    client.publish({
+    publishStomp(token, {
       destination: `/app/whiteboard/${lessonId}/clear`,
       body: "{}",
       headers: STOMP_JSON_HEADERS,

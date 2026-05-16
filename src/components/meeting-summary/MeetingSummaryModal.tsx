@@ -24,6 +24,7 @@ interface MeetingSummaryModalProps {
   isGenerating?: boolean;
   error?: string | null;
   onRetry?: () => void;
+  onToggleActionItem?: (summaryId: number, itemIndex: number) => Promise<MeetingSummaryResult | null | void>;
   /** Hide retry button when there's no transcript data */
   isNoDataError?: boolean;
 }
@@ -36,10 +37,12 @@ export function MeetingSummaryModal({
   isGenerating = false,
   error = null,
   onRetry,
+  onToggleActionItem,
   isNoDataError = false,
 }: MeetingSummaryModalProps) {
   const { t } = useTranslation();
   const [completedActions, setCompletedActions] = useState<Set<number>>(new Set());
+  const [togglingActionIndex, setTogglingActionIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (summary?.actionItems) {
@@ -66,16 +69,59 @@ export function MeetingSummaryModal({
 
   if (!isOpen) return null;
 
-  const toggleActionComplete = (index: number) => {
+  const setActionCompletedOptimistically = (index: number) => {
+    let nextCompleted = false;
     setCompletedActions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(index)) {
         newSet.delete(index);
       } else {
         newSet.add(index);
+        nextCompleted = true;
       }
       return newSet;
     });
+    return nextCompleted;
+  };
+
+  const applyCompletedFromSummary = (nextSummary: MeetingSummaryResult) => {
+    const completed = new Set<number>();
+    nextSummary.actionItems?.forEach((item, index) => {
+      if (item.completed) completed.add(index);
+    });
+    setCompletedActions(completed);
+  };
+
+  const toggleActionComplete = async (index: number) => {
+    if (!summary?.id || !onToggleActionItem) {
+      setActionCompletedOptimistically(index);
+      return;
+    }
+
+    const wasCompleted = completedActions.has(index);
+    setActionCompletedOptimistically(index);
+    setTogglingActionIndex(index);
+
+    try {
+      const updated = await onToggleActionItem(summary.id, index);
+      if (updated) {
+        applyCompletedFromSummary(updated);
+      } else {
+        throw new Error("Action item update failed");
+      }
+    } catch {
+      setCompletedActions((prev) => {
+        const reverted = new Set(prev);
+        if (wasCompleted) {
+          reverted.add(index);
+        } else {
+          reverted.delete(index);
+        }
+        return reverted;
+      });
+    } finally {
+      setTogglingActionIndex(null);
+    }
   };
 
   const handleDownload = () => {
@@ -106,7 +152,9 @@ Model: ${summary.modelUsed || "AI"}
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `meeting-summary-${summary.sessionId}-${Date.now()}.txt`;
+    const safeSessionId = String(summary.sessionId).replace(/[^a-zA-Z0-9-_]/g, "");
+    const safeDate = new Date().toISOString().replace(/[:.]/g, "-");
+    a.download = `meeting-summary-${safeSessionId}-${safeDate}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -180,10 +228,10 @@ Model: ${summary.modelUsed || "AI"}
           )}
 
           {/* Error state */}
-          {error && !isLoading && !isGenerating && (
+          {(error || (summary?.status === "FAILED" && summary.errorMessage)) && !isLoading && !isGenerating && !summary?.summary && (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <AlertCircle className="h-8 w-8 text-red-400" />
-              <p className="text-red-400 text-sm text-center">{error}</p>
+              <p className="text-red-400 text-sm text-center">{error ?? summary?.errorMessage}</p>
               {onRetry && !isNoDataError && (
                 <Button
                   onClick={onRetry}
@@ -196,8 +244,21 @@ Model: ${summary.modelUsed || "AI"}
           )}
 
           {/* Summary content */}
-          {summary && !isLoading && !isGenerating && (
+          {summary && summary.status !== "FAILED" && !isLoading && !isGenerating && (
             <div className="space-y-6">
+              {(summary.isMock || summary.status === "FAILED" || summary.errorMessage) && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {summary.status === "FAILED"
+                      ? summary.errorMessage || "Summary generation failed."
+                      : summary.isMock
+                      ? "This summary is marked as mock data."
+                      : summary.errorMessage}
+                  </span>
+                </div>
+              )}
+
               {/* Summary text */}
               <div>
                 <h3 className="text-[#F0F0F0] font-semibold text-sm mb-2 flex items-center gap-2">
@@ -252,9 +313,12 @@ Model: ${summary.modelUsed || "AI"}
                       >
                         <button
                           onClick={() => toggleActionComplete(index)}
+                          disabled={togglingActionIndex === index}
                           className="mt-0.5 shrink-0"
                         >
-                          {completedActions.has(index) ? (
+                          {togglingActionIndex === index ? (
+                            <Loader2 className="h-5 w-5 animate-spin text-secondary" />
+                          ) : completedActions.has(index) ? (
                             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                           ) : (
                             <Circle className="h-5 w-5 text-[#8B8FA8]" />

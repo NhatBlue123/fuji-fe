@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useGetMyAttemptsQuery } from "@/store/services/jlptApi";
 import type { TestAttemptResult, JLPTLevel } from "@/types/jlpt";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,15 @@ export default function JlptHistoryPage() {
       <div className="max-w-7xl mx-auto space-y-8">
         {/* ── Header ── */}
         <div>
+          <button
+            onClick={() => router.back()}
+            className="group flex items-center gap-2 text-slate-500 hover:text-pink-400 transition-all font-bold mb-3"
+          >
+            <div className="p-2 rounded-xl border group-hover:border-pink-500/20 group-hover:bg-pink-500/10 transition-all">
+              <ArrowLeft size={18} />
+            </div>
+            Quay lại
+          </button>
           <h1 className="text-3xl font-black bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
             Lịch sử thi JLPT
           </h1>

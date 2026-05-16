@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, Ban, Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -16,8 +17,14 @@ import { API_CONFIG } from "@/config/api";
 
 type BookingTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
-function formatDate(v: string) {
-  return new Date(v).toLocaleDateString("vi-VN", {
+function localeFromLanguage(language: string) {
+  if (language.startsWith("ja")) return "ja-JP";
+  if (language.startsWith("en")) return "en-US";
+  return "vi-VN";
+}
+
+function formatDate(v: string, language: string) {
+  return new Date(v).toLocaleDateString(localeFromLanguage(language), {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
@@ -31,8 +38,23 @@ function formatTimeRange(startAt: string, endAt: string) {
   return `${hhmm(s)} - ${hhmm(e)}`;
 }
 
+function normalizeSummary(data: unknown): MeetingSummaryResult {
+  const source =
+    typeof data === "object" && data !== null
+      ? (data as Partial<MeetingSummaryResult> & Record<string, unknown>)
+      : {};
+
+  return {
+    ...source,
+    keyPoints: Array.isArray(source.keyPoints) ? source.keyPoints.filter((item): item is string => typeof item === "string") : [],
+    actionItems: Array.isArray(source.actionItems) ? source.actionItems as MeetingSummaryResult["actionItems"] : [],
+    isMock: Boolean(source.isMock),
+    errorMessage: typeof source.errorMessage === "string" ? source.errorMessage : null,
+  } as MeetingSummaryResult;
+}
+
 export default function MySchedulePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isTeacher, isInitialized, accessToken } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -69,7 +91,7 @@ export default function MySchedulePage() {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/summaries/session/${bookingId}?sessionType=BOOKING`,
+        `${API_CONFIG.BASE_URL}/summaries/booking/${bookingId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -82,20 +104,19 @@ export default function MySchedulePage() {
         if (response.status === 404) {
           // No summary exists - either AI was disabled or transcript wasn't collected
           setSummaryError(
-            t("meetingSummary.noSummaryHint") ||
-            "AI Summary không được bật trong buổi học này hoặc chưa có dữ liệu transcript."
+            t("booking.modal.summary.noData")
           );
           return;
         }
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to fetch summary");
+        throw new Error(errorData.message || t("booking.modal.summary.loadFailed"));
       }
 
       const data = await response.json();
-      setCurrentSummary(data);
+      setCurrentSummary(normalizeSummary(data));
     } catch (err) {
       console.error("[BookingModal] Failed to fetch summary:", err);
-      setSummaryError(err instanceof Error ? err.message : (t("meetingSummary.error") || "Không thể tải tóm tắt cuộc họp."));
+      setSummaryError(err instanceof Error ? err.message : t("booking.modal.summary.loadFailed"));
     } finally {
       setSummaryLoading(false);
     }
@@ -112,19 +133,15 @@ export default function MySchedulePage() {
     setSummaryError(null);
 
     try {
+      const summaryLanguage = (i18n.language || "vi").split("-")[0];
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/summaries/generate`,
+        `${API_CONFIG.BASE_URL}/summaries/booking/${selectedBookingId}/generate?language=${summaryLanguage}`,
         {
           method: "POST",
           headers: {
             'Content-Type': 'application/json',
             ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
           },
-          body: JSON.stringify({
-            sessionId: selectedBookingId,
-            sessionType: "BOOKING",
-            language: "vi",
-          }),
         }
       );
 
@@ -135,20 +152,43 @@ export default function MySchedulePage() {
         if (errorMsg.toLowerCase().includes("transcript") ||
             errorMsg.toLowerCase().includes("no data") ||
             errorMsg.toLowerCase().includes("không có dữ liệu")) {
-          throw new Error("Buổi học này không có dữ liệu transcript. Vui lòng bật AI Summary khi vào phòng học để thu thập dữ liệu.");
+          throw new Error(t("booking.modal.summary.noTranscript"));
         }
-        throw new Error(errorMsg || "Không thể tạo tóm tắt. Vui lòng thử lại sau.");
+        throw new Error(errorMsg || t("booking.modal.summary.createFailed"));
       }
 
       const data = await response.json();
-      setCurrentSummary(data);
+      setCurrentSummary(normalizeSummary(data));
     } catch (err) {
       console.error("[BookingModal] Failed to generate summary:", err);
-      setSummaryError(err instanceof Error ? err.message : (t("meetingSummary.error") || "Không thể tạo tóm tắt cuộc họp."));
+      setSummaryError(err instanceof Error ? err.message : t("booking.modal.summary.createFailed"));
     } finally {
       setSummaryLoading(false);
     }
-  }, [selectedBookingId, t, accessToken]);
+  }, [selectedBookingId, t, accessToken, i18n.language]);
+
+  const handleToggleSummaryActionItem = useCallback(async (
+    summaryId: number,
+    itemIndex: number
+  ): Promise<MeetingSummaryResult | null> => {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}/summaries/${summaryId}/action-items/${itemIndex}/toggle`,
+      {
+        method: "PATCH",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || t("booking.modal.summary.updateActionFailed"));
+    }
+
+    const data = await response.json();
+    const updated = normalizeSummary(data);
+    setCurrentSummary(updated);
+    return updated;
+  }, [accessToken, t]);
 
   const items = data ?? [];
 
@@ -162,10 +202,10 @@ export default function MySchedulePage() {
       }
       setDeletingId(null);
     } catch (e) {
-      console.error("Lỗi khi hủy lịch:", e);
+      console.error("[BookingModal] Failed to update booking:", e);
       alert(actionType === "END_EARLY"
-        ? "Không thể kết thúc sớm, vui lòng thử lại sau."
-        : "Không thể hủy lịch, vui lòng thử lại sau.");
+        ? t("booking.modal.alert.endEarlyFailed")
+        : t("booking.modal.alert.cancelFailed"));
     }
   };
 
@@ -192,7 +232,7 @@ export default function MySchedulePage() {
                   tab === tabItem ? "bg-secondary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                {tabItem === "UPCOMING" ? "Sắp tới" : tabItem === "COMPLETED" ? "Đã hoàn thành" : "Đã hủy"}
+                {t(`booking.modal.tabs.${tabItem.toLowerCase()}`)}
               </button>
             ))}
           </div>
@@ -208,7 +248,9 @@ export default function MySchedulePage() {
               <span className="material-symbols-outlined text-sm">
                 {isMounted && isTeacher ? "calendar_month" : "add"}
               </span>
-              {isMounted && isTeacher ? "Quản lý lịch dạy" : "Đặt lịch mới"}
+              {isMounted && isTeacher
+                ? t("booking.modal.manageTeachingSchedule")
+                : t("booking.modal.newBooking")}
             </button>
           </Link>
         </div>
@@ -216,168 +258,165 @@ export default function MySchedulePage() {
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <div className="flex items-center gap-2 text-amber-200">
             <AlertTriangle className="size-4" />
-            <p className="text-sm font-bold">{t("auto.bookingModal_1")}</p>
+            <p className="text-sm font-bold">{t("booking.modal.rules.title")}</p>
           </div>
           <ul className="mt-2 space-y-1.5 text-xs text-amber-100/90">
             <li className="flex items-start gap-2">
               <Clock3 className="mt-0.5 size-3.5 shrink-0" />
-              {t("auto.bookingModal_2")}
+              {t("booking.modal.rules.rule1")}
             </li>
             <li className="flex items-start gap-2">
               <Ban className="mt-0.5 size-3.5 shrink-0" />
-              {t("auto.bookingModal_3")}
+              {t("booking.modal.rules.rule2")}
             </li>
             <li className="flex items-start gap-2">
               <Ban className="mt-0.5 size-3.5 shrink-0" />
-              {t("auto.bookingModal_4")}
+              {t("booking.modal.rules.rule3")}
             </li>
           </ul>
         </div>
 
         {(isLoading || isFetching) && (
-          <div className="text-slate-400 animate-pulse">{t("auto.bookingModal_5")}</div>
+          <div className="text-slate-400 animate-pulse">{t("booking.modal.loading")}</div>
         )}
 
         {isError && (
           <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {t("auto.bookingModal_6")}
+            {t("booking.modal.fetchError")}
           </div>
         )}
 
         {!isLoading && !isFetching && !isError && items.length === 0 && (
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">
-            {t("auto.bookingModal_7")}
+            {t("booking.modal.empty")}
           </div>
         )}
 
         <div className="space-y-4">
-          {items.map((c) => {
-            const isTeachingBooking = c.role === "TEACHER";
+          {items.map((c) => (
+            <div
+              key={c.bookingId}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
+            >
+              <div className="flex items-center gap-4 flex-1 w-full">
+                <Image
+                  src={(c.role === "TEACHER" ? c.studentAvatarUrl : c.teacherAvatarUrl) || "/images/avt-default.jpg"}
+                  width={56}
+                  height={56}
+                  className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
+                  alt={c.role === "TEACHER"
+                    ? t("booking.modal.roles.student")
+                    : t("booking.modal.roles.teacher")}
+                />
+                <div>
+                  <h4 className="text-slate-100 font-bold">
+                    {c.role === "TEACHER" ? c.studentName : c.teacherName}
+                  </h4>
+                  <p className="text-pink-400 text-sm">{c.subject}</p>
+                  <p className="text-slate-500 text-xs">
+                    {c.role === "TEACHER"
+                      ? t("booking.modal.roles.student")
+                      : t("booking.modal.roles.teacher")}
+                  </p>
+                </div>
+              </div>
 
-            return (
-              <div
-                key={c.bookingId}
-                className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
-              >
-                <div className="flex items-center gap-4 flex-1 w-full">
-                  <img
-                    src={(isTeachingBooking ? c.studentAvatarUrl : c.teacherAvatarUrl) || "/images/avt-default.jpg"}
-                    className="size-14 rounded-xl object-cover ring-2 ring-pink-500/20"
-                    alt={isTeachingBooking ? "Student" : "Teacher"}
-                  />
-                  <div>
-                    <h4 className="text-slate-100 font-bold">
-                      {isTeachingBooking ? c.studentName : c.teacherName}
-                    </h4>
-                    <p className="text-pink-400 text-sm">{c.subject}</p>
-                    <p className="text-slate-500 text-xs">
-                      {isTeachingBooking ? "Học viên" : "Giáo viên"}
-                    </p>
-                  </div>
+              <div className="flex items-center gap-8 px-8 border-x border-white/10">
+                <div className="flex flex-col items-center">
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("booking.modal.date")}</p>
+                  <p className="text-white font-bold">{formatDate(c.startAt, i18n.language)}</p>
                 </div>
 
-                <div className="flex items-center gap-8 px-8 border-x border-white/10">
-                  <div className="flex flex-col items-center">
-                    <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_8")}</p>
-                    <p className="text-white font-bold">{formatDate(c.startAt)}</p>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <p className="text-slate-500 text-xs uppercase tracking-wider">{t("auto.bookingModal_9")}</p>
-                    <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
-                  </div>
+                <div className="flex flex-col items-center">
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("booking.modal.time")}</p>
+                  <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                  {tab === "UPCOMING" && (
-                    <>
-                      {c.canJoinVideoCall ? (
-                        <Link href={`/learn/lesson/${c.bookingId}`}>
-                          <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
-                            <span className="material-symbols-outlined text-sm">videocam</span>
-                            {t("auto.bookingModal_10")}
-                          </button>
-                        </Link>
-                      ) : (
-                        <button
-                          disabled
-                          className="px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
-                          title={t("auto.bookingModal_18")}
-                        >
-                          {t("auto.bookingModal_11")}
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                {tab === "UPCOMING" && (
+                  <>
+                    {c.canJoinVideoCall ? (
+                      <Link href={`/learn/lesson/${c.bookingId}`}>
+                        <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-all flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm">videocam</span>
+                          {t("booking.modal.joinRoom")}
                         </button>
-                      )}
-                      {!isTeachingBooking && (
-                        <button
-                          disabled={isCancelling}
-                          onClick={() => {
-                            setActionType("CANCEL");
-                            setDeletingId(c.bookingId);
-                          }}
-                          className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                        >
-                          {t("auto.bookingModal_12")}
-                        </button>
-                      )}
-                      {isTeachingBooking && (() => {
-                        const action = getTeacherAction(c.startAt, c.endAt);
-                        if (action.canEndEarly) {
-                          return (
-                            <button
-                              disabled={isEndingEarly}
-                              onClick={() => {
-                                setActionType("END_EARLY");
-                                setDeletingId(c.bookingId);
-                              }}
-                              className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
-                            >
-                              {t("auto.bookingModal_13")}
-                            </button>
-                          );
-                        }
-                        if (action.canCancel) {
-                          return (
-                            <button
-                              disabled={isCancelling}
-                              onClick={() => {
-                                setActionType("CANCEL");
-                                setDeletingId(c.bookingId);
-                              }}
-                              className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
-                            >
-                              {t("auto.bookingModal_14")}
-                            </button>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </>
-                  )}
-
-                  {tab === "COMPLETED" && (
-                    <>
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="px-6 py-3 rounded-xl text-sm font-bold bg-secondary/50 text-white/60 cursor-not-allowed transition-all"
+                        title={t("booking.modal.joinNotYetTitle")}
+                      >
+                        {t("booking.modal.waitingRoom")}
+                      </button>
+                    )}
+                    {!isTeacher && (
                       <button
                         onClick={() => handleViewSummary(c.bookingId)}
                         className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
                       >
-                        <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                        AI Summary
+                        {t("booking.modal.cancel")}
                       </button>
-                      <Link href={`/learn/lesson/${c.bookingId}`}>
-                        <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
-                          <span className="material-symbols-outlined text-sm">visibility</span>
-                          {t("auto.bookingModal_19")}
-                        </button>
-                      </Link>
-                    </>
-                  )}
+                    )}
+                    {isTeacher && (() => {
+                      const action = getTeacherAction(c.startAt, c.endAt);
+                      if (action.canEndEarly) {
+                        return (
+                          <button
+                            disabled={isEndingEarly}
+                            onClick={() => {
+                              setActionType("END_EARLY");
+                              setDeletingId(c.bookingId);
+                            }}
+                            className="px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-50"
+                          >
+                            {t("booking.modal.endEarly")}
+                          </button>
+                        );
+                      }
+                      if (action.canCancel) {
+                        return (
+                          <button
+                            disabled={isCancelling}
+                            onClick={() => {
+                              setActionType("CANCEL");
+                              setDeletingId(c.bookingId);
+                            }}
+                            className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                          >
+                            {t("booking.modal.cancelSchedule")}
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </>
+                )}
 
-                  {tab === "CANCELLED" && (
-                    <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
-                      {t("auto.bookingModal_16")}
-                    </span>
-                  )}
-                </div>
+                {tab === "COMPLETED" && (
+                  <>
+                    <button
+                      onClick={() => handleViewSummary(c.bookingId)}
+                      className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                      {t("meetingSummary.viewSummary")}
+                    </button>
+                    <Link href={`/learn/session/${c.bookingId}`}>
+                      <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">visibility</span>
+                        {t("booking.modal.viewDetail")}
+                      </button>
+                    </Link>
+                  </>
+                )}
+
+                {tab === "CANCELLED" && (
+                  <span className="px-6 py-3 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/20">
+                    {t("booking.modal.cancelled")}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -393,6 +432,7 @@ export default function MySchedulePage() {
         isGenerating={summaryLoading}
         error={summaryError}
         onRetry={handleRetrySummary}
+        onToggleActionItem={handleToggleSummaryActionItem}
         isNoDataError={
           summaryError?.toLowerCase().includes("không có dữ liệu") ||
           summaryError?.toLowerCase().includes("no data") ||
@@ -401,7 +441,7 @@ export default function MySchedulePage() {
         }
       />
 
-      {/* --- MODAL XÁC NHẬN HỦY --- */}
+      {/* Cancel confirmation modal */}
       {deletingId !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
@@ -415,12 +455,14 @@ export default function MySchedulePage() {
               </div>
 
               <h3 className="text-xl font-bold text-white mb-2">
-                {actionType === "END_EARLY" ? "Xác nhận kết thúc sớm" : "Xác nhận hủy lớp"}
+                {actionType === "END_EARLY"
+                  ? t("booking.modal.confirm.endEarlyTitle")
+                  : t("booking.modal.confirm.cancelTitle")}
               </h3>
               <p className="text-slate-400 text-sm mb-8">
                 {actionType === "END_EARLY"
-                  ? "Buổi học sẽ kết thúc ngay và không thể vào lại phòng. Bạn có chắc chắn không?"
-                  : "Bạn sẽ phải chịu 50% phí hủy lớp. Bạn có chắc chắn muốn hủy lịch học này không?"}
+                  ? t("booking.modal.confirm.endEarlyDescription")
+                  : t("booking.modal.confirm.cancelDescription")}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -429,7 +471,7 @@ export default function MySchedulePage() {
                   disabled={isCancelling}
                   className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
                 >
-                  {t("auto.bookingModal_17")}
+                  {t("booking.modal.confirm.later")}
                 </button>
 
                 <button
@@ -440,9 +482,13 @@ export default function MySchedulePage() {
                   {(isCancelling || isEndingEarly) ? (
                     <>
                       <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {actionType === "END_EARLY" ? "Đang kết thúc..." : "Đang hủy..."}
+                      {actionType === "END_EARLY"
+                        ? t("booking.modal.confirm.ending")
+                        : t("booking.modal.confirm.cancelling")}
                     </>
-                  ) : (actionType === "END_EARLY" ? "Kết thúc sớm" : "Đồng ý hủy")}
+                  ) : (actionType === "END_EARLY"
+                    ? t("booking.modal.confirm.endEarlyConfirm")
+                    : t("booking.modal.confirm.cancelConfirm"))}
                 </button>
               </div>
             </div>

@@ -3,15 +3,19 @@ import { cookies } from "next/headers";
 import { fetchPublishedCourses } from "@/lib/publicApi";
 import { CourseListServer } from "@/components/seo/CourseListServer";
 import CourseListClient from "@/components/user-component/course/CourseListClient";
+import { CoursePageHeroText } from "@/components/user-component/course/CoursePageI18nText";
 
 export const revalidate = 3600;
 
+const COURSE_HERO_IMAGE_PATH = "/images/add18fd4-4014-464b-a78a-e0901a9aeafe.png";
+const COURSE_HERO_IMAGE_URL = `https://fuji.io.vn${COURSE_HERO_IMAGE_PATH}`;
+
 const DEFAULT_OG_IMAGE = {
-  url: "https://fuji.io.vn/images/og-image.jpg",
+  url: COURSE_HERO_IMAGE_URL,
   width: 1200,
   height: 630,
   alt: "Khóa học tiếng Nhật | FUJI",
-  type: "image/jpeg",
+  type: "image/png",
 };
 
 interface SearchParams {
@@ -107,24 +111,18 @@ export default async function CoursePage({
     <div className="flex-1 overflow-y-auto relative scroll-smooth">
       {/* Hero Section — static, rendered server-side */}
       <div className="relative w-full h-[320px] flex flex-col justify-center overflow-hidden rounded-b-[2.5rem] shadow-2xl shadow-secondary/10">
-        <div className="absolute inset-0 z-0 opacity-50">
+        <div className="absolute inset-0 z-0">
           <div
             className="w-full h-full bg-cover bg-bottom"
             style={{
-              backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-0H413QGHVmbebIlG1fj6OMnPzgFRDOaQZOq2DxLJMxtjK0P7VjCnCsjUlnAoun3J-acR1M3rSTXPDtqTNSTFUdFiJinhXaGf1nQNb1Gl8XA6gdYyijjozi-gJsg6V4tEB5xCpoCZaw1xb26qCFFYfLeCT64NwSSsPs-1Q64PHfLkuuvmdJdQpgUfIpcrb8S2jhDXazjs-F19uu8vR444_2S5hjtAWw1a5HOALkwVzUoBmbeLiuKC7CcBFfAbJ3IhdDZ4awJcN_c')",
+              backgroundImage: `url('${COURSE_HERO_IMAGE_PATH}')`,
             }}
           />
         </div>
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/75 via-black/45 to-black/15" />
+        <div className="absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-background/80 to-transparent" />
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
-          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3">
-            Khóa học tiếng Nhật trên{" "}
-            <span className="text-secondary text-glow">FUJI</span>
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed">
-            Học tiếng Nhật từ N5 đến N1 với giáo viên chuyên nghiệp, AI Chat
-            24/7 và hệ thống luyện đề JLPT toàn diện.
-          </p>
+          <CoursePageHeroText />
         </div>
       </div>
 

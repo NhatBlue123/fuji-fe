@@ -534,10 +534,14 @@ export default function TeachingSchedulePage() {
       toast.success("Đã lưu thay đổi lịch rảnh.");
     } catch (e: unknown) {
       const rawMsg =
-        typeof e === "object" && e !== null && "data" in e
-          ? (e as { data?: { message?: string } }).data?.message
+        typeof e === "object" && e !== null
+          ? (e as Record<string, unknown>).data
+              ? ((e as { data?: unknown }).data as Record<string, unknown>)?.messageKey
+              : (e as { message?: string }).message
           : null;
-      const msg: string = rawMsg ?? "Không cập nhật được. Slot phải còn trống và không trùng lịch khác.";
+      const msg: string = typeof rawMsg === "string" && rawMsg.length > 0
+        ? rawMsg
+        : "Không cập nhật được. Slot phải còn trống và không trùng lịch khác.";
 
       if (msg.startsWith("Trùng lịch")) {
         toast.error(

@@ -222,6 +222,19 @@ export default function FlashcardSetDetailPage({
 
   return (
     <main className="min-h-screen flex-1 overflow-y-auto bg-background text-foreground">
+      {/* Back button */}
+      <div className="mx-auto max-w-7xl px-5 py-4 md:px-8 lg:px-10">
+        <button
+          onClick={() => router.back()}
+          className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all font-bold"
+        >
+          <div className="p-2 rounded-xl border group-hover:border-primary/20 group-hover:bg-primary/10 transition-all">
+            <ArrowLeft size={18} />
+          </div>
+          Quay lại
+        </button>
+      </div>
+
       <section className="border-b border-border bg-card">
         <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_340px] md:px-8 lg:px-10">
           <div className="flex min-w-0 flex-col gap-6">

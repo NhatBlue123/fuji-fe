@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import * as wanakana from "wanakana";
+import { useTranslation } from "react-i18next";
 import type { ChatMessageItem } from "../types";
 
 interface ChatBoxProps {
@@ -34,6 +35,7 @@ export function ChatBox({
   showWarning,
   className,
 }: ChatBoxProps) {
+  const { t, i18n } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [showSuggestion, setShowSuggestion] = useState(false);
@@ -202,7 +204,12 @@ export function ChatBox({
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString("vi-VN", {
+    const locale = i18n.language.startsWith("ja")
+      ? "ja-JP"
+      : i18n.language.startsWith("en")
+        ? "en-US"
+        : "vi-VN";
+    return date.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -214,7 +221,7 @@ export function ChatBox({
     const diff = banUntil.getTime() - now.getTime();
     if (diff <= 0) return "";
     const minutes = Math.ceil(diff / 60000);
-    return `${minutes} phút`;
+    return t("videoCall.random.chat.minutes", { count: minutes });
   };
 
   if (isCollapsed) {
@@ -243,7 +250,7 @@ export function ChatBox({
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-slate-200/70 dark:border-slate-800/70 bg-slate-50/70 dark:bg-slate-900/40">
-        <h3 className="font-semibold text-sm">チャット</h3>
+        <h3 className="font-semibold text-sm">{t("videoCall.random.chat.title")}</h3>
         <Button
           variant="ghost"
           size="icon"
@@ -260,11 +267,10 @@ export function ChatBox({
           <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
           <div className="text-xs text-yellow-800 dark:text-yellow-200">
             <p className="font-medium">
-              Bạn nên sử dụng tiếng Nhật để việc học trở nên hiệu quả với nền
-              tảng hơn.
+              {t("videoCall.random.chat.warning")}
             </p>
             <p className="text-yellow-700 dark:text-yellow-300 mt-1">
-              Vi phạm: {violationCount}/5
+              {t("videoCall.random.chat.violationCount", { count: violationCount })}
             </p>
           </div>
         </div>
@@ -274,7 +280,7 @@ export function ChatBox({
       {isBanned && (
         <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-3">
           <p className="text-xs text-red-800 dark:text-red-200 font-medium">
-            Bạn đã bị cấm chat trong {getBanTimeRemaining()}
+            {t("videoCall.random.chat.banMessage", { remaining: getBanTimeRemaining() })}
           </p>
         </div>
       )}
@@ -284,7 +290,7 @@ export function ChatBox({
         <div className="space-y-3">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              <p>Chưa có tin nhắn nào</p>
+              <p>{t("videoCall.random.chat.empty")}</p>
             </div>
           ) : (
             messages.map((msg) => (
@@ -312,11 +318,13 @@ export function ChatBox({
                 </div>
                 {msg.status === "sending" && (
                   <span className="text-xs text-muted-foreground">
-                    送信中...
+                    {t("videoCall.random.chat.sending")}
                   </span>
                 )}
                 {msg.status === "failed" && (
-                  <span className="text-xs text-red-500">送信失敗</span>
+                  <span className="text-xs text-red-500">
+                    {t("videoCall.random.chat.sendFailed")}
+                  </span>
                 )}
               </div>
             ))
@@ -335,20 +343,24 @@ export function ChatBox({
                 "bg-primary/10 ring-2 ring-primary/30",
             )}
           >
-            <span>ひらがな:</span>
+            <span>{t("videoCall.random.chat.hiraganaLabel")}</span>
             <span className="font-medium">{hiraganaPreview}</span>
             <span className="text-xs text-muted-foreground">
-              (クリックして変換)
+              {t("videoCall.random.chat.applySuggestionHint")}
             </span>
           </button>
           <div className="mt-2">
-            <p className="text-xs text-muted-foreground">Kanji gợi ý</p>
+            <p className="text-xs text-muted-foreground">
+              {t("videoCall.random.chat.kanjiSuggestions")}
+            </p>
             {isFetchingSuggestions && (
-              <p className="text-xs text-muted-foreground mt-1">Đang tìm...</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("videoCall.random.chat.searching")}
+              </p>
             )}
             {!isFetchingSuggestions && kanjiSuggestions.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                Chưa có gợi ý
+                {t("videoCall.random.chat.noSuggestions")}
               </p>
             )}
             <div className="mt-2 flex flex-wrap gap-2">
@@ -376,7 +388,7 @@ export function ChatBox({
             </div>
             {/* Keyboard hint */}
             <p className="text-[10px] text-muted-foreground mt-2">
-              ↑↓←→ để chọn · Enter để áp dụng · Esc để đóng
+              {t("videoCall.random.chat.keyboardHint")}
             </p>
           </div>
         </div>
@@ -425,7 +437,9 @@ export function ChatBox({
               }
             }}
             placeholder={
-              isBanned ? "Bạn đang bị cấm chat" : "メッセージを入力..."
+              isBanned
+                ? t("videoCall.random.chat.bannedPlaceholder")
+                : t("videoCall.random.chat.messagePlaceholder")
             }
             disabled={isBanned}
             className="flex-1"

@@ -108,8 +108,54 @@ interface AiApiResponse<T> {
 export interface JlptAiAssessment {
   attemptId: number;
   markdown: string;
-  generatedAt: string;
+  keywords?: JlptAiAssessmentKeyword[];
+  weaknesses?: JlptAiAssessmentWeakness[];
+  studyPlan?: JlptAiAssessmentStudyPlan[];
+  courseRecommendations?: JlptAiCourseRecommendation[];
+  generatedAt?: string | null;
   modelVersion?: string;
+}
+
+export interface JlptAiAssessmentKeyword {
+  keyword: string;
+  category: "GRAMMAR" | "VOCABULARY" | "READING" | "LISTENING";
+  reason?: string;
+  confidence?: number;
+}
+
+export interface JlptAiAssessmentWeakness {
+  title: string;
+  category: "GRAMMAR" | "VOCABULARY" | "READING" | "LISTENING";
+  evidence?: string;
+  priority?: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export interface JlptAiAssessmentStudyPlan {
+  title: string;
+  description: string;
+  days?: number;
+}
+
+export interface JlptAiCourseRecommendation {
+  id: number;
+  title: string;
+  description?: string | null;
+  price?: number;
+  priceHoa?: number;
+  priceUnit?: string;
+  currency?: string;
+  level?: string | null;
+  thumbnailUrl?: string | null;
+  students?: number;
+  lessonCount?: number;
+  instructor?: string;
+  slug?: string | null;
+  url?: string;
+  enrolled?: boolean;
+  matchScore?: number;
+  matchedKeywords?: string[];
+  matchedLessons?: string[];
+  reason?: string;
 }
 
 export const jlptAiApi = createApi({

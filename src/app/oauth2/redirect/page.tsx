@@ -6,11 +6,45 @@ import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { setAccessToken } from "@/lib/token";
+import { useAppDispatch } from "@/store/hooks";
+import { loginSuccess } from "@/store/slices/authSlice";
 import { useLazyGetCurrentUserQuery } from "@/store/services/authApi";
+import type { User } from "@/types/auth";
+import type { AuthUser } from "@/types/auth-user";
+
+function mapAuthUserToUser(authUser: AuthUser): User {
+  const resolvedRole = authUser.role || "STUDENT";
+
+  return {
+    _id: String(authUser.id || ""),
+    id: authUser.id,
+    email: authUser.email || "",
+    username: authUser.username || "",
+    fullname: authUser.fullName || authUser.username || "",
+    fullName: authUser.fullName || "",
+    avatar: authUser.avatarUrl || "",
+    avatarUrl: authUser.avatarUrl || "",
+    avatarFrameUrl: authUser.avatarFrameUrl || null,
+    gender: authUser.gender || "",
+    role: resolvedRole,
+    level: (authUser.jlptLevel || "N5") as User["level"],
+    subscriptionTier: authUser.subscriptionTier,
+    isActive: authUser.active ?? true,
+    isAdmin: resolvedRole === "ADMIN",
+    isOnline: true,
+    posts: 0,
+    followers: [],
+    following: [],
+    lastActiveAt: new Date().toISOString(),
+    createdAt: authUser.createdAt || new Date().toISOString(),
+    updatedAt: authUser.createdAt || new Date().toISOString(),
+  };
+}
 
 function OAuth2RedirectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
   const [getCurrentUser] = useLazyGetCurrentUserQuery();
 
   useEffect(() => {
@@ -37,7 +71,8 @@ function OAuth2RedirectContent() {
 
     getCurrentUser()
       .unwrap()
-      .then(() => {
+      .then((authUser) => {
+        dispatch(loginSuccess({ user: mapAuthUserToUser(authUser), accessToken: token }));
         toast.success("Đăng nhập bằng Google thành công!");
         router.replace("/");
       })
@@ -45,7 +80,7 @@ function OAuth2RedirectContent() {
         toast.error("Không tải được thông tin tài khoản. Vui lòng đăng nhập lại.");
         router.replace("/login");
       });
-  }, [router, searchParams, getCurrentUser]);
+  }, [dispatch, router, searchParams, getCurrentUser]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#0a0a0c]">

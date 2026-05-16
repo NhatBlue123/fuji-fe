@@ -232,12 +232,12 @@ export default function BookingPage() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('${BOOKING_HERO_IMAGE}')` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-background/10 dark:from-background/90 dark:via-background/55 dark:to-background/5" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background/80 to-transparent" />
 
         <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-6 md:px-12 lg:px-20">
           <div className="max-w-3xl">
-            <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
+            <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-[0_3px_16px_rgba(0,0,0,0.45)] md:text-5xl">
               <Trans
                 i18nKey="booking.heroTitle"
                 components={{
@@ -245,7 +245,7 @@ export default function BookingPage() {
                 }}
               />
             </h1>
-            <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-muted-foreground md:text-xl">
+            <p className="mt-3 max-w-2xl text-base font-semibold leading-relaxed text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] md:text-xl">
               {t("booking.subtitle")}
             </p>
 

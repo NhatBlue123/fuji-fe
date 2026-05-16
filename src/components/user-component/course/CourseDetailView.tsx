@@ -1138,8 +1138,8 @@ export default function CourseDetailView({
             className="object-cover blur-sm scale-105"
             priority
           />
-          <div className="absolute inset-0 bg-background/60 z-10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
+          <div className="absolute inset-0 bg-black/45 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/45 to-black/10 z-10" />
         </div>
 
         {/* Content */}
@@ -1150,7 +1150,7 @@ export default function CourseDetailView({
               <span className="px-3 py-1 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold rounded-lg border border-white/10 shadow-lg uppercase tracking-wider">
                 {formatPrice(course.price)}
               </span>
-              <span className="px-3 py-1 bg-white/10 backdrop-blur text-foreground/80 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1">
+              <span className="px-3 py-1 bg-white/10 backdrop-blur text-white/90 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">
                   schedule
                 </span>{" "}
@@ -1163,12 +1163,12 @@ export default function CourseDetailView({
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-4 leading-tight text-glow">
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4 leading-tight text-glow drop-shadow-[0_3px_16px_rgba(0,0,0,0.45)]">
               {course.title}
             </h1>
 
             {/* Stats */}
-            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-white/90 drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
               {course.ratingCount > 0 && (
                 <div className="flex items-center gap-1.5 text-yellow-500 font-bold">
                   <span className="text-xl">
@@ -1177,7 +1177,7 @@ export default function CourseDetailView({
                   <div className="flex">
                     {renderStars(Number(course.averageRating))}
                   </div>
-                  <span className="text-muted-foreground font-normal ml-1">
+                  <span className="text-white/80 font-normal ml-1">
                     ({course.ratingCount.toLocaleString()} đánh giá)
                   </span>
                 </div>

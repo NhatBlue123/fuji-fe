@@ -67,7 +67,7 @@ export default async function CoursePage() {
     <div className="flex-1 overflow-y-auto relative scroll-smooth">
       {/* Hero Section — static, rendered server-side */}
       <div className="relative w-full h-[320px] flex flex-col justify-center overflow-hidden rounded-b-[2.5rem] shadow-2xl shadow-secondary/10">
-        <div className="absolute inset-0 z-0 opacity-50">
+        <div className="absolute inset-0 z-0">
           <div
             className="w-full h-full bg-cover bg-bottom"
             style={{
@@ -75,6 +75,8 @@ export default async function CoursePage() {
             }}
           />
         </div>
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/75 via-black/45 to-black/15" />
+        <div className="absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-background/80 to-transparent" />
         <div className="relative z-20 max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-20 -mt-10 text-center md:text-left">
           <CoursePageHeroText />
         </div>

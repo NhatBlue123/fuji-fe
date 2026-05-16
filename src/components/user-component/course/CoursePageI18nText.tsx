@@ -18,7 +18,7 @@ export function CoursePageHeroText() {
 
   return (
     <>
-      <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-3">
+      <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-3 drop-shadow-[0_3px_16px_rgba(0,0,0,0.45)]">
         <Trans
           i18nKey="course.page.heroTitle"
           components={{
@@ -26,7 +26,7 @@ export function CoursePageHeroText() {
           }}
         />
       </h1>
-      <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-xl md:max-w-2xl leading-relaxed">
+      <p className="text-white/95 text-lg md:text-xl font-semibold max-w-xl md:max-w-2xl leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]">
         {t("course.page.heroSubtitle")}
       </p>
     </>

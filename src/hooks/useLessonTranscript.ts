@@ -25,7 +25,15 @@ function normalizeTranscript(raw: Record<string, unknown>): LessonTranscriptItem
   const content = typeof raw.content === "string" ? raw.content.trim() : "";
   const sessionId = Number(raw.sessionId);
   if (!content || !Number.isFinite(sessionId)) return null;
-  if (isLikelyTranscriptNoise(content)) return null;
+  const confidence = raw.confidence == null ? null : Number(raw.confidence);
+  if (
+    isLikelyTranscriptNoise(content, {
+      languageConfidence: Number.isFinite(confidence) ? confidence : null,
+      source: "stomp",
+    })
+  ) {
+    return null;
+  }
 
   return {
     id: raw.id == null ? null : Number(raw.id),
@@ -38,7 +46,7 @@ function normalizeTranscript(raw: Record<string, unknown>): LessonTranscriptItem
     source: typeof raw.source === "string" ? raw.source : null,
     startTimeMs: raw.startTimeMs == null ? null : Number(raw.startTimeMs),
     endTimeMs: raw.endTimeMs == null ? null : Number(raw.endTimeMs),
-    confidence: raw.confidence == null ? null : Number(raw.confidence),
+    confidence,
     createdAt: typeof raw.createdAt === "string" ? raw.createdAt : null,
   };
 }

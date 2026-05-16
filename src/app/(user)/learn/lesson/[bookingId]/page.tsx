@@ -145,6 +145,7 @@ export default function LessonPage() {
     accessToken: accessToken ?? null,
     isMicOn,
     enabled: meetingSummary.settings.enabled,
+    classroomTopic: lessonData?.subject ?? null,
   });
 
   const {

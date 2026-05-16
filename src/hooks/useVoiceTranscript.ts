@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_CONFIG } from "@/config/api";
-import { isLikelyTranscriptNoise } from "@/lib/transcriptFilters";
+import {
+  createTranscriptLanguageContext,
+  evaluateTranscriptCandidate,
+  recordAcceptedTranscriptLanguage,
+  type TranscriptLanguageContext,
+  type TranscriptLanguagePolicy,
+  type TranscriptNoiseOptions,
+} from "@/lib/transcriptFilters";
 
 const ASSEMBLYAI_WS_URL = "wss://streaming.assemblyai.com/v3/ws";
 const SAMPLE_RATE = 16_000;
@@ -30,6 +37,8 @@ interface UseVoiceTranscriptOptions {
   accessToken: string | null;
   isMicOn: boolean;
   enabled?: boolean;
+  classroomTopic?: string | null;
+  transcriptLanguagePolicy?: TranscriptLanguagePolicy;
 }
 
 interface AssemblyAiMessage {
@@ -129,6 +138,8 @@ export function useVoiceTranscript({
   accessToken,
   isMicOn,
   enabled = true,
+  classroomTopic = null,
+  transcriptLanguagePolicy,
 }: UseVoiceTranscriptOptions) {
   const [status, setStatus] = useState<VoiceTranscriptStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -152,9 +163,24 @@ export function useVoiceTranscript({
   const speechHangoverChunksRef = useRef(0);
   const lastSavedTranscriptRef = useRef("");
   const lastSavedAtRef = useRef(0);
+  const languagePolicy = useMemo<TranscriptLanguagePolicy>(
+    () => ({
+      primaryLanguage: "vi",
+      classroomTopic,
+      ...transcriptLanguagePolicy,
+    }),
+    [classroomTopic, transcriptLanguagePolicy]
+  );
+  const languageContextRef = useRef<TranscriptLanguageContext>(
+    createTranscriptLanguageContext(languagePolicy)
+  );
+
+  useEffect(() => {
+    languageContextRef.current = createTranscriptLanguageContext(languagePolicy);
+  }, [languagePolicy, lessonId]);
 
   const saveTranscriptSegment = useCallback(
-    async (content: string, startTimeMs: number) => {
+    async (content: string, startTimeMs: number, confidence?: number | null) => {
       if (!lessonId || !accessToken || !content.trim()) return;
 
       try {
@@ -173,6 +199,7 @@ export function useVoiceTranscript({
             content: content.trim(),
             source: "VOICE",
             startTimeMs,
+            confidence: confidence ?? undefined,
           }),
         });
       } catch (err) {
@@ -183,16 +210,30 @@ export function useVoiceTranscript({
   );
 
   const handleFinalTranscript = useCallback(
-    (rawTranscript: string, options: { languageCode?: string | null; languageConfidence?: number | null } = {}) => {
-      const cleanTranscript = rawTranscript.trim();
-      if (cleanTranscript.length < MIN_FINAL_TRANSCRIPT_CHARS) {
+    (rawTranscript: string, options: TranscriptNoiseOptions = {}) => {
+      const trimmedTranscript = rawTranscript.trim();
+      if (trimmedTranscript.length < MIN_FINAL_TRANSCRIPT_CHARS) {
         setPartialTranscript("");
         return;
       }
-      if (isLikelyTranscriptNoise(cleanTranscript, options)) {
+
+      const decision = evaluateTranscriptCandidate(
+        trimmedTranscript,
+        {
+          ...options,
+          isFinal: true,
+          languagePolicy,
+        },
+        languageContextRef.current
+      );
+      if (!decision.accepted) {
+        if (process.env.NODE_ENV === "development") {
+          console.debug("[VoiceTranscript] Ignored transcript:", decision.reason, trimmedTranscript);
+        }
         return;
       }
 
+      const cleanTranscript = decision.text;
       const normalizedFinal = normalizeForDuplicate(cleanTranscript);
       const now = Date.now();
       if (
@@ -204,12 +245,13 @@ export function useVoiceTranscript({
 
       const startTimeMs = Math.max(0, (turnStartMsRef.current || now) - sessionStartMs.current);
       setPartialTranscript("");
-      void saveTranscriptSegment(cleanTranscript, startTimeMs);
+      void saveTranscriptSegment(cleanTranscript, startTimeMs, decision.confidence);
+      recordAcceptedTranscriptLanguage(languageContextRef.current, decision);
       lastSavedTranscriptRef.current = normalizedFinal;
       lastSavedAtRef.current = now;
       turnStartMsRef.current = now;
     },
-    [saveTranscriptSegment]
+    [languagePolicy, saveTranscriptSegment]
   );
 
   const fetchToken = useCallback(async (): Promise<string | null> => {
@@ -339,14 +381,31 @@ export function useVoiceTranscript({
         if (!transcript) continue;
 
         if (result.isFinal) {
-          handleFinalTranscript(transcript);
+          handleFinalTranscript(transcript, {
+            languageCode: "vi",
+            languageConfidence: result[0]?.confidence ?? 0.82,
+            source: "browser",
+          });
         } else {
           interim = `${interim} ${transcript}`.trim();
         }
       }
 
-      if (interim && !isLikelyTranscriptNoise(interim)) {
-        setPartialTranscript(interim);
+      if (interim) {
+        const decision = evaluateTranscriptCandidate(
+          interim,
+          {
+            languageCode: "vi",
+            languageConfidence: 0.72,
+            source: "browser",
+            isFinal: false,
+            languagePolicy,
+          },
+          languageContextRef.current
+        );
+        if (decision.accepted) {
+          setPartialTranscript(decision.text);
+        }
       }
     };
 
@@ -407,7 +466,7 @@ export function useVoiceTranscript({
       recognitionRef.current = null;
       return false;
     }
-  }, [accessToken, enabled, handleFinalTranscript, isMicOn, lessonId]);
+  }, [accessToken, enabled, handleFinalTranscript, isMicOn, languagePolicy, lessonId]);
 
   const float32ToPCM16 = (float32Array: Float32Array): ArrayBuffer => {
     const buffer = new ArrayBuffer(float32Array.length * 2);
@@ -545,22 +604,25 @@ export function useVoiceTranscript({
 
         if (msg.type === "Turn") {
           const cleanTranscript = (msg.transcript ?? "").trim();
-          if (
-            isLikelyTranscriptNoise(cleanTranscript, {
-              languageCode: msg.language_code,
-              languageConfidence: msg.language_confidence,
-            })
-          ) {
-            return;
-          }
+          const transcriptOptions: TranscriptNoiseOptions = {
+            languageCode: msg.language_code,
+            languageConfidence: msg.language_confidence,
+            source: "assemblyai",
+            isFinal: Boolean(msg.end_of_turn),
+            languagePolicy,
+          };
 
           if (msg.end_of_turn) {
-            handleFinalTranscript(cleanTranscript, {
-              languageCode: msg.language_code,
-              languageConfidence: msg.language_confidence,
-            });
+            handleFinalTranscript(cleanTranscript, transcriptOptions);
           } else {
-            setPartialTranscript(cleanTranscript);
+            const decision = evaluateTranscriptCandidate(
+              cleanTranscript,
+              transcriptOptions,
+              languageContextRef.current
+            );
+            if (decision.accepted) {
+              setPartialTranscript(decision.text);
+            }
           }
           return;
         }
@@ -622,6 +684,7 @@ export function useVoiceTranscript({
     startAudio,
     handleFinalTranscript,
     cleanupAudioResources,
+    languagePolicy,
   ]);
 
   useEffect(() => {

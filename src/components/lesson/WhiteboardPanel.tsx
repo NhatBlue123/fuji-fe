@@ -8,6 +8,8 @@ import { useGetWhiteboardSnapshotQuery } from "@/store/services/lessonApi";
 import { Trash2, Download, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const TLDRAW_LICENSE_KEY = process.env.NEXT_PUBLIC_TLDRAW_LICENSE_KEY?.trim() || undefined;
+
 const TldrawEditor = dynamic(
   () => import("tldraw").then((mod) => {
     const { Tldraw } = mod;
@@ -15,6 +17,7 @@ const TldrawEditor = dynamic(
       return (
         <Tldraw
           onMount={onMount}
+          licenseKey={TLDRAW_LICENSE_KEY}
           autoFocus
           hideUi={false}
         />
@@ -30,15 +33,96 @@ interface WhiteboardPanelProps {
   currentUserId: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyTldrawChanges(editor: any, payload: unknown) {
-  const changes = ((payload as { changes?: unknown })?.changes ?? payload) as {
-    added?: Record<string, unknown>;
-    updated?: Record<string, [unknown, unknown]>;
-    removed?: Record<string, unknown>;
+const WHITEBOARD_FLUSH_INTERVAL_MS = 80;
+const WHITEBOARD_MAX_BATCH_SIZE = 24;
+
+type TldrawRecord = Record<string, unknown>;
+type TldrawChanges = {
+  added?: Record<string, TldrawRecord>;
+  updated?: Record<string, [TldrawRecord, TldrawRecord]>;
+  removed?: Record<string, TldrawRecord>;
+};
+
+function getRecordId(record: unknown, fallback: string): string {
+  if (record && typeof record === "object") {
+    const id = (record as { id?: unknown }).id;
+    if (typeof id === "string" && id.trim()) return id;
+  }
+  return fallback;
+}
+
+function normalizeTldrawChanges(payload: unknown): TldrawChanges | null {
+  const changes = ((payload as { changes?: unknown })?.changes ?? payload) as TldrawChanges | null;
+  if (!changes || typeof changes !== "object") return null;
+  return changes;
+}
+
+function compactTldrawChanges(changes: TldrawChanges): TldrawChanges {
+  const compact: TldrawChanges = {};
+  if (changes.added && Object.keys(changes.added).length > 0) compact.added = changes.added;
+  if (changes.updated && Object.keys(changes.updated).length > 0) compact.updated = changes.updated;
+  if (changes.removed && Object.keys(changes.removed).length > 0) compact.removed = changes.removed;
+  return compact;
+}
+
+function hasTldrawChanges(changes: TldrawChanges | null): changes is TldrawChanges {
+  if (!changes) return false;
+  return Boolean(
+    (changes.added && Object.keys(changes.added).length > 0) ||
+    (changes.updated && Object.keys(changes.updated).length > 0) ||
+    (changes.removed && Object.keys(changes.removed).length > 0)
+  );
+}
+
+function mergeTldrawChanges(current: TldrawChanges, next: TldrawChanges): TldrawChanges {
+  const merged: TldrawChanges = {
+    added: { ...(current.added ?? {}) },
+    updated: { ...(current.updated ?? {}) },
+    removed: { ...(current.removed ?? {}) },
   };
 
-  if (!changes || typeof changes !== "object") return;
+  if (next.added) {
+    for (const [fallbackId, record] of Object.entries(next.added)) {
+      const id = getRecordId(record, fallbackId);
+      delete merged.updated?.[id];
+      delete merged.removed?.[id];
+      merged.added![id] = record;
+    }
+  }
+
+  if (next.updated) {
+    for (const [fallbackId, pair] of Object.entries(next.updated)) {
+      if (!Array.isArray(pair)) continue;
+      const [from, to] = pair;
+      const id = getRecordId(to, fallbackId);
+      if (merged.added?.[id]) {
+        merged.added[id] = to;
+      } else {
+        const existing = merged.updated?.[id];
+        merged.updated![id] = [existing?.[0] ?? from, to];
+      }
+    }
+  }
+
+  if (next.removed) {
+    for (const [fallbackId, record] of Object.entries(next.removed)) {
+      const id = getRecordId(record, fallbackId);
+      if (merged.added?.[id]) {
+        delete merged.added[id];
+      } else {
+        delete merged.updated?.[id];
+        merged.removed![id] = record;
+      }
+    }
+  }
+
+  return compactTldrawChanges(merged);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyTldrawChanges(editor: any, payload: unknown) {
+  const changes = normalizeTldrawChanges(payload);
+  if (!hasTldrawChanges(changes)) return;
 
   editor.store.mergeRemoteChanges(() => {
     if (changes.added) {
@@ -74,6 +158,10 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
   const [hasShapes, setHasShapes] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const isRemoteUpdateRef = useRef(false);
+  const pendingLocalChangesRef = useRef<TldrawChanges | null>(null);
+  const pendingLocalChangeCountRef = useRef(0);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const storeUnlistenRef = useRef<(() => void) | null>(null);
 
   const syncHasShapes = useCallback(() => {
     const editor = editorRef.current;
@@ -84,6 +172,51 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
     const shapeIds = editor.getCurrentPageShapeIds();
     setHasShapes(shapeIds.size > 0);
   }, []);
+
+  const flushLocalChanges = useCallback(() => {
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+
+    const changes = pendingLocalChangesRef.current;
+    pendingLocalChangesRef.current = null;
+    pendingLocalChangeCountRef.current = 0;
+
+    if (hasTldrawChanges(changes)) {
+      sendChanges(compactTldrawChanges(changes));
+    }
+  }, [sendChanges]);
+
+  const queueLocalChanges = useCallback(
+    (payload: unknown) => {
+      const changes = normalizeTldrawChanges(payload);
+      if (!hasTldrawChanges(changes)) return;
+
+      pendingLocalChangesRef.current = pendingLocalChangesRef.current
+        ? mergeTldrawChanges(pendingLocalChangesRef.current, changes)
+        : compactTldrawChanges(changes);
+      pendingLocalChangeCountRef.current += 1;
+
+      if (pendingLocalChangeCountRef.current >= WHITEBOARD_MAX_BATCH_SIZE) {
+        flushLocalChanges();
+        return;
+      }
+
+      if (!flushTimerRef.current) {
+        flushTimerRef.current = setTimeout(flushLocalChanges, WHITEBOARD_FLUSH_INTERVAL_MS);
+      }
+    },
+    [flushLocalChanges]
+  );
+
+  useEffect(() => {
+    return () => {
+      storeUnlistenRef.current?.();
+      storeUnlistenRef.current = null;
+      flushLocalChanges();
+    };
+  }, [flushLocalChanges]);
 
   const handleMount = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,7 +232,8 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
       syncHasShapes();
 
       const store = editor.store;
-      store.listen(
+      storeUnlistenRef.current?.();
+      storeUnlistenRef.current = store.listen(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (entry: any) => {
           if (isRemoteUpdateRef.current) return;
@@ -108,13 +242,13 @@ export function WhiteboardPanel({ lessonId, token, currentUserId }: WhiteboardPa
           const changes = entry.changes;
           if (!changes) return;
 
-          sendChanges(changes);
+          queueLocalChanges(changes);
           syncHasShapes();
         },
         { source: "user", scope: "document" }
       );
     },
-    [sendChanges, syncHasShapes]
+    [queueLocalChanges, syncHasShapes]
   );
 
   useEffect(() => {

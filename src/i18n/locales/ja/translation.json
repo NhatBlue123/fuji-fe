@@ -1307,7 +1307,7 @@
       "errorEvaluation": "会話の評価に失敗しました",
       "status": {
         "startToTalk": "セッションを開始して話す",
-        "holdToTalk": "マイクを押して話す",
+        "holdToTalk": "マイクをタップして話す",
         "listening": "聞き取り中...",
         "processing": "処理中...",
         "speaking": "先生が話しています...",
@@ -1326,7 +1326,12 @@
         "viewResult": "結果を見る"
       },
       "mic": {
-        "release": "離して送信"
+        "release": "離して送信",
+        "tapToSend": "タップして送信",
+        "realtimeLabel": "リアルタイムSTT",
+        "waitingTranscript": "聞き取り中...",
+        "send": "送信",
+        "retry": "もう一度話す"
       },
       "history": {
         "title": "会話履歴",

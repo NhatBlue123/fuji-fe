@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { disconnectStomp } from "@/lib/stomp";
+import { API_CONFIG } from "@/config/api";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";

@@ -1339,7 +1339,7 @@
       "errorEvaluation": "Failed to evaluate conversation",
       "status": {
         "startToTalk": "Start session to talk",
-        "holdToTalk": "Hold mic to talk",
+        "holdToTalk": "Tap mic to talk",
         "listening": "Listening...",
         "processing": "Processing...",
         "speaking": "Sensei is speaking...",
@@ -1358,7 +1358,12 @@
         "viewResult": "View Result"
       },
       "mic": {
-        "release": "Release to send"
+        "release": "Release to send",
+        "tapToSend": "Tap to send",
+        "realtimeLabel": "Realtime STT",
+        "waitingTranscript": "Listening...",
+        "send": "Send speech",
+        "retry": "Speak again"
       },
       "history": {
         "title": "Conversation History",

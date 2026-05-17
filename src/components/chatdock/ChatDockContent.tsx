@@ -33,6 +33,11 @@ const STREAM_STALL_TIMEOUT_MS = 20000;
 const STREAM_HEARTBEAT_CHECK_MS = 5000;
 const STREAM_MAX_IDLE_MS = 15000;
 const ROUTER_THINKING_MAX_ITEMS = 5;
+export type ChatDockModelId = "fuji-bot" | "gpt-5.4-mini";
+
+type ChatDockContentProps = {
+  selectedModel: ChatDockModelId;
+};
 
 /**
  * ChatDockContent - Compact version of AssistantPanel for ChatDock
@@ -65,7 +70,7 @@ function createClientMessageId() {
   return `chat_${Date.now().toString(36)}_${randomPart}`;
 }
 
-export default function ChatDockContent() {
+export default function ChatDockContent({ selectedModel }: ChatDockContentProps) {
   const { socket, isConnected } = useAIChatSocket();
   const [createAiConversation] = useCreateAiConversationMutation();
 
@@ -481,6 +486,7 @@ export default function ChatDockContent() {
         message: trimmed,
         mode: "basic",
         deepHelp: false,
+        model: selectedModel,
         clientMessageId,
       },
       (ack: {
@@ -510,6 +516,7 @@ export default function ChatDockContent() {
     ensureConversationId,
     armWatchdog,
     finishStreamingWithError,
+    selectedModel,
   ]);
 
   return (
@@ -579,15 +586,17 @@ export default function ChatDockContent() {
         )}
       </div>
 
-      <ChatInputArea
-        input={input}
-        onInputChange={setInput}
-        onSend={handleSend}
-        chips={[]}
-        placeholder="Hỏi về tiếng Nhật..."
-        inputDisabled={!isConnected}
-        sendDisabled={!isConnected || isTyping}
-      />
+      <div className="border-t border-border/60 bg-background/80 px-3 pt-2">
+        <ChatInputArea
+          input={input}
+          onInputChange={setInput}
+          onSend={handleSend}
+          chips={[]}
+          placeholder={selectedModel === "fuji-bot" ? "Hỏi FUJI bot miễn phí..." : "Hỏi GPT-5.4 mini..."}
+          inputDisabled={!isConnected}
+          sendDisabled={!isConnected || isTyping}
+        />
+      </div>
     </div>
   );
 }

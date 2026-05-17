@@ -81,22 +81,25 @@ export const ASSISTANT_CHIPS = [
 export const FuriganaDisplay = memo(function FuriganaDisplay({
   furigana,
   highlightIndex,
+  speaking = false,
 }: {
   furigana: FuriganaData;
   highlightIndex: number;
+  speaking?: boolean;
 }) {
   return (
     <div className="space-y-2">
       {/* Main line: kanji + furigana */}
       <p className="text-foreground text-base font-medium leading-[2.2] flex flex-wrap gap-x-1">
         {furigana.segments.map((seg, i) => {
-          const active = i <= highlightIndex;
+          const active = speaking || i <= highlightIndex;
           return (
             <ruby
               key={i}
+              style={speaking ? { animationDelay: `${i * 80}ms` } : undefined}
               className={`transition-colors duration-300 ${
                 active
-                  ? "text-secondary"
+                  ? `text-secondary ${speaking ? "animate-pulse" : ""}`
                   : highlightIndex >= 0
                     ? "text-muted-foreground/50"
                     : "text-foreground"
@@ -117,8 +120,11 @@ export const FuriganaDisplay = memo(function FuriganaDisplay({
         {furigana.segments.map((seg, i) => (
           <span
             key={i}
+            style={speaking ? { animationDelay: `${i * 80}ms` } : undefined}
             className={`transition-colors duration-300 ${
-              i <= highlightIndex ? "text-secondary/70" : ""
+              speaking || i <= highlightIndex
+                ? `text-secondary/70 ${speaking ? "animate-pulse" : ""}`
+                : ""
             }`}
           >
             {seg.romaji}

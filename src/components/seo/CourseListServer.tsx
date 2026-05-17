@@ -52,16 +52,18 @@ export function CourseListServer({ courses }: CourseListServerProps) {
               ? `/course/${course.slug}-${course.id}`
               : `/course/${course.id}`;
             const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
+            const imageAlt = course.thumbnailAlt || course.title;
 
             return (
               <article
                 key={course.id}
                 className="bg-card rounded-2xl overflow-hidden border border-border card-hover-effect group flex flex-col h-full hover:shadow-xl transition-all duration-300"
               >
+                {/* Thumbnail */}
                 <div className="h-48 relative overflow-hidden">
                   <Image
                     src={thumbnail}
-                    alt={course.thumbnailAlt || course.title}
+                    alt={imageAlt}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -92,13 +94,13 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                   <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors line-clamp-1">
                     {course.title}
                   </h3>
-
                   {course.description && (
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
                       {course.description}
                     </p>
                   )}
 
+                  {/* Instructor */}
                   {course.instructorName && (
                     <p className="text-xs text-muted-foreground mb-3">
                       <CourseInstructorLine name={course.instructorName} />
@@ -108,17 +110,13 @@ export function CourseListServer({ courses }: CourseListServerProps) {
                   <div className="mt-auto pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground mb-4">
                     {course.lessonCount > 0 && (
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">
-                          menu_book
-                        </span>
+                        <span className="material-symbols-outlined text-sm">menu_book</span>
                         <CourseLessonCount count={course.lessonCount} />
                       </span>
                     )}
                     {course.studentCount > 0 && (
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">
-                          group
-                        </span>
+                        <span className="material-symbols-outlined text-sm">group</span>
                         <CourseStudentCount count={course.studentCount} />
                       </span>
                     )}

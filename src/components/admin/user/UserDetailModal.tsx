@@ -50,7 +50,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/api";
@@ -417,10 +416,19 @@ export function UserDetailModal({
   const accountIsActive = user?.isActive;
   const accountLockedUntil = user?.lockedUntil;
 
+  const accountActiveStatusLabel = useMemo(() => {
+    if (accountIsActive === undefined) return "";
+    return accountIsActive ? "Đang hoạt động" : "Đã khóa tài khoản";
+  }, [accountIsActive]);
+
+  const accountActiveBadgeClass = accountIsActive
+    ? "text-emerald-600 border-emerald-200 bg-emerald-50"
+    : "text-rose-600 border-rose-200 bg-rose-50";
+
   const accountLockStatusLabel = useMemo(() => {
     if (accountIsActive === undefined) return "";
-    if (!accountIsActive) return "Đang khóa tài khoản";
-    if (!isAccountTemporarilyLocked) return "Đang hoạt động";
+    if (!accountIsActive) return "Đã khóa tài khoản";
+    if (!isAccountTemporarilyLocked) return "Không bị khóa";
     return accountLockedUntil
       ? `Khóa tạm đến ${format(new Date(accountLockedUntil), "HH:mm dd/MM/yyyy")}`
       : "Đang khóa tạm thời";
@@ -490,15 +498,44 @@ export function UserDetailModal({
   };
 
   const renderAccountLockStatus = () => (
-    <div className="flex items-center justify-between gap-3">
-      <div className="text-xs font-bold text-foreground">
-        Trạng thái tài khoản
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-bold text-foreground">
+          Trạng thái tài khoản
+        </div>
+        <Badge variant="outline" className={accountActiveBadgeClass}>
+          {accountActiveStatusLabel}
+        </Badge>
       </div>
-      <Badge variant="outline" className={accountLockBadgeClass}>
-        {accountLockStatusLabel}
-      </Badge>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-bold text-foreground">
+          Trạng thái khóa tài khoản
+        </div>
+        <Badge variant="outline" className={accountLockBadgeClass}>
+          {accountLockStatusLabel}
+        </Badge>
+      </div>
     </div>
   );
+
+  const renderLockAccountButton = () =>
+    user && !isAccountLocked && user.role !== "ADMIN" ? (
+      <Button
+        type="button"
+        size="sm"
+        variant="destructive"
+        disabled={isSubmitting}
+        onClick={handleLockAccount}
+        className="text-[11px] gap-1.5"
+      >
+        {isSubmitting ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Lock className="size-3.5" />
+        )}
+        Khóa tài khoản
+      </Button>
+    ) : null;
 
   const renderUnlockAccountButton = () =>
     isAccountLocked ? (
@@ -1892,109 +1929,7 @@ export function UserDetailModal({
                         {t("admin.user.modal.permissions.advanced")}
                       </Badge>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between h-10">
-                            <Label
-                              htmlFor="exam-access"
-                              className="text-sm font-medium text-foreground cursor-pointer"
-                            >
-                              {t("admin.user.modal.permissions.exam")}
-                            </Label>
-                            <Switch
-                              id="exam-access"
-                              checked={formData.examAccess}
-                              onCheckedChange={(checked) =>
-                                setFormData({
-                                  ...formData,
-                                  examAccess: checked,
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center justify-between h-10">
-                            <Label
-                              htmlFor="content-access"
-                              className="text-sm font-medium text-foreground cursor-pointer"
-                            >
-                              {t("admin.user.modal.permissions.content")}
-                            </Label>
-                            <Switch
-                              id="content-access"
-                              checked={formData.contentAccess}
-                              onCheckedChange={(checked) =>
-                                setFormData({
-                                  ...formData,
-                                  contentAccess: checked,
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center justify-between h-10">
-                            <Label
-                              htmlFor="chat-access"
-                              className="text-sm font-medium text-foreground cursor-pointer"
-                            >
-                              {t("admin.user.modal.permissions.chat")}
-                            </Label>
-                            <Switch
-                              id="chat-access"
-                              checked={formData.chatAccess}
-                              onCheckedChange={(checked) =>
-                                setFormData({
-                                  ...formData,
-                                  chatAccess: checked,
-                                })
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label
-                              htmlFor="device-limit"
-                              className="text-sm font-medium text-foreground"
-                            >
-                              {t("admin.user.modal.permissions.deviceLimit")}
-                            </Label>
-                            <Input
-                              id="device-limit"
-                              type="number"
-                              min="1"
-                              value={formData.deviceLimit}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  deviceLimit: parseInt(e.target.value) || 1,
-                                })
-                              }
-                              className="h-10 border-border rounded-lg text-sm bg-background"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label
-                              htmlFor="expiry-date"
-                              className="text-sm font-medium text-foreground"
-                            >
-                              {t("admin.user.modal.permissions.expiryDate")}
-                            </Label>
-                            <Input
-                              id="expiry-date"
-                              type="date"
-                              value={formData.expiryDate}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  expiryDate: e.target.value,
-                                })
-                              }
-                              className="h-10 border-border rounded-lg text-sm bg-background"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
+                    <CardContent className="p-6">
                       <div className="rounded-xl border border-border bg-muted/10 p-4 space-y-3">
                         {renderAccountLockStatus()}
 
@@ -2066,6 +2001,7 @@ export function UserDetailModal({
                           >
                             {t("admin.user.modal.permissions.unban")}
                           </Button>
+                          {renderLockAccountButton()}
                           {renderBookingBlockButtons()}
                           {renderUnlockAccountButton()}
                         </div>
@@ -2653,6 +2589,7 @@ export function UserDetailModal({
                           >
                             Gỡ cấm chat
                           </Button>
+                          {renderLockAccountButton()}
                           {renderBookingBlockButtons()}
                           {renderUnlockAccountButton()}
                         </div>

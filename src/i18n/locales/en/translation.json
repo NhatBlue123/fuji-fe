@@ -843,7 +843,6 @@
     "mySchedule": "My Schedule",
     "rules": {
       "title": "Booking Rules",
-      "rule1": "Only enter the classroom up to 5 minutes before start.",
       "rule2": "Canceling within 2 hours of class will result in a 100% loss of fee.",
       "rule3": "Account may be locked from booking for 24 hours.",
       "rule4": "Canceled slot cannot be immediately re-booked."

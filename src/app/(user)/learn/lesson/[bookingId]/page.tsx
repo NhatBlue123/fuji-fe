@@ -70,7 +70,7 @@ export default function LessonPage() {
   const [reportComment, setReportComment] = useState("");
   const [aiSummarySettingsOpen, setAiSummarySettingsOpen] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [transcriptLanguage, setTranscriptLanguage] = useState<VoiceTranscriptLanguage>("vi");
+  const [transcriptLanguage, setTranscriptLanguage] = useState<VoiceTranscriptLanguage>("auto");
 
   // AI Summary hook
   const meetingSummary = useMeetingSummary();

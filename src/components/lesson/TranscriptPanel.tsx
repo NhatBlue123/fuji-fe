@@ -21,6 +21,7 @@ interface TranscriptPanelProps {
 }
 
 const TRANSCRIPT_LANGUAGES: Array<{ value: VoiceTranscriptLanguage; label: string }> = [
+  { value: "auto", label: "Auto VI/JA" },
   { value: "vi", label: "Tiếng Việt" },
   { value: "ja", label: "日本語" },
   { value: "en", label: "English" },

@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import { use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useGetFlashListByIdQuery } from "@/store/services/flashcardApi";
 import { getMockImage } from "@/lib/mockImages";
 import {
@@ -17,6 +19,7 @@ export default function FlashListDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { slug } = use(params);
   const id = extractTrailingId(slug);
   const { data: flashlist, isLoading, error } = useGetFlashListByIdQuery(id);

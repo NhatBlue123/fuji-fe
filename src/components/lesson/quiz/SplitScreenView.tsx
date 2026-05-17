@@ -97,7 +97,7 @@ export function SplitScreenView({
                             isSelected && !showResults
                               ? "bg-[#6C63FF]/20 border border-[#6C63FF]/50"
                               : isRevealedCorrect
-                              ? "bg-emerald-500/20 border border-emerald-500/50"
+                              ? "border border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-500/20"
                               : isRevealedWrong
                               ? "bg-red-500/20 border border-red-500/50"
                               : "bg-[#252838]/50 border border-white/[0.06] hover:border-white/[0.12]"
@@ -115,7 +115,7 @@ export function SplitScreenView({
                           <span
                             className={
                               isRevealedCorrect
-                                ? "text-emerald-400"
+                                ? "text-emerald-700 dark:text-emerald-400"
                                 : isRevealedWrong
                                 ? "text-red-400"
                                 : "text-[#E8E8F0]"
@@ -124,7 +124,7 @@ export function SplitScreenView({
                             {opt}
                           </span>
                           {isRevealedCorrect && (
-                            <span className="ml-auto text-[10px] text-emerald-400">✓</span>
+                            <span className="ml-auto text-[10px] text-emerald-700 dark:text-emerald-400">✓</span>
                           )}
                         </label>
                       );

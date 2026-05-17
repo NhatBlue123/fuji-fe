@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AdminUser } from "./UserTable";
+import type { AdminUser } from "./UserTable";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -169,6 +169,23 @@ interface UserDetailModalProps {
   onUserUpdated?: () => void;
 }
 
+type DisplayViolationLog = {
+  id: number;
+  logKey: string;
+  source: "SECURITY" | "CHAT";
+  selectable: boolean;
+  type: string;
+  severity: "LOW" | "MEDIUM" | "HIGH";
+  testId?: string;
+  description: string;
+  ipAddress?: string;
+  device?: string;
+  browser?: string;
+  isHandled?: boolean;
+  createdAt: string;
+  count?: number;
+};
+
 /**
  * Component Modal hiển thị và chỉnh sửa chi tiết người dùng
  * Bao gồm: Thông tin cá nhân, phân quyền truy cập, và nhật ký vi phạm/hoạt động
@@ -247,6 +264,11 @@ export function UserDetailModal({
   const [isChatBanLoading, setIsChatBanLoading] = useState(false);
   const [chatViolations, setChatViolations] = useState<any[]>([]);
   const [isAccountUnlockLoading, setIsAccountUnlockLoading] = useState(false);
+  const [bookingBlockInfo, setBookingBlockInfo] = useState<{
+    blocked: boolean;
+    expiredAt: string | null;
+  }>({ blocked: false, expiredAt: null });
+  const [isBookingBlockLoading, setIsBookingBlockLoading] = useState(false);
   const PAGE_SIZE = 5;
 
   useEffect(() => {
@@ -305,10 +327,15 @@ export function UserDetailModal({
       setRoleChangeWarning(null);
       setWarningMessage("");
       setInstructorLogSearch("");
+      setSelectedLogs([]);
       setSelectedInstructorLogs([]);
       setStudentLogPage(0);
       setInstructorLogPage(0);
       setAdminLogPage(0);
+      setBookingBlockInfo({
+        blocked: Boolean(user.bookingBlocked),
+        expiredAt: user.bookingBlockExpiredAt ?? null,
+      });
     }
   }, [user]);
 
@@ -426,6 +453,42 @@ export function UserDetailModal({
     }
   };
 
+  const handleBlockBooking = async () => {
+    if (!user) return;
+    setIsBookingBlockLoading(true);
+    try {
+      const response = await api.post(`/users/me/${user.id}/booking-block`, {
+        hours: 24,
+      });
+      const updatedUser = response.data?.data;
+      setBookingBlockInfo({
+        blocked: Boolean(updatedUser?.bookingBlocked),
+        expiredAt: updatedUser?.bookingBlockExpiredAt ?? null,
+      });
+      toast.success("Đã tạm khóa đặt lịch 24h");
+      if (onUserUpdated) onUserUpdated();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể tạm khóa đặt lịch");
+    } finally {
+      setIsBookingBlockLoading(false);
+    }
+  };
+
+  const handleUnblockBooking = async () => {
+    if (!user) return;
+    setIsBookingBlockLoading(true);
+    try {
+      await api.delete(`/users/me/${user.id}/booking-block`);
+      setBookingBlockInfo({ blocked: false, expiredAt: null });
+      toast.success("Đã mở khóa đặt lịch");
+      if (onUserUpdated) onUserUpdated();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể mở khóa đặt lịch");
+    } finally {
+      setIsBookingBlockLoading(false);
+    }
+  };
+
   const renderAccountLockStatus = () => (
     <div className="flex items-center justify-between gap-3">
       <div className="text-xs font-bold text-foreground">
@@ -455,6 +518,79 @@ export function UserDetailModal({
       </Button>
     ) : null;
 
+  const bookingBlockExpiresAt = bookingBlockInfo.expiredAt;
+  const bookingBlockIsExpired = Boolean(
+    bookingBlockInfo.blocked &&
+      bookingBlockExpiresAt &&
+      new Date(bookingBlockExpiresAt).getTime() <= Date.now(),
+  );
+  const isBookingBlocked = Boolean(
+    bookingBlockInfo.blocked && !bookingBlockIsExpired,
+  );
+
+  const bookingBlockStatusLabel = !bookingBlockInfo.blocked
+    ? "Được phép đặt lịch"
+    : bookingBlockIsExpired
+      ? "Khóa đặt lịch đã hết hạn"
+      : bookingBlockExpiresAt
+        ? `Tạm khóa đến ${format(new Date(bookingBlockExpiresAt), "HH:mm dd/MM/yyyy")}`
+        : "Đang tạm khóa đặt lịch";
+
+  const bookingBlockBadgeClass = !bookingBlockInfo.blocked
+    ? "text-emerald-600 border-emerald-200 bg-emerald-50"
+    : bookingBlockIsExpired
+      ? "text-slate-600 border-slate-200 bg-slate-50"
+      : "text-amber-600 border-amber-200 bg-amber-50";
+
+  const renderBookingBlockStatus = () => (
+    <div className="flex items-center justify-between gap-3">
+      <div className="text-xs font-bold text-foreground">
+        Trạng thái đặt lịch
+      </div>
+      {isBookingBlockLoading ? (
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      ) : (
+        <Badge variant="outline" className={bookingBlockBadgeClass}>
+          {bookingBlockStatusLabel}
+        </Badge>
+      )}
+    </div>
+  );
+
+  const renderBookingBlockButtons = () => (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={isBookingBlockLoading || isBookingBlocked}
+        onClick={handleBlockBooking}
+        className="text-[11px] gap-1.5"
+      >
+        {isBookingBlockLoading ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Calendar className="size-3.5" />
+        )}
+        Tạm khóa đặt lịch 24h
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        disabled={isBookingBlockLoading || !bookingBlockInfo.blocked}
+        onClick={handleUnblockBooking}
+        className="text-[11px] bg-sky-600 hover:bg-sky-700 text-white gap-1.5"
+      >
+        {isBookingBlockLoading ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <UserCheck className="size-3.5" />
+        )}
+        Mở khóa đặt lịch
+      </Button>
+    </>
+  );
+
   const riskLevel = useMemo(() => {
     const violationsCount = user?.violationLogs?.length || 0;
 
@@ -480,7 +616,7 @@ export function UserDetailModal({
     };
   }, [user?.violationLogs, t]);
 
-  const filteredLogs = useMemo(() => {
+  const filteredLogs = useMemo<DisplayViolationLog[]>(() => {
     const now = Date.now();
     const hasActiveBan = Boolean(
       chatBanInfo &&
@@ -489,25 +625,88 @@ export function UserDetailModal({
           new Date(chatBanInfo.banUntil).getTime() > now)),
     );
 
-    const mapped = (chatViolations || []).map((v: any) => {
-      const severity =
-        v.violationType === "OTHER"
-          ? "HIGH"
-          : v.violationType === "VIETNAMESE" || v.violationType === "ENGLISH"
-            ? "MEDIUM"
-            : "LOW";
-      return {
-        id: Number(v.id),
-        createdAt: v.detectedAt,
-        description: v.messageContent || t("admin.user.modal.violations.suitableLang"),
-        type: v.violationType || "CHAT_VIOLATION",
-        severity,
-        isHandled: hasActiveBan,
-      };
-    });
+    const baseLogs: DisplayViolationLog[] = (user?.violationLogs || []).map(
+      (log) => {
+        const type = log.type || "SECURITY_VIOLATION";
+        const isChat = type.startsWith("CHAT_");
+        const severity =
+          log.severity === "HIGH" ||
+          log.severity === "MEDIUM" ||
+          log.severity === "LOW"
+            ? log.severity
+            : isChat
+              ? "MEDIUM"
+              : "LOW";
 
-    const filtered = mapped.filter((log: any) => {
-      const searchTerms = [log.description, log.type]
+        return {
+          id: Number(log.id),
+          logKey: `${isChat ? "chat" : "security"}-${log.id}-${log.createdAt || "unknown"}`,
+          source: isChat ? "CHAT" : "SECURITY",
+          selectable: !isChat,
+          createdAt: log.createdAt,
+          description:
+            log.description ||
+            (isChat
+              ? t("admin.user.modal.violations.suitableLang")
+              : type),
+          type,
+          severity,
+          testId: log.testId,
+          ipAddress: log.ipAddress,
+          device: log.device,
+          browser: log.browser,
+          isHandled: isChat ? hasActiveBan : Boolean(log.isHandled),
+        };
+      },
+    );
+
+    const knownChatIds = new Set(
+      baseLogs
+        .filter((log) => log.source === "CHAT")
+        .map((log) => String(log.id)),
+    );
+
+    const extraChatLogs: DisplayViolationLog[] = (chatViolations || [])
+      .filter((v: any) => !knownChatIds.has(String(v.id)))
+      .map((v: any) => {
+        const violationType = v.violationType || "OTHER";
+        const severity =
+          violationType === "OTHER"
+            ? "HIGH"
+            : violationType === "VIETNAMESE" || violationType === "ENGLISH"
+              ? "MEDIUM"
+              : "LOW";
+        return {
+          id: Number(v.id),
+          logKey: `chat-extra-${v.id}-${v.detectedAt || "unknown"}`,
+          source: "CHAT",
+          selectable: false,
+          createdAt: v.detectedAt || new Date().toISOString(),
+          description:
+            v.messageContent ||
+            t("admin.user.modal.violations.suitableLang"),
+          type: `CHAT_${violationType}`,
+          severity,
+          testId: v.sessionId,
+          ipAddress: v.ipAddress,
+          isHandled: hasActiveBan,
+        };
+      });
+
+    const mapped = [...baseLogs, ...extraChatLogs].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const filtered = mapped.filter((log) => {
+      const searchTerms = [
+        log.description,
+        log.type,
+        log.testId,
+        log.ipAddress,
+        log.browser,
+        log.device,
+      ]
         .filter(Boolean)
         .map((s) => s?.toLowerCase());
       const matchesSearch =
@@ -521,7 +720,7 @@ export function UserDetailModal({
       return matchesSearch && matchesSeverity && matchesStatus;
     });
 
-    const grouped: any[] = [];
+    const grouped: DisplayViolationLog[] = [];
     filtered.forEach((log) => {
       const last = grouped[grouped.length - 1];
       const logTime = new Date(log.createdAt).getTime();
@@ -529,9 +728,10 @@ export function UserDetailModal({
 
       if (
         last &&
+        last.source === log.source &&
         last.description === log.description &&
         last.type === log.type &&
-        lastTime - logTime < 3600000
+        Math.abs(lastTime - logTime) < 3600000
       ) {
         last.count = (last.count || 1) + 1;
       } else {
@@ -540,7 +740,20 @@ export function UserDetailModal({
     });
 
     return grouped;
-  }, [chatBanInfo, chatViolations, logSearch, logSeverity, logStatus]);
+  }, [
+    chatBanInfo,
+    chatViolations,
+    user?.violationLogs,
+    logSearch,
+    logSeverity,
+    logStatus,
+    t,
+  ]);
+
+  const selectableFilteredLogIds = useMemo(
+    () => filteredLogs.filter((log) => log.selectable).map((log) => log.id),
+    [filteredLogs],
+  );
 
   const filteredInstructorLogs = useMemo(() => {
     if (!user?.violationLogs) return [];
@@ -659,13 +872,22 @@ export function UserDetailModal({
   };
 
   const handleBulkHandleLogs = async () => {
-    if (selectedLogs.length === 0 || !user) return;
+    const selectedHandleableIds = selectedLogs.filter((id) =>
+      filteredLogs.some((log) => log.selectable && log.id === id),
+    );
+    if (selectedHandleableIds.length === 0 || !user) return;
     setIsSubmitting(true);
     try {
       await Promise.all(
-        selectedLogs.map((id) => api.post(`/users/me/violations/${id}/handle`)),
+        selectedHandleableIds.map((id) =>
+          api.post(`/users/me/violations/${id}/handle`),
+        ),
       );
-      toast.success(t("admin.user.toast.bulkHandled", { count: selectedLogs.length }));
+      toast.success(
+        t("admin.user.toast.bulkHandled", {
+          count: selectedHandleableIds.length,
+        }),
+      );
       setSelectedLogs([]);
       if (onUserUpdated) onUserUpdated();
     } catch (error) {
@@ -1371,17 +1593,35 @@ export function UserDetailModal({
                               <th className="p-4 w-10">
                                 <Checkbox
                                   checked={
-                                    selectedLogs.length ===
-                                      filteredLogs.length &&
-                                    filteredLogs.length > 0
+                                    selectableFilteredLogIds.length > 0 &&
+                                    selectableFilteredLogIds.every((id) =>
+                                      selectedLogs.includes(id),
+                                    )
                                   }
                                   onCheckedChange={(checked) => {
-                                    if (checked)
-                                      setSelectedLogs(
-                                        filteredLogs.map((l) => l.id),
+                                    if (checked) {
+                                      setSelectedLogs((prev) =>
+                                        Array.from(
+                                          new Set([
+                                            ...prev,
+                                            ...selectableFilteredLogIds,
+                                          ]),
+                                        ),
                                       );
-                                    else setSelectedLogs([]);
+                                    } else {
+                                      setSelectedLogs((prev) =>
+                                        prev.filter(
+                                          (id) =>
+                                            !selectableFilteredLogIds.includes(
+                                              id,
+                                            ),
+                                        ),
+                                      );
+                                    }
                                   }}
+                                  disabled={
+                                    selectableFilteredLogIds.length === 0
+                                  }
                                 />
                               </th>
                               <th className="p-4 text-[10px] font-bold text-muted-foreground tracking-wider">
@@ -1410,26 +1650,39 @@ export function UserDetailModal({
                                 )
                                 .map((log) => (
                                   <tr
-                                    key={log.id}
-                                    className={`hover:bg-muted/20 transition-all cursor-default group ${selectedLogs.includes(log.id) ? "bg-primary/5" : ""}`}
+                                    key={log.logKey}
+                                    className={`hover:bg-muted/20 transition-all cursor-default group ${
+                                      log.selectable &&
+                                      selectedLogs.includes(log.id)
+                                        ? "bg-primary/5"
+                                        : ""
+                                    }`}
                                   >
                                     <td className="p-4 align-middle">
-                                      <Checkbox
-                                        checked={selectedLogs.includes(log.id)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked)
-                                            setSelectedLogs([
-                                              ...selectedLogs,
-                                              log.id,
-                                            ]);
-                                          else
-                                            setSelectedLogs(
-                                              selectedLogs.filter(
-                                                (id) => id !== log.id,
-                                              ),
-                                            );
-                                        }}
-                                      />
+                                      {log.selectable ? (
+                                        <Checkbox
+                                          checked={selectedLogs.includes(
+                                            log.id,
+                                          )}
+                                          onCheckedChange={(checked) => {
+                                            if (checked)
+                                              setSelectedLogs([
+                                                ...selectedLogs,
+                                                log.id,
+                                              ]);
+                                            else
+                                              setSelectedLogs(
+                                                selectedLogs.filter(
+                                                  (id) => id !== log.id,
+                                                ),
+                                              );
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="size-5 rounded-full bg-violet-500/10 text-violet-600 flex items-center justify-center">
+                                          <MessageSquareWarning className="size-3" />
+                                        </div>
+                                      )}
                                     </td>
                                     <td className="p-4 align-top">
                                       <div className="text-xs font-bold text-foreground tabular-nums">
@@ -1448,7 +1701,7 @@ export function UserDetailModal({
                                     <td className="p-4">
                                       <div className="text-xs font-bold text-foreground/80 leading-tight flex items-center gap-2">
                                         {log.description}
-                                        {log.count > 1 && (
+                                        {(log.count ?? 0) > 1 && (
                                           <Badge
                                             variant="secondary"
                                             className="h-4 px-1.5 text-[8px] font-bold bg-muted/50 text-muted-foreground rounded-full"
@@ -1500,22 +1753,44 @@ export function UserDetailModal({
                                     </td>
                                     <td className="p-4 text-right align-middle">
                                       <div className="flex justify-end items-center">
-                                        {log.isHandled ? (
-                                          <Button
-                                            onClick={handleUnbanChat}
-                                            disabled={isChatBanLoading}
-                                            className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
-                                          >
+                                        {log.source === "CHAT" ? (
+                                          log.isHandled ? (
+                                            <Button
+                                              onClick={handleUnbanChat}
+                                              disabled={isChatBanLoading}
+                                              className="h-8 w-[120px] text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-emerald-500/20"
+                                            >
+                                              <CheckCircle2 className="size-3" />
+                                              {t("admin.user.modal.violations.openChat")}
+                                            </Button>
+                                          ) : (
+                                            <Button
+                                              onClick={() =>
+                                                handleSetChatBan("TEMPORARY")
+                                              }
+                                              disabled={isChatBanLoading}
+                                              className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
+                                            >
+                                              <CheckCircle2 className="size-3" />
+                                              {t("admin.user.modal.violations.handleNow")}
+                                            </Button>
+                                          )
+                                        ) : log.isHandled ? (
+                                          <div className="h-8 w-[110px] flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-full shadow-sm select-none">
                                             <CheckCircle2 className="size-3" />
-                                            {t("admin.user.modal.violations.openChat")}
-                                          </Button>
+                                            <span className="text-[9px] font-bold">
+                                              {t("admin.user.status.handled")}
+                                            </span>
+                                          </div>
                                         ) : (
                                           <Button
                                             onClick={() =>
-                                              handleSetChatBan("TEMPORARY")
+                                              setShowConfirmHandleLog({
+                                                id: log.id,
+                                                description: log.description,
+                                              })
                                             }
-                                            disabled={isChatBanLoading}
-                                            className="h-8 w-[120px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
+                                            className="h-8 w-[110px] text-[9px] font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all hover:bg-amber-500/20"
                                           >
                                             <CheckCircle2 className="size-3" />
                                             {t("admin.user.modal.violations.handleNow")}
@@ -1759,6 +2034,8 @@ export function UserDetailModal({
                           )}
                         </div>
 
+                        {renderBookingBlockStatus()}
+
                         <div className="flex flex-wrap gap-2">
                           <Button
                             type="button"
@@ -1789,6 +2066,7 @@ export function UserDetailModal({
                           >
                             {t("admin.user.modal.permissions.unban")}
                           </Button>
+                          {renderBookingBlockButtons()}
                           {renderUnlockAccountButton()}
                         </div>
                       </div>
@@ -2343,6 +2621,8 @@ export function UserDetailModal({
                           )}
                         </div>
 
+                        {renderBookingBlockStatus()}
+
                         <div className="flex flex-wrap gap-2">
                           <Button
                             type="button"
@@ -2373,6 +2653,7 @@ export function UserDetailModal({
                           >
                             Gỡ cấm chat
                           </Button>
+                          {renderBookingBlockButtons()}
                           {renderUnlockAccountButton()}
                         </div>
                       </div>

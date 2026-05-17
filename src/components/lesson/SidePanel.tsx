@@ -85,9 +85,9 @@ export function SidePanel({
   }, []);
 
   return (
-    <div className="w-full h-full min-w-0 rounded-[24px] overflow-hidden border border-white/[0.08] bg-[#1e2130] flex flex-col">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-border bg-card shadow-xl dark:border-white/[0.08] dark:bg-[#1e2130]">
       {/* Tab bar */}
-      <div className="flex items-center gap-0.5 px-3 py-2.5 border-b border-white/[0.08] shrink-0">
+      <div className="flex shrink-0 items-center gap-0.5 border-b border-border px-3 py-2.5 dark:border-white/[0.08]">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -98,8 +98,8 @@ export function SidePanel({
               activeTab === tab.id
                 ? "bg-[#6C63FF]/20 text-[#6C63FF]"
                 : tab.available
-                  ? "text-[#8B8FA8] hover:text-[#F0F0F0] hover:bg-white/[0.04]"
-                  : "text-[#8B8FA8]/30 cursor-not-allowed"
+                  ? "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-[#8B8FA8] dark:hover:bg-white/[0.04] dark:hover:text-[#F0F0F0]"
+                  : "cursor-not-allowed text-muted-foreground/40 dark:text-[#8B8FA8]/30"
             )}
           >
             {tab.icon}

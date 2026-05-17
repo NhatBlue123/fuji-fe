@@ -145,7 +145,7 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
   if (isLoadingNote) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-5 w-5 text-[#8B8FA8] animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground dark:text-[#8B8FA8]" />
       </div>
     );
   }
@@ -153,9 +153,9 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.08]">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2 dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-[#8B8FA8]">
+          <span className="text-xs text-muted-foreground dark:text-[#8B8FA8]">
             {isSaving ? (
               <span className="flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -175,7 +175,7 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
         <button
           onClick={handleManualSave}
           disabled={!isDirty || isSaving}
-          className="flex items-center gap-1 text-[10px] font-medium text-[#6C63FF] hover:text-[#5a52e0] disabled:text-[#8B8FA8]/40 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]"
+          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-[#6C63FF] transition-colors hover:bg-muted hover:text-[#5a52e0] disabled:text-muted-foreground/40 dark:hover:bg-white/[0.04] dark:disabled:text-[#8B8FA8]/40"
         >
           <Save className="h-3 w-3" />
           Lưu
@@ -188,13 +188,13 @@ export function NotesPanel({ lessonId }: NotesPanelProps) {
           value={content}
           onChange={(e) => handleChange(e.target.value)}
           placeholder={t('auto.lesson_notes_1')}
-          className="w-full h-full resize-none bg-transparent text-sm text-[#F0F0F0] placeholder:text-[#8B8FA8]/40 focus:outline-none leading-relaxed"
+          className="h-full w-full resize-none bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-none dark:text-[#F0F0F0] dark:placeholder:text-[#8B8FA8]/40"
         />
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 px-4 py-2 border-t border-white/[0.08]">
-        <p className="text-[10px] text-[#8B8FA8]/50">
+      <div className="shrink-0 border-t border-border px-4 py-2 dark:border-white/[0.08]">
+        <p className="text-[10px] text-muted-foreground/70 dark:text-[#8B8FA8]/50">
           Tự động lưu sau 1.5 giây • Chỉ bạn mới xem được
         </p>
       </div>

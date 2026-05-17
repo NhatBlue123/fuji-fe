@@ -43,7 +43,7 @@ export function ControlBar({
   audioLevel = 0,
 }: ControlBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3 py-4 px-6 bg-[#0f1117]/80 backdrop-blur-md border-t border-white/[0.08]">
+    <div className="flex flex-wrap items-center justify-center gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur-md dark:border-white/[0.08] dark:bg-[#0f1117]/80">
       <ControlButton
         active={isMicOn}
         onClick={onToggleMic}
@@ -72,7 +72,7 @@ export function ControlBar({
         highlight={isScreenSharing}
       />
 
-      <div className="w-px h-8 bg-white/10 mx-2" />
+      <div className="mx-2 h-8 w-px bg-border dark:bg-white/10" />
 
       {mediaError && (
         <div
@@ -135,7 +135,7 @@ function ControlButton({
       className={cn(
         "w-12 h-12 rounded-full flex items-center justify-center transition-all border",
         active
-          ? "bg-[#252838] border-white/10 text-[#F0F0F0] hover:bg-[#2f3347]"
+          ? "border-border bg-card text-foreground hover:bg-muted dark:border-white/10 dark:bg-[#252838] dark:text-[#F0F0F0] dark:hover:bg-[#2f3347]"
           : "bg-[#FF6B6B] border-[#FF6B6B] text-white hover:bg-[#ff5252]",
         highlight && "bg-[#6C63FF] border-[#6C63FF] hover:bg-[#5a52e0]",
         loading && "cursor-wait opacity-80"

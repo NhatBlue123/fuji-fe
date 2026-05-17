@@ -70,16 +70,16 @@ export function LessonHeader({
   const peerName = role === "TEACHER" ? studentName : teacherName;
 
   return (
-    <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-[#0f1117] border-b border-white/[0.08]">
+    <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-3 shadow-sm dark:border-white/[0.08] dark:bg-[#0f1117]">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />
-          <span className="text-[#F0F0F0] font-semibold text-sm">
+          <span className="text-sm font-semibold text-foreground dark:text-[#F0F0F0]">
             {subject || "Buổi học"}
           </span>
         </div>
 
-        <span className="text-[#8B8FA8] text-xs">
+        <span className="text-xs text-muted-foreground dark:text-[#8B8FA8]">
           với {peerName}
         </span>
 
@@ -93,7 +93,7 @@ export function LessonHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <Clock className="h-4 w-4 text-[#8B8FA8]" />
+        <Clock className="h-4 w-4 text-muted-foreground dark:text-[#8B8FA8]" />
         <span
           className={cn(
             "font-mono text-sm font-semibold",
@@ -101,7 +101,7 @@ export function LessonHeader({
               ? "text-[#FF4444] animate-pulse"
               : remaining <= 300
                 ? "text-amber-400"
-                : "text-[#F0F0F0]"
+                : "text-foreground dark:text-[#F0F0F0]"
           )}
         >
           {formatTime(remaining)}
@@ -111,7 +111,7 @@ export function LessonHeader({
             variant="ghost"
             size="icon"
             onClick={onSettingsClick}
-            className="ml-2 text-[#8B8FA8] hover:text-[#F0F0F0]"
+            className="ml-2 text-muted-foreground hover:text-foreground dark:text-[#8B8FA8] dark:hover:text-[#F0F0F0]"
           >
             <Settings className="h-4 w-4" />
           </Button>

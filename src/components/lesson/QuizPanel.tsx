@@ -254,9 +254,9 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
   const getQuizTypeColor = (type?: string) => {
     switch (type) {
-      case "LISTENING": return "bg-blue-500/20 text-blue-400";
-      case "READING": return "bg-green-500/20 text-green-400";
-      default: return "bg-[#6C63FF]/20 text-[#6C63FF]";
+      case "LISTENING": return "bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-0";
+      case "READING": return "bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-500/20 dark:text-green-400 dark:ring-0";
+      default: return "bg-[#6C63FF]/10 text-[#4F46E5] ring-1 ring-[#6C63FF]/20 dark:bg-[#6C63FF]/20 dark:text-[#6C63FF] dark:ring-0";
     }
   };
 
@@ -266,12 +266,12 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0 text-[13px]">
+    <div className="flex h-full min-h-0 flex-col text-[13px] text-foreground dark:text-[#F0F0F0]">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-white/[0.08] flex items-center justify-between shrink-0">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2 dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
           <HelpCircle className="h-4 w-4 text-[#6C63FF]" />
-          <span className="font-medium text-[#F0F0F0]">Quiz</span>
+          <span className="font-medium text-foreground dark:text-[#F0F0F0]">Quiz</span>
         </div>
         {liveQuestion && (
           <button
@@ -280,8 +280,8 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
             className={cn(
               "ml-auto mr-1.5 flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
               isLiveQuestionHidden
-                ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
-                : "bg-white/[0.06] text-[#C9CAD4] hover:bg-white/[0.1]"
+                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-0 dark:hover:bg-emerald-500/25"
+                : "bg-muted text-muted-foreground hover:bg-muted/80 dark:bg-white/[0.06] dark:text-[#C9CAD4] dark:hover:bg-white/[0.1]"
             )}
             title={isLiveQuestionHidden ? "Hiện quiz" : "Ẩn quiz"}
           >
@@ -326,7 +326,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
         {/* Quiz Creator */}
         {isTeacher && showCreator && (
-          <div className="rounded-xl border border-[#6C63FF]/30 bg-[#1a1d27] p-3">
+          <div className="rounded-xl border border-[#6C63FF]/30 bg-violet-50/60 p-3 dark:bg-[#1a1d27]">
             <QuizCreator
               title={creatorTitle}
               setTitle={setCreatorTitle}
@@ -346,9 +346,9 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {/* Quiz List */}
         <div className="space-y-2">
-          <p className="text-xs text-[#8B8FA8]">Danh sách quiz</p>
+          <p className="text-xs text-muted-foreground dark:text-[#8B8FA8]">Danh sách quiz</p>
           {quizzes.length === 0 ? (
-            <p className="text-xs text-[#8B8FA8]/70">Chưa có quiz nào</p>
+            <p className="text-xs text-muted-foreground/70 dark:text-[#8B8FA8]/70">Chưa có quiz nào</p>
           ) : (
             quizzes.map((q: QuizResponse) => (
               <div
@@ -357,22 +357,22 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                   "rounded-lg border px-2 py-2 flex items-center justify-between gap-2 transition-colors",
                   activeQuizId === q.id
                     ? "border-[#6C63FF]/50 bg-[#6C63FF]/10"
-                    : "border-white/[0.08] bg-[#1a1d27]/80 hover:border-white/[0.12]"
+                    : "border-border bg-background hover:border-[#6C63FF]/25 dark:border-white/[0.08] dark:bg-[#1a1d27]/80 dark:hover:border-white/[0.12]"
                 )}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-[#F0F0F0] text-xs font-medium truncate">{q.title}</p>
+                    <p className="truncate text-xs font-medium text-foreground dark:text-[#F0F0F0]">{q.title}</p>
                     <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full shrink-0", getQuizTypeColor(q.quizType))}>
                       {getQuizTypeLabel(q.quizType)}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#8B8FA8]">{q.questionCount} câu</p>
+                  <p className="text-[10px] text-muted-foreground dark:text-[#8B8FA8]">{q.questionCount} câu</p>
                 </div>
                 <div className="flex flex-wrap gap-1 shrink-0">
                   <button
                     type="button"
-                    className="rounded-md bg-white/[0.06] px-2 py-1 text-[10px] text-[#F0F0F0] hover:bg-white/10"
+                    className="rounded-md bg-muted px-2 py-1 text-[10px] text-foreground hover:bg-muted/80 dark:bg-white/[0.06] dark:text-[#F0F0F0] dark:hover:bg-white/10"
                     onClick={() => {
                       setActiveQuizId(q.id);
                       setFeed([]);
@@ -399,7 +399,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                           liveQuestion.quizId !== q.id ||
                           !canGoNext(q.id)
                         }
-                        className="rounded-md bg-white/[0.08] px-2 py-1 text-[10px] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-md bg-muted px-2 py-1 text-[10px] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white/[0.08]"
                         onClick={() => handleNextQuestion(q.id)}
                         title={getNextTitle(q.id)}
                       >
@@ -408,7 +408,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                       </button>
                       <button
                         type="button"
-                        className="rounded-md bg-white/[0.08] px-2 py-1 text-[10px]"
+                        className="rounded-md bg-muted px-2 py-1 text-[10px] dark:bg-white/[0.08]"
                         onClick={() => liveQuestion && sendReveal(liveQuestion.id)}
                       >
                         <Eye className="inline h-3 w-3 mr-0.5" />
@@ -432,18 +432,18 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {/* Live Question Display */}
         {liveQuestion && isLiveQuestionHidden && (
-          <div className="rounded-xl border border-white/[0.08] bg-[#1a1d27]/80 p-3">
+          <div className="rounded-xl border border-border bg-background p-3 dark:border-white/[0.08] dark:bg-[#1a1d27]/80">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full", getQuizTypeColor(liveQuestion.quizType))}>
                     {getQuizTypeLabel(liveQuestion.quizType)}
                   </span>
-                  <span className="text-xs text-[#F0F0F0]">
+                  <span className="text-xs text-foreground dark:text-[#F0F0F0]">
                     Câu {liveQuestion.questionIndex + 1}
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-[#8B8FA8] truncate">
+                <p className="mt-1 truncate text-[11px] text-muted-foreground dark:text-[#8B8FA8]">
                   Quiz đang được ẩn trên máy này để dành chỗ tạo quiz mới.
                 </p>
               </div>
@@ -460,15 +460,15 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
         )}
 
         {liveQuestion && !isLiveQuestionHidden && (
-          <div className="rounded-xl border border-[#6C63FF]/30 bg-[#1a1d27] p-3 space-y-3">
+          <div className="space-y-3 rounded-xl border border-[#6C63FF]/30 bg-violet-50/60 p-3 dark:bg-[#1a1d27]">
             {/* Question Header with Progress */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full", getQuizTypeColor(liveQuestion.quizType))}>
                   {getQuizTypeLabel(liveQuestion.quizType)}
                 </span>
-                <ChevronRight className="h-3 w-3 text-[#8B8FA8]" />
-                <span className="text-xs text-[#8B8FA8]">
+                <ChevronRight className="h-3 w-3 text-muted-foreground dark:text-[#8B8FA8]" />
+                <span className="text-xs text-muted-foreground dark:text-[#8B8FA8]">
                   Câu {liveQuestion.questionIndex + 1}
                 </span>
               </div>
@@ -508,7 +508,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
             {/* Standard Question Display for VOCAB/LISTENING without audio */}
             {(liveQuestion.quizType !== "READING") && (
               <>
-                <p className="text-sm text-[#F0F0F0] whitespace-pre-wrap">{liveQuestion.questionText}</p>
+                <p className="whitespace-pre-wrap text-sm text-foreground dark:text-[#F0F0F0]">{liveQuestion.questionText}</p>
                 {liveQuestion.questionType === "MULTIPLE_CHOICE" && (
                   <div className="space-y-1.5">
                     {parseOptions(liveQuestion.optionsJson).map((opt, i) => {
@@ -520,7 +520,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                             "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors text-xs",
                             studentAnswer === opt
                               ? "bg-[#6C63FF]/20 border border-[#6C63FF]/50"
-                              : "bg-[#252838]/50 border border-white/[0.06] hover:border-white/[0.12]"
+                              : "border border-border bg-background hover:border-[#6C63FF]/25 dark:border-white/[0.06] dark:bg-[#252838]/50 dark:hover:border-white/[0.12]"
                           )}
                         >
                           <input
@@ -530,8 +530,8 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                             checked={studentAnswer === opt}
                             onChange={() => setStudentAnswer(opt)}
                           />
-                          <span className="text-[#8B8FA8] font-medium w-5">{labels[i]}.</span>
-                          <span className="text-[#E8E8F0]">{opt}</span>
+                          <span className="w-5 font-medium text-muted-foreground dark:text-[#8B8FA8]">{labels[i]}.</span>
+                          <span className="text-foreground dark:text-[#E8E8F0]">{opt}</span>
                         </label>
                       );
                     })}
@@ -539,7 +539,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                 )}
                 {liveQuestion.questionType !== "MULTIPLE_CHOICE" && (
                   <input
-                    className="w-full rounded-lg bg-[#252838] border border-white/10 px-2 py-1.5 text-xs"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-1.5 text-xs text-foreground dark:border-white/10 dark:bg-[#252838] dark:text-[#F0F0F0]"
                     placeholder="Nhập đáp án..."
                     value={studentAnswer}
                     onChange={(e) => setStudentAnswer(e.target.value)}
@@ -550,13 +550,13 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
             {/* Reveal Section */}
             {reveal && reveal.questionId === liveQuestion.id && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-2">
-                <p className="text-xs text-emerald-400 font-medium">
+              <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   Đáp án: <span className="font-mono">{reveal.correctAnswer}</span>
                 </p>
                 {reveal.explanation && (
                   <div className="pt-2 border-t border-emerald-500/20">
-                    <p className="text-xs text-[#8B8FA8]">
+                    <p className="text-xs text-muted-foreground dark:text-[#8B8FA8]">
                       <span className="text-yellow-400 font-medium">Giải thích: </span>
                       {reveal.explanation}
                     </p>
@@ -581,7 +581,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {/* Results Dashboard */}
         {showResults && activeQuizId && results && (
-          <div className="rounded-xl border border-[#6C63FF]/30 bg-[#1a1d27] p-3">
+          <div className="rounded-xl border border-[#6C63FF]/30 bg-violet-50/60 p-3 dark:bg-[#1a1d27]">
             <QuizResultsDashboard
               quizTitle={quizzes.find(q => q.id === activeQuizId)?.title || "Quiz"}
               totalQuestions={results.totalQuestions}
@@ -600,13 +600,13 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {/* Realtime Feed for Teacher */}
         {isTeacher && feed.length > 0 && (
-          <div className="rounded-xl border border-white/[0.08] p-2 space-y-1">
-            <p className="text-[10px] text-[#8B8FA8]">Realtime</p>
+          <div className="space-y-1 rounded-xl border border-border p-2 dark:border-white/[0.08]">
+            <p className="text-[10px] text-muted-foreground dark:text-[#8B8FA8]">Realtime</p>
             {feed.map((f, i) => (
-              <div key={`${f.userId}-${f.questionId}-${i}`} className="text-[11px] text-[#c9cad4]">
+              <div key={`${f.userId}-${f.questionId}-${i}`} className="text-[11px] text-muted-foreground dark:text-[#c9cad4]">
                 <span className="text-[#6C63FF]">{f.userName}</span> —{" "}
                 {f.correct ? (
-                  <span className="text-emerald-400">đúng (+{f.scorePoints})</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">đúng (+{f.scorePoints})</span>
                 ) : (
                   <span className="text-[#FF6B6B]">sai</span>
                 )}
@@ -617,8 +617,8 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
 
         {/* Results JSON for Teacher */}
         {isTeacher && results && activeQuizId && !showResults && (
-          <div className="rounded-xl border border-white/[0.08] p-2 text-[11px] text-[#8B8FA8]">
-            <p className="text-[#F0F0F0] text-xs mb-1">Kết quả</p>
+          <div className="rounded-xl border border-border p-2 text-[11px] text-muted-foreground dark:border-white/[0.08] dark:text-[#8B8FA8]">
+            <p className="mb-1 text-xs text-foreground dark:text-[#F0F0F0]">Kết quả</p>
             <div className="space-y-1">
               {Object.entries(results.scoresByUser).map(([userId, score]) => {
                 const submissions = results.submissions.filter(s => String(s.userId) === userId);
@@ -627,7 +627,7 @@ export function QuizPanel({ lessonId, token, isTeacher }: QuizPanelProps) {
                 return (
                   <div key={userId} className="flex items-center justify-between">
                     <span className="text-[#6C63FF]">{userName}</span>
-                    <span className="text-emerald-400">{correctCount}/{results.totalQuestions} đúng ({score} điểm)</span>
+                    <span className="text-emerald-700 dark:text-emerald-400">{correctCount}/{results.totalQuestions} đúng ({score} điểm)</span>
                   </div>
                 );
               })}

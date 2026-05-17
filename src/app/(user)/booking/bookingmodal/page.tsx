@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, Ban, Clock3 } from "lucide-react";
@@ -16,6 +16,8 @@ import type { MeetingSummaryResult } from "@/hooks/useMeetingSummary";
 import { API_CONFIG } from "@/config/api";
 
 type BookingTab = "UPCOMING" | "COMPLETED" | "CANCELLED";
+
+const ARCHIVE_PAGE_SIZE = 5;
 
 function localeFromLanguage(language: string) {
   if (language.startsWith("ja")) return "ja-JP";
@@ -63,6 +65,7 @@ export default function MySchedulePage() {
   }, []);
 
   const [tab, setTab] = useState<BookingTab>("UPCOMING");
+  const [archivePage, setArchivePage] = useState(1);
 
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [actionType, setActionType] = useState<"CANCEL" | "END_EARLY">("CANCEL");
@@ -191,6 +194,34 @@ export default function MySchedulePage() {
   }, [accessToken, t]);
 
   const items = data ?? [];
+  const shouldPaginate = tab === "COMPLETED" || tab === "CANCELLED";
+  const totalPages = shouldPaginate
+    ? Math.max(1, Math.ceil(items.length / ARCHIVE_PAGE_SIZE))
+    : 1;
+  const paginatedItems = useMemo(() => {
+    if (!shouldPaginate) return items;
+    const start = (archivePage - 1) * ARCHIVE_PAGE_SIZE;
+    return items.slice(start, start + ARCHIVE_PAGE_SIZE);
+  }, [archivePage, items, shouldPaginate]);
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const pages = new Set([1, totalPages, archivePage - 1, archivePage, archivePage + 1]);
+    return Array.from(pages)
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((a, b) => a - b);
+  }, [archivePage, totalPages]);
+
+  useEffect(() => {
+    setArchivePage(1);
+  }, [tab]);
+
+  useEffect(() => {
+    if (!shouldPaginate) return;
+    setArchivePage((current) => Math.min(current, totalPages));
+  }, [shouldPaginate, totalPages]);
 
   const handleConfirmCancel = async () => {
     if (deletingId === null) return;
@@ -219,17 +250,17 @@ export default function MySchedulePage() {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto bg-[#0f172a] px-6 relative min-h-screen">
+    <main className="relative min-h-screen flex-1 overflow-y-auto bg-background px-6 text-foreground dark:bg-[#0f172a]">
       <div className="px-10 py-8">
         {/* Tab Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
+          <div className="flex gap-2 rounded-xl border border-border bg-card/80 p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
             {(["UPCOMING", "COMPLETED", "CANCELLED"] as BookingTab[]).map((tabItem) => (
               <button
                 key={tabItem}
                 onClick={() => setTab(tabItem)}
                 className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                  tab === tabItem ? "bg-secondary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+                  tab === tabItem ? "bg-secondary text-white shadow-lg" : "text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-slate-200"
                 }`}
               >
                 {t(`booking.modal.tabs.${tabItem.toLowerCase()}`)}
@@ -256,11 +287,11 @@ export default function MySchedulePage() {
         </div>
 
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <div className="flex items-center gap-2 text-amber-200">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
             <AlertTriangle className="size-4" />
             <p className="text-sm font-bold">{t("booking.modal.rules.title")}</p>
           </div>
-          <ul className="mt-2 space-y-1.5 text-xs text-amber-100/90">
+          <ul className="mt-2 space-y-1.5 text-xs text-amber-700 dark:text-amber-100/90">
             <li className="flex items-start gap-2">
               <Clock3 className="mt-0.5 size-3.5 shrink-0" />
               {t("booking.modal.rules.rule1")}
@@ -277,7 +308,7 @@ export default function MySchedulePage() {
         </div>
 
         {(isLoading || isFetching) && (
-          <div className="text-slate-400 animate-pulse">{t("booking.modal.loading")}</div>
+          <div className="animate-pulse text-muted-foreground">{t("booking.modal.loading")}</div>
         )}
 
         {isError && (
@@ -287,16 +318,16 @@ export default function MySchedulePage() {
         )}
 
         {!isLoading && !isFetching && !isError && items.length === 0 && (
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center text-slate-400">
+          <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-muted-foreground shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
             {t("booking.modal.empty")}
           </div>
         )}
 
         <div className="space-y-4">
-          {items.map((c) => (
+          {paginatedItems.map((c) => (
             <div
               key={c.bookingId}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 hover:bg-white/[0.07] transition-colors"
+              className="flex flex-col items-center gap-6 rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:bg-muted/40 md:flex-row dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.07]"
             >
               <div className="flex items-center gap-4 flex-1 w-full">
                 <Image
@@ -309,11 +340,11 @@ export default function MySchedulePage() {
                     : t("booking.modal.roles.teacher")}
                 />
                 <div>
-                  <h4 className="text-slate-100 font-bold">
+                  <h4 className="font-bold text-foreground dark:text-slate-100">
                     {c.role === "TEACHER" ? c.studentName : c.teacherName}
                   </h4>
                   <p className="text-pink-400 text-sm">{c.subject}</p>
-                  <p className="text-slate-500 text-xs">
+                  <p className="text-xs text-muted-foreground dark:text-slate-500">
                     {c.role === "TEACHER"
                       ? t("booking.modal.roles.student")
                       : t("booking.modal.roles.teacher")}
@@ -321,16 +352,17 @@ export default function MySchedulePage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-8 px-8 border-x border-white/10">
+              <div className="flex items-center gap-8 border-x border-border px-8 dark:border-white/10">
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("booking.modal.date")}</p>
-                  <p className="text-white font-bold">{formatDate(c.startAt, i18n.language)}</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground dark:text-slate-500">{t("booking.modal.date")}</p>
+                  <p className="font-bold text-foreground dark:text-white">{formatDate(c.startAt, i18n.language)}</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-500 text-xs uppercase tracking-wider">{t("booking.modal.time")}</p>
-                  <p className="text-white font-bold">{formatTimeRange(c.startAt, c.endAt)}</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground dark:text-slate-500">{t("booking.modal.time")}</p>
+                  <p className="font-bold text-foreground dark:text-white">{formatTimeRange(c.startAt, c.endAt)}</p>
                 </div>
+              </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                 {tab === "UPCOMING" && (
@@ -353,8 +385,13 @@ export default function MySchedulePage() {
                     )}
                     {!isTeacher && (
                       <button
-                        onClick={() => handleViewSummary(c.bookingId)}
-                        className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
+                        type="button"
+                        disabled={isCancelling}
+                        onClick={() => {
+                          setActionType("CANCEL");
+                          setDeletingId(c.bookingId);
+                        }}
+                        className="flex items-center gap-2 rounded-xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                       >
                         {t("booking.modal.cancel")}
                       </button>
@@ -383,7 +420,7 @@ export default function MySchedulePage() {
                               setActionType("CANCEL");
                               setDeletingId(c.bookingId);
                             }}
-                            className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-50"
+                            className="rounded-xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                           >
                             {t("booking.modal.cancelSchedule")}
                           </button>
@@ -398,13 +435,13 @@ export default function MySchedulePage() {
                   <>
                     <button
                       onClick={() => handleViewSummary(c.bookingId)}
-                      className="px-4 py-3 rounded-xl text-sm font-bold bg-white/10 text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-all flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground transition-all hover:bg-purple-500/10 hover:text-purple-600 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-purple-500/20 dark:hover:text-purple-300"
                     >
                       <span className="material-symbols-outlined text-sm">auto_awesome</span>
                       {t("meetingSummary.viewSummary")}
                     </button>
                     <Link href={`/learn/session/${c.bookingId}`}>
-                      <button className="px-6 py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
+                      <button className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-6 py-3 text-sm font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30">
                         <span className="material-symbols-outlined text-sm">visibility</span>
                         {t("booking.modal.viewDetail")}
                       </button>
@@ -418,9 +455,63 @@ export default function MySchedulePage() {
                   </span>
                 )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
+
+        {shouldPaginate && items.length > ARCHIVE_PAGE_SIZE && (
+          <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm sm:flex-row dark:border-white/10 dark:bg-white/5">
+            <p className="text-sm font-semibold text-muted-foreground dark:text-slate-400">
+              Hiển thị {(archivePage - 1) * ARCHIVE_PAGE_SIZE + 1}-
+              {Math.min(archivePage * ARCHIVE_PAGE_SIZE, items.length)} / {items.length} lịch
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setArchivePage((page) => Math.max(1, page - 1))}
+                disabled={archivePage === 1}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              >
+                Trước
+              </button>
+
+              {pageNumbers.map((page, index) => {
+                const previous = pageNumbers[index - 1];
+                const hasGap = previous != null && page - previous > 1;
+                return (
+                  <React.Fragment key={page}>
+                    {hasGap && (
+                      <span className="px-1 text-sm font-bold text-muted-foreground dark:text-slate-500">
+                        ...
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setArchivePage(page)}
+                      className={`h-10 min-w-10 rounded-xl px-3 text-sm font-black transition ${
+                        archivePage === page
+                          ? "bg-secondary text-white shadow-lg shadow-secondary/20"
+                          : "border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => setArchivePage((page) => Math.min(totalPages, page + 1))}
+                disabled={archivePage === totalPages}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- MODAL AI SUMMARY --- */}
@@ -445,21 +536,21 @@ export default function MySchedulePage() {
       {deletingId !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm dark:bg-slate-950/80"
             onClick={() => !isCancelling && setDeletingId(null)}
           />
-          <div className="relative bg-[#1e293b] border border-white/10 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="relative w-full max-w-sm animate-in rounded-3xl border border-border bg-card p-6 shadow-2xl duration-200 fade-in zoom-in dark:border-white/10 dark:bg-[#1e293b]">
             <div className="flex flex-col items-center text-center">
               <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-secondary text-3xl">warning</span>
               </div>
 
-              <h3 className="text-xl font-bold text-white mb-2">
+              <h3 className="mb-2 text-xl font-bold text-foreground dark:text-white">
                 {actionType === "END_EARLY"
                   ? t("booking.modal.confirm.endEarlyTitle")
                   : t("booking.modal.confirm.cancelTitle")}
               </h3>
-              <p className="text-slate-400 text-sm mb-8">
+              <p className="mb-8 text-sm text-muted-foreground dark:text-slate-400">
                 {actionType === "END_EARLY"
                   ? t("booking.modal.confirm.endEarlyDescription")
                   : t("booking.modal.confirm.cancelDescription")}
@@ -469,7 +560,7 @@ export default function MySchedulePage() {
                 <button
                   onClick={() => setDeletingId(null)}
                   disabled={isCancelling}
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-muted px-4 py-3 font-bold text-muted-foreground transition-all hover:bg-muted/80 disabled:opacity-50 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
                 >
                   {t("booking.modal.confirm.later")}
                 </button>

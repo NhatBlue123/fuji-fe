@@ -55,6 +55,7 @@ interface UseMeetingSummaryReturn {
   saveBulkTranscripts: (segments: TranscriptSegment[]) => Promise<void>;
   generateSummary: (sessionId: number, sessionType: string, language?: string) => Promise<MeetingSummaryResult | null>;
   getSummary: (sessionId: number, sessionType: string) => Promise<MeetingSummaryResult | null>;
+  getBookingSummary: (bookingId: number) => Promise<MeetingSummaryResult | null>;
   toggleActionItem: (summaryId: number, itemIndex: number) => Promise<MeetingSummaryResult | null>;
   toggleAiSummary: (enabled: boolean) => Promise<void>;
   setAiSummaryLanguage: (language: string) => Promise<void>;
@@ -230,6 +231,44 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
     }
   }, [accessToken, normalizeSummary]);
 
+  const getBookingSummary = useCallback(async (
+    bookingId: number
+  ): Promise<MeetingSummaryResult | null> => {
+    setHasAttemptedGeneration(true);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/summaries/booking/${bookingId}`,
+        {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        }
+      );
+
+      if (response.status === 404) {
+        setSummary(null);
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch summary");
+      }
+
+      const data = await response.json();
+      const result = normalizeSummary(data);
+      setSummary(result);
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(message);
+      console.error("[MeetingSummary] Failed to fetch booking summary:", err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [accessToken, normalizeSummary]);
+
   // Load AI summary settings from backend
   const loadSettings = useCallback(async () => {
     try {
@@ -316,6 +355,7 @@ export function useMeetingSummary(): UseMeetingSummaryReturn {
     saveBulkTranscripts,
     generateSummary,
     getSummary,
+    getBookingSummary,
     toggleActionItem,
     toggleAiSummary,
     setAiSummaryLanguage,

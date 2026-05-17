@@ -247,7 +247,7 @@ export function QuizCreator({
                       className="flex-1 rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1 text-xs text-[#F0F0F0]"
                     />
                     {question.correctAnswer === opt && (
-                      <span className="text-[10px] text-emerald-400">✓</span>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400">✓</span>
                     )}
                   </div>
                 );
@@ -392,14 +392,14 @@ export function QuizCreator({
 
           {/* Uploaded audio preview */}
           {mediaContent && !isUploading && (
-            <div className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/30 dark:bg-emerald-500/5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                    <CheckCircle className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs text-emerald-400 font-medium truncate">
+                    <p className="truncate text-xs font-medium text-emerald-700 dark:text-emerald-400">
                       Audio đã tải lên
                     </p>
                     <p className="text-[10px] text-[#8B8FA8] truncate">

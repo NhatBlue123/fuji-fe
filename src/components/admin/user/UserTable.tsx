@@ -45,6 +45,8 @@ export interface AdminUser {
   lastViolationAt?: string | null;
   lockedUntil?: string | null;
   temporarilyLocked?: boolean;
+  bookingBlocked?: boolean;
+  bookingBlockExpiredAt?: string | null;
   identificationCode?: string;
   violationLogs?: ViolationLog[];
   auditLogs?: {

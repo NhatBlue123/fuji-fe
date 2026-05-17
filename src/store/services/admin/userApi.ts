@@ -61,6 +61,8 @@ export interface UserAdminDTO {
     status: "ACTIVE" | "LOCKED" | "BANNED";
     score?: number;
     antiCheatViolations?: number;
+    bookingBlocked?: boolean;
+    bookingBlockExpiredAt?: string | null;
     createdAt: string;
 }
 

@@ -17,16 +17,11 @@ const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop";
 
 /**
- * Server Component — renders the initial course grid for SSR.
+ * Server Component - renders the initial course grid for SSR.
  *
- * This component renders course cards with all indexable content (title,
- * description, price, rating, instructor) visible in the initial HTML
- * without JavaScript execution.
- *
- * The interactive CourseList client component renders below this and takes
- * over for filtering, pagination, and purchase actions.
- *
- * Must NOT use RTK Query, useState, useEffect, or any client-side hooks.
+ * This component renders course cards with all indexable content visible in the
+ * initial HTML. The client course list below can still handle filtering and
+ * interactive purchase actions.
  */
 export function CourseListServer({ courses }: CourseListServerProps) {
   return (
@@ -44,10 +39,10 @@ export function CourseListServer({ courses }: CourseListServerProps) {
             search_off
           </span>
           <p className="text-lg font-medium text-muted-foreground">
-            Không tìm thấy khóa học nào
+            Khong tim thay khoa hoc nao
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Hãy thử chọn danh mục hoặc từ khóa khác
+            Hay thu chon danh muc hoac tu khoa khac
           </p>
         </div>
       ) : (
@@ -56,77 +51,79 @@ export function CourseListServer({ courses }: CourseListServerProps) {
             const slug = course.slug
               ? `/course/${course.slug}-${course.id}`
               : `/course/${course.id}`;
+            const thumbnail = course.thumbnailUrl || DEFAULT_THUMBNAIL;
 
-                {/* Price badge */}
-                <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
-                  <CoursePriceBadge price={course.price} />
-                </div>
+            return (
+              <article
+                key={course.id}
+                className="bg-card rounded-2xl overflow-hidden border border-border card-hover-effect group flex flex-col h-full hover:shadow-xl transition-all duration-300"
+              >
+                <div className="h-48 relative overflow-hidden">
+                  <Image
+                    src={thumbnail}
+                    alt={course.thumbnailAlt || course.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-80" />
 
-                  {/* Price badge */}
                   <div className="absolute top-3 left-3 bg-secondary/90 backdrop-blur text-secondary-foreground text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
-                    {formatPrice(course.price)}
+                    <CoursePriceBadge price={course.price} />
                   </div>
 
-                  {/* Rating badge */}
                   {course.ratingCount > 0 && (
                     <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/60 backdrop-blur px-2 py-1 rounded-lg flex items-center gap-1 text-yellow-600 dark:text-yellow-400 text-xs font-bold border border-black/10 dark:border-white/10 shadow-sm">
-                      <span className="material-symbols-outlined text-sm filled">star</span>
+                      <span className="material-symbols-outlined text-sm filled">
+                        star
+                      </span>
                       {Number(course.averageRating).toFixed(1)}
                     </div>
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="p-5 flex flex-col flex-1">
-                  {/* JLPT Level */}
                   {course.jlptLevel && (
                     <span className="text-xs font-bold text-secondary bg-secondary/10 px-2 py-0.5 rounded-full border border-secondary/20 self-start mb-2">
                       JLPT {course.jlptLevel}
                     </span>
                   )}
 
-                {/* Instructor */}
-                {course.instructorName && (
-                  <p className="text-xs text-muted-foreground mb-3">
-                    <CourseInstructorLine name={course.instructorName} />
-                  </p>
-                )}
+                  <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors line-clamp-1">
+                    {course.title}
+                  </h3>
 
-                {/* Stats */}
-                <div className="mt-auto pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  {course.lessonCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">menu_book</span>
-                      <CourseLessonCount count={course.lessonCount} />
-                    </span>
-                  )}
-                  {course.studentCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">group</span>
-                      <CourseStudentCount count={course.studentCount} />
-                    </span>
+                  {course.description && (
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
+                      {course.description}
+                    </p>
                   )}
 
-                  {/* Stats */}
+                  {course.instructorName && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                      <CourseInstructorLine name={course.instructorName} />
+                    </p>
+                  )}
+
                   <div className="mt-auto pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground mb-4">
                     {course.lessonCount > 0 && (
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">menu_book</span>
-                        {course.lessonCount} bài học
+                        <span className="material-symbols-outlined text-sm">
+                          menu_book
+                        </span>
+                        <CourseLessonCount count={course.lessonCount} />
                       </span>
                     )}
                     {course.studentCount > 0 && (
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">group</span>
-                        {course.studentCount > 1000
-                          ? `${(course.studentCount / 1000).toFixed(1)}k`
-                          : course.studentCount}{" "}
-                        học viên
+                        <span className="material-symbols-outlined text-sm">
+                          group
+                        </span>
+                        <CourseStudentCount count={course.studentCount} />
                       </span>
                     )}
                   </div>
 
-                  {/* Auth-aware CTA */}
                   <CourseCardActions
                     courseId={course.id}
                     detailHref={slug}

@@ -16,6 +16,7 @@ import type {
   TeacherAvailabilityResponse,
   TeacherScheduleResponse,
   VideoSessionResponse,
+  BookingDetail,
 } from "@/types/booking";
 import type { Weekday } from "@/components/user-component/booking-instructor/types";
 
@@ -116,6 +117,12 @@ export const bookingApi = baseApi.injectEndpoints({
       query: ({ status }) => `/bookings/me?status=${status}`,
       transformResponse: (res: ApiEnvelope<MyBookingItem[]>) => res.data,
       providesTags: [{ type: "Booking", id: "MY_BOOKINGS" }],
+    }),
+
+    getBookingDetail: builder.query<BookingDetail, { bookingId: number }>({
+      query: ({ bookingId }) => `/bookings/${bookingId}`,
+      transformResponse: (res: ApiEnvelope<BookingDetail>) => res.data,
+      providesTags: (_r, _e, { bookingId }) => [{ type: "Booking", id: `DETAIL_${bookingId}` }],
     }),
 
     cancelBooking: builder.mutation<{ message: string }, { bookingId: number }>({
@@ -249,6 +256,7 @@ export const {
   useCreateBookingMutation,
   useCreateBulkBookingMutation,
   useGetMyBookingsQuery,
+  useGetBookingDetailQuery,
   useGetMyTimeSlotsQuery,
   useDeleteTimeSlotMutation,
   useUpdateTimeSlotMutation,

@@ -11,12 +11,14 @@ export interface LessonRoomResponse {
   bookingId: number;
   roomUrl: string;
   roomName: string;
-  token: string;
+  token: string | null;
   status: string;
   teacherName: string;
   studentName: string;
   subject: string | null;
   remainingSeconds: number;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
 }
 
 export interface LessonTokenResponse {
@@ -271,6 +273,11 @@ export const lessonApi = baseApi.injectEndpoints({
       transformResponse: (res: ApiEnvelope<QuizResponse[]>) => res.data,
     }),
 
+    getQuiz: builder.query<QuizResponse, { lessonId: number; quizId: number }>({
+      query: ({ lessonId, quizId }) => `/lessons/${lessonId}/quizzes/${quizId}`,
+      transformResponse: (res: ApiEnvelope<QuizResponse>) => res.data,
+    }),
+
     submitQuizAnswer: builder.mutation<
       SubmissionResponse,
       { lessonId: number; quizId: number; questionId: number; answer: string }
@@ -340,6 +347,7 @@ export const {
   useDeleteMaterialMutation,
   useCreateQuizMutation,
   useListQuizzesQuery,
+  useGetQuizQuery,
   useSubmitQuizAnswerMutation,
   useGetQuizResultsQuery,
   useCreateLessonSummaryMutation,

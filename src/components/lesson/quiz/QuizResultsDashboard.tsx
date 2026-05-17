@@ -44,13 +44,13 @@ export function QuizResultsDashboard({
   }, [results]);
 
   const getScoreColor = (percentage: number) => {
-    if (percentage >= 80) return "text-emerald-400";
+    if (percentage >= 80) return "text-emerald-700 dark:text-emerald-400";
     if (percentage >= 60) return "text-yellow-400";
     return "text-red-400";
   };
 
   const getScoreBg = (percentage: number) => {
-    if (percentage >= 80) return "bg-emerald-500/10 border-emerald-500/30";
+    if (percentage >= 80) return "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30";
     if (percentage >= 60) return "bg-yellow-500/10 border-yellow-500/30";
     return "bg-red-500/10 border-red-500/30";
   };
@@ -88,14 +88,14 @@ export function QuizResultsDashboard({
             className={cn(
               "rounded-lg border p-3",
               result.isCorrect
-                ? "border-emerald-500/20 bg-emerald-500/5"
+                ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5"
                 : "border-red-500/20 bg-red-500/5"
             )}
           >
             {/* Question Header */}
             <div className="flex items-start gap-2 mb-2">
               {result.isCorrect ? (
-                <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5 dark:text-emerald-400" />
               ) : (
                 <XCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
               )}
@@ -106,7 +106,7 @@ export function QuizResultsDashboard({
                     className={cn(
                       "text-[10px] px-1.5 py-0.5 rounded-full",
                       result.isCorrect
-                        ? "bg-emerald-500/20 text-emerald-400"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
                         : "bg-red-500/20 text-red-400"
                     )}
                   >
@@ -124,7 +124,7 @@ export function QuizResultsDashboard({
                 <span
                   className={cn(
                     "font-medium",
-                    result.isCorrect ? "text-emerald-400" : "text-red-400"
+                    result.isCorrect ? "text-emerald-700 dark:text-emerald-400" : "text-red-400"
                   )}
                 >
                   {result.userAnswer || "(Không trả lời)"}
@@ -133,7 +133,7 @@ export function QuizResultsDashboard({
               {!result.isCorrect && (
                 <div className="flex items-center gap-2">
                   <span className="text-[#8B8FA8]">Đáp án đúng:</span>
-                  <span className="font-medium text-emerald-400">{result.correctAnswer}</span>
+                  <span className="font-medium text-emerald-700 dark:text-emerald-400">{result.correctAnswer}</span>
                 </div>
               )}
             </div>

@@ -355,12 +355,12 @@ export function ChatPanel({
       <button
         type="button"
         onClick={() => downloadFile(msg.fileUrl!, fileName)}
-        className="flex items-center gap-2 px-3 py-2 bg-[#1a1d27] hover:bg-[#252838] rounded-xl transition-colors border border-white/5 w-full text-left"
+        className="flex w-full items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-left transition-colors hover:bg-muted dark:border-white/5 dark:bg-[#1a1d27] dark:hover:bg-[#252838]"
       >
         <span className="text-lg">{isPdf ? '📄' : getFileIcon()}</span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate">{fileName}</div>
-          <div className="text-[10px] text-[#8B8FA8]">{t('auto.lesson_chat_1')}</div>
+          <div className="text-[10px] text-muted-foreground dark:text-[#8B8FA8]">{t('auto.lesson_chat_1')}</div>
         </div>
       </button>
     );
@@ -383,7 +383,7 @@ export function ChatPanel({
       >
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center">
-            <p className="text-[#8B8FA8] text-xs text-center leading-relaxed">
+            <p className="text-center text-xs leading-relaxed text-muted-foreground dark:text-[#8B8FA8]">
               Gửi tin nhắn để bắt đầu
               <br />
               trò chuyện trong buổi học.
@@ -404,9 +404,9 @@ export function ChatPanel({
               onMouseLeave={() => setHoveredMsgId(null)}
             >
               {/* Sender name */}
-              <span className="text-[#8B8FA8] text-[10px] px-1">
+              <span className="px-1 text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
                 {msg.senderName}
-                <span className="ml-1 text-[#8B8FA8]/50">
+                <span className="ml-1 text-muted-foreground/60 dark:text-[#8B8FA8]/50">
                   {msg.senderRole === "TEACHER" ? "GV" : "HV"}
                 </span>
               </span>
@@ -418,7 +418,7 @@ export function ChatPanel({
                     "px-3 py-2 rounded-2xl text-sm shadow-sm",
                     isMine
                       ? "bg-[#6C63FF] text-white rounded-br-sm"
-                      : "bg-[#252838] text-[#F0F0F0] rounded-bl-sm",
+                      : "rounded-bl-sm bg-muted text-foreground dark:bg-[#252838] dark:text-[#F0F0F0]",
                     msg.type === "VOCABULARY" && "border border-[#4ECDC4]/30 bg-[#4ECDC4]/10",
                     msg.type === "FILE" && "p-2"
                   )}
@@ -435,7 +435,7 @@ export function ChatPanel({
                     <div
                       className={cn(
                         "mt-1 text-[10px] text-right",
-                        isMine ? "text-white/50" : "text-[#8B8FA8]/60"
+                        isMine ? "text-white/50" : "text-muted-foreground dark:text-[#8B8FA8]/60"
                       )}
                     >
                       {formatTime(msg.createdAt)}
@@ -447,7 +447,7 @@ export function ChatPanel({
                 {hoveredMsgId === msg.id && (
                   <div
                     className={cn(
-                      "absolute -top-8 z-10 flex items-center gap-0.5 bg-[#1a1d27] border border-white/10 rounded-full px-1.5 py-0.5 shadow-lg",
+                      "absolute -top-8 z-10 flex items-center gap-0.5 rounded-full border border-border bg-card px-1.5 py-0.5 shadow-lg dark:border-white/10 dark:bg-[#1a1d27]",
                       isMine ? "right-0" : "left-0"
                     )}
                   >
@@ -475,7 +475,7 @@ export function ChatPanel({
                         "flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full border transition-colors",
                         (users as number[]).includes(currentUserId)
                           ? "bg-[#6C63FF]/20 border-[#6C63FF]/40 text-[#6C63FF]"
-                          : "bg-white/5 border-white/10 text-[#8B8FA8] hover:bg-white/10"
+                          : "border-border bg-background text-muted-foreground hover:bg-muted dark:border-white/10 dark:bg-white/5 dark:text-[#8B8FA8] dark:hover:bg-white/10"
                       )}
                     >
                       <span>{emoji}</span>
@@ -496,7 +496,7 @@ export function ChatPanel({
               <span className="w-1.5 h-1.5 rounded-full bg-[#8B8FA8] animate-bounce [animation-delay:150ms]" />
               <span className="w-1.5 h-1.5 rounded-full bg-[#8B8FA8] animate-bounce [animation-delay:300ms]" />
             </div>
-            <span className="text-[10px] text-[#8B8FA8]">
+              <span className="text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
               {typingUsers.map((t) => t.userName).join(", ")} đang nhập...
             </span>
           </div>
@@ -504,7 +504,7 @@ export function ChatPanel({
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 p-3 border-t border-white/[0.08] bg-[#0f1117]/60">
+      <div className="shrink-0 border-t border-border bg-background/80 p-3 dark:border-white/[0.08] dark:bg-[#0f1117]/60">
         <div className="flex gap-2 items-end">
           {/* File attachment button */}
           <div className="relative shrink-0">
@@ -519,7 +519,7 @@ export function ChatPanel({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="shrink-0 w-10 h-10 rounded-xl bg-[#252838] hover:bg-[#2d3142] text-[#8B8FA8] hover:text-[#F0F0F0] disabled:opacity-50 flex items-center justify-center transition-colors border border-white/5"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 dark:border-white/5 dark:bg-[#252838] dark:text-[#8B8FA8] dark:hover:bg-[#2d3142] dark:hover:text-[#F0F0F0]"
               title={t('auto.lesson_chat_5')}
             >
               <Paperclip className="h-4 w-4" />
@@ -533,7 +533,7 @@ export function ChatPanel({
             onKeyDown={handleKeyDown}
             placeholder={t('auto.lesson_chat_2')}
             rows={1}
-            className="flex-1 min-h-[40px] max-h-[100px] resize-none bg-[#252838] border border-white/10 text-sm text-[#F0F0F0] placeholder:text-[#8B8FA8]/60 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#6C63FF] transition-colors"
+            className="max-h-[100px] min-h-[40px] flex-1 resize-none rounded-xl border border-input bg-card px-3 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#6C63FF] dark:border-white/10 dark:bg-[#252838] dark:text-[#F0F0F0] dark:placeholder:text-[#8B8FA8]/60"
           />
 
           {/* Send button */}
@@ -552,7 +552,7 @@ export function ChatPanel({
 
         {/* File preview */}
         {selectedFile && (
-          <div className="mt-2 flex items-center gap-2 p-2 bg-[#1a1d27] rounded-lg border border-white/5">
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background p-2 dark:border-white/5 dark:bg-[#1a1d27]">
             {filePreview ? (
               <img
                 src={filePreview}
@@ -560,13 +560,13 @@ export function ChatPanel({
                 className="h-12 w-12 object-cover rounded"
               />
             ) : (
-              <div className="h-12 w-12 rounded bg-[#252838] flex items-center justify-center">
-                <FileText className="h-6 w-6 text-[#8B8FA8]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded bg-muted dark:bg-[#252838]">
+                <FileText className="h-6 w-6 text-muted-foreground dark:text-[#8B8FA8]" />
               </div>
             )}
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium truncate">{selectedFile.name}</div>
-              <div className="text-[10px] text-[#8B8FA8]">
+              <div className="text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </div>
             </div>
@@ -574,7 +574,7 @@ export function ChatPanel({
               type="button"
               onClick={handleRemoveFile}
               disabled={isUploading}
-              className="shrink-0 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white flex items-center justify-center transition-colors"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground dark:bg-white/10 dark:text-white/60 dark:hover:bg-white/20 dark:hover:text-white"
             >
               ×
             </button>

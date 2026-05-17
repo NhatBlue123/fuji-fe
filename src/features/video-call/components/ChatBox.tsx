@@ -26,6 +26,43 @@ type JishoSuggestion = {
   scriptType?: "HIRAGANA" | "KANJI" | "OTHER";
 };
 
+const LATIN_CHAR_REGEX = /[A-Za-z]/;
+const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u3400-\u9fff]/;
+const KANA_CHAR_REGEX = /[\u3040-\u30ff]/;
+
+async function fetchJishoSuggestions(
+  keyword: string,
+  signal?: AbortSignal,
+): Promise<JishoSuggestion[]> {
+  const res = await fetch(
+    `/api/jisho/search?keyword=${encodeURIComponent(keyword)}`,
+    { signal },
+  );
+  const data = await res.json().catch(() => ({}));
+  return Array.isArray(data?.suggestions) ? data.suggestions : [];
+}
+
+function getRomajiSuggestionContext(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || !LATIN_CHAR_REGEX.test(trimmed)) return null;
+  if (JAPANESE_CHAR_REGEX.test(trimmed)) return null;
+
+  const hiragana = wanakana.toHiragana(trimmed).trim();
+  if (hiragana === trimmed || !KANA_CHAR_REGEX.test(hiragana)) return null;
+  const lookup = hiragana.split(/\s+/).find((part) => KANA_CHAR_REGEX.test(part));
+  if (!lookup) return null;
+
+  return { raw: trimmed, hiragana, lookup };
+}
+
+function hasMeaningfulJapaneseSuggestion(suggestions: JishoSuggestion[]) {
+  return suggestions.some((item) => {
+    const word = (item.word ?? "").trim();
+    const reading = (item.reading ?? "").trim();
+    return Boolean(word || reading);
+  });
+}
+
 export function ChatBox({
   messages,
   onSendMessage,
@@ -42,6 +79,7 @@ export function ChatBox({
   const [hiraganaPreview, setHiraganaPreview] = useState("");
   const [suggestions, setSuggestions] = useState<JishoSuggestion[]>([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [isResolvingSend, setIsResolvingSend] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,18 +114,15 @@ export function ChatBox({
     setIsFetchingSuggestions(true);
 
     suggestTimerRef.current = setTimeout(() => {
-      fetch(
-        `/api/jisho/search?keyword=${encodeURIComponent(hiraganaPreview)}`,
-        {
-          signal: controller.signal,
-        },
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          const items = Array.isArray(data?.suggestions)
-            ? data.suggestions
-            : [];
+      const context = getRomajiSuggestionContext(inputValue);
+      const lookupKeyword = context?.lookup ?? hiraganaPreview;
+
+      fetchJishoSuggestions(lookupKeyword, controller.signal)
+        .then((items) => {
           setSuggestions(items);
+          if (!hasMeaningfulJapaneseSuggestion(items)) {
+            setShowSuggestion(false);
+          }
         })
         .catch((error) => {
           if (error?.name === "AbortError") return;
@@ -106,50 +141,44 @@ export function ChatBox({
       }
       controller.abort();
     };
-  }, [showSuggestion, hiraganaPreview]);
+  }, [showSuggestion, hiraganaPreview, inputValue]);
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
 
-    // Auto-convert romaji to hiragana preview
-    // Only show suggestion if input contains latin characters and no Japanese
-    const hasLatin = /[a-zA-Z]/.test(value);
-    const hasJapanese = /[ぁ-んァ-ン一-龯]/.test(value);
-
-    if (hasLatin && !hasJapanese && value.trim().length > 0) {
-      const hiragana = wanakana.toHiragana(value);
-      // Only show if conversion actually changed something
-      if (hiragana !== value) {
-        setHiraganaPreview(hiragana);
-        setShowSuggestion(true);
-        // reset selection when suggestions change
-        setSelectedSuggestionIndex(-1);
-      } else {
-        setShowSuggestion(false);
-        setHiraganaPreview("");
-        setSuggestions([]);
-        setSelectedSuggestionIndex(-1);
-      }
-    } else {
-      setShowSuggestion(false);
-      setHiraganaPreview("");
+    const context = getRomajiSuggestionContext(value);
+    if (context) {
+      setHiraganaPreview(context.hiragana);
+      setShowSuggestion(true);
       setSuggestions([]);
       setSelectedSuggestionIndex(-1);
+      return;
     }
-  };
 
-  const handleSend = () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed || isBanned) return;
-
-    onSendMessage(trimmed);
-    setInputValue("");
     setShowSuggestion(false);
     setHiraganaPreview("");
     setSuggestions([]);
     setSelectedSuggestionIndex(-1);
   };
 
+  const handleSend = async () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed || isBanned || isResolvingSend) return;
+
+    try {
+      setIsResolvingSend(true);
+      const messageToSend = await resolveMessageForSend(trimmed);
+
+      onSendMessage(messageToSend);
+      setInputValue("");
+      setShowSuggestion(false);
+      setHiraganaPreview("");
+      setSuggestions([]);
+      setSelectedSuggestionIndex(-1);
+    } finally {
+      setIsResolvingSend(false);
+    }
+  };
   const applySuggestion = (value: string) => {
     setInputValue(value);
     setShowSuggestion(false);
@@ -166,6 +195,7 @@ export function ChatBox({
     setSelectedSuggestionIndex(-1);
   };
 
+  const hasDictionarySuggestions = hasMeaningfulJapaneseSuggestion(suggestions);
   const kanjiSuggestions = suggestions.filter(
     (item) => item.scriptType === "KANJI",
   );
@@ -174,7 +204,7 @@ export function ChatBox({
   // index 0 = hiragana preview, index 1+ = each kanji suggestion
   const selectableItems = (() => {
     const items: { type: "hiragana" | "kanji"; label: string; value: string }[] = [];
-    if (hiraganaPreview) {
+    if (hiraganaPreview && hasDictionarySuggestions) {
       items.push({ type: "hiragana", label: hiraganaPreview, value: hiraganaPreview });
     }
     for (const s of kanjiSuggestions.slice(0, 6)) {
@@ -182,6 +212,32 @@ export function ChatBox({
     }
     return items;
   })();
+
+  const resolveMessageForSend = async (trimmed: string) => {
+    if (
+      selectedSuggestionIndex >= 0 &&
+      selectedSuggestionIndex < selectableItems.length
+    ) {
+      return selectableItems[selectedSuggestionIndex].value;
+    }
+
+    const context = getRomajiSuggestionContext(trimmed);
+    if (!context) return trimmed;
+
+    if (hasMeaningfulJapaneseSuggestion(suggestions)) {
+      return context.hiragana;
+    }
+
+    try {
+      const freshSuggestions = await fetchJishoSuggestions(context.lookup);
+      return hasMeaningfulJapaneseSuggestion(freshSuggestions)
+        ? context.hiragana
+        : trimmed;
+    } catch (error) {
+      console.warn("[ChatBox] Failed to resolve romaji before sending.", error);
+      return trimmed;
+    }
+  };
 
   const navigateSuggestion = (direction: "next" | "prev") => {
     if (selectableItems.length === 0) return;
@@ -195,11 +251,6 @@ export function ChatBox({
         return (prev - 1 + selectableItems.length) % selectableItems.length;
       }
     });
-  };
-
-  const selectCurrentSuggestion = () => {
-    if (selectedSuggestionIndex < 0 || selectedSuggestionIndex >= selectableItems.length) return;
-    applySuggestion(selectableItems[selectedSuggestionIndex].value);
   };
 
   const formatTime = (timestamp: number) => {
@@ -416,11 +467,7 @@ export function ChatBox({
                 }
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (selectedSuggestionIndex >= 0) {
-                    selectCurrentSuggestion();
-                  } else {
-                    handleSend();
-                  }
+                  handleSend();
                   return;
                 }
                 if (e.key === "Escape") {
@@ -446,7 +493,7 @@ export function ChatBox({
           />
           <Button
             onClick={handleSend}
-            disabled={!inputValue.trim() || isBanned}
+            disabled={!inputValue.trim() || isBanned || isResolvingSend}
             size="icon"
           >
             <Send className="h-4 w-4" />

@@ -2484,7 +2484,7 @@
         "kanjiSuggestions": "漢字候補",
         "searching": "検索中...",
         "noSuggestions": "候補はまだありません",
-        "keyboardHint": "矢印キーで選択 · Enterで適用 · Escで閉じる",
+        "keyboardHint": "矢印キーで選択 · Enterで候補を送信 · Escで閉じる",
         "bannedPlaceholder": "チャットが禁止されています",
         "messagePlaceholder": "メッセージを入力..."
       },
@@ -2499,13 +2499,13 @@
         "selectAll": "すべて選択",
         "clearAll": "すべて解除",
         "noticeTitle": "重要なお知らせ",
-        "noticeDescription": "ルール違反は、ビデオ通話機能の一時停止または永久停止につながる場合があります。システムは言語に関する違反を自動検知します。",
+        "noticeDescription": "システムは言語に関する違反を自動検知します。5回違反すると、チャットが5分間ロックされます。",
         "acceptReady": "理解して同意します",
         "acceptPending": "すべて同意 ({{count}}/{{total}})",
         "items": {
           "japaneseOnly": {
             "title": "日本語のみ使用",
-            "description": "通話中は日本語で話す、またはチャットしてください。ベトナム語、英語、その他の言語は使用しないでください。"
+            "description": "通話中のチャットは日本語のみ使用してください。ベトナム語、英語、その他の言語は使用しないでください。"
           },
           "noPii": {
             "title": "個人情報を共有しない",

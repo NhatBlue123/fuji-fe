@@ -2514,7 +2514,7 @@
         "kanjiSuggestions": "Kanji gợi ý",
         "searching": "Đang tìm...",
         "noSuggestions": "Chưa có gợi ý",
-        "keyboardHint": "Dùng phím mũi tên để chọn · Enter để áp dụng · Esc để đóng",
+        "keyboardHint": "Dùng phím mũi tên để chọn · Enter để gửi bằng gợi ý · Esc để đóng",
         "bannedPlaceholder": "Bạn đang bị cấm chat",
         "messagePlaceholder": "Nhập tin nhắn..."
       },
@@ -2529,13 +2529,13 @@
         "selectAll": "Chọn tất cả",
         "clearAll": "Bỏ chọn tất cả",
         "noticeTitle": "Lưu ý quan trọng",
-        "noticeDescription": "Vi phạm quy định có thể dẫn đến cấm tạm thời hoặc vĩnh viễn khỏi tính năng gọi video. Hệ thống tự động phát hiện các vi phạm về ngôn ngữ.",
+        "noticeDescription": "Hệ thống tự động phát hiện vi phạm ngôn ngữ. Nếu vi phạm 5 lần, bạn sẽ bị khóa chat 5 phút.",
         "acceptReady": "Đã hiểu và đồng ý",
         "acceptPending": "Chấp nhận tất cả ({{count}}/{{total}})",
         "items": {
           "japaneseOnly": {
             "title": "Chỉ sử dụng tiếng Nhật",
-            "description": "Nói hoặc chat tiếng Nhật trong suốt cuộc gọi. Không dùng tiếng Việt, tiếng Anh hay ngôn ngữ khác."
+            "description": "Chỉ chat tiếng Nhật trong suốt cuộc gọi. Không dùng tiếng Việt, tiếng Anh hay ngôn ngữ khác."
           },
           "noPii": {
             "title": "Không chia sẻ thông tin cá nhân",

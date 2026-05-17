@@ -26,15 +26,6 @@ import { useTranslation } from "react-i18next";
 import { useRandomVideoCall } from "../hooks/useRandomVideoCall";
 import type { JLPTLevel, VideoCallMatchMode } from "../types";
 import { ChatBox } from "./ChatBox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];
@@ -53,7 +44,6 @@ interface CallRule {
   descriptionKey: string;
   icon: React.ElementType;
   color: string;
-  mandatory: boolean;
 }
 
 const CALL_RULES: CallRule[] = [
@@ -63,7 +53,6 @@ const CALL_RULES: CallRule[] = [
     descriptionKey: "videoCall.random.rules.items.japaneseOnly.description",
     icon: GraduationCap,
     color: "text-blue-600",
-    mandatory: true,
   },
   {
     id: "no_pii",
@@ -71,7 +60,6 @@ const CALL_RULES: CallRule[] = [
     descriptionKey: "videoCall.random.rules.items.noPii.description",
     icon: EyeOff,
     color: "text-purple-600",
-    mandatory: true,
   },
   {
     id: "respectful",
@@ -79,7 +67,6 @@ const CALL_RULES: CallRule[] = [
     descriptionKey: "videoCall.random.rules.items.respectful.description",
     icon: CheckCircle2,
     color: "text-green-600",
-    mandatory: true,
   },
   {
     id: "no_record",
@@ -87,7 +74,6 @@ const CALL_RULES: CallRule[] = [
     descriptionKey: "videoCall.random.rules.items.noRecord.description",
     icon: Eye,
     color: "text-amber-600",
-    mandatory: true,
   },
   {
     id: "appropriate_content",
@@ -95,37 +81,93 @@ const CALL_RULES: CallRule[] = [
     descriptionKey: "videoCall.random.rules.items.appropriateContent.description",
     icon: Shield,
     color: "text-rose-600",
-    mandatory: true,
   },
 ];
 
-function RuleItem({ rule, checked, onChange }: { rule: CallRule; checked: boolean; onChange: (checked: boolean) => void }) {
+function RulePreviewItem({ rule }: { rule: CallRule }) {
   const { t } = useTranslation();
   const Icon = rule.icon;
+
   return (
-    <div className="flex items-start gap-4 rounded-xl border p-4 transition-all hover:bg-muted/50">
-      <div className={cn("mt-0.5 rounded-lg bg-background p-2 shadow-sm", checked ? "border-green-500/50 bg-green-50 dark:bg-green-900/20" : "border-border")}>
+    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
+      <div className="mt-0.5 rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800">
         <Icon className={cn("h-5 w-5", rule.color)} />
       </div>
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-2">
-          <Label htmlFor={rule.id} className="font-semibold cursor-pointer">
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
             {t(rule.titleKey)}
-          </Label>
-          {rule.mandatory && (
-            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
-              {t("videoCall.random.rules.mandatory")}
-            </Badge>
-          )}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">{t(rule.descriptionKey)}</p>
+        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+          {t(rule.descriptionKey)}
+        </p>
       </div>
-      <Checkbox
-        id={rule.id}
-        checked={checked}
-        onCheckedChange={onChange}
-        className="mt-1 h-5 w-5"
-      />
+    </div>
+  );
+}
+
+function RulesHoverButton({
+  iconOnly = false,
+  placement = "bottom",
+}: {
+  iconOnly?: boolean;
+  placement?: "bottom" | "top";
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="group relative inline-flex">
+      <Button
+        type="button"
+        variant={iconOnly ? "ghost" : "outline"}
+        size={iconOnly ? "icon" : "sm"}
+        className={cn(
+          "gap-2",
+          iconOnly
+            ? "h-11 w-11 rounded-full text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            : "border-sky-200 bg-sky-50 hover:bg-sky-100 dark:border-white/10 dark:bg-slate-900/60 dark:hover:bg-slate-800",
+        )}
+        title={t("videoCall.random.rules.viewTitle")}
+      >
+        <Shield className="h-4 w-4 text-blue-600" />
+        {!iconOnly && t("videoCall.random.rules.button")}
+      </Button>
+
+      <div
+        role="tooltip"
+        className={cn(
+          "pointer-events-none absolute z-50 w-[min(24rem,calc(100vw-2rem))] opacity-0 shadow-2xl transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+          placement === "top"
+            ? "bottom-full left-1/2 mb-3 -translate-x-1/2 translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0"
+            : "right-0 top-full mt-3 -translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0",
+        )}
+      >
+        <div className="rounded-2xl border border-sky-200 bg-white p-4 text-left text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/15">
+              <Shield className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+            </div>
+            <div>
+              <p className="font-semibold">{t("videoCall.random.rules.title")}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                {t("videoCall.random.rules.noticeDescription")}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {CALL_RULES.map((rule) => (
+              <RulePreviewItem key={rule.id} rule={rule} />
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{t("videoCall.random.rules.noticeTitle")}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -136,8 +178,6 @@ export default function RandomVideoCallExperience() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [selectedLevel, setSelectedLevel] = useState<JLPTLevel>("N5");
   const [matchMode, setMatchMode] = useState<VideoCallMatchMode>("same_level");
-  const [showRulesDialog, setShowRulesDialog] = useState(true);
-  const [acceptedRules, setAcceptedRules] = useState<Record<string, boolean>>({});
   const call = useRandomVideoCall({ autoStart: false });
 
   useEffect(() => {
@@ -151,37 +191,6 @@ export default function RandomVideoCallExperience() {
       remoteVideoRef.current.srcObject = call.remoteStream;
     }
   }, [call.remoteStream]);
-
-  const allRulesAccepted = CALL_RULES.every((rule) => acceptedRules[rule.id]);
-  const acceptedRulesCount = CALL_RULES.filter((rule) => acceptedRules[rule.id]).length;
-
-  const handleAcceptRules = () => {
-    if (allRulesAccepted) {
-      setShowRulesDialog(false);
-    }
-  };
-
-  const handleToggleAllRules = () => {
-    if (allRulesAccepted) {
-      setAcceptedRules({});
-      return;
-    }
-
-    setAcceptedRules(
-      CALL_RULES.reduce<Record<string, boolean>>((next, rule) => {
-        next[rule.id] = true;
-        return next;
-      }, {}),
-    );
-  };
-
-  const handleToggleRule = (ruleId: string, checked: boolean) => {
-    setAcceptedRules((prev) => ({ ...prev, [ruleId]: checked }));
-  };
-
-  const handleOpenRules = () => {
-    setShowRulesDialog(true);
-  };
 
   const isConnected = call.status === "connected";
   const isMatching =
@@ -205,9 +214,6 @@ export default function RandomVideoCallExperience() {
               : t("videoCall.random.status.preparing");
 
   const handleStartMatching = () => {
-    if (showRulesDialog && !allRulesAccepted) {
-      return;
-    }
     call.startSearch({
       level: selectedLevel,
       matchMode,
@@ -216,101 +222,6 @@ export default function RandomVideoCallExperience() {
 
   return (
     <>
-      {/* Rules Dialog */}
-      <Dialog open={showRulesDialog} onOpenChange={setShowRulesDialog}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="text-center sm:text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
-              <Shield className="h-8 w-8 text-white" />
-            </div>
-            <DialogTitle className="text-2xl font-bold">
-              {t("videoCall.random.rules.title")}
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              {t("videoCall.random.rules.description")}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-4">
-            <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold">
-                  {t("videoCall.random.rules.progressTitle")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("videoCall.random.rules.progressCount", {
-                    count: acceptedRulesCount,
-                    total: CALL_RULES.length,
-                  })}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant={allRulesAccepted ? "outline" : "secondary"}
-                size="sm"
-                onClick={handleToggleAllRules}
-                className="shrink-0 font-semibold"
-              >
-                {allRulesAccepted
-                  ? t("videoCall.random.rules.clearAll")
-                  : t("videoCall.random.rules.selectAll")}
-              </Button>
-            </div>
-
-            {CALL_RULES.map((rule) => (
-              <RuleItem
-                key={rule.id}
-                rule={rule}
-                checked={acceptedRules[rule.id] ?? false}
-                onChange={(checked) => handleToggleRule(rule.id, checked)}
-              />
-            ))}
-          </div>
-
-          <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div className="text-sm">
-                <p className="font-semibold text-amber-800 dark:text-amber-200">
-                  {t("videoCall.random.rules.noticeTitle")}
-                </p>
-                <p className="mt-1 text-amber-700 dark:text-amber-300">
-                  {t("videoCall.random.rules.noticeDescription")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="flex-col gap-3 sm:flex-col">
-            <Button
-              onClick={handleAcceptRules}
-              disabled={!allRulesAccepted}
-              className={cn(
-                "h-12 text-base font-semibold transition-all",
-                allRulesAccepted
-                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/25"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              <CheckCircle2 className="mr-2 h-5 w-5" />
-              {allRulesAccepted
-                ? t("videoCall.random.rules.acceptReady")
-                : t("videoCall.random.rules.acceptPending", {
-                    count: acceptedRulesCount,
-                    total: CALL_RULES.length,
-                  })}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowRulesDialog(false)}
-              className="h-10"
-            >
-              {t("common.close")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Main Video Call UI */}
       <div
         className="relative flex overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50"
@@ -332,15 +243,7 @@ export default function RandomVideoCallExperience() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenRules}
-              className="gap-2 border-sky-200 bg-sky-50 hover:bg-sky-100 dark:border-white/10 dark:bg-slate-900/60 dark:hover:bg-slate-800"
-            >
-              <Shield className="h-4 w-4 text-blue-600" />
-              {t("videoCall.random.rules.button")}
-            </Button>
+            <RulesHoverButton />
           </div>
 
           {/* Video Grid */}
@@ -489,7 +392,7 @@ export default function RandomVideoCallExperience() {
                           type="button"
                           className="h-12 w-full rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 shadow-lg shadow-sky-500/25 dark:from-sky-500 dark:to-blue-600 dark:hover:from-sky-400 dark:hover:to-blue-500"
                           onClick={handleStartMatching}
-                          disabled={!canStart || !allRulesAccepted}
+                          disabled={!canStart}
                         >
                           <Radio className="mr-2 h-4 w-4" />
                           {t("videoCall.random.startMatching")}
@@ -575,7 +478,7 @@ export default function RandomVideoCallExperience() {
                   : "bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 shadow-lg shadow-sky-500/25 dark:from-sky-500 dark:to-blue-600 dark:hover:from-sky-400 dark:hover:to-blue-500",
               )}
               onClick={isBusy ? call.endCall : handleStartMatching}
-              disabled={!call.localStream || (!isBusy && !allRulesAccepted)}
+              disabled={!call.localStream}
             >
               {isBusy ? (
                 <>
@@ -601,16 +504,7 @@ export default function RandomVideoCallExperience() {
               {t("videoCall.random.controls.next")}
             </Button>
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 rounded-full text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-              onClick={handleOpenRules}
-              title={t("videoCall.random.rules.viewTitle")}
-            >
-              <Shield className="h-5 w-5 text-blue-600" />
-            </Button>
+            <RulesHoverButton iconOnly placement="top" />
           </footer>
         </main>
 

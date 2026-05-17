@@ -2516,7 +2516,7 @@
         "kanjiSuggestions": "Kanji suggestions",
         "searching": "Searching...",
         "noSuggestions": "No suggestions yet",
-        "keyboardHint": "Use arrows to choose · Enter to apply · Esc to close",
+        "keyboardHint": "Use arrows to choose · Enter to send with suggestion · Esc to close",
         "bannedPlaceholder": "You are banned from chat",
         "messagePlaceholder": "Type a message..."
       },
@@ -2531,13 +2531,13 @@
         "selectAll": "Select all",
         "clearAll": "Clear all",
         "noticeTitle": "Important notice",
-        "noticeDescription": "Violating the rules may lead to a temporary or permanent ban from video calls. The system automatically detects language-related violations.",
+        "noticeDescription": "The system automatically detects language violations. After 5 violations, chat will be locked for 5 minutes.",
         "acceptReady": "I understand and agree",
         "acceptPending": "Accept all ({{count}}/{{total}})",
         "items": {
           "japaneseOnly": {
             "title": "Use Japanese only",
-            "description": "Speak or chat in Japanese throughout the call. Do not use Vietnamese, English, or other languages."
+            "description": "Only chat in Japanese throughout the call. Do not use Vietnamese, English, or other languages."
           },
           "noPii": {
             "title": "Do not share personal information",

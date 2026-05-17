@@ -14,7 +14,7 @@ import { useStompChat } from "@/hooks/useStompChat";
 import { useMeetingSummary } from "@/hooks/useMeetingSummary";
 import { useTranscriptSync } from "@/hooks/useTranscriptSync";
 import { useLessonTranscript } from "@/hooks/useLessonTranscript";
-import { useVoiceTranscript } from "@/hooks/useVoiceTranscript";
+import { useVoiceTranscript, type VoiceTranscriptLanguage } from "@/hooks/useVoiceTranscript";
 import { API_CONFIG } from "@/config/api";
 import {
   useCreateLessonRoomMutation,
@@ -42,7 +42,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { disconnectStomp } from "@/lib/stomp";
-import { API_CONFIG } from "@/config/api";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { tMsg } from "@/i18n";
@@ -71,6 +70,7 @@ export default function LessonPage() {
   const [reportComment, setReportComment] = useState("");
   const [aiSummarySettingsOpen, setAiSummarySettingsOpen] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [transcriptLanguage, setTranscriptLanguage] = useState<VoiceTranscriptLanguage>("vi");
 
   // AI Summary hook
   const meetingSummary = useMeetingSummary();
@@ -171,7 +171,7 @@ export default function LessonPage() {
     [accessToken]
   );
 
-  // Voice transcript — streams mic audio to AssemblyAI realtime, saves final turns as transcripts
+  // Voice transcript — uses browser SpeechRecognition realtime, saves final turns as transcripts
   // Starts automatically when mic is on, pauses when mic is off
   const voiceTranscript = useVoiceTranscript({
     lessonId: lessonData?.lessonId ?? null,
@@ -182,6 +182,7 @@ export default function LessonPage() {
     isMicOn,
     enabled: meetingSummary.settings.enabled,
     classroomTopic: lessonData?.subject ?? null,
+    language: transcriptLanguage,
   });
 
   const {
@@ -512,6 +513,8 @@ export default function LessonPage() {
             voiceTranscriptStatus={voiceTranscript.status}
             voiceTranscriptError={voiceTranscript.error}
             voiceTranscriptPartialText={voiceTranscript.partialTranscript}
+            voiceTranscriptLanguage={transcriptLanguage}
+            onVoiceTranscriptLanguageChange={setTranscriptLanguage}
             transcriptEnabled={meetingSummary.settings.enabled}
             onSendMessage={sendMessage}
             onSendTyping={sendTyping}

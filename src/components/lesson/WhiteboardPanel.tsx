@@ -8,6 +8,8 @@ import { useGetWhiteboardSnapshotQuery } from "@/store/services/lessonApi";
 import { Trash2, Download, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const TLDRAW_LICENSE_KEY = process.env.NEXT_PUBLIC_TLDRAW_LICENSE_KEY?.trim() || undefined;
+
 const TldrawEditor = dynamic(
   () => import("tldraw").then((mod) => {
     const { Tldraw } = mod;
@@ -15,6 +17,7 @@ const TldrawEditor = dynamic(
       return (
         <Tldraw
           onMount={onMount}
+          licenseKey={TLDRAW_LICENSE_KEY}
           autoFocus
           hideUi={false}
         />

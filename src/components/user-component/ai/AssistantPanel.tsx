@@ -10,7 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Brain, Check, ChevronDown, Infinity, Loader2, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAIChatSocket } from "@/providers/AIChatSocketProvider";
 import { useGetMyAiQuotaQuery } from "@/store/services/aiQuotaApi";
@@ -43,6 +43,7 @@ const STREAM_STALL_TIMEOUT_MS = 20000; // ✅ Giảm từ 70s xuống 20s
 const STREAM_HEARTBEAT_CHECK_MS = 5000; // ✅ Check mỗi 5s
 const STREAM_MAX_IDLE_MS = 15000; // ✅ Timeout nếu 15s không có event
 const ROUTER_THINKING_MAX_ITEMS = 5;
+type ChatModelId = "fuji-bot" | "gpt-5.4-mini";
 
 type AssistantPanelProps = {
   initialConversationId?: number | null;
@@ -179,6 +180,8 @@ export default function AssistantPanel({
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [input, setInput] = useState("");
   const [deepHelpEnabled, setDeepHelpEnabled] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<ChatModelId>("fuji-bot");
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [queuedInfo, setQueuedInfo] = useState<{
@@ -925,14 +928,15 @@ export default function AssistantPanel({
       return;
     }
 
-    const useDeepHelp = deepHelpEnabled;
+    const useFujiBot = selectedModel === "fuji-bot";
+    const useDeepHelp = !useFujiBot && deepHelpEnabled;
 
     if (useDeepHelp && isDeepChatQuotaEmpty) {
       alert(t("monetization.messages.advancedHelpEmpty"));
       return;
     }
 
-    if (!useDeepHelp && isBasicChatQuotaEmpty) {
+    if (!useFujiBot && !useDeepHelp && isBasicChatQuotaEmpty) {
       alert(t("monetization.messages.chatEmpty"));
       return;
     }
@@ -973,6 +977,7 @@ export default function AssistantPanel({
         message: trimmed,
         mode: useDeepHelp ? "reasoning" : "basic",
         deepHelp: useDeepHelp,
+        model: selectedModel,
         clientMessageId,
       },
       (ack: { 
@@ -1005,6 +1010,7 @@ export default function AssistantPanel({
     socket,
     isConnected,
     deepHelpEnabled,
+    selectedModel,
     isBasicChatQuotaEmpty,
     isDeepChatQuotaEmpty,
     ensureConversationId,
@@ -1067,11 +1073,25 @@ export default function AssistantPanel({
 
   const isLoadingMessages =
     isLoadingInitialMessages || (isFetchingMessages && messages.length === 0);
-  const isCurrentModeQuotaEmpty = deepHelpEnabled
+  const isFujiBotSelected = selectedModel === "fuji-bot";
+  const isCurrentModeQuotaEmpty = isFujiBotSelected
+    ? false
+    : deepHelpEnabled
     ? isDeepChatQuotaEmpty
     : isBasicChatQuotaEmpty;
-  const isAllChatQuotaEmpty = isBasicChatQuotaEmpty && isDeepChatQuotaEmpty;
-  const chatPlaceholder = deepHelpEnabled
+  const isAllChatQuotaEmpty = isFujiBotSelected ? false : isBasicChatQuotaEmpty && isDeepChatQuotaEmpty;
+  const modelModeLabel = isFujiBotSelected
+    ? "Không giới hạn"
+    : deepHelpEnabled
+      ? deepChatRemaining === null
+        ? "Thinking"
+        : `Thinking · ${deepChatRemaining} lượt`
+      : basicChatRemaining === null
+        ? "Fast"
+        : `Fast · ${basicChatRemaining} lượt`;
+  const chatPlaceholder = isFujiBotSelected
+    ? "Hỏi FUJI bot miễn phí, không tính lượt..."
+    : deepHelpEnabled
     ? isDeepChatQuotaEmpty
       ? t("monetization.messages.advancedHelpEmpty")
       : t("monetization.messages.advancedHelpPlaceholder")
@@ -1093,7 +1113,7 @@ export default function AssistantPanel({
           </div>
         )}
 
-        {(isBasicChatQuotaLow || isBasicChatQuotaEmpty) && (
+        {!isFujiBotSelected && (isBasicChatQuotaLow || isBasicChatQuotaEmpty) && (
           <div className={`mx-6 mt-4 rounded-lg border px-3 py-2 text-sm ${
             isBasicChatQuotaEmpty
               ? "border-red-400/40 bg-red-500/10 text-red-700 dark:border-red-500/30 dark:text-red-400"
@@ -1205,35 +1225,91 @@ export default function AssistantPanel({
         </div>
 
         <div className="shrink-0 bg-white/45 px-6 py-3 backdrop-blur-md dark:bg-slate-950/55">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setDeepHelpEnabled((current) => !current)}
-                disabled={isDeepChatQuotaEmpty}
-                className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 font-semibold transition-colors ${
-                  deepHelpEnabled
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-foreground hover:border-primary/45 hover:text-primary"
-                } disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
-              >
-                <span className="material-symbols-outlined text-[17px]">
-                  psychology
-                </span>
-                {t("monetization.actions.useAdvancedHelp")}
-              </button>
+          <div className="relative flex justify-end">
+            <button
+              type="button"
+              onClick={() => setModelMenuOpen((current) => !current)}
+              className="inline-flex h-10 min-w-[176px] items-center justify-between gap-3 rounded-full border border-border/70 bg-background px-4 text-left text-sm font-semibold text-foreground shadow-sm transition hover:border-primary/40 dark:bg-slate-900 dark:border-slate-700"
+            >
               <span>
-                {deepChatRemaining === null
-                  ? t("monetization.messages.advancedHelpLoading")
-                  : t("monetization.messages.advancedHelpRemaining", {
-                      count: deepChatRemaining,
-                    })}
+                {isFujiBotSelected ? "FUJI bot" : "GPT-5.4 mini"}
+                <span className="ml-2 text-xs font-medium text-muted-foreground">
+                  {modelModeLabel}
+                </span>
               </span>
-            </div>
-            {isDeepChatQuotaEmpty && (
-              <Link href="/packages" className="font-semibold text-primary underline">
-                {t("monetization.actions.upgradePackage")}
-              </Link>
+              <ChevronDown
+                className={`size-4 text-muted-foreground transition-transform ${
+                  modelMenuOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {modelMenuOpen && (
+              <div className="absolute bottom-12 right-0 z-20 w-[280px] overflow-hidden rounded-2xl border border-border/70 bg-background p-1.5 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedModel("fuji-bot");
+                    setDeepHelpEnabled(false);
+                    setModelMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted"
+                >
+                  <Infinity className="size-4 text-emerald-600" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-foreground">FUJI bot</span>
+                    <span className="block text-xs text-muted-foreground">Không giới hạn lượt dùng</span>
+                  </span>
+                  {isFujiBotSelected && <Check className="size-4 text-foreground" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedModel("gpt-5.4-mini");
+                    setDeepHelpEnabled(false);
+                    setModelMenuOpen(false);
+                  }}
+                  disabled={isBasicChatQuotaEmpty}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <Zap className="size-4 text-amber-500" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-foreground">GPT-5.4 mini Fast</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {basicChatRemaining === null ? "Đang tải lượt dùng" : `${basicChatRemaining} lượt còn lại`}
+                    </span>
+                  </span>
+                  {!isFujiBotSelected && !deepHelpEnabled && <Check className="size-4 text-foreground" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedModel("gpt-5.4-mini");
+                    setDeepHelpEnabled(true);
+                    setModelMenuOpen(false);
+                  }}
+                  disabled={isDeepChatQuotaEmpty}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <Brain className="size-4 text-primary" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-foreground">GPT-5.4 mini Thinking</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {deepChatRemaining === null ? "Đang tải lượt dùng" : `${deepChatRemaining} lượt còn lại`}
+                    </span>
+                  </span>
+                  {!isFujiBotSelected && deepHelpEnabled && <Check className="size-4 text-foreground" />}
+                </button>
+                {(isBasicChatQuotaEmpty || isDeepChatQuotaEmpty) && (
+                  <Link
+                    href="/packages"
+                    className="mt-1 block rounded-xl px-3 py-2 text-xs font-semibold text-primary hover:bg-muted"
+                    onClick={() => setModelMenuOpen(false)}
+                  >
+                    {t("monetization.actions.upgradePackage")}
+                  </Link>
+                )}
+              </div>
             )}
           </div>
         </div>

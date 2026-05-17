@@ -23,9 +23,37 @@ type PublishParams = {
   headers?: Record<string, string>;
 };
 
-const BASE_WS_URL = `${
-  process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "http://localhost:8181"
-}/ws`;
+function normalizeHttpUrl(value: string | undefined): string | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+
+  try {
+    const url = new URL(raw);
+    const hostname = url.hostname.toLowerCase();
+    if (!hostname || hostname.startsWith(".")) return null;
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+}
+
+function resolveStompWsUrl(): string {
+  const explicit = normalizeHttpUrl(process.env.NEXT_PUBLIC_STOMP_WS_URL);
+  if (explicit) return explicit;
+
+  const apiUrl = normalizeHttpUrl(process.env.NEXT_PUBLIC_API_URL);
+  if (apiUrl) {
+    const origin = new URL(apiUrl).origin;
+    return `${origin}/ws`;
+  }
+
+  throw new Error(
+    "STOMP URL is not configured. Set NEXT_PUBLIC_STOMP_WS_URL or NEXT_PUBLIC_API_URL."
+  );
+}
+
+const BASE_WS_URL = resolveStompWsUrl();
 const BASE_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 

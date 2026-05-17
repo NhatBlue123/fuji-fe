@@ -1337,7 +1337,7 @@
       "errorEvaluation": "Không thể chấm điểm phiên hội thoại",
       "status": {
         "startToTalk": "Bắt đầu phiên để nói",
-        "holdToTalk": "Giữ mic để nói",
+        "holdToTalk": "Bấm mic để nói",
         "listening": "Đang nghe bạn nói...",
         "processing": "Đang xử lý...",
         "speaking": "Sensei đang nói...",
@@ -1356,7 +1356,12 @@
         "viewResult": "Xem kết quả"
       },
       "mic": {
-        "release": "Thả để gửi"
+        "release": "Thả để gửi",
+        "tapToSend": "Bấm để gửi",
+        "realtimeLabel": "STT realtime",
+        "waitingTranscript": "Đang nghe...",
+        "send": "Gửi câu nói",
+        "retry": "Nói lại"
       },
       "history": {
         "title": "Lịch sử hội thoại",

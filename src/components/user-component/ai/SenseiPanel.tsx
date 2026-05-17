@@ -318,9 +318,11 @@ export default function SenseiPanel() {
 
   const {
     state,
+    liveTranscript,
     startSession,
     startRecording,
     stopRecording,
+    cancelRecording,
     stopSession,
     isSessionActive,
   } = voice;
@@ -415,16 +417,42 @@ export default function SenseiPanel() {
     }
   }, [selectedSessionCode, sessionDetail, isLoadingDetail, t]);
 
-  const handleMicDown = useCallback(() => {
-    if (!isSessionActive || isProcessing || isPlaying) return;
-    startRecording();
-  }, [isSessionActive, isProcessing, isPlaying, startRecording]);
-
-  const handleMicUp = useCallback(async () => {
+  const handleSendRecording = useCallback(async () => {
     if (!isRecording) return;
     await stopRecording();
     refetchAiQuota();
   }, [isRecording, refetchAiQuota, stopRecording]);
+
+  const handleRedoRecording = useCallback(async () => {
+    if (!isSessionActive || isProcessing || isPlaying) return;
+    if (isRecording) {
+      await cancelRecording();
+    }
+    await startRecording();
+  }, [
+    cancelRecording,
+    isRecording,
+    isSessionActive,
+    isProcessing,
+    isPlaying,
+    startRecording,
+  ]);
+
+  const handleMicToggle = useCallback(async () => {
+    if (!isSessionActive || isProcessing || isPlaying) return;
+    if (isRecording) {
+      await handleSendRecording();
+      return;
+    }
+    await startRecording();
+  }, [
+    handleSendRecording,
+    isRecording,
+    isSessionActive,
+    isProcessing,
+    isPlaying,
+    startRecording,
+  ]);
 
   // Transcript messages
   const displayMessages: SenseiMessage[] = useMemo(() => {
@@ -582,7 +610,7 @@ export default function SenseiPanel() {
               </>
             ) : (
               <>
-                {/* Push-to-talk mic button */}
+                {/* Tap-to-talk mic button */}
                 <div className="relative">
                   {isRecording && (
                     <>
@@ -596,9 +624,7 @@ export default function SenseiPanel() {
                     </>
                   )}
                   <Button
-                    onPointerDown={handleMicDown}
-                    onPointerUp={handleMicUp}
-                    onPointerLeave={handleMicUp}
+                    onClick={handleMicToggle}
                     disabled={isProcessing || isPlaying}
                     className={`relative size-16 md:size-20 rounded-full flex items-center justify-center border-4 border-background transition-all duration-300 group ${
                       isRecording
@@ -622,7 +648,7 @@ export default function SenseiPanel() {
                   </Button>
                   <p className="absolute -bottom-8 w-48 -left-14 text-center text-[10px] font-bold text-secondary uppercase tracking-widest opacity-80">
                     {isRecording
-                      ? t("ai.sensei.mic.release")
+                      ? t("ai.sensei.mic.tapToSend")
                       : isProcessing
                         ? t("ai.sensei.status.processing")
                         : isPlaying
@@ -630,6 +656,20 @@ export default function SenseiPanel() {
                           : t("ai.sensei.status.holdToTalk")}
                   </p>
                 </div>
+
+                {!showHistory && isRecording && (
+                  <div className="mt-10 w-[min(90vw,24rem)] rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-sm text-foreground shadow-lg backdrop-blur">
+                    <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-primary">
+                      <span className="material-symbols-outlined text-sm">
+                        graphic_eq
+                      </span>
+                      {t("ai.sensei.mic.realtimeLabel")}
+                    </div>
+                    <p className="line-clamp-3 leading-relaxed">
+                      {liveTranscript || t("ai.sensei.mic.waitingTranscript")}
+                    </p>
+                  </div>
+                )}
 
                 {/* Stop session button */}
                 <Button
@@ -682,7 +722,53 @@ export default function SenseiPanel() {
               {showHistory && (
                 <div className="p-4 flex-1 overflow-y-auto space-y-3">
                   {/* Voice indicator — recording / processing */}
-                  {(isRecording || isProcessing) && (
+                  {isRecording && (
+                    <div className="flex gap-4 opacity-90">
+                      <div className="shrink-0 size-8 rounded-full bg-muted mt-1 border border-border flex items-center justify-center">
+                        <span className="material-symbols-outlined text-sm text-muted-foreground">
+                          person
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="rounded-2xl rounded-tl-sm bg-muted/60 px-4 py-3">
+                          <div className="mb-1 flex items-center gap-2 text-xs font-bold text-primary">
+                            <span className="material-symbols-outlined text-base">
+                              graphic_eq
+                            </span>
+                            {t("ai.sensei.mic.realtimeLabel")}
+                          </div>
+                          <p className="text-base font-medium leading-relaxed text-foreground">
+                            {liveTranscript || t("ai.sensei.mic.waitingTranscript")}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            onClick={handleSendRecording}
+                            size="sm"
+                            className="h-8 rounded-full bg-primary px-3 text-xs text-primary-foreground hover:bg-primary/90"
+                          >
+                            <span className="material-symbols-outlined mr-1 text-sm">
+                              send
+                            </span>
+                            {t("ai.sensei.mic.send")}
+                          </Button>
+                          <Button
+                            onClick={handleRedoRecording}
+                            size="sm"
+                            variant="outline"
+                            className="h-8 rounded-full px-3 text-xs"
+                          >
+                            <span className="material-symbols-outlined mr-1 text-sm">
+                              replay
+                            </span>
+                            {t("ai.sensei.mic.retry")}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isProcessing && (
                     <div className="flex gap-4 opacity-70">
                       <div className="shrink-0 size-8 rounded-full bg-muted mt-1 border border-border flex items-center justify-center">
                         <span className="material-symbols-outlined text-sm text-muted-foreground">
@@ -702,7 +788,7 @@ export default function SenseiPanel() {
                           />
                         </span>
                         <p className="text-sm font-medium">
-                          {isRecording ? t("ai.sensei.history.recording") : t("ai.sensei.status.processing")}
+                          {t("ai.sensei.status.processing")}
                         </p>
                       </div>
                     </div>
@@ -718,6 +804,7 @@ export default function SenseiPanel() {
                       msg.role === "ai" &&
                       msg.id === displayMessages.length - 1;
                     const isReplaying = replayIdx === msg.id;
+                    const isSpeakingAi = (isLastAi && isPlaying) || isReplaying;
                     const karaokeIndex =
                       isLastAi && isPlaying && msg.furigana?.segments
                         ? Math.floor(
@@ -741,11 +828,18 @@ export default function SenseiPanel() {
                             <FuriganaDisplay
                               furigana={msg.furigana}
                               highlightIndex={karaokeIndex}
+                              speaking={isSpeakingAi}
                             />
                           ) : (
                             <>
                               {msg.textJp && (
-                                <p className="text-foreground text-base font-medium leading-relaxed">
+                                <p
+                                  className={`text-base font-medium leading-relaxed ${
+                                    isSpeakingAi
+                                      ? "animate-pulse text-secondary"
+                                      : "text-foreground"
+                                  }`}
+                                >
                                   {msg.textJp}
                                 </p>
                               )}

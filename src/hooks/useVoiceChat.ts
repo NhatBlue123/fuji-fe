@@ -15,6 +15,56 @@ import type {
 } from "@/types/voice";
 import type { Socket } from "socket.io-client";
 
+interface SpeechRecognitionAlternativeLike {
+  transcript: string;
+}
+
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  0: SpeechRecognitionAlternativeLike;
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: {
+    length: number;
+    [index: number]: SpeechRecognitionResultLike;
+  };
+}
+
+interface SpeechRecognitionErrorEventLike {
+  error?: string;
+  message?: string;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+function getBrowserSpeechRecognition(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+}
+
+function normalizeSpeechText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
 interface UseVoiceChatOptions {
   /** Socket.IO instance kết nối tới AI-FUJI */
   socket: Socket | null;
@@ -42,11 +92,17 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
   const [endSessionMutation] = useEndVoiceSessionMutation();
   const [startVoiceSessionMutation] = useStartVoiceSessionMutation();
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState("");
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
   const sessionCodeRef = useRef<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const recognitionRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recognitionRunIdRef = useRef(0);
+  const finalizedResultKeysRef = useRef<Set<string>>(new Set());
+  const finalTranscriptRef = useRef("");
+  const interimTranscriptRef = useRef("");
+  const isCapturingSpeechRef = useRef(false);
+  const shouldRestartRecognitionRef = useRef(false);
 
   // Config lưu tạm để gửi kèm mỗi lượt chat
   const chatConfigRef = useRef<{
@@ -66,6 +122,103 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
     },
     [options],
   );
+
+  const stopLiveSpeechRecognition = useCallback((clearTranscript = false) => {
+    shouldRestartRecognitionRef.current = false;
+    isCapturingSpeechRef.current = false;
+    if (recognitionRestartTimerRef.current) {
+      clearTimeout(recognitionRestartTimerRef.current);
+      recognitionRestartTimerRef.current = null;
+    }
+
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      try { recognition.stop(); } catch { /* ignore */ }
+      try { recognition.abort(); } catch { /* ignore */ }
+      recognitionRef.current = null;
+    }
+
+    if (clearTranscript) {
+      finalizedResultKeysRef.current.clear();
+      finalTranscriptRef.current = "";
+      interimTranscriptRef.current = "";
+      setLiveTranscript("");
+    }
+  }, []);
+
+  const startLiveSpeechRecognition = useCallback(function startLiveSpeechRecognition(): boolean {
+    const SpeechRecognition = getBrowserSpeechRecognition();
+    if (!SpeechRecognition) return false;
+    if (recognitionRef.current) return true;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ja-JP";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    shouldRestartRecognitionRef.current = true;
+    recognitionRunIdRef.current += 1;
+    const runId = recognitionRunIdRef.current;
+
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const transcript = normalizeSpeechText(result[0]?.transcript ?? "");
+        if (!transcript) continue;
+
+        if (result.isFinal) {
+          const resultKey = `${runId}:${i}`;
+          if (finalizedResultKeysRef.current.has(resultKey)) continue;
+          finalizedResultKeysRef.current.add(resultKey);
+          const currentFinal = normalizeSpeechText(finalTranscriptRef.current);
+          finalTranscriptRef.current = normalizeSpeechText(`${currentFinal} ${transcript}`);
+        } else {
+          interimTranscript = normalizeSpeechText(`${interimTranscript} ${transcript}`);
+        }
+      }
+
+      interimTranscriptRef.current = interimTranscript;
+      setLiveTranscript(normalizeSpeechText(`${finalTranscriptRef.current} ${interimTranscript}`));
+    };
+
+    recognition.onerror = (event) => {
+      const code = event.error ?? "unknown";
+      if (code === "no-speech" || code === "aborted") return;
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[VoiceChat] Browser SpeechRecognition error:", event);
+      }
+    };
+
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      if (!shouldRestartRecognitionRef.current) return;
+      if (!isCapturingSpeechRef.current) return;
+
+      recognitionRestartTimerRef.current = setTimeout(() => {
+        recognitionRestartTimerRef.current = null;
+        if (shouldRestartRecognitionRef.current && isCapturingSpeechRef.current) {
+          startLiveSpeechRecognition();
+        }
+      }, 250);
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+      return true;
+    } catch (err) {
+      recognitionRef.current = null;
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[VoiceChat] Failed to start browser SpeechRecognition:", err);
+      }
+      return false;
+    }
+  }, []);
 
   /**
    * Chờ kết quả job qua Socket.IO events.
@@ -249,182 +402,168 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
   // Removed listenForOpening - logic moved inline into startSession to fix race condition
 
   /**
-   * Bắt đầu thu âm (push-to-talk: nhấn giữ)
+   * Bắt đầu nhận diện giọng nói bằng browser STT.
    */
   const startRecording = useCallback(async () => {
-    try {
-      setState((prev) => ({ ...prev, error: null }));
-      chunksRef.current = [];
+    if (isCapturingSpeechRef.current) return;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
-      streamRef.current = stream;
+    const SpeechRecognition = getBrowserSpeechRecognition();
+    if (!SpeechRecognition) {
+      const message = "Trình duyệt chưa hỗ trợ STT realtime. Vui lòng dùng Chrome hoặc Edge.";
+      setState((prev) => ({ ...prev, status: "error", error: message }));
+      options.onError?.(message);
+      return;
+    }
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
-      });
-      mediaRecorderRef.current = recorder;
+    setState((prev) => ({ ...prev, error: null }));
+    finalizedResultKeysRef.current.clear();
+    finalTranscriptRef.current = "";
+    interimTranscriptRef.current = "";
+    setLiveTranscript("");
+    isCapturingSpeechRef.current = true;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.start();
+    if (startLiveSpeechRecognition()) {
       updateStatus("recording");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Không thể truy cập mic";
+    } else {
+      isCapturingSpeechRef.current = false;
+      const message = "Không thể bắt đầu STT realtime. Kiểm tra quyền microphone.";
       setState((prev) => ({ ...prev, status: "error", error: message }));
       options.onError?.(message);
     }
-  }, [updateStatus, options]);
+  }, [startLiveSpeechRecognition, updateStatus, options]);
+
+  const cancelRecording = useCallback(async () => {
+    stopLiveSpeechRecognition(true);
+    updateStatus("idle");
+  }, [stopLiveSpeechRecognition, updateStatus]);
 
   /**
-   * Dừng thu âm → convert base64 → gửi AI service → chờ socket event → phát audio
+   * Dừng STT → gửi transcript lên AI service → chờ socket event → phát audio
    */
   const stopRecording = useCallback(async () => {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder || recorder.state !== "recording") return;
+    if (!isCapturingSpeechRef.current) return;
+    const transcriptFromState = normalizeSpeechText(liveTranscript);
+    const transcriptFromRefs = normalizeSpeechText(
+      `${finalTranscriptRef.current} ${interimTranscriptRef.current}`,
+    );
+    const transcriptToSend =
+      transcriptFromRefs.length >= transcriptFromState.length
+        ? transcriptFromRefs
+        : transcriptFromState;
+    stopLiveSpeechRecognition(false);
 
-    return new Promise<void>((resolve) => {
-      recorder.onstop = async () => {
-        // Tắt mic
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
+    if (!transcriptToSend) {
+      const message = "Chưa nhận được nội dung giọng nói để gửi.";
+      setState((prev) => ({ ...prev, status: "error", error: message }));
+      setLiveTranscript("");
+      options.onError?.(message);
+      return;
+    }
 
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        chunksRef.current = [];
+    updateStatus("processing");
+    const config = chatConfigRef.current;
+    if (!config) {
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        error: "Chưa khởi tạo session",
+      }));
+      setLiveTranscript("");
+      return;
+    }
 
-        if (blob.size === 0) {
-          updateStatus("idle");
-          resolve();
-          return;
-        }
+    const now = new Date().toISOString();
+    const userItem: VoiceTranscriptItem = {
+      role: "user",
+      transcript: transcriptToSend,
+      createdAt: now,
+    };
+    options.onTranscriptUpdate?.(userItem);
+    setState((prev) => ({
+      ...prev,
+      transcriptHistory: [...prev.transcriptHistory, userItem],
+    }));
 
-        // Convert blob → base64
-        const base64 = await blobToBase64(blob);
+    try {
+      const { jobId } = await voiceChatMutation({
+        level: config.level,
+        context: config.context,
+        goals: config.goals,
+        userTranscript: transcriptToSend,
+        preferredVoice: config.preferredVoice,
+        session: sessionCodeRef.current || undefined,
+        topicId: config.topicId,
+        scenarioId: config.scenarioId,
+      }).unwrap();
 
-        // Gửi lên AI service
-        updateStatus("processing");
-        const config = chatConfigRef.current;
-        if (!config) {
-          setState((prev) => ({
-            ...prev,
-            status: "error",
-            error: "Chưa khởi tạo session",
-          }));
-          resolve();
-          return;
-        }
+      const result = await waitForJobResult(jobId);
 
-        try {
-          // Bước 1: Gửi request → nhận jobId (202 async)
-          const { jobId } = await voiceChatMutation({
-            level: config.level,
-            context: config.context,
-            goals: config.goals,
-            inputVoice: base64,
-            audioFormat: "webm",
-            preferredVoice: config.preferredVoice,
-            session: sessionCodeRef.current || undefined,
-            topicId: config.topicId,
-            scenarioId: config.scenarioId,
-          }).unwrap();
+      if (result.session) {
+        sessionCodeRef.current = result.session;
+        setState((prev) => ({ ...prev, sessionCode: result.session }));
+      }
 
-          let userTranscriptEmitted = false;
+      const responseAt = new Date().toISOString();
+      const newItems: VoiceTranscriptItem[] = [];
+      let aiText = result.aiResponse?.text || "";
+      let isAutoClose = false;
+      if (aiText.includes("((close))")) {
+        isAutoClose = true;
+        aiText = aiText.replace("((close))", "").trim();
+      }
 
-          // Bước 2: Chờ kết quả qua socket
-          const result = await waitForJobResult(jobId, (transcript) => {
-            const now = new Date().toISOString();
-            const userItem: VoiceTranscriptItem = {
-              role: "user",
-              transcript,
-              createdAt: now,
-            };
-            userTranscriptEmitted = true;
-            options.onTranscriptUpdate?.(userItem);
-            setState((prev) => ({
-              ...prev,
-              transcriptHistory: [...prev.transcriptHistory, userItem],
-            }));
-          });
+      if (aiText) {
+        const furigana = result.aiResponse?.furigana;
+        const aiItem: VoiceTranscriptItem = {
+          role: "assistant",
+          transcript: aiText,
+          translationVi: furigana?.translation || undefined,
+          furigana: furigana || undefined,
+          audioBase64: result.audioBase64 || undefined,
+          audioFormat: result.audioFormat || "mp3",
+          createdAt: responseAt,
+        };
+        newItems.push(aiItem);
+        options.onTranscriptUpdate?.(aiItem);
+      }
 
-          // Lưu session code cho lượt tiếp
-          if (result.session) {
-            sessionCodeRef.current = result.session;
-            setState((prev) => ({ ...prev, sessionCode: result.session }));
-          }
+      setState((prev) => ({
+        ...prev,
+        transcriptHistory: [...prev.transcriptHistory, ...newItems],
+      }));
 
-          // Thêm transcript vào history
-          const now = new Date().toISOString();
-          const newItems: VoiceTranscriptItem[] = [];
-          if (result.transcript && !userTranscriptEmitted) {
-            const userItem: VoiceTranscriptItem = {
-              role: "user",
-              transcript: result.transcript,
-              createdAt: now,
-            };
-            newItems.push(userItem);
-            options.onTranscriptUpdate?.(userItem);
-          }
+      if (result.audioBase64) {
+        updateStatus("playing");
+        await playBase64Audio(
+          result.audioBase64,
+          result.audioFormat || "mp3",
+          options.onAudioProgress,
+        );
+      }
 
-          let aiText = result.aiResponse?.text || "";
-          let isAutoClose = false;
-          if (aiText.includes("((close))")) {
-            isAutoClose = true;
-            aiText = aiText.replace("((close))", "").trim();
-          }
+      updateStatus("idle");
+      setLiveTranscript("");
+      finalTranscriptRef.current = "";
+      interimTranscriptRef.current = "";
 
-          if (aiText) {
-            const furigana = result.aiResponse?.furigana;
-            const aiItem: VoiceTranscriptItem = {
-              role: "assistant",
-              transcript: aiText,
-              translationVi: furigana?.translation || undefined,
-              furigana: furigana || undefined,
-              audioBase64: result.audioBase64 || undefined,
-              audioFormat: result.audioFormat || "mp3",
-              createdAt: now,
-            };
-            newItems.push(aiItem);
-            options.onTranscriptUpdate?.(aiItem);
-          }
-
-          setState((prev) => ({
-            ...prev,
-            transcriptHistory: [...prev.transcriptHistory, ...newItems],
-          }));
-
-          // Phát audio response
-          if (result.audioBase64) {
-            updateStatus("playing");
-            await playBase64Audio(
-              result.audioBase64,
-              result.audioFormat || "mp3",
-              options.onAudioProgress,
-            );
-          }
-
-          updateStatus("idle");
-
-          // Báo hiệu FE hiển thị popup kết thúc nếu thấy ((close))
-          if (isAutoClose) {
-            options.onAutoClose?.();
-          }
-        } catch (err) {
-          const message =
-            err instanceof Error ? err.message : "Lỗi khi gửi voice";
-          setState((prev) => ({ ...prev, status: "error", error: message }));
-          options.onError?.(message);
-        }
-
-        resolve();
-      };
-
-      recorder.stop();
-    });
-  }, [voiceChatMutation, waitForJobResult, updateStatus, options]);
+      if (isAutoClose) {
+        options.onAutoClose?.();
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Lỗi khi gửi voice";
+      setState((prev) => ({ ...prev, status: "error", error: message }));
+      setLiveTranscript("");
+      options.onError?.(message);
+    }
+  }, [
+    liveTranscript,
+    voiceChatMutation,
+    waitForJobResult,
+    updateStatus,
+    stopLiveSpeechRecognition,
+    options,
+  ]);
 
   /**
    * Kết thúc session hoàn toàn
@@ -434,11 +573,9 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
     feedback: VoiceSessionFeedback | null;
     evaluation: VoiceEvaluationState | null;
   } | null> => {
-    // Dừng recording nếu đang record
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop();
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    // Dừng STT nếu đang nghe
+    if (isCapturingSpeechRef.current) {
+      await cancelRecording();
     }
 
     const sessionCode = sessionCodeRef.current;
@@ -476,39 +613,25 @@ export function useVoiceChat(options: UseVoiceChatOptions) {
       transcriptHistory: [],
     });
     return null;
-  }, [endSessionMutation]);
+  }, [cancelRecording, endSessionMutation]);
 
   // Cleanup khi unmount
   useEffect(() => {
     return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      mediaRecorderRef.current = null;
+      stopLiveSpeechRecognition(true);
     };
-  }, []);
+  }, [stopLiveSpeechRecognition]);
 
   return {
     state,
+    liveTranscript,
     startSession,
     startRecording,
     stopRecording,
+    cancelRecording,
     stopSession,
     isSessionActive,
   };
-}
-
-/** Convert Blob → base64 string (without data URI prefix) */
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      // Bỏ prefix "data:audio/webm;base64,"
-      const base64 = result.split(",")[1] || result;
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 /** Phát audio từ base64 string */

@@ -7,7 +7,8 @@ export interface VoiceChatRequest {
   level: string;
   context: string;
   goals?: string; // mục tiêu học tập của người dùng, để AI có thể cá nhân hóa phản hồi
-  inputVoice: string; // base64 encoded audio
+  inputVoice?: string; // base64 encoded audio
+  userTranscript?: string; // browser STT text
   audioFormat?: string; // định dạng âm thanh của audio input
   preferredVoice?: string; 
   memorySummary?: string;

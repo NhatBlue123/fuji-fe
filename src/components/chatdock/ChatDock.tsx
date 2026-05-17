@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Maximize2, Minimize2, ExternalLink } from "lucide-react";
+import { Check, ChevronDown, ExternalLink, Maximize2, Minimize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ChatDockContent from "./ChatDockContent";
+import ChatDockContent, { type ChatDockModelId } from "./ChatDockContent";
 import FramedAiAvatar from "./FramedAiAvatar";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/store/hooks";
@@ -29,6 +29,8 @@ export default function ChatDock() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedModel, setSelectedModel] = useState<ChatDockModelId>("fuji-bot");
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
 
   // Hide ChatDock on AI Chat and Sensei pages
   const shouldHide = pathname?.includes("/ai-chat") || pathname?.includes("/sensei");
@@ -177,6 +179,50 @@ export default function ChatDock() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setModelMenuOpen((current) => !current)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/55 bg-white/55 px-2.5 text-xs font-semibold text-foreground transition hover:bg-white/75 dark:border-white/10 dark:bg-white/10 dark:hover:bg-white/15"
+                      title="Chọn model"
+                    >
+                      {selectedModel === "fuji-bot" ? "FUJI bot" : "GPT-5.4"}
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
+                          modelMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {modelMenuOpen && (
+                      <div className="absolute right-0 top-9 z-[9999] w-40 overflow-hidden rounded-xl border border-border/70 bg-background p-1 text-xs shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedModel("fuji-bot");
+                            setModelMenuOpen(false);
+                          }}
+                          className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left font-semibold hover:bg-muted"
+                        >
+                          <span>
+                            FUJI bot
+                            <span className="block text-[10px] font-medium text-muted-foreground">Không giới hạn</span>
+                          </span>
+                          {selectedModel === "fuji-bot" && <Check className="h-3.5 w-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedModel("gpt-5.4-mini");
+                            setModelMenuOpen(false);
+                          }}
+                          className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left font-semibold hover:bg-muted"
+                        >
+                          <span>GPT-5.4</span>
+                          {selectedModel === "gpt-5.4-mini" && <Check className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -219,7 +265,7 @@ export default function ChatDock() {
                   exit={{ opacity: 0 }}
                   className="flex-1 overflow-hidden flex flex-col min-h-0"
                 >
-                  <ChatDockContent />
+                  <ChatDockContent selectedModel={selectedModel} />
                 </motion.div>
               )}
 

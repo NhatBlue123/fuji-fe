@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Trash2, Upload, BookOpen, Headphones, FileText, Loader2, CheckCircle, X } from "lucide-react";
+import { Plus, Trash2, BookOpen, Headphones, FileText, Loader2, CheckCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { QuizType, QuestionType, QuizQuestionItem } from "@/store/services/lessonApi";
@@ -52,6 +52,9 @@ const DEFAULT_OPTIONS = ["A", "B", "C", "D"];
 
 const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/m4a", "audio/ogg", "audio/webm"];
 const MAX_AUDIO_SIZE_MB = 50;
+const LABEL_CLASS = "mb-1 block text-xs text-muted-foreground dark:text-[#8B8FA8]";
+const FORM_CONTROL_CLASS =
+  "w-full rounded-lg border border-input bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-[#6C63FF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/15 dark:border-white/10 dark:bg-[#1a1d27] dark:text-[#F0F0F0] dark:placeholder:text-[#8B8FA8]/70";
 
 export function QuizCreator({
   title,
@@ -182,14 +185,14 @@ export function QuizCreator({
     return (
       <div
         key={index}
-        className="rounded-lg border border-white/[0.08] bg-[#1a1d27]/50 p-3 space-y-3"
+        className="space-y-3 rounded-lg border border-border bg-background/80 p-3 shadow-sm dark:border-white/[0.08] dark:bg-[#1a1d27]/50 dark:shadow-none"
       >
         {/* Question Header */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-[#8B8FA8]">Câu {index + 1}</span>
+          <span className="text-xs font-medium text-muted-foreground dark:text-[#8B8FA8]">Câu {index + 1}</span>
           <button
             onClick={() => removeQuestion(index)}
-            className="text-[#8B8FA8] hover:text-red-400 transition-colors"
+            className="text-muted-foreground transition-colors hover:text-red-500 dark:text-[#8B8FA8] dark:hover:text-red-400"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -197,13 +200,13 @@ export function QuizCreator({
 
         {/* Question Type */}
         <div>
-          <label className="text-xs text-[#8B8FA8] mb-1 block">Loại câu hỏi</label>
+          <label className={LABEL_CLASS}>Loại câu hỏi</label>
           <select
             value={question.type}
             onChange={(e) =>
               updateQuestion(index, { type: e.target.value as QuestionType })
             }
-            className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-xs text-[#F0F0F0]"
+            className={FORM_CONTROL_CLASS}
           >
             {QUESTION_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -215,27 +218,27 @@ export function QuizCreator({
 
         {/* Question Text */}
         <div>
-          <label className="text-xs text-[#8B8FA8] mb-1 block">Nội dung câu hỏi</label>
+          <label className={LABEL_CLASS}>Nội dung câu hỏi</label>
           <textarea
             value={question.questionText}
             onChange={(e) =>
               updateQuestion(index, { questionText: e.target.value })
             }
             placeholder="Nhập câu hỏi..."
-            className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-xs text-[#F0F0F0] min-h-[52px] resize-none"
+            className={cn(FORM_CONTROL_CLASS, "min-h-[52px] resize-none")}
           />
         </div>
 
         {/* Options for Multiple Choice */}
         {question.type === "MULTIPLE_CHOICE" && (
           <div>
-            <label className="text-xs text-[#8B8FA8] mb-1 block">Các lựa chọn</label>
+            <label className={LABEL_CLASS}>Các lựa chọn</label>
             <div className="space-y-1.5">
               {parseOptions().map((opt, optIdx) => {
                 const labels = ["A", "B", "C", "D", "E", "F", "G", "H"];
                 return (
                   <div key={optIdx} className="flex items-center gap-2">
-                    <span className="text-xs text-[#8B8FA8] font-medium w-5">{labels[optIdx]}.</span>
+                    <span className="w-5 text-xs font-medium text-muted-foreground dark:text-[#8B8FA8]">{labels[optIdx]}.</span>
                     <input
                       type="text"
                       value={opt}
@@ -244,7 +247,7 @@ export function QuizCreator({
                         newOpts[optIdx] = e.target.value;
                         updateOptions(newOpts);
                       }}
-                      className="flex-1 rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1 text-xs text-[#F0F0F0]"
+                      className={cn(FORM_CONTROL_CLASS, "flex-1 py-1")}
                     />
                     {question.correctAnswer === opt && (
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400">✓</span>
@@ -258,13 +261,13 @@ export function QuizCreator({
 
         {/* Correct Answer */}
         <div>
-          <label className="text-xs text-[#8B8FA8] mb-1 block">Đáp án đúng</label>
+          <label className={LABEL_CLASS}>Đáp án đúng</label>
           <select
             value={question.correctAnswer}
             onChange={(e) =>
               updateQuestion(index, { correctAnswer: e.target.value })
             }
-            className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-xs text-[#F0F0F0]"
+            className={FORM_CONTROL_CLASS}
           >
             <option value="">-- Chọn đáp án --</option>
             {parseOptions().map((opt, optIdx) => {
@@ -280,14 +283,14 @@ export function QuizCreator({
 
         {/* Explanation */}
         <div>
-          <label className="text-xs text-[#8B8FA8] mb-1 block">Giải thích (tùy chọn)</label>
+          <label className={LABEL_CLASS}>Giải thích (tùy chọn)</label>
           <textarea
             value={question.explanation || ""}
             onChange={(e) =>
               updateQuestion(index, { explanation: e.target.value })
             }
             placeholder="Giải thích đáp án..."
-            className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-xs text-[#F0F0F0] min-h-[40px] resize-none"
+            className={cn(FORM_CONTROL_CLASS, "min-h-[40px] resize-none")}
           />
         </div>
       </div>
@@ -298,19 +301,19 @@ export function QuizCreator({
     <div className="space-y-4">
       {/* Quiz Title */}
       <div>
-        <label className="text-xs text-[#8B8FA8] mb-1 block">Tiêu đề quiz</label>
+        <label className={LABEL_CLASS}>Tiêu đề quiz</label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Nhập tiêu đề bài quiz..."
-          className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-xs text-[#F0F0F0]"
+          className={FORM_CONTROL_CLASS}
         />
       </div>
 
       {/* Quiz Type Tabs */}
       <div>
-        <label className="text-xs text-[#8B8FA8] mb-2 block">Loại quiz</label>
+        <label className="mb-2 block text-xs text-muted-foreground dark:text-[#8B8FA8]">Loại quiz</label>
         <div className="grid grid-cols-3 gap-2">
           {QUIZ_TYPE_TABS.map((tab) => (
             <button
@@ -319,8 +322,8 @@ export function QuizCreator({
               className={cn(
                 "flex flex-col items-center gap-1 p-2 rounded-lg border transition-all text-xs",
                 quizType === tab.value
-                  ? "border-[#6C63FF]/50 bg-[#6C63FF]/10 text-[#F0F0F0]"
-                  : "border-white/[0.08] bg-[#1a1d27]/50 text-[#8B8FA8] hover:border-white/[0.12]"
+                  ? "border-[#6C63FF]/50 bg-[#6C63FF]/10 text-[#4F46E5] shadow-sm dark:text-[#F0F0F0] dark:shadow-none"
+                  : "border-border bg-background text-muted-foreground hover:border-[#6C63FF]/30 hover:text-foreground dark:border-white/[0.08] dark:bg-[#1a1d27]/50 dark:text-[#8B8FA8] dark:hover:border-white/[0.12] dark:hover:text-[#F0F0F0]"
               )}
             >
               {tab.icon}
@@ -333,7 +336,7 @@ export function QuizCreator({
       {/* LISTENING: Audio Upload */}
       {quizType === "LISTENING" && (
         <div>
-          <label className="text-xs text-[#8B8FA8] mb-1 block">File Audio (Cloudinary)</label>
+          <label className={LABEL_CLASS}>File Audio (Cloudinary)</label>
           
           {/* Hidden file input */}
           <input
@@ -355,21 +358,21 @@ export function QuizCreator({
                 "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
                 isDragging
                   ? "border-[#6C63FF] bg-[#6C63FF]/10"
-                  : "border-white/[0.12] hover:border-white/[0.2] bg-[#1a1d27]/30"
+                  : "border-border bg-background/70 hover:border-[#6C63FF]/30 dark:border-white/[0.12] dark:bg-[#1a1d27]/30 dark:hover:border-white/[0.2]"
               )}
             >
               <div className="flex flex-col items-center gap-2">
                 <div className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center",
-                  isDragging ? "bg-[#6C63FF]/20" : "bg-[#252838]"
+                  isDragging ? "bg-[#6C63FF]/20" : "bg-muted dark:bg-[#252838]"
                 )}>
-                  <Headphones className={cn("h-5 w-5", isDragging ? "text-[#6C63FF]" : "text-[#8B8FA8]")} />
+                  <Headphones className={cn("h-5 w-5", isDragging ? "text-[#6C63FF]" : "text-muted-foreground dark:text-[#8B8FA8]")} />
                 </div>
                 <div>
-                  <p className="text-xs text-[#F0F0F0]">
+                  <p className="text-xs text-foreground dark:text-[#F0F0F0]">
                     Kéo thả file audio hoặc <span className="text-[#6C63FF]">bấm để chọn</span>
                   </p>
-                  <p className="text-[10px] text-[#8B8FA8] mt-1">
+                  <p className="mt-1 text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
                     MP3, WAV, M4A, OGG, WebM • Tối đa {MAX_AUDIO_SIZE_MB}MB
                   </p>
                 </div>
@@ -383,8 +386,8 @@ export function QuizCreator({
               <div className="flex items-center gap-3">
                 <Loader2 className="h-5 w-5 text-[#6C63FF] animate-spin" />
                 <div>
-                  <p className="text-xs text-[#F0F0F0]">Đang tải lên Cloudinary...</p>
-                  <p className="text-[10px] text-[#8B8FA8]">Vui lòng đợi</p>
+                  <p className="text-xs text-foreground dark:text-[#F0F0F0]">Đang tải lên Cloudinary...</p>
+                  <p className="text-[10px] text-muted-foreground dark:text-[#8B8FA8]">Vui lòng đợi</p>
                 </div>
               </div>
             </div>
@@ -402,7 +405,7 @@ export function QuizCreator({
                     <p className="truncate text-xs font-medium text-emerald-700 dark:text-emerald-400">
                       Audio đã tải lên
                     </p>
-                    <p className="text-[10px] text-[#8B8FA8] truncate">
+                    <p className="truncate text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
                       {mediaContent.split("/").pop()}
                     </p>
                   </div>
@@ -415,7 +418,7 @@ export function QuizCreator({
                   />
                   <button
                     onClick={removeAudio}
-                    className="p-1.5 rounded-md bg-white/5 hover:bg-red-500/20 text-[#8B8FA8] hover:text-red-400 transition-colors"
+                    className="rounded-md bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:bg-white/5 dark:text-[#8B8FA8] dark:hover:bg-red-500/20 dark:hover:text-red-400"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -424,7 +427,7 @@ export function QuizCreator({
             </div>
           )}
 
-          <p className="text-[10px] text-[#8B8FA8] mt-2">
+          <p className="mt-2 text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
             Audio sẽ được lưu trên Cloudinary. Học viên có thể nghe trong khi làm bài.
           </p>
         </div>
@@ -433,14 +436,14 @@ export function QuizCreator({
       {/* READING: Passage Text */}
       {quizType === "READING" && (
         <div>
-          <label className="text-xs text-[#8B8FA8] mb-1 block">Đoạn văn đọc hiểu</label>
+          <label className={LABEL_CLASS}>Đoạn văn đọc hiểu</label>
           <textarea
             value={passageText}
             onChange={(e) => setPassageText(e.target.value)}
             placeholder="Nhập đoạn văn dài..."
-            className="w-full rounded-lg bg-[#1a1d27] border border-white/10 px-2 py-1.5 text-xs text-[#F0F0F0] min-h-[120px] resize-y"
+            className={cn(FORM_CONTROL_CLASS, "min-h-[120px] resize-y")}
           />
-          <p className="text-[10px] text-[#8B8FA8] mt-1">
+          <p className="mt-1 text-[10px] text-muted-foreground dark:text-[#8B8FA8]">
             Các câu hỏi bên dưới sẽ chia sẻ đoạn văn này
           </p>
         </div>
@@ -449,7 +452,7 @@ export function QuizCreator({
       {/* Questions */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-[#8B8FA8]">Câu hỏi</label>
+          <label className="text-xs text-muted-foreground dark:text-[#8B8FA8]">Câu hỏi</label>
           <button
             onClick={addQuestion}
             className="flex items-center gap-1 text-xs text-[#6C63FF] hover:text-[#8B83FF]"
@@ -459,8 +462,8 @@ export function QuizCreator({
           </button>
         </div>
         {questions.length === 0 ? (
-          <div className="text-center py-6 border border-dashed border-white/[0.08] rounded-lg">
-            <p className="text-xs text-[#8B8FA8]">Chưa có câu hỏi nào</p>
+          <div className="rounded-lg border border-dashed border-border bg-background/40 py-6 text-center dark:border-white/[0.08] dark:bg-transparent">
+            <p className="text-xs text-muted-foreground dark:text-[#8B8FA8]">Chưa có câu hỏi nào</p>
             <button
               onClick={addQuestion}
               className="mt-2 text-xs text-[#6C63FF] hover:underline"

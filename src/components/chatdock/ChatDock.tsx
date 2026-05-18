@@ -31,13 +31,29 @@ export default function ChatDock() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedModel, setSelectedModel] = useState<ChatDockModelId>("fuji-bot");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
-  // Hide ChatDock on AI Chat and Sensei pages
-  const shouldHide = pathname?.includes("/ai-chat") || pathname?.includes("/sensei");
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+    return () => mediaQuery.removeEventListener("change", updateViewport);
+  }, []);
+
+  // Hide ChatDock on AI Chat, Sensei, and mobile video-call pages.
+  const isVideoCallPage =
+    pathname === "/video-call" || pathname?.startsWith("/video-call/");
+  const shouldHide =
+    pathname?.includes("/ai-chat") ||
+    pathname?.includes("/sensei") ||
+    (isMobileViewport && isVideoCallPage);
 
   useEffect(() => {
     if (shouldHide && isOpen) {
-      setIsOpen(false);
+      const timeoutId = window.setTimeout(() => setIsOpen(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
   }, [shouldHide, isOpen]);
 

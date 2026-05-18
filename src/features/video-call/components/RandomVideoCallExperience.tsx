@@ -38,6 +38,12 @@ const MATCH_MODES: Array<{
   { value: "over_level", labelKey: "videoCall.random.matchModes.overLevel" },
 ];
 
+const liquidPanelClass =
+  "relative overflow-hidden border border-white/55 bg-white/56 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.5)] backdrop-blur-2xl ring-1 ring-white/60 dark:border-white/12 dark:bg-white/[0.07] dark:shadow-[0_28px_90px_-48px_rgba(56,189,248,0.28)] dark:ring-white/10";
+
+const glassSheenClass =
+  "pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(255,255,255,0.16)_38%,rgba(125,211,252,0.12)_62%,rgba(255,255,255,0.08))] opacity-80 dark:bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(56,189,248,0.08)_42%,rgba(255,255,255,0.05)_72%)]";
+
 interface CallRule {
   id: string;
   titleKey: string;
@@ -89,8 +95,8 @@ function RulePreviewItem({ rule }: { rule: CallRule }) {
   const Icon = rule.icon;
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
-      <div className="mt-0.5 rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800">
+    <div className="flex items-start gap-3 rounded-xl border border-white/55 bg-white/68 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]">
+      <div className="mt-0.5 rounded-lg border border-white/60 bg-white/58 p-2 shadow-inner dark:border-white/10 dark:bg-white/[0.06]">
         <Icon className={cn("h-5 w-5", rule.color)} />
       </div>
       <div className="flex-1 space-y-1">
@@ -125,8 +131,8 @@ function RulesHoverButton({
         className={cn(
           "gap-2",
           iconOnly
-            ? "h-11 w-11 rounded-full text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-            : "border-sky-200 bg-sky-50 hover:bg-sky-100 dark:border-white/10 dark:bg-slate-900/60 dark:hover:bg-slate-800",
+            ? "h-11 w-11 rounded-full border border-white/45 bg-white/44 text-slate-600 shadow-sm backdrop-blur-xl hover:bg-white/68 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/[0.1]"
+            : "border-white/55 bg-white/58 shadow-sm backdrop-blur-xl hover:bg-white/75 dark:border-white/10 dark:bg-white/[0.07] dark:hover:bg-white/[0.11]",
         )}
         title={t("videoCall.random.rules.viewTitle")}
       >
@@ -143,9 +149,11 @@ function RulesHoverButton({
             : "right-0 top-full mt-3 -translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0",
         )}
       >
-        <div className="rounded-2xl border border-sky-200 bg-white p-4 text-left text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50">
+        <div className={cn("rounded-2xl p-4 text-left text-slate-900 dark:text-slate-50", liquidPanelClass)}>
+          <span className={glassSheenClass} />
+          <div className="relative z-10">
           <div className="mb-3 flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/15">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-white/58 shadow-inner dark:border-white/10 dark:bg-sky-400/12">
               <Shield className="h-5 w-5 text-blue-600 dark:text-blue-300" />
             </div>
             <div>
@@ -165,6 +173,7 @@ function RulesHoverButton({
           <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{t("videoCall.random.rules.noticeTitle")}</span>
+          </div>
           </div>
         </div>
       </div>
@@ -224,48 +233,54 @@ export default function RandomVideoCallExperience() {
     <>
       {/* Main Video Call UI */}
       <div
-        className="relative flex overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50"
+        className="relative flex overflow-hidden bg-[#edf6ff] text-slate-900 dark:bg-[#030712] dark:text-slate-50"
         style={{ height: "calc(100vh - 64px)" }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.15),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.10),transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.16),transparent_34%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(125,211,252,0.44),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(244,114,182,0.28),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(16,185,129,0.22),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.90),rgba(224,242,254,0.72))] dark:bg-[radial-gradient(circle_at_18%_0%,rgba(14,165,233,0.34),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(168,85,247,0.20),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(16,185,129,0.14),transparent_34%),linear-gradient(180deg,rgba(2,6,23,0.98),rgba(3,7,18,0.96))]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.18)_1px,transparent_1px)] bg-[size:44px_44px] opacity-25 dark:opacity-[0.08]" />
 
         <main className="relative z-10 flex min-h-0 flex-1 flex-col">
-          {/* Top Bar with Rules Button */}
-          <div className="flex items-center justify-between border-b border-sky-200/50 bg-white/80 px-4 py-2 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600">
-                <GraduationCap className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="font-semibold">{t("videoCall.random.title")}</h1>
-                <p className="text-xs text-muted-foreground">
-                  {t("videoCall.random.subtitle")}
-                </p>
+          {/* Top Bar */}
+          <div className="shrink-0">
+            <div className="relative flex items-center overflow-hidden border-b border-white/55 bg-white/50 px-5 py-3 shadow-[0_18px_44px_-38px_rgba(15,23,42,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06]">
+              <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.62),rgba(255,255,255,0.16)_48%,rgba(125,211,252,0.16))] dark:bg-[linear-gradient(90deg,rgba(255,255,255,0.10),rgba(56,189,248,0.06))]" />
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/46 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_14px_30px_-20px_rgba(14,165,233,0.9)] backdrop-blur-xl dark:border-white/10 dark:bg-sky-400/14">
+                  <GraduationCap className="h-5 w-5 text-sky-600 dark:text-sky-200" />
+                </div>
+                <div>
+                  <h1 className="text-sm font-semibold tracking-wide text-slate-950 dark:text-white">
+                    {t("videoCall.random.title")}
+                  </h1>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {t("videoCall.random.subtitle")}
+                  </p>
+                </div>
               </div>
             </div>
-            <RulesHoverButton />
           </div>
 
           {/* Video Grid */}
           <section className={cn(
-            "grid min-h-0 flex-1 gap-4 bg-transparent p-4",
+            "grid min-h-0 flex-1 gap-4 bg-transparent p-4 pb-3 md:gap-5 md:p-5 md:pb-4",
             isConnected ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-2"
           )}>
             {/* Local Video */}
-            <div className="relative min-h-[340px] overflow-hidden rounded-2xl border-4 border-sky-500/80 bg-slate-100 shadow-2xl dark:border-white/90 dark:bg-slate-950">
+            <div className={cn("relative h-full min-h-[340px] overflow-hidden rounded-[1.75rem] bg-slate-950", liquidPanelClass)}>
+              <span className={glassSheenClass} />
               <video
                 ref={localVideoRef}
                 autoPlay
                 playsInline
                 muted
                 className={cn(
-                  "h-full w-full scale-x-[-1] bg-slate-100 object-cover transition-opacity duration-300 dark:bg-slate-950",
+                  "h-full w-full scale-x-[-1] bg-slate-950 object-cover transition-opacity duration-300",
                   (!call.localStream || !call.isCameraOn) && "opacity-0",
                 )}
               />
 
               {(!call.localStream || !call.isCameraOn) && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-50/98 px-6 text-center dark:bg-slate-950/92">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/62 px-6 text-center backdrop-blur-2xl dark:bg-slate-950/42">
                   {!call.localStream ? (
                     <RefreshCw className="h-9 w-9 animate-spin text-sky-500 dark:text-sky-300" />
                   ) : (
@@ -285,7 +300,7 @@ export default function RandomVideoCallExperience() {
               )}
 
               <div className="absolute left-5 top-5 flex items-center gap-2">
-                <Badge className="rounded-full border border-sky-300 bg-sky-50/95 px-3 py-1 text-[11px] text-sky-700 dark:border-white/15 dark:bg-slate-900/75 dark:text-slate-100">
+                <Badge className="rounded-full border border-white/70 bg-white/54 px-3 py-1 text-[11px] text-slate-700 shadow-sm backdrop-blur-xl dark:border-white/15 dark:bg-slate-950/45 dark:text-slate-100">
                   {t("common.me")}
                 </Badge>
                 {!call.isMicOn && (
@@ -297,19 +312,20 @@ export default function RandomVideoCallExperience() {
             </div>
 
             {/* Remote Video */}
-            <div className="relative min-h-[340px] overflow-hidden rounded-2xl border-4 border-sky-500/80 bg-slate-100 shadow-2xl dark:border-white/90 dark:bg-slate-950">
+            <div className={cn("relative h-full min-h-[340px] overflow-hidden rounded-[1.75rem] bg-slate-950", liquidPanelClass)}>
+              <span className={glassSheenClass} />
               <video
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
                 className={cn(
-                  "h-full w-full scale-x-[-1] bg-slate-100 object-cover transition-opacity duration-300 dark:bg-slate-950",
+                  "h-full w-full scale-x-[-1] bg-slate-950 object-cover transition-opacity duration-300",
                   (!call.remoteStream || !call.remoteMedia.video) && "opacity-0",
                 )}
               />
 
               {(!call.remoteStream || !call.remoteMedia.video) && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-slate-50/98 px-6 text-center dark:bg-slate-950/92">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-white/62 px-6 text-center backdrop-blur-2xl dark:bg-slate-950/42">
                   {isBusy ? (
                     <>
                       {call.status === "error" || call.status === "closed" ? (
@@ -328,7 +344,7 @@ export default function RandomVideoCallExperience() {
                     </>
                   ) : (
                     <>
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-sky-400/50 bg-sky-100/90 dark:border-sky-300/25 dark:bg-sky-400/15">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/60 bg-white/46 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_32px_-24px_rgba(14,165,233,0.8)] backdrop-blur-xl dark:border-sky-300/20 dark:bg-sky-400/12">
                         <GraduationCap className="h-7 w-7 text-sky-600 dark:text-sky-200" />
                       </div>
                       <div>
@@ -352,10 +368,10 @@ export default function RandomVideoCallExperience() {
                                 key={level}
                                 type="button"
                                 className={cn(
-                                  "h-10 rounded-md border text-sm font-semibold transition",
+                                  "h-10 rounded-lg border text-sm font-semibold transition",
                                   selectedLevel === level
-                                    ? "border-sky-500 bg-sky-500 text-white dark:border-sky-300 dark:bg-sky-400 dark:text-slate-950"
-                                    : "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800",
+                                    ? "border-white/70 bg-sky-500/82 text-white shadow-lg shadow-sky-500/20 backdrop-blur-xl dark:border-sky-300/30 dark:bg-sky-300/88 dark:text-slate-950"
+                                    : "border-white/55 bg-white/48 text-sky-700 backdrop-blur-xl hover:bg-white/68 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/[0.1]",
                                 )}
                                 onClick={() => setSelectedLevel(level)}
                               >
@@ -375,10 +391,10 @@ export default function RandomVideoCallExperience() {
                                 key={mode.value}
                                 type="button"
                                 className={cn(
-                                  "h-10 rounded-md border text-sm font-semibold transition",
+                                  "h-10 rounded-lg border text-sm font-semibold transition",
                                   matchMode === mode.value
-                                    ? "border-emerald-500 bg-emerald-500 text-white dark:border-emerald-300 dark:bg-emerald-400 dark:text-slate-950"
-                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800",
+                                    ? "border-white/70 bg-emerald-500/82 text-white shadow-lg shadow-emerald-500/20 backdrop-blur-xl dark:border-emerald-300/30 dark:bg-emerald-300/88 dark:text-slate-950"
+                                    : "border-white/55 bg-white/48 text-emerald-700 backdrop-blur-xl hover:bg-white/68 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/[0.1]",
                                 )}
                                 onClick={() => setMatchMode(mode.value)}
                               >
@@ -390,7 +406,7 @@ export default function RandomVideoCallExperience() {
 
                         <Button
                           type="button"
-                          className="h-12 w-full rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 shadow-lg shadow-sky-500/25 dark:from-sky-500 dark:to-blue-600 dark:hover:from-sky-400 dark:hover:to-blue-500"
+                          className="h-12 w-full rounded-xl border border-white/55 bg-sky-500/88 text-white shadow-[0_18px_36px_-22px_rgba(14,165,233,0.9)] backdrop-blur-xl hover:bg-sky-600 dark:border-sky-200/25 dark:bg-sky-300/90 dark:text-slate-950 dark:hover:bg-sky-200"
                           onClick={handleStartMatching}
                           disabled={!canStart}
                         >
@@ -407,10 +423,10 @@ export default function RandomVideoCallExperience() {
               <div className="absolute left-5 top-5 flex items-center gap-2">
                 <Badge
                   className={cn(
-                    "rounded-full border px-3 py-1 text-[11px]",
+                    "rounded-full border px-3 py-1 text-[11px] shadow-sm backdrop-blur-xl",
                     isConnected
-                      ? "border-emerald-400/60 bg-emerald-50/95 text-emerald-700 dark:border-emerald-300/30 dark:bg-emerald-400/15 dark:text-emerald-200"
-                      : "border-sky-400/60 bg-sky-50/95 text-sky-700 dark:border-sky-300/25 dark:bg-sky-400/15 dark:text-sky-100",
+                      ? "border-emerald-300/70 bg-emerald-50/70 text-emerald-700 dark:border-emerald-300/30 dark:bg-emerald-400/15 dark:text-emerald-200"
+                      : "border-sky-300/70 bg-sky-50/70 text-sky-700 dark:border-sky-300/25 dark:bg-sky-400/15 dark:text-sky-100",
                   )}
                 >
                   {isConnected ? (
@@ -446,11 +462,13 @@ export default function RandomVideoCallExperience() {
           </section>
 
           {/* Control Bar */}
-          <footer className="relative z-20 flex shrink-0 flex-wrap items-center justify-center gap-3 border-t border-sky-200 bg-white/80 px-4 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
+          <div className="shrink-0">
+          <footer className="relative z-20 flex shrink-0 flex-wrap items-center justify-center gap-3 overflow-visible border-t border-white/55 bg-white/48 px-4 py-4 shadow-[0_-22px_52px_-38px_rgba(15,23,42,0.42)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_-22px_56px_-38px_rgba(56,189,248,0.24)]">
+            <span className={glassSheenClass} />
             <Button
               type="button"
               size="icon"
-              className="h-11 w-11 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700"
+              className="relative h-11 w-11 rounded-full border border-white/60 bg-white/52 text-slate-700 shadow-sm backdrop-blur-xl hover:bg-white/72 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-50 dark:hover:bg-white/15"
               onClick={call.toggleMic}
               disabled={!call.localStream}
               title={call.isMicOn ? t("videoCall.random.controls.micOff") : t("videoCall.random.controls.micOn")}
@@ -461,7 +479,7 @@ export default function RandomVideoCallExperience() {
             <Button
               type="button"
               size="icon"
-              className="h-11 w-11 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700"
+              className="relative h-11 w-11 rounded-full border border-white/60 bg-white/52 text-slate-700 shadow-sm backdrop-blur-xl hover:bg-white/72 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-50 dark:hover:bg-white/15"
               onClick={call.toggleCamera}
               disabled={!call.localStream}
               title={call.isCameraOn ? t("videoCall.random.controls.cameraOff") : t("videoCall.random.controls.cameraOn")}
@@ -472,10 +490,10 @@ export default function RandomVideoCallExperience() {
             <Button
               type="button"
               className={cn(
-                "h-12 rounded-full px-7 font-semibold transition-all",
+                "relative h-12 rounded-full border px-7 font-semibold shadow-lg backdrop-blur-xl transition-all",
                 isBusy
-                  ? "bg-gradient-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-lg shadow-rose-500/25"
-                  : "bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 shadow-lg shadow-sky-500/25 dark:from-sky-500 dark:to-blue-600 dark:hover:from-sky-400 dark:hover:to-blue-500",
+                  ? "border-white/50 bg-rose-500/88 text-white shadow-rose-500/20 hover:bg-rose-600"
+                  : "border-white/55 bg-sky-500/88 text-white shadow-sky-500/20 hover:bg-sky-600 dark:bg-sky-300/90 dark:text-slate-950 dark:hover:bg-sky-200",
               )}
               onClick={isBusy ? call.endCall : handleStartMatching}
               disabled={!call.localStream}
@@ -496,7 +514,7 @@ export default function RandomVideoCallExperience() {
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-full border-sky-200 bg-sky-50 px-5 font-semibold text-sky-700 hover:bg-sky-100 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800"
+              className="relative h-11 rounded-full border-white/60 bg-white/52 px-5 font-semibold text-slate-700 shadow-sm backdrop-blur-xl hover:bg-white/72 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-100 dark:hover:bg-white/15"
               onClick={call.nextPeer}
               disabled={!isMatching && !isConnected}
             >
@@ -506,6 +524,7 @@ export default function RandomVideoCallExperience() {
 
             <RulesHoverButton iconOnly placement="top" />
           </footer>
+          </div>
         </main>
 
         {/* Chat Box - Right Side */}

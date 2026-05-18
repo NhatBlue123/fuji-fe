@@ -39,11 +39,11 @@ import AiAvatar from "@/components/chatdock/AiAvatar";
 import type { RouterThinkingItem } from "./assistant/types";
 
 const MESSAGES_PAGE_SIZE = 20;
-const STREAM_STALL_TIMEOUT_MS = 20000; // ✅ Giảm từ 70s xuống 20s
-const STREAM_HEARTBEAT_CHECK_MS = 5000; // ✅ Check mỗi 5s
-const STREAM_MAX_IDLE_MS = 15000; // ✅ Timeout nếu 15s không có event
+const STREAM_STALL_TIMEOUT_MS = 150000;
+const STREAM_HEARTBEAT_CHECK_MS = 5000;
+const STREAM_MAX_IDLE_MS = 135000;
 const ROUTER_THINKING_MAX_ITEMS = 5;
-type ChatModelId = "fuji-bot" | "gpt-5.4-mini";
+type ChatModelId = "fuji-bot" | "gpt-5.4-mini" | "gpt-5.4-thinking";
 
 type AssistantPanelProps = {
   initialConversationId?: number | null;
@@ -179,7 +179,6 @@ export default function AssistantPanel({
     useState(false);
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [input, setInput] = useState("");
-  const [deepHelpEnabled, setDeepHelpEnabled] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ChatModelId>("fuji-bot");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -929,7 +928,7 @@ export default function AssistantPanel({
     }
 
     const useFujiBot = selectedModel === "fuji-bot";
-    const useDeepHelp = !useFujiBot && deepHelpEnabled;
+    const useDeepHelp = selectedModel === "gpt-5.4-thinking";
 
     if (useDeepHelp && isDeepChatQuotaEmpty) {
       alert(t("monetization.messages.advancedHelpEmpty"));
@@ -975,8 +974,8 @@ export default function AssistantPanel({
       {
         sessionId: sessionIdRef.current,
         message: trimmed,
-        mode: useDeepHelp ? "reasoning" : "basic",
-        deepHelp: useDeepHelp,
+        mode: "basic",
+        deepHelp: false,
         model: selectedModel,
         clientMessageId,
       },
@@ -1002,14 +1001,10 @@ export default function AssistantPanel({
         }
       },
     );
-    if (useDeepHelp) {
-      setDeepHelpEnabled(false);
-    }
   }, [
     input,
     socket,
     isConnected,
-    deepHelpEnabled,
     selectedModel,
     isBasicChatQuotaEmpty,
     isDeepChatQuotaEmpty,
@@ -1074,15 +1069,16 @@ export default function AssistantPanel({
   const isLoadingMessages =
     isLoadingInitialMessages || (isFetchingMessages && messages.length === 0);
   const isFujiBotSelected = selectedModel === "fuji-bot";
+  const isThinkingModelSelected = selectedModel === "gpt-5.4-thinking";
   const isCurrentModeQuotaEmpty = isFujiBotSelected
     ? false
-    : deepHelpEnabled
+    : isThinkingModelSelected
     ? isDeepChatQuotaEmpty
     : isBasicChatQuotaEmpty;
   const isAllChatQuotaEmpty = isFujiBotSelected ? false : isBasicChatQuotaEmpty && isDeepChatQuotaEmpty;
   const modelModeLabel = isFujiBotSelected
     ? "Không giới hạn"
-    : deepHelpEnabled
+    : isThinkingModelSelected
       ? deepChatRemaining === null
         ? "Thinking"
         : `Thinking · ${deepChatRemaining} lượt`
@@ -1091,7 +1087,7 @@ export default function AssistantPanel({
         : `Fast · ${basicChatRemaining} lượt`;
   const chatPlaceholder = isFujiBotSelected
     ? "Hỏi FUJI bot miễn phí, không tính lượt..."
-    : deepHelpEnabled
+    : isThinkingModelSelected
     ? isDeepChatQuotaEmpty
       ? t("monetization.messages.advancedHelpEmpty")
       : t("monetization.messages.advancedHelpPlaceholder")
@@ -1232,7 +1228,11 @@ export default function AssistantPanel({
               className="inline-flex h-10 min-w-[176px] items-center justify-between gap-3 rounded-full border border-border/70 bg-background px-4 text-left text-sm font-semibold text-foreground shadow-sm transition hover:border-primary/40 dark:bg-slate-900 dark:border-slate-700"
             >
               <span>
-                {isFujiBotSelected ? "FUJI bot" : "GPT-5.4 mini"}
+                {isFujiBotSelected
+                  ? "FUJI bot"
+                  : isThinkingModelSelected
+                    ? "GPT-5.4"
+                    : "GPT-5.4 mini"}
                 <span className="ml-2 text-xs font-medium text-muted-foreground">
                   {modelModeLabel}
                 </span>
@@ -1250,7 +1250,6 @@ export default function AssistantPanel({
                   type="button"
                   onClick={() => {
                     setSelectedModel("fuji-bot");
-                    setDeepHelpEnabled(false);
                     setModelMenuOpen(false);
                   }}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted"
@@ -1266,7 +1265,6 @@ export default function AssistantPanel({
                   type="button"
                   onClick={() => {
                     setSelectedModel("gpt-5.4-mini");
-                    setDeepHelpEnabled(false);
                     setModelMenuOpen(false);
                   }}
                   disabled={isBasicChatQuotaEmpty}
@@ -1279,13 +1277,12 @@ export default function AssistantPanel({
                       {basicChatRemaining === null ? "Đang tải lượt dùng" : `${basicChatRemaining} lượt còn lại`}
                     </span>
                   </span>
-                  {!isFujiBotSelected && !deepHelpEnabled && <Check className="size-4 text-foreground" />}
+                  {selectedModel === "gpt-5.4-mini" && <Check className="size-4 text-foreground" />}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedModel("gpt-5.4-mini");
-                    setDeepHelpEnabled(true);
+                    setSelectedModel("gpt-5.4-thinking");
                     setModelMenuOpen(false);
                   }}
                   disabled={isDeepChatQuotaEmpty}
@@ -1293,12 +1290,12 @@ export default function AssistantPanel({
                 >
                   <Brain className="size-4 text-primary" />
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-foreground">GPT-5.4 mini Thinking</span>
+                    <span className="block font-semibold text-foreground">GPT-5.4 Thinking</span>
                     <span className="block text-xs text-muted-foreground">
                       {deepChatRemaining === null ? "Đang tải lượt dùng" : `${deepChatRemaining} lượt còn lại`}
                     </span>
                   </span>
-                  {!isFujiBotSelected && deepHelpEnabled && <Check className="size-4 text-foreground" />}
+                  {isThinkingModelSelected && <Check className="size-4 text-foreground" />}
                 </button>
                 {(isBasicChatQuotaEmpty || isDeepChatQuotaEmpty) && (
                   <Link

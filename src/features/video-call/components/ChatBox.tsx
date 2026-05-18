@@ -293,20 +293,16 @@ export function ChatBox({
   }
 
   return (
-    <div
-      className={cn(
-        "flex flex-col bg-white/90 dark:bg-slate-950/80 backdrop-blur border-l border-slate-200/70 dark:border-slate-800/70 shadow-xl h-full",
-        className,
-      )}
-    >
+    <div className={cn("relative flex h-full flex-col overflow-hidden border-l border-white/50 bg-white/48 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06]", className)}>
+      <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.68),rgba(255,255,255,0.12)_42%,rgba(125,211,252,0.10))] dark:bg-[linear-gradient(135deg,rgba(255,255,255,0.12),rgba(56,189,248,0.06)_48%,rgba(255,255,255,0.03))]" />
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-slate-200/70 dark:border-slate-800/70 bg-slate-50/70 dark:bg-slate-900/40">
+      <div className="relative z-10 flex items-center justify-between border-b border-white/45 bg-white/35 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
         <h3 className="font-semibold text-sm">{t("videoCall.random.chat.title")}</h3>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(true)}
-          className="h-8 w-8"
+          className="h-8 w-8 rounded-lg hover:bg-white/60 dark:hover:bg-white/10"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -314,7 +310,7 @@ export function ChatBox({
 
       {/* Warning Banner */}
       {showWarning && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 p-3 flex items-start gap-2">
+        <div className="relative z-10 flex items-start gap-2 border-b border-yellow-200/70 bg-yellow-50/68 p-3 backdrop-blur-xl dark:border-yellow-800/70 dark:bg-yellow-900/18">
           <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
           <div className="text-xs text-yellow-800 dark:text-yellow-200">
             <p className="font-medium">
@@ -329,7 +325,7 @@ export function ChatBox({
 
       {/* Ban Notice */}
       {isBanned && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-3">
+        <div className="relative z-10 border-b border-red-200/70 bg-red-50/68 p-3 backdrop-blur-xl dark:border-red-800/70 dark:bg-red-900/18">
           <p className="text-xs text-red-800 dark:text-red-200 font-medium">
             {t("videoCall.random.chat.banMessage", { remaining: getBanTimeRemaining() })}
           </p>
@@ -337,7 +333,7 @@ export function ChatBox({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3" ref={scrollRef}>
+      <div className="relative z-10 flex-1 overflow-y-auto p-3" ref={scrollRef}>
         <div className="space-y-3">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -358,10 +354,10 @@ export function ChatBox({
                 </div>
                 <div
                   className={cn(
-                    "rounded-lg px-3 py-2 max-w-[80%] break-words text-sm",
+                    "max-w-[80%] break-words rounded-xl px-3 py-2 text-sm",
                     msg.isLocal
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted",
+                      ? "border border-white/55 bg-sky-500/88 text-white shadow-lg shadow-sky-500/10 backdrop-blur-xl"
+                      : "border border-white/45 bg-white/54 text-slate-800 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.07] dark:text-slate-100",
                     msg.isViolation && "opacity-60",
                   )}
                 >
@@ -385,7 +381,7 @@ export function ChatBox({
 
       {/* IME Suggestion */}
       {showSuggestion && hiraganaPreview && (
-        <div className="px-3 py-2 border-t border-slate-200/70 dark:border-slate-800/70 bg-slate-50/80 dark:bg-slate-900/40">
+        <div className="relative z-10 border-t border-white/45 bg-white/38 px-3 py-2 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
           <button
             onClick={() => applySuggestion(hiraganaPreview)}
             className={cn(
@@ -421,7 +417,7 @@ export function ChatBox({
                   onClick={() => applySuggestion(item.word)}
                   title={item.meaning || item.reading || item.word}
                   className={cn(
-                    "rounded-full border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/70 px-3 py-1 text-xs shadow-sm hover:bg-white",
+                    "rounded-full border border-white/55 bg-white/58 px-3 py-1 text-xs shadow-sm backdrop-blur-xl hover:bg-white/75 dark:border-white/10 dark:bg-white/[0.07]",
                     selectedSuggestionIndex === 1 + idx &&
                       "bg-primary/10 ring-2 ring-primary/30 border-primary/50",
                   )}
@@ -446,7 +442,7 @@ export function ChatBox({
       )}
 
       {/* Input */}
-      <div className="p-3 border-t">
+      <div className="relative z-10 border-t border-white/45 bg-white/38 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -489,12 +485,13 @@ export function ChatBox({
                 : t("videoCall.random.chat.messagePlaceholder")
             }
             disabled={isBanned}
-            className="flex-1"
+            className="flex-1 rounded-xl border-white/55 bg-white/68 shadow-sm backdrop-blur-xl focus-visible:ring-sky-400/35 dark:border-white/10 dark:bg-white/[0.07]"
           />
           <Button
             onClick={handleSend}
             disabled={!inputValue.trim() || isBanned || isResolvingSend}
             size="icon"
+            className="rounded-xl border border-white/55 bg-sky-500/88 text-white shadow-lg shadow-sky-500/20 backdrop-blur-xl hover:bg-sky-600"
           >
             <Send className="h-4 w-4" />
           </Button>

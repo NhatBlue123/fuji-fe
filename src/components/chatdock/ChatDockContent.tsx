@@ -29,9 +29,9 @@ import type {
 } from "@/components/user-component/ai/assistant/types";
 import FramedAiAvatar from "./FramedAiAvatar";
 
-const STREAM_STALL_TIMEOUT_MS = 20000;
+const STREAM_STALL_TIMEOUT_MS = 150000;
 const STREAM_HEARTBEAT_CHECK_MS = 5000;
-const STREAM_MAX_IDLE_MS = 15000;
+const STREAM_MAX_IDLE_MS = 135000;
 const ROUTER_THINKING_MAX_ITEMS = 5;
 export type ChatDockModelId = "fuji-bot" | "gpt-5.4-mini";
 

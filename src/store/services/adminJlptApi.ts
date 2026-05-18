@@ -89,7 +89,14 @@ const baseQuery = async (args: AdminBaseQueryArgs) => {
 export interface CreateJlptTestDTO {
   title: string;
   level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
-  testType: 'full_test' | 'vocabulary' | 'grammar_reading' | 'listening';
+  testType:
+    | 'full_test'
+    | 'vocabulary'
+    | 'vocabulary_grammar'
+    | 'grammar'
+    | 'grammar_reading'
+    | 'reading'
+    | 'listening';
   description?: string;
   duration: number; // minutes
   totalQuestions: number;
@@ -113,6 +120,7 @@ export interface CreateQuestionDTO {
   contentText: string;
   imageMediaId?: number | null;
   audioMediaId?: number | null;
+  listeningScript?: string;
   options?: string; // JSON-encoded string array: "[\"a\",\"b\",\"c\",\"d\"]" (matches backend String field)
   correctOption?: number; // 1-4
   explanation?: string;
@@ -136,6 +144,7 @@ export interface QuestionBankItem {
   contentText: string;
   imageMedia?: MediaInfo | null;
   audioMedia?: MediaInfo | null;
+  listeningScript?: string | null;
   options?: string;
   correctOption?: number;
   explanation?: string;
@@ -165,6 +174,7 @@ export interface CreateQuestionBankItemDTO {
   contentText: string;
   imageMediaId?: number | null;
   audioMediaId?: number | null;
+  listeningScript?: string;
   options?: string;
   correctOption?: number;
   explanation?: string;
@@ -224,6 +234,7 @@ export interface JlptQuestionAdmin {
   contentText: string;
   imageMedia?: MediaInfo | null;
   audioMedia?: MediaInfo | null;
+  listeningScript?: string | null;
   options?: string | string[]; // Backend returns JSON string; may be pre-parsed to array
   correctOption?: number;
   explanation?: string;

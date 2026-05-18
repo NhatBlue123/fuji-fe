@@ -3,7 +3,9 @@ export type JLPTLevel = "N1" | "N2" | "N3" | "N4" | "N5";
 export type TestType = 
   | "full_test" 
   | "vocabulary" 
-  | "grammar" 
+  | "vocabulary_grammar"
+  | "grammar"
+  | "grammar_reading"
   | "reading" 
   | "listening";
 
@@ -49,6 +51,7 @@ export interface JlptQuestion {
   contentText: string;
   imageMedia?: MediaInfo;
   audioMedia?: MediaInfo;
+  listeningScript?: string | null;
   options?: string[];
   correctOption?: number;
   explanation?: string;

@@ -140,6 +140,7 @@ export default function JlptQuestionBankPage() {
       contentText: item.contentText,
       imageMediaId: item.imageMedia?.id ?? null,
       audioMediaId: item.audioMedia?.id ?? null,
+      listeningScript: item.listeningScript ?? undefined,
       options: item.options,
       correctOption: item.correctOption,
       explanation: item.explanation,
@@ -958,6 +959,19 @@ export default function JlptQuestionBankPage() {
               className="text-xs"
             />
           </div>
+
+          {form.section === "LISTENING" && (
+            <div className="space-y-1">
+              <Label className="text-xs">Listening script (transcript)</Label>
+              <Textarea
+                rows={4}
+                value={form.listeningScript ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, listeningScript: e.target.value }))}
+                placeholder="Paste the audio transcript for AI assessment."
+                className="text-xs font-mono"
+              />
+            </div>
+          )}
 
           <div className="space-y-1">
             <Label className="text-xs">Nội dung câu hỏi *</Label>

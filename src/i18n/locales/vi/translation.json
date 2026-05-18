@@ -840,7 +840,6 @@
     "mySchedule": "Lịch của tôi",
     "rules": {
       "title": "Quy định đặt lịch",
-      "rule1": "Chỉ vào phòng học trước tối đa 5 phút.",
       "rule2": "Hủy lịch trong vòng 2 giờ trước khi học sẽ mất 100% học phí.",
       "rule3": "Tài khoản có thể bị khóa chức năng đặt lịch 24 giờ.",
       "rule4": "Slot đã hủy không thể đặt lại ngay."

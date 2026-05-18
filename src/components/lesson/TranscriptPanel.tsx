@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Loader2, Radio, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LessonTranscriptItem } from "@/hooks/useLessonTranscript";
-import type { VoiceTranscriptStatus } from "@/hooks/useVoiceTranscript";
+import type { VoiceTranscriptLanguage, VoiceTranscriptStatus } from "@/hooks/useVoiceTranscript";
 
 interface TranscriptPanelProps {
   transcripts: LessonTranscriptItem[];
@@ -16,7 +16,16 @@ interface TranscriptPanelProps {
   currentUserName: string;
   currentUserRole: "TEACHER" | "STUDENT";
   enabled: boolean;
+  voiceLanguage: VoiceTranscriptLanguage;
+  onVoiceLanguageChange: (language: VoiceTranscriptLanguage) => void;
 }
+
+const TRANSCRIPT_LANGUAGES: Array<{ value: VoiceTranscriptLanguage; label: string }> = [
+  { value: "auto", label: "Auto VI/JA" },
+  { value: "vi", label: "Tiếng Việt" },
+  { value: "ja", label: "日本語" },
+  { value: "en", label: "English" },
+];
 
 function formatElapsed(ms?: number | null): string {
   if (ms == null || !Number.isFinite(ms)) return "";
@@ -74,6 +83,8 @@ export function TranscriptPanel({
   currentUserName,
   currentUserRole,
   enabled,
+  voiceLanguage,
+  onVoiceLanguageChange,
 }: TranscriptPanelProps) {
   const [query, setQuery] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -120,10 +131,25 @@ export function TranscriptPanel({
           <Radio className="h-4 w-4 text-[#6C63FF]" />
           <span className="text-sm font-semibold">Transcript</span>
         </div>
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px]", statusClass(voiceStatus, enabled))}>
-          {hasStatusSpinner ? <Loader2 className="h-3 w-3 animate-spin" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
-          {statusLabel(voiceStatus, enabled)}
-        </span>
+        <div className="flex items-center gap-2">
+          <select
+            value={voiceLanguage}
+            onChange={(event) => onVoiceLanguageChange(event.target.value as VoiceTranscriptLanguage)}
+            disabled={!enabled}
+            className="h-7 rounded-full border border-input bg-background px-2 text-[11px] font-medium text-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-[#171a24] dark:text-[#F0F0F0]"
+            title="Ngôn ngữ nhận diện"
+          >
+            {TRANSCRIPT_LANGUAGES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px]", statusClass(voiceStatus, enabled))}>
+            {hasStatusSpinner ? <Loader2 className="h-3 w-3 animate-spin" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+            {statusLabel(voiceStatus, enabled)}
+          </span>
+        </div>
       </div>
 
       <div className="shrink-0 border-b border-border px-4 py-3 dark:border-white/[0.08]">

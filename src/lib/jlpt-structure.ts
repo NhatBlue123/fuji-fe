@@ -18,15 +18,22 @@
 
 export type JLPTLevel = "N1" | "N2" | "N3" | "N4" | "N5";
 export type SectionKey = "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING";
-export type TestType = "full_test" | "vocabulary" | "grammar_reading" | "listening";
+export type TestType =
+  | "full_test"
+  | "vocabulary"
+  | "vocabulary_grammar"
+  | "grammar"
+  | "grammar_reading"
+  | "reading"
+  | "listening";
 
 // Default question counts per mondai (used when counts not provided)
 export const JLPT_PASSAGE_DEFAULTS: Record<JLPTLevel, Record<number, number>> = {
-  N5: {},
-  N4: {},
-  N3: {},
-  N2: {},
-  N1: {},
+  N5: { 8: 4, 9: 4, 10: 2, 11: 2 },
+  N4: { 8: 3, 9: 3, 10: 3, 11: 2 },
+  N3: { 8: 2, 9: 2, 10: 2, 11: 2 },
+  N2: { 9: 2, 10: 2, 11: 2, 12: 7 },
+  N1: { 7: 2, 8: 2, 9: 2, 10: 2, 11: 14 },
 };
 
 export interface MondaiConfig {
@@ -46,6 +53,25 @@ export interface SectionConfig {
   name: string;         // display name
   sectionKeys: SectionKey[];   // backend section enum values this covers
   mondai: MondaiConfig[];
+}
+
+export function isDefaultPassageMondai(
+  section: SectionConfig,
+  mondai: Pick<MondaiConfig, "title" | "requires_passage">
+): boolean {
+  if (mondai.requires_passage) return true;
+  if (!section.sectionKeys.includes("READING")) return false;
+  return /読解|情報検索|統合/.test(mondai.title || "");
+}
+
+export function getDefaultMondaiQuestionCount(
+  level: JLPTLevel,
+  section: SectionConfig,
+  mondai: MondaiConfig
+): number {
+  const baseCount = mondai.end - mondai.start + 1;
+  if (!isDefaultPassageMondai(section, mondai)) return baseCount;
+  return JLPT_PASSAGE_DEFAULTS[level]?.[mondai.number] ?? baseCount;
 }
 
 /**
@@ -80,7 +106,7 @@ export function rebuildStructureWithCounts(
   const rebuilt = base.map((section) => ({
     ...section,
     mondai: section.mondai.map((m) => {
-      const isPassage = childModes[m.number] ?? m.requires_passage;
+      const isPassage = childModes[m.number] ?? isDefaultPassageMondai(section, m);
       const baseCount = m.end - m.start + 1;
       const count = counts[m.number] ?? baseCount;
 
@@ -376,15 +402,31 @@ export function getQuestionNumbers(mondai: MondaiConfig): number[] {
 const TEST_TYPE_TO_KEYS: Record<string, SectionKey[]> = {
   full_test: ["VOCABULARY", "GRAMMAR", "READING", "LISTENING"],
   vocabulary: ["VOCABULARY"],
+  vocabulary_grammar: ["VOCABULARY", "GRAMMAR"],
+  grammar: ["GRAMMAR"],
   grammar_reading: ["GRAMMAR", "READING"],
+  reading: ["READING"],
   listening: ["LISTENING"],
 };
 
+function inferMondaiSectionKey(section: SectionConfig, mondai: MondaiConfig): SectionKey {
+  const keys = section.sectionKeys;
+  if (keys.length === 1) return keys[0];
+  if (mondai.requires_audio && keys.includes("LISTENING")) return "LISTENING";
+  if (mondai.requires_passage && keys.includes("READING")) return "READING";
+
+  const title = mondai.title || "";
+  if (keys.includes("READING") && /読解|情報検索|統合/.test(title)) return "READING";
+  if (keys.includes("GRAMMAR") && /文法/.test(title)) return "GRAMMAR";
+  if (keys.includes("VOCABULARY")) return "VOCABULARY";
+  if (keys.includes("GRAMMAR")) return "GRAMMAR";
+  return keys[0];
+}
+
 /**
  * Returns the JLPT structure for a given level filtered by testType.
- * For full_test → all sections returned as-is.
- * For specific categories → only sections whose sectionKeys overlap with
- * the target key are returned.
+ * For full_test -> all sections returned as-is.
+ * For specific categories -> filters down to matching mondai inside mixed sections.
  */
 export function getStructureForTestType(
   level: JLPTLevel,
@@ -397,9 +439,22 @@ export function getStructureForTestType(
   }
 
   const allSections = JLPT_STRUCTURE[level] ?? [];
-  return allSections.filter((section) =>
-    section.sectionKeys.some((k) => targetKeys.includes(k))
-  );
+  return allSections
+    .map((section) => ({
+      ...section,
+      sectionKeys: section.sectionKeys.filter((key) => targetKeys.includes(key)),
+      mondai: section.mondai.filter((mondai) =>
+        targetKeys.includes(inferMondaiSectionKey(section, mondai))
+      ),
+    }))
+    .filter((section) => section.mondai.length > 0);
+}
+
+export function getDefaultStructureForTestType(
+  level: JLPTLevel,
+  testType: string
+): SectionConfig[] {
+  return rebuildStructureWithCounts(level, {}, getStructureForTestType(level, testType));
 }
 
 /**

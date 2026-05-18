@@ -10,7 +10,7 @@ import { QuizPanel } from "./QuizPanel";
 import { TranscriptPanel } from "./TranscriptPanel";
 import type { ChatMessage, TypingStatus } from "@/hooks/useStompChat";
 import type { LessonTranscriptItem } from "@/hooks/useLessonTranscript";
-import type { VoiceTranscriptStatus } from "@/hooks/useVoiceTranscript";
+import type { VoiceTranscriptLanguage, VoiceTranscriptStatus } from "@/hooks/useVoiceTranscript";
 
 
 type TabId = "chat" | "whiteboard" | "quiz" | "transcript" | "notes";
@@ -45,6 +45,8 @@ interface SidePanelProps {
   voiceTranscriptStatus?: VoiceTranscriptStatus;
   voiceTranscriptError?: string | null;
   voiceTranscriptPartialText?: string;
+  voiceTranscriptLanguage: VoiceTranscriptLanguage;
+  onVoiceTranscriptLanguageChange: (language: VoiceTranscriptLanguage) => void;
   transcriptEnabled: boolean;
   onSendMessage: (content: string, type?: string, fileUrl?: string) => void;
   onSendTyping: (isTyping: boolean) => void;
@@ -68,6 +70,8 @@ export function SidePanel({
   voiceTranscriptStatus,
   voiceTranscriptError,
   voiceTranscriptPartialText,
+  voiceTranscriptLanguage,
+  onVoiceTranscriptLanguageChange,
   transcriptEnabled,
   onSendMessage,
   onSendTyping,
@@ -160,6 +164,8 @@ export function SidePanel({
             currentUserName={currentUserName}
             currentUserRole={currentUserRole}
             enabled={transcriptEnabled}
+            voiceLanguage={voiceTranscriptLanguage}
+            onVoiceLanguageChange={onVoiceTranscriptLanguageChange}
           />
         </div>
       </div>

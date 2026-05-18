@@ -296,10 +296,6 @@ export default function BookingPage() {
               <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
                 <li className="flex items-start gap-2">
                   <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                  <span>{t("booking.rules.rule1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                   <span>{t("booking.rules.rule2")}</span>
                 </li>
                 <li className="flex items-start gap-2">

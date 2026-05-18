@@ -122,7 +122,7 @@ export default function ExamCard({
 
   return (
     <article
-      className={`glass-card group relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-slate-800/60 ${status === "done" ? "border-t-4 border-t-emerald-500" : ""}`}
+      className={`glass-card group relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/90 hover:shadow-xl dark:hover:bg-slate-800/60 ${status === "done" ? "border-t-4 border-t-emerald-500" : ""}`}
     >
       {status === "locked" && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900/60 opacity-0 backdrop-blur-[3px] transition-opacity group-hover:opacity-100">
@@ -164,7 +164,7 @@ export default function ExamCard({
           <span className="rounded bg-pink-100 px-2 py-0.5 text-[10px] font-bold text-pink-700 dark:bg-pink-500/20 dark:text-pink-300">
             {tag}
           </span>
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-semibold text-slate-600 transition-colors group-hover:text-slate-800 dark:text-slate-400 dark:group-hover:text-slate-200">
             • {info}
           </span>
         </div>

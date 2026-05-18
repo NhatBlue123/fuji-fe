@@ -20,7 +20,6 @@ import {
 } from "@/store/services/jlptApi";
 import type { JlptQuestion, UserAnswer } from "@/types/jlpt";
 import {
-  JLPT_STRUCTURE,
   rebuildStructureWithCounts,
   type JLPTLevel,
   type SectionConfig,
@@ -232,16 +231,12 @@ function JLPTTestExperience() {
       }
     });
 
-    if (Object.keys(countMap).length > 0 || Object.keys(childModeMap).length > 0) {
-      return rebuildStructureWithCounts(
-        testData.level as JLPTLevel,
-        countMap,
-        undefined,
-        childModeMap,
-      );
-    }
-
-    return JLPT_STRUCTURE[testData.level as JLPTLevel] ?? [];
+    return rebuildStructureWithCounts(
+      testData.level as JLPTLevel,
+      countMap,
+      undefined,
+      childModeMap,
+    );
   }, [testData, testId]);
 
   /* ===== FLATTEN QUESTIONS ===== */

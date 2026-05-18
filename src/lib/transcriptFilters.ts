@@ -258,6 +258,25 @@ const ARABIC_RE = /[\u0600-\u06FF]/;
 const HEBREW_RE = /[\u0590-\u05FF]/;
 const LETTER_RE = /\p{L}/u;
 const NORDIC_LATIN_RE = /[\u00F8\u00D8\u00E6\u00C6\u00E5\u00C5]/;
+const SENSITIVE_TRANSCRIPT_TERMS = [
+  "l\u1ed3n",
+  "c\u1eb7c",
+  "bu\u1ed3i",
+  "\u0111\u1ecbt",
+  "\u0111\u1ee5",
+  "\u0111\u00e9o",
+  "dm",
+  "dmm",
+  "vcl",
+  "vl",
+];
+
+const SENSITIVE_TRANSCRIPT_RE = new RegExp(
+  `(^|[^\\p{L}\\p{N}_])(${SENSITIVE_TRANSCRIPT_TERMS
+    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")})(?=$|[^\\p{L}\\p{N}_])`,
+  "giu",
+);
 
 function normalizeTranscriptText(text: string): string {
   return text
@@ -266,6 +285,10 @@ function normalizeTranscriptText(text: string): string {
     .replace(/[^\p{L}\p{N}' ]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+export function sanitizeSensitiveTranscriptText(text: string): string {
+  return text.replace(SENSITIVE_TRANSCRIPT_RE, (_match, prefix: string) => `${prefix}****`);
 }
 
 function stripVietnameseMarks(text: string): string {
@@ -702,7 +725,7 @@ export function evaluateTranscriptCandidate(
 
   return {
     accepted: true,
-    text: trimmed,
+    text: sanitizeSensitiveTranscriptText(trimmed),
     language: chosen.language,
     confidence,
     reason: chosen.reason,

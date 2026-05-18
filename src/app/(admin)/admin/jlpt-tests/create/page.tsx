@@ -29,19 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Pencil, Trash2, ArrowRight } from "lucide-react";
 import {
-  getStructureForTestType,
+  getDefaultStructureForTestType,
   type JLPTLevel,
   type MondaiConfig,
   type SectionKey,
@@ -49,6 +41,56 @@ import {
   getQuestionNumbers,
 } from "@/lib/jlpt-structure";
 import { toast } from "sonner";
+
+type GenerationSectionGroup = "VOCABULARY" | "GRAMMAR_READING" | "LISTENING";
+
+const GENERATION_SECTION_OPTIONS: {
+  key: GenerationSectionGroup;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: "VOCABULARY",
+    label: "文字・語彙 (Vocabulary)",
+    description: "Kanji, spelling, vocabulary in context.",
+  },
+  {
+    key: "GRAMMAR_READING",
+    label: "文法・読解 (Grammar & Reading)",
+    description: "Grammar, sentence ordering, reading passages.",
+  },
+  {
+    key: "LISTENING",
+    label: "聴解 (Listening)",
+    description: "Listening questions; AI creates scripts, bank can include audio.",
+  },
+];
+
+const DEFAULT_GENERATION_SECTIONS = GENERATION_SECTION_OPTIONS.map((option) => option.key);
+
+const TEST_TYPE_SECTION_KEYS: Record<string, SectionKey[]> = {
+  full_test: ["VOCABULARY", "GRAMMAR", "READING", "LISTENING"],
+  vocabulary: ["VOCABULARY"],
+  vocabulary_grammar: ["VOCABULARY", "GRAMMAR"],
+  grammar: ["GRAMMAR"],
+  grammar_reading: ["GRAMMAR", "READING"],
+  reading: ["READING"],
+  listening: ["LISTENING"],
+};
+
+function getAllowedSectionKeys(testType: string): SectionKey[] {
+  return TEST_TYPE_SECTION_KEYS[testType] ?? TEST_TYPE_SECTION_KEYS.full_test;
+}
+
+function sectionKeyToGenerationGroup(sectionKey: SectionKey): GenerationSectionGroup {
+  if (sectionKey === "VOCABULARY") return "VOCABULARY";
+  if (sectionKey === "LISTENING") return "LISTENING";
+  return "GRAMMAR_READING";
+}
+
+function sameStringArray(a: string[], b: string[]) {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
 
 // ─── Module-level helper: pick the correct sectionKey for a mondai ────────────
 function resolveSectionKeyForMondai(
@@ -75,10 +117,17 @@ function resolveSectionKeyForMondai(
     if (/文法/.test(title)) return "GRAMMAR";
     return "VOCABULARY";
   }
+  if (keys.includes("VOCABULARY") && keys.includes("GRAMMAR")) {
+    if (/文法/.test(title)) return "GRAMMAR";
+    return "VOCABULARY";
+  }
 
   if (testTypeInput === "reading" && keys.includes("READING")) return "READING";
   if (testTypeInput === "listening" && keys.includes("LISTENING")) return "LISTENING";
-  if (testTypeInput === "vocabulary_grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
+  if (testTypeInput === "vocabulary" && keys.includes("VOCABULARY")) return "VOCABULARY";
+  if (testTypeInput === "vocabulary_grammar" && keys.includes("VOCABULARY")) return "VOCABULARY";
+  if (testTypeInput === "grammar" && keys.includes("GRAMMAR")) return "GRAMMAR";
+  if (testTypeInput === "grammar_reading" && keys.includes("GRAMMAR")) return "GRAMMAR";
   return keys[0] as SectionKey;
 }
 
@@ -105,6 +154,8 @@ function CreateJLPTTestPageContent() {
 
   const [autoGenerateWithAI, setAutoGenerateWithAI] = useState(false);
   const [autoGenerateWithBank, setAutoGenerateWithBank] = useState(false);
+  const [selectedGenerationSections, setSelectedGenerationSections] =
+    useState<GenerationSectionGroup[]>(DEFAULT_GENERATION_SECTIONS);
   const [creatingQuestions, setCreatingQuestions] = useState(false);
 
   const searchParams = useSearchParams();
@@ -195,8 +246,52 @@ function CreateJLPTTestPageContent() {
       (formData.testType as string | undefined) ??
       ((createdTest as any)?.testType as string | undefined);
     if (!level || !testType) return [];
-    return getStructureForTestType(level, testType);
+    return getDefaultStructureForTestType(level, testType);
   }, [formData.level, formData.testType, createdTest]);
+
+  const availableGenerationSectionKeys = useMemo<GenerationSectionGroup[]>(() => {
+    const testType = formData.testType as string | undefined;
+    if (!testType || structure.length === 0) return DEFAULT_GENERATION_SECTIONS;
+
+    const allowedSectionKeys = getAllowedSectionKeys(testType);
+    const keys = new Set<GenerationSectionGroup>();
+
+    for (const section of structure) {
+      for (const mondai of section.mondai) {
+        const sectionKey = resolveSectionKeyForMondai(section, mondai, testType);
+        if (allowedSectionKeys.includes(sectionKey)) {
+          keys.add(sectionKeyToGenerationGroup(sectionKey));
+        }
+      }
+    }
+
+    return GENERATION_SECTION_OPTIONS
+      .map((option) => option.key)
+      .filter((key) => keys.has(key));
+  }, [formData.testType, structure]);
+
+  const availableGenerationSectionSet = useMemo(
+    () => new Set(availableGenerationSectionKeys),
+    [availableGenerationSectionKeys],
+  );
+
+  const activeGenerationSections = useMemo(
+    () => selectedGenerationSections.filter((key) => availableGenerationSectionSet.has(key)),
+    [availableGenerationSectionSet, selectedGenerationSections],
+  );
+
+  const isAutoGeneratingQuestions = autoGenerateWithAI || autoGenerateWithBank;
+
+  useEffect(() => {
+    setSelectedGenerationSections((current) => {
+      const next = current.filter((key) => availableGenerationSectionSet.has(key));
+      const fallback = availableGenerationSectionKeys.length > 0
+        ? availableGenerationSectionKeys
+        : DEFAULT_GENERATION_SECTIONS;
+      const normalized = next.length > 0 ? next : fallback;
+      return sameStringArray(current, normalized) ? current : normalized;
+    });
+  }, [availableGenerationSectionKeys, availableGenerationSectionSet]);
 
   const mondaiConfigs = useMemo<MondaiConfig[]>(() => {
     const map = new Map<number, MondaiConfig>();
@@ -235,7 +330,50 @@ function CreateJLPTTestPageContent() {
     setDraftExplanation(selectedQuestion.explanation ?? "");
   }, [selectedQuestion?.id]);
 
-  const generateQuestionsFromBank = async (testId: number) => {
+  const toggleGenerationSection = (key: GenerationSectionGroup, checked: boolean) => {
+    setSelectedGenerationSections((current) => {
+      if (checked) {
+        const next = Array.from(new Set([...current, key]));
+        return GENERATION_SECTION_OPTIONS
+          .map((option) => option.key)
+          .filter((optionKey) => next.includes(optionKey));
+      }
+      return current.filter((optionKey) => optionKey !== key);
+    });
+  };
+
+  const shouldGenerateMondai = (
+    section: SectionConfig,
+    mondai: MondaiConfig,
+    testType: string,
+    generationSections: GenerationSectionGroup[],
+  ) => {
+    const sectionKey = resolveSectionKeyForMondai(section, mondai, testType);
+    const allowedSectionKeys = getAllowedSectionKeys(testType);
+
+    return (
+      allowedSectionKeys.includes(sectionKey) &&
+      generationSections.includes(sectionKeyToGenerationGroup(sectionKey))
+    );
+  };
+
+  const getGeneratedContentText = (
+    sectionKey: SectionKey,
+    mondai: MondaiConfig,
+    question: { contentText?: string; passageText?: string },
+  ) => {
+    const contentText = question.contentText ?? "";
+    const passageText = question.passageText?.trim();
+    if (sectionKey === "READING" && !mondai.requires_passage && passageText) {
+      return `【読解】\n${passageText}\n\n${contentText}`;
+    }
+    return contentText;
+  };
+
+  const generateQuestionsFromBank = async (
+    testId: number,
+    generationSections: GenerationSectionGroup[],
+  ) => {
     const token = getAccessToken();
     if (!token) {
       throw new Error("Chưa đăng nhập hoặc không có access token.");
@@ -243,21 +381,13 @@ function CreateJLPTTestPageContent() {
 
     const level = formData.level as JLPTLevel;
     const testType = formData.testType as string;
-    const structure = getStructureForTestType(level, testType);
-
-    const shouldIncludeMondai = (mondai: any) => {
-      if (testType === "full_test") return true;
-      if (testType === "vocabulary_grammar") return !mondai.requires_passage;
-      if (testType === "reading") return mondai.requires_passage;
-      if (testType === "listening") return mondai.requires_audio;
-      return true;
-    };
+    const structure = getDefaultStructureForTestType(level, testType);
 
     // resolveSectionKeyForMondai is defined at module level above
 
     for (const section of structure) {
       for (const mondai of section.mondai) {
-        if (!shouldIncludeMondai(mondai)) continue;
+        if (!shouldGenerateMondai(section as SectionConfig, mondai, testType, generationSections)) continue;
         const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
 
         const nums = getQuestionNumbers(mondai);
@@ -304,7 +434,7 @@ function CreateJLPTTestPageContent() {
             bankItemId: parentItem.id,
             testId,
             section: sectionKey,
-            questionOrder: mondai.start - 1,
+            questionOrder: mondai.start,
             mondaiNumber: mondai.number,
             mondaiTitle: mondai.title,
             parentQuestionId: null,
@@ -352,6 +482,12 @@ function CreateJLPTTestPageContent() {
     e.preventDefault();
 
     try {
+      if (isAutoGeneratingQuestions && activeGenerationSections.length === 0) {
+        toast.error("Vui lòng chọn ít nhất một phần để tạo câu hỏi.");
+        return;
+      }
+
+      const generationSections = activeGenerationSections;
       const result = await createTest(formData).unwrap();
       if (autoGenerateWithBank) {
         setCreatingQuestions(true);
@@ -360,7 +496,7 @@ function CreateJLPTTestPageContent() {
         setCreationMode("bank");
         setReviewConfirmed(false);
         try {
-          await generateQuestionsFromBank(result.id);
+          await generateQuestionsFromBank(result.id, generationSections);
           toast.success("Tạo đề thi + tạo sẵn câu hỏi từ ngân hàng thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
           return;
         } finally {
@@ -385,12 +521,11 @@ function CreateJLPTTestPageContent() {
       try {
         const level = formData.level as JLPTLevel;
         const testType = formData.testType as string;
-        const structure = getStructureForTestType(level, testType);
+        const structure = getDefaultStructureForTestType(level, testType);
 
         for (const section of structure) {
           for (const mondai of section.mondai) {
-            // Skip listening mondai — user will create those manually
-            if (mondai.requires_audio) continue;
+            if (!shouldGenerateMondai(section as SectionConfig, mondai, testType, generationSections)) continue;
 
             const sectionKey = resolveSectionKeyForMondai(section as SectionConfig, mondai, testType);
             const nums = getQuestionNumbers(mondai);
@@ -420,6 +555,7 @@ function CreateJLPTTestPageContent() {
               correctOption: number;
               explanation: string;
               passageText: string;
+              listeningScript?: string;
             }[];
 
             let parentId: number | null = null;
@@ -429,7 +565,7 @@ function CreateJLPTTestPageContent() {
                 mondaiNumber: mondai.number,
                 mondaiTitle: mondai.title,
                 parentId: null,
-                questionOrder: mondai.start - 1,
+                questionOrder: mondai.start,
                 section: sectionKey as any,
                 contentText: first.passageText,
               };
@@ -451,10 +587,11 @@ function CreateJLPTTestPageContent() {
                 parentId: mondai.requires_passage ? parentId : null,
                 questionOrder: nums[i],
                 section: sectionKey as any,
-                contentText: q.contentText,
+                contentText: getGeneratedContentText(sectionKey, mondai, q),
                 options: JSON.stringify(normalizedOptions) as any,
                 correctOption: normalizedCorrectOption,
                 explanation: q.explanation || undefined,
+                listeningScript: sectionKey === "LISTENING" ? q.listeningScript?.trim() : undefined,
                 points: 1.0,
               };
               await addQuestion({ testId: result.id, data: payload }).unwrap();
@@ -463,7 +600,9 @@ function CreateJLPTTestPageContent() {
         }
 
         toast.success("Tạo đề thi + sinh sẵn câu hỏi bằng AI thành công! Vui lòng review trước khi chuyển sang trang câu hỏi.");
-        toast.warning("⚠️ Phần Nghe (Listening) chưa được tạo — vui lòng tạo thủ công trong trang câu hỏi.");
+        if (generationSections.includes("LISTENING")) {
+          toast.warning("AI đã tạo câu nghe và script; vui lòng upload audio trước khi publish đề.");
+        }
       } finally {
         setCreatingQuestions(false);
       }
@@ -661,35 +800,107 @@ function CreateJLPTTestPageContent() {
               </p>
             </div>
 
+                <div className="rounded-md border bg-muted/20 p-4 space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold">Tạo câu hỏi tự động</p>
+                    <p className="text-xs text-muted-foreground">
+                      Chọn nguồn tạo câu hỏi, sau đó chọn phần JLPT cần tạo cho đề này.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="flex items-start gap-3 rounded-md border bg-background p-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={autoGenerateWithAI}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setAutoGenerateWithAI(next);
+                          if (next) setAutoGenerateWithBank(false);
+                        }}
+                      />
+                      <span>
+                        <span className="block font-medium">Tạo full câu hỏi bằng AI theo cấp độ đã chọn</span>
+                        <span className="block text-xs text-muted-foreground">
+                          Listening sẽ có script để admin upload audio sau.
+                        </span>
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 rounded-md border bg-background p-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={autoGenerateWithBank}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setAutoGenerateWithBank(next);
+                          if (next) setAutoGenerateWithAI(false);
+                        }}
+                      />
+                      <span>
+                        <span className="block font-medium">Lấy câu hỏi từ ngân hàng đề thi</span>
+                        <span className="block text-xs text-muted-foreground">
+                          Ưu tiên câu trong bank đúng level, section và mondai.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {isAutoGeneratingQuestions && (
+                    <div className="space-y-2">
+                      <Label>Phần cần tạo</Label>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {GENERATION_SECTION_OPTIONS.map((option) => {
+                          const disabled = !availableGenerationSectionSet.has(option.key);
+                          const checked = selectedGenerationSections.includes(option.key) && !disabled;
+
+                          return (
+                            <label
+                              key={option.key}
+                              className={`flex min-h-[92px] items-start gap-3 rounded-md border bg-background p-3 text-sm ${
+                                disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={checked}
+                                disabled={disabled}
+                                onChange={(e) => toggleGenerationSection(option.key, e.target.checked)}
+                              />
+                              <span>
+                                <span className="block font-medium">{option.label}</span>
+                                <span className="block text-xs text-muted-foreground">
+                                  {option.description}
+                                </span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {activeGenerationSections.length === 0 && (
+                        <p className="text-xs text-destructive">
+                          Vui lòng chọn ít nhất một phần để tạo câu hỏi.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Actions */}
                 <div className="flex gap-3 pt-4">
-                  <Button type="submit" disabled={isLoading || creatingQuestions}>
+                  <Button
+                    type="submit"
+                    disabled={
+                      isLoading ||
+                      creatingQuestions ||
+                      (isAutoGeneratingQuestions && activeGenerationSections.length === 0)
+                    }
+                  >
                     {isLoading || creatingQuestions ? "Đang tạo..." : "Tạo đề thi"}
                   </Button>
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={autoGenerateWithAI}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setAutoGenerateWithAI(next);
-                        if (next) setAutoGenerateWithBank(false);
-                      }}
-                    />
-                    Sinh sẵn câu hỏi bằng AI (1 bước)
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={autoGenerateWithBank}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setAutoGenerateWithBank(next);
-                        if (next) setAutoGenerateWithAI(false);
-                      }}
-                    />
-                    Tạo sẵn câu hỏi từ ngân hàng (1 bước)
-                  </label>
                   <Button
                     type="button"
                     variant="outline"

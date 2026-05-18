@@ -12,6 +12,7 @@ export interface AIGeneratedQuestion {
   correctOption: number;
   explanation: string;
   passageText: string;
+  listeningScript?: string;
 }
 
 interface AIQuestionGeneratorProps {

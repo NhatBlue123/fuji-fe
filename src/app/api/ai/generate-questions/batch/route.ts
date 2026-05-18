@@ -130,7 +130,12 @@ function buildBatchPrompt(level: string, specs: MondaiSpec[]): string {
   const parts = specs.map((m) => {
     const focus = FOCUS[level]?.[m.section]?.[m.mondaiNumber]
       ?? `JLPT ${level} ${m.section} Mondai ${m.mondaiNumber}: ${m.mondaiTitle}.`;
-    return `- Mondai ${m.mondaiNumber} (${m.section}): ${focus} Generate EXACTLY ${m.count} question(s).${m.requires_passage ? " Set passageText on FIRST question only." : ' passageText="" for all.'}`;
+    const contentRule = m.section === "LISTENING"
+      ? ' passageText="" for all. Include listeningScript on every question.'
+      : m.requires_passage
+        ? " Set passageText on FIRST question only."
+        : ' passageText="" for all.';
+    return `- Mondai ${m.mondaiNumber} (${m.section}): ${focus} Generate EXACTLY ${m.count} question(s).${contentRule}`;
   }).join("\n");
 
   return `You are a JLPT ${level} test creator. Generate questions for ALL mondai listed below.
@@ -145,7 +150,8 @@ Return a valid JSON array. Each element:
       "options": ["opt1","opt2","opt3","opt4"],
       "correctOption": 1,
       "explanation": "Vietnamese explanation",
-      "passageText": ""
+      "passageText": "",
+      "listeningScript": ""
     }
   ]
 }
@@ -155,6 +161,7 @@ Rules:
 - JLPT ${level} difficulty strictly.
 - Reordering mondai (文の文法②): 4 chunks ア・イ・ウ・エ in options; options are orderings like "ア→ウ→イ→エ"; mark ★ in contentText.
 - VOCABULARY: use 【word】 to mark the target word.
+- LISTENING: contentText is the short visible question only. Put the full Japanese audio transcript/dialogue in listeningScript. Do not put the full transcript in contentText.
 
 Mondai list:
 ${parts}`;
@@ -223,8 +230,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "AI không trả về danh sách. Hãy thử lại." }, { status: 500 });
     }
 
-    setBatchCache(cacheKey, parsed);
-    return NextResponse.json({ results: parsed });
+    const sanitized = parsed.map((result: any) => ({
+      ...result,
+      questions: Array.isArray(result?.questions)
+        ? result.questions.map((question: any, index: number) => ({
+            ...question,
+            correctOption:
+              typeof question?.correctOption === "number" &&
+              question.correctOption >= 1 &&
+              question.correctOption <= 4
+                ? question.correctOption
+                : 1,
+            passageText: index === 0 ? (question?.passageText || "") : "",
+            listeningScript:
+              result?.section === "LISTENING"
+                ? String(question?.listeningScript || question?.script || "").trim()
+                : undefined,
+          }))
+        : [],
+    }));
+
+    setBatchCache(cacheKey, sanitized);
+    return NextResponse.json({ results: sanitized });
   } catch (err: any) {
     console.error("[AI/batch] error:", err);
     return NextResponse.json({ error: err?.message ?? "AI không thể tạo câu hỏi. Vui lòng thử lại." }, { status: 500 });

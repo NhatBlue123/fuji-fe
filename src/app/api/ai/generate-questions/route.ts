@@ -12,6 +12,16 @@ interface GenerateQuestionsRequest {
   topic?: string;
 }
 
+interface GeneratedQuestion {
+  contentText?: string;
+  options?: string[];
+  correctOption?: number;
+  explanation?: string;
+  passageText?: string;
+  listeningScript?: string;
+  script?: string;
+}
+
 // ── In-memory cache (TTL 10 min) ─────────────────────────────────────────────
 const cache = new Map<string, { data: any; expiresAt: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
@@ -216,6 +226,28 @@ ${isReorder
 ${jsonFormat}`;
   }
 
+  if (section === "LISTENING") {
+    return `JLPT ${level} test creator. LISTENING Mondai ${mondaiNumber}${mondaiTitle ? `: ${mondaiTitle}` : ""}.
+Task: ${focus}
+${distributionRule}
+- Generate EXACTLY ${count} listening questions.
+- Japanese for listening scripts, questions, and options. Vietnamese for explanations only.
+- JLPT ${level} difficulty and natural spoken Japanese.
+- contentText: short question/prompt shown to the student. Do NOT paste the full script here.
+- listeningScript: full transcript for the audio; include enough context for a teacher/AI to evaluate mistakes.
+- passageText MUST be "" for all.
+${topicLine}
+Return a valid JSON array. Each element:
+{
+  "contentText": "short listening question",
+  "options": ["option1","option2","option3","option4"],
+  "correctOption": 1,
+  "explanation": "Vietnamese explanation",
+  "passageText": "",
+  "listeningScript": "full Japanese transcript/dialogue"
+}`;
+  }
+
   // VOCABULARY prompt - instruction is NOT in contentText, it's shown in UI
   const vocabFocus = MONDAI_FOCUS[level]?.VOCABULARY?.[mondaiNumber] ?? `JLPT ${level} vocabulary question`;
   return `JLPT ${level} test creator. VOCABULARY Mondai ${mondaiNumber}.
@@ -334,7 +366,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "AI không trả về danh sách câu hỏi. Hãy thử lại." }, { status: 500 });
     }
 
-    const sanitized = questions.map((q: any, i: number) => {
+    const sanitized = questions.map((q: GeneratedQuestion, i: number) => {
       const rawCorrect = q.correctOption;
       // Ensure correctOption is always a valid 1-4 integer (default to 1)
       const correctOption =
@@ -345,6 +377,10 @@ export async function POST(req: NextRequest) {
         ...q,
         correctOption,
         passageText: i === 0 ? (q.passageText || "") : "",
+        listeningScript:
+          body.section === "LISTENING"
+            ? String(q.listeningScript || q.script || "").trim()
+            : undefined,
       };
     });
 

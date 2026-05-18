@@ -19,9 +19,10 @@ import {
 import {
   JLPT_STRUCTURE,
   rebuildStructureWithCounts,
-  getQuestionNumbers,
   getStructureForTestType,
   getMondaiInstruction,
+  getDefaultMondaiQuestionCount,
+  isDefaultPassageMondai,
   type JLPTLevel,
   type SectionConfig,
   type MondaiConfig,
@@ -445,37 +446,51 @@ export default function AdminExamLayout() {
     if (!test?.level) return;
     const merged: Record<number, MondaiOverride> = {};
 
-    // Build counts from JLPT_STRUCTURE for this level
+    // Build default counts/child modes from the shared JLPT structure.
     const levelStructure = JLPT_STRUCTURE[test.level as JLPTLevel] || [];
-    const levelCounts: Record<number, number> = {};
+    const levelDefaults: Record<number, { count: number; childMode: boolean }> = {};
     levelStructure.forEach((section) => {
       section.mondai.forEach((m) => {
-        levelCounts[m.number] = m.end - m.start + 1;
+        levelDefaults[m.number] = {
+          count: getDefaultMondaiQuestionCount(test.level as JLPTLevel, section, m),
+          childMode: isDefaultPassageMondai(section, m),
+        };
       });
+    });
+
+    Object.entries(levelDefaults).forEach(([k, v]) => {
+      const key = Number(k);
+      merged[key] = {
+        count: v.count,
+        instruction: getMondaiInstruction(key),
+        childMode: v.childMode,
+      };
     });
 
     if (test.mondaiCounts && Object.keys(test.mondaiCounts).length > 0) {
       Object.entries(test.mondaiCounts).forEach(([k, v]) => {
-        merged[Number(k)] = {
-          count: v,
-          instruction: getMondaiInstruction(Number(k)),
-          childMode: test.mondaiChildModes?.[Number(k)] ?? false,
-        };
-      });
-    } else {
-      Object.entries(levelCounts).forEach(([k, v]) => {
-        merged[Number(k)] = {
-          count: v,
-          instruction: getMondaiInstruction(Number(k)),
-          childMode: test.mondaiChildModes?.[Number(k)] ?? false,
-        };
+        const key = Number(k);
+        if (!merged[key]) {
+          merged[key] = {
+            count: levelDefaults[key]?.count ?? 1,
+            instruction: getMondaiInstruction(key),
+            childMode: levelDefaults[key]?.childMode ?? false,
+          };
+        }
+        if (v > 0) merged[key].count = v;
       });
     }
 
     if (test.mondaiChildModes && Object.keys(test.mondaiChildModes).length > 0) {
       Object.entries(test.mondaiChildModes).forEach(([k, v]) => {
         const key = Number(k);
-        if (!merged[key]) merged[key] = { count: levelCounts[key] ?? 1, instruction: getMondaiInstruction(key) };
+        if (!merged[key]) {
+          merged[key] = {
+            count: levelDefaults[key]?.count ?? 1,
+            instruction: getMondaiInstruction(key),
+            childMode: levelDefaults[key]?.childMode ?? false,
+          };
+        }
         merged[key].childMode = Boolean(v);
       });
     }
@@ -483,7 +498,13 @@ export default function AdminExamLayout() {
     test.questions?.forEach((q) => {
       if (q.section === "READING" && q.children && q.children.length > 0) {
         const key = q.mondaiNumber;
-        if (!merged[key]) merged[key] = { count: levelCounts[key] ?? q.children.length, instruction: getMondaiInstruction(key) };
+        if (!merged[key]) {
+          merged[key] = {
+            count: levelDefaults[key]?.count ?? q.children.length,
+            instruction: getMondaiInstruction(key),
+            childMode: levelDefaults[key]?.childMode ?? true,
+          };
+        }
         merged[key].childMode = true;
         merged[key].count = Math.max(merged[key].count || 0, q.children.length);
       }
@@ -530,6 +551,7 @@ export default function AdminExamLayout() {
   // ── Form state ────────────────────────────────────────────────────────────
   const [passageText, setPassageText] = useState("");
   const [questionText, setQuestionText] = useState("");
+  const [listeningScript, setListeningScript] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctOption, setCorrectOption] = useState(1);
   const [explanation, setExplanation] = useState("");
@@ -588,6 +610,7 @@ export default function AdminExamLayout() {
     setCorrectOption(question.correctOption ?? 1);
     setExplanation(question.explanation ?? "");
     setPoints(question.points ?? 1.0);
+    setListeningScript(question.listeningScript ?? "");
     setAudioMediaId(question.audioMedia?.id ?? null);
     setAudioPreviewUrl(question.audioMedia?.url ?? null);
     setImageMediaId(question.imageMedia?.id ?? null);
@@ -868,6 +891,7 @@ export default function AdminExamLayout() {
       setCorrectOption(child?.correctOption ?? 1);
       setExplanation(child?.explanation ?? "");
       setPoints(child?.points ?? 1.0);
+      setListeningScript(child?.listeningScript ?? parent?.listeningScript ?? "");
       setAudioMediaId(child?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
       setAudioPreviewUrl(child?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
       setImageMediaId(child?.imageMedia?.id ?? null);
@@ -916,6 +940,7 @@ export default function AdminExamLayout() {
     setCorrectOption(child?.correctOption ?? 1);
     setExplanation(child?.explanation ?? "");
     setPoints(child?.points ?? 1.0);
+    setListeningScript(child?.listeningScript ?? parent?.listeningScript ?? "");
     setAudioMediaId(child?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
     setAudioPreviewUrl(child?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
     setImageMediaId(child?.imageMedia?.id ?? null);
@@ -949,6 +974,7 @@ export default function AdminExamLayout() {
       setCorrectOption(existingChild?.correctOption ?? 1);
       setExplanation(existingChild?.explanation ?? "");
       setPoints(existingChild?.points ?? 1.0);
+      setListeningScript(existingChild?.listeningScript ?? parent?.listeningScript ?? "");
       setAudioMediaId(existingChild?.audioMedia?.id ?? parent?.audioMedia?.id ?? null);
       setAudioPreviewUrl(existingChild?.audioMedia?.url ?? parent?.audioMedia?.url ?? null);
       setImageMediaId(existingChild?.imageMedia?.id ?? null);
@@ -984,6 +1010,7 @@ export default function AdminExamLayout() {
       setCorrectOption(existingChild?.correctOption ?? 1);
       setExplanation(existingChild?.explanation ?? "");
       setPoints(existingChild?.points ?? 1.0);
+      setListeningScript(existingChild?.listeningScript ?? "");
       setAudioMediaId(existingChild?.audioMedia?.id ?? null);
       setAudioPreviewUrl(existingChild?.audioMedia?.url ?? null);
       setImageMediaId(existingChild?.imageMedia?.id ?? null);
@@ -1063,6 +1090,7 @@ export default function AdminExamLayout() {
 
       const overrideInstruction = mondaiOverrides[mondai.number]?.instruction?.trim();
       const effectiveMondaiTitle = overrideInstruction || mondai.title;
+      const listeningScriptPayload = listeningScript.trim();
 
       // PASSAGE mondai (requires_passage=true): save passage separately + question as child
       if (isPassage && passageText.trim()) {
@@ -1076,6 +1104,7 @@ export default function AdminExamLayout() {
           options: undefined,
           correctOption: undefined,
           audioMediaId: mondai.requires_audio ? (audioMediaId ?? undefined) : undefined,
+          listeningScript: mondai.requires_audio ? listeningScriptPayload : undefined,
         };
 
         if (existingParent) {
@@ -1104,6 +1133,7 @@ export default function AdminExamLayout() {
         explanation: explanation || undefined,
         points,
         audioMediaId: mondai.requires_audio && !isPassage ? (audioMediaIdRef.current ?? undefined) : undefined,
+        listeningScript: mondai.requires_audio && !isPassage ? listeningScriptPayload : undefined,
         imageMediaId: imageMediaId ?? undefined,
       };
 
@@ -1323,9 +1353,7 @@ export default function AdminExamLayout() {
             <div className="max-w-2xl space-y-6">
               {/* AI Question Generator Panel */}
               {showAIPanel && derived ? (() => {
-                const actualStart = mondaiActualStarts[derived.mondai.number] ?? derived.mondai.start;
                 const count = derived.mondai._totalCount ?? (derived.mondai.end - derived.mondai.start + 1);
-                const actualEnd = actualStart + count - 1;
                 
                 // Xác định section đúng: nếu mondai requires_passage hoặc có từ khóa đọc thì là READING
                 const resolveAIGeneratorSection = (): "VOCABULARY" | "GRAMMAR" | "READING" | "LISTENING" => {
@@ -1636,6 +1664,22 @@ export default function AdminExamLayout() {
                   onUpload={handleAudioUpload}
                   uploading={uploadingAudio}
                 />
+              )}
+
+              {derived.mondai.requires_audio && (
+                <div className="space-y-2">
+                  <Label className="font-semibold">Listening script (transcript)</Label>
+                  <Textarea
+                    rows={6}
+                    value={listeningScript}
+                    onChange={(e) => setListeningScript(e.target.value)}
+                    placeholder="Paste the audio transcript so AI can evaluate the Listening section more accurately..."
+                    className="text-sm resize-y font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used by admin and AI assessment only. It is hidden from the student exam screen.
+                  </p>
+                </div>
               )}
 
               {/* Question Content */}
